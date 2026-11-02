@@ -2,7 +2,6 @@
 // Each builder is unit_models.gd's of the same name (`_helm_nile_khat` -> helm_nile_khat), line for line;
 // its comments are there. Angles the GDScript keeps in radians are turned to degrees where they're used.
 
-
 // ---- a mod's .glb parts (unit_models.gd mod_materials; Mods.glb_parts)
 
 let MOD_TEX_DIR = "../assets/art/textures"
@@ -72,7 +71,7 @@ def helm_nile_headcloth(c:Colours) -> Spec:
         let y = 0.4 + float(k) * 0.85
         let r = 5.25 * sqrt(1.0 - pow(y / 3.8, 2.0))
         add_child(n, ring(r - 0.3, r + 0.15, team, float3 { -0.2, -3.0 + y, 0.0 }, float3_0, float3 { 1.0, 1.0, 0.98 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.6, 4.6, 1.1 }, linen, float3 { 0.6, -6.6, 4.6 * side }, float3 { 15.0 * side, 0.0, 0.0 }))
         add_child(n, blob(float3 { 1.65, 0.6, 1.15 }, team, float3 { 0.6, -7.6, 4.7 * side }, float3 { 15.0 * side, 0.0, 0.0 }))
     add_child(n, blob(float3 { 2.0, 4.0, 3.6 }, linen, float3 { -3.9, -5.2, 0.0 }))
@@ -83,7 +82,7 @@ def helm_nile_bronze(c:Colours) -> Spec:
     let bronze = surf("bronze", float3 { 0.95, 0.88, 0.66 }, 2.0)
     add_child(n, dome(float3 { 5.2, 4.4, 5.1 }, bronze, float3 { -0.2, -3.0, 0.0 }))
     add_child(n, rod(float3 { -4.2, -1.0, 0.0 }, float3 { 3.6, 1.0, 0.0 }, 0.6, 0.4, bronze))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.8, 2.6, 0.5 }, bronze, float3 { 1.6, -4.6, 4.6 * side }))
     add_child(n, blob(float3 { 2.0, 2.4, 3.6 }, surf("cloth", LINEN, 3.0), float3 { -4.2, -4.6, 0.0 }))
     add_child(n, ring(5.0, 5.5, plain(col(c, "team")), float3 { -0.2, -3.0, 0.0 }))
@@ -92,21 +91,21 @@ def helm_nile_bronze(c:Colours) -> Spec:
 
 def weapon_khopesh(c:Colours) -> Spec:
     let bronze = surf("bronze", float3 { 1.15, 1.05, 0.8 }, 3.0)
-    let pts = [float2 { 0.0, -0.8 }, float2 { 5.5, -0.8 }, float2 { 8.5, -2.8 }, float2 { 12.5, -3.0 }, float2 { 15.0, -0.8 },
-               float2 { 15.2, 2.2 }, float2 { 13.6, 3.6 }, float2 { 13.0, 1.4 }, float2 { 11.6, -0.4 }, float2 { 9.0, -0.2 }, float2 { 5.5, 0.9 }, float2 { 0.0, 0.9 }]
+    let pts = [ float2 { 0.0, -0.8 }, float2 { 5.5, -0.8 }, float2 { 8.5, -2.8 }, float2 { 12.5, -3.0 }, float2 { 15.0, -0.8 },
+                float2 { 15.2, 2.2 }, float2 { 13.6, 3.6 }, float2 { 13.0, 1.4 }, float2 { 11.6, -0.4 }, float2 { 9.0, -0.2 }, float2 { 5.5, 0.9 }, float2 { 0.0, 0.9 } ]
     return spec_of(sword(pts, float3 { 3.0, 14.0, 0.0 }, bronze, bronze))
 
 def shield_cowhide(c:Colours) -> Spec:
     let n = mnode()
     let h = facing(n, float3 { 3.0, 0.0, 1.5 }, SHIELD_FACE)
-    let outline = [float2 { -4.0, -8.0 }, float2 { 4.0, -8.0 }, float2 { 4.0, 4.0 }]
+    let outline = [ float2 { -4.0, -8.0 }, float2 { 4.0, -8.0 }, float2 { 4.0, 4.0 } ]
     for(9) k:
         let a = 180.0 * float(k) / 8.0
         outline.push(float2 { cos(a) * 4.0, 4.0 + sin(a) * 4.2 })
     outline.push(float2 { -4.0, 4.0 })
     add_child(h, slab(outline, 0.9, plain(html("#e8cc98"))))
     let spot = plain(html("#9a5a32"))
-    for([float2 { -1.4, 3.0 }, float2 { 1.6, -3.4 }]) p:
+    for([ float2 { -1.4, 3.0 }, float2 { 1.6, -3.4 } ]) p:
         add_child(h, blob(float3 { 2.2, 2.6, 0.3 }, spot, float3 { p.x, p.y, 0.45 }))
     for(outline.length) k:
         let a = outline[k]
@@ -127,7 +126,7 @@ def helm_han_cap(c:Colours) -> Spec:
     let black = plain(html("#16141a"))
     add_child(n, dome(float3 { 5.1, 3.4, 5.0 }, black, float3 { -0.2, -2.8, 0.0 }))
     add_child(n, blob(float3 { 2.6, 3.0, 2.6 }, black, float3 { -1.2, 1.4, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, rod(float3 { -3.6, -0.4, 1.2 * side }, float3 { -4.6, 0.2, 7.0 * side }, 0.45, 0.35, black))
     add_child(n, ring(4.8, 5.2, plain(col(c, "team")), float3 { -0.2, -2.8, 0.0 }))
     return spec_of(n)
@@ -154,7 +153,7 @@ def weapon_ji(c:Colours) -> Spec:
     let d = normalize(b - a)
     let iron = surf("iron", float3_1, 3.0)
     add_child(n, rod(b, b + d * 4.6, 0.9, 0.1, iron, false))
-    add_child(n, blade([float2 { 0.0, -0.6 }, float2 { 3.8, -1.4 }, float2 { 5.0, 0.6 }, float2 { 3.6, 0.4 }, float2 { 0.0, 0.6 }], 0.5, iron,
+    add_child(n, blade([ float2 { 0.0, -0.6 }, float2 { 3.8, -1.4 }, float2 { 5.0, 0.6 }, float2 { 3.6, 0.4 }, float2 { 0.0, 0.6 } ], 0.5, iron,
                        b - d * 1.2, atan2(float2 { d.x, d.y }) + 90.0))
     add_child(n, blob(float3 { 0.9, 1.2, 0.9 }, plain(col(c, "team")), b - d * 2.6))
     return spec_of(n)
@@ -162,7 +161,7 @@ def weapon_ji(c:Colours) -> Spec:
 def shield_lacquer(c:Colours) -> Spec:
     let n = mnode()
     let h = facing(n, float3 { 3.0, 0.0, 1.5 }, SHIELD_FACE)
-    let outline = [float2 { -3.8, -7.5 }, float2 { 3.8, -7.5 }, float2 { 3.8, 5.5 }, float2 { 0.0, 8.0 }, float2 { -3.8, 5.5 }]
+    let outline = [ float2 { -3.8, -7.5 }, float2 { 3.8, -7.5 }, float2 { 3.8, 5.5 }, float2 { 0.0, 8.0 }, float2 { -3.8, 5.5 } ]
     add_child(h, slab(outline, 0.9, plain(html("#c8402a"))))
     for(outline.length) k:
         let a = outline[k]
@@ -185,7 +184,7 @@ def helm_aztec_quilted(c:Colours) -> Spec:
     for(3) k:
         let fk = float(k)
         add_child(n, ring(4.9 - fk * 1.2, 5.15 - fk * 1.2, surf("cloth", html("#c8bea4"), 2.0), float3 { -0.2, -2.4 + fk * 1.1, 0.0 }))
-    let greens = [html("#2a9a6a"), html("#e8c040"), html("#2a9a6a"), html("#c83a2a"), html("#2a9a6a")]
+    let greens = [ html("#2a9a6a"), html("#e8c040"), html("#2a9a6a"), html("#c83a2a"), html("#2a9a6a") ]
     for(5) k:
         let z = -2.0 + float(k) * 1.0
         add_child(n, blob(float3 { 0.5, 3.0, 0.7 }, plain(greens[k]), float3 { -3.2, 1.6, z }, float3 { z * 6.0, 0.0, 20.0 }))
@@ -199,7 +198,7 @@ def helm_aztec_eagle(c:Colours) -> Spec:
     add_child(n, dome(float3 { 5.4, 4.6, 5.3 }, feathers, float3 { -0.4, -3.2, 0.0 }))
     let beak = plain(html("#e8b030"))
     add_child(n, cone(0.4, 2.4, 4.6, beak, float3 { 4.8, -1.0, 0.0 }, float3 { 0.0, 0.0, -100.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.7, 0.7, 0.4 }, plain(INK), float3 { 3.0, 0.4, 2.6 * side }))
         add_child(n, blob(float3 { 1.0, 2.6, 0.6 }, feathers, float3 { 1.2, -4.8, 4.8 * side }))
     for(4) k:
@@ -213,14 +212,14 @@ def weapon_macuahuitl(c:Colours) -> Spec:
     let tip = float3 { 3.0, 14.0, 0.0 }
     let d = normalize(tip)
     let ang = atan2(float2 { d.x, d.y })
-    add_child(n, blade([float2 { 0.0, -1.0 }, float2 { 12.5, -1.7 }, float2 { 14.0, 0.0 }, float2 { 12.5, 1.7 }, float2 { 0.0, 1.0 }], 0.8,
+    add_child(n, blade([ float2 { 0.0, -1.0 }, float2 { 12.5, -1.7 }, float2 { 14.0, 0.0 }, float2 { 12.5, 1.7 }, float2 { 0.0, 1.0 } ], 0.8,
                        surf("wood_grain", html("#c89a60"), 3.0), float3_0, ang))
     let glass = surf("iron", html("#3a3640"), 1.5)
     let across = float3 { -d.y, d.x, 0.0 }
     for(6) k:
         let at = d * (3.0 + float(k) * 1.8)
         let w = 1.1 + float(k) * 0.1
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             add_child(n, blob(float3 { 0.55, 0.7, 0.3 }, glass, at + across * side * (w + 0.5)))
     add_child(n, rod(float3_0, -d * 3.0, 0.6, 0.6, surf("leather", float3_1, 2.0), false))
     return spec_of(n)
@@ -231,14 +230,13 @@ def shield_chimalli(c:Colours) -> Spec:
     add_child(h, disc(5.6, 0.8, plain(col(c, "team")), 0.0))
     add_child(h, ring(2.6, 3.4, plain(html("#f4f0e4")), float3 { 0.0, 0.0, 0.45 }, float3 { 90.0, 0.0, 0.0 }))
     add_child(h, disc(1.2, 0.3, plain(html("#e8c040")), 0.5))
-    let cols = [html("#2a9a6a"), html("#e8c040"), html("#c83a2a")]
+    let cols = [ html("#2a9a6a"), html("#e8c040"), html("#c83a2a") ]
     for(9) k:
         let x = -4.0 + float(k) * 1.0
         add_child(h, blob(float3 { 0.45, 2.0, 0.3 }, plain(cols[k % 3]), float3 { x, -6.0 - abs(x) * -0.25, 0.1 }))
     return spec_of(n)
 
 // ---- Norse
-
 
 def helm_norse_fur(c:Colours) -> Spec:
     let n = mnode()
@@ -263,17 +261,17 @@ def helm_norse_spectacle(c:Colours) -> Spec:
     add_child(n, dome(float3 { 5.0, 5.4, 4.8 }, iron, float3 { 0.0, -3.8, 0.0 }))
     add_child(n, ring(4.8, 5.4, iron, float3 { 0.0, -3.6, 0.0 }))
     add_child(n, rod(float3 { -5.0, -1.0, 0.0 }, float3 { 5.0, -1.0, 0.0 }, 0.5, 0.5, iron))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, ring(0.9, 1.5, iron, float3 { 4.6, -5.4, 1.7 * side }, float3 { 0.0, 0.0, 90.0 }))
     let mail = surf("mail", float3 { 0.7, 0.7, 0.75 }, 2.0)
-    for([180.0 * 0.55, 180.0 * 0.78, 180.0 * 1.22, 180.0 * 1.45]) a:
+    for([ 180.0 * 0.55, 180.0 * 0.78, 180.0 * 1.22, 180.0 * 1.45 ]) a:
         add_child(n, blob(float3 { 1.9, 2.4, 0.45 }, mail, float3 { cos(a) * 5.0 - 0.6, -4.6, sin(a) * 5.0 }, float3 { 0.0, -a, 0.0 }))
     add_child(n, ring(4.9, 5.3, plain(col(c, "team")), float3 { 0.0, -3.0, 0.0 }))
     return spec_of(n)
 
 def axe_head(top:float, k:float) -> [float2]:
-    let pts = [float2 { 0.3, 1.0 }, float2 { 0.3, -1.4 }, float2 { 1.4, -6.0 }, float2 { -1.6, -6.8 }, float2 { -5.2, -6.0 },
-               float2 { -3.0, -1.4 }, float2 { -3.0, 1.0 }]
+    let pts = [ float2 { 0.3, 1.0 }, float2 { 0.3, -1.4 }, float2 { 1.4, -6.0 }, float2 { -1.6, -6.8 }, float2 { -5.2, -6.0 },
+                float2 { -3.0, -1.4 }, float2 { -3.0, 1.0 } ]
     return map(pts) p: float2 { top + p.x * k, p.y * k }
 
 def weapon_axe_bearded(c:Colours) -> Spec:
@@ -331,7 +329,7 @@ def tool_staff_cheese(c:Colours) -> Spec:
     let t = float3 { 5.0, 29.0, 0.0 }
     add_child(n, rod(a, b, 1.0, 0.9, wood))
     add_child(n, rod(b, t, 0.9, 0.75, wood))
-    add_child(n, slab([float2 { -2.6, -1.6 }, float2 { 3.0, -1.6 }, float2 { -2.6, 2.6 }], 2.6, surf("cheese", float3_1, 3.0), t + float3 { 0.4, 1.2, 0.0 }))
+    add_child(n, slab([ float2 { -2.6, -1.6 }, float2 { 3.0, -1.6 }, float2 { -2.6, 2.6 } ], 2.6, surf("cheese", float3_1, 3.0), t + float3 { 0.4, 1.2, 0.0 }))
     add_child(n, ring(0.7, 1.1, plain(col(c, "team")), t + float3 { -0.2, -0.6, 0.0 }, float3 { 0.0, 0.0, -16.0 }))
     return spec_of(n)
 
@@ -341,7 +339,7 @@ def tool_satchel_cheese(c:Colours) -> Spec:
     add_child(n, blob(float3 { 2.8, 3.4, 2.8 }, sack, float3 { 2.6, -2.4, 1.6 }))
     add_child(n, cone(0.7, 1.5, 1.4, sack, float3 { 2.6, 1.0, 1.6 }))
     add_child(n, ring(0.6, 1.0, plain(col(c, "team")), float3 { 2.6, 1.2, 1.6 }))
-    add_child(n, slab([float2 { 0.0, 0.0 }, float2 { 2.2, 0.6 }, float2 { 0.2, 1.8 }], 1.2, surf("cheese", float3_1, 2.0), float3 { 3.6, -0.6, 3.6 }))
+    add_child(n, slab([ float2 { 0.0, 0.0 }, float2 { 2.2, 0.6 }, float2 { 0.2, 1.8 } ], 1.2, surf("cheese", float3_1, 2.0), float3 { 3.6, -0.6, 3.6 }))
     return spec_of(n)
 
 def tool_staff_lily(c:Colours) -> Spec:
@@ -388,7 +386,7 @@ def tool_staff_laurel(c:Colours) -> Spec:
 def tool_staff_olive(c:Colours) -> Spec:
     let n = mnode()
     let wood = surf("bone", html("#c4b494"), 5.0)
-    let pts = [float3 { -2.0, -9.0, 0.0 }, float3 { 1.2, 6.0, 0.4 }, float3 { 2.6, 18.0, -0.4 }, float3 { 5.4, 29.0, 0.0 }]
+    let pts = [ float3 { -2.0, -9.0, 0.0 }, float3 { 1.2, 6.0, 0.4 }, float3 { 2.6, 18.0, -0.4 }, float3 { 5.4, 29.0, 0.0 } ]
     for(3) k:
         add_child(n, rod(pts[k], pts[k + 1], 1.05 - float(k) * 0.08, 0.95 - float(k) * 0.08, wood))
     add_child(n, blob(float3 { 1.4, 1.1, 1.3 }, wood, pts[1]))
@@ -503,7 +501,7 @@ def tool_staff_rune(c:Colours) -> Spec:
     add_child(n, blob(float3 { 2.4, 3.0, 1.6 }, surf("rock", float3 { 0.9, 0.9, 0.86 }, 1.5), b + d * 2.4))
     for(3) k:
         add_child(n, blob(float3 { 0.25, 1.6, 0.2 }, plain(col(c, "team")), b + d * 2.4 + float3 { 0.6 * float(k - 1), 0.0, 1.5 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.9, 2.4, 0.9 }, surf("leaf", float3 { 0.7, 0.9, 0.55 }, 2.0), b - d * 1.0 + float3 { 0.4, -1.6, 1.3 * side }, float3 { 0.0, 0.0, 18.0 * side }))
     add_child(n, ring(0.7, 1.15, surf("leather", float3_1, 2.0), b - d * 0.2, float3 { 0.0, 0.0, tilt_of(m, b) }))
     return spec_of(n)
@@ -523,11 +521,11 @@ def tool_staff_feather(c:Colours) -> Spec:
     let d = normalize(b - a)
     let tilt = tilt_of(a, b)
     add_child(n, rod(a, b, 0.95, 0.9, surf("bone", html("#c08a58"), 6.0)))
-    let bands = [html("#2a7a6a"), html("#e8c040"), html("#c83a2a")]
+    let bands = [ html("#2a7a6a"), html("#e8c040"), html("#c83a2a") ]
     for(3) k:
         add_child(n, ring(0.75, 1.15, plain(bands[k]), b - d * (2.0 + float(k) * 1.3), float3 { 0.0, 0.0, tilt }))
     add_child(n, blob(float3 { 1.5, 1.2, 1.5 }, plain(html("#e8c040")), b + d * 0.6))
-    let cols = [html("#1f9a5a"), html("#c83a2a"), html("#1f9a5a"), html("#e8c040"), html("#1f9a5a"), html("#c83a2a"), html("#1f9a5a")]
+    let cols = [ html("#1f9a5a"), html("#c83a2a"), html("#1f9a5a"), html("#e8c040"), html("#1f9a5a"), html("#c83a2a"), html("#1f9a5a") ]
     for(7) k:
         let ang = rad(float(k - 3) * 0.32)
         let length = 5.8 - abs(float(k - 3)) * 0.6
@@ -556,8 +554,8 @@ def tool_staff_lantern(c:Colours) -> Spec:
     let lt = b + float3 { 4.6, -3.4, 0.0 }
     add_child(n, rod(b + float3 { 4.6, 1.6, 0.0 }, lt + float3 { 0.0, 2.8, 0.0 }, 0.3, 0.3, iron))
     add_child(n, box(float3 { 2.6, 3.2, 2.6 }, glow(html("#ffd060")), lt))
-    for([-1.3, 1.3]) x:
-        for([-1.3, 1.3]) z:
+    for([ -1.3, 1.3 ]) x:
+        for([ -1.3, 1.3 ]) z:
             add_child(n, box(float3 { 0.45, 3.4, 0.45 }, iron, lt + float3 { x, 0.0, z }))
     add_child(n, cone(0.4, 2.1, 1.6, iron, lt + float3 { 0.0, 2.3, 0.0 }))
     add_child(n, box(float3 { 2.9, 0.5, 2.9 }, iron, lt + float3 { 0.0, -1.8, 0.0 }))
@@ -567,7 +565,7 @@ def tool_staff_lantern(c:Colours) -> Spec:
 def tool_staff_candle(c:Colours) -> Spec:
     let n = mnode()
     let bone = surf("bone", html("#ece4cc"), 4.0)
-    let pts = [float3 { -2.0, -9.0, 0.0 }, float3 { 1.8, 4.0, 0.5 }, float3 { 0.8, 13.0, -0.4 }, float3 { 4.2, 22.0, 0.3 }, float3 { 3.6, 26.0, 0.0 }]
+    let pts = [ float3 { -2.0, -9.0, 0.0 }, float3 { 1.8, 4.0, 0.5 }, float3 { 0.8, 13.0, -0.4 }, float3 { 4.2, 22.0, 0.3 }, float3 { 3.6, 26.0, 0.0 } ]
     for(4) k:
         add_child(n, rod(pts[k], pts[k + 1], 0.95, 0.85, bone))
         add_child(n, blob(float3 { 1.45, 1.2, 1.35 }, bone, pts[k + 1]))
@@ -596,12 +594,12 @@ def tool_satchel_bottle(c:Colours) -> Spec:
 def tool_staff_branch(c:Colours) -> Spec:
     let n = mnode()
     let bark = surf("bark_plate", html("#b08a60"), 4.0)
-    let pts = [float3 { -2.0, -9.0, 0.0 }, float3 { 0.8, 5.0, -0.4 }, float3 { 3.4, 17.0, 0.4 }, float3 { 5.0, 26.0, 0.0 }]
+    let pts = [ float3 { -2.0, -9.0, 0.0 }, float3 { 0.8, 5.0, -0.4 }, float3 { 3.4, 17.0, 0.4 }, float3 { 5.0, 26.0, 0.0 } ]
     for(3) k:
         add_child(n, rod(pts[k], pts[k + 1], 1.15 - float(k) * 0.12, 1.0 - float(k) * 0.12, bark))
     let top = pts[3]
     let leaf = surf("leaf", html("#80c850"), 2.0)
-    let twigs = [[pts[2], pts[2] + float3 { -3.4, 3.2, 0.6 }], [top, top + float3 { -2.0, 3.6, -0.4 }], [top, top + float3 { 2.6, 3.0, 0.5 }]]
+    let twigs = [ [ pts[2], pts[2] + float3 { -3.4, 3.2, 0.6 } ], [ top, top + float3 { -2.0, 3.6, -0.4 } ], [ top, top + float3 { 2.6, 3.0, 0.5 } ] ]
     for(twigs) t:
         add_child(n, rod(t[0], t[1], 0.5, 0.35, bark))
         add_child(n, blob(float3 { 1.4, 1.0, 1.2 }, leaf, t[1] + float3 { 0.0, 0.6, 0.0 }))
@@ -667,4 +665,4 @@ def build_units5(base:string, c:Colours) -> Spec?:
         case "tool.satchel.bottle": return tool_satchel_bottle(c)
         case "tool.staff.branch": return tool_staff_branch(c)
         case "tool.satchel.leaf": return tool_satchel_leaf(c)
-        default: return mod_part(base, c)   // a mod's .glb part (nil when no mod in use has it)
+        default: return mod_part(base, c)  // a mod's .glb part (nil when no mod in use has it)

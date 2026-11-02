@@ -11,27 +11,27 @@ class Case:
 
 // Races whose every unit is checked (between them: every playable body, every hold, back parts, wings, a fused
 // centaur, siege crews).
-let PROMPTS = ["romans", "swamp frogs", "sewer rats", "rats", "forest beetles", "spooky spiders",
-    "flying greeks with wings", "centaur romans", "winged frogs", "vikings", "bears", "polar bears", "moonbears", "viking bears"]
+let PROMPTS = [ "romans", "swamp frogs", "sewer rats", "rats", "forest beetles", "spooky spiders",
+                "flying greeks with wings", "centaur romans", "winged frogs", "vikings", "bears", "polar bears", "moonbears", "viking bears" ]
 // More races for milestone 13's new lines only (scouts, mounted archers, unique units...).
-let LINE_PROMPTS = ["greeks", "royal humans", "mongols", "aztecs", "egyptians", "han", "sewer rats with cheese hammers",
-    "tiny vikings", "swamp humans", "forest humans", "sewer humans", "spooky humans", "forest bears", "romans riding bears",
-    "rats riding bears", "giant bears"]
-let NEW_LINES = ["scout", "mounted_archer", "unique", "large", "trader", "great_sling", "war_beast"]
+let LINE_PROMPTS = [ "greeks", "royal humans", "mongols", "aztecs", "egyptians", "han", "sewer rats with cheese hammers",
+                     "tiny vikings", "swamp humans", "forest humans", "sewer humans", "spooky humans", "forest bears", "romans riding bears",
+                     "rats riding bears", "giant bears" ]
+let NEW_LINES = [ "scout", "mounted_archer", "unique", "large", "trader", "great_sling", "war_beast" ]
 // Riders (a race's spear unit, put on each mount) and the mounts.
-let RIDERS = ["romans", "swamp frogs", "sewer rats", "spooky spiders", "forest beetles"]
-let MOUNTS = ["pony", "beetle", "spider", "capybara", "newt", "hummingbird", "cat", "bear", "bear_black"]
+let RIDERS = [ "romans", "swamp frogs", "sewer rats", "spooky spiders", "forest beetles" ]
+let MOUNTS = [ "pony", "beetle", "spider", "capybara", "newt", "hummingbird", "cat", "bear", "bear_black" ]
 // The race whose units carry each playable creature's hero looks, Norse kit and gear.
-let HERO_BASE = [["frog", "swamp frogs"], ["rat", "sewer rats"], ["human", "romans"], ["spider", "spooky spiders"],
-    ["beetle", "forest beetles"], ["centaur", "centaur romans"], ["bear", "bears"], ["bear_black", "moonbears"], ["bear_polar", "polar bears"]]
-let NORSE_HELMS = ["helm.norse_fur", "helm.norse_conical", "helm.norse_spectacle", "helm.horned"]
-let NORSE_AXES = ["weapon.axe.bearded", "weapon.axe.broad"]
-let BEARS = ["bear", "bear_black", "bear_polar"]
+let HERO_BASE = [ [ "frog", "swamp frogs" ], [ "rat", "sewer rats" ], [ "human", "romans" ], [ "spider", "spooky spiders" ],
+                  [ "beetle", "forest beetles" ], [ "centaur", "centaur romans" ], [ "bear", "bears" ], [ "bear_black", "moonbears" ], [ "bear_polar", "polar bears" ] ]
+let NORSE_HELMS = [ "helm.norse_fur", "helm.norse_conical", "helm.norse_spectacle", "helm.horned" ]
+let NORSE_AXES = [ "weapon.axe.bearded", "weapon.axe.broad" ]
+let BEARS = [ "bear", "bear_black", "bear_polar" ]
 
 def hero_base(cid:string) -> string:
     for(HERO_BASE) kv:
         if kv[0] == cid: return kv[1]
-    assert false   // (hero cases: a race in PROMPTS for every playable creature)
+    assert false  // (hero cases: a race in PROMPTS for every playable creature)
     return ""
 
 let case_races = dictionary<string, JV>(63)
@@ -92,7 +92,7 @@ def all_cases(with_lines:bool) -> [Case]:
                     i++
     // The swordsman's age-3 kit for the cultures PROMPTS leaves out, and the plain iron sword, the fallback, which
     // royal humans get under the bronze rules.
-    for([["greeks", "default"], ["mongols", "default"], ["han", "default"], ["royal humans", "bronze"]]) s:
+    for([ [ "greeks", "default" ], [ "mongols", "default" ], [ "han", "default" ], [ "royal humans", "bronze" ] ]) s:
         for(glist(slot_unit(race_for(s[0], s[1]), "infantry"), "line")) l:
             if gint(l, "age", 1) >= 2:
                 cases.push(Case { "{s[0]} swordsman age {gint(l, "age", 1)}" + (if s[1] != "default": " (bronze rules)" else: ""), at(l, "recipe") })
@@ -107,9 +107,9 @@ def all_cases(with_lines:bool) -> [Case]:
     for(RIDERS) p:
         let spear = slot_unit(race_for(p, "default"), "spear")
         for(MOUNTS) m:
-            cases.push(Case { "{rstr(at(spear, "recipe"), "creature")} on {m}", ride(spear, m, as_str(glist(creature(m), "skins")[0]), shallow_copy(gobj(creature(m), "parts"))) })   // (with what the mount always has: a hummingbird's wings)
+            cases.push(Case { "{rstr(at(spear, "recipe"), "creature")} on {m}", ride(spear, m, as_str(glist(creature(m), "skins")[0]), shallow_copy(gobj(creature(m), "parts"))) })  // (with what the mount always has: a hummingbird's wings)
     let human = slot_unit(race_for("romans", "default"), "spear")
-    for(["pony", "beetle", "spider"]) m:   // (winged mounts, a "pegasus": the mount's wings at its withers)
+    for([ "pony", "beetle", "spider" ]) m:  // (winged mounts, a "pegasus": the mount's wings at its withers)
         let wp = jobj()
         set(wp, "back", jstr("wings.feather"))
         cases.push(Case { "human on winged {m}", ride(human, m, as_str(glist(creature(m), "skins")[0]), wp) })
@@ -153,13 +153,13 @@ def norse_cases() -> [Case]:
     for(in_play_creatures()) cid:
         let race = race_for(hero_base(cid), "default")
         let sword = at(last_step(slot_unit(race, "infantry")), "recipe")
-        for(NORSE_HELMS) h: out.push(Case { "norse: {cid} swordsman with {h}", with_parts(sword, [["head_gear", h]]) })
-        for(NORSE_AXES) a: out.push(Case { "norse: {cid} swordsman with {a}", with_parts(sword, [["hand_r", a]]) })
-        if cid != "centaur" and not has_str(glist(creature("pony"), "not_ridden_by"), cid):   // (bears don't ride)
+        for(NORSE_HELMS) h: out.push(Case { "norse: {cid} swordsman with {h}", with_parts(sword, [ [ "head_gear", h ] ]) })
+        for(NORSE_AXES) a: out.push(Case { "norse: {cid} swordsman with {a}", with_parts(sword, [ [ "hand_r", a ] ]) })
+        if cid != "centaur" and not has_str(glist(creature("pony"), "not_ridden_by"), cid):  // (bears don't ride)
             let rider = ride(slot_unit(race, "spear"), "pony", as_str(glist(creature("pony"), "skins")[0]), jobj())
-            out.push(Case { "norse: {cid} rider with weapon.axe.bearded and helm.norse_conical", with_parts(rider, [["hand_r", "weapon.axe.bearded"], ["head_gear", "helm.norse_conical"]]) })
-        out.push(Case { "norse: {cid} scout with weapon.axe.bearded and helm.norse_fur", with_parts(at(slot_unit(race, "scout"), "recipe"), [["hand_r", "weapon.axe.bearded"], ["head_gear", "helm.norse_fur"]]) })
-        out.push(Case { "norse: {cid} healer with tool.staff.rune", with_parts(at(slot_unit(race, "healer"), "recipe"), [["hand_r", "tool.staff.rune"]]) })
+            out.push(Case { "norse: {cid} rider with weapon.axe.bearded and helm.norse_conical", with_parts(rider, [ [ "hand_r", "weapon.axe.bearded" ], [ "head_gear", "helm.norse_conical" ] ]) })
+        out.push(Case { "norse: {cid} scout with weapon.axe.bearded and helm.norse_fur", with_parts(at(slot_unit(race, "scout"), "recipe"), [ [ "hand_r", "weapon.axe.bearded" ], [ "head_gear", "helm.norse_fur" ] ]) })
+        out.push(Case { "norse: {cid} healer with tool.staff.rune", with_parts(at(slot_unit(race, "healer"), "recipe"), [ [ "hand_r", "tool.staff.rune" ] ]) })
     return out
 
 // Off-hand and back gear on every body: every shield, cape and banner on each playable body's age-3 swordsman,
@@ -169,15 +169,15 @@ def gear_cases() -> [Case]:
     let ids = sorted_strs(lib_parts.keys)
     for(in_play_creatures()) cid:
         let race = race_for(hero_base(cid), "default")
-        let units = [at(last_step(slot_unit(race, "infantry")), "recipe"), at(last_step(slot_unit(race, "archer")), "recipe"), at(slot_unit(race, "healer"), "recipe")]
+        let units = [ at(last_step(slot_unit(race, "infantry")), "recipe"), at(last_step(slot_unit(race, "archer")), "recipe"), at(slot_unit(race, "healer"), "recipe") ]
         for(ids) id:
             let p = part(id)
             let tags = gstrs(p, "tags")
             let ps = rstr(p, "slot")
             if (ps == "hand_l" or ps == "back") and not has_str(glist(p, "only_if"), "hero_only") and not has_s(tags, "flying"):
                 let who = if has_s(tags, "heal"): 2 elif has_s(tags, "quiver"): 1 else: 0
-                if not has_str(glist(p, "not_worn_by"), rstr(units[who], "body")):   // (parts.json not_worn_by: never on this body)
-                    out.push(Case { "gear: {cid} {["infantry", "archer", "healer"][who]} with {id}", with_parts(units[who], [[ps, id]]) })
+                if not has_str(glist(p, "not_worn_by"), rstr(units[who], "body")):  // (parts.json not_worn_by: never on this body)
+                    out.push(Case { "gear: {cid} {["infantry", "archer", "healer"][who]} with {id}", with_parts(units[who], [ [ ps, id ] ]) })
     return out
 
 // The bears: every helmet, hat, body armour and held piece of the game (not a hero's, a siege engine's or a
@@ -185,7 +185,7 @@ def gear_cases() -> [Case]:
 def bear_cases() -> [Case]:
     let out = []::Case
     let ids = sorted_strs(lib_parts.keys)
-    let whos = ["infantry", "spear", "archer", "skirmisher", "healer", "worker"]
+    let whos = [ "infantry", "spear", "archer", "skirmisher", "healer", "worker" ]
     for(BEARS) cid:
         let race = race_for(hero_base(cid), "default")
         let units = map(whos) w: at(if w == "healer" or w == "worker": slot_unit(race, w) else: last_step(slot_unit(race, w)), "recipe")
@@ -195,7 +195,7 @@ def bear_cases() -> [Case]:
             let ps = rstr(p, "slot")
             let only = gstrs(p, "only_if")
             if (ps == "head_gear" or ps == "torso" or ps == "hand_r") and not has_s(only, "hero_only") and not has_s(only, "concept_only") and
-               not has_s(tags, "siege") and not has_s(tags, "sapper") and not has_s(tags, "war_beast") and not has_s(tags, "load"):
+                    not has_s(tags, "siege") and not has_s(tags, "sapper") and not has_s(tags, "war_beast") and not has_s(tags, "load"):
                 var who = "infantry"
                 if ps == "hand_r":
                     if has_s(tags, "heal"): who = "healer"
@@ -205,31 +205,31 @@ def bear_cases() -> [Case]:
                     elif has_s(tags, "spear") or has_s(tags, "lance"): who = "spear"
                 let u = units[find(whos) w: w == who]
                 if not has_str(glist(p, "not_worn_by"), rstr(u, "body")):
-                    out.push(Case { "bear: {cid} {who} with {id}", with_parts(u, [[ps, id]]) })
+                    out.push(Case { "bear: {cid} {who} with {id}", with_parts(u, [ [ ps, id ] ]) })
     return out
 
 // Creature-kit creatures: the cat rebuilt through the kit under a rat, and the bears' concept rows.
 let BEAR_CASES = [
-    ["brown bear spear", "bear greeks", "spear", "\{\"skin\": \"bear_brown\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}"],
-    ["brown bear stock helm", "bear greeks", "spear", "\{\"skin\": \"bear_brown\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bronze\"\}\}"],
-    ["brown bear open helm", "bear greeks", "spear", "\{\"skin\": \"bear_brown\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_open\"\}\}"],
-    ["brown bear worker", "bear greeks", "worker", "\{\"skin\": \"bear_brown\"\}"],
-    ["brown bear infantry", "bear greeks", "infantry", "\{\"skin\": \"bear_brown\"\}"],
-    ["black bear spear", "bear greeks", "spear", "\{\"creature\": \"bear_black\", \"body\": \"body.bear_black\", \"head\": \"head.bear_black\", \"skin\": \"bear_black\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}"],
-    ["polar bear spear", "bear greeks", "spear", "\{\"creature\": \"bear_polar\", \"body\": \"body.bear_polar\", \"head\": \"head.bear_polar\", \"skin\": \"bear_polar\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}"],
-    ["giant polar bear", "giant bear greeks", "large", "\{\"creature\": \"bear_polar\", \"body\": \"body.bear_polar\", \"head\": \"head.bear_polar\", \"skin\": \"bear_polar\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}"],
-    ["giant old bear", "giant bear greeks", "large", "\{\"skin\": \"bear_grizzled\", \"parts\": \{\"hand_r\": \"weapon.sword.xiphos\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}"],
+    [ "brown bear spear", "bear greeks", "spear", "\{\"skin\": \"bear_brown\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}" ],
+    [ "brown bear stock helm", "bear greeks", "spear", "\{\"skin\": \"bear_brown\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bronze\"\}\}" ],
+    [ "brown bear open helm", "bear greeks", "spear", "\{\"skin\": \"bear_brown\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_open\"\}\}" ],
+    [ "brown bear worker", "bear greeks", "worker", "\{\"skin\": \"bear_brown\"\}" ],
+    [ "brown bear infantry", "bear greeks", "infantry", "\{\"skin\": \"bear_brown\"\}" ],
+    [ "black bear spear", "bear greeks", "spear", "\{\"creature\": \"bear_black\", \"body\": \"body.bear_black\", \"head\": \"head.bear_black\", \"skin\": \"bear_black\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}" ],
+    [ "polar bear spear", "bear greeks", "spear", "\{\"creature\": \"bear_polar\", \"body\": \"body.bear_polar\", \"head\": \"head.bear_polar\", \"skin\": \"bear_polar\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}" ],
+    [ "giant polar bear", "giant bear greeks", "large", "\{\"creature\": \"bear_polar\", \"body\": \"body.bear_polar\", \"head\": \"head.bear_polar\", \"skin\": \"bear_polar\", \"parts\": \{\"hand_r\": \"weapon.dory\", \"hand_l\": \"shield.hoplon\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}" ],
+    [ "giant old bear", "giant bear greeks", "large", "\{\"skin\": \"bear_grizzled\", \"parts\": \{\"hand_r\": \"weapon.sword.xiphos\", \"torso\": \"armour.bronze\", \"head_gear\": \"helm.bear_crest\"\}\}" ],
 ]
 
 def kit_cases() -> [Case]:
     stage_file("res://data/creature_kit.json")
     let cases = []::Case
     let rat = slot_unit(race_for("sewer rats", "default"), "spear")
-    for(["kitcat", "kitcat_built"]) m: cases.push(Case { "kit: rat on {m}", ride(rat, m, as_str(glist(creature(m), "skins")[0]), shallow_copy(gobj(creature(m), "parts"))) })
+    for([ "kitcat", "kitcat_built" ]) m: cases.push(Case { "kit: rat on {m}", ride(rat, m, as_str(glist(creature(m), "skins")[0]), shallow_copy(gobj(creature(m), "parts"))) })
     for(BEAR_CASES) b:
         let r = deep_copy(at(slot_unit(race_for(b[1], "default"), b[2]), "recipe"))
         let over = parse_json(b[3])
-        for(over.keys) k, n: set(r, k, over.a[n])   // (Dictionary.merge with overwrite: whole values replaced)
+        for(over.keys) k, n: set(r, k, over.a[n])  // (Dictionary.merge with overwrite: whole values replaced)
         cases.push(Case { "kit: " + b[0], r })
     let human = slot_unit(race_for("romans", "default"), "spear")
     for(gstrs(creature("bear"), "skins")) skin: cases.push(Case { "kit: human on bear {skin}", ride(human, "bear", skin, jobj()) })
@@ -240,9 +240,9 @@ def kit_cases() -> [Case]:
 // Concept composites (staged from data/later/): the trade carts of round TC1, each beast in its draught harness;
 // the great sling packed and throwing; what a worker pushes home.
 let COMPOSITE_CASES = [
-    ["romans", "concept.tc1_a_timber", "pony", "pony_bay"], ["swamp frogs", "concept.tc1_a_frog", "newt", "newt_fire"],
-    ["sewer rats", "concept.tc1_a_junk", "cat", "cat_ginger"], ["forest beetles", "concept.tc1_a_forest", "beetle", "beetle_stag"],
-    ["spooky spiders", "concept.tc1_a_spooky", "spider", "spider_black"], ["romans", "concept.tc1_c_timber", "pony", "pony_grey"],
+    [ "romans", "concept.tc1_a_timber", "pony", "pony_bay" ], [ "swamp frogs", "concept.tc1_a_frog", "newt", "newt_fire" ],
+    [ "sewer rats", "concept.tc1_a_junk", "cat", "cat_ginger" ], [ "forest beetles", "concept.tc1_a_forest", "beetle", "beetle_stag" ],
+    [ "spooky spiders", "concept.tc1_a_spooky", "spider", "spider_black" ], [ "romans", "concept.tc1_c_timber", "pony", "pony_grey" ],
 ]
 
 def composite_cases() -> [Case]:
@@ -255,15 +255,15 @@ def composite_cases() -> [Case]:
         let h = parse_json("\{\"creature\": \"{c[2]}\", \"skin\": \"{c[3]}\", \"parts\": \{\"torso\": \"harness.draught\"\}\}")
         set(r, "haul", h)
         cases.push(Case { "composite: {c[0]} {c[1].substring(8, c[1].length - 8)} hauled by a {c[2]}", r })
-    for(["romans", "sewer rats", "forest beetles", "spooky spiders", "centaur romans", "swamp frogs", "winged frogs"]) p:
+    for([ "romans", "sewer rats", "forest beetles", "spooky spiders", "centaur romans", "swamp frogs", "winged frogs" ]) p:
         let u = slot_unit(race_for(p, "default"), "great_sling")
-        for(["packed", "throw"]) look:
+        for([ "packed", "throw" ]) look:
             let shown = gstr(part(rstr(at(u, "recipe"), "body")), look, "")
             if shown != "":
                 let r = deep_copy(at(u, "recipe"))
                 set(r, "body", jstr(shown))
                 cases.push(Case { "composite: {p} great sling " + (if look == "packed": "packed" else: "throwing"), r })
-    for(["sewer rats", "sewer rats with cheese hammers"]) p:
+    for([ "sewer rats", "sewer rats with cheese hammers" ]) p:
         let w = at(slot_unit(race_for(p, "default"), "worker"), "recipe")
         let pushes = gobj(creature(rstr(w, "creature")), "push_home")
         for(pushes.keys) res, n: cases.push(Case { "composite: {p} worker pushing {res} home", push_recipe(w, as_str(pushes.a[n])) })
@@ -282,7 +282,7 @@ def mod_cases() -> [Case]:
             for(glist(race_for(p, rid), "units")) u:
                 let seen = []::string
                 let line = glist(u, "line")
-                for(if line.length: line else: [u]) s:
+                for(if line.length: line else: [ u ]) s:
                     let rec2 = at(s, "recipe")
                     let sig = stringify(at(rec2, "parts"))
                     var mine = false

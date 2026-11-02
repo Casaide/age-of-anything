@@ -2,7 +2,7 @@
 // Recipe -> stats, tags and cost. Integer maths; the superlinear curve is a fixed-point table.
 
 let GIANT_POINTS = 6
-let WEAPON_KEYS = ["reload", "min_range", "splash", "pass", "targets", "unpack", "pack", "blast", "blast_line_pct"]
+let WEAPON_KEYS = [ "reload", "min_range", "splash", "pass", "targets", "unpack", "pack", "blast", "blast_line_pct" ]
 
 // Small int maps in insertion order (armour, bonus, mixes), as JV objects of ints.
 def iget(o:JV, k:string) -> int: return gint(o, k, 0)
@@ -130,7 +130,7 @@ def evaluate(recipe:JV, rules:JV, age:int) -> JV:
         attack += 3
         iadd(armour, "pierce", 3)
         speed -= 2
-        points += gint(at(rules, "cost"), "giant_price_points", GIANT_POINTS)   // (calibrated: the generator spends GIANT_POINTS)
+        points += gint(at(rules, "cost"), "giant_price_points", GIANT_POINTS)  // (calibrated: the generator spends GIANT_POINTS)
         tag_add(tags, "large")
         tag_add(tags, "giant")
     elif scale <= 85:

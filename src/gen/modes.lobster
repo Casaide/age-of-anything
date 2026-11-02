@@ -5,7 +5,7 @@
 // player 0's team defends (`defend`), everyone else attacks (`attack`); its win rules are the sim's
 // (lib/match.lobster, mode_hold).
 
-let FORT_SIDES = ["n", "e", "s", "w"]
+let FORT_SIDES = [ "n", "e", "s", "w" ]
 
 def setup_mode():
     let id = gstr(su_rules, "mode", "")
@@ -14,7 +14,7 @@ def setup_mode():
     assert has(modes, id)
     let m = at(modes, id)
     let lift = gstrs(m, "lift_lacks")
-    if lift.length:   // every side can build and repair what the mode lists, whatever its race lacks
+    if lift.length:  // every side can build and repair what the mode lists, whatever its race lacks
         su_idents = map(su_idents) ident:
             let own = deep_copy(ident)
             set(own, "lacks", jarr(filter(glist(own, "lacks")) x: not (x.kind == J_STR and has_s(lift, x.s))))
@@ -140,7 +140,7 @@ def fortify_ring(p:int, cx:int, cy:int, r:int, spec:JV):
     let loy = cy - r
     let hix = cx + r
     let hiy = cy + r
-    let gate_at = []::int      // the gates' cells, and each one's gate (top-left x, y, along), in the order made
+    let gate_at = []::int  // the gates' cells, and each one's gate (top-left x, y, along), in the order made
     let gate_of = []::int3
     for(gates) s:
         assert has_s(FORT_SIDES, s)

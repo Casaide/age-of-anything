@@ -33,7 +33,7 @@ def compose(r:JV, k:int, pose:Pose2) -> UV:
     var v = compose_once(r, k, pose)
     step2("  composed")
     var tries = 0
-    while bake_view(v.node) and tries < 4:   // (a part baked can bring others: its rig sets what the composer picks)
+    while bake_view(v.node) and tries < 4:  // (a part baked can bring others: its rig sets what the composer picks)
         step2("  baked")
         free_tree(v.node)
         v = compose_once(r, k, pose)
@@ -58,7 +58,7 @@ def is_work(pose:Pose2) -> bool: return exists(WORK_POSES) w: w.name == pose.nam
 // Composes one unit in every facing and pose and checks it. tweak (fixtures): which old configuration to put back
 // on each view after it's composed (-1: none).
 var case_tweak = -1
-var debug2d = false   // (each unit's parts, facing 0 standing; and a trail of each step in /tmp/aoa_placement_trail.txt)
+var debug2d = false  // (each unit's parts, facing 0 standing; and a trail of each step in /tmp/aoa_placement_trail.txt)
 var trail2 = ""
 def step2(s:string):
     if debug2d:
@@ -66,10 +66,10 @@ def step2(s:string):
         write_file("/tmp/aoa_placement_trail.txt", trail2, 0, 1)
 
 def check_case2d(label:string, r:JV) -> void:
-    write_file("/tmp/aoa_placement_at.txt", label + "\n", 0, 1)   // (the unit being checked: where a crash was)
+    write_file("/tmp/aoa_placement_at.txt", label + "\n", 0, 1)  // (the unit being checked: where a crash was)
     let poses = copy(POSES2)
     if not has(r, "crew") and not has(r, "mount") and gstr(get(lib_creatures, gstr(r, "creature", "")) or jobj(), "gait", "") == "hop":
-        append_into(poses, HOP_POSES)   // (a hopper on the ground: crouched to leap, squashed landing)
+        append_into(poses, HOP_POSES)  // (a hopper on the ground: crouched to leap, squashed landing)
     if gstr(r, "slot", "") == "worker" and not has(r, "crew"): append_into(poses, WORK_POSES)
     if not has(r, "crew"):
         var walker = rstr(r, "body")
@@ -81,7 +81,7 @@ def check_case2d(label:string, r:JV) -> void:
             p.body_pose = bp
             poses.push(p)
     for(8) k:
-        let stands = dictionary<string, dictionary<string, IMap>>(7)   // per member ("" the unit): rig -> its legs' standing lows
+        let stands = dictionary<string, dictionary<string, IMap>>(7)  // per member ("" the unit): rig -> its legs' standing lows
         let stand = dictionary<string, IMap>(7)
         stands.set("", stand)
         for(poses) pose:
@@ -103,7 +103,7 @@ def check_case2d(label:string, r:JV) -> void:
                 coverage(v, label, view)
             free_tree(v.node)
     rig_clear()
-    if has(r, "crew") and has(part(rstr(r, "body")), "legs"): check_case2d(label, beast_recipe(r))   // (a war beast walks: its legs and head as any creature's)
+    if has(r, "crew") and has(part(rstr(r, "body")), "legs"): check_case2d(label, beast_recipe(r))  // (a war beast walks: its legs and head as any creature's)
 
 // A composite (engine) view: its members posed like the engine (walking with it, but those riding on top), checked
 // as units, then the depth order.
@@ -116,8 +116,8 @@ def check_engine_view(v:UV, label:string, k:int, r:JV, stands:dictionary<string,
             uv_process(m, 0.0)
             m.walking = false
     pose_members()
-    bake_view(v.node)   // (the members' walk steps: legs the standing compose didn't wear)
-    pose_members()      // (again, riding on their planted feet now that the steps are baked)
+    bake_view(v.node)  // (the members' walk steps: legs the standing compose didn't wear)
+    pose_members()     // (again, riding on their planted feet now that the steps are baked)
     for(v.crew) m:
         let key = "member " + m.crew_socket
         var st = stands.get(key)
@@ -181,8 +181,8 @@ def depth_order(v:UV, label:string, view:string, k:int, r:JV):
     let es = rig_spec(rstr(r, "body"), colours)
     if not es: return
     let ms = members(r, es.sockets)
-    let pieces = [TPiece { es.node, XF_ID, 0 }]
-    if has(part(rstr(r, "body")), "legs"):   // (a war beast's legs and head, baked apart: the beast's too)
+    let pieces = [ TPiece { es.node, XF_ID, 0 } ]
+    if has(part(rstr(r, "body")), "legs"):  // (a war beast's legs and head, baked apart: the beast's too)
         for(rig_unit(beast_recipe(r), RigPose {}).pieces) p:
             if p.kind != "body": pieces.push(TPiece { p.node, p.xf, 0 })
     for(ms) m, i:
@@ -213,7 +213,7 @@ def depth_order(v:UV, label:string, view:string, k:int, r:JV):
                 let key = "{iget(top, c, -1)}>{want}"
                 if over.get(key, -1) < 0: over_keys.push(key)
                 over.set(key, over.get(key, 0) + 1)
-    let names = append(["the engine"], map(ms) m: m.name)
+    let names = append([ "the engine" ], map(ms) m: m.name)
     let bad = []::string
     for(over_keys) key:
         let ab = tokenize(key, ">", "")
@@ -236,7 +236,7 @@ def draw_cells(v:UV, n:VNode, t:[float], owner:int, index:dictionary<string, int
                 let key = draw_key(c)
                 let b = bakes.get(key)
                 if b:
-                    let g = b.scale * 100.0 / float(c.size)   // (the truth's grid: a part is baked at its drawn size, D-180)
+                    let g = b.scale * 100.0 / float(c.size)  // (the truth's grid: a part is baked at its drawn size, D-180)
                     for(pixels_of(key).pts) q:
                         let p = xf_apply(ct, q)
                         iset(top, ckey(int(floor(p.x * g)), int(floor(p.y * g))), o)
@@ -244,13 +244,13 @@ def draw_cells(v:UV, n:VNode, t:[float], owner:int, index:dictionary<string, int
 
 // ---- at work: a fused mount's kneel (work_2d.gd)
 
-let KNEEL_LEGS = 4   // a body kneels on four or more legs
+let KNEEL_LEGS = 4  // a body kneels on four or more legs
 
 def check_work(v:UV, label:string, view:string, k:int):
     let r = v.recipe
     if not (has(r, "mount") and gbool(at(r, "mount"), "fused", false) and v.legs.length >= KNEEL_LEGS and v.kneel > 0.0): return
     let cam = camera(k)
-    let back = -project(float3 { 20.0, 0.0, 0.0 }, cam)   // (the model's tail end, from its middle, on screen)
+    let back = -project(float3 { 20.0, 0.0, 0.0 }, cam)  // (the model's tail end, from its middle, on screen)
     let mc = at(lib_creatures, rstr(at(r, "mount"), "creature"))
     let body_id = gstr(mc, "fused_body", rstr(mc, "body"))
     let colours = colours_for(rstr(at(r, "mount"), "skin"), rstr(r, "family"), check_team)
@@ -259,7 +259,7 @@ def check_work(v:UV, label:string, view:string, k:int):
     let hips = map(bs.anchors) a: a.pos
     var mid = 0.0
     for(hips) h: mid += h.x / float(hips.length)
-    var ground = -1000000.0   // (the standing ground line: the lowest leg's lowest pixel, standing)
+    var ground = -1000000.0  // (the standing ground line: the lowest leg's lowest pixel, standing)
     let stand_low = map(v.legs) leg: lowest_at(cells_xf(leg.node, standing_xf(v, leg)))
     for(stand_low) s: ground = max(ground, s.y)
     for(v.legs) leg, li:
@@ -273,7 +273,7 @@ def check_work(v:UV, label:string, view:string, k:int):
         if shin and folded:
             let st = cells_xf(shin, xf_mul(to_unit(shin, v), xf_local(shin)))
             let t = xf_mul(to_unit(shin, v), xf_local(shin))
-            let along = float2 { t[2], t[3] }   // (the shin's own length, knee to hoof: its y axis on screen)
+            let along = float2 { t[2], t[3] }  // (the shin's own length, knee to hoof: its y axis on screen)
             note("K2 a folded shin lies back along the ground", label, view, dot(normalize(along), normalize(back)) < 0.3,
                  "shin {normalize(along)}, back {normalize(back)}")
             let gap = cells_gap(cells, st)
@@ -289,7 +289,7 @@ def check_work(v:UV, label:string, view:string, k:int):
 // Where a leg stands: the unit's own transform with the bob at rest and the leg straight, at its reach.
 def standing_xf(v:UV, leg:Leg) -> [float]:
     let root = leg.node.parent
-    let t = [leg.node.scl.x, 0.0, 0.0, leg.reach, leg.rest.x, leg.rest.y]
+    let t = [ leg.node.scl.x, 0.0, 0.0, leg.reach, leg.rest.x, leg.rest.y ]
     return xf_mul(xf_mul(xf_local(v.visual), if root: xf_local(root) else: XF_ID2), t)
 
 // The 3D hip a leg is drawn at: the facing's projected anchor at its rest position (the bake's own order).
@@ -301,7 +301,7 @@ def hip_of(v:UV, leg:Leg, k:int, hips:[float3]) -> float3:
                 let anchors = glist(rig(c.part_id + facing_suffix(k)), "anchors")
                 for(anchors) a, i:
                     if magnitude(float2 { as_float(a.a[0]), as_float(a.a[1]) } - leg.rest) < 0.01 and i < hips.length: return hips[i]
-    assert false   // (work2d: no anchor at the leg's rest)
+    assert false  // (work2d: no anchor at the leg's rest)
     return float3_0
 
 def cells_xf(n:VNode, t:[float]) -> IMap:
@@ -348,7 +348,7 @@ def dump_owners(truth:IMap, top:IMap, file:string):
         hi = max(hi, u)
     let w = hi.x - lo.x + 1
     let h = hi.y - lo.y + 1
-    let pal = [[40, 40, 40], [230, 60, 60], [60, 200, 60], [60, 90, 230], [230, 200, 40], [200, 60, 200], [60, 200, 200], [255, 255, 255]]
+    let pal = [ [ 40, 40, 40 ], [ 230, 60, 60 ], [ 60, 200, 60 ], [ 60, 90, 230 ], [ 230, 200, 40 ], [ 200, 60, 200 ], [ 60, 200, 200 ], [ 255, 255, 255 ] ]
     var out = "P3\n{w * 2 + 4} {h}\n255\n"
     for(h) y:
         for(w * 2 + 4) x:
@@ -356,7 +356,7 @@ def dump_owners(truth:IMap, top:IMap, file:string):
             if side:
                 let c = ckey(lo.x + (if x < w: x else: x - w - 4), lo.y + y)
                 let o = iget(side, c, -1)
-                let col = if o < 0: [0, 0, 0] else: pal[min(o + 1, 7)]
+                let col = if o < 0: [ 0, 0, 0 ] else: pal[min(o + 1, 7)]
                 out += "{col[0]} {col[1]} {col[2]} "
             else: out += "128 128 128 "
         out += "\n"

@@ -64,11 +64,11 @@ import gen.start
 import gen.reset
 import gen.balance
 
-let PANEL_RACES = 3   // the panel: every line of a few races from the dice (seed "panel"; no creature or culture twice)
-let PRICE_LO = 40     // percent of the generator's price: the search's bracket
+let PANEL_RACES = 3  // the panel: every line of a few races from the dice (seed "panel"; no creature or culture twice)
+let PRICE_LO = 40    // percent of the generator's price: the search's bracket
 let PRICE_HI = 250
-let STEPS = 4         // halvings of the bracket (in ratio): about 6% at the end
-let TOLERANCE = 10    // win-rate points off the group's mean
+let STEPS = 4       // halvings of the bracket (in ratio): about 6% at the end
+let TOLERANCE = 10  // win-rate points off the group's mean
 let OUT_DIR = "../build/calibrate"
 
 let args0 = command_line_arguments()
@@ -120,7 +120,7 @@ def lexicon_words(even:bool) -> [string], [string], [string], [string]:
     return firsts, sorted_strs(cultures), sorted_strs(kit), sorted_strs(sizes)
 
 def random_prompts(seed:string, count:int) -> [string]:
-    let cr, cu, ki, si = lexicon_words(seed != "held")   // (the held-out prompts as first measured: the lobby's odds)
+    let cr, cu, ki, si = lexicon_words(seed != "held")  // (the held-out prompts as first measured: the lobby's odds)
     let r = new_rng(hash_text(seed))
     return map(count):
         let words = []::string
@@ -143,7 +143,7 @@ def panel_of() -> [JV]:
 // ---- a line's parts (as evaluate adds them up) and the rest of its points
 
 def line_parts(recipe:JV) -> [string]:
-    let out = [as_str(at(recipe, "body"))]
+    let out = [ as_str(at(recipe, "body")) ]
     if gstr(recipe, "head", "") != "": out.push(as_str(at(recipe, "head")))
     for(at(recipe, "parts").a) v: out.push(as_str(v))
     for(gobj(recipe, "kit").a) v: out.push(as_str(v))
@@ -223,7 +223,7 @@ class Sample:
     fixed:int
     parts:[string]
     label:string
-    size:string       // giant, tiny or -
+    size:string  // giant, tiny or -
 
 def read_samples(paths:[string]) -> [Sample]:
     let out = []::Sample
@@ -272,7 +272,7 @@ def roster_points(slot:string) -> int:
     return 0
 
 def run_fit(lambda:float, write:bool):
-    let samples = read_samples([OUT_DIR + "/age2.txt", OUT_DIR + "/age3.txt"])
+    let samples = read_samples([ OUT_DIR + "/age2.txt", OUT_DIR + "/age3.txt" ])
     assert samples.length
     let t = targets(samples)
     let ids = writable_parts()
@@ -361,14 +361,14 @@ def run_fit(lambda:float, write:bool):
     for(rows) r, k:
         var s = 0.0
         for(r) n: s += xi[n]
-        let keys = [samples[k].slot]
+        let keys = [ samples[k].slot ]
         for(samples[k].parts) id:
             for(gstrs(part(id), "tags")) tg: keys.push("tag " + tg)
         for(keys) g:
-            let acc = groups.get(g, [0.0, 0.0])
-            groups.set(g, [acc[0] + want[k] - s, acc[1] + 1.0])
+            let acc = groups.get(g, [ 0.0, 0.0 ])
+            groups.set(g, [ acc[0] + want[k] - s, acc[1] + 1.0 ])
     for(sorted_strs(groups.get_keys())) g:
-        let acc = groups.get(g, [0.0, 0.0])
+        let acc = groups.get(g, [ 0.0, 0.0 ])
         if acc[1] >= 10.0 and abs(acc[0] / acc[1]) > 0.5: print "  left on {g}: {acc[0] / acc[1]} points ({int(acc[1])} lines)"
     let prices = jobj()
     var moved = 0
@@ -386,10 +386,10 @@ def run_fit(lambda:float, write:bool):
 
 def measure_groups() -> [[string]]:
     let held = random_prompts("held", 16)
-    let groups = [["sewer rats with cheese hammers", "angry swamp frogs with reed spears"],
-        ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "greek hoplites", "spooky beetle knights"]]
-    for(4) g: groups.push([held[g * 2], held[g * 2 + 1]])
-    for(2) g: groups.push([held[8 + g * 4], held[9 + g * 4], held[10 + g * 4], held[11 + g * 4]])
+    let groups = [ [ "sewer rats with cheese hammers", "angry swamp frogs with reed spears" ],
+                   [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "greek hoplites", "spooky beetle knights" ] ]
+    for(4) g: groups.push([ held[g * 2], held[g * 2 + 1] ])
+    for(2) g: groups.push([ held[8 + g * 4], held[9 + g * 4], held[10 + g * 4], held[11 + g * 4] ])
     return groups
 
 // The method's best: every held-out line at its own fair price against the panel (no fit), for measure oracle.
@@ -413,7 +413,7 @@ def pool_group() -> [[string]]:
     for(measure_groups()) g:
         for(g) p:
             if find_index(out, p) < 0: out.push(p)
-    return [out]
+    return [ out ]
 
 def run_measure(check:int, oracle:bool, one_pool:bool):
     let groups = if one_pool: pool_group() else: measure_groups()

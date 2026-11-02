@@ -7,9 +7,9 @@
 // mat_check.sh holds them to Godot's (mat_dump.gd) pixel by pixel.
 // Needs model/kit (MMat), model/props (FastNoiseLite's hash, gradients, OpenSimplex2S), view/node (f32).
 
-var bmat_matte = false            // pixel-art bakes: no gloss, no clearcoat (art_kit.gd sets it)
-let bmat_dir = "textures"         // where the noise textures are written (relative, as model_tex_dir)
-let BMAT_VERSION = 1              // in the file names: bump it when the textures change
+var bmat_matte = false     // pixel-art bakes: no gloss, no clearcoat (art_kit.gd sets it)
+let bmat_dir = "textures"  // where the noise textures are written (relative, as model_tex_dir)
+let BMAT_VERSION = 1       // in the file names: bump it when the textures change
 let bmat_cache = dictionary<string, MMat>(32)
 
 // ------------------------------------------------------------------ FastNoiseLite, 2D (Godot's: FBm, gain 0.5, lacunarity 2)
@@ -78,12 +78,12 @@ let BMAT_RV2 = [
     0.403732798, -0.914876947, 0.994426337, 0.105433677, -0.162471165, 0.986713292, -0.994948781, -0.100383875,
     -0.699530256, 0.714602981, 0.526341492, -0.850273270, -0.539522148, 0.841971408, 0.657937032, 0.753072946,
     0.014267588, -0.999898213, -0.673438399, 0.739243345, 0.639412098, -0.768864207, 0.921157142, 0.389190852,
-    -0.146637214, -0.989190339, -0.782318098, 0.622879116, -0.503961084, -0.863726360, -0.774312019, -0.632803996]
+    -0.146637214, -0.989190339, -0.782318098, 0.622879116, -0.503961084, -0.863726360, -0.774312019, -0.632803996 ]
 
-let BMAT_SIMPLEX = 0              // FastNoiseLite.TYPE_SIMPLEX (OpenSimplex2)
-let BMAT_SIMPLEX_SMOOTH = 1       // TYPE_SIMPLEX_SMOOTH (OpenSimplex2S)
-let BMAT_CELLULAR = 2             // TYPE_CELLULAR (euclidean distance, jitter 1)
-let BMAT_CELL_VALUE = 0           // cellular return types, as FastNoiseLite numbers them
+let BMAT_SIMPLEX = 0         // FastNoiseLite.TYPE_SIMPLEX (OpenSimplex2)
+let BMAT_SIMPLEX_SMOOTH = 1  // TYPE_SIMPLEX_SMOOTH (OpenSimplex2S)
+let BMAT_CELLULAR = 2        // TYPE_CELLULAR (euclidean distance, jitter 1)
+let BMAT_CELL_VALUE = 0      // cellular return types, as FastNoiseLite numbers them
 let BMAT_DISTANCE = 1
 let BMAT_DISTANCE2_DIV = 6
 
@@ -92,7 +92,7 @@ class BNoise:
     freq:float
     seed:int
     octaves:int
-    cell_return:int               // (Godot's default: BMAT_DISTANCE)
+    cell_return:int  // (Godot's default: BMAT_DISTANCE)
 
 // A double rounded to a float32's 24 bits (Veltkamp's split: to nearest; far quicker than f32, for the hot loops)
 def b32(x:float) -> float:
@@ -254,7 +254,7 @@ def bmat_seamless(n:BNoise, w:int, h:int) -> [int]:
     let hh = h / 2
     let ex = hw + sw
     let ey = hh + sh
-    def rd(x:int, y:int, mode:int) -> int:   // 0 default, 1 alt x, 2 alt y, 3 alt xy (Noise.img_buff)
+    def rd(x:int, y:int, mode:int) -> int:  // 0 default, 1 alt x, 2 alt y, 3 alt xy (Noise.img_buff)
         let mx = if mode == 1 or mode == 3: w else: srcw
         let my = if mode == 2 or mode == 3: h else: srch
         return src[(x + hw) % mx + ((y + hh) % my) * srcw]
@@ -309,7 +309,7 @@ def bmat_ramp_lut(offs:[float], hexes:[string]) -> [[int]]:
                 let ca = cs[middle]
                 let cb = cs[middle + 1]
                 c = float3 { f32(ca.x + f32(wt * f32(cb.x - ca.x))), f32(ca.y + f32(wt * f32(cb.y - ca.y))), f32(ca.z + f32(wt * f32(cb.z - ca.z))) }
-        [int(clamp(c.x * 255.0, 0.0, 255.0)), int(clamp(c.y * 255.0, 0.0, 255.0)), int(clamp(c.z * 255.0, 0.0, 255.0)), 255]
+        [ int(clamp(c.x * 255.0, 0.0, 255.0)), int(clamp(c.y * 255.0, 0.0, 255.0)), int(clamp(c.z * 255.0, 0.0, 255.0)), 255 ]
 
 def bmat_albedo(img:[int], offs:[float], hexes:[string]) -> [int]:
     let lut = bmat_ramp_lut(offs, hexes)
@@ -372,7 +372,7 @@ def bmat_png(rgba:[int], w:int, h:int) -> string:
         while i < e:
             raw.push(rgba[i])
             i++
-    let z = [0x78, 0x01]
+    let z = [ 0x78, 0x01 ]
     var at = 0
     var s1 = 1
     var s2 = 0
@@ -389,11 +389,11 @@ def bmat_png(rgba:[int], w:int, h:int) -> string:
         for(len) k: z.push(raw[at + k])
         at += len
     bmat_be32(z, (s2 << 16) | s1)
-    let out = [137, 80, 78, 71, 13, 10, 26, 10]
+    let out = [ 137, 80, 78, 71, 13, 10, 26, 10 ]
     let ihdr = []::int
     bmat_be32(ihdr, w)
     bmat_be32(ihdr, h)
-    for([8, 6, 0, 0, 0]) b: ihdr.push(b)
+    for([ 8, 6, 0, 0, 0 ]) b: ihdr.push(b)
     bmat_chunk(out, "IHDR", ihdr)
     bmat_chunk(out, "IDAT", z)
     bmat_chunk(out, "IEND", [])
@@ -495,22 +495,22 @@ def bmat_recipe(name:string, m:MMat) -> BRecipe:
     switch name:
         case "grass":
             m.roughness = 0.95
-            return BRecipe { BNoise { BMAT_SIMPLEX, 0.04, 13, 5, BMAT_DISTANCE }, [0.0, 0.5, 0.8, 1.0], ["#36521e", "#4c6e28", "#628634", "#7a9840"], float3_1, 3.0 }
+            return BRecipe { BNoise { BMAT_SIMPLEX, 0.04, 13, 5, BMAT_DISTANCE }, [ 0.0, 0.5, 0.8, 1.0 ], [ "#36521e", "#4c6e28", "#628634", "#7a9840" ], float3_1, 3.0 }
         case "swamp":
             m.roughness = 0.2
             m.metallic_specular = 0.7
-            return BRecipe { BNoise { BMAT_SIMPLEX, 0.012, 17, 3, BMAT_DISTANCE }, [0.0, 0.5, 0.8, 1.0], ["#1e3430", "#2a4438", "#3a5440", "#4a6044"], float3_1, 1.0 }
+            return BRecipe { BNoise { BMAT_SIMPLEX, 0.012, 17, 3, BMAT_DISTANCE }, [ 0.0, 0.5, 0.8, 1.0 ], [ "#1e3430", "#2a4438", "#3a5440", "#4a6044" ], float3_1, 1.0 }
         case "frog":
             m.roughness = 0.35
             m.clearcoat_enabled = true
             m.clearcoat = 0.5
             return BRecipe { BNoise { BMAT_CELLULAR, 0.05, 19, 4, BMAT_CELL_VALUE },
-                             [0.0, 0.55, 0.56, 0.7, 0.71, 1.0], ["#4f8a3a", "#5e9c44", "#3f6e30", "#3f6e30", "#64a64a", "#6cb052"], float3_1, 4.0 }
+                             [ 0.0, 0.55, 0.56, 0.7, 0.71, 1.0 ], [ "#4f8a3a", "#5e9c44", "#3f6e30", "#3f6e30", "#64a64a", "#6cb052" ], float3_1, 4.0 }
         default:
-            assert false   // an unknown material (or one of the unreachable recipes listed at the end)
+            assert false  // an unknown material (or one of the unreachable recipes listed at the end)
             return BRecipe { BNoise { 0, 0.0, 0, 0, 0 }, [], [], float3_1, 0.0 }
 
-def bmat_noise_names() -> [string]: return ["grass", "swamp", "frog"]
+def bmat_noise_names() -> [string]: return [ "grass", "swamp", "frog" ]
 
 def bmat_make(name:string) -> MMat:
     if name == "thatch": return bmat_thatch()

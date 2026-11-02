@@ -6,19 +6,19 @@
 // less, until every win rate is within the tolerance of the mean: prices set by fights, at race
 // creation (the lobby's load time), not by hand.
 
-let RR_SLOTS = ["spear", "infantry", "skirmisher", "archer", "large", "scout", "mounted_archer"]
-let RR_SLOTS_AGE3 = ["unique"]
+let RR_SLOTS = [ "spear", "infantry", "skirmisher", "archer", "large", "scout", "mounted_archer" ]
+let RR_SLOTS_AGE3 = [ "unique" ]
 let RR_BUDGET = 1200
 let RR_LIMIT = 3000
-let RR_FROM = [int2 { 11000, 20500 }, int2 { 21000, 20500 }]
+let RR_FROM = [ int2 { 11000, 20500 }, int2 { 21000, 20500 } ]
 let SPAWN_JITTER = 400
 
 class RRUnit:
-    race:int            // index into the races
+    race:int  // index into the races
     slot:string
     label:string
 
-var rr_price_pct = dictionary<string, int>(64)   // "race|slot" -> its price, percent of the generator's
+var rr_price_pct = dictionary<string, int>(64)  // "race|slot" -> its price, percent of the generator's
 var rr_fights = 0
 var rr_ticks = 0
 
@@ -58,12 +58,12 @@ def rr_left() -> int, int:
 // (rr_hash.gd's check), and the whole state at tick dumpat.
 def rr_fight(races:[JV], rules:JV, age:int, a:RRUnit, b:RRUnit, trace = false, dumpat = -1) -> int:
     reset_world()
-    setup_world(1, "flat_test", [races[a.race], races[b.race]], rules, [])
+    setup_world(1, "flat_test", [ races[a.race], races[b.race] ], rules, [])
     for(2) p: rr_in_age(p, age)
     let value = []::int
     let kinds = []::int
     let counts = []::int
-    for([a, b]) u, p:
+    for([ a, b ]) u, p:
         let k = type_of_slot(p, u.slot)
         assert k >= 0
         let pct = rr_price_pct.get(price_key(races, u), 100)
@@ -73,7 +73,7 @@ def rr_fight(races:[JV], rules:JV, age:int, a:RRUnit, b:RRUnit, trace = false, d
         value.push(cost)
         kinds.push(k)
         counts.push(max(1, (RR_BUDGET + cost / 2) / cost))
-    while tick < 8:   // (the spawn ran at the start of turn 2: World.issue's delay)
+    while tick < 8:  // (the spawn ran at the start of turn 2: World.issue's delay)
         step()
         if trace: print "h {tick} {state_hash()}"
     for(2) p:
@@ -139,8 +139,8 @@ def bare_rules(rules:JV) -> JV:
 def auto_balance(races:[JV], rules:JV, age:int, rounds:int, tolerance:int, report) -> [int]:
     let bare = bare_rules(rules)
     let units = rr_units(races, age)
-    let too_cheap = map(units.length): 0      // the dearest price it still won too much at (0: none seen)
-    let too_dear = map(units.length): 0       // the cheapest price it lost too much at
+    let too_cheap = map(units.length): 0  // the dearest price it still won too much at (0: none seen)
+    let too_dear = map(units.length): 0   // the cheapest price it lost too much at
     var rates = []::int
     for(rounds) round:
         let r, mean = round_robin(races, bare, age, units)
@@ -156,7 +156,7 @@ def auto_balance(races:[JV], rules:JV, age:int, rounds:int, tolerance:int, repor
             if rates[k] > mean + tolerance: too_cheap[k] = max(too_cheap[k], pct)
             if rates[k] < mean - tolerance: too_dear[k] = if too_dear[k] == 0: pct else: min(too_dear[k], pct)
             if abs(rates[k] - mean) > tolerance:
-                var want = pct * (rates[k] + 25) / (mean + 25)   // the price follows the win rate
+                var want = pct * (rates[k] + 25) / (mean + 25)  // the price follows the win rate
                 want = clamp(want, pct * 3 / 4, pct * 4 / 3)
                 if too_cheap[k] > 0 and too_dear[k] > 0: want = (too_cheap[k] + too_dear[k]) / 2
                 rr_price_pct.set(key, max(10, want))

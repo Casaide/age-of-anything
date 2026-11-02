@@ -2,14 +2,14 @@
 // Each builder is unit_models.gd's of the same name (`_body_frog` -> body_frog), line for line; its
 // comments are there. Part units are about one 2D pixel: x the way the unit faces, y up, z the near side.
 
-var hold = "low"                     // the body being built: how its near hand holds the weapon (arm_pose)
-var rest_pose = ""                        // ...and the idle pose it rests in while holding it (creature kit)
+var hold = "low"    // the body being built: how its near hand holds the weapon (arm_pose)
+var rest_pose = ""  // ...and the idle pose it rests in while holding it (creature kit)
 
 let INK = html("#2a1a12")
 let REACH_FLOOR = 8.0
 let SHIELD_FACE = float3 { 1.0, 0.1, 0.45 }
 
-var arm_reach = 1.0   // the body being built: how much longer its arm is than the poses were made for (arm_pose)
+var arm_reach = 1.0  // the body being built: how much longer its arm is than the poses were made for (arm_pose)
 
 // The near arm's elbow and hand for the body's hold (unit_models.gd arm_pose): a longer arm (the heroic human,
 // D-173) reaches as far out.
@@ -31,7 +31,7 @@ def arm_pose_at(sh:float3, elbow:float3, hand:float3, head:float3) -> float3, fl
             let to = sh + float3 { 6.5, -6.5, 1.8 }
             return sh + float3 { 3.5, -3.0, 1.3 }, float3 { to.x, max(to.y, REACH_FLOOR), to.z }
         case "raise": return sh + float3 { -1.0, 3.5, 2.2 }, sh + float3 { -2.5, 8.0, 2.6 }
-        case "follow":   // the blow carried through, low and across the body (art-quality study; baked only with AOW_STUDY_HOLDS)
+        case "follow":  // the blow carried through, low and across the body (art-quality study; baked only with AOW_STUDY_HOLDS)
             let low = sh + float3 { 5.0, -7.5, -2.5 }
             return sh + float3 { 3.0, -3.5, -0.4 }, float3 { low.x, max(low.y, REACH_FLOOR), low.z }
         case "thrust": return sh + float3 { 4.0, -0.5, 1.4 }, sh + float3 { 9.0, -1.0, 0.9 }
@@ -64,7 +64,7 @@ def vivid(c:float3) -> float3:
     return from_hsv(h, min(1.0, s * 1.25 + 0.05), min(1.0, v * 1.08 + 0.02))
 
 def frog_mats(c:Colours) -> [MMat]:
-    return [surf("frog_skin", vivid(col(c, "skin")), 7.0), surf("frog_belly", lightened(col(c, "skin2"), 0.25), 6.0)]
+    return [ surf("frog_skin", vivid(col(c, "skin")), 7.0), surf("frog_belly", lightened(col(c, "skin2"), 0.25), 6.0) ]
 
 def frog_hand(into:MNode, hand:float3, dir:float3, skin:MMat, pad:MMat):
     add_child(into, blob(float3 { 1.2, 0.9, 1.2 }, skin, hand))
@@ -74,13 +74,13 @@ def frog_hand(into:MNode, hand:float3, dir:float3, skin:MMat, pad:MMat):
         add_child(into, blob(float3 { 0.75, 0.6, 0.75 }, pad, tip))
 
 def frog_eyes(n:MNode, at:float3, spread:float, r:float, skin:MMat):
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let d = at + float3 { 0.0, 0.0, spread * side }
         add_child(n, blob(float3 { r, r * 1.05, r }, skin, d))
         let look = float3 { 0.6, 0.35, 0.75 * side }
         add_child(n, decal("frog_eye", r * 1.45, r * 1.45, on_surface(d, float3 { r, r * 1.05, r }, look, 0.1), look, false))
 
-let LIMP_ARM = [float3 { 7.5, 13.0, 8.5 }, float3 { 11.0, 15.0, 10.0 }]
+let LIMP_ARM = [ float3 { 7.5, 13.0, 8.5 }, float3 { 11.0, 15.0, 10.0 } ]
 
 // The crouched leaper (2026-10-11 to 2026-10-28; the frog before D-178, kept for the old concept sheets: _crouched).
 def body_frog_crouched(c:Colours) -> Spec: return scaled(body_frog_built(c), FROG_SCALE)
@@ -93,7 +93,7 @@ def body_frog_built(c:Colours) -> Spec:
     add_child(n, blob(float3 { 6.0, 3.8, 5.0 } * slump, m[1], float3 { 1.6, if hold != "limp": 8.0 else: 7.0, 0.0 }, float3 { 0.0, 0.0, 32.0 }))
     let front = mnode()
     var near_hand = float3_0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let into = if side == 1.0: front else: n
         let sh = float3 { 4.2, 11.0, 4.6 * side }
         var elbow = float3 { 6.0, 6.5, 5.6 * side }
@@ -121,7 +121,7 @@ def body_frog_built(c:Colours) -> Spec:
     sock(s, "sit", float3 { -0.5, 3.6, 0.0 })
     sock(s, "drape", float3 { -7.5, 12.5, 0.0 })
     sock(s, "sling", float3 { -7.4, 12.5, 0.0 })
-    s.anchors = [anchor(float3 { -4.5, 6.0, -5.2 }, 0.0, -1), anchor(float3 { -4.5, 6.0, 5.2 }, MPI, 1)]
+    s.anchors = [ anchor(float3 { -4.5, 6.0, -5.2 }, 0.0, -1), anchor(float3 { -4.5, 6.0, 5.2 }, MPI, 1) ]
     return spec_num(s, "torso_scale", float3 { 0.75, 0.6, 0.0 })
 
 def head_frog_crouched(c:Colours) -> Spec: return scaled(head_frog_built(c), FROG_SCALE)
@@ -179,8 +179,8 @@ let FROG_KNEE_OUT = 4.2
 let FROG_ANKLE_OUT = 3.1
 // A hop's keys (UnitModels.HOP_KEYS; the composer has its own copy, view/unit_view.lobster HOP_KEYS, which model
 // checks don't import): p, how far the legs are squashed, how far they're flung back (-) or forward.
-let FROG_HOP_KEYS = [[0.0, 1.0, 0.0], [0.15, 0.7, 0.0], [0.25, 0.7, 0.0], [0.36, 1.15, -0.7], [0.52, 0.75, -0.25],
-    [0.66, 0.9, 0.3], [0.75, 1.0, 0.0], [0.82, 0.72, 0.0], [1.0, 1.0, 0.0]]
+let FROG_HOP_KEYS = [ [ 0.0, 1.0, 0.0 ], [ 0.15, 0.7, 0.0 ], [ 0.25, 0.7, 0.0 ], [ 0.36, 1.15, -0.7 ], [ 0.52, 0.75, -0.25 ],
+                      [ 0.66, 0.9, 0.3 ], [ 0.75, 1.0, 0.0 ], [ 0.82, 0.72, 0.0 ], [ 1.0, 1.0, 0.0 ] ]
 
 def frog_hop_key(p:float) -> float2:
     var i = 1
@@ -195,7 +195,7 @@ def frog_hop_key(p:float) -> float2:
 
 def frog_coat(c:Colours) -> dictionary<string, MMat>:
     let m = frog_mats(c)
-    return mats_of([m[0], m[1], plain(INK), plain(html("#f0e6b0"))], ["skin", "belly", "eye", "eyeball"])
+    return mats_of([ m[0], m[1], plain(INK), plain(html("#f0e6b0")) ], [ "skin", "belly", "eye", "eyeball" ])
 
 def body_frog(c:Colours) -> Spec:
     let n = mnode()
@@ -205,8 +205,8 @@ def body_frog(c:Colours) -> Spec:
     add_child(n, glb("body_frog", coat))
     let front = mnode()
     var near_hand = float3_0
-    let limp = hold == "limp"   // dead (corpse.lobster): the arms flung forward and out, to lie on the ground
-    for([1.0, -1.0]) side:
+    let limp = hold == "limp"  // dead (corpse.lobster): the arms flung forward and out, to lie on the ground
+    for([ 1.0, -1.0 ]) side:
         let into = if side == 1.0: front else: n
         let sh = float3 { FROG_SHOULDER.x, FROG_SHOULDER.y, FROG_SHOULDER.z * side }
         var elbow = if side == 1.0: float3 { 14.0, 11.2, 7.6 } else: float3 { 13.45, 10.0, -8.0 }
@@ -228,8 +228,8 @@ def body_frog(c:Colours) -> Spec:
         add_child(into, rod(sh, elbow, 1.55, 1.3, skin))
         add_child(into, rod(elbow, hand, 1.3, 1.0, skin))
         frog_hand(into, hand, if side == -1.0 and not limp: float3 { 1.0, -0.2, 0.0 } else: float3 { 0.8, 0.4, 0.0 }, skin, belly)
-    let lean = float2 { sin(FROG_LEAN), cos(FROG_LEAN) }   // up the trunk
-    let out = float2 { -lean.y, lean.x }                   // off its back
+    let lean = float2 { sin(FROG_LEAN), cos(FROG_LEAN) }  // up the trunk
+    let out = float2 { -lean.y, lean.x }                  // off its back
     def on(along:float, off:float) -> float3:
         let q = float2 { FROG_HIP.x, FROG_HIP.y } + lean * along + out * off
         return float3 { q.x, q.y, 0.0 }
@@ -245,7 +245,7 @@ def body_frog(c:Colours) -> Spec:
     sock(s, "drape", on(9.5, 5.5))
     sock(s, "banner", on(8.0, 7.0))
     sock(s, "sit", float3 { 3.4, 3.7, 0.0 })
-    s.anchors = [anchor(FROG_HIP + float3 { 0.0, 0.0, -FROG_HIP_Z }, 0.0, -1), anchor(FROG_HIP + float3 { 0.0, 0.0, FROG_HIP_Z }, MPI, 1)]
+    s.anchors = [ anchor(FROG_HIP + float3 { 0.0, 0.0, -FROG_HIP_Z }, 0.0, -1), anchor(FROG_HIP + float3 { 0.0, 0.0, FROG_HIP_Z }, MPI, 1) ]
     spec_num(s, "torso_scale", float3 { 0.75, 0.6, 0.0 })
     spec_num(s, "torso_tilt", -FROG_LEAN)
     return spec_num(s, "torso_fit", float3 { 0.62, 0.62, 0.66 })
@@ -263,7 +263,7 @@ def leg_frog(c:Colours) -> Spec:
     let knee = float3 { jk.x, jk.y, FROG_KNEE_OUT }
     let ankle = float3 { ja.x, ja.y, FROG_ANKLE_OUT }
     let toe = float3 { jt.x, jt.y, FROG_ANKLE_OUT }
-    add_child(n, blob(float3 { 3.6, 3.4, 3.2 }, skin, float3 { 0.8, -0.6, 0.8 }))   // the haunch
+    add_child(n, blob(float3 { 3.6, 3.4, 3.2 }, skin, float3 { 0.8, -0.6, 0.8 }))  // the haunch
     add_child(n, rod(float3 { 0.6, -0.4, 0.6 }, knee, 3.0, 2.0, skin))
     add_child(n, rod(knee, ankle, 2.0, 1.15, skin))
     for(3) t:
@@ -284,7 +284,7 @@ def frog_joints(pose:string) -> float2, float2, float2:
     let p = walk_step(pose)
     if p >= 0.0: k = frog_hop_key(p)
     let ankle = float2 { FROG_ANKLE.x + 11.0 * k.y, FROG_ANKLE.y * k.x - 3.5 * max(-k.y, 0.0) }
-    let turn = (-2.0 * max(-k.y, 0.0) + 0.4 * max(k.y, 0.0)) * RAD_DEG   // flung back the foot points down and back; reaching, toes up
+    let turn = (-2.0 * max(-k.y, 0.0) + 0.4 * max(k.y, 0.0)) * RAD_DEG  // flung back the foot points down and back; reaching, toes up
     let toe = ankle + rot2d(FROG_TOE - FROG_ANKLE, turn)
     return ik2(ankle, FROG_THIGH, FROG_SHANK, true), ankle, toe
 
@@ -314,7 +314,7 @@ def weapon_spear_reed(c:Colours) -> Spec:
 def armour_bark(c:Colours) -> Spec:
     let n = mnode()
     add_child(n, blob(float3 { 9.0, 8.4, 10.8 }, surf("bark_plate", float3_1, 9.0), float3 { 2.0, 0.5, 0.0 }, float3 { 0.0, 0.0, -10.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, ring(9.6, 10.6, surf("leather", float3_1, 4.0), float3 { 1.5, 1.0, 0.0 }, float3 { 0.0, 0.0, 70.0 * side }, float3_1))
     add_child(n, blob(float3 { 1.2, 1.2, 0.6 }, plain(html("#c08a3e")), float3 { 10.6, 2.0, 2.0 }))
     return spec_of(n)
@@ -346,7 +346,7 @@ def cape_leaf(c:Colours) -> Spec:
 // carried low. The trunk, tail and head are modelled in Blender (tools/blender/rat.py); the arms here, posed for what
 // the near hand holds; the legs here too, digitigrade, baked in 8 walk steps with the knees bending (D-179).
 
-let RAT_LEAN = 42.0      // degrees the trunk leans forward from the hips (as modelled)
+let RAT_LEAN = 42.0  // degrees the trunk leans forward from the hips (as modelled)
 let RAT_HIP = float3 { 0.0, 11.0, 0.0 }
 let RAT_HIP_Z = 2.7
 let RAT_BANNER_Y = 22.6
@@ -354,17 +354,17 @@ let RAT_HAND_L = float3 { 12.6, 17.8, -8.6 }
 let RAT_THIGH = 5.9
 let RAT_SHANK = 6.66
 let RAT_HEEL = float2 { -0.8, -8.4 }
-let RAT_FOOT = 6.2       // heel to toes
-let RAT_STRIDE = 9.0     // how far a heel travels along the ground in a step
-let RAT_STANCE = 0.55    // the share of a step a foot is down
-let RAT_SWING = 2.6      // how far the near hand swings forward and back walking (D-179)
-let RAT_SWING_FAR = 1.0  // the far (shield) hand
-let RAT_TAIL_SWEEP = 14.0   // degrees the tail sweeps to each side walking
+let RAT_FOOT = 6.2         // heel to toes
+let RAT_STRIDE = 9.0       // how far a heel travels along the ground in a step
+let RAT_STANCE = 0.55      // the share of a step a foot is down
+let RAT_SWING = 2.6        // how far the near hand swings forward and back walking (D-179)
+let RAT_SWING_FAR = 1.0    // the far (shield) hand
+let RAT_TAIL_SWEEP = 14.0  // degrees the tail sweeps to each side walking
 
 def rat_coat(c:Colours, units:float) -> dictionary<string, MMat>:
-    return mats_of([surf("rat_fur", col(c, "skin"), units), surf("rat_fur", lightened(col(c, "skin"), 0.25), units),
-                    surf("frog_belly", col(c, "skin2"), units - 1.0), plain(html("#1a1210")), plain(html("#f4f0e0"))],
-                   ["fur", "belly", "pink", "eye", "tooth"])
+    return mats_of([ surf("rat_fur", col(c, "skin"), units), surf("rat_fur", lightened(col(c, "skin"), 0.25), units),
+                     surf("frog_belly", col(c, "skin2"), units - 1.0), plain(html("#1a1210")), plain(html("#f4f0e0")) ],
+                   [ "fur", "belly", "pink", "eye", "tooth" ])
 
 def body_rat(c:Colours) -> Spec:
     let n = mnode()
@@ -387,13 +387,13 @@ def body_rat(c:Colours) -> Spec:
     if step >= 0.0:
         let tail = glb_named(body, "tail")
         assert tail
-        let root = float3 { -2.6, 9.8, 0.0 }   // where it leaves the haunch (tools/blender/rat.py)
+        let root = float3 { -2.6, 9.8, 0.0 }  // where it leaves the haunch (tools/blender/rat.py)
         let sweep = axis_angle(float3 { 0.0, 1.0, 0.0 }, RAT_TAIL_SWEEP * sin(360.0 * (step - 0.2)))
         set_xform(tail, xmul(Xform { sweep, root - bxf(sweep, root) }, node_xform(tail)))
     var near_hand = float3_0
     let far_hand = RAT_HAND_L + float3 { -RAT_SWING_FAR * swing, 0.3 * swing * swing, 0.0 }
     let front = mnode()
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let into = if side == 1.0: front else: n
         let sh = xf(t, float3 { 8.6, 19.9, 3.4 * side })
         var elbow = if side == 1.0: float3 { 10.4, 15.7, 4.2 } else: float3 { 8.0, 15.5, -4.4 }
@@ -402,10 +402,10 @@ def body_rat(c:Colours) -> Spec:
             let e, h = arm_pose(sh, elbow, hand, xf(t, float3 { 11.2, 23.1, 0.0 }))
             elbow = e
             hand = h
-            if hold == "raise" or hold == "reach" or hold == "follow":   // a blow swung out beside the hunched trunk
+            if hold == "raise" or hold == "reach" or hold == "follow":  // a blow swung out beside the hunched trunk
                 elbow += float3 { if hold == "raise": 1.0 else: 0.0, 0.0, 1.2 }
                 hand += float3 { if hold == "raise": 1.6 else: 0.0, 0.0, 1.6 }
-            elif hold == "draw":   // a bow drawn at the leaning shoulders' height
+            elif hold == "draw":  // a bow drawn at the leaning shoulders' height
                 elbow += float3 { 0.0, 2.0, 0.0 }
                 hand += float3 { 0.0, 4.0, 0.0 }
             // Forward, rising a little; back half as far, dipping.
@@ -429,7 +429,7 @@ def body_rat(c:Colours) -> Spec:
     sock(s, "banner", xf(t, float3 { 2.8, RAT_BANNER_Y, 0.0 }))
     sock(s, "drape", xf(t, float3 { -0.4, 20.6, 0.0 }))
     sock(s, "sit", RAT_HIP + float3 { 6.0, 0.0, 0.0 })
-    s.anchors = [anchor(RAT_HIP + float3 { 0.0, 0.0, -RAT_HIP_Z }, 0.0, -1), anchor(RAT_HIP + float3 { 0.0, 0.0, RAT_HIP_Z }, MPI, 1)]
+    s.anchors = [ anchor(RAT_HIP + float3 { 0.0, 0.0, -RAT_HIP_Z }, 0.0, -1), anchor(RAT_HIP + float3 { 0.0, 0.0, RAT_HIP_Z }, MPI, 1) ]
     spec_num(s, "torso_scale", float3 { 0.58, 0.74, 0.0 })
     spec_num(s, "torso_tilt", -hunch)
     return spec_num(s, "torso_fit", float3 { 0.57, 0.57, 0.62 })
@@ -446,7 +446,7 @@ def leg_rat(c:Colours) -> Spec:
     let knee = v3of(jk)
     let heel = v3of(jh)
     let toe = v3of(jt)
-    add_child(n, blob(float3 { 3.2, 3.6, 2.9 }, fur, float3 { 0.6, -1.4, 0.0 }))   // the haunch
+    add_child(n, blob(float3 { 3.2, 3.6, 2.9 }, fur, float3 { 0.6, -1.4, 0.0 }))  // the haunch
     add_child(n, rod(float3 { 0.4, -1.0, 0.0 }, knee, 2.9, 1.9, fur))
     add_child(n, rod(knee, heel, 1.8, 1.05, fur))
     add_child(n, rod(heel, lerp3(heel, toe, 0.7), 0.95, 0.7, pink))
@@ -468,14 +468,14 @@ def rat_joints(pose:string) -> float2, float2, float2:
             heel += float2 { RAT_STRIDE * (smoothstep(0.0, 1.0, q) - 0.5), 0.0 }
             lift = 3.2 * sin(q * 180.0)
     heel += float2 { 0.0, lift }
-    var toe = float2 { heel.x + RAT_FOOT, ground + 0.35 + lift * 0.45 }   // a lifted foot hangs, toes down
+    var toe = float2 { heel.x + RAT_FOOT, ground + 0.35 + lift * 0.45 }  // a lifted foot hangs, toes down
     if lift == 0.0: toe = float2 { toe.x, ground + 0.35 }
     return ik2(heel, RAT_THIGH, RAT_SHANK, true), heel, toe
 
 def tool_axe(c:Colours) -> Spec:
     let n = mnode()
     add_child(n, rod(float3 { -1.0, -3.5, 0.0 }, float3 { 3.0, 9.5, 0.0 }, 0.75, 0.7, surf("wood_grain", float3_1, 6.0)))
-    add_child(n, slab([float2 { 2.2, 9.0 }, float2 { 7.5, 10.5 }, float2 { 7.0, 4.5 }, float2 { 3.0, 6.5 }], 0.9, surf("bronze", float3_1, 4.0)))
+    add_child(n, slab([ float2 { 2.2, 9.0 }, float2 { 7.5, 10.5 }, float2 { 7.0, 4.5 }, float2 { 3.0, 6.5 } ], 0.9, surf("bronze", float3_1, 4.0)))
     add_child(n, ring(0.6, 1.1, surf("leather", float3_1, 3.0), float3 { 2.6, 8.0, 0.0 }, float3 { 0.0, 0.0, -17.0 }))
     return spec_of(n)
 
@@ -486,7 +486,7 @@ def weapon_spear_bronze(c:Colours) -> Spec:
     add_child(n, rod(a, b, 0.85, 0.8, surf("wood_grain", float3_1, 8.0), false))
     let d = normalize(b - a)
     let ang = atan2(float2 { d.x, d.y })
-    add_child(n, blade([float2 { 0.0, -1.6 }, float2 { 6.5, 0.0 }, float2 { 0.0, 1.6 }, float2 { -1.2, 0.0 }], 0.8, surf("bronze", float3_1, 3.0), b, ang))
+    add_child(n, blade([ float2 { 0.0, -1.6 }, float2 { 6.5, 0.0 }, float2 { 0.0, 1.6 }, float2 { -1.2, 0.0 } ], 0.8, surf("bronze", float3_1, 3.0), b, ang))
     add_child(n, ring(0.7, 1.15, surf("bronze", float3_1, 3.0), b - d * 0.4, float3 { 0.0, 0.0, ang - 90.0 }))
     return spec_of(n)
 
@@ -507,7 +507,7 @@ def shield_bottlecap(c:Colours) -> Spec:
 
 // ------------------------------------------------------------------ spider
 
-let SPIDER_FAN = [45.0, -60.0, -30.0]
+let SPIDER_FAN = [ 45.0, -60.0, -30.0 ]
 
 def body_spider(c:Colours) -> Spec:
     let n = mnode()
@@ -519,16 +519,16 @@ def body_spider(c:Colours) -> Spec:
     let limb = surf("rat_fur", col(c, "skin"), 4.0)
     let hand_r = float3 { 7.0, 17.5, 5.2 }
     let hand_l = float3 { 7.0, 17.5, -5.2 }
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let elbow = float3 { 5.5, 19.0, 6.0 * side }
         add_child(n, rod(float3 { 2.5, 18.0, 3.5 * side }, elbow, 1.0, 0.85, limb))
         add_child(n, rod(elbow, if side == 1.0: hand_r else: hand_l, 0.85, 0.6, limb))
     let s = spec_of(n)
-    let xs = [0.5, -2.5, -6.5]
+    let xs = [ 0.5, -2.5, -6.5 ]
     for(3) k:
         let pair = if k >= 1: 1.0 else: 0.0
-        s.anchors.push(anchor(float3 { xs[k], 10.5, 3.5 }, float(k), 1, [pair, 0.0, SPIDER_FAN[k]]))
-        s.anchors.push(anchor(float3 { xs[k], 10.5, -3.5 }, float(k) + MPI, -1, [pair, 0.0, SPIDER_FAN[k]]))
+        s.anchors.push(anchor(float3 { xs[k], 10.5, 3.5 }, float(k), 1, [ pair, 0.0, SPIDER_FAN[k] ]))
+        s.anchors.push(anchor(float3 { xs[k], 10.5, -3.5 }, float(k) + MPI, -1, [ pair, 0.0, SPIDER_FAN[k] ]))
     sock(s, "head", float3 { 3.5, 20.0, 0.0 })
     sock(s, "hand_r", hand_r)
     sock(s, "hand_l", hand_l)
@@ -546,19 +546,19 @@ def head_spider(c:Colours) -> Spec:
     let head_c = float3 { 3.0, 1.0, 0.0 }
     let head_r = float3 { 4.2, 3.6, 4.0 }
     add_child(n, blob(head_r, hair, head_c))
-    let eyes = [float3 { 1.0, 0.45, 0.3 }, float3 { 1.0, 0.45, -0.3 }, float3 { 0.8, 0.8, 0.6 }, float3 { 0.8, 0.8, -0.6 },
-                float3 { 0.6, 1.0, 0.25 }, float3 { 0.6, 1.0, -0.25 }, float3 { 0.9, 0.2, 0.75 }, float3 { 0.9, 0.2, -0.75 }]
-    let sizes = [1.3, 1.3, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6]
+    let eyes = [ float3 { 1.0, 0.45, 0.3 }, float3 { 1.0, 0.45, -0.3 }, float3 { 0.8, 0.8, 0.6 }, float3 { 0.8, 0.8, -0.6 },
+                 float3 { 0.6, 1.0, 0.25 }, float3 { 0.6, 1.0, -0.25 }, float3 { 0.9, 0.2, 0.75 }, float3 { 0.9, 0.2, -0.75 } ]
+    let sizes = [ 1.3, 1.3, 0.8, 0.8, 0.7, 0.7, 0.6, 0.6 ]
     for(eyes) e, i:
         add_child(n, decal("rat_eye", sizes[i] * 2.0, sizes[i] * 2.0, on_surface(head_c, head_r, e, 0.05), e, false))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, rod(float3 { 6.2, -0.5, 1.2 * side }, float3 { 7.4, -3.2, 0.8 * side }, 0.9, 0.35, plain(html("#1e1612"))))
     return spec_num(sock(spec_of(n), "top", float3 { 2.0, 4.0, 0.0 }), "gear_scale", 0.62)
 
 def leg_spider(c:Colours) -> Spec:
     let n = mnode()
     let hair = surf("rat_fur", col(c, "skin"), 4.0)
-    let knee, tip = stepped(float3 { 6.0, 7.0, 1.5 }, float3 { 11.0, -10.0, 2.5 }, if hold == "low": "" else: hold, 4.0, 0.6, 0.7)   // (D-179: baked per walk step; a short, low step)
+    let knee, tip = stepped(float3 { 6.0, 7.0, 1.5 }, float3 { 11.0, -10.0, 2.5 }, if hold == "low": "" else: hold, 4.0, 0.6, 0.7)  // (D-179: baked per walk step; a short, low step)
     let mid = knee + (tip - knee) * 0.6
     add_child(n, rod(float3_0, knee, 1.4, 1.2, hair))
     add_child(n, rod(knee, mid, 1.2, 0.9, hair))
@@ -570,7 +570,7 @@ def leg_spider(c:Colours) -> Spec:
 def weapon_cheese_hammer(c:Colours) -> Spec:
     let n = mnode()
     add_child(n, rod(float3 { -1.0, -3.5, 0.0 }, float3 { 3.0, 10.0, 0.0 }, 0.8, 0.75, surf("wood_grain", float3_1, 6.0)))
-    add_child(n, slab([float2 { -3.0, 9.5 }, float2 { 8.0, 13.5 }, float2 { 8.5, 7.5 }, float2 { -0.5, 5.5 }], 4.5, surf("cheese", float3_1, 5.0)))
+    add_child(n, slab([ float2 { -3.0, 9.5 }, float2 { 8.0, 13.5 }, float2 { 8.5, 7.5 }, float2 { -0.5, 5.5 } ], 4.5, surf("cheese", float3_1, 5.0)))
     add_child(n, blob(float3 { 1.2, 1.2, 0.6 }, plain(html("#b0841a")), float3 { 3.5, 9.5, 2.3 }))
     return spec_of(n)
 
@@ -591,7 +591,7 @@ def weapon_sling(c:Colours) -> Spec:
 
 def weapon_crossbow(c:Colours) -> Spec:
     let n = mnode()
-    add_child(n, slab([float2 { -5.0, -0.8 }, float2 { 10.0, 0.6 }, float2 { 10.0, 2.4 }, float2 { -5.0, 1.4 }, float2 { -6.0, -1.8 }], 1.8, surf("wood_grain", float3_1, 6.0)))
+    add_child(n, slab([ float2 { -5.0, -0.8 }, float2 { 10.0, 0.6 }, float2 { 10.0, 2.4 }, float2 { -5.0, 1.4 }, float2 { -6.0, -1.8 } ], 1.8, surf("wood_grain", float3_1, 6.0)))
     let iron = surf("iron", float3_1, 3.0)
     add_child(n, rod(float3 { 9.0, 1.5, 0.0 }, float3 { 7.5, 2.0, 7.0 }, 0.55, 0.4, iron))
     add_child(n, rod(float3 { 9.0, 1.5, 0.0 }, float3 { 7.5, 2.0, -7.0 }, 0.55, 0.4, iron))
@@ -605,7 +605,7 @@ def helm_dome(c:Colours) -> Spec:
     let iron = surf("iron", float3_1, 3.0)
     add_child(n, blob(float3 { 6.4, 4.4, 6.4 }, iron, float3 { 0.0, 0.5, 0.0 }))
     add_child(n, ring(6.2, 7.4, iron, float3 { 0.0, 0.6, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, ring(0.7, 1.4, iron, float3 { -1.0, 1.6, 6.9 * side }, float3 { 90.0, 0.0, 0.0 }))
     return spec_of(n)
 
@@ -621,9 +621,9 @@ def weapon_blowgun(c:Colours) -> Spec:
 // and worn armour are modelled in Blender (*_heroic.glb); the arms here, posed for what the near hand holds.
 
 let HUMAN_LOOK = "_heroic"
-let HUMAN_HAND_L = float3 { 6.1, 27.3, -5.4 }   // the shield hand, forearm up
-let HUMAN_WOOL = html("#a39478")   // undyed wool: the cloth the culture's colour is mixed into (the team's stays bright)
-let HUMAN_ARM = 1.15     // its arm against the one the holds were posed for (arm_pose)
+let HUMAN_HAND_L = float3 { 6.1, 27.3, -5.4 }  // the shield hand, forearm up
+let HUMAN_WOOL = html("#a39478")               // undyed wool: the cloth the culture's colour is mixed into (the team's stays bright)
+let HUMAN_ARM = 1.15                           // its arm against the one the holds were posed for (arm_pose)
 
 def body_human(c:Colours) -> Spec:
     let n = mnode()
@@ -632,11 +632,11 @@ def body_human(c:Colours) -> Spec:
     let cloth = surf("cloth", lerp3(HUMAN_WOOL, col(c, "cloth"), 0.45), 4.0)
     let skin = surf("skin", col(c, "skin"), 8.0)
     let belt = surf("leather", html("#8a6a4a"), 3.0)
-    add_child(n, glb("torso_human" + HUMAN_LOOK, mats_of([team, cloth, belt, skin], ["team", "cloth", "leather", "skin"])))
-    add_child(n, blob(float3 { 0.45, 0.55, 0.5 }, surf("bronze", float3_1, 2.0), float3 { 3.15, 22.05, 0.0 }))   // the buckle
+    add_child(n, glb("torso_human" + HUMAN_LOOK, mats_of([ team, cloth, belt, skin ], [ "team", "cloth", "leather", "skin" ])))
+    add_child(n, blob(float3 { 0.45, 0.55, 0.5 }, surf("bronze", float3_1, 2.0), float3 { 3.15, 22.05, 0.0 }))  // the buckle
     var near_hand = float3_0
     let front = mnode()
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let into = if side == 1.0: front else: n
         let sh = float3 { 0.3, 29.3, 4.7 * side }
         var elbow = float3 { 1.3, 23.9, 5.9 * side }
@@ -662,9 +662,9 @@ def body_human(c:Colours) -> Spec:
     sock(s, "hand_l", HUMAN_HAND_L)
     sock(s, "torso", float3 { 0.0, 26.0, 0.0 })
     sock(s, "back", float3 { -3.8, 27.2, 0.0 })
-    sock(s, "cape.cloth", float3 { -4.4, 29.2, 0.0 })   // a cape from behind the shoulders (parts.json drape_scale)
+    sock(s, "cape.cloth", float3 { -4.4, 29.2, 0.0 })  // a cape from behind the shoulders (parts.json drape_scale)
     sock(s, "cape.leaf", float3 { -4.4, 29.2, 0.0 })
-    s.anchors = [anchor(float3 { -2.4, 18.0, -2.5 }, 0.0, -1), anchor(float3 { 2.1, 18.0, 2.5 }, MPI, 1)]
+    s.anchors = [ anchor(float3 { -2.4, 18.0, -2.5 }, 0.0, -1), anchor(float3 { 2.1, 18.0, 2.5 }, MPI, 1) ]
     spec_num(s, "torso_scale", float3 { 0.66, 0.82, 0.0 })
     spec_num(s, "torso_fit", float3 { 0.46, 0.70, 0.55 })
     return spec_flag(s, "legs_under")
@@ -672,22 +672,22 @@ def body_human(c:Colours) -> Spec:
 def head_human(c:Colours) -> Spec:
     let face = surf("skin", col(c, "skin") * 0.4, 6.0)
     face.emission = col(c, "skin") * 0.82
-    let hs = 0.68   // the heroic build's head (D-173)
-    let n = glb("head_human", mats_of([face, surf("mane", darkened(col(c, "skin2"), 0.45), 3.0), plain(html("#1a1210"))], ["skin", "hair", "eye"]))
+    let hs = 0.68  // the heroic build's head (D-173)
+    let n = glb("head_human", mats_of([ face, surf("mane", darkened(col(c, "skin2"), 0.45), 3.0), plain(html("#1a1210")) ], [ "skin", "hair", "eye" ]))
     n.scl = n.scl * hs
     return spec_num(sock(spec_of(n), "top", float3 { 0.3, 10.3, 0.0 } * hs + float3 { 0.0, 0.2, 0.0 }), "gear_scale", 0.86 * hs)
 
 // The heroic leg's joints as modelled (tools/blender/human_leg.py, in the game's units) and its walk (D-179).
 let HUMAN_KNEE = float2 { 0.784, -9.0 }
 let HUMAN_ANKLE = float2 { 0.112, -15.667 }
-let HUMAN_STRIDE = 10.0   // how far an ankle travels along the ground in a step
-let HUMAN_STANCE = 0.6    // the share of a step a foot is down
-let HUMAN_LIFT = 3.2      // how high a foot swings through
+let HUMAN_STRIDE = 10.0  // how far an ankle travels along the ground in a step
+let HUMAN_STANCE = 0.6   // the share of a step a foot is down
+let HUMAN_LIFT = 3.2     // how high a foot swings through
 
 // The leg in pieces bent at the knee and ankle for the pose ("w<i>_<n>", a walk step; "" as modelled).
 def leg_human(c:Colours) -> Spec:
     let n = mnode()
-    let leg = glb("leg_human" + HUMAN_LOOK, mats_of([surf("cloth", col(c, "cloth2"), 5.0), surf("leather", html("#6a4a30"), 3.0)], ["cloth", "leather"]))
+    let leg = glb("leg_human" + HUMAN_LOOK, mats_of([ surf("cloth", col(c, "cloth2"), 5.0), surf("leather", html("#6a4a30"), 3.0) ], [ "cloth", "leather" ]))
     if HUMAN_LOOK != "" and hold != "low" and hold != "":
         let jk, ja, jf = human_joints(hold)
         def at(pivot:float2, to:float2, turn:float) -> Xform:
@@ -730,7 +730,7 @@ def build_units(base:string, c:Colours) -> Spec?:
         case "head.frog": return head_frog(c)
         case "leg.frog": return leg_frog(c)
         case "tool.basket": return tool_basket(c)
-        case "weapon.spear.reed", "weapon.spear_reed": return weapon_spear_reed(c)   // (Godot finds a model by the id with . as _)
+        case "weapon.spear.reed", "weapon.spear_reed": return weapon_spear_reed(c)  // (Godot finds a model by the id with . as _)
         case "armour.bark": return armour_bark(c)
         case "shield.lilypad": return shield_lilypad(c)
         case "helm.acorn": return helm_acorn(c)

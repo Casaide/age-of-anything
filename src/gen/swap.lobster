@@ -7,12 +7,12 @@
 // Attack classes the match didn't know (a tag no race at the start had) count as the last class,
 // as in GDScript's _class.
 
-var type_gen = 0                  // bumped when any type changes look (the views rebuild)
+var type_gen = 0  // bumped when any type changes look (the views rebuild)
 
 def line_of(u:JV) -> [JV]:
     if has(u, "line"): return glist(u, "line")
     let r = at(u, "recipe")
-    return [line_step(as_int(at(r, "tier")), r, at(u, "eval"))]
+    return [ line_step(as_int(at(r, "tier")), r, at(u, "eval")) ]
 
 // Type k takes another recipe and line (World._make_type's fields; retype does the rest).
 def retarget_type(k:int, r:JV, e:JV, line:[JV]):
@@ -84,7 +84,7 @@ def balance_newcomer(race:JV, others:[JV], rounds:int, report_fn) -> void:
     let rules = su_rules
     stash_world()
     reset_world()
-    let races = [race]
+    let races = [ race ]
     for(others) o: races.push(o)
     auto_balance(races, rules, 2, rounds, 10) round, units, rates, mean, off:
         report_fn(round, units, rates, mean, off)

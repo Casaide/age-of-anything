@@ -72,5 +72,5 @@ def mesh_boxes(n:MNode, parent:Xform, out:[[float3]]) -> void:
             let q = xf(t, float3 { if i & 1: hi.x else: lo.x, if i & 2: hi.y else: lo.y, if i & 4: hi.z else: lo.z })
             blo = min(blo, q)
             bhi = max(bhi, q)
-        out.push([blo, bhi])
+        out.push([ blo, bhi ])
     for(n.kids) kid: mesh_boxes(kid, t, out)

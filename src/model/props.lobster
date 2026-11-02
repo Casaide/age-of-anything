@@ -4,7 +4,7 @@
 // (its comments are there), seeded with Godot's RandomNumberGenerator (model/grng.lobster) drawn in the same order.
 // stone_mesh needs Godot's FastNoiseLite (OpenSimplex2S, FBm, its defaults): ported here, as fnl_noise3/fnl_noise2.
 
-def mix3(a:float3, b:float3, t:float) -> float3: return a + (b - a) * t   // Color.lerp
+def mix3(a:float3, b:float3, t:float) -> float3: return a + (b - a) * t  // Color.lerp
 
 // ------------------------------------------------------------------ FastNoiseLite (Godot's: OpenSimplex2S, FBm, 5 octaves, gain 0.5, lacunarity 2)
 
@@ -46,7 +46,7 @@ let FNL_G2D = [
     -0.923879532511287, -0.38268343236509, -0.99144486137381, -0.130526192220052, -0.99144486137381, 0.130526192220051, -0.923879532511287, 0.38268343236509,
     -0.793353340291235, 0.608761429008721, -0.608761429008721, 0.793353340291235, -0.38268343236509, 0.923879532511287, -0.130526192220052, 0.99144486137381,
     0.38268343236509, 0.923879532511287, 0.923879532511287, 0.38268343236509, 0.923879532511287, -0.38268343236509, 0.38268343236509, -0.923879532511287,
-    -0.38268343236509, -0.923879532511287, -0.923879532511287, -0.38268343236509, -0.923879532511287, 0.38268343236509, -0.38268343236509, 0.923879532511287]
+    -0.38268343236509, -0.923879532511287, -0.923879532511287, -0.38268343236509, -0.923879532511287, 0.38268343236509, -0.38268343236509, 0.923879532511287 ]
 let FNL_G3D = [
     0.0, 1.0, 1.0, 0.0, 0.0, -1.0, 1.0, 0.0,
     0.0, 1.0, -1.0, 0.0, 0.0, -1.0, -1.0, 0.0,
@@ -79,7 +79,7 @@ let FNL_G3D = [
     1.0, 1.0, 0.0, 0.0, -1.0, 1.0, 0.0, 0.0,
     1.0, -1.0, 0.0, 0.0, -1.0, -1.0, 0.0, 0.0,
     1.0, 1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0,
-    -1.0, 1.0, 0.0, 0.0, 0.0, -1.0, -1.0, 0.0]
+    -1.0, 1.0, 0.0, 0.0, 0.0, -1.0, -1.0, 0.0 ]
 
 def fnl_hash(seed:int, xp:int, yp:int, zp:int) -> int: return fnl_i32(fnl_i32(seed ^ xp ^ yp ^ zp) * 0x27d4eb2d)
 
@@ -108,11 +108,11 @@ def fnl_os2s_3d(seed:int, x:float, y:float, z:float) -> float:
     j *= FNL_PY
     k *= FNL_PZ
     let seed2 = seed + 1293373
-    let xm = if xi >= 0.5: -1 else: 0      // (int)(-0.5f - xi)
+    let xm = if xi >= 0.5: -1 else: 0  // (int)(-0.5f - xi)
     let ym = if yi >= 0.5: -1 else: 0
     let zm = if zi >= 0.5: -1 else: 0
-    def m(mask:int, p:int) -> int: return if mask != 0: p else: 0      // mask & p
-    def nm(mask:int, p:int) -> int: return if mask != 0: 0 else: p     // ~mask & p
+    def m(mask:int, p:int) -> int: return if mask != 0: p else: 0   // mask & p
+    def nm(mask:int, p:int) -> int: return if mask != 0: 0 else: p  // ~mask & p
     let x0 = xi + float(xm)
     let y0 = yi + float(ym)
     let z0 = zi + float(zm)
@@ -277,8 +277,8 @@ def normalized32(v:float3) -> float3:
 def reed_clump(seed_value:int, size:float = 1.0, stage:int = 0) -> MNode:
     let rng = grng(seed_value)
     let n = mnode()
-    let keep = [1.0, 0.55, 0.22, 0.0][stage]
-    let clumps = []::float3          // x, z of the centre and its radius and height (y unused): [at, r, h]
+    let keep = [ 1.0, 0.55, 0.22, 0.0 ][stage]
+    let clumps = []::float3  // x, z of the centre and its radius and height (y unused): [at, r, h]
     let clump_r = []::float
     let clump_h = []::float
     for(randi_range(rng, 5, 7)):
@@ -343,7 +343,7 @@ def bug_bush(seed_value:int, stage:int = 0) -> MNode:
     let n = mnode()
     let size = randf_range(rng, 0.8, 1.2)
     let squash = randf_range(rng, 0.8, 1.15)
-    let lc = []::float3              // lobes: centres and radii
+    let lc = []::float3  // lobes: centres and radii
     let lr = []::float3
     for(randi_range(rng, 4, 7)):
         let a = randf(rng) * TAU
@@ -354,8 +354,8 @@ def bug_bush(seed_value:int, stage:int = 0) -> MNode:
     for(lc) c, i: add_child(n, blob(lr[i] * 0.8, plain(mix3(html("#1c2c12"), html("#3a2c16"), float(stage) / 3.0)), c))
     var top = 0.0
     for(lc) c, i: top = max(top, c.y + lr[i].y)
-    let leaves = [1.0, 0.85, 0.7, 0.55][stage]
-    let brown = [0.0, 0.18, 0.36, 0.55][stage]
+    let leaves = [ 1.0, 0.85, 0.7, 0.55 ][stage]
+    let brown = [ 0.0, 0.18, 0.36, 0.55 ][stage]
     for(340) k:
         let li = k % lc.length
         let dx = randf_range(rng, -1.0, 1.0)
@@ -375,7 +375,7 @@ def bug_bush(seed_value:int, stage:int = 0) -> MNode:
             if wither < brown: tint = tint * float3 { 1.35, 0.95, 0.55 }
             add_child(n, decal("leaf", 0.06 * size, 0.08 * size, at, face, true, d, tint))
     let berry = plain(html("#c8221a"))
-    let berries = [1.0, 0.5, 0.2, 0.0][stage]
+    let berries = [ 1.0, 0.5, 0.2, 0.0 ][stage]
     for(46):
         let li = randi(rng) % lc.length
         let dx = randf_range(rng, -1.0, 1.0)
@@ -455,7 +455,7 @@ def stone_sphere():
     var point = 0
     for(STONE_RINGS + 2) j:
         let v = f32(float(j) / float(STONE_RINGS + 1))
-        let w = if j == 0 or j == STONE_RINGS + 1: 0.0 else: f32(sin(180.0 * v))   // (Godot's poles and seam meet exactly)
+        let w = if j == 0 or j == STONE_RINGS + 1: 0.0 else: f32(sin(180.0 * v))  // (Godot's poles and seam meet exactly)
         let y = f32(cos(180.0 * v))
         for(STONE_RADIAL + 1) i:
             let u = f32(float(i) / float(STONE_RADIAL))
@@ -465,7 +465,7 @@ def stone_sphere():
             stone_sphere_uv.push(float2 { u, v })
             point++
             if i > 0 and j > 0:
-                append_into(stone_sphere_idx, [prevrow + i - 1, prevrow + i, thisrow + i - 1, prevrow + i, thisrow + i, thisrow + i - 1])
+                append_into(stone_sphere_idx, [ prevrow + i - 1, prevrow + i, thisrow + i - 1, prevrow + i, thisrow + i, thisrow + i - 1 ])
         prevrow = thisrow
         thisrow = point
 
@@ -504,11 +504,11 @@ def stone_mesh(seed_value:int, cut:bool = false) -> MMesh:
 def boulders(seed_value:int) -> MNode:
     let rng = grng(seed_value)
     let n = mnode()
-    let tints = [float3 { 0.72, 0.7, 0.66 }, float3 { 0.62, 0.6, 0.56 }, float3 { 0.8, 0.77, 0.7 }, float3 { 0.66, 0.66, 0.62 }]
+    let tints = [ float3 { 0.72, 0.7, 0.66 }, float3 { 0.62, 0.6, 0.56 }, float3 { 0.8, 0.77, 0.7 }, float3 { 0.66, 0.66, 0.62 } ]
     let sx0 = randf_range(rng, -0.08, 0.08)
     let sz0 = randf_range(rng, -0.08, 0.08)
-    let at = [float3 { sx0, 0.0, sz0 }]
-    let rs = [randf_range(rng, 0.26, 0.34)]
+    let at = [ float3 { sx0, 0.0, sz0 } ]
+    let rs = [ randf_range(rng, 0.26, 0.34) ]
     for(randi_range(rng, 6, 9)):
         let a = randf(rng) * TAU
         let d = randf_range(rng, 0.2, 0.45)
@@ -524,7 +524,7 @@ def boulders(seed_value:int) -> MNode:
         let ry = randf_range(rng, 0.0, 180.0)
         let rz = randf_range(rng, -15.0, 15.0)
         add_child(n, prop_stone(mesh, m, float3 { sx, sy, r }, float3 { rx, ry, rz }, at[k] + float3 { 0.0, r * 0.35, 0.0 }))
-    let lichen = [plain(html("#b8b46a")), plain(html("#d8d6c8")), plain(html("#5e7a34"))]
+    let lichen = [ plain(html("#b8b46a")), plain(html("#d8d6c8")), plain(html("#5e7a34")) ]
     for(at.length) k:
         let r = rs[k]
         for(if k == 0: 8 else: 2) d:
@@ -560,11 +560,11 @@ def quarry(seed_value:int, stage:int = 0, ore:string = "stone") -> MNode:
     let rng = grng(seed_value)
     let n = mnode()
     let gold = ore == "gold"
-    var tints = [float3 { 0.98, 0.88, 0.7 }, float3 { 0.9, 0.79, 0.62 }, float3 { 1.0, 0.93, 0.8 }, float3 { 0.86, 0.75, 0.6 }]
-    if gold: tints = [float3 { 0.62, 0.56, 0.5 }, float3 { 0.55, 0.5, 0.46 }, float3 { 0.68, 0.62, 0.55 }, float3 { 0.5, 0.46, 0.42 }]
+    var tints = [ float3 { 0.98, 0.88, 0.7 }, float3 { 0.9, 0.79, 0.62 }, float3 { 1.0, 0.93, 0.8 }, float3 { 0.86, 0.75, 0.6 } ]
+    if gold: tints = [ float3 { 0.62, 0.56, 0.5 }, float3 { 0.55, 0.5, 0.46 }, float3 { 0.68, 0.62, 0.55 }, float3 { 0.5, 0.46, 0.42 } ]
     let metal = plain(html("#f2c440"))
     metal.emission = html("#7a5a10")
-    let keep = [1.0, 0.65, 0.35, 0.0][stage]
+    let keep = [ 1.0, 0.65, 0.35, 0.0 ][stage]
     let rat = []::float3
     let rr = []::float
     let rturn = []::float
@@ -595,7 +595,7 @@ def quarry(seed_value:int, stage:int = 0, ore:string = "stone") -> MNode:
     if not gold and stage < 3:
         let br = rr[0] * (1.0 - 0.25 * float(stage))
         add_child(n, box(float3 { 0.02, br * 0.9, br * 1.1 }, surf("rock", float3 { 1.0, 0.97, 0.9 }, 0.4), rat[0] + float3 { br * 0.55, br * 0.75, br * 0.45 }, float3 { 0.0, 30.0, -50.0 }))
-        let blocks = [float3 { 0.36, 0.05, 0.3 }, float3 { 0.48, 0.05, 0.2 }, float3 { 0.42, 0.14, 0.26 }]
+        let blocks = [ float3 { 0.36, 0.05, 0.3 }, float3 { 0.48, 0.05, 0.2 }, float3 { 0.42, 0.14, 0.26 } ]
         for(3 - stage) b:
             add_child(n, box(float3 { 0.13, 0.09, 0.09 }, surf("rock", tints[b % tints.length], 0.6), blocks[b], float3 { 0.0, 20.0 + float(b) * 25.0, 0.0 }))
     for(9 - stage) k:
@@ -614,7 +614,7 @@ def carcass(seed_value:int, stage:int = 0) -> MNode:
     let fat = plain(html("#e8c8b0"))
     let bone = plain(html("#f0e8d8"))
     add_child(n, blob(float3 { 0.34 - float(stage) * 0.06, 0.03, 0.24 - float(stage) * 0.04 }, hide, float3 { 0.0, 0.02, 0.0 }, float3 { 0.0, randf_range(rng, 0.0, 90.0), 0.0 }))
-    let cuts = [4, 3, 2, 0][stage]
+    let cuts = [ 4, 3, 2, 0 ][stage]
     for(4) k:
         let a = randf(rng) * TAU
         let p = float3 { rcos(a) * 0.12, 0.06, rsin(a) * 0.1 }
@@ -633,7 +633,7 @@ def crops(seed_value:int) -> MNode:
     let rng = grng(seed_value)
     let n = mnode()
     add_child(n, box(float3 { 0.98, 0.04, 0.98 }, plain(html("#5e4228")), float3 { 0.0, 0.02, 0.0 }))
-    let leaves = [plain(html("#5e8a2c")), plain(html("#4a7424")), plain(html("#76a038"))]
+    let leaves = [ plain(html("#5e8a2c")), plain(html("#4a7424")), plain(html("#76a038")) ]
     let ear = plain(html("#d8b44a"))
     for(6) row:
         let z = -0.4 + float(row) * 0.16
@@ -655,7 +655,7 @@ def paddy(seed_value:int) -> MNode:
     let rng = grng(seed_value)
     let n = mnode()
     add_child(n, box(float3 { 0.98, 0.02, 0.98 }, plain(html("#3e6e6a")), float3 { 0.0, 0.01, 0.0 }))
-    for([-1.0, 1.0]) side:
+    for([ -1.0, 1.0 ]) side:
         add_child(n, blob(float3 { 0.5, 0.03, 0.04 }, plain(html("#5a4630")), float3 { 0.0, 0.02, side * 0.47 }))
     let shoot = plain(html("#7aa83e"))
     for(5) row:

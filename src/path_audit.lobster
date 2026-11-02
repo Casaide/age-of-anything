@@ -63,22 +63,22 @@ import gen.reset
 import testkit.kit
 
 let SEED = 7
-let WINDOW = 20          // ticks of history per unit for jitter and treading
+let WINDOW = 20  // ticks of history per unit for jitter and treading
 let EXAMPLES = 8
-let SCENES = ["bushes", "hunt", "farms", "reeds"]
-let KINDS = ["give_up", "snap", "jitter", "tread", "moves", "crowd", "stacked"]
-let EXAMPLE_KINDS = ["give_up", "snap", "jitter", "tread", "crowd"]
-let JOB_KINDS = ["give_up", "jitter", "tread"]
+let SCENES = [ "bushes", "hunt", "farms", "reeds" ]
+let KINDS = [ "give_up", "snap", "jitter", "tread", "moves", "crowd", "stacked" ]
+let EXAMPLE_KINDS = [ "give_up", "snap", "jitter", "tread", "crowd" ]
+let JOB_KINDS = [ "give_up", "jitter", "tread" ]
 
-let hist = dictionary<int, [int]>(1024)        // id -> x, y, moving for its last WINDOW ticks (flat)
-let stuck_seen = dictionary<int, int>(256)     // id -> tick of the last counted give-up
+let hist = dictionary<int, [int]>(1024)     // id -> x, y, moving for its last WINDOW ticks (flat)
+let stuck_seen = dictionary<int, int>(256)  // id -> tick of the last counted give-up
 let tread_seen = dictionary<int, int>(256)
 let jitter_seen = dictionary<int, int>(256)
 var counts = map(KINDS.length): 0
-var wcounts = map(KINDS.length): 0               // workers only
+var wcounts = map(KINDS.length): 0  // workers only
 var examples = map(EXAMPLE_KINDS.length): []::string
-var job_names = map(JOB_KINDS.length): []::string   // per kind: the workers' jobs ("gather food") ...
-var job_counts = map(JOB_KINDS.length): []::int     // ... and how often
+var job_names = map(JOB_KINDS.length): []::string  // per kind: the workers' jobs ("gather food") ...
+var job_counts = map(JOB_KINDS.length): []::int    // ... and how often
 
 def count(kind:string, worker:bool):
     let k = find_index(KINDS, kind)
@@ -107,15 +107,15 @@ def example(kind:string, i:int, what0:string):
     var what = what0
     let c = cell_of(u_x[i], u_y[i])
     var around = ""
-    for([-1, 0, 1]) dy:
-        for([-1, 0, 1]) dx:
+    for([ -1, 0, 1 ]) dy:
+        for([ -1, 0, 1 ]) dx:
             around += if cell_walkable(c % W + dx, c / W + dy, u_mclass[i]): "." else: "#"
         around += "/"
     if u_reach[i] == 1:
         let ex = max(max(u_rx0[i] - u_x[i], 0), u_x[i] - u_rx1[i])
         let ey = max(max(u_ry0[i] - u_y[i], 0), u_y[i] - u_ry1[i])
         what += " [rect gap {ex},{ey} reach {u_radius[i] + REACH}]"
-    let fi = field_index(u_fkey[i])   // (the cache only: asking field_for would queue a solve)
+    let fi = field_index(u_fkey[i])  // (the cache only: asking field_for would queue a solve)
     let field = if fi >= 0: "dist {field_vals[fi].dist[c]} next {field_vals[fi].next[c]}" else: "no field"
     list.push("{clock(tick)}: {what} (P{u_owner[i]} {unit_name(u_kind[i])}, {task_name(u_task[i])}, foe {u_foe[i]}, group {u_group[i]}) at ({u_x[i]},{u_y[i]}) cell {c} ({c % W},{c / W}) {around}; wp ({u_wx[i]},{u_wy[i]}) target ({u_tx[i]},{u_ty[i]}) reach {u_reach[i]} arrive {u_arrive[i]} stuck {u_stuck[i]}; {field}")
 
@@ -220,9 +220,9 @@ def set_up(scene:string):
     elif scene == "farms":
         let fk = btype_index("farm")
         var n = 0
-        for([int2 { 8, 10 }, int2 { 8, 12 }, int2 { 8, 14 }, int2 { 11, 15 }, int2 { 13, 15 }, int2 { 11, 8 }, int2 { 13, 8 }, int2 { 15, 10 }, int2 { 15, 13 }]) spot:
+        for([ int2 { 8, 10 }, int2 { 8, 12 }, int2 { 8, 14 }, int2 { 11, 15 }, int2 { 13, 15 }, int2 { 11, 8 }, int2 { 13, 8 }, int2 { 15, 10 }, int2 { 15, 13 } ]) spot:
             if n < ids.length and can_place(0, fk, spot.x, spot.y):
-                issue_cmd(0, CMD_BUILD, [ids[n]], fk, spot.x, spot.y, 0)
+                issue_cmd(0, CMD_BUILD, [ ids[n] ], fk, spot.x, spot.y, 0)
                 n++
         assert n == ids.length
     stock[resource_index("wood")][0] = 5000
@@ -230,7 +230,7 @@ def set_up(scene:string):
 def audit(map_id:string, races:[JV], rules:JV, minutes:int, sd:int):
     let scene = find_index(SCENES, map_id) >= 0
     new_world(sd, if scene: "reed_meadow" else: map_id, races, rules, [])
-    let sides = if scene: []::Side else: [full_side(0), full_side(1)]
+    let sides = if scene: []::Side else: [ full_side(0), full_side(1) ]
     if scene: set_up(map_id)
     hist.clear()
     stuck_seen.clear()
@@ -270,12 +270,12 @@ let args = plain_args(command_line_arguments())
 let seeds_arg = filter(args) a: starts_with(a, "seeds:")
 let rest = filter(args) a: not starts_with(a, "seeds:")
 let minutes = if rest.length > 0: string_to_int(rest[0]) else: 8
-let maps = if rest.length > 1: rest.slice(1, -1) else: ["flat_test", "choke_test"]
-let seeds = if seeds_arg.length: map(tokenize(seeds_arg[0].substring(6, seeds_arg[0].length - 6), ",", " ")) s: string_to_int(s) else: [SEED]
+let maps = if rest.length > 1: rest.slice(1, -1) else: [ "flat_test", "choke_test" ]
+let seeds = if seeds_arg.length: map(tokenize(seeds_arg[0].substring(6, seeds_arg[0].length - 6), ",", " ")) s: string_to_int(s) else: [ SEED ]
 lib_load("../data")
 id_load("../data")
 let rules = load_rules("default")
-let races = [generate("angry swamp frogs with reed spears", rules, 0), generate("centaur romans", rules, 0)]
+let races = [ generate("angry swamp frogs with reed spears", rules, 0), generate("centaur romans", rules, 0) ]
 let t_all = seconds_elapsed()
 for(maps) m:
     for(seeds) sd: audit(m, races, rules, minutes, sd)

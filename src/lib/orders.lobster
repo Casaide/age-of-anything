@@ -28,7 +28,7 @@ def off_walls(ax:int, ay:int, r:int, ln:int) -> int, int:
         y = (cy + 1) * TILE - min(r, TILE / 2)
     return x, y
 
-let SLOT_STEPS = 8   // a formation slot that isn't open steps in towards the centre in this many steps
+let SLOT_STEPS = 8  // a formation slot that isn't open steps in towards the centre in this many steps
 
 def slot_ok(i:int, apx:int, apy:int, x:int, y:int) -> int, int:
     let ln = lane(i)
@@ -127,7 +127,7 @@ def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
     if d > 0:
         ux = dx * ONE / d
         uy = dy * ONE / d
-    let bands = [[]::int, []::int, []::int]
+    let bands = [ []::int, []::int, []::int ]
     var flank = []::int
     for(idx) i:
         let role = t_role[u_kind[i]]
@@ -174,7 +174,7 @@ def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
         let nl = (fl.length + 1) / 2
         let sp = form_space(fl)
         let inner = half + FORM_GAP + form_rmax(fl)
-        for([fl.slice(0, nl), fl.slice(nl, -1)]) wing0:
+        for([ fl.slice(0, nl), fl.slice(nl, -1) ]) wing0:
             if wing0.length:
                 let left = wing0[0] == fl[0]
                 let depth = clamp(deep, 1, wing0.length)
@@ -209,7 +209,7 @@ def building_field(bid:int, near:bool, ln:int) -> int:
 
 // Head for "next to" a rect of milli-tiles (inclusive), following field `key` (World.order_reach).
 def order_reach(i:int, x0:int, y0:int, x1:int, y1:int, key:int):
-    if u_perch[i] != 0: return   // on a wall: it walks the walkway, never the ground
+    if u_perch[i] != 0: return  // on a wall: it walks the walkway, never the ground
     u_tx[i] = x0 + (x1 - x0) / 2
     u_ty[i] = y0 + (y1 - y0) / 2
     u_reach[i] = 1
@@ -314,10 +314,9 @@ def run_attack_move(player:int, ids:[int], group:int, fx:int, fy:int, pace:int):
 def run_stance(player:int, ids:[int], posture:int):
     for(ids) uid:
         let i = index_of(uid)
-        if i >= 0 and u_owner[i] == player and t_animal[u_kind[i]] == 0:   // (animals have no stance)
+        if i >= 0 and u_owner[i] == player and t_animal[u_kind[i]] == 0:  // (animals have no stance)
             u_posture[i] = posture
             if u_stance[i] == AUTO and posture == PASSIVE:
                 u_foe[i] = 0
                 u_stance[i] = NONE
                 u_moving[i] = 0
-

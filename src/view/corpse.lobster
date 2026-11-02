@@ -20,11 +20,11 @@ def corpse_spot(kind:string) -> float3:
         case "hand_r": return float3 { 6.0, 21.0, 0.35 }
         case "hand_l": return float3 { -4.0, -11.0, -0.5 }
         case "head_gear": return float3 { 14.0, 4.0, 0.0 }
-        default: return float3 { -17.0, 6.0, 2.4 }   // (the back: a banner)
+        default: return float3 { -17.0, 6.0, 2.4 }  // (the back: a banner)
 
 def about(at:float3, b:Basis) -> Xform: return xmul(Xform { b, at }, Xform { BASIS_ID, -at })
 
-def borthonormalized(b:Basis) -> Basis:   // (Godot's Basis.orthonormalized: Gram-Schmidt, x first)
+def borthonormalized(b:Basis) -> Basis:  // (Godot's Basis.orthonormalized: Gram-Schmidt, x first)
     let x = normalize(b.x)
     let y = normalize(b.y - x * dot(x, b.y))
     let z = normalize(b.z - x * dot(x, b.z) - y * dot(y, b.z))
@@ -85,7 +85,7 @@ def corpse_model(r:JV, p:JV, f:float) -> MNode:
     for(dropped) q, i:
         let w = dropped_w[i]
         var s = corpse_spot(q.kind)
-        let spots = gobj(p, "spots")   // the body's own (a wide one's: the frog's shield lay in its flank)
+        let spots = gobj(p, "spots")  // the body's own (a wide one's: the frog's shield lay in its flank)
         if has(spots, q.kind):
             let own = at(spots, q.kind).a
             s = float3 { as_float(own[0].a[0]), as_float(own[0].a[1]), as_float(own[1]) }
@@ -110,9 +110,9 @@ def corpse_flat(n:MNode, yaw:float, upturned:bool) -> Basis:
         lo = min(lo, v)
         hi = max(hi, v)
     let size = hi - lo
-    let axes = [float3 { 1.0, 0.0, 0.0 }, float3 { 0.0, 1.0, 0.0 }, float3 { 0.0, 0.0, 1.0 }]
-    let sizes = [size.x, size.y, size.z]
-    let order = [0, 1, 2]
+    let axes = [ float3 { 1.0, 0.0, 0.0 }, float3 { 0.0, 1.0, 0.0 }, float3 { 0.0, 0.0, 1.0 } ]
+    let sizes = [ size.x, size.y, size.z ]
+    let order = [ 0, 1, 2 ]
     insertion_sort(order) i, j: sizes[i] > sizes[j]
     let long = axes[order[0]]
     let thin = axes[order[2]]
@@ -147,7 +147,7 @@ def corpse_corners(n:MNode, t0:Xform) -> [float3]:
     let t = xmul(t0, node_xform(n))
     let m = n.mesh
     if m:
-        let lo, size = mesh_box([m])
+        let lo, size = mesh_box([ m ])
         for(8) c: out.push(xf(t, lo + size * float3 { float(c & 1), float((c >> 1) & 1), float((c >> 2) & 1) }))
     for(n.kids) c: append_into(out, corpse_corners(c, t))
     return out
@@ -175,14 +175,14 @@ def bake_corpse(r:JV, p:JV, f:float, shadow:bool) -> void:
         if shadow:
             // the footprint: the posed body flattened onto the ground, its silhouette at the sprite's pixels
             let flat = mnode()
-            flat.kids.push(m)   // (held, not parented: m stays the model)
+            flat.kids.push(m)  // (held, not parented: m stays the model)
             flat.scl = float3 { 1.0, 0.01, 1.0 }
             let fs, fw, fh, fo = bake_facing(model_tris(flat), k)
             let out = ensure_size("", fw * fh * 4, 0)
             for(fh) y:
                 for(fw) x:
                     if fs[(y * fw + x) * 4 + 3] >= 128:
-                        for([int2 { 0, 0 }, int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }, int2 { 1, 1 }, int2 { 2, 1 }]) d:
+                        for([ int2 { 0, 0 }, int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }, int2 { 1, 1 }, int2 { 2, 1 } ]) d:
                             let qx = x + d.x
                             let qy = y + d.y
                             if qx >= 0 and qy >= 0 and qx < fw and qy < fh:

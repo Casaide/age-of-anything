@@ -2,7 +2,7 @@
 // A race's one hero: the one its prompt names, else one of its hpool picked by its race key; dressed
 // over its swordsman (else spearman) line.
 
-let HERO_BASE_SLOTS = ["infantry", "spear"]
+let HERO_BASE_SLOTS = [ "infantry", "spear" ]
 
 def signatures_for(cid:string, fid:string) -> [string]:
     let out = []::string

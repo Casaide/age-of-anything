@@ -11,7 +11,7 @@ let SIEGE_UP = float3 { 0.0, 1.0, 0.0 }
 let SIEGE_RIGHT = float3 { 1.0, 0.0, 0.0 }
 let SIEGE_BACK = float3 { 0.0, 0.0, 1.0 }
 let SIEGE_E = 2.718281828459045
-let SIEGE_NOMAT = plain(float3 { 1.0, 0.0, 1.0 })   // a material the family doesn't have (s.get / s.has)
+let SIEGE_NOMAT = plain(float3 { 1.0, 0.0, 1.0 })  // a material the family doesn't have (s.get / s.has)
 
 def siege_lerp(a:float3, b:float3, t:float) -> float3: return a + (b - a) * t
 def siege_lerpf(a:float, b:float, t:float) -> float: return a + (b - a) * t
@@ -21,7 +21,7 @@ def siege_smoothstep(a:float, b:float, x:float) -> float:
     if x >= b: return 1.0
     let s = (x - a) / (b - a)
     return s * s * (3.0 - 2.0 * s)
-def siege_cosr(a:float) -> float: return cos(rad(a))   // cos/sin of an angle in radians (Godot's)
+def siege_cosr(a:float) -> float: return cos(rad(a))  // cos/sin of an angle in radians (Godot's)
 def siege_sinr(a:float) -> float: return sin(rad(a))
 def siege_approx(a:float3, b:float3) -> bool:
     def ok(x:float, y:float) -> bool:
@@ -109,7 +109,7 @@ def siege_style(fam:string, c:Colours) -> SStyle:
             s.roof = s.plate
             s.ammo = surf("cheese", float3_1, 4.0)
         default: assert false
-    s.rope.rope = true   // (ropes are tied at both ends: the placement check, C3, finds them by it)
+    s.rope.rope = true  // (ropes are tied at both ends: the placement check, C3, finds them by it)
     if s.lash != SIEGE_NOMAT: s.lash.rope = true
     return s
 
@@ -155,16 +155,16 @@ def siege_wheel(n:MNode, at:float3, r:float, thick:float, s:SStyle):
             add_child(n, cone(r * 0.25, r * 0.25, thick + 0.6, s.dark, at, SIEGE_X90, 10))
 
 def siege_undercarriage(n:MNode, s:SStyle, len:float, wide:float, r:float, x0:float = 0.0):
-    for([-1.0, 1.0]) fx:
-        for([1.0, -1.0]) side:
+    for([ -1.0, 1.0 ]) fx:
+        for([ 1.0, -1.0 ]) side:
             siege_wheel(n, float3 { x0 + fx * len * 0.3, r, (wide * 0.5 + 1.2) * side }, r, 1.6, s)
-    for([-1.0, 1.0]) fx:
+    for([ -1.0, 1.0 ]) fx:
         add_child(n, rod(float3 { x0 + fx * len * 0.3, r, -wide * 0.5 - 1.0 }, float3 { x0 + fx * len * 0.3, r, wide * 0.5 + 1.0 }, 0.6, 0.6, s.dark, false))
 
 def siege_pennant(n:MNode, s:SStyle, at:float3, h:float, size:float = 4.0):
     add_child(n, rod(at, at + float3 { 0.0, h, 0.0 }, 0.35, 0.3, s.dark))
     let top = at + float3 { 0.0, h - 0.3, 0.0 }
-    add_child(n, slab([float2 { 0.0, 0.0 }, float2 { -size * 1.3, -size * 0.25 }, float2 { -size * 1.1, -size * 0.6 }, float2 { 0.0, -size * 0.75 }], 0.3, s.team, top))
+    add_child(n, slab([ float2 { 0.0, 0.0 }, float2 { -size * 1.3, -size * 0.25 }, float2 { -size * 1.1, -size * 0.6 }, float2 { 0.0, -size * 0.75 } ], 0.3, s.team, top))
 
 def ram_head(n:MNode, s:SStyle, tip:float3, r:float):
     switch s.fam:
@@ -173,15 +173,15 @@ def ram_head(n:MNode, s:SStyle, tip:float3, r:float):
             add_child(n, ring(r * 0.9, r * 1.3, s.metal, tip + float3 { -1.0, 0.0, 0.0 }, float3 { 0.0, 0.0, 90.0 }))
             add_child(n, ring(r * 0.9, r * 1.3, s.metal, tip + float3 { -12.0, 0.0, 0.0 }, float3 { 0.0, 0.0, 90.0 }))
         case "forest":
-            let pts = [tip, tip + float3 { 4.5, 0.6, 0.0 }, tip + float3 { 8.0, 2.8, 0.0 }, tip + float3 { 9.5, 6.0, 0.0 }]
-            let rr = [r * 1.0, r * 0.75, r * 0.45, 0.3]
+            let pts = [ tip, tip + float3 { 4.5, 0.6, 0.0 }, tip + float3 { 8.0, 2.8, 0.0 }, tip + float3 { 9.5, 6.0, 0.0 } ]
+            let rr = [ r * 1.0, r * 0.75, r * 0.45, 0.3 ]
             for(pts.length - 1) i:
                 let k = i + 1
                 add_child(n, rod(pts[k - 1], pts[k], rr[k - 1], rr[k], s.metal))
         case "spooky":
             add_child(n, blob(float3 { 4.6, 4.2, 4.0 }, s.metal, tip + float3 { 2.6, 0.8, 0.0 }))
             add_child(n, blob(float3 { 2.8, 1.6, 3.0 }, s.metal, tip + float3 { 5.0, -2.2, 0.0 }))
-            for([1.0, -1.0]) side:
+            for([ 1.0, -1.0 ]) side:
                 add_child(n, blob(float3 { 1.1, 1.3, 1.0 }, plain(html("#141018")), tip + float3 { 6.0, 1.2, 1.7 * side }))
         default: return
 
@@ -200,14 +200,14 @@ def ram_b(s:SStyle) -> Spec:
     let top = 25.0
     siege_undercarriage(n, s, L, wd, wr)
     let base = wr + 1.0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, siege_beam(float3 { -L * 0.5, base, wd * 0.5 * side }, float3 { L * 0.5, base, wd * 0.5 * side }, 1.4, 1.4, s.dark))
-    for([-L * 0.32, L * 0.32]) x:
-        for([1.0, -1.0]) side:
+    for([ -L * 0.32, L * 0.32 ]) x:
+        for([ 1.0, -1.0 ]) side:
             add_child(n, rod(float3 { x, base, wd * 0.5 * side }, float3 { x, top, 0.0 }, 0.8, 0.7, s.wood))
     add_child(n, siege_beam(float3 { -L * 0.4, top, 0.0 }, float3 { L * 0.4, top, 0.0 }, 1.3, 1.3, s.dark))
     let y = top - 9.0
-    for([-L * 0.25, L * 0.25]) x:
+    for([ -L * 0.25, L * 0.25 ]) x:
         add_child(n, rod(float3 { x, top, 0.0 }, float3 { x, y + 2.0, 0.0 }, 0.35, 0.35, s.rope, false))
     ram_log(n, s, -L * 0.55, L * 0.5 + 8.0, y, 3.0)
     switch s.fam:
@@ -253,12 +253,12 @@ def catapult_a(s:SStyle) -> Spec:
     let wr = 3.8
     siege_undercarriage(n, s, L, wd, wr)
     let base = wr + 1.0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, siege_beam(float3 { -L * 0.5, base, wd * 0.5 * side }, float3 { L * 0.5, base, wd * 0.5 * side }, 1.6, 1.6, s.dark))
-    for([-L * 0.42, -L * 0.1, L * 0.42]) x:
+    for([ -L * 0.42, -L * 0.1, L * 0.42 ]) x:
         add_child(n, siege_beam(float3 { x, base, -wd * 0.5 }, float3 { x, base, wd * 0.5 }, 1.4, 1.4, s.dark))
     let bar = base + 12.0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, siege_beam(float3 { L * 0.12, base, wd * 0.5 * side }, float3 { L * 0.12, bar, wd * 0.5 * side }, 1.4, 1.4, s.wood))
         add_child(n, rod(float3 { L * 0.4, base, wd * 0.5 * side }, float3 { L * 0.12, bar - 3.0, wd * 0.5 * side }, 0.6, 0.6, s.dark))
     add_child(n, siege_beam(float3 { L * 0.12, bar, -wd * 0.5 - 1.0 }, float3 { L * 0.12, bar, wd * 0.5 + 1.0 }, 1.6, 1.6, s.dark))
@@ -268,7 +268,7 @@ def catapult_a(s:SStyle) -> Spec:
     let tip = float3 { L * 0.12 - 0.5, base + 22.0, 0.0 }
     throw_arm(n, s, pivot, tip)
     add_child(n, rod(float3 { -L * 0.45, base + 1.6, -wd * 0.5 }, float3 { -L * 0.45, base + 1.6, wd * 0.5 }, 1.0, 1.0, s.dark))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, rod(float3 { -L * 0.45, base + 1.6, wd * 0.5 * side }, float3 { -L * 0.45 - 2.0, base + 4.0, wd * 0.5 * side }, 0.4, 0.4, s.dark))
     if s.fam == "spooky":
         add_child(n, blob(float3 { 1.8, 2.0, 1.8 }, s.metal, float3 { L * 0.5, base + 2.2, 0.0 }))
@@ -285,7 +285,7 @@ def bow_and_bolt(n:MNode, s:SStyle, x0:float, x1:float, y:float, span:float):
         add_child(n, box(float3 { 3.0, 3.0, 3.6 }, s.metal, float3 { bx, y + 0.4, 0.0 }))
     elif s.fam == "spooky": bow_mat = s.metal
     elif s.fam == "forest": bow_mat = surf("wood_grain", float3 { 0.8, 0.7, 0.55 }, 5.0)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let mid = float3 { bx - 1.0, y + 0.5, span * 0.55 * side }
         let end = float3 { bx - 4.5, y + 0.5, span * side }
         add_child(n, rod(float3 { bx, y + 0.5, 1.4 * side }, mid, 0.8, 0.65, bow_mat))
@@ -298,17 +298,17 @@ def bow_and_bolt(n:MNode, s:SStyle, x0:float, x1:float, y:float, span:float):
     else:
         add_child(n, rod(float3 { x0 + 4.0, y + 1.3, 0.0 }, head - float3 { 1.5, 0.0, 0.0 }, 0.35, 0.35, if s.fam != "spooky": s.wood else: s.metal))
         add_child(n, cone(0.05, 0.75, 2.4, if s.fam != "timber": s.metal else: surf("iron", float3 { 0.7, 0.7, 0.75 }, 3.0), head, float3 { 0.0, 0.0, -90.0 }, 8))
-        for([1.0, -1.0]) side:
-            add_child(n, slab([float2 { 0.0, 0.0 }, float2 { 2.4, 0.0 }, float2 { 0.4, 1.2 * side }], 0.2, s.team, float3 { x0 + 4.0, y + 1.3, 0.0 }))
+        for([ 1.0, -1.0 ]) side:
+            add_child(n, slab([ float2 { 0.0, 0.0 }, float2 { 2.4, 0.0 }, float2 { 0.4, 1.2 * side } ], 0.2, s.team, float3 { x0 + 4.0, y + 1.3, 0.0 }))
 
 def bolt_a(s:SStyle) -> Spec:
     let n = mnode()
     let wr = 5.0
     let y = 13.0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         siege_wheel(n, float3 { 0.0, wr, 6.5 * side }, wr, 1.6, s)
     add_child(n, rod(float3 { 0.0, wr, -7.5 }, float3 { 0.0, wr, 7.5 }, 0.7, 0.7, s.dark, false))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, siege_beam(float3 { 1.5, wr + 0.5, 3.0 * side }, float3 { -17.0, 0.8, 0.8 * side }, 1.4, 1.4, s.dark))
     add_child(n, siege_beam(float3 { 0.0, wr, 0.0 }, float3 { 0.0, y - 1.0, 0.0 }, 2.0, 2.0, s.dark))
     add_child(n, box(float3 { 6.0, 0.4, 2.8 }, s.team, float3 { -10.5, 3.6, 0.0 }, float3 { 0.0, 0.0, 18.0 }))
@@ -330,7 +330,7 @@ def siege_grate(n:MNode, s:SStyle, at:float3, w:float, h:float, lean:float = 0.0
     g.pos = at
     g.rot = float3 { 0.0, 0.0, lean }
     let iron = surf("iron", float3 { 0.5, 0.48, 0.46 }, 4.0)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(g, box(float3 { 1.0, h, 1.2 }, iron, float3 { 0.0, h * 0.5, w * 0.5 * side }))
         add_child(g, box(float3 { 1.0, 1.2, w }, iron, float3 { 0.0, h * 0.5 + (h * 0.5 - 0.6) * side, 0.0 }))
     for(5) i:
@@ -345,8 +345,8 @@ def siege_patch(n:MNode, s:SStyle, at:float3, size:float2, rot:float3, m:MMat):
     p.pos = at
     p.rot = rot
     add_child(p, box(float3 { size.x, size.y, 0.5 }, m, float3_0))
-    for([-1.0, 1.0]) cx:
-        for([-1.0, 1.0]) cy:
+    for([ -1.0, 1.0 ]) cx:
+        for([ -1.0, 1.0 ]) cy:
             add_child(p, blob(float3_1 * 0.45, s.rivet, float3 { cx * (size.x * 0.5 - 0.7), cy * (size.y * 0.5 - 0.7), 0.3 }))
     add_child(n, p)
 
@@ -361,7 +361,7 @@ def junk_head(n:MNode, s:SStyle, tip:float3, r:float):
 def junk_log(n:MNode, s:SStyle, x0:float, x1:float, y:float, r:float):
     add_child(n, siege_beam(float3 { x0, y, 0.0 }, float3 { x1, y, 0.0 }, r * 1.8, r * 1.8, s.wood))
     add_child(n, siege_beam(float3 { x0 + 6.0, y + r * 0.95, 0.4 }, float3 { x0 + 18.0, y + r * 0.95, 0.4 }, r * 1.2, 0.6, s.wood2))
-    for([x0 + 3.0, (x0 + x1) * 0.5, x1 - 3.0]) x:
+    for([ x0 + 3.0, (x0 + x1) * 0.5, x1 - 3.0 ]) x:
         add_child(n, box(float3 { 1.2, r * 2.1, r * 2.1 }, s.metal, float3 { x, y, 0.0 }))
     junk_head(n, s, float3 { x1, y, 0.0 }, r)
 
@@ -371,7 +371,7 @@ def ram_c(s:SStyle) -> Spec:
     let spec = if s.fam == "junk": ram_c_junk(s) elif s.fam == "timber" and TIMBER_RAM_ROOF != "": ram_covered(s, TIMBER_RAM_ROOF) else: ram_b(s)
     let L = 42.0
     spec.sockets = dictionary<string, float3>(11)
-    sock(spec, "crew0_f0_reach_in", float3 { -L * 0.3, 0.0, -3.2 })   // (at 2.5 the heroic humans' shoulders were in the frame: C1, D-173)
+    sock(spec, "crew0_f0_reach_in", float3 { -L * 0.3, 0.0, -3.2 })  // (at 2.5 the heroic humans' shoulders were in the frame: C1, D-173)
     sock(spec, "crew1_f0_reach_in", float3 { L * 0.1, 0.0, -3.2 })
     sock(spec, "crew2_f0_reach", float3 { -L * 0.5 - 5.0, 0.0, 5.0 })
     sock(spec, "crew2_f0_reach_wide", float3 { -L * 0.5 - 12.0, 0.0, 5.0 })
@@ -389,26 +389,26 @@ def ram_covered(s:SStyle, roof:string) -> Spec:
     let wd = 12.0
     let wr = 4.2
     let base = wr + 1.0
-    let eave = 27.0   // (23 before the heroic humans' longer legs, D-173)
+    let eave = 27.0  // (23 before the heroic humans' longer legs, D-173)
     let ridge = 34.5
     let px = L * 0.36
     siege_undercarriage(n, s, L, wd, wr)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let z = wd * 0.5 * side
         add_child(n, siege_beam(float3 { -L * 0.5, base, z }, float3 { L * 0.5, base, z }, 1.4, 1.4, s.dark))
         add_child(n, siege_beam(float3 { -px - 1.5, eave, z }, float3 { px + 1.5, eave, z }, 1.2, 1.2, s.dark))
-        for([-px, px]) x:
+        for([ -px, px ]) x:
             add_child(n, siege_beam(float3 { x, base, z }, float3 { x, eave, z }, 1.2, 1.2, s.wood))
         add_child(n, rod(float3 { -px, base + 0.5, z }, float3 { 0.0, eave - 0.5, z }, 0.4, 0.4, s.wood, false))
-    for([-px, px]) x:
+    for([ -px, px ]) x:
         add_child(n, siege_beam(float3 { x, eave, -wd * 0.5 }, float3 { x, eave, wd * 0.5 }, 1.2, 1.2, s.dark))
         add_child(n, siege_beam(float3 { x, eave, 0.0 }, float3 { x, ridge, 0.0 }, 1.0, 1.0, s.wood))
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             add_child(n, rod(float3 { x, eave - 0.6, (wd * 0.5 + 1.6) * side }, float3 { x, ridge, 0.0 }, 0.55, 0.5, s.wood, false))
     let rx = px + 3.5
     add_child(n, siege_beam(float3 { -rx, ridge, 0.0 }, float3 { rx, ridge, 0.0 }, 1.3, 1.3, s.dark))
-    let y = 21.0   // the log at the crew's chests (17 went through the heroic humans' skirts, D-173)
-    for([-L * 0.25, L * 0.25]) x:
+    let y = 21.0  // the log at the crew's chests (17 went through the heroic humans' skirts, D-173)
+    for([ -L * 0.25, L * 0.25 ]) x:
         add_child(n, rod(float3 { x, ridge, 0.0 }, float3 { x, y + 2.0, 0.0 }, 0.35, 0.35, s.rope, false))
     ram_log(n, s, -L * 0.55, L * 0.5 + 8.0, y, 3.0)
     let ze = wd * 0.5 + 1.8
@@ -417,8 +417,8 @@ def ram_covered(s:SStyle, roof:string) -> Spec:
         hide_roof(n, s, rx, ridge, ze, ye)
     else:
         plank_roof(n, s, rx, ridge, ze, ye)
-    let a = atan2(float2 { ze, ridge - ye })   // degrees
-    for([1.0, -1.0]) side:
+    let a = atan2(float2 { ze, ridge - ye })  // degrees
+    for([ 1.0, -1.0 ]) side:
         let d = 2.8
         let at = float3 { -rx * 0.35, ridge + 0.75 - sin(a) * d * 0.5, cos(a) * d * 0.5 * side }
         add_child(n, box(float3 { 7.0, 0.35, d }, s.team, at, float3 { a * side, 0.0, 0.0 }))
@@ -431,17 +431,17 @@ def roof_slope(m:MMat, x:float, len:float, ridge:float, ze:float, ye:float, side
     return box(float3 { len, thick, d }, m, mid, float3 { a * side, 0.0, 0.0 })
 
 def hide_roof(n:MNode, s:SStyle, rx:float, ridge:float, ze:float, ye:float):
-    let hides = [surf("hide", float3 { 0.6, 0.44, 0.31 }, 6.0), s.roof, surf("hide", float3 { 0.48, 0.34, 0.24 }, 6.0)]
+    let hides = [ surf("hide", float3 { 0.6, 0.44, 0.31 }, 6.0), s.roof, surf("hide", float3 { 0.48, 0.34, 0.24 }, 6.0) ]
     let lash = plain(html("#3e2e20"))
     let count = 3
     let w = rx * 2.0 / float(count)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let o = if side < 0.0: 1 else: 0
         for(count) k:
             let x = -rx + w * (float(k) + 0.5) + (if (k + o) % 2 == 0: 0.8 else: -0.6)
-            let drop = [0.4, 1.4, 0.8][(k + o) % 3]
+            let drop = [ 0.4, 1.4, 0.8 ][(k + o) % 3]
             let hide = roof_slope(hides[(k + o) % 3], x, w + 2.2, ridge + 0.5, ze + drop * 0.5, ye - drop, side, 0.5, 0.15 * float((k + o) % 2))
-            hide.rot = float3 { hide.rot.x, [4.0, -3.0, 5.0][(k + o) % 3], hide.rot.z }
+            hide.rot = float3 { hide.rot.x, [ 4.0, -3.0, 5.0 ][(k + o) % 3], hide.rot.z }
             add_child(n, hide)
         for(count * 2 + 1) k:
             let x0 = -rx + w * 0.5 * float(k)
@@ -454,11 +454,11 @@ def hide_roof(n:MNode, s:SStyle, rx:float, ridge:float, ze:float, ye:float):
 def plank_roof(n:MNode, s:SStyle, rx:float, ridge:float, ze:float, ye:float):
     let count = 10
     let w = rx * 2.0 / float(count)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         for(count) k:
             let m = if (k + (if side < 0.0: 1 else: 0)) % 3 != 0: s.wood else: s.dark
             add_child(n, roof_slope(m, -rx + w * (float(k) + 0.5), w - 0.25, ridge + 0.4, ze, ye, side, 0.6, 0.1 * float(k % 2)))
-        for([0.3, 0.8]) t:
+        for([ 0.3, 0.8 ]) t:
             let p = float3 { 0.0, ridge + 0.9 + (ye - ridge) * t, ze * t * side }
             add_child(n, siege_beam(p - float3 { rx, 0.0, 0.0 }, p + float3 { rx, 0.0, 0.0 }, 0.6, 0.5, s.dark))
         add_child(n, box(float3 { rx * 2.0, 2.6, 0.35 }, s.roof, float3 { 0.0, ye - 1.3, (ze + 0.1) * side }, float3 { -8.0 * side, 0.0, 0.0 }))
@@ -471,18 +471,18 @@ def ram_c_junk(s:SStyle) -> Spec:
     let top = 25.0
     siege_undercarriage(n, s, L, wd, wr)
     let base = wr + 1.0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         if side > 0.0:
             add_child(n, siege_beam(float3 { -L * 0.5, base, wd * 0.5 }, float3 { L * 0.5, base, wd * 0.5 }, 1.6, 1.6, s.wood2))
         else:
             add_child(n, rod(float3 { -L * 0.5, base, -wd * 0.5 }, float3 { L * 0.5, base, -wd * 0.5 }, 0.8, 0.8, s.pipe))
-    for([-L * 0.32, L * 0.32]) x:
-        for([1.0, -1.0]) side:
+    for([ -L * 0.32, L * 0.32 ]) x:
+        for([ 1.0, -1.0 ]) side:
             add_child(n, rod(float3 { x, base, wd * 0.5 * side }, float3 { x, top, 0.0 }, 0.75, 0.75, s.pipe))
         add_child(n, blob(float3 { 1.4, 1.4, 1.6 }, s.metal, float3 { x, top, 0.0 }))
     add_child(n, rod(float3 { -L * 0.4, top, 0.0 }, float3 { L * 0.4, top, 0.0 }, 0.9, 0.9, s.pipe))
     let y = top - 9.0
-    for([-L * 0.25, L * 0.25]) x:
+    for([ -L * 0.25, L * 0.25 ]) x:
         siege_chain(n, float3 { x, top - 0.6, 0.0 }, float3 { x, y + 2.0, 0.0 }, s.metal, 0.75)
     junk_log(n, s, -L * 0.55, L * 0.5 + 6.0, y, 2.6)
     add_child(n, box(float3 { 3.0, 4.0, 0.4 }, s.team, float3 { -L * 0.12, top - 2.4, 1.0 }, float3 { 0.0, 0.0, 8.0 }))
@@ -513,10 +513,10 @@ def catapult_c_junk(s:SStyle) -> Spec:
     let base = wr + 1.0
     add_child(n, siege_beam(float3 { -L * 0.5, base, wd * 0.5 }, float3 { L * 0.5, base, wd * 0.5 }, 1.6, 1.6, s.wood2))
     add_child(n, siege_beam(float3 { -L * 0.5, base, -wd * 0.5 }, float3 { L * 0.5, base, -wd * 0.5 }, 1.8, 1.4, s.dark))
-    for([-L * 0.42, -L * 0.1, L * 0.42]) x:
+    for([ -L * 0.42, -L * 0.1, L * 0.42 ]) x:
         add_child(n, siege_beam(float3 { x, base, -wd * 0.5 }, float3 { x, base, wd * 0.5 }, 1.4, 1.4, if x < 0.0: s.wood else: s.wood2))
     let bar = base + 12.0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, rod(float3 { L * 0.12, base, wd * 0.5 * side }, float3 { L * 0.12, bar, wd * 0.5 * side }, 0.8, 0.8, s.pipe))
         add_child(n, siege_beam(float3 { L * 0.4, base, wd * 0.5 * side }, float3 { L * 0.12, bar - 3.0, wd * 0.5 * side }, 0.9, 0.4, s.metal))
     add_child(n, rod(float3 { L * 0.12, bar, -wd * 0.5 - 1.0 }, float3 { L * 0.12, bar, wd * 0.5 + 1.0 }, 0.9, 0.9, s.pipe))
@@ -526,7 +526,7 @@ def catapult_c_junk(s:SStyle) -> Spec:
     siege_chain(n, pivot + float3 { 0.0, 1.7, -wd * 0.45 }, pivot + float3 { 0.0, 1.7, wd * 0.45 }, s.metal, 0.7)
     let tip = float3 { L * 0.12 - 0.5, base + 22.0, 0.0 }
     add_child(n, siege_beam(pivot, tip, 1.7, 1.5, s.wood))
-    for([0.3, 0.65]) t:
+    for([ 0.3, 0.65 ]) t:
         add_child(n, box(float3 { 2.0, 0.9, 2.0 }, s.metal, siege_lerp(pivot, tip, t), float3 { 0.0, 0.0, atan2(float2 { tip.x - pivot.x, tip.y - pivot.y }) }))
     add_child(n, cone(2.8, 2.0, 3.2, s.metal, tip + float3 { 0.0, 0.4, 0.0 }, float3_0, 14))
     add_child(n, ring(2.6, 3.0, s.rivet, tip + float3 { 0.0, 2.0, 0.0 }))
@@ -555,33 +555,33 @@ def tower_c(s:SStyle) -> Spec:
     let deck_y = WALL_WALK + 1.0
     let top = deck_y + 0.8 * PART_PER_MODEL
     def taper(y:float) -> float: return 1.0 - (y - base) / (top - base) * 0.12
-    for([-L * 0.45, L * 0.45]) x:
-        for([-wd * 0.45, wd * 0.45]) z:
+    for([ -L * 0.45, L * 0.45 ]) x:
+        for([ -wd * 0.45, wd * 0.45 ]) z:
             add_child(n, siege_beam(float3 { x, base, z }, float3 { x * taper(top), top, z * taper(top) }, 2.0, 2.0, s.wood))
-    for([base, (base + deck_y) * 0.5, deck_y, top]) y:
+    for([ base, (base + deck_y) * 0.5, deck_y, top ]) y:
         let k = taper(y)
-        for([-wd * 0.45 * k, wd * 0.45 * k]) z:
+        for([ -wd * 0.45 * k, wd * 0.45 * k ]) z:
             add_child(n, siege_beam(float3 { -L * 0.45 * k, y, z }, float3 { L * 0.45 * k, y, z }, 1.4, 1.4, s.dark))
-        for([-L * 0.45 * k, L * 0.45 * k]) x:
+        for([ -L * 0.45 * k, L * 0.45 * k ]) x:
             add_child(n, siege_beam(float3 { x, y, -wd * 0.45 * k }, float3 { x, y, wd * 0.45 * k }, 1.4, 1.4, s.dark))
     let hide = if s.roof != SIEGE_NOMAT: s.roof else: s.wood
-    for([float2 { base + 2.0, deck_y - 1.0 }, float2 { deck_y + 1.0, top - 1.0 }]) lo_hi:
+    for([ float2 { base + 2.0, deck_y - 1.0 }, float2 { deck_y + 1.0, top - 1.0 } ]) lo_hi:
         let y0 = lo_hi.x
         let y1 = lo_hi.y
         let k = taper((y0 + y1) * 0.5)
-        for([-wd * 0.43 * k, wd * 0.43 * k]) z:
+        for([ -wd * 0.43 * k, wd * 0.43 * k ]) z:
             add_child(n, box(float3 { L * 0.84 * k, y1 - y0, 0.5 }, hide, float3 { 0.0, (y0 + y1) * 0.5, z }))
         add_child(n, box(float3 { 0.5, y1 - y0, wd * 0.84 * k }, hide, float3 { L * 0.43 * k, (y0 + y1) * 0.5, 0.0 }))
     let kt = taper(top)
     add_child(n, box(float3 { L * 0.86 * kt, 1.2, wd * 0.86 * kt }, s.dark, float3 { 0.0, top, 0.0 }))
-    for([-wd * 0.4 * kt, wd * 0.4 * kt]) z:
+    for([ -wd * 0.4 * kt, wd * 0.4 * kt ]) z:
         add_child(n, box(float3 { L * 0.8 * kt, 4.0, 1.0 }, s.wood, float3 { 0.0, top + 2.0, z }))
     add_child(n, box(float3 { 1.0, 4.0, wd * 0.8 * kt }, s.wood, float3 { L * 0.4 * kt, top + 2.0, 0.0 }))
     let kd = taper(deck_y)
     let gx = L * 0.45 * kd + 1.4
     let g_len = 30.0
     add_child(n, box(float3 { 1.2, g_len, wd * 0.6 }, s.wood, float3 { gx, deck_y + g_len * 0.5, 0.0 }))
-    for([-wd * 0.26, wd * 0.26]) z:
+    for([ -wd * 0.26, wd * 0.26 ]) z:
         add_child(n, rod(float3 { gx, deck_y + g_len - 1.0, z }, float3 { L * 0.4 * kt, top + 3.0, z }, 0.3, 0.3, s.rope, false))
     siege_pennant(n, s, float3 { -L * 0.35 * kt, top + 1.0, -wd * 0.35 * kt }, 14.0, 6.0)
     let sp = spec_of(n)
@@ -597,14 +597,14 @@ def bolt_c_junk(s:SStyle) -> Spec:
     siege_wheel(n, float3 { 0.0, wr, 6.5 }, wr, 1.6, s)
     siege_wheel(n, float3 { 0.01, wr * 0.92, -6.5 }, wr * 0.92, 1.8, s)
     add_child(n, rod(float3 { 0.0, wr, -7.5 }, float3 { 0.0, wr, 7.5 }, 0.7, 0.7, s.pipe, false))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, rod(float3 { 1.5, wr + 0.5, 3.0 * side }, float3 { -17.0, 0.8, 0.8 * side }, 0.75, 0.75, s.pipe))
     add_child(n, siege_beam(float3 { 0.0, wr, 0.0 }, float3 { 0.0, y - 1.0, 0.0 }, 2.0, 2.0, s.wood2))
     add_child(n, box(float3 { 6.0, 0.4, 2.8 }, s.team, float3 { -10.5, 3.6, 0.0 }, float3 { 0.0, 0.0, 18.0 }))
     siege_grate(n, s, float3 { 3.0, wr - 2.0, 0.0 }, 11.0, 9.5, 8.0)
     add_child(n, siege_beam(float3 { -10.0, y, 0.0 }, float3 { 10.0, y, 0.0 }, 2.2, 1.6, s.wood))
     add_child(n, box(float3 { 3.0, 3.0, 3.6 }, s.metal, float3 { 7.0, y + 0.4, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         for(3) leaf:
             let a = float3 { 7.0, y + 0.5 - float(leaf) * 0.5, 1.4 * side }
             let e = float3 { 3.0 + float(leaf) * 1.2, y + 0.5 - float(leaf) * 0.5, (11.0 - float(leaf) * 2.6) * side }
@@ -612,8 +612,8 @@ def bolt_c_junk(s:SStyle) -> Spec:
         add_child(n, rod(float3 { 3.0, y + 0.5, 11.0 * side }, float3 { -6.0, y + 0.9, 0.0 }, 0.14, 0.14, s.rope, false))
     add_child(n, rod(float3 { -6.0, y + 1.3, 0.0 }, float3 { 13.5, y + 1.3, 0.0 }, 0.35, 0.35, s.pipe))
     add_child(n, cone(0.05, 0.6, 2.6, s.metal, float3 { 15.0, y + 1.3, 0.0 }, float3 { 0.0, 0.0, -90.0 }, 8))
-    for([1.0, -1.0]) side:
-        add_child(n, slab([float2 { 0.0, 0.0 }, float2 { 2.4, 0.0 }, float2 { 0.4, 1.2 * side }], 0.2, s.plate2, float3 { -6.0, y + 1.3, 0.0 }))
+    for([ 1.0, -1.0 ]) side:
+        add_child(n, slab([ float2 { 0.0, 0.0 }, float2 { 2.4, 0.0 }, float2 { 0.4, 1.2 * side } ], 0.2, s.plate2, float3 { -6.0, y + 1.3, 0.0 }))
     return spec_of(n)
 
 // ------------------------------------------------------------------ the giant beetle (D-117)
@@ -634,8 +634,8 @@ def giant_beetle(n:MNode, s:SStyle) -> MNode:
     let b = mnode()
     b.pos = float3 { 0.0, -BEETLE_DROP, 0.0 }
     add_child(n, b)
-    for([float3 { 14.0, 7.0, 15.0 }, float3 { 2.0, 1.0, 2.0 }, float3 { -10.0, -6.0, -14.0 }]) leg:
-        for([1.0, -1.0]) side:
+    for([ float3 { 14.0, 7.0, 15.0 }, float3 { 2.0, 1.0, 2.0 }, float3 { -10.0, -6.0, -14.0 } ]) leg:
+        for([ 1.0, -1.0 ]) side:
             let hip = float3 { leg.x, 16.0 - BEETLE_DROP, 9.0 * side }
             let knee = float3 { leg.x + leg.y, 20.0 - BEETLE_DROP, 21.0 * side }
             let foot = float3 { leg.x + leg.z, 0.8, 25.0 * side }
@@ -643,7 +643,7 @@ def giant_beetle(n:MNode, s:SStyle) -> MNode:
             add_child(n, rod(knee, foot, 2.5, 1.4, dark))
             add_child(n, rod(foot, foot + float3 { 2.0 * siege_sign(leg.z + 0.1), -0.5, 1.0 * side }, 0.8, 0.5, dark))
     add_child(b, blob(float3 { 26.0, 7.5, 13.0 }, under, float3 { -2.0, 17.0, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(b, blob(float3 { 24.0, 12.5, 8.6 }, shell, float3 { -8.0, 25.0, 7.4 * side }, float3 { 0.0, 0.0, 4.0 }))
     add_child(b, rod(float3 { -31.0, 25.0, 0.0 }, float3 { 11.0, 37.5, 0.0 }, 0.5, 0.5, dark, false))
     add_child(b, blob(float3 { 11.0, 10.5, 14.5 }, shell, float3 { 16.0, 25.0, 0.0 }))
@@ -652,12 +652,12 @@ def giant_beetle(n:MNode, s:SStyle) -> MNode:
     for(5) k:
         let a = -0.9 + float(k) * 0.45
         add_child(b, blob(float3_1 * 0.9, iron, float3 { 17.5 + siege_cosr(a) * 9.5, 30.5, siege_sinr(a) * 12.0 }))
-    siege_limb(b, [float3 { 22.0, 33.0, 0.0 }, float3 { 31.0, 35.5, 0.0 }, float3 { 39.0, 33.0, 0.0 }, float3 { 43.5, 27.5, 0.0 }], [3.0, 2.3, 1.6, 0.8], dark)
+    siege_limb(b, [ float3 { 22.0, 33.0, 0.0 }, float3 { 31.0, 35.5, 0.0 }, float3 { 39.0, 33.0, 0.0 }, float3 { 43.5, 27.5, 0.0 } ], [ 3.0, 2.3, 1.6, 0.8 ], dark)
     add_child(b, blob(float3 { 7.5, 6.5, 8.5 }, shell, float3 { 29.0, 18.0, 0.0 }))
-    siege_limb(b, [float3 { 33.0, 17.0, 0.0 }, float3 { 43.0, 17.0, 0.0 }, float3 { 52.0, 18.5, 0.0 }, float3 { 58.0, 22.0, 0.0 }], [4.4, 3.7, 3.0, 2.5], dark)
+    siege_limb(b, [ float3 { 33.0, 17.0, 0.0 }, float3 { 43.0, 17.0, 0.0 }, float3 { 52.0, 18.5, 0.0 }, float3 { 58.0, 22.0, 0.0 } ], [ 4.4, 3.7, 3.0, 2.5 ], dark)
     add_child(b, ring(3.5, 4.6, iron, float3 { 43.0, 17.0, 0.0 }, float3 { 0.0, 0.0, 90.0 }))
     add_child(b, cone(0.8, 3.6, 6.5, iron, float3 { 60.5, 24.0, 0.0 }, float3 { 0.0, 0.0, -50.0 }, 14))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(b, blob(float3 { 1.6, 1.6, 1.2 }, plain(html("#120c0a")), float3 { 31.0, 20.0, 6.8 * side }))
         add_child(b, blob(float3 { 0.5, 0.5, 0.4 }, plain(html("#d8c8b8")), float3 { 31.8, 20.8, 7.6 * side }))
         add_child(b, rod(float3 { 34.0, 15.0, 4.5 * side }, float3 { 39.0, 14.0, 7.5 * side }, 0.35, 0.3, dark))
@@ -671,13 +671,13 @@ def ram_ridden(s:SStyle) -> Spec:
     let deck_y = 37.6
     let wood = surf("wood_grain", float3 { 0.75, 0.62, 0.5 }, 6.0)
     add_child(b, box(float3 { 22.0, 1.4, 16.0 }, wood, float3 { -6.0, deck_y, 0.0 }))
-    for([-16.5, 4.5]) x:
-        for([1.0, -1.0]) side:
+    for([ -16.5, 4.5 ]) x:
+        for([ 1.0, -1.0 ]) side:
             add_child(b, rod(float3 { x, deck_y, 7.6 * side }, float3 { x, deck_y + 4.5, 7.6 * side }, 0.45, 0.45, s.dark))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(b, rod(float3 { -16.5, deck_y + 4.5, 7.6 * side }, float3 { 4.5, deck_y + 4.5, 7.6 * side }, 0.4, 0.4, s.dark))
     add_child(b, rod(float3 { -16.5, deck_y + 4.5, -7.6 }, float3 { -16.5, deck_y + 4.5, 7.6 }, 0.4, 0.4, s.dark))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(b, box(float3 { 12.0, 6.5, 0.4 }, s.team, float3 { -6.0, deck_y - 3.0, 8.4 * side }, float3 { 16.0 * side, 0.0, 0.0 }))
     siege_pennant(b, s, float3 { -16.5, deck_y, -6.5 }, 11.0, 3.6)
     let sp = spec_of(n)
@@ -700,7 +700,7 @@ def siege_bundle(n:MNode, a:float3, b:float3, r:float, s:SStyle, ties:int = 3, r
         siege_band(n, siege_lerp(a, b, t), b - a, siege_lerpf(r, rb, t), s.lash)
 
 def siege_sledge(n:MNode, s:SStyle, L:float, wd:float, x0:float = 0.0):
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let z = wd * 0.5 * side
         add_child(n, siege_beam(float3 { x0 - L * 0.5, 1.4, z }, float3 { x0 + L * 0.38, 1.4, z }, 2.6, 2.6, s.dark))
         add_child(n, rod(float3 { x0 + L * 0.38, 1.4, z }, float3 { x0 + L * 0.48, 3.4, z }, 1.3, 1.2, s.dark))
@@ -720,7 +720,7 @@ def ram_beast(s:SStyle) -> Spec:
     let deck_y = snapping_turtle(n, s)
     add_child(n, cone(10.5, 9.0, 6.0, s.wicker, float3 { -6.0, deck_y + 1.0, 0.0 }, float3_0, 20))
     add_child(n, ring(10.0, 11.2, s.reed, float3 { -6.0, deck_y + 4.0, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { 14.0, 0.6, 13.0 }, s.team, float3 { -6.0, deck_y - 6.0, 15.5 * side }, float3 { 48.0 * side, 0.0, 0.0 }))
     siege_pennant(n, s, float3 { -15.0, deck_y + 2.0, -5.0 }, 14.0, 4.0)
     let sp = spec_of(n)
@@ -735,7 +735,7 @@ def snapping_turtle(n:MNode, s:SStyle) -> float:
     let horn = plain(html("#2c2a20"))
     let C = float3 { -4.0, 12.0, 0.0 }
     let R = float3 { 33.0, 23.0, 25.0 }
-    for([float2 { 16.0, 1.0 }, float2 { 16.0, -1.0 }, float2 { -20.0, 1.0 }, float2 { -20.0, -1.0 }]) leg:
+    for([ float2 { 16.0, 1.0 }, float2 { 16.0, -1.0 }, float2 { -20.0, 1.0 }, float2 { -20.0, -1.0 } ]) leg:
         let x = leg.x
         let side = leg.y
         let hip = float3 { x, 11.0, 18.0 * side }
@@ -750,7 +750,7 @@ def snapping_turtle(n:MNode, s:SStyle) -> float:
     for(5) k:
         let a = MPI * 0.6 + float(k) * MPI * 0.2
         add_child(n, cone(0.2, 2.4, 5.0, keel, C + float3 { siege_cosr(a) * (R.x + 2.0), -0.5, siege_sinr(a) * (R.z + 2.0) }, float3 { 0.0, -rad(a), 90.0 }, 6))
-    for([-12.0, 0.0, 12.0]) z:
+    for([ -12.0, 0.0, 12.0 ]) z:
         for(6) k:
             let x = -28.0 + float(k) * 9.0
             let q = 1.0 - pow((x - C.x) / R.x, 2.0) - pow(z / R.z, 2.0)
@@ -763,7 +763,7 @@ def snapping_turtle(n:MNode, s:SStyle) -> float:
     add_child(n, dome(float3 { 6.4, 3.0, 6.0 }, s.stone, float3 { 45.0, 19.8, 0.0 }))
     for(4) k:
         add_child(n, blob(float3_1 * 1.3, s.stone, float3 { 42.0 + float(k) * 2.4, 22.6 - abs(float(k) - 1.5) * 0.6, float(k % 2) * 2.6 - 1.3 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.4, 1.4, 1.0 }, plain(html("#c8a040")), float3 { 48.0, 17.5, 7.0 * side }))
         add_child(n, blob(float3 { 0.6, 0.8, 0.5 }, plain(html("#141008")), float3 { 48.8, 17.6, 7.6 * side }))
     add_child(n, rod(float3 { -33.0, 15.0, 0.0 }, float3 { -46.0, 9.0, 0.0 }, 4.0, 2.4, skin))
@@ -774,7 +774,7 @@ def snapping_turtle(n:MNode, s:SStyle) -> float:
 
 def deck_catapult(n:MNode, s:SStyle, d:float, x0:float, h:float = 42.0):
     let bar = d + h * 24.0 / 42.0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         siege_bundle(n, float3 { x0 + 10.0, d, 8.5 * side }, float3 { x0 + 10.0, bar, 8.5 * side }, 1.9, s, 2)
         siege_bundle(n, float3 { x0 + 17.0, d, 8.5 * side }, float3 { x0 + 10.0, bar - 7.0, 8.5 * side }, 1.1, s, 1)
     siege_bundle(n, float3 { x0 + 10.0, bar, -10.5 }, float3 { x0 + 10.0, bar, 10.5 }, 1.8, s, 3)
@@ -791,7 +791,7 @@ def bolt_beast(s:SStyle) -> Spec:
     let top = 33.0
     add_child(n, box(float3 { 20.0, 0.8, 24.0 }, s.team, float3 { -4.0, top - 1.0, 0.0 }, float3 { 0.0, 0.0, 10.0 }))
     post_bolt(n, s, top, -2.0)
-    add_child(n, box(float3 { 10.0, 1.4, 12.0 }, s.team, float3 { -21.5, 24.5, 0.0 }))   // a pad on its rump for the gunner
+    add_child(n, box(float3 { 10.0, 1.4, 12.0 }, s.team, float3 { -21.5, 24.5, 0.0 }))  // a pad on its rump for the gunner
     let sp = spec_of(n)
     sock(sp, "crew0_f0_reach_top", float3 { -21.5, 25.3, 0.0 })
     sock(sp, "crew1_f0_reach", float3 { -6.0, 0.0, -30.0 })
@@ -803,7 +803,7 @@ def post_bolt(n:MNode, s:SStyle, top:float, x0:float):
     let y = top + 7.0
     add_child(n, siege_beam(float3 { x0 - 18.0, y, 0.0 }, float3 { x0 + 20.0, y, 0.0 }, 2.8, 2.2, s.dark))
     let bx = x0 + 18.0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let mid = float3 { bx - 2.0, y + 0.5, 13.0 * side }
         let end = float3 { bx - 9.0, y + 0.5, 24.0 * side }
         siege_bundle(n, float3 { bx, y + 0.5, 1.8 * side }, mid, 2.0, s, 1, 1.6)
@@ -817,7 +817,7 @@ def giant_toad(n:MNode, s:SStyle):
     let skin = surf("frog_skin", html("#a08a52"), 6.0)
     let wart = plain(html("#5a4a26"))
     let belly = surf("frog_belly", html("#b8a478"), 5.0)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 13.0, 8.5, 6.5 }, skin, float3 { -12.0, 9.0, 15.0 * side }, float3 { 0.0, 0.0, 18.0 }))
         add_child(n, rod(float3 { -4.0, 1.0, 18.0 * side }, float3 { 6.0, 0.8, 21.0 * side }, 2.4, 1.6, skin))
         add_child(n, rod(float3 { 12.0, 15.0, 11.0 * side }, float3 { 17.0, 1.0, 16.0 * side }, 3.6, 2.8, skin))
@@ -828,7 +828,7 @@ def giant_toad(n:MNode, s:SStyle):
     add_child(n, blob(float3 { 11.0, 8.0, 14.0 }, skin, float3 { 16.0, 20.0, 0.0 }))
     add_child(n, rod(float3 { 24.5, 17.5, -11.0 }, float3 { 26.6, 17.5, 0.0 }, 0.5, 0.5, plain(INK)))
     add_child(n, rod(float3 { 26.6, 17.5, 0.0 }, float3 { 24.5, 17.5, 11.0 }, 0.5, 0.5, plain(INK)))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 3.2, 3.0, 3.0 }, skin, float3 { 18.0, 27.0, 8.0 * side }))
         add_child(n, blob(float3 { 1.8, 1.8, 1.4 }, plain(html("#d8a830")), float3 { 20.0, 27.8, 9.4 * side }))
         add_child(n, blob(float3 { 0.6, 1.0, 0.5 }, plain(html("#140c06")), float3 { 21.2, 28.0, 10.0 * side }))
@@ -850,12 +850,12 @@ def swamp_snail(n:MNode, s:SStyle) -> float:
     add_child(n, rod(float3 { 46.5, 11.0, -3.5 }, float3 { 48.0, 11.2, 0.0 }, 0.4, 0.4, plain(INK)))
     add_child(n, rod(float3 { 48.0, 11.2, 0.0 }, float3 { 46.5, 11.0, 3.5 }, 0.4, 0.4, plain(INK)))
     let eye = plain(html("#141210"))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, rod(float3 { 43.0, 18.0, 3.0 * side }, float3 { 52.0, 36.0, 7.5 * side }, 2.4, 1.6, body))
         add_child(n, blob(float3_1 * 2.9, eye, float3 { 52.4, 37.0, 7.7 * side }))
         add_child(n, blob(float3_1 * 0.8, plain(html("#e8e4d8")), float3 { 53.6, 38.4, 8.6 * side }))
         add_child(n, rod(float3 { 47.0, 12.0, 4.0 * side }, float3 { 57.0, 7.0, 8.5 * side }, 1.9, 0.8, body))
-    let whorls = [html("#c88a3c"), html("#9a6428"), html("#6e4420"), html("#4e3018")]
+    let whorls = [ html("#c88a3c"), html("#9a6428"), html("#6e4420"), html("#4e3018") ]
     let band = surf("chitin", html("#3a2410"), 6.0)
     let lip = plain(html("#ecdcb4"))
     let R0 = 19.0
@@ -872,7 +872,7 @@ def swamp_snail(n:MNode, s:SStyle) -> float:
         top = max(top, at.y + r * 1.1)
         if k > 4:
             let inward = float3 { -siege_cosr(phi), -siege_sinr(phi), 0.0 } * r * 0.8
-            for([1.0, -1.0]) side:
+            for([ 1.0, -1.0 ]) side:
                 add_child(n, blob(float3_1 * clamp(r * 0.28, 0.7, 2.0), band, at + inward + float3 { 0.0, 0.0, r * 1.05 * side }))
     add_child(n, ring(R0 * 0.42, R0 * 0.56, lip, O + float3 { cos(-50.0) * R0 + 2.0, sin(-50.0) * R0, 0.0 }, float3 { 90.0, 0.0, 40.0 }, float3 { 1.0, 1.0, 1.3 }))
     return top
@@ -883,9 +883,9 @@ def catapult_snail(s:SStyle) -> Spec:
     let x0 = -8.0
     let d = top + 1.0
     add_child(n, box(float3 { 30.0, 2.0, 19.0 }, s.dark, float3 { x0 - 3.0, d - 1.0, 0.0 }))
-    for([x0 - 15.0, x0 + 9.0]) x:
+    for([ x0 - 15.0, x0 + 9.0 ]) x:
         add_child(n, siege_beam(float3 { x, d - 2.4, -10.5 }, float3 { x, d - 2.4, 10.5 }, 2.4, 2.4, s.wood))
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             add_child(n, rod(float3 { x, d - 2.4, 10.0 * side }, float3 { x * 1.3, 7.0, (if x > 0.0: 13.0 else: 7.0) * side }, 0.45, 0.45, s.rope, false))
     add_child(n, box(float3 { 30.4, 2.4, 1.2 }, s.team, float3 { x0 - 3.0, d - 1.0, 9.9 }))
     add_child(n, box(float3 { 30.4, 2.4, 1.2 }, s.team, float3 { x0 - 3.0, d - 1.0, -9.9 }))
@@ -902,16 +902,16 @@ def handcart(s:SStyle, loaded:bool = true) -> Spec:
     let n = mnode()
     let wr = 6.5
     let y = wr + 1.6
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         siege_wheel(n, float3 { 2.0, wr, 8.6 * side }, wr, 1.6, s)
     add_child(n, rod(float3 { 2.0, wr, -9.6 }, float3 { 2.0, wr, 9.6 }, 0.6, 0.6, s.dark, false))
     let plank = surf("wood_grain", float3_1, 8.0)
     add_child(n, box(float3 { 22.0, 1.2, 13.0 }, plank, float3 { 2.0, y, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { 22.0, 3.6, 0.8 }, plank, float3 { 2.0, y + 2.3, 6.3 * side }))
-    for([-8.6, 12.6]) x:
+    for([ -8.6, 12.6 ]) x:
         add_child(n, box(float3 { 0.8, 3.6, 13.0 }, plank, float3 { x, y + 2.3, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, siege_beam(float3 { -8.0, y + 0.5, 4.6 * side }, float3 { -18.5, y + 3.6, 4.6 * side }, 1.0, 1.0, s.dark))
         add_child(n, rod(float3 { -7.0, y, 4.6 * side }, float3 { -7.6, 0.4, 4.6 * side }, 0.45, 0.45, s.dark))
     if loaded:
@@ -922,7 +922,7 @@ def cart_load(n:MNode, s:SStyle, at:float3):
     let plank = surf("wood_grain", float3_1, 8.0)
     add_child(n, box(float3 { 7.5, 6.0, 7.5 }, s.dark, at + float3 { 4.5, 3.6, 1.8 }))
     add_child(n, box(float3 { 8.2, 0.5, 8.2 }, s.team, at + float3 { 4.5, 6.9, 1.8 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { 5.0, 3.2, 0.4 }, s.team, at + float3 { 4.5, 5.2, 1.8 + 4.0 * side }))
     add_child(n, box(float3 { 5.0, 4.0, 5.0 }, plank, at + float3 { -5.0, 2.6, -3.0 }, float3 { 0.0, 20.0, 0.0 }))
     let sack = surf("cloth", html("#c8b48a"), 3.0)
@@ -959,7 +959,7 @@ def hauled_cart(beast:string, s:SStyle, c:Colours, k:float = 1.0) -> Spec:
     let haul = float3 { CART_FRONT + SHAFT - te.x, 0.0, 0.0 }
     let sp = spec_of(n)
     sock(sp, "haul0_f0", haul)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let hitch = haul + float3 { te.x, te.y - hitch_drop(beast) / k, te.z * side }
         add_child(n, siege_beam(float3 { CART_FRONT - 1.0, y + 1.0, 6.3 * side }, hitch, 1.0, 1.0, s.dark))
         sock(sp, "hitch0_" + (if side > 0.0: "near" else: "far"), hitch)
@@ -969,14 +969,14 @@ def hauled_cart(beast:string, s:SStyle, c:Colours, k:float = 1.0) -> Spec:
 def cart_body(n:MNode, s:SStyle) -> float:
     let wr = 6.5
     let y = wr + 1.6
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         siege_wheel(n, float3 { 0.0, wr, 8.6 * side }, wr, 1.6, s)
     add_child(n, rod(float3 { 0.0, wr, -9.6 }, float3 { 0.0, wr, 9.6 }, 0.6, 0.6, s.dark, false))
     let plank = if s.fam != "spooky": surf("wood_grain", float3_1, 8.0) else: s.wood
     add_child(n, box(float3 { 24.0, 1.2, 13.0 }, plank, float3 { 0.0, y, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { 24.0, 3.6, 0.8 }, plank, float3 { 0.0, y + 2.3, 6.3 * side }))
-    for([-11.6, 11.6]) x:
+    for([ -11.6, 11.6 ]) x:
         add_child(n, box(float3 { 0.8, 3.6, 13.0 }, plank, float3 { x, y + 2.3, 0.0 }))
     cart_load(n, s, float3 { 0.0, y, 0.0 })
     add_child(n, rod(float3 { -11.0, y, 0.0 }, float3 { -13.0, 0.3, 0.0 }, 0.5, 0.5, s.dark))
@@ -1003,7 +1003,7 @@ def cart_snail(s:SStyle) -> Spec:
     for(8) i:
         add_child(n, rod(pts[i], pts[i + 1], 0.55, 0.55, pad))
     let sp = spec_of(n)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let end = pts[if side > 0.0: 0 else: 8]
         add_child(n, siege_beam(float3 { CART_FRONT - 1.0, y + 1.0, 6.3 * side }, end, 1.0, 1.0, s.dark))
         add_child(n, blob(float3_1 * 0.9, surf("bronze", float3_1, 3.0), end))
@@ -1043,7 +1043,7 @@ def harness_fitted(armour_id:string, body_id:string, c:Colours) -> Spec?:
     let lay = harness_layout(body_id, c)
     let n = mnode()
     let leather = surf("leather", float3 { 0.42, 0.27, 0.16 }, 3.0)
-    let loops = append(append([lay.band], lay.backs), lay.traces)
+    let loops = append(append([ lay.band ], lay.backs), lay.traces)
     for(loops) lp:
         for(lp.length - 1) i:
             add_child(n, rod(lp[i], lp[i + 1], 0.55, 0.55, leather))
@@ -1098,9 +1098,9 @@ def harness_layout(body_id:string, c:Colours) -> HarnessLayout:
         if abs(p.y - y) < 1.5 and abs(p.z) >= 0.4 * half:
             rear = min(rear, p.x)
     let backs = []::[float3]
-    for([xf_ - 2.5, xh + 2.5]) bx:
+    for([ xf_ - 2.5, xh + 2.5 ]) bx:
         backs.push(siege_contour(pts, float3 { bx, y, 0.0 }, false, 0.0, 180.0, 9))
-    let traces = [[band[0]], [band[band.length - 1]]]
+    let traces = [ [ band[0] ], [ band[band.length - 1] ] ]
     var x = xm - 2.0
     while x > rear + 1.0:
         var w = 0.0
@@ -1111,7 +1111,7 @@ def harness_layout(body_id:string, c:Colours) -> HarnessLayout:
             traces[0].push(float3 { x, y, w + HARNESS_GAP })
             traces[1].push(float3 { x, y, -w - HARNESS_GAP })
         x -= 2.0
-    let ends = [float3 { rear - TRACE_TAIL, y, traces[0][traces[0].length - 1].z }, float3 { rear - TRACE_TAIL, y, traces[1][traces[1].length - 1].z }]
+    let ends = [ float3 { rear - TRACE_TAIL, y, traces[0][traces[0].length - 1].z }, float3 { rear - TRACE_TAIL, y, traces[1][traces[1].length - 1].z } ]
     traces[0].push(ends[0])
     traces[1].push(ends[1])
     let lay = HarnessLayout { band, backs, traces, ends, half, front }
@@ -1155,15 +1155,15 @@ def scrap_barrow(s:SStyle, load:string) -> Spec:
     let wr = 6.0
     siege_wheel(n, float3 { 13.0, wr, 0.0 }, wr, 2.0, s)
     let y = 9.0
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, rod(float3 { 13.0, wr, 1.8 * side }, float3 { -6.0, y, 5.5 * side }, 0.7, 0.7, s.pipe))
         add_child(n, rod(float3 { -6.0, y, 5.5 * side }, float3 { -18.0, y + 3.0, 5.0 * side }, 0.7, 0.7, s.pipe))
         add_child(n, rod(float3 { -4.0, y, 5.5 * side }, float3 { -5.0, 0.4, 5.5 * side }, 0.6, 0.6, s.pipe))
     add_child(n, box(float3 { 20.0, 1.0, 12.0 }, s.wood2, float3 { 2.0, y + 0.5, 0.0 }))
     if load == "stone":
         let rock = surf("rock", float3 { 0.85, 0.82, 0.76 }, 3.0)
-        for([[float3 { -2.0, y + 3.0, 2.0 }, float3 { 3.6, 2.4, 3.0 }], [float3 { 4.0, y + 2.8, -1.5 }, float3 { 3.2, 2.2, 3.4 }],
-             [float3 { 1.0, y + 5.0, 0.0 }, float3 { 2.8, 2.0, 2.6 }], [float3 { 8.0, y + 2.2, 2.4 }, float3 { 2.4, 1.8, 2.2 }]]) b:
+        for([ [ float3 { -2.0, y + 3.0, 2.0 }, float3 { 3.6, 2.4, 3.0 } ], [ float3 { 4.0, y + 2.8, -1.5 }, float3 { 3.2, 2.2, 3.4 } ],
+              [ float3 { 1.0, y + 5.0, 0.0 }, float3 { 2.8, 2.0, 2.6 } ], [ float3 { 8.0, y + 2.2, 2.4 }, float3 { 2.4, 1.8, 2.2 } ] ]) b:
             add_child(n, blob(b[1], rock, b[0], float3 { 0.0, b[0].x * 11.0, 12.0 }))
         add_child(n, box(float3 { 5.0, 0.4, 5.0 }, s.team, float3 { -4.0, y + 1.2, -3.6 }, float3 { 0.0, 20.0, 8.0 }))
     else:
@@ -1177,7 +1177,7 @@ def scrap_barrow(s:SStyle, load:string) -> Spec:
 def gold_load(n:MNode, s:SStyle, at:float3):
     let sack = surf("cloth", html("#c8b48a"), 3.0)
     let gold = plain(html("#f2c440"))
-    for([float3 { -3.0, 2.6, 2.2 }, float3 { 3.0, 2.4, -2.0 }, float3 { 0.0, 4.6, 0.4 }]) b:
+    for([ float3 { -3.0, 2.6, 2.2 }, float3 { 3.0, 2.4, -2.0 }, float3 { 0.0, 4.6, 0.4 } ]) b:
         add_child(n, blob(float3 { 3.2, 2.6, 3.0 }, sack, at + b))
         for(3) k:
             add_child(n, blob(float3 { 0.8, 0.65, 0.75 }, gold, at + b + float3 { -0.8 + float(k) * 0.8, 2.3, 0.6 - float(k) * 0.5 }))
@@ -1187,15 +1187,15 @@ def gold_load(n:MNode, s:SStyle, at:float3):
 
 // howdah: a walled box at `at` (its floor's middle), team cloths down both sides; the riders stand in it, seen from
 // the hips up (D-176). Its riders' sockets ("_box": legs not drawn) go on `sp`.
-let HOWDAH_WALL = 12.0   // its walls' height over the floor: up to a heroic human's thighs (hips at 18)
+let HOWDAH_WALL = 12.0  // its walls' height over the floor: up to a heroic human's thighs (hips at 18)
 
 def howdah(sp:Spec, n:MNode, s:SStyle, at:float3, L:float, wd:float, riders:int = 2):
     add_child(n, box(float3 { L, 1.4, wd }, s.dark, at))
     let top = HOWDAH_WALL
-    for([-L * 0.5 + 0.6, L * 0.5 - 0.6]) x:
-        for([1.0, -1.0]) side:
-            add_child(n, rod(at + float3 { x, 0.0, wd * 0.5 * side }, at + float3 { x, top + 1.2, wd * 0.5 * side }, 0.55, 0.5, s.dark))   // corner posts
-    for([1.0, -1.0]) side:   // the walls: planks along each side and across each end, a team band along their tops
+    for([ -L * 0.5 + 0.6, L * 0.5 - 0.6 ]) x:
+        for([ 1.0, -1.0 ]) side:
+            add_child(n, rod(at + float3 { x, 0.0, wd * 0.5 * side }, at + float3 { x, top + 1.2, wd * 0.5 * side }, 0.55, 0.5, s.dark))  // corner posts
+    for([ 1.0, -1.0 ]) side:                                                                                                              // the walls: planks along each side and across each end, a team band along their tops
         add_child(n, box(float3 { L - 1.0, top, 0.6 }, s.wood, at + float3 { 0.0, top * 0.5 + 0.7, wd * 0.5 * side }))
         add_child(n, box(float3 { 0.6, top, wd - 1.0 }, s.wood, at + float3 { L * 0.5 * side, top * 0.5 + 0.7, 0.0 }))
         add_child(n, box(float3 { L, 1.2, 0.8 }, s.team, at + float3 { 0.0, top + 0.3, wd * 0.5 * side }))
@@ -1226,8 +1226,8 @@ def elephant(s:SStyle, with_howdah:bool, play:bool = false, look:string = "") ->
     let n = mnode()
     let m = elephant_mats()
     let hips = []::float3
-    for([13.0, -13.0]) lx:
-        for([1.0, -1.0]) side:
+    for([ 13.0, -13.0 ]) lx:
+        for([ 1.0, -1.0 ]) side:
             let x = lx + (if side > 0.0: 2.0 else: -1.0)
             let hip = float3 { x, 30.0, 8.5 * side }
             if play: hips.push(hip)
@@ -1251,7 +1251,7 @@ def elephant(s:SStyle, with_howdah:bool, play:bool = false, look:string = "") ->
         howdah(out, n, s, float3 { -3.0, 52.5, 0.0 }, 22.0, 18.0)
         add_child(n, box(float3 { 26.0, 0.6, 30.0 }, s.trim, float3 { -3.0, 51.6, 0.0 }))
     else:
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             add_child(n, box(float3 { 30.0, 13.0, 0.5 }, s.trim, float3 { -1.0, 40.0, 15.0 * side }, float3 { 8.0 * side, 0.0, 0.0 }))
             add_child(n, box(float3 { 30.0, 1.8, 0.6 }, s.team, float3 { -1.0, 33.5, 15.9 * side }, float3 { 8.0 * side, 0.0, 0.0 }))
         add_child(n, dome(float3 { 5.5, 3.0, 8.5 }, m.bronze, float3 { 30.5, 49.5, 0.0 }))
@@ -1260,7 +1260,7 @@ def elephant(s:SStyle, with_howdah:bool, play:bool = false, look:string = "") ->
     if play:
         sock(out, "head", ELEPHANT_NECK)
         out.anchors = beast_hips(hips)
-        if look != "":   // the sculpted legs and head grow out of the body, joined without a line
+        if look != "":  // the sculpted legs and head grow out of the body, joined without a line
             spec_num(out, "seam_legs", float3 { 10.0, 0.0, 0.0 })
             spec_str(out, "seam_head", "head.beast_elephant_" + look)
             spec_num(out, "seam_r", float3 { 9.0, 0.0, 0.0 })
@@ -1268,7 +1268,7 @@ def elephant(s:SStyle, with_howdah:bool, play:bool = false, look:string = "") ->
     return out
 
 def elephant_glb_mats(m:EleMats) -> dictionary<string, MMat>:
-    return mats_of([m.hide, m.dark, m.ivory, plain(html("#1a1412")), plain(html("#8a8478"))], ["hide", "dark", "ivory", "eye", "nail"])
+    return mats_of([ m.hide, m.dark, m.ivory, plain(html("#1a1412")), plain(html("#8a8478")) ], [ "hide", "dark", "ivory", "eye", "nail" ])
 
 def elephant_leg(n:MNode, hip:float3, side:float, m:EleMats):
     add_child(n, rod(hip, hip + float3 { 0.0, -25.0, 0.5 * side }, 5.6, 5.0, m.hide))
@@ -1281,10 +1281,10 @@ def elephant_head(n:MNode, at:float3, m:EleMats):
     let o = at - ELEPHANT_NECK
     add_child(n, blob(float3 { 10.0, 10.5, 9.5 }, m.hide, o + float3 { 28.0, 41.0, 0.0 }))
     add_child(n, blob(float3 { 5.0, 4.0, 8.0 }, m.dark, o + float3 { 30.0, 49.0, 0.0 }))
-    let trunk = [float3 { 35.0, 38.0, 0.0 }, float3 { 39.0, 30.0, 0.0 }, float3 { 40.5, 20.0, 0.0 }, float3 { 40.0, 11.0, 0.0 }, float3 { 42.5, 6.0, 0.0 }]
-    let tr = [4.2, 3.4, 2.8, 2.2, 1.6]
+    let trunk = [ float3 { 35.0, 38.0, 0.0 }, float3 { 39.0, 30.0, 0.0 }, float3 { 40.5, 20.0, 0.0 }, float3 { 40.0, 11.0, 0.0 }, float3 { 42.5, 6.0, 0.0 } ]
+    let tr = [ 4.2, 3.4, 2.8, 2.2, 1.6 ]
     siege_limb(n, map(trunk) p: o + p, tr, m.hide)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let ear = cone(9.5, 9.5, 0.8, m.dark, o + float3 { 24.0, 42.0, 9.0 * side }, SIEGE_X90, 20)
         ear.scl = float3 { 0.8, 1.0, 1.15 }
         add_child(n, ear)
@@ -1296,13 +1296,13 @@ def beast_hips(hips:[float3], hind:bool = false) -> [Anchor]:
     return map(hips) h:
         let front = h.x > 0.0
         let near = h.z > 0.0
-        anchor(h, if front == near: 0.0 else: MPI, if near: 1 else: -1, [0.0, if hind and not front: 1.0 else: 0.0])
+        anchor(h, if front == near: 0.0 else: MPI, if near: 1 else: -1, [ 0.0, if hind and not front: 1.0 else: 0.0 ])
 
 def siege_deck(n:MNode, s:SStyle, at:float3, L:float, wd:float, cloth:float = 7.0) -> float:
     add_child(n, box(float3 { L, 1.6, wd }, s.dark, at + float3 { 0.0, -0.8, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { L * 0.8, cloth, 0.4 }, s.team, at + float3 { 0.0, -cloth * 0.5 - 0.6, (wd * 0.5 + 0.4) * side }, float3 { 10.0 * side, 0.0, 0.0 }))
-        for([-L * 0.5 + 0.6, L * 0.5 - 0.6]) x:
+        for([ -L * 0.5 + 0.6, L * 0.5 - 0.6 ]) x:
             add_child(n, rod(at + float3 { x, 0.0, wd * 0.5 * side }, at + float3 { x, 4.5, wd * 0.5 * side }, 0.45, 0.45, s.dark))
         add_child(n, rod(at + float3 { -L * 0.5, 4.5, wd * 0.5 * side }, at + float3 { L * 0.5, 4.5, wd * 0.5 * side }, 0.4, 0.4, s.dark))
     return at.y
@@ -1319,14 +1319,14 @@ let BOAR_NECK = float3 { 24.0, 32.0, 0.0 }
 
 def boar_mats() -> BoarMats:
     return BoarMats { surf("rat_fur", float3 { 0.42, 0.33, 0.27 }, 5.0), surf("rat_fur", float3 { 0.26, 0.21, 0.18 }, 4.0),
-        surf("mane", float3 { 0.78, 0.68, 0.54 }, 3.0), plain(html("#1e1814")), plain(html("#f0e6cc")), surf("skin", float3 { 0.62, 0.45, 0.4 }, 4.0) }
+                      surf("mane", float3 { 0.78, 0.68, 0.54 }, 3.0), plain(html("#1e1814")), plain(html("#f0e6cc")), surf("skin", float3 { 0.62, 0.45, 0.4 }, 4.0) }
 
 def war_boar(s:SStyle, with_howdah:bool, play:bool = false) -> Spec:
     let n = mnode()
     let m = boar_mats()
     let hips = []::float3
-    for([18.0, -19.0]) x:
-        for([1.0, -1.0]) side:
+    for([ 18.0, -19.0 ]) x:
+        for([ 1.0, -1.0 ]) side:
             if play:
                 hips.push(float3 { x - (if x > 0.0: 4.0 else: 0.0), 28.0, (if x > 0.0: 11.0 else: 9.5) * side })
             else:
@@ -1342,20 +1342,20 @@ def war_boar(s:SStyle, with_howdah:bool, play:bool = false) -> Spec:
         if x > 24.0: top = 40.0
         let h = (if x > 4.0: 11.0 else: 6.0) + float(k % 3) * 1.5
         add_child(n, cone(0.2, 2.6, h, m.bristle, float3 { x, top + h * 0.3, (float(k % 2) - 0.5) * 1.6 }, float3 { 0.0, 0.0, 32.0 }, 6))
-    siege_limb(n, [float3 { -30.0, 34.0, 0.0 }, float3 { -33.0, 27.0, 0.0 }, float3 { -32.0, 22.0, 0.0 }], [1.0, 0.7, 0.5], m.dark)
+    siege_limb(n, [ float3 { -30.0, 34.0, 0.0 }, float3 { -33.0, 27.0, 0.0 }, float3 { -32.0, 22.0, 0.0 } ], [ 1.0, 0.7, 0.5 ], m.dark)
     add_child(n, blob(float3 { 1.2, 2.4, 1.2 }, m.bristle, float3 { -32.0, 21.0, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         for(3) k:
             let fk = float(k)
             let at = float3 { 10.0 - fk * 11.0, 31.0 - abs(fk - 0.5) * 1.0, (14.2 - abs(fk - 1.0) * 0.6) * side }
             add_child(n, box(float3 { 10.5, 12.0, 0.8 }, if k != 1: s.plate else: s.plate2, at, float3 { 8.0 * side, 0.0, 4.0 - fk * 4.0 }))
-            for([float2 { -4.0, 5.0 }, float2 { 4.0, 5.0 }, float2 { -4.0, -5.0 }, float2 { 4.0, -5.0 }]) r:
+            for([ float2 { -4.0, 5.0 }, float2 { 4.0, 5.0 }, float2 { -4.0, -5.0 }, float2 { 4.0, -5.0 } ]) r:
                 add_child(n, blob(float3_1 * 0.6, s.rivet, at + float3 { r.x, r.y, 0.6 * side }))
     let sp = spec_of(n)
     if with_howdah:
         let y = siege_deck(n, s, float3 { -6.0, 46.5, 0.0 }, 22.0, 18.0)
         add_child(n, box(float3 { 26.0, 0.8, 28.0 }, s.wood2, float3 { -6.0, 45.3, 0.0 }))
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             siege_chain(n, float3 { -6.0, 45.0, 14.0 * side }, float3 { -6.0, 22.0, 12.5 * side }, s.metal)
         siege_pennant(n, s, float3 { -16.4, y, -8.0 }, 14.0, 4.5)
         sock(sp, "crew0_f0_top", float3 { 0.0, y + 0.7, 3.0 })
@@ -1367,7 +1367,7 @@ def war_boar(s:SStyle, with_howdah:bool, play:bool = false) -> Spec:
         add_child(n, box(float3 { 12.0, 1.6, 12.0 }, s.team, float3 { 9.0, 52.4, 0.0 }))
         add_child(n, box(float3 { 9.0, 1.4, 9.0 }, s.dark, float3 { 9.0, 53.6, 0.0 }))
         add_child(n, rod(float3 { -8.0, 46.0, 0.0 }, float3 { -8.0, 70.0, 0.0 }, 0.6, 0.5, s.pipe))
-        add_child(n, slab([float2 { 0.0, 0.0 }, float2 { -10.0, -1.0 }, float2 { -9.0, -6.0 }, float2 { -11.0, -11.0 }, float2 { 0.0, -10.0 }], 0.4, s.team, float3 { -8.2, 69.0, 0.0 }))
+        add_child(n, slab([ float2 { 0.0, 0.0 }, float2 { -10.0, -1.0 }, float2 { -9.0, -6.0 }, float2 { -11.0, -11.0 }, float2 { 0.0, -10.0 } ], 0.4, s.team, float3 { -8.2, 69.0, 0.0 }))
         sock(sp, "crew0_f0_top", float3 { 9.0, 54.3, 0.0 })
     if play:
         sock(sp, "head", BOAR_NECK)
@@ -1376,7 +1376,7 @@ def war_boar(s:SStyle, with_howdah:bool, play:bool = false) -> Spec:
 
 def boar_leg(n:MNode, hip:float3, side:float, fore:bool, m:BoarMats):
     let d = if fore: 1.0 else: -1.0
-    siege_limb(n, [hip, hip + float3 { 2.5 * d, -16.0, 0.5 * side }, hip + float3 { 1.0, -25.4, 0.5 * side }], [6.0, 3.2, 2.3], if fore: m.fur else: m.dark)
+    siege_limb(n, [ hip, hip + float3 { 2.5 * d, -16.0, 0.5 * side }, hip + float3 { 1.0, -25.4, 0.5 * side } ], [ 6.0, 3.2, 2.3 ], if fore: m.fur else: m.dark)
     add_child(n, cone(1.8, 2.6, 2.8, m.hoof, hip + float3 { 1.5, -26.6, 0.5 * side }))
 
 def boar_head(n:MNode, at:float3, m:BoarMats):
@@ -1384,16 +1384,16 @@ def boar_head(n:MNode, at:float3, m:BoarMats):
     add_child(n, blob(float3 { 13.0, 10.5, 9.0 }, m.fur, o + float3 { 32.0, 31.0, 0.0 }, float3 { 0.0, 0.0, -14.0 }))
     add_child(n, rod(o + float3 { 37.0, 28.0, 0.0 }, o + float3 { 51.0, 22.0, 0.0 }, 7.0, 4.6, m.fur))
     add_child(n, cone(4.8, 4.8, 1.6, m.snout, o + float3 { 52.0, 21.6, 0.0 }, float3 { 0.0, 0.0, -68.0 }, 16))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.7, 0.9, 0.6 }, m.hoof, o + float3 { 52.8, 22.0, 1.8 * side }))
-        siege_limb(n, [o + float3 { 45.0, 21.0, 4.5 * side }, o + float3 { 51.0, 22.5, 8.5 * side }, o + float3 { 54.5, 29.0, 9.5 * side }, o + float3 { 52.0, 34.0, 8.5 * side }], [2.3, 1.9, 1.2, 0.4], m.ivory)
+        siege_limb(n, [ o + float3 { 45.0, 21.0, 4.5 * side }, o + float3 { 51.0, 22.5, 8.5 * side }, o + float3 { 54.5, 29.0, 9.5 * side }, o + float3 { 52.0, 34.0, 8.5 * side } ], [ 2.3, 1.9, 1.2, 0.4 ], m.ivory)
         add_child(n, blob(float3 { 1.3, 1.1, 0.9 }, plain(html("#120c08")), o + float3 { 37.5, 33.0, 7.0 * side }))
         add_child(n, blob(float3 { 0.45, 0.45, 0.4 }, plain(html("#d8a040")), o + float3 { 38.3, 33.4, 7.7 * side }))
         add_child(n, cone(0.4, 3.2, 7.0, m.dark, o + float3 { 27.0, 42.0, 6.0 * side }, float3 { 25.0 * side, 0.0, 20.0 }, 8))
 
 let TARANTULA_MOUTH = float3 { 23.0, 15.0, 0.0 }
-let TARANTULA_FAN = [-45.0, -12.0, 25.0, 55.0]
-let TARANTULA_HIP_Z = [9.0, 11.5, 11.5, 9.5]
+let TARANTULA_FAN = [ -45.0, -12.0, 25.0, 55.0 ]
+let TARANTULA_HIP_Z = [ 9.0, 11.5, 11.5, 9.5 ]
 
 def tarantula(s:SStyle, with_crew:bool, patterned:bool = false, play:bool = false) -> Spec:
     let n = mnode()
@@ -1403,21 +1403,21 @@ def tarantula(s:SStyle, with_crew:bool, patterned:bool = false, play:bool = fals
     let eye = plain(html("#0c0a0e"))
     let C = float3 { 12.0, 18.0, 0.0 }
     let A = float3 { -16.0, 22.0, 0.0 }
-    let legs = [float3 { 22.0, 30.0, 50.0 }, float3 { 16.0, 14.0, 20.0 }, float3 { 9.0, -2.0, -12.0 }, float3 { 3.0, -14.0, -34.0 }]
+    let legs = [ float3 { 22.0, 30.0, 50.0 }, float3 { 16.0, 14.0, 20.0 }, float3 { 9.0, -2.0, -12.0 }, float3 { 3.0, -14.0, -34.0 } ]
     let hips = []::Anchor
     for(legs) leg, i:
-        for([1.0, -1.0]) side:
-            hips.push(anchor(float3 { leg.x, 17.0, TARANTULA_HIP_Z[i] * side }, MPI * 0.5 * float(i) + (if side > 0.0: 0.0 else: MPI), int(side), [0.0, 0.0, TARANTULA_FAN[i]]))
+        for([ 1.0, -1.0 ]) side:
+            hips.push(anchor(float3 { leg.x, 17.0, TARANTULA_HIP_Z[i] * side }, MPI * 0.5 * float(i) + (if side > 0.0: 0.0 else: MPI), int(side), [ 0.0, 0.0, TARANTULA_FAN[i] ]))
     let drawn = if play: []::float3 else: legs
     for(drawn) leg:
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             let hip = float3 { leg.x, 17.0, 9.0 * side }
             let knee = float3 { leg.x + (leg.y - leg.x) * 0.55, 34.0, 24.0 * side }
             let ankle = float3 { leg.x + (leg.z - leg.x) * 0.85, 12.0, 36.0 * side }
             let foot = float3 { leg.z, 0.8, 39.0 * side }
-            siege_limb(n, [hip, knee], [3.4, 3.0], fur)
+            siege_limb(n, [ hip, knee ], [ 3.4, 3.0 ], fur)
             add_child(n, blob(float3 { 3.2, 3.2, 3.2 }, band, knee))
-            siege_limb(n, [knee, ankle, foot], [2.8, 2.2, 1.4], dark)
+            siege_limb(n, [ knee, ankle, foot ], [ 2.8, 2.2, 1.4 ], dark)
     add_child(n, blob(float3 { 15.0, 8.0, 13.0 }, fur, C))
     let coat = if patterned: surf("rat_fur", float3 { 0.5, 0.27, 0.18 }, 4.0) else: fur
     add_child(n, blob(float3 { 19.0, 14.0, 16.0 }, coat, A, float3 { 0.0, 0.0, -10.0 }))
@@ -1432,7 +1432,7 @@ def tarantula(s:SStyle, with_crew:bool, patterned:bool = false, play:bool = fals
     let sp = spec_of(n)
     let top = A + float3 { 2.0, 13.6, 0.0 }
     add_child(n, ring(0.9, 1.0, surf("cloth", html("#d8d2e4"), 3.0), A, float3 { 0.0, 0.0, 80.0 }, float3 { 17.0, 3.0, 17.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { 14.0, 9.0, 0.4 }, s.team, A + float3 { 2.0, 3.0, 15.0 * side }, float3 { 30.0 * side, 0.0, 0.0 }))
         add_child(n, blob(float3 { 1.2, 1.2, 1.2 }, s.metal, A + float3 { 2.0, 9.0, 13.5 * side }))
     if with_crew:
@@ -1443,7 +1443,7 @@ def tarantula(s:SStyle, with_crew:bool, patterned:bool = false, play:bool = fals
         add_child(n, box(float3 { 10.0, 1.4, 12.0 }, s.dark, top))
         add_child(n, rod(top, top + float3 { -2.0, 30.0, 0.0 }, 0.6, 0.5, s.wood))
         add_child(n, blob(float3 { 1.6, 2.0, 1.6 }, s.metal, top + float3 { -2.0, 31.2, 0.0 }))
-        add_child(n, slab([float2 { 0.0, 0.0 }, float2 { -12.0, 0.0 }, float2 { -12.0, -10.0 }, float2 { -9.0, -8.0 }, float2 { -6.0, -11.0 }, float2 { -3.0, -8.0 }, float2 { 0.0, -10.0 }], 0.4, s.team, top + float3 { -2.2, 29.0, 0.0 }))
+        add_child(n, slab([ float2 { 0.0, 0.0 }, float2 { -12.0, 0.0 }, float2 { -12.0, -10.0 }, float2 { -9.0, -8.0 }, float2 { -6.0, -11.0 }, float2 { -3.0, -8.0 }, float2 { 0.0, -10.0 } ], 0.4, s.team, top + float3 { -2.2, 29.0, 0.0 }))
     if play:
         sock(sp, "head", TARANTULA_MOUTH)
         sp.anchors = hips
@@ -1453,10 +1453,10 @@ def tarantula_jaws(n:MNode, at:float3, fur:MMat, dark:MMat):
     let o = at - TARANTULA_MOUTH
     let fang = plain(html("#141012"))
     add_child(n, blob(float3 { 3.0, 3.0, 6.5 }, dark, o + float3 { 24.0, 14.5, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 4.0, 5.0, 3.0 }, dark, o + float3 { 26.0, 14.0, 3.4 * side }, float3 { 0.0, 0.0, -20.0 }))
         add_child(n, cone(0.1, 1.2, 5.0, fang, o + float3 { 28.5, 9.0, 3.0 * side }, float3 { 0.0, 0.0, -15.0 }, 8))
-        siege_limb(n, [o + float3 { 24.0, 15.0, 6.0 * side }, o + float3 { 32.0, 18.0, 9.0 * side }, o + float3 { 36.0, 6.0, 10.0 * side }], [1.8, 1.6, 1.4], fur)
+        siege_limb(n, [ o + float3 { 24.0, 15.0, 6.0 * side }, o + float3 { 32.0, 18.0, 9.0 * side }, o + float3 { 36.0, 6.0, 10.0 * side } ], [ 1.8, 1.6, 1.4 ], fur)
 
 def tarantula_pattern(n:MNode, C:float3, A:float3, legs:[float3]):
     let pale = plain(html("#e6d2a4"))
@@ -1476,12 +1476,12 @@ def tarantula_pattern(n:MNode, C:float3, A:float3, legs:[float3]):
         let local = float3 { lx, ly, lz }
         let nrm = normalize(float3 { lx / (R.x * R.x), ly / (R.y * R.y), lz / (R.z * R.z) })
         return A + bxf(tilt, local + nrm * lift), normalize(bxf(tilt, nrm))
-    for([8.5, -7.5, -12.5]) lx:
-        for([1.0, -1.0]) side:
+    for([ 8.5, -7.5, -12.5 ]) lx:
+        for([ 1.0, -1.0 ]) side:
             let a, _an = skin(lx + 2.6, 0.6 * side, 0.3)
             let b, _bn = skin(lx - 1.4, 7.0 * side, 0.3)
             add_child(n, rod(a, b, 1.4, 1.1, pale))
-    for([4.0, -3.5, -10.0]) lx:
+    for([ 4.0, -3.5, -10.0 ]) lx:
         var prev, _pn = skin(lx, -13.0, 0.2)
         for(8) i:
             let t = i + 1
@@ -1496,10 +1496,10 @@ def tarantula_pattern(n:MNode, C:float3, A:float3, legs:[float3]):
         let at, an = skin(lx, lz, 0.0)
         add_child(n, rod(at, at + an * 2.8 + float3 { -0.8, 0.4, 0.0 }, 0.55, 0.1, if k % 2 == 0: pale else: straw))
     for(legs) leg:
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             let hip = float3 { leg.x, 17.0, 9.0 * side }
             let knee = float3 { leg.x + (leg.y - leg.x) * 0.55, 34.0, 24.0 * side }
-            for([0.35, 0.65]) t:
+            for([ 0.35, 0.65 ]) t:
                 let at = siege_lerp(hip, knee, t)
                 add_child(n, rod(at + float3 { 0.0, 2.6, 0.0 }, at + float3 { -0.6, 5.4, 0.8 * side }, 0.6, 0.1, pale))
             let ankle = float3 { leg.x + (leg.z - leg.x) * 0.85, 12.0, 36.0 * side }
@@ -1512,13 +1512,13 @@ def heron(s:SStyle, play:bool = false) -> Spec:
     let grey = surf("hide", float3 { 0.72, 0.74, 0.78 }, 6.0)
     let dark = plain(html("#3a3c44"))
     let hips = []::Anchor
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         if play:
-            hips.push(anchor(float3 { 0.0, 40.0, 5.0 * side }, if side > 0.0: 0.0 else: MPI, int(side), [0.0]))
+            hips.push(anchor(float3 { 0.0, 40.0, 5.0 * side }, if side > 0.0: 0.0 else: MPI, int(side), [ 0.0 ]))
         else:
             heron_leg(n, float3 { 0.0, 40.0, 5.0 * side }, side)
     add_child(n, blob(float3 { 17.0, 9.5, 10.0 }, grey, float3 { -2.0, 46.0, 0.0 }, float3 { 0.0, 0.0, 12.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 17.0, 6.0, 3.0 }, grey, float3 { -5.0, 47.0, 8.5 * side }, float3 { 0.0, 0.0, 14.0 }))
         add_child(n, blob(float3 { 10.0, 3.0, 2.4 }, dark, float3 { -17.0, 43.5, 7.0 * side }, float3 { 0.0, 0.0, 20.0 }))
     if not play:
@@ -1533,7 +1533,7 @@ def heron(s:SStyle, play:bool = false) -> Spec:
 
 def heron_leg(n:MNode, hip:float3, side:float):
     let leg = plain(html("#8a7a4a"))
-    siege_limb(n, [hip, hip + float3 { 2.0, -14.0, 1.0 * side }, hip + float3 { -2.0, -28.0, 1.0 * side }, hip + float3 { 0.0, -39.0, 1.5 * side }], [2.4, 1.3, 1.2, 1.0], leg)
+    siege_limb(n, [ hip, hip + float3 { 2.0, -14.0, 1.0 * side }, hip + float3 { -2.0, -28.0, 1.0 * side }, hip + float3 { 0.0, -39.0, 1.5 * side } ], [ 2.4, 1.3, 1.2, 1.0 ], leg)
     let foot = hip + float3 { 0.0, -39.2, 1.5 * side }
     for(3) t:
         add_child(n, rod(foot, hip + float3 { 6.0, -39.4, (1.5 + float(t - 1) * 3.0) * side }, 0.6, 0.4, leg))
@@ -1543,16 +1543,16 @@ def heron_neck(n:MNode, at:float3):
     let o = at - HERON_NECK
     let white = surf("hide", float3 { 0.95, 0.95, 0.93 }, 6.0)
     let dark = plain(html("#3a3c44"))
-    siege_limb(n, [o + float3 { 10.0, 50.0, 0.0 }, o + float3 { 16.0, 58.0, 0.0 }, o + float3 { 12.0, 66.0, 0.0 }, o + float3 { 16.0, 74.0, 0.0 }], [4.0, 3.0, 2.8, 2.8], white)
+    siege_limb(n, [ o + float3 { 10.0, 50.0, 0.0 }, o + float3 { 16.0, 58.0, 0.0 }, o + float3 { 12.0, 66.0, 0.0 }, o + float3 { 16.0, 74.0, 0.0 } ], [ 4.0, 3.0, 2.8, 2.8 ], white)
     add_child(n, blob(float3 { 4.6, 3.6, 3.4 }, white, o + float3 { 18.0, 75.0, 0.0 }))
     add_child(n, cone(0.2, 1.8, 14.0, plain(html("#c8a040")), o + float3 { 28.0, 74.0, 0.0 }, float3 { 0.0, 0.0, -93.0 }, 10))
-    siege_limb(n, [o + float3 { 15.0, 77.0, 0.0 }, o + float3 { 6.0, 79.0, 0.0 }, o + float3 { 0.0, 77.0, 0.0 }], [1.0, 0.7, 0.3], dark)
-    for([1.0, -1.0]) side:
+    siege_limb(n, [ o + float3 { 15.0, 77.0, 0.0 }, o + float3 { 6.0, 79.0, 0.0 }, o + float3 { 0.0, 77.0, 0.0 } ], [ 1.0, 0.7, 0.3 ], dark)
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.9, 0.9, 0.6 }, plain(html("#d8b020")), o + float3 { 20.0, 76.0, 3.0 * side }))
         add_child(n, rod(o + float3 { 17.0, 75.5, 3.4 * side }, o + float3 { 22.0, 75.0, 2.4 * side }, 0.4, 0.3, dark))
 
 let MANTIS_NECK = float3 { 4.0, 24.0, 0.0 }
-let MANTIS_FAN = [-27.0, 27.0]
+let MANTIS_FAN = [ -27.0, 27.0 ]
 
 def mantis(s:SStyle, play:bool = false) -> Spec:
     let n = mnode()
@@ -1560,15 +1560,15 @@ def mantis(s:SStyle, play:bool = false) -> Spec:
     let dark = surf("chitin", html("#4a7028"), 4.0)
     let wing = surf("leaf", float3 { 0.75, 0.9, 0.55 }, 10.0)
     let hips = []::Anchor
-    for([float2 { 2.0, 12.0 }, float2 { -6.0, -16.0 }]) leg:
-        for([1.0, -1.0]) side:
+    for([ float2 { 2.0, 12.0 }, float2 { -6.0, -16.0 } ]) leg:
+        for([ 1.0, -1.0 ]) side:
             if play:
                 let fore = leg.x > 0.0
-                hips.push(anchor(float3 { leg.x, 22.0, 4.0 * side }, if fore == (side > 0.0): 0.0 else: MPI, int(side), [0.0, 0.0, MANTIS_FAN[if fore: 0 else: 1]]))
+                hips.push(anchor(float3 { leg.x, 22.0, 4.0 * side }, if fore == (side > 0.0): 0.0 else: MPI, int(side), [ 0.0, 0.0, MANTIS_FAN[if fore: 0 else: 1] ]))
             else:
-                siege_limb(n, [float3 { leg.x, 22.0, 4.0 * side }, float3 { leg.x + (leg.y - leg.x) * 0.4, 34.0, 18.0 * side }, float3 { leg.y, 0.8, 24.0 * side }], [1.8, 1.4, 0.8], dark)
+                siege_limb(n, [ float3 { leg.x, 22.0, 4.0 * side }, float3 { leg.x + (leg.y - leg.x) * 0.4, 34.0, 18.0 * side }, float3 { leg.y, 0.8, 24.0 * side } ], [ 1.8, 1.4, 0.8 ], dark)
     add_child(n, blob(float3 { 22.0, 6.5, 7.5 }, green, float3 { -20.0, 26.0, 0.0 }, float3 { 0.0, 0.0, 10.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 20.0, 2.0, 5.0 }, wing, float3 { -18.0, 31.0, 3.0 * side }, float3 { 0.0, 0.0, 10.0 }))
     add_child(n, blob(float3 { 7.0, 5.0, 6.0 }, green, float3 { 0.0, 23.0, 0.0 }))
     if not play:
@@ -1584,16 +1584,16 @@ def mantis(s:SStyle, play:bool = false) -> Spec:
 def mantis_fore(n:MNode, at:float3, green:MMat, dark:MMat):
     let o = at - MANTIS_NECK
     let spike = plain(html("#2a3a14"))
-    siege_limb(n, [o + float3 { 4.0, 24.0, 0.0 }, o + float3 { 16.0, 42.0, 0.0 }], [3.4, 2.6], green)
+    siege_limb(n, [ o + float3 { 4.0, 24.0, 0.0 }, o + float3 { 16.0, 42.0, 0.0 } ], [ 3.4, 2.6 ], green)
     add_child(n, blob(float3 { 3.6, 4.0, 5.6 }, green, o + float3 { 19.0, 46.0, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 2.4, 2.6, 2.2 }, plain(html("#c8d870")), o + float3 { 19.5, 48.0, 5.0 * side }))
-        siege_limb(n, [o + float3 { 20.0, 49.0, 1.5 * side }, o + float3 { 26.0, 58.0, 5.0 * side }, o + float3 { 32.0, 62.0, 8.0 * side }], [0.5, 0.35, 0.2], dark)
+        siege_limb(n, [ o + float3 { 20.0, 49.0, 1.5 * side }, o + float3 { 26.0, 58.0, 5.0 * side }, o + float3 { 32.0, 62.0, 8.0 * side } ], [ 0.5, 0.35, 0.2 ], dark)
         let cox = o + float3 { 13.0, 37.0, 3.5 * side }
         let elbow = o + float3 { 20.0, 26.0, 6.0 * side }
         let wrist = o + float3 { 25.0, 40.0, 6.5 * side }
-        siege_limb(n, [cox, elbow, wrist], [2.2, 2.4, 1.8], green)
-        siege_limb(n, [wrist, o + float3 { 22.0, 31.0, 7.0 * side }], [1.6, 0.6], dark)
+        siege_limb(n, [ cox, elbow, wrist ], [ 2.2, 2.4, 1.8 ], green)
+        siege_limb(n, [ wrist, o + float3 { 22.0, 31.0, 7.0 * side } ], [ 1.6, 0.6 ], dark)
         for(4) t:
             add_child(n, cone(0.1, 0.5, 2.4, spike, siege_lerp(elbow, wrist, 0.2 + float(t) * 0.2) + float3 { -1.4, 0.0, 0.0 }, float3 { 0.0, 0.0, 70.0 }, 6))
 
@@ -1609,7 +1609,7 @@ def head_beast_elephant(look:string = "") -> Spec:
     // the bronze caps on the tusks' tips (elephant.py TUSK: its last two points)
     let tip = if look == "a": float3 { 12.2, -11.4, 5.2 } else: float3 { 19.6, -9.8, 6.8 }
     let back = if look == "a": float3 { 8.6, -10.6, 4.4 } else: float3 { 15.6, -13.2, 5.8 }
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let t = tip * float3 { 1.0, 1.0, side }
         let d = normalize(t - back * float3 { 1.0, 1.0, side })
         add_child(n, rod(t - d * 1.6, t + d * 0.5, 0.75, 0.45, m.bronze))
@@ -1667,8 +1667,8 @@ def leg_beast_elephant_sculpted(look:string) -> Spec:
     let knee = float2 { k3.x, k3.y }
     let ankle = float2 { a3.x, a3.y }
     let leg = glb("leg_elephant_" + look, elephant_glb_mats(elephant_mats()))
-    turn_pieces(leg, ["upper", "lower", "foot"], [float2_0, ELEPHANT_KNEE, ELEPHANT_ANKLE], [float2_0, knee, ankle],
-        [atan2(knee) - atan2(ELEPHANT_KNEE), atan2(ankle - knee) - atan2(ELEPHANT_ANKLE - ELEPHANT_KNEE), 0.0])
+    turn_pieces(leg, [ "upper", "lower", "foot" ], [ float2_0, ELEPHANT_KNEE, ELEPHANT_ANKLE ], [ float2_0, knee, ankle ],
+                [ atan2(knee) - atan2(ELEPHANT_KNEE), atan2(ankle - knee) - atan2(ELEPHANT_ANKLE - ELEPHANT_KNEE), 0.0 ])
     let n = mnode()
     add_child(n, leg)
     return spec_of(n)
@@ -1693,7 +1693,7 @@ def boar_leg_posed(fore:bool) -> Spec:
     let m = boar_mats()
     let st = beast_step(12.0, 5.0)
     let j0, foot = ik3(float3_0, float3 { 1.0 + st.x, -25.4 + st.y, 0.5 }, 16.2, 9.6, SIEGE_RIGHT * (if fore: 1.0 else: -1.0))
-    siege_limb(n, [float3_0, j0, foot], [6.0, 3.2, 2.3], if fore: m.fur else: m.dark)
+    siege_limb(n, [ float3_0, j0, foot ], [ 6.0, 3.2, 2.3 ], if fore: m.fur else: m.dark)
     add_child(n, cone(1.8, 2.6, 2.8, m.hoof, foot + float3 { 0.5, -1.2, 0.0 }))
     return spec_of(n)
 
@@ -1706,10 +1706,10 @@ def leg_beast_tarantula() -> Spec:
     let st = beast_step(10.0, 6.0, 0.5)
     let knee, foot = ik3(float3_0, float3 { st.x, -16.2 + st.y, 30.0 }, 22.7, 36.4, SIEGE_UP)
     let ankle = siege_lerp(knee, foot, 0.66) + float3 { 0.0, 0.0, 1.5 }
-    siege_limb(n, [float3_0, knee], [3.4, 3.0], fur)
+    siege_limb(n, [ float3_0, knee ], [ 3.4, 3.0 ], fur)
     add_child(n, blob(float3 { 3.2, 3.2, 3.2 }, band, knee))
-    siege_limb(n, [knee, ankle, foot], [2.8, 2.2, 1.4], dark)
-    for([0.35, 0.65]) t:
+    siege_limb(n, [ knee, ankle, foot ], [ 2.8, 2.2, 1.4 ], dark)
+    for([ 0.35, 0.65 ]) t:
         let at = knee * t
         add_child(n, rod(at + float3 { 0.0, 2.6, 0.0 }, at + float3 { -0.6, 5.4, 0.8 }, 0.6, 0.1, pale))
     add_child(n, blob(float3 { 2.7, 2.7, 2.7 }, pale, siege_lerp(knee, ankle, 0.45)))
@@ -1721,12 +1721,12 @@ def leg_beast_heron() -> Spec:
     let st = beast_step(18.0, 7.0, 0.55)
     let k = st.y / 7.0
     var foot = float3 { st.x, -39.0 + st.y, 1.5 }
-    let a = atan2(float2 { 11.0, -2.0 }) - rad(0.75 * k)   // degrees
+    let a = atan2(float2 { 11.0, -2.0 }) - rad(0.75 * k)  // degrees
     var heel = foot + float3 { sin(a) * 11.18, cos(a) * 11.18, -0.5 }
     let j0, j1 = ik3(float3_0, heel, 14.14, 14.56, SIEGE_RIGHT)
     heel = j1
     foot = heel - float3 { sin(a) * 11.18, cos(a) * 11.18, -0.5 }
-    siege_limb(n, [float3_0, j0, heel, foot], [2.4, 1.3, 1.2, 1.0], leg)
+    siege_limb(n, [ float3_0, j0, heel, foot ], [ 2.4, 1.3, 1.2, 1.0 ], leg)
     let curl = rad(-0.9 * k)
     for(3) t:
         add_child(n, rod(foot, foot + float3 { 6.0 * cos(curl), 6.0 * sin(curl) - 0.2, float(t - 1) * 3.0 }, 0.6, 0.4, leg))
@@ -1737,7 +1737,7 @@ def leg_beast_mantis() -> Spec:
     let n = mnode()
     let st = beast_step(10.0, 5.0, 0.55)
     let j0, j1 = ik3(float3_0, float3 { st.x, -21.2 + st.y, 20.0 }, 18.4, 33.7, SIEGE_UP)
-    siege_limb(n, [float3_0, j0, j1], [1.8, 1.4, 0.8], surf("chitin", html("#4a7028"), 4.0))
+    siege_limb(n, [ float3_0, j0, j1 ], [ 1.8, 1.4, 0.8 ], surf("chitin", html("#4a7028"), 4.0))
     return spec_of(n)
 
 def leg_beast(kind:string, hind:bool) -> Spec?:
@@ -1808,7 +1808,7 @@ def sling_towers(n:MNode, s:SStyle, base:float = 0.0, k:float = 1.0) -> float:
     let top = base + 50.0 * k
     let L = 28.0 * k
     let wd = 15.0 * k
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, siege_beam(float3 { -L, base + T * 0.5, wd * side }, float3 { L, base + T * 0.5, wd * side }, T, T, s.dark))
         add_child(n, siege_beam(float3 { -16.0 * k, base + T, wd * side }, float3 { 0.0, top, 7.0 * k * side }, T * 0.9, T * 0.9, s.wood))
         add_child(n, siege_beam(float3 { 16.0 * k, base + T, wd * side }, float3 { 0.0, top, 7.0 * k * side }, T * 0.9, T * 0.9, s.wood))
@@ -1816,7 +1816,7 @@ def sling_towers(n:MNode, s:SStyle, base:float = 0.0, k:float = 1.0) -> float:
         add_child(n, siege_beam(float3 { -L + 2.0 * k, base + T, wd * side }, float3 { -9.0 * k, base + 30.0 * k, 10.0 * k * side }, T * 0.7, T * 0.7, s.dark))
         add_child(n, siege_beam(float3 { L - 2.0 * k, base + T, wd * side }, float3 { 9.0 * k, base + 30.0 * k, 10.0 * k * side }, T * 0.7, T * 0.7, s.dark))
         add_child(n, box(float3 { T + 1.2, 2.2 * k, T + 1.2 }, s.metal, float3 { 0.0, top - 1.0 * k, 7.0 * k * side }))
-    for([-L + 2.0 * k, 0.0, L - 2.0 * k]) x:
+    for([ -L + 2.0 * k, 0.0, L - 2.0 * k ]) x:
         add_child(n, siege_beam(float3 { x, base + T * 1.5, -wd - 2.0 * k }, float3 { x, base + T * 1.5, wd + 2.0 * k }, T, T, s.dark))
     add_child(n, rod(float3 { 0.0, top, -10.0 * k }, float3 { 0.0, top, 10.0 * k }, 1.8 * k, 1.8 * k, s.metal, false))
     return top
@@ -1826,12 +1826,12 @@ def sling_arm(n:MNode, s:SStyle, short:float3, long:float3, k:float = 1.0, pouch
     add_child(n, siege_beam(short, mid, 5.4 * k, 5.4 * k, s.wood))
     add_child(n, siege_beam(mid, long, 3.6 * k, 3.6 * k, s.wood))
     let dv = long - short
-    let ang = atan2(float2 { dot(dv, SIEGE_RIGHT), magnitude(cross(dv, SIEGE_RIGHT)) })   // angle_to, degrees
-    for([0.08, 0.22, 0.42, 0.62]) t:
+    let ang = atan2(float2 { dot(dv, SIEGE_RIGHT), magnitude(cross(dv, SIEGE_RIGHT)) })  // angle_to, degrees
+    for([ 0.08, 0.22, 0.42, 0.62 ]) t:
         add_child(n, ring(2.2 * k, 3.4 * k, s.metal, siege_lerp(short, long, t), float3 { 0.0, 0.0, 90.0 + ang }))
     add_child(n, box(float3 { 14.0 * k, 0.6, 5.8 * k }, s.team, siege_lerp(short, long, 0.48) + float3 { 0.0, 2.4 * k, 0.0 }, float3 { 0.0, 0.0, ang }))
     let pouch = long + pouch_drop * k
-    for([1.2, -1.2]) z:
+    for([ 1.2, -1.2 ]) z:
         add_child(n, rod(long, pouch + float3 { 0.0, 1.0, z } * k, 0.35, 0.35, s.rope, false))
     add_child(n, blob(float3 { 3.6, 2.4, 3.6 } * k, surf("leather", float3_1, 2.0), pouch))
     if loaded:
@@ -1844,7 +1844,7 @@ def great_sling(s:SStyle) -> Spec:
     let n = mnode()
     let short, _long = sling_frame(n, s)
     let sp = spec_of(n)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let stake = float3 { SLING_FILE.x + 2.0 * SLING_FILE.y + 12.0, 0.0, 9.0 * side }
         add_child(n, rod(short + float3 { 0.0, 0.0, 7.0 * side }, stake + float3 { 0.0, 1.5, 0.0 }, 0.4, 0.4, s.rope, false))
         add_child(n, cone(0.25, 0.9, 5.0, s.dark, stake + float3 { 0.0, 1.5, 0.0 }, float3 { 0.0, 0.0, -20.0 }, 8))
@@ -1861,7 +1861,7 @@ def great_sling(s:SStyle) -> Spec:
     sock(sp, "crew6_f6_reach_wide", float3 { -38.0, 0.0, 34.0 })
     siege_pennant(n, s, float3 { 0.0, 51.0, -10.0 }, 12.0, 5.0)
     if s.fam == "junk":
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             siege_patch(n, s, float3 { -8.0, 14.0, 15.6 * side }, float2 { 7.0, 9.0 }, float3 { 0.0, 0.0, 32.0 }, s.plate)
             siege_chain(n, float3 { -26.0, 4.0, 15.0 * side }, float3 { 0.0, 48.0, 7.0 * side }, s.metal)
     return sp
@@ -1870,10 +1870,10 @@ def great_packed(s:SStyle) -> Spec:
     let n = mnode()
     siege_undercarriage(n, s, 54.0, 20.0, 6.0)
     add_child(n, box(float3 { 58.0, 2.4, 20.0 }, s.dark, float3 { 0.0, 12.0, 0.0 }))
-    for([-7.0, 0.0, 7.0]) z:
+    for([ -7.0, 0.0, 7.0 ]) z:
         add_child(n, siege_beam(float3 { -26.0, 15.4, z }, float3 { 26.0, 15.4, z }, 4.2, 4.2, s.wood))
     add_child(n, siege_beam(float3 { -34.0, 20.0, 0.0 }, float3 { 34.0, 20.0, 0.0 }, 5.0, 5.0, s.wood))
-    for([-20.0, 0.0, 20.0]) t:
+    for([ -20.0, 0.0, 20.0 ]) t:
         add_child(n, ring(2.6, 3.8, s.metal, float3 { t, 20.0, 0.0 }, float3 { 0.0, 0.0, 90.0 }))
     add_child(n, ring(2.4, 3.6, s.rope, float3 { -14.0, 23.2, 0.0 }))
     add_child(n, ring(2.4, 3.6, s.rope, float3 { 12.0, 23.2, 0.0 }))
@@ -1899,7 +1899,7 @@ def bullfrog(n:MNode, at:float3, k:float = 1.0):
     add_child(b, blob(float3 { 7.0, 3.2, 8.4 }, throat, float3 { 10.0, 10.0, 0.0 }))
     add_child(b, rod(float3 { 16.6, 12.0, -6.0 }, float3 { 17.4, 12.0, 0.0 }, 0.4, 0.4, plain(INK)))
     add_child(b, rod(float3 { 17.4, 12.0, 0.0 }, float3 { 16.6, 12.0, 6.0 }, 0.4, 0.4, plain(INK)))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(b, blob(float3 { 2.8, 2.8, 2.6 }, skin, float3 { 10.0, 19.0, 5.0 * side }))
         add_child(b, blob(float3 { 1.6, 1.6, 1.2 }, plain(html("#d8a830")), float3 { 11.6, 19.6, 6.0 * side }))
         add_child(b, blob(float3 { 0.5, 0.9, 0.4 }, plain(html("#140c06")), float3 { 12.8, 19.8, 6.6 * side }))
@@ -1929,11 +1929,11 @@ def frog_sling(s:SStyle, thrown:bool = false) -> Spec:
     add_child(n, box(float3 { 13.0, 2.0, 13.0 }, s.wicker, short + float3 { -1.0, 2.2, 0.0 }))
     add_child(n, box(float3 { 11.0, 0.6, 11.0 }, s.team, short + float3 { -1.0, 3.5, 0.0 }))
     let T = FROG_TOWER
-    for([T.x - T.z, T.x + T.z]) x:
-        for([-T.z, T.z]) z:
+    for([ T.x - T.z, T.x + T.z ]) x:
+        for([ -T.z, T.z ]) z:
             siege_bundle(n, float3 { x, 0.0, z }, float3 { x, T.y, z * 0.9 }, 1.6, s, 4, 1.3)
-    for([20.0, 42.0]) y:
-        for([-T.z, T.z]) z:
+    for([ 20.0, 42.0 ]) y:
+        for([ -T.z, T.z ]) z:
             add_child(n, rod(float3 { T.x - T.z, y, z }, float3 { T.x + T.z, y + 8.0, z }, 0.6, 0.6, s.lash))
     add_child(n, box(float3 { 16.0, 2.0, 16.0 }, s.plank, float3 { T.x, T.y + 1.0, 0.0 }))
     if thrown:
@@ -1962,12 +1962,12 @@ def frog_packed(s:SStyle) -> Spec:
     let wd = 24.0
     let x0 = -8.0
     siege_sledge(n, s, L, wd, x0)
-    for([-7.5, -2.5, 2.5, 7.5]) z:
+    for([ -7.5, -2.5, 2.5, 7.5 ]) z:
         siege_bundle(n, float3 { x0 - 28.0, 5.6, z }, float3 { x0 + 22.0, 5.6, z }, 1.8, s, 4, 1.6)
-    for([-5.0, 5.0]) z:
+    for([ -5.0, 5.0 ]) z:
         add_child(n, siege_beam(float3 { x0 - 24.0, 9.6, z }, float3 { x0 + 20.0, 9.6, z }, 3.8, 3.8, s.dark))
     add_child(n, siege_beam(float3 { x0 - 30.0, 13.8, 0.0 }, float3 { x0 + 26.0, 13.8, 0.0 }, 4.6, 4.6, s.wood))
-    for([x0 - 18.0, x0, x0 + 16.0]) x:
+    for([ x0 - 18.0, x0, x0 + 16.0 ]) x:
         add_child(n, ring(2.4, 3.4, s.lash, float3 { x, 13.8, 0.0 }, float3 { 0.0, 0.0, 90.0 }))
         add_child(n, rod(float3 { x, 3.2, -wd * 0.5 - 0.4 }, float3 { x, 11.0, -6.0 }, 0.35, 0.35, s.lash))
         add_child(n, rod(float3 { x, 3.2, wd * 0.5 + 0.4 }, float3 { x, 11.0, 6.0 }, 0.35, 0.35, s.lash))
@@ -1979,7 +1979,7 @@ def frog_packed(s:SStyle) -> Spec:
     bullfrog(n, float3 { bx, 0.0, 0.0 }, bk)
     let band_at = float3 { bx, 10.0 * bk, 0.0 }
     add_child(n, ring(10.6 * bk, 11.6 * bk, s.lash, band_at, float3 { 0.0, 0.0, 90.0 }, float3 { 0.86, 1.0, 1.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, rod(float3 { x0 + L * 0.5, 6.0, wd * 0.5 * side }, band_at + float3 { 0.0, 0.0, 11.1 * bk * side }, 0.4, 0.4, s.rope, false))
     siege_pennant(n, s, float3 { x0 - 34.0, 3.2, -wd * 0.5 }, 14.0, 4.5)
     let sp = spec_of(n)
@@ -1994,9 +1994,9 @@ def shot_boulder(n:MNode, k:float):
     let dark = surf("rock", float3 { 0.6, 0.58, 0.54 }, 2.5)
     let pale = surf("rock", float3 { 1.15, 1.12, 1.05 }, 2.5)
     add_child(n, blob(float3 { 3.3, 2.9, 3.1 } * k, rock, float3_0, float3 { 10.0, 25.0, 15.0 }))
-    let dirs = [float3 { 1.0, 0.6, 0.4 }, float3 { -0.8, 0.2, 0.9 }, float3 { 0.1, -0.9, -0.6 }, float3 { -0.3, 0.9, -0.5 }, float3 { 0.7, -0.4, -0.9 }]
-    let sizes = [1.8, 1.6, 1.7, 1.5, 1.3]
-    let mats = [rock, dark, dark, pale, rock]
+    let dirs = [ float3 { 1.0, 0.6, 0.4 }, float3 { -0.8, 0.2, 0.9 }, float3 { 0.1, -0.9, -0.6 }, float3 { -0.3, 0.9, -0.5 }, float3 { 0.7, -0.4, -0.9 } ]
+    let sizes = [ 1.8, 1.6, 1.7, 1.5, 1.3 ]
+    let mats = [ rock, dark, dark, pale, rock ]
     for(dirs) d, i:
         add_child(n, blob(float3_1 * sizes[i] * k, mats[i], normalize(d) * 2.2 * k))
     add_child(n, blob(float3 { 1.6, 0.4, 1.2 } * k, plain(html("#5a6a32")), float3 { -0.6, 2.4, 1.6 } * k))
@@ -2004,10 +2004,10 @@ def shot_boulder(n:MNode, k:float):
 def shot_cheese(n:MNode, k:float):
     let cheese = surf("cheese", float3_1, 3.0)
     let rind = surf("cheese", float3 { 0.82, 0.62, 0.3 }, 3.0)
-    add_child(n, slab(map([float2 { -3.4, -2.0 }, float2 { 3.6, -2.0 }, float2 { -3.4, 2.6 }]) v: v * k, 4.2 * k, cheese))
+    add_child(n, slab(map([ float2 { -3.4, -2.0 }, float2 { 3.6, -2.0 }, float2 { -3.4, 2.6 } ]) v: v * k, 4.2 * k, cheese))
     add_child(n, box(float3 { 0.6, 4.6, 4.3 } * k, rind, float3 { -3.6, 0.3, 0.0 } * k))
     let hole = plain(html("#b88a28"))
-    for([float4 { -1.2, -0.6, 2.15, 0.8 }, float4 { 0.8, -1.2, 2.15, 0.6 }, float4 { -2.2, 1.0, 2.15, 0.55 }, float4 { -0.6, -0.8, -2.15, 0.75 }]) h:
+    for([ float4 { -1.2, -0.6, 2.15, 0.8 }, float4 { 0.8, -1.2, 2.15, 0.6 }, float4 { -2.2, 1.0, 2.15, 0.55 }, float4 { -0.6, -0.8, -2.15, 0.75 } ]) h:
         add_child(n, blob(float3 { h.w, h.w, 0.3 } * k, hole, float3 { h.x, h.y, h.z } * k))
 
 def shot_acorn(n:MNode, k:float):
@@ -2020,14 +2020,14 @@ def shot_bone(n:MNode, k:float):
     let bone = surf("bone", float3_1, 3.0)
     let silk = surf("cloth", html("#cfc8d8"), 2.0)
     add_child(n, blob(float3_1 * 2.6 * k, silk, float3_0))
-    for([[float3 { -3.0, 0.6, 1.0 }, float3 { 3.0, -0.4, 1.4 }], [float3 { -1.0, -2.6, -1.6 }, float3 { 1.4, 2.8, -1.2 }], [float3 { 0.6, 0.4, -3.0 }, float3 { -0.4, -0.2, 3.0 }]]) b:
+    for([ [ float3 { -3.0, 0.6, 1.0 }, float3 { 3.0, -0.4, 1.4 } ], [ float3 { -1.0, -2.6, -1.6 }, float3 { 1.4, 2.8, -1.2 } ], [ float3 { 0.6, 0.4, -3.0 }, float3 { -0.4, -0.2, 3.0 } ] ]) b:
         add_child(n, rod(b[0] * k, b[1] * k, 0.55 * k, 0.55 * k, bone))
         for(b) end:
             add_child(n, blob(float3_1 * 0.85 * k, bone, end * k))
     add_child(n, blob(float3 { 1.7, 1.6, 1.5 } * k, bone, float3 { 1.6, 1.4, 0.6 } * k))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.4, 0.45, 0.3 } * k, plain(html("#1a1418")), float3 { 2.9, 1.6, 0.6 + 0.6 * side } * k))
-    for([SIEGE_X90, float3 { 0.0, 0.0, 90.0 }, float3 { 45.0, 45.0, 0.0 }]) rot:
+    for([ SIEGE_X90, float3 { 0.0, 0.0, 90.0 }, float3 { 45.0, 45.0, 0.0 } ]) rot:
         add_child(n, ring(2.5 * k, 2.8 * k, silk, float3_0, rot, float3 { 1.0, 0.5, 1.0 }))
 
 def shot_clay(n:MNode, k:float):
@@ -2044,9 +2044,9 @@ def shot_bolt(n:MNode):
     add_child(n, cone(0.0, 1.5, 4.0, surf("iron", float3_1, 2.0), float3 { 8.6, 0.0, 0.0 }, float3 { 0.0, 0.0, -90.0 }, 8))
     add_child(n, cone(0.7, 0.7, 0.8, surf("iron", float3 { 0.7, 0.7, 0.7 }, 2.0), float3 { 6.8, 0.0, 0.0 }, float3 { 0.0, 0.0, 90.0 }, 8))
     let vane = surf("leather", float3 { 0.95, 0.88, 0.75 }, 2.0)
-    for([0.0, 120.0, 240.0]) a:
+    for([ 0.0, 120.0, 240.0 ]) a:
         let d = float3 { 0.0, cos(a), sin(a) }
-        let v = slab([float2 { 0.0, 0.0 }, float2 { -4.0, 0.0 }, float2 { -4.6, 1.8 }, float2 { -1.2, 1.2 }], 0.25, vane)
+        let v = slab([ float2 { 0.0, 0.0 }, float2 { -4.0, 0.0 }, float2 { -4.6, 1.8 }, float2 { -1.2, 1.2 } ], 0.25, vane)
         set_basis(v, axis_angle(SIEGE_RIGHT, a))
         v.pos = float3 { -4.6, 0.0, 0.0 } + d * 0.3
         add_child(n, v)
@@ -2126,7 +2126,7 @@ def build_siege(base:string, c:Colours) -> Spec?:
         if tokenize(base, ".", "").length != 3: return nil
         return siege_engine(base, c)
     switch base:
-        case "harness.draught": return spec_of(mnode())   // (no model off its wearer: always fitted on the beast, harness_fitted)
+        case "harness.draught": return spec_of(mnode())  // (no model off its wearer: always fitted on the beast, harness_fitted)
         case "leg.beast_elephant": return leg_beast_elephant()
         case "leg.beast_elephant_a": return leg_beast_elephant("a")
         case "leg.beast_elephant_b": return leg_beast_elephant("b")

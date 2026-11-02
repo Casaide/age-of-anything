@@ -24,13 +24,13 @@ def pole(n:MNode, a:float3, b:float3, r:float, head:[float2], head_mat:MMat) -> 
 
 def weapon_pike_iron(c:Colours) -> Spec:
     let n = mnode()
-    pole(n, float3 { 5.0, -5.0, 0.0 }, float3 { -13.0, 27.0, 0.0 }, 0.85, u4_pts([0.0, -1.3, 8.0, 0.0, 0.0, 1.3, -1.0, 0.0]), surf("iron", float3_1, 3.0))
+    pole(n, float3 { 5.0, -5.0, 0.0 }, float3 { -13.0, 27.0, 0.0 }, 0.85, u4_pts([ 0.0, -1.3, 8.0, 0.0, 0.0, 1.3, -1.0, 0.0 ]), surf("iron", float3_1, 3.0))
     return spec_of(n)
 
 def weapon_dory(c:Colours) -> Spec:
     let n = mnode()
     let bronze = surf("bronze", float3_1, 3.0)
-    let d = pole(n, float3 { -8.0, -5.0, 0.0 }, float3 { 20.0, 11.0, 0.0 }, 0.85, u4_pts([0.0, -1.8, 3.0, -1.6, 7.0, 0.0, 3.0, 1.6, 0.0, 1.8, -1.2, 0.0]), bronze)
+    let d = pole(n, float3 { -8.0, -5.0, 0.0 }, float3 { 20.0, 11.0, 0.0 }, 0.85, u4_pts([ 0.0, -1.8, 3.0, -1.6, 7.0, 0.0, 3.0, 1.6, 0.0, 1.8, -1.2, 0.0 ]), bronze)
     add_child(n, rod(float3 { -8.0, -5.0, 0.0 }, float3 { -8.0, -5.0, 0.0 } - d * 3.0, 0.9, 0.3, bronze))
     return spec_of(n)
 
@@ -45,7 +45,7 @@ def weapon_pilum(c:Colours) -> Spec:
     add_child(n, rod(b, tip, 0.35, 0.3, iron, false))
     let ang = atan2(float2 { d.x, d.y })
     add_child(n, ring(0.45, 0.7, iron, b, float3 { 0.0, 0.0, ang - 90.0 }))
-    add_child(n, blade(u4_pts([0.0, -0.9, 2.6, 0.0, 0.0, 0.9]), 0.8, iron, tip, ang))
+    add_child(n, blade(u4_pts([ 0.0, -0.9, 2.6, 0.0, 0.0, 0.9 ]), 0.8, iron, tip, ang))
     return spec_of(n)
 
 def weapon_lance(c:Colours) -> Spec:
@@ -56,8 +56,8 @@ def weapon_lance(c:Colours) -> Spec:
     let ang = atan2(float2 { d.x, d.y })
     add_child(n, rod(a, b, 1.3, 0.7, surf("wood_grain", float3_1, 8.0), false))
     add_child(n, cone(0.9, 3.0, 2.4, surf("iron", float3_1, 3.0), a + d * 12.0, float3 { 0.0, 0.0, ang + 90.0 }))
-    add_child(n, blade(u4_pts([0.0, -0.9, 5.0, 0.0, 0.0, 0.9]), 1.0, surf("iron", float3_1, 3.0), b, ang))
-    add_child(n, blade(u4_pts([0.0, 0.0, -6.5, -0.6, -4.5, -2.0, -6.5, -3.6, -0.5, -3.4]), 0.3, surf("cloth", c.team, 4.0), b - d * 2.5, ang))
+    add_child(n, blade(u4_pts([ 0.0, -0.9, 5.0, 0.0, 0.0, 0.9 ]), 1.0, surf("iron", float3_1, 3.0), b, ang))
+    add_child(n, blade(u4_pts([ 0.0, 0.0, -6.5, -0.6, -4.5, -2.0, -6.5, -3.6, -0.5, -3.4 ]), 0.3, surf("cloth", c.team, 4.0), b - d * 2.5, ang))
     return spec_of(n)
 
 def weapon_club_bone(c:Colours) -> Spec:
@@ -73,27 +73,27 @@ def weapon_club_bone(c:Colours) -> Spec:
 
 def weapon_sword_bronze(c:Colours) -> Spec:
     let bronze = surf("bronze", float3_1, 3.0)
-    return spec_of(sword(u4_pts([0.0, -1.0, 8.0, -1.5, 14.4, 0.0, 8.0, 1.5, 0.0, 1.0]), float3 { 3.0, 14.0, 0.0 }, bronze, surf("wood_grain", float3_1, 3.0)))
+    return spec_of(sword(u4_pts([ 0.0, -1.0, 8.0, -1.5, 14.4, 0.0, 8.0, 1.5, 0.0, 1.0 ]), float3 { 3.0, 14.0, 0.0 }, bronze, surf("wood_grain", float3_1, 3.0)))
 
 def weapon_sword_iron(c:Colours) -> Spec:
     let iron = surf("iron", float3_1, 3.0)
-    return spec_of(sword(u4_pts([0.0, -1.1, 13.5, -0.9, 15.4, 0.0, 13.5, 0.9, 0.0, 1.1]), float3 { 3.0, 15.0, 0.0 }, iron, iron))
+    return spec_of(sword(u4_pts([ 0.0, -1.1, 13.5, -0.9, 15.4, 0.0, 13.5, 0.9, 0.0, 1.1 ]), float3 { 3.0, 15.0, 0.0 }, iron, iron))
 
 def weapon_gladius(c:Colours) -> Spec:
-    return spec_of(sword(u4_pts([0.0, -1.4, 5.0, -1.2, 8.5, -1.4, 11.2, 0.0, 8.5, 1.4, 5.0, 1.2, 0.0, 1.4]),
-        float3 { 2.0, 11.0, 0.0 }, surf("iron", float3_1, 3.0), surf("bronze", float3_1, 2.0)))
+    return spec_of(sword(u4_pts([ 0.0, -1.4, 5.0, -1.2, 8.5, -1.4, 11.2, 0.0, 8.5, 1.4, 5.0, 1.2, 0.0, 1.4 ]),
+                         float3 { 2.0, 11.0, 0.0 }, surf("iron", float3_1, 3.0), surf("bronze", float3_1, 2.0)))
 
 // ------------------------------------------------------------------ the swordsman's age-3 kit (S3, D-125)
 
 let SWORD3_TIP = float3 { 3.0, 14.0, 0.0 }
 
 def weapon_sword_iron_plain(c:Colours) -> Spec:
-    return spec_of(sword(u4_pts([0.0, -1.1, 13.5, -0.9, 15.4, 0.0, 13.5, 0.9, 0.0, 1.1]),
-        float3 { 3.0, 15.0, 0.0 }, bright_iron(), surf("iron", float3_1, 3.0)))
+    return spec_of(sword(u4_pts([ 0.0, -1.1, 13.5, -0.9, 15.4, 0.0, 13.5, 0.9, 0.0, 1.1 ]),
+                         float3 { 3.0, 15.0, 0.0 }, bright_iron(), surf("iron", float3_1, 3.0)))
 
 def weapon_sword_xiphos(c:Colours) -> Spec:
-    let pts = u4_pts([0.0, -0.9, 5.0, -1.0, 11.5, -1.9, 15.5, -1.2, 18.2, 0.0,
-        15.5, 1.2, 11.5, 1.9, 5.0, 1.0, 0.0, 0.9])
+    let pts = u4_pts([ 0.0, -0.9, 5.0, -1.0, 11.5, -1.9, 15.5, -1.2, 18.2, 0.0,
+                       15.5, 1.2, 11.5, 1.9, 5.0, 1.0, 0.0, 0.9 ])
     return spec_of(sword(pts, SWORD3_TIP, bright_iron(), surf("bronze", float3 { 1.2, 1.1, 0.85 }, 2.0)))
 
 def helm_attic(c:Colours) -> Spec:
@@ -102,7 +102,7 @@ def helm_attic(c:Colours) -> Spec:
     add_child(n, dome(float3 { 5.0, 5.0, 4.8 }, bronze, float3 { 0.0, -3.6, 0.0 }))
     add_child(n, ring(4.8, 5.5, surf("bronze", float3 { 1.35, 1.25, 1.0 }, 2.0), float3 { 0.0, -3.5, 0.0 }))
     add_child(n, blob(float3 { 2.0, 0.5, 4.0 }, bronze, float3 { 4.4, -2.6, 0.0 }, float3 { 0.0, 0.0, -12.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 2.0, 2.8, 0.6 }, bronze, float3 { 2.0, -6.0, 4.4 * side }, float3 { 0.0, 0.0, 10.0 }))
     add_child(n, blob(float3 { 2.8, 3.0, 4.4 }, bronze, float3 { -2.8, -5.8, 0.0 }))
     add_child(n, rod(float3 { 0.0, 1.0, 0.0 }, float3 { -0.4, 4.2, 0.0 }, 0.55, 0.55, bronze))
@@ -114,7 +114,7 @@ def weapon_sword_flared_sabre(c:Colours) -> Spec:
     let n = mnode()
     let d = normalize(SWORD3_TIP)
     let ang = atan2(float2 { d.x, d.y })
-    add_child(n, blade(curved(17.0, 3.2, [1.1, 1.1, 1.2, 1.9, 2.0, 0.0], 0.3), 0.6, bright_iron(), float3_0, ang))
+    add_child(n, blade(curved(17.0, 3.2, [ 1.1, 1.1, 1.2, 1.9, 2.0, 0.0 ], 0.3), 0.6, bright_iron(), float3_0, ang))
     let across = float3 { -d.y, d.x, 0.0 }
     let brass = surf("bronze", float3 { 1.2, 1.1, 0.8 }, 2.0)
     add_child(n, rod(-across * 2.8, across * 2.8, 0.6, 0.6, brass))
@@ -129,7 +129,7 @@ def helm_steppe_spike(c:Colours) -> Spec:
     add_child(n, rod(float3 { 0.0, 2.9, 0.0 }, float3 { 0.0, 6.0, 0.0 }, 0.7, 0.25, surf("bronze", float3 { 1.2, 1.1, 0.85 }, 2.0)))
     add_child(n, blob(float3 { 1.1, 2.8, 1.1 }, plain(c.team), float3 { -2.0, 3.0, 0.0 }, float3 { 0.0, 0.0, 60.0 }))
     let mail = surf("mail", float3 { 0.7, 0.7, 0.75 }, 2.0)
-    for([MPI * 0.55, MPI * 0.78, MPI * 1.22, MPI * 1.45]) a:
+    for([ MPI * 0.55, MPI * 0.78, MPI * 1.22, MPI * 1.45 ]) a:
         let deg = rad(a)
         add_child(n, blob(float3 { 1.9, 2.6, 0.45 }, mail, float3 { cos(deg) * 5.0 - 0.6, -4.4, sin(deg) * 5.0 }, float3 { 0.0, -deg, 0.0 }))
     return spec_of(n)
@@ -150,16 +150,16 @@ def weapon_sword_chitin(c:Colours) -> Spec:
     let n = mnode()
     let d = normalize(SWORD3_TIP)
     let ang = atan2(float2 { d.x, d.y })
-    add_child(n, blade(curved(16.5, 0.0, [1.0, 1.3, 1.3, 1.0, 0.0]), 0.8, surf("wood_grain", float3 { 0.6, 0.45, 0.32 }, 3.0), float3_0, ang))
+    add_child(n, blade(curved(16.5, 0.0, [ 1.0, 1.3, 1.3, 1.0, 0.0 ]), 0.8, surf("wood_grain", float3 { 0.6, 0.45, 0.32 }, 3.0), float3_0, ang))
     let shell = surf("chitin", html("#4fd0a0"), 2.0)
     let across = float3 { -d.y, d.x, 0.0 }
     for(6) k:
         let t = 2.0 + float(k) * 2.4
         let w = if k < 4: 1.3 else: 1.3 - float(k - 3) * 0.4
-        for([1.0, -1.0]) side:
-            add_child(n, blade(u4_pts([-1.4, 0.0, 0.0, -0.8, 1.6, 0.0, 0.0, 0.8]), 0.5, shell,
-                d * t + across * side * w, ang + rad(0.25) * side))
-    add_child(n, blade(u4_pts([0.0, -1.0, 3.0, 0.0, 0.0, 1.0]), 0.6, shell, d * 16.0, ang))
+        for([ 1.0, -1.0 ]) side:
+            add_child(n, blade(u4_pts([ -1.4, 0.0, 0.0, -0.8, 1.6, 0.0, 0.0, 0.8 ]), 0.5, shell,
+                               d * t + across * side * w, ang + rad(0.25) * side))
+    add_child(n, blade(u4_pts([ 0.0, -1.0, 3.0, 0.0, 0.0, 1.0 ]), 0.6, shell, d * 16.0, ang))
     add_child(n, blob(float3 { 1.2, 3.2, 1.6 }, shell, float3_0, float3 { 0.0, 0.0, ang }))
     grip(n, d, surf("leather", float3_1, 2.0), shell)
     return spec_of(n)
@@ -169,8 +169,8 @@ def weapon_sword_hook(c:Colours) -> Spec:
     let d = normalize(SWORD3_TIP)
     let ang = atan2(float2 { d.x, d.y })
     let steel = bright_iron(2.5)
-    let raw = u4_pts([0.0, -0.9, 11.0, -1.1, 14.0, -1.6, 16.4, -0.6, 17.4, 1.6, 16.4, 3.8,
-        14.2, 4.8, 13.4, 3.8, 15.0, 2.6, 15.2, 1.0, 13.6, 0.4, 11.0, 0.9, 0.0, 0.9])
+    let raw = u4_pts([ 0.0, -0.9, 11.0, -1.1, 14.0, -1.6, 16.4, -0.6, 17.4, 1.6, 16.4, 3.8,
+                       14.2, 4.8, 13.4, 3.8, 15.0, 2.6, 15.2, 1.0, 13.6, 0.4, 11.0, 0.9, 0.0, 0.9 ])
     let pts = map(raw.length) i: float2 { raw[raw.length - 1 - i].x, -raw[raw.length - 1 - i].y }
     add_child(n, blade(pts, 0.6, steel, float3_0, ang))
     let silk = surf("cloth", html("#f2f0ea"), 2.0)
@@ -185,7 +185,7 @@ def weapon_sword_dao(c:Colours) -> Spec:
     let n = mnode()
     let d = normalize(SWORD3_TIP)
     let ang = atan2(float2 { d.x, d.y })
-    add_child(n, blade(curved(16.5, 1.8, [1.1, 1.3, 1.6, 2.0, 1.6, 0.0], 0.5), 0.6, bright_iron(), float3_0, ang))
+    add_child(n, blade(curved(16.5, 1.8, [ 1.1, 1.3, 1.6, 2.0, 1.6, 0.0 ], 0.5), 0.6, bright_iron(), float3_0, ang))
     let bronze = surf("bronze", float3 { 1.2, 1.1, 0.85 }, 2.0)
     add_child(n, cone(1.8, 1.8, 0.5, bronze, float3_0, float3 { 0.0, 0.0, ang - 90.0 }))
     add_child(n, rod(float3_0, -d * 3.4, 0.6, 0.6, surf("cloth", html("#3a2a20"), 2.0), false))
@@ -198,7 +198,7 @@ def weapon_bow_short(c:Colours) -> Spec:
     let n = mnode()
     let wood = surf("wood_grain", html("#e8c48a"), 4.0)
     let g = float3 { 5.7, 0.0, 0.0 }
-    let pts = [float3 { 3.8, -13.6, 0.0 }, float3 { 2.0, -12.0, 0.0 }, float3 { 5.5, -6.0, 0.0 }, float3 { 6.6, 0.0, 0.0 }, float3 { 5.5, 6.0, 0.0 }, float3 { 2.0, 12.0, 0.0 }, float3 { 3.8, 13.6, 0.0 }]
+    let pts = [ float3 { 3.8, -13.6, 0.0 }, float3 { 2.0, -12.0, 0.0 }, float3 { 5.5, -6.0, 0.0 }, float3 { 6.6, 0.0, 0.0 }, float3 { 5.5, 6.0, 0.0 }, float3 { 2.0, 12.0, 0.0 }, float3 { 3.8, 13.6, 0.0 } ]
     var k = 1
     while k < pts.length:
         let r = if k == 3 or k == 4: 1.15 else: 0.85
@@ -213,7 +213,7 @@ def weapon_bow_short(c:Colours) -> Spec:
 
 def weapon_musket(c:Colours) -> Spec:
     let n = mnode()
-    add_child(n, slab(u4_pts([-5.0, -2.2, -4.0, 0.6, 14.0, 3.6, 14.0, 2.0, -1.0, -0.6, -2.0, -2.6]), 1.6, surf("wood_grain", float3_1, 5.0)))
+    add_child(n, slab(u4_pts([ -5.0, -2.2, -4.0, 0.6, 14.0, 3.6, 14.0, 2.0, -1.0, -0.6, -2.0, -2.6 ]), 1.6, surf("wood_grain", float3_1, 5.0)))
     let iron = surf("iron", float3_1, 3.0)
     add_child(n, rod(float3 { 5.0, 2.4, 0.0 }, float3 { 19.5, 5.3, 0.0 }, 0.75, 0.7, iron, false))
     add_child(n, ring(0.7, 1.0, iron, float3 { 18.6, 5.1, 0.0 }, float3 { 0.0, 0.0, -79.0 }))
@@ -246,7 +246,7 @@ def shield_round(c:Colours) -> Spec:
 def shield_kite(c:Colours) -> Spec:
     let n = mnode()
     let h = facing(n, float3 { 3.0, 0.5, 1.5 }, SHIELD_FACE)
-    let outline = u4_pts([-1.0, 8.0, 5.0, 6.0, 4.0, -4.0, 0.0, -9.0, -4.0, -4.0, -4.0, 6.0])
+    let outline = u4_pts([ -1.0, 8.0, 5.0, 6.0, 4.0, -4.0, 0.0, -9.0, -4.0, -4.0, -4.0, 6.0 ])
     let body = slab(outline, 0.8, plain(c.team))
     body.pos = float3 { -0.5, 0.0, 0.0 }
     add_child(h, body)
@@ -264,8 +264,8 @@ def shield_scutum(c:Colours) -> Spec:
     // team colour on its face, a bronze rim, boss and spine, wings and lightning bolts.
     let n = mnode()
     let h = facing(n, float3 { 3.0, 0.0, 1.5 }, SHIELD_FACE)
-    let board = glb("shield_scutum", mats_of([plain(c.team), surf("bronze", float3_1, 3.0), surf("wood_grain", float3_1, 4.0)], ["team", "bronze", "wood"]))
-    board.pos = float3 { board.pos.x, board.pos.y, 1.0 }   // (out from the hand, off a wide body)
+    let board = glb("shield_scutum", mats_of([ plain(c.team), surf("bronze", float3_1, 3.0), surf("wood_grain", float3_1, 4.0) ], [ "team", "bronze", "wood" ]))
+    board.pos = float3 { board.pos.x, board.pos.y, 1.0 }  // (out from the hand, off a wide body)
     add_child(h, board)
     return spec_of(n)
 
@@ -285,7 +285,7 @@ def helm_bronze(c:Colours) -> Spec:
     let bronze = surf("bronze", float3_1, 3.0)
     add_child(n, dome(float3 { 5.0, 5.0, 4.8 }, bronze, float3 { 0.0, -3.8, 0.0 }))
     add_child(n, ring(4.7, 5.5, bronze, float3 { 0.0, -3.6, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.5, 2.4, 0.5 }, bronze, float3 { 2.0, -5.4, 4.3 * side }))
     add_child(n, rod(float3 { 0.0, 0.8, 0.0 }, float3 { 0.0, 2.0, 0.0 }, 0.5, 0.5, bronze))
     crest(n, c.team, float3 { -0.3, 1.6, 0.0 }, 8.0, 4.0)
@@ -308,9 +308,9 @@ def helm_horned(c:Colours) -> Spec:
     add_child(n, dome(float3 { 5.0, 5.2, 4.8 }, iron, float3 { 0.0, -3.8, 0.0 }))
     add_child(n, ring(4.7, 5.5, iron, float3 { 0.0, -3.6, 0.0 }))
     add_child(n, rod(float3 { -5.0, -1.0, 0.0 }, float3 { 5.0, -1.0, 0.0 }, 0.5, 0.5, iron))
-    for([1.0, -1.0]) side:
-        let pts = [float3 { 0.5, -1.5, 4.4 * side }, float3 { 0.5, 0.5, 7.2 * side }, float3 { 0.2, 3.8, 8.4 * side }, float3 { -0.4, 6.4, 8.0 * side }]
-        let r = [1.4, 1.1, 0.7, 0.3]
+    for([ 1.0, -1.0 ]) side:
+        let pts = [ float3 { 0.5, -1.5, 4.4 * side }, float3 { 0.5, 0.5, 7.2 * side }, float3 { 0.2, 3.8, 8.4 * side }, float3 { -0.4, 6.4, 8.0 * side } ]
+        let r = [ 1.4, 1.1, 0.7, 0.3 ]
         var k = 1
         while k < pts.length:
             add_child(n, rod(pts[k - 1], pts[k], r[k - 1], r[k], bone))
@@ -321,7 +321,7 @@ def helm_horned(c:Colours) -> Spec:
 def helm_galea(c:Colours) -> Spec:
     // Modelled in Blender (tools/blender/gear_roman.py): a ribbed iron bowl, a bronze brow band, hinged cheek guards, a
     // flared neck guard; the crest here.
-    let n = glb("helm_galea", mats_of([surf("iron", float3_1, 3.0), surf("bronze", float3_1, 2.0)], ["iron", "bronze"]))
+    let n = glb("helm_galea", mats_of([ surf("iron", float3_1, 3.0), surf("bronze", float3_1, 2.0) ], [ "iron", "bronze" ]))
     crest(n, col(c, "crimson"), float3 { -0.2, 1.5, 0.0 }, 9.0, 4.5)
     return spec_of(n)
 
@@ -331,7 +331,7 @@ def helm_corinthian(c:Colours) -> Spec:
     let bright = surf("bronze", float3_1, 2.0)
     add_child(n, dome(float3 { 5.0, 5.0, 4.8 }, bronze, float3 { 0.0, -3.6, 0.0 }))
     add_child(n, ring(4.8, 5.4, bright, float3 { 0.0, -3.5, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 2.4, 3.6, 0.7 }, bronze, float3 { 2.4, -6.6, 4.2 * side }, float3 { 0.0, 0.0, 8.0 }))
     add_child(n, rod(float3 { 4.9, -3.4, 0.0 }, float3 { 5.2, -6.8, 0.0 }, 0.7, 0.55, bronze))
     add_child(n, blob(float3 { 3.0, 3.6, 4.4 }, bronze, float3 { -2.6, -6.2, 0.0 }))
@@ -352,7 +352,7 @@ def armour_bronze(c:Colours) -> Spec:
     let n = mnode()
     let bronze = surf("bronze", float3_1, 4.0)
     add_child(n, blob(float3 { 8.8, 8.2, 10.4 }, bronze, float3 { 1.5, 0.5, 0.0 }, float3 { 0.0, 0.0, -10.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 3.2, 2.6, 3.8 }, bronze, float3 { 7.6, 2.6, 3.6 * side }))
     add_child(n, blob(float3 { 2.4, 3.6, 2.4 }, bronze, float3 { 8.4, -2.8, 0.0 }))
     let flaps = surf("leather", float3_1, 3.0)
@@ -366,10 +366,10 @@ def armour_lorica(c:Colours) -> Spec:
     let iron = surf("iron", float3_1, 4.0)
     let dark = surf("iron", float3 { 0.62, 0.64, 0.68 }, 3.0)
     add_child(n, blob(float3 { 8.8, 8.2, 10.4 }, iron, float3 { 1.5, 0.5, 0.0 }, float3 { 0.0, 0.0, -10.0 }))
-    for([-5.0, -2.0, 1.0, 4.0]) y:
+    for([ -5.0, -2.0, 1.0, 4.0 ]) y:
         let k = sqrt(1.0 - pow(y / 8.6, 2.0))
         add_child(n, ring(8.3 * k, 9.4 * k, dark, float3 { 1.5, y + 0.5, 0.0 }, float3 { 0.0, 0.0, -10.0 }, float3 { 1.0, 1.0, 10.4 / 8.8 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 4.2, 2.0, 4.0 }, iron, float3 { 0.5, 7.0, 6.6 * side }, float3 { 20.0 * side, 0.0, 0.0 }))
     return spec_of(n)
 
@@ -378,8 +378,8 @@ def armour_lorica(c:Colours) -> Spec:
 def cape_cloth(c:Colours) -> Spec:
     let n = mnode()
     let cloth = surf("cloth", c.team, 4.0)
-    for([1.0, -1.0]) side:
-        let panel = slab(u4_pts([2.0, 1.0, 3.0, -1.0, 0.5, -14.0, -2.5, -14.5, -4.0, -10.5, -1.5, 0.5]), 0.6, cloth)
+    for([ 1.0, -1.0 ]) side:
+        let panel = slab(u4_pts([ 2.0, 1.0, 3.0, -1.0, 0.5, -14.0, -2.5, -14.5, -4.0, -10.5, -1.5, 0.5 ]), 0.6, cloth)
         panel.pos = float3 { 0.0, 0.0, 3.0 * side }
         panel.rot = float3 { 0.0, -10.0 * side, 0.0 }
         add_child(n, panel)
@@ -391,7 +391,7 @@ def banner_team(c:Colours) -> Spec:
     add_child(n, rod(float3 { 0.0, -4.0, 0.0 }, float3 { 0.0, 22.0, 0.0 }, 0.5, 0.45, surf("wood_grain", float3_1, 5.0), false))
     add_child(n, blob(float3 { 0.9, 1.2, 0.9 }, surf("bronze", float3_1, 2.0), float3 { 0.0, 22.8, 0.0 }))
     add_child(n, rod(float3 { -0.3, 21.2, 0.0 }, float3 { 9.6, 21.2, 0.0 }, 0.3, 0.3, surf("wood_grain", float3_1, 3.0)))
-    add_child(n, slab(u4_pts([0.3, 21.0, 9.3, 21.0, 9.3, 13.2, 7.0, 15.4, 4.8, 13.2, 0.3, 14.4]), 0.4, surf("cloth", c.team, 4.0)))
+    add_child(n, slab(u4_pts([ 0.3, 21.0, 9.3, 21.0, 9.3, 13.2, 7.0, 15.4, 4.8, 13.2, 0.3, 14.4 ]), 0.4, surf("cloth", c.team, 4.0)))
     add_child(n, blob(float3 { 1.6, 1.6, 0.5 }, plain(html("#e8e4d8")), float3 { 4.8, 17.6, 0.3 }))
     return spec_of(n)
 
@@ -453,7 +453,7 @@ def load_reeds(c:Colours) -> Spec:
         let fan = off * 0.35
         add_child(n, rod(front + off * 0.8 - axis * 0.8, back + off + fan, 0.45, 0.35, reed, false))
     let tie = surf("leather", float3_1, 2.0)
-    for([0.22, 0.6]) f:
+    for([ 0.22, 0.6 ]) f:
         let at = front + (back - front) * f
         add_child(n, ring(1.9, 2.7, tie, at, float3 { 0.0, 0.0, atan2(float2 { axis.x, axis.y }) + 90.0 }))
     for(5) k:
@@ -473,7 +473,7 @@ def load_gold(c:Colours) -> Spec:
     add_child(n, blob(float3 { 3.0, 3.6, 2.8 }, sack, float3 { -2.6, -3.6, 0.0 }, float3 { 0.0, 0.0, -30.0 }))
     add_child(n, rod(float3 { 0.2, 0.4, 0.0 }, float3 { -1.2, -1.0, 0.0 }, 0.8, 1.1, sack))
     let gold = plain(html("#f2c440"))
-    for([float3 { -1.0, -1.6, 1.4 }, float3 { -2.2, -1.2, 1.2 }, float3 { -3.4, -2.2, 1.6 }, float3 { -1.8, -2.6, 2.2 }]) p:
+    for([ float3 { -1.0, -1.6, 1.4 }, float3 { -2.2, -1.2, 1.2 }, float3 { -3.4, -2.2, 1.6 }, float3 { -1.8, -2.6, 2.2 } ]) p:
         add_child(n, blob(float3 { 0.75, 0.6, 0.7 }, gold, p))
     return spec_of(n)
 
@@ -571,9 +571,9 @@ def shield_can_scutum(c:Colours) -> Spec:
     let R = 5.5
     for(5) i:
         let a = float(i - 2) * 17.0
-        let mats = [tin, plain(c.team), tin]
-        let tall = [6.0, 4.4, 4.2]
-        let ys = [4.2, -1.0, -5.3]
+        let mats = [ tin, plain(c.team), tin ]
+        let tall = [ 6.0, 4.4, 4.2 ]
+        let ys = [ 4.2, -1.0, -5.3 ]
         for(3) p:
             add_child(h, box(float3 { 1.75, tall[p], 0.5 }, mats[p], float3 { sin(a) * R, ys[p], cos(a) * R - R }, float3 { 0.0, a, 0.0 }))
     add_child(h, cone(1.2, 1.4, 0.6, surf("bronze", float3_1, 1.0), float3 { 0.0, 0.5, 0.4 }, float3 { 90.0, 0.0, 0.0 }, 14))

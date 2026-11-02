@@ -7,10 +7,10 @@ import view.voxel
 
 class row:
     u:vx_unit_def
-    mode:string   // stand (8 facings), walk or attack (8 steps in profile, facing right)
-    wear:string   // the team on a creature: scarf or vest
-    shade:bool    // shadows (on the body and the ground)
-    look:int      // a human's look (vx_set_look)
+    mode:string  // stand (8 facings), walk or attack (8 steps in profile, facing right)
+    wear:string  // the team on a creature: scarf or vest
+    shade:bool   // shadows (on the body and the ground)
+    look:int     // a human's look (vx_set_look)
 
 let units = [
     vx_unit_def { "rat worker", vx_RAT, "axe", "", true, false, "", "", "", "", float3_0 },
@@ -44,7 +44,7 @@ if args.length > 1 and args[1] == "romans":
 if args.length > 1 and args[1] == "looks":
     while rows.length: rows.pop()
     for([ units[5], units[6], units[11], units[12] ]) u: for(vx_LOOKS) v: rows.push(row { u, "stand", "scarf", true, v })
-let step = vx_CELL.x * 3 / 2   // a column (room for the shadows)
+let step = vx_CELL.x * 3 / 2  // a column (room for the shadows)
 // `check`: every unit in every facing, standing and in each walk step, stands in its shadow (vx_contact_gap); exit 1 if not
 if args.length > 1 and args[1] == "check":
     var bad = 0
@@ -65,7 +65,7 @@ if args.length > 1 and args[1] == "check":
                     print "FLOATS: {u.label}, step {st}, facing {f}: no shadow showing under its feet as the game draws it"
     print "contact: {n} frames, {bad} float"
     if bad: set_exit_code(1)
-else:   // the sheet
+else:  // the sheet
     let iw = step * 8
     let ih = vx_CELL.y * rows.length
     let img = map(iw * ih): float3 { 86.0, 120.0, 46.0 } / 255.0
@@ -81,7 +81,7 @@ else:   // the sheet
             let t = seconds_elapsed()
             let stand = vx_fill(vx_unit_prims(u, 0.0), u.rc.size)
             fills += seconds_elapsed() - t
-            for(8) c: vx_draw(stand, (c + 3) % 8, img, iw, c * step, r * vx_CELL.y)   // (columns as the composed sheet's)
+            for(8) c: vx_draw(stand, (c + 3) % 8, img, iw, c * step, r * vx_CELL.y)  // (columns as the composed sheet's)
         else:
             for(8) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 45.0), u.rc.size), 2, img, iw, k * step, r * vx_CELL.y)
         print "{u.label} ({rw.mode}): drawn"

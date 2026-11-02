@@ -7,20 +7,20 @@ let AUDIO_DIR = "../assets/audio"
 
 class Sound:
     takes:int
-    gap:float        // seconds
+    gap:float  // seconds
     bus:string
-    next:int = 0     // the take to play next
+    next:int = 0  // the take to play next
     last:float = -10.0
 
 let sounds = dictionary<string, Sound>(64)
 let buses = dictionary<string, float>(8)
 let voice_takes = dictionary<string, int>(8)
-var voice_of = []::string                   // per player: its creature's voice
+var voice_of = []::string  // per player: its creature's voice
 var voice_last = -10.0
 var sound_on = true
-var music_level = 5                         // the player's volumes, 0..10 (settings.txt beside the saves)
+var music_level = 5  // the player's volumes, 0..10 (settings.txt beside the saves)
 var sound_level = 10
-var hud_size = 115                          // the match HUD's size in percent (Ctrl/Cmd + and -), in settings.txt too
+var hud_size = 115  // the match HUD's size in percent (Ctrl/Cmd + and -), in settings.txt too
 let SETTINGS_FILE = "settings.txt"
 
 def volume_load():
@@ -65,7 +65,7 @@ def say(p:int, kind:string):
 
 let music_ids = []::int
 let music_names = []::string
-let music_now = []::float          // each stem's volume now (0..1)
+let music_now = []::float  // each stem's volume now (0..1)
 var music_cfg:JV? = nil
 
 def music_start():
@@ -101,11 +101,11 @@ def music_tick(mix:string, battle:bool, dt:float):
 // loops on top by town_level (0: no town or the camera far away .. 1: a big town right below): the
 // quiet one comes in first, the busy one joins past the middle. Each a music track, looping, faded.
 
-let amb_ids = []::int              // meadow, town_quiet, town_busy
-let amb_now = [0.0, 0.0, 0.0]
+let amb_ids = []::int  // meadow, town_quiet, town_busy
+let amb_now = [ 0.0, 0.0, 0.0 ]
 
 def ambience_start():
-    for(["sfx/meadow_1.wav", "sfx/town_quiet_1.wav", "sfx/town_busy_1.wav"]) f:
+    for([ "sfx/meadow_1.wav", "sfx/town_quiet_1.wav", "sfx/town_busy_1.wav" ]) f:
         let id = play_music("{AUDIO_DIR}/{f}", -1)
         if id > 0: music_volume(id, 0.0)
         amb_ids.push(id)
@@ -113,9 +113,9 @@ def ambience_start():
 
 def ambience_tick(town_level:float, dt:float):
     let master = db_to_volume(buses.get("Ambience", 0.0)) * float(sound_level) / 10.0
-    let want = [db_to_volume(-6.0),
-                if town_level * 2.5 > 0.01: db_to_volume(4.0) * clamp(town_level * 2.5, 0.0, 1.0) else: 0.0,
-                if town_level > 0.41: db_to_volume(4.0) * clamp((town_level - 0.4) / 0.6, 0.0, 1.0) else: 0.0]
+    let want = [ db_to_volume(-6.0),
+                 if town_level * 2.5 > 0.01: db_to_volume(4.0) * clamp(town_level * 2.5, 0.0, 1.0) else: 0.0,
+                 if town_level > 0.41: db_to_volume(4.0) * clamp((town_level - 0.4) / 0.6, 0.0, 1.0) else: 0.0 ]
     for(amb_ids) id, k:
         if id > 0:
             amb_now[k] = move_toward(amb_now[k], (if sound_on: want[k] * master else: 0.0), dt * 0.5)

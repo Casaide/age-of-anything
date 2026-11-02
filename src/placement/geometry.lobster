@@ -14,27 +14,27 @@
 // Results are {rule|case: [failing views]}.
 
 // Tolerances (part units; one part unit is 1.275 art pixels at game size).
-let ENGINE_SINK = 4.0     // an engine (a beast's belly) pressed into the ground at most this deep
-let GROUND_TOL = 1.0      // a foot within this of the ground plane; nothing deeper than this below it
-let SUPPORT_SLACK = 3.0   // the centre of mass within this of the feet's support polygon
-let ATTACH_GAP = 1.0      // a joint at most this far outside its parent's surface (floating)
-let BURY = 4.0            // ...and at most this deep inside it (data: legs.stance.bury)
-let OUTSIDE = 0.5         // at least this share of a leg's or head's volume outside its parent
-let JOINT_R = 4.0         // jointed pieces may share volume this near the joint (or 45% of the child's reach)
-let PEN_VOX = 12          // shared voxels allowed anywhere (1.5 cubic units: rounding where surfaces touch)
-let PEN_SHARE = 0.03      // ...plus this share of the smaller piece
-let ARMOUR_OFF = 0.25     // at most this share of worn armour more than 1.5 units off its body
-let ARMOUR_CENTRE = 1.5   // worn armour's middle at most this far (across) from the middle of the body it covers
-let SEAT_SINK = 0.3       // at most this share of a rider's body inside its mount
-let SEAT_GAP = 1.5        // a rider's lowest point at most this far over its mount's back
-let DROP = 0.6            // a standing leg's drop (hip to foot) is at least this share of its reach (data: legs.stance.drop)
-let SPRAWL = [-2.0, 6.0]  // a standing foot this far out to its own side of its hip (data: legs.stance.sprawl)
+let ENGINE_SINK = 4.0       // an engine (a beast's belly) pressed into the ground at most this deep
+let GROUND_TOL = 1.0        // a foot within this of the ground plane; nothing deeper than this below it
+let SUPPORT_SLACK = 3.0     // the centre of mass within this of the feet's support polygon
+let ATTACH_GAP = 1.0        // a joint at most this far outside its parent's surface (floating)
+let BURY = 4.0              // ...and at most this deep inside it (data: legs.stance.bury)
+let OUTSIDE = 0.5           // at least this share of a leg's or head's volume outside its parent
+let JOINT_R = 4.0           // jointed pieces may share volume this near the joint (or 45% of the child's reach)
+let PEN_VOX = 12            // shared voxels allowed anywhere (1.5 cubic units: rounding where surfaces touch)
+let PEN_SHARE = 0.03        // ...plus this share of the smaller piece
+let ARMOUR_OFF = 0.25       // at most this share of worn armour more than 1.5 units off its body
+let ARMOUR_CENTRE = 1.5     // worn armour's middle at most this far (across) from the middle of the body it covers
+let SEAT_SINK = 0.3         // at most this share of a rider's body inside its mount
+let SEAT_GAP = 1.5          // a rider's lowest point at most this far over its mount's back
+let DROP = 0.6              // a standing leg's drop (hip to foot) is at least this share of its reach (data: legs.stance.drop)
+let SPRAWL = [ -2.0, 6.0 ]  // a standing foot this far out to its own side of its hip (data: legs.stance.sprawl)
 let WALK_PHASES = 8
-let BROW_CLEAR = 0.5      // an open cap's lowest edge over the eyes at least this above the brow
-let HEAD_NOTCH = 1.0      // the top line from the withers to the head dips at most this (data: legs.stance.notch)
-let NOTCH_SPIKE = 3       // ...after spikes narrower than this many voxel columns are levelled
-let EYE_CLEAR = 3.0       // nothing of the head gear this far out in front of an eye
-let LIE = 3.0             // a corpse's body, legs and head this near the ground at most
+let BROW_CLEAR = 0.5  // an open cap's lowest edge over the eyes at least this above the brow
+let HEAD_NOTCH = 1.0  // the top line from the withers to the head dips at most this (data: legs.stance.notch)
+let NOTCH_SPIKE = 3   // ...after spikes narrower than this many voxel columns are levelled
+let EYE_CLEAR = 3.0   // nothing of the head gear this far out in front of an eye
+let LIE = 3.0         // a corpse's body, legs and head this near the ground at most
 
 // The results: per rule and case, the views that broke it (and how).
 let check_results = dictionary<string, [string]>(1023)
@@ -81,7 +81,6 @@ def pverts(p:Piece) -> [float3]: return vertices(p.node, p.xf)
 
 def stance_of(body_id:string) -> JV: return gobj(gobj(part(body_id), "legs"), "stance")
 
-
 def legs_of(a:Rigged) -> [Piece]: return filter(a.pieces) p: p.kind == "leg" and p.rig == a.walker
 
 // Numbers in the notes as Godot's "%.1f" and "%.2f" write them.
@@ -104,7 +103,7 @@ class Swing:
     level:bool
 
 def check_poses(r:JV) -> [Swing]:
-    let out = [Swing { "stand", "", 0.0, false }]
+    let out = [ Swing { "stand", "", 0.0, false } ]
     if has(r, "mount") or has(r, "crew"): return out
     let cols = colours_for(rstr(r, "skin"), rstr(r, "family"), float3 { 1.0, 0.0, 1.0 })
     let bs = rig_spec(rstr(r, "body"), cols)
@@ -136,7 +135,7 @@ def check_unit(label:string, r:JV) -> void:
     if has(r, "crew"):
         check_engine(label, r)
         rig_clear()
-        if has(part(rstr(r, "body")), "legs"): check_unit(label, beast_recipe(r))   // (a war beast walks: its body, legs and head as any creature's)
+        if has(part(rstr(r, "body")), "legs"): check_unit(label, beast_recipe(r))  // (a war beast walks: its body, legs and head as any creature's)
         return
     // The data's 2D anchors (drawn before the body is baked, and the count of legs asked to bake) are the model's
     // hips, one for one.
@@ -145,7 +144,7 @@ def check_unit(label:string, r:JV) -> void:
     if has(r, "mount"):
         let mc = at(lib_creatures, rstr(at(r, "mount"), "creature"))
         mbody = gstr(mc, "mount_body", rstr(mc, "body"))
-    for([rstr(r, "body"), mbody]) body_id:
+    for([ rstr(r, "body"), mbody ]) body_id:
         if body_id != "" and has(part(body_id), "legs"):
             let bs = rig_spec(body_id, cols)
             if bs:
@@ -174,7 +173,7 @@ def check_unit(label:string, r:JV) -> void:
         check_pose(label, bp, rig_unit(r, rp), true)
     check_corpse(label, r)
     rig_clear()
-    if vox_cached > 600:   // (kept across units: a mount's body and legs voxelize once for all its riders)
+    if vox_cached > 600:  // (kept across units: a mount's body and legs voxelize once for all its riders)
         vox_cache.clear()
         attach_cache.clear()
         vox_cached = 0
@@ -276,7 +275,7 @@ def check_head_join(label:string, view:string, a:Rigged, st:JV):
     for(legs) l:
         fore = max(fore, l.joint.x)
         hind = min(hind, l.joint.x)
-    let withers = fore - 0.25 * (fore - hind)   // (a hump or the withers can rise behind the fore hips)
+    let withers = fore - 0.25 * (fore - hind)  // (a hump or the withers can rise behind the fore hips)
     var hx = 0.0
     for(hv.keys) q: hx += vcentre(q).x
     hx /= float(max(vcount(hv), 1))
@@ -285,7 +284,7 @@ def check_head_join(label:string, view:string, a:Rigged, st:JV):
     let i1 = int(floor(hx / GEOM_RES))
     let n = i1 - i0 + 1
     var t = map(n): -100000
-    for([pvox(body), hv]) cells:
+    for([ pvox(body), hv ]) cells:
         for(cells.keys) q:
             let c = vunkey(q)
             if c.x >= i0 and c.x <= i1: t[c.x - i0] = max(t[c.x - i0], c.y)
@@ -397,7 +396,7 @@ def check_attachment(label:string, view:string, a:Rigged, st:JV):
                             if not vhas(pv, q): vadd(outside, q)
                         var hem = 1000000.0
                         var foot = 1000000.0
-                        if p.kind == "leg" and parent.legs_under:   // (under a skirt: the leg shows below the body's hem)
+                        if p.kind == "leg" and parent.legs_under:  // (under a skirt: the leg shows below the body's hem)
                             for(pv.keys) q: hem = min(hem, vcentre(q).y)
                             for(mine.keys) q: foot = min(foot, vcentre(q).y)
                         // A3: what's outside comes out of the body in one piece (a leg through the body and out of its
@@ -425,7 +424,7 @@ def check_attachment(label:string, view:string, a:Rigged, st:JV):
                          "{p.name} {at2.stray} voxels in {at2.pieces - 1} other pieces")
                 case "hand_r", "hand_l":
                     if not p.harness:
-                        if p.slung:   // (a shield slung across the back: on the back, as back gear)
+                        if p.slung:  // (a shield slung across the back: on the back, as back gear)
                             let db = vdepth(pv, p.joint, 8.0)
                             note("A2 a slung shield on the back", label, view, db > ATTACH_GAP + 1.0 and vshared(pvox(p), pv) == 0, "{p.name} {f1(db)} off the back, not touching it")
                         else:
@@ -440,7 +439,7 @@ def check_attachment(label:string, view:string, a:Rigged, st:JV):
                     let d = vdepth(pv, p.joint, 8.0)
                     note("A2 back gear on the back", label, view, d > ATTACH_GAP + 1.0 and vshared(pvox(p), pv) == 0, "{p.name} {f1(d)} off the back, not touching it")
                 case "armour":
-                    if p.harness: harness_on_body(label, view, p, parent)   // (not body armour: its own rule)
+                    if p.harness: harness_on_body(label, view, p, parent)  // (not body armour: its own rule)
                     else: check_armour(label, view, p, parent)
                 default: pass()
     // A rider sits on its mount's back: not sunk into it, not floating over it.
@@ -456,7 +455,7 @@ def check_attachment(label:string, view:string, a:Rigged, st:JV):
         var top = -1000000.0
         var j = c.y - 40
         while j < c.y + 40:
-            for([-1, 0, 1]) i:
+            for([ -1, 0, 1 ]) i:
                 if vhas(mv, vkey(c.x + i, j, c.z)): top = max(top, float(j + 1) * GEOM_RES)
             j++
         note("A2 the seat on its mount\'s back", label, view, abs(a.seat.y - top) > SEAT_GAP,
@@ -475,7 +474,7 @@ def check_brow(label:string, view:string, gear:Piece, head:Piece):
     for(hv.keys) q: mid += vcentre(q)
     mid /= float(max(vcount(hv), 1))
     let face = gstr(part(gear.id), "face", "")
-    if face == "sealed": return   // (a sealed helmet, a mod's visor: the whole face behind it, by design)
+    if face == "sealed": return  // (a sealed helmet, a mod's visor: the whole face behind it, by design)
     var covered = 0
     for(eyes) e:
         let c = e[0] + e[1] * 0.5
@@ -543,9 +542,9 @@ def check_armour(label:string, view:string, p:Piece, body:Piece):
 
 // Pairs that are free to overlap: an arm and its own body (the shoulder), armour and what it wraps, head gear and
 // its head, a weapon and the arm that holds it.
-let WRAPPED = ["leg", "head", "back", "hand_l"]
-let HELD = ["hand_r", "hand_l"]
-let FREE = [["arm", "body"], ["armour", "body"], ["armour", "arm"], ["head_gear", "head"], ["hand_r", "arm"]]
+let WRAPPED = [ "leg", "head", "back", "hand_l" ]
+let HELD = [ "hand_r", "hand_l" ]
+let FREE = [ [ "arm", "body" ], [ "armour", "body" ], [ "armour", "arm" ], [ "head_gear", "head" ], [ "hand_r", "arm" ] ]
 
 def check_overlap(label:string, view:string, a:Rigged):
     let ps = a.pieces
@@ -557,13 +556,13 @@ def check_overlap(label:string, view:string, a:Rigged):
             j++
             let cross = (p.rig == "rider") != (q.rig == "rider")
             var skip = (p.rig != q.rig and not cross) or
-                       (cross and p.kind == "body" and q.kind == "body") or   // (the seat: its own check)
-                       (cross and a.fused and (p.kind == "body" or q.kind == "body"))   // (a centaur's tunic covers the join)
+                (cross and p.kind == "body" and q.kind == "body") or            // (the seat: its own check)
+                (cross and a.fused and (p.kind == "body" or q.kind == "body"))  // (a centaur's tunic covers the join)
             if not skip and p.rig == q.rig:
                 for(FREE) f:
                     if (p.kind == f[0] and q.kind == f[1]) or (p.kind == f[1] and q.kind == f[0]): skip = true
-            if not skip and ((has_s(["leg", "head"], p.kind) and p.parent == q.name) or (has_s(["leg", "head"], q.kind) and q.parent == p.name)):
-                skip = true   // (a leg or head in its own body: the attachment rules above)
+            if not skip and ((has_s([ "leg", "head" ], p.kind) and p.parent == q.name) or (has_s([ "leg", "head" ], q.kind) and q.parent == p.name)):
+                skip = true  // (a leg or head in its own body: the attachment rules above)
             if not skip:
                 let pv = pvox(p)
                 let qv = pvox(q)
@@ -574,9 +573,9 @@ def check_overlap(label:string, view:string, a:Rigged):
                     // the body near its root; what a rider holds may rest on its mount near the hand.
                     var child:Piece? = nil
                     if p.parent == q.name or (q.kind == "armour" and has_s(WRAPPED, p.kind)) or (q.kind == "arm" and p.kind == "head") or
-                       (cross and has_s(HELD, p.kind) and p.rig == "rider") or (p.mouth and q.kind == "head"): child = p
+                        (cross and has_s(HELD, p.kind) and p.rig == "rider") or (p.mouth and q.kind == "head"): child = p
                     elif q.parent == p.name or (p.kind == "armour" and has_s(WRAPPED, q.kind)) or (p.kind == "arm" and q.kind == "head") or
-                         (cross and has_s(HELD, q.kind) and q.rig == "rider") or (q.mouth and p.kind == "head"): child = q
+                        (cross and has_s(HELD, q.kind) and q.rig == "rider") or (q.mouth and p.kind == "head"): child = q
                     if p.kind == "armour" or q.kind == "armour":
                         // (inside the body, armour and what it wraps are both hidden: only the rest counts)
                         let bp = rig_by(a, p.rig + ":body")
@@ -629,21 +628,21 @@ def check_engine(label:string, r:JV) -> void:
     if not es: return
     let ev = engine_whole(r, es)
     let cr = deep_copy(at(r, "crew"))
-    for([["creature", rstr(r, "creature")], ["family", rstr(r, "family")], ["slot", "worker"], ["role", "worker"], ["name", ""]]) kv:
-        if not has(cr, kv[0]): set(cr, kv[0], jstr(kv[1]))   // (merged in: the crew's own words stay)
+    for([ [ "creature", rstr(r, "creature") ], [ "family", rstr(r, "family") ], [ "slot", "worker" ], [ "role", "worker" ], [ "name", "" ] ]) kv:
+        if not has(cr, kv[0]): set(cr, kv[0], jstr(kv[1]))  // (merged in: the crew's own words stay)
     if not has(cr, "tier"): set(cr, "tier", jint(1))
     // The engine itself (a war beast with nobody on it too: the tarantula) stands on the ground: its lowest point (a
     // wheel, a runner, a foot) on the ground plane, not floating; a soft belly may press into it a little.
     var low = 1000000.0
     for(ev.keys) q: low = min(low, float(vunkey(q).y) * GEOM_RES)
-    if not has(part(rstr(r, "body")), "legs"):   // (a war beast's body stands on its legs, baked apart: checked as a creature's)
+    if not has(part(rstr(r, "body")), "legs"):  // (a war beast's body stands on its legs, baked apart: checked as a creature's)
         note("A1 the engine stands on the ground", label, rstr(r, "body"), low > GROUND_TOL + GEOM_RES or low < -ENGINE_SINK, "its lowest point at {f1(low)}")
     let sj = jobj()
     for(es.sockets.get_keys()) k: set(sj, k, jint(1))
     for(engine_sockets(r, sj)) name:
         if starts_with(name, "crew"):
             let at_ = es.sockets.get(name, float3_0)
-            if ends_with(name, "_top") or ends_with(name, "_box"):   // (_box: in a walled howdah, its legs not drawn, set into the floor)
+            if ends_with(name, "_top") or ends_with(name, "_box"):  // (_box: in a walled howdah, its legs not drawn, set into the floor)
                 // (something to stand on just under the feet: a deck, a saddle, a basket's floor; not floating over it)
                 let c = vunkey(vcell(at_))
                 var gap = 1000000.0
@@ -662,14 +661,14 @@ def check_engine(label:string, r:JV) -> void:
             rp.hold = held
             let a = rig_unit(cr, rp)
             var t = Xform { bscaled_global(axis_angle(float3 { 0.0, 1.0, 0.0 }, -45.0 * float(engine_turn(name))), float3_1 * s), at_ }
-            if not (ends_with(name, "_top") or ends_with(name, "_box")):   // (standing back by its lean, as UnitView._build_engine puts it)
+            if not (ends_with(name, "_top") or ends_with(name, "_box")):  // (standing back by its lean, as UnitView._build_engine puts it)
                 t = Xform { t.b, t.o - bxf(t.b, float3 { float(gint(gobj(lib_creatures, gstr(cr, "creature", "")), "crew_back", 0)), 0.0, 0.0 }) }
             let crew_vox = new_vox()
             for(a.pieces) p: voxels_into(p.node, xmul(t, p.xf), crew_vox)
             let share = float(vshared(crew_vox, ev)) / float(max(vcount(crew_vox), 1))
             note("A3 crew not cut through their engine", label, name, share > 0.12, "{f2(share)} of the crew member inside the engine")
     for(es.sockets.get_keys()) name:
-        if starts_with(name, "haul"):   // (a beast hauling it, a trade cart's pony, stands on the ground)
+        if starts_with(name, "haul"):  // (a beast hauling it, a trade cart's pony, stands on the ground)
             let y = es.sockets.get(name, float3_0).y
             note("A2 crew stand on the ground", label, name, abs(y) > GROUND_TOL, "socket at height {f1(y)}")
     check_composite(label, r)

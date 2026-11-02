@@ -12,13 +12,13 @@
 // tethered by the door, idling and grazing.
 
 let LOAD_DECAY_S = 14.0
-let PILE_STAGE_AT = [0.5, 3.0, 7.0]
+let PILE_STAGE_AT = [ 0.5, 3.0, 7.0 ]
 let PILE_MAX = 10.0
 let CHORE_AFTER_S = 3.0
 let CHORE_NEAR_HOME = 6000
 let CHORE_SPELL_S = 18.0
 let CHAT_REACH = 1600
-let YARD_AT_S = [60.0, 150.0, 270.0, 420.0]
+let YARD_AT_S = [ 60.0, 150.0, 270.0, 420.0 ]
 let CRITTERS_PER_TOWN = 6
 
 class Was:
@@ -45,7 +45,7 @@ class Critter:
 let town_last = dictionary<int, Was>(256)
 let town_idle_since = dictionary<int, float>(256)
 var chores = dictionary<int, string>(64)
-let piles = dictionary<string, float>(64)       // "bid:resource index" -> loads
+let piles = dictionary<string, float>(64)  // "bid:resource index" -> loads
 let house_born = dictionary<int, float>(64)
 var town_puffs = []::Puff
 var critters = []::Critter
@@ -58,11 +58,11 @@ class Puff2:
     v:float2
     t:float
     life:float
-    kind:int                      // 0 chimney smoke, 1 flame, 2 black smoke
+    kind:int  // 0 chimney smoke, 1 flame, 2 black smoke
     size:float
 
 var town_parts = []::Puff2
-let town_emit = dictionary<string, float>(128)   // "<building id>:<what>" -> particles owed
+let town_emit = dictionary<string, float>(128)  // "<building id>:<what>" -> particles owed
 var town_builders = []::int
 
 def is_house(k:int) -> bool: return k < su_btypes.length and gbool(su_btypes[k], "house", false)
@@ -147,7 +147,7 @@ def town_workers():
     for(idle) i:
         let id = u_id[i]
         let spell = int((now - town_idle_since.get(id, now)) / CHORE_SPELL_S) + id
-        var chore = ["sweep", "sit", "sweep", "sit"][spell % 4]
+        var chore = [ "sweep", "sit", "sweep", "sit" ][spell % 4]
         let other = talking.get(i, -1)
         if other >= 0 and spell % 3 != 0:
             chore = "chat"
@@ -216,7 +216,7 @@ def building_fx_tick(dt:float):
             let at = building_anchor(b)
             let fx = bfx.get(look)
             if fx and fx.has_smoke and (is_house(b_kind[b]) or b_queue[b].length > 0):
-                emit("{b_id[b]}:s", 2.5, dt) (): Puff2 { at + fx.smoke, rnd_dir(float2 { 0.2, -1.0 }, 12.0, 4.0, 7.0), 0.0, 4.0, 0, rnd_range(0.12, 0.2) * 16.0 }
+                emit("{b_id[b]}:s", 2.5, dt)(): Puff2 { at + fx.smoke, rnd_dir(float2 { 0.2, -1.0 }, 12.0, 4.0, 7.0), 0.0, 4.0, 0, rnd_range(0.12, 0.2) * 16.0 }
             let full = bm_hp[b_owner[b]][b_kind[b]]
             let damage = if full > 0: 1.0 - float(b_hp[b]) / float(full) else: 0.0
             if damage >= DAMAGE_FIRE:
@@ -224,16 +224,16 @@ def building_fx_tick(dt:float):
                 let burning = min(spots.length, 1 + int((damage - DAMAGE_FIRE) / (1.0 - DAMAGE_FIRE) * 3.0))
                 for(burning) k:
                     let sp = at + spots[k]
-                    emit("{b_id[b]}:f{k}", 20.0, dt) (): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
-                    emit("{b_id[b]}:b{k}", 4.0, dt) (): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
-    for(fx_ruins) r:   // a fallen building burns on a while in its ruin
+                    emit("{b_id[b]}:f{k}", 20.0, dt)(): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
+                    emit("{b_id[b]}:b{k}", 4.0, dt)(): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
+    for(fx_ruins) r:  // a fallen building burns on a while in its ruin
         if clock_s - r.t0 < RUIN_BURN:
             let at = r.at / 1.5
             let spots = fire_spots_on(r.id, r.body)
             for(min(r.fires, spots.length)) k:
                 let sp = at + spots[k]
-                emit("r{r.id}:f{k}", 20.0, dt) (): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
-                emit("r{r.id}:b{k}", 4.0, dt) (): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
+                emit("r{r.id}:f{k}", 20.0, dt)(): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
+                emit("r{r.id}:b{k}", 4.0, dt)(): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
     for(town_parts) q:
         q.t += dt
         let g = if q.kind == 0: float2 { 2.0, -1.0 } elif q.kind == 1: float2 { 0.0, -8.0 } else: float2 { 2.5, -1.5 }
@@ -262,7 +262,7 @@ def crack_lines(b:int, look:string) -> [[float2]]:
         return float(h % 10000) / 10000.0
     return map(6):
         var p = float2 { (float(fr.w) * (0.25 + next() * 0.5) - float(fr.ox)) * fr.k / 1.5, (float(fr.h) * (0.42 + next() * 0.2) - float(fr.oy)) * fr.k / 1.5 }
-        let line = [p]
+        let line = [ p ]
         let dir = normalize(float2 { next() * 1.2 - 0.6, 1.0 })
         for(3 + int(next() * 3.0)):
             p += normalize(dir + float2 { next() * 1.8 - 0.9, 0.0 }) * (1.8 + next() * 1.5)
@@ -289,7 +289,7 @@ def collect_cracks():
         if b_done[b] == 1 and fog[ME][b_cy[b] * W + b_cx[b]] != 0 and b_owner[b] < arch_of.length:
             let full = bm_hp[b_owner[b]][b_kind[b]]
             let lk = looks.get(building_look(b))
-            if full > 0 and float(full - b_hp[b]) / float(full) >= DAMAGE_CRACKS and lk and not lk.ruins.length:   // (cracks: a look baked without its broken-up stages)
+            if full > 0 and float(full - b_hp[b]) / float(full) >= DAMAGE_CRACKS and lk and not lk.ruins.length:  // (cracks: a look baked without its broken-up stages)
                 let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
                 draws.push(Drawable { at.y + 0.5, draws.length, -3, float(b), 0.0, float4_1, [] })
 
@@ -339,7 +339,7 @@ def move_toward2(p:float2, to:float2, d:float) -> float2:
 
 def critter_tick(c:Critter, dt:float):
     c.t += dt
-    if c.kind == "dragonfly":   // hover, then a quick dart to a new spot near home; bob a little
+    if c.kind == "dragonfly":  // hover, then a quick dart to a new spot near home; bob a little
         if magnitude(c.p - c.goal) < 1.0:
             if rnd_float() < dt * 0.8:
                 let a = rnd_float() * 360.0
@@ -349,7 +349,7 @@ def critter_tick(c:Critter, dt:float):
             if abs(c.goal.x - c.p.x) > 0.5: c.face = sign(c.goal.x - c.p.x)
         c.air = 8.0 + sin(c.t * 3.0 * 57.29578) * 1.5
         return
-    if c.air > 0.0 or c.flying:   // flying off (or back): up, across to a new spot, down
+    if c.air > 0.0 or c.flying:  // flying off (or back): up, across to a new spot, down
         let d = c.goal - c.p
         let left = magnitude(d)
         c.p = move_toward2(c.p, c.goal, dt * 55.0)
@@ -357,7 +357,7 @@ def critter_tick(c:Critter, dt:float):
         c.air = if left > 1.0: min(18.0, left * 0.25 + 2.0) else: 0.0
         c.flying = left > 1.0
         return
-    if fmodf(c.t, 0.5) < dt and rnd_float() < 0.35:   // hop a step now and then, peck
+    if fmodf(c.t, 0.5) < dt and rnd_float() < 0.35:  // hop a step now and then, peck
         let step = float2 { rnd_range(-4.0, 4.0), rnd_range(-2.0, 2.0) }
         c.p += step
         if abs(step.x) > 0.5: c.face = sign(step.x)
@@ -373,7 +373,7 @@ def critter_tick(c:Critter, dt:float):
 
 // Every frame, after the views are synced.
 def town_tick(dt:float):
-    if tick != town_tick_seen:   // what's read from the sim changes only on its ticks
+    if tick != town_tick_seen:  // what's read from the sim changes only on its ticks
         town_tick_seen = tick
         town_deliveries()
         town_houses()
@@ -394,7 +394,7 @@ def pile_stage(loads:float) -> int:
         if loads >= at: st = k + 1
     return st
 
-def town_cell_free(m:float2) -> bool:   // milli-tiles
+def town_cell_free(m:float2) -> bool:  // milli-tiles
     let cx = int(m.x) / 1000
     let cy = int(m.y) / 1000
     if cx < 0 or cy < 0 or cx >= W or cy >= H: return false
@@ -422,8 +422,8 @@ def collect_town():
                     let name = "pile.{resource_names[r]}.{st}"
                     if st > 0 and frame_index(name) >= 0:
                         var n = 0
-                        for([float2 { float((x0 + sx) * 1000 + 300), (float(y0) + float(sy) * 0.25) * 1000.0 }, float2 { float((x0 + sx) * 1000 + 300), (float(y0) + float(sy) * 0.75) * 1000.0 },
-                             float2 { (float(x0) + float(sx) * 0.75) * 1000.0, float((y0 + sy) * 1000 + 300) }, float2 { (float(x0) + float(sx) * 0.25) * 1000.0, float((y0 + sy) * 1000 + 300) }]) s:
+                        for([ float2 { float((x0 + sx) * 1000 + 300), (float(y0) + float(sy) * 0.25) * 1000.0 }, float2 { float((x0 + sx) * 1000 + 300), (float(y0) + float(sy) * 0.75) * 1000.0 },
+                              float2 { (float(x0) + float(sx) * 0.75) * 1000.0, float((y0 + sy) * 1000 + 300) }, float2 { (float(x0) + float(sx) * 0.25) * 1000.0, float((y0 + sy) * 1000 + 300) } ]) s:
                             let c = cell_of(int(s.x), int(s.y))
                             if int(s.x) / 1000 < W and int(s.y) / 1000 < H and occupied[c] == 0 and amount[c] <= 0:
                                 if n == slot:
@@ -441,9 +441,9 @@ def collect_town():
                 if st > 0:
                     let x1 = x0 + sx
                     let y1 = y0 + sy
-                    var spots = [float2 { float(x1 * 1000 + 250), float(y0 * 1000 + 350) }, float2 { float(x0 * 1000 + 350), float(y1 * 1000 + 250) },
-                                 float2 { float(x1 * 1000 + 300), float(y1 * 1000 - 700) }, float2 { float(x1 * 1000 - 700), float(y1 * 1000 + 300) }]
-                    if b_id[b] % 2 == 1: spots = [spots[1], spots[0], spots[3], spots[2]]
+                    var spots = [ float2 { float(x1 * 1000 + 250), float(y0 * 1000 + 350) }, float2 { float(x0 * 1000 + 350), float(y1 * 1000 + 250) },
+                                  float2 { float(x1 * 1000 + 300), float(y1 * 1000 - 700) }, float2 { float(x1 * 1000 - 700), float(y1 * 1000 + 300) } ]
+                    if b_id[b] % 2 == 1: spots = [ spots[1], spots[0], spots[3], spots[2] ]
                     let free = filter(spots) p: town_cell_free(p)
                     if free.length > 0:
                         let at = iso(free[0].x, free[0].y)

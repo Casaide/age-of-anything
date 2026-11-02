@@ -3,16 +3,16 @@
 // Words map to tags (data/lexicon.json), tags pick parts, parts become unit recipes. The race key
 // hashes the recipes (sha256 of Godot's sorted JSON), so it matches the GDScript generator's.
 
-let SIGNATURE_TAGS = ["roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow", "junk", "saucepan", "nile", "han", "aztec", "norse"]
-let KIND_TAGS = ["spear", "lance", "blade", "blunt", "bow", "sling", "javelin", "poison", "gun", "worker",
-                 "shield", "helmet", "hat", "armour", "cape", "banner", "wings", "quiver"]
-let OPTIONAL_SLOTS = ["hand_l", "head_gear", "torso", "back"]
-let HEALER_SLOTS = ["hand_l", "head_gear", "back"]
-let SCOUT_SLOTS = ["head_gear", "torso", "back"]
-let SAPPER_SLOTS = ["head_gear"]
-let WORKER_SLOTS = ["head_gear"]
-let EPITHET_SLOTS = ["hand_r", "torso"]
-let LIGHT_ROLES = ["scout", "sapper"]
+let SIGNATURE_TAGS = [ "roman", "greek", "viking", "cheese", "woodland", "knight", "bat", "crossbow", "junk", "saucepan", "nile", "han", "aztec", "norse" ]
+let KIND_TAGS = [ "spear", "lance", "blade", "blunt", "bow", "sling", "javelin", "poison", "gun", "worker",
+                  "shield", "helmet", "hat", "armour", "cape", "banner", "wings", "quiver" ]
+let OPTIONAL_SLOTS = [ "hand_l", "head_gear", "torso", "back" ]
+let HEALER_SLOTS = [ "hand_l", "head_gear", "back" ]
+let SCOUT_SLOTS = [ "head_gear", "torso", "back" ]
+let SAPPER_SLOTS = [ "head_gear" ]
+let WORKER_SLOTS = [ "head_gear" ]
+let EPITHET_SLOTS = [ "hand_r", "torso" ]
+let LIGHT_ROLES = [ "scout", "sapper" ]
 let LIGHT_POINTS = 2
 let GIANT_SCALE = 150
 let TINY_SCALE = 80
@@ -26,28 +26,28 @@ def role_needs(role:string) -> string:
         case "large", "infantry", "scout": return "melee"
         case "healer": return "heal"
         case "siege_tower": return "docks"
-        default: return role   // ram, catapult, bolt_thrower, sapper, great_sling, war_beast
+        default: return role  // ram, catapult, bolt_thrower, sapper, great_sling, war_beast
 def role_excludes(role:string) -> [string]:
     switch role:
-        case "skirmisher": return ["bow"]
-        case "infantry": return ["spear", "lance"]
-        case "scout": return ["spear", "lance", "heavy"]
+        case "skirmisher": return [ "bow" ]
+        case "infantry": return [ "spear", "lance" ]
+        case "scout": return [ "spear", "lance", "heavy" ]
         default: return []
-def role_kinds(role:string) -> [string]: return if role == "infantry" or role == "scout": ["blade"] else: []
+def role_kinds(role:string) -> [string]: return if role == "infantry" or role == "scout": [ "blade" ] else: []
 def int_map(keys:[string], vals:[int]) -> JV:
     let o = jobj()
     for(keys) k, n: set(o, k, jint(vals[n]))
     return o
 def role_bias(role:string) -> JV:
     switch role:
-        case "spear": return int_map(["reach"], [1])
-        case "skirmisher": return int_map(["skirmish"], [2])
-        case "large": return int_map(["charge", "heavy", "lance"], [3, 2, 3])
-        case "infantry": return int_map(["blade"], [1])
-        case "scout": return int_map(["blade", "light"], [1, 2])
+        case "spear": return int_map([ "reach" ], [ 1 ])
+        case "skirmisher": return int_map([ "skirmish" ], [ 2 ])
+        case "large": return int_map([ "charge", "heavy", "lance" ], [ 3, 2, 3 ])
+        case "infantry": return int_map([ "blade" ], [ 1 ])
+        case "scout": return int_map([ "blade", "light" ], [ 1, 2 ])
         default: return jobj()
-let HEAVY_BOOST = int_map(["heavy", "armour", "helmet", "shield"], [3, 3, 2, 1])
-let HEALER_WANTS = int_map(["heal"], [3])
+let HEAVY_BOOST = int_map([ "heavy", "armour", "helmet", "shield" ], [ 3, 3, 2, 1 ])
+let HEALER_WANTS = int_map([ "heal" ], [ 3 ])
 
 // ---- the race being made (GDScript's ctx)
 
@@ -95,14 +95,14 @@ def normalize_prompt(prompt:string) -> string:
     var cleaned = ""
     for(low.length) n:
         let ch = low[n]
-        cleaned += if (ch >= 'a' and ch <= 'z') or (ch >= '0' and ch <= '9'): unicode_to_string([ch]) else: " "
+        cleaned += if (ch >= 'a' and ch <= 'z') or (ch >= '0' and ch <= '9'): unicode_to_string([ ch ]) else: " "
     return concat_string(prompt_words(cleaned), " ")
 
 def prompt_words(s:string) -> [string]: return filter(tokenize(s, " ", "")) w: w.length > 0
 
 def lookup(word:string) -> string:
     if has(lib_lexicon, word): return word
-    let endings = [["ies", "y"], ["es", ""], ["s", ""]]
+    let endings = [ [ "ies", "y" ], [ "es", "" ], [ "s", "" ] ]
     for(endings) e:
         if ends_with(word, e[0]):
             let stem = substring(word, 0, word.length - e[0].length) + e[1]
@@ -158,7 +158,7 @@ def generate(prompt:string, rules:JV, reroll:int) -> JV:
         notes.push("Nobody said who, so the " + rstr(creature(cid), "plural") + " volunteered.")
     let c = creature(cid)
     let fid = if brief.families.length: brief.families[0] else: as_str(rpick(rng, glist(c, "families")))
-    g_affinity = [cid, fid]
+    g_affinity = [ cid, fid ]
     g_no_restrictions = gbool(rules, "no_restrictions", false)
     let tags = shallow_copy(brief.tags)
     tadd(tags, fid, 2)
@@ -175,7 +175,7 @@ def generate(prompt:string, rules:JV, reroll:int) -> JV:
     g_skin = rpick(rng, race_skins(c, fid, brief.colours, notes))
     g_firsts = jobj()
     g_crew = nil
-    let slots = filter(glist(rules, "roster")) sd: not has_s(["planned", "parked"], gstr(sd, "status", "")) and rstr(sd, "role") != "hero"
+    let slots = filter(glist(rules, "roster")) sd: not has_s([ "planned", "parked" ], gstr(sd, "status", "")) and rstr(sd, "role") != "hero"
     let rngs = map(slots) sd: if gbool(sd, "own_seed", false): new_rng(hash_text(norm + "|" + rules_id + "|" + string(reroll) + "|" + rstr(sd, "slot"))) else: rng
     let lacks = []::string
     let units = []::JV?
@@ -193,7 +193,7 @@ def generate(prompt:string, rules:JV, reroll:int) -> JV:
             if rstr(sd, "slot") == "worker": g_crew = recipe
             set(g_firsts, rstr(sd, "slot"), recipe)
             let ev = evaluate(recipe, rules, g_age)
-            units.push(unit_entry(recipe, ev, [line_step(g_age, recipe, ev)]))
+            units.push(unit_entry(recipe, ev, [ line_step(g_age, recipe, ev) ]))
     for(units) u, k:
         if u:
             let sd = slots[k]
@@ -237,7 +237,7 @@ def generate(prompt:string, rules:JV, reroll:int) -> JV:
     let asked = heroes_asked(brief.heroes, cid, fid)
     if asked.length: set(race, "hero_asked", jstr(asked[0]))
     if asked.length > 1:
-        notes.push("Only one hero leads a race, so " + said_heroes(prompt, [asked[0]]) + " came and " + said_heroes(prompt, asked.slice(1, -1)) + " stayed home.")
+        notes.push("Only one hero leads a race, so " + said_heroes(prompt, [ asked[0] ]) + " came and " + said_heroes(prompt, asked.slice(1, -1)) + " stayed home.")
     let strays = filter(brief.heroes) sid: not has_s(asked, sid)
     if strays.length:
         let who = lowercase(rstr(c, "plural"))
@@ -263,7 +263,7 @@ def race_key(race:JV) -> string:
     for(glist(race, "units")) u:
         if rstr(at(u, "recipe"), "slot") != "hero":
             if has(u, "line"): recipes.a.push(jarr(map(glist(u, "line")) l: at(l, "recipe")))
-            else: recipes.a.push(jarr([at(u, "recipe")]))
+            else: recipes.a.push(jarr([ at(u, "recipe") ]))
     set(sh, "recipes", recipes)
     if has(race, "hero_asked"): set(sh, "hero_asked", at(race, "hero_asked"))
     if has(race, "mods"): set(sh, "mods", at(race, "mods"))
@@ -349,7 +349,7 @@ def make_unit(sd:JV) -> JV?:
     let excluded = role_excludes(role)
     let options = filter(cands("hand_r")) p: has_s(ptags(p), need) and not any_in(ptags(p), excluded) and allowed(p, role, g_tags)
     var affordable = filter(options) p: spent + pts(p) <= budget
-    if not affordable.length: affordable = [cheapest(options)]
+    if not affordable.length: affordable = [ cheapest(options) ]
     let unit_tags = shallow_copy(g_tags)
     if heavy:
         set(recipe, "elite", jstr("heavy"))
@@ -520,7 +520,7 @@ def make_unique(sd:JV) -> JV:
         let excluded = role_excludes(role)
         let options = filter(cands("hand_r")) p: has_s(ptags(p), need) and not any_in(ptags(p), excluded) and allowed(p, role, unit_tags) and not (is_light and has_s(ptags(p), "heavy"))
         let affordable = filter(options) p: spent + pts(p) <= budget
-        let primary = best(if affordable.length: affordable else: [cheapest(options)], unit_tags, role_bias(role), rng)
+        let primary = best(if affordable.length: affordable else: [ cheapest(options) ], unit_tags, role_bias(role), rng)
         set(rp, "hand_r", at(primary, "id"))
         spent += pts(primary)
     let mount = get(recipe, "mount")
@@ -528,7 +528,7 @@ def make_unique(sd:JV) -> JV:
     for(OPTIONAL_SLOTS) slot:
         if not (has(rp, slot) or (slot == "hand_l" and gbool(part(rstr(rp, "hand_r")), "two_handed", false))):
             var cs = filter(cands(slot)) p: allowed(p, role, unit_tags) and not off_theme(p, unit_tags) and (not is_light or light(p)) and
-                                             not (ridden and has_s(ptags(p), "wings") and not winged(unit_tags)) and fits_mount(p, recipe)
+                not (ridden and has_s(ptags(p), "wings") and not winged(unit_tags)) and fits_mount(p, recipe)
             cs = filter(cs) p: spent + pts(p) <= budget
             if cs.length:
                 let b = best(cs, unit_tags, role_bias(role), rng)
@@ -550,7 +550,7 @@ def gear_slots(role:string) -> [string]:
 def healer_gear(p:JV, tags:JV) -> bool:
     switch rstr(p, "slot"):
         case "hand_l": return has_s(ptags(p), "heal")
-        case "head_gear": return pts(p) <= 1 and not any_in(ptags(p), ["crest", "horns", "heavy"])
+        case "head_gear": return pts(p) <= 1 and not any_in(ptags(p), [ "crest", "horns", "heavy" ])
         case "back": return has_s(ptags(p), "wings") and winged(tags)
         default: return false
 
@@ -680,11 +680,11 @@ def upgrade(prev:JV, sd:JV) -> JV:
         if slot == "hand_r" and has_s(ptags(cur), "primitive"):
             for(role_kinds(role)) k: kinds.push(k)
         var cs = filter(cands(slot)) p: ptier(p) > ptier(cur) and allowed(p, role, unit_tags) and not off_theme(p, unit_tags) and fits_mount(p, r) and
-                                        (any_in(ptags(p), kinds) or any_in(gstrs(p, "replaces"), kinds) or want(p, g_brief.tags) > 0)
+            (any_in(ptags(p), kinds) or any_in(gstrs(p, "replaces"), kinds) or want(p, g_brief.tags) > 0)
         if has(cur, "upgrade_within"):
             let within = rstr(cur, "upgrade_within")
             cs = filter(cs) p: has_s(ptags(p), within)
-        if role == "worker": cs = filter(cs) p: pts(p) <= 2 and not any_in(ptags(p), ["crest", "horns", "heavy"])
+        if role == "worker": cs = filter(cs) p: pts(p) <= 2 and not any_in(ptags(p), [ "crest", "horns", "heavy" ])
         if role == "healer" and slot != "hand_r": cs = filter(cs) p: healer_gear(p, unit_tags)
         if has_s(LIGHT_ROLES, role) and slot != "hand_r": cs = filter(cs) p: light(p)
         if slot == "hand_r":

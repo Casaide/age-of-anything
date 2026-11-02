@@ -20,7 +20,7 @@ let bake_soles = dictionary<string, [float2]>(1023)
 let bake_spans = dictionary<string, [float2]>(1023)
 var rigs = jobj()
 let modelled = dictionary<string, int>(511)
-var modelled_listed = false        // (a pack's index lists every modelled part: then what it leaves out has none)
+var modelled_listed = false  // (a pack's index lists every modelled part: then what it leaves out has none)
 let TEAM_KEY_HEX = "ff00ff"
 
 def ffloat(s:string) -> float:
@@ -34,7 +34,7 @@ def load_part_data(dir:string):
             switch t[0]:
                 case "bake": bakes.set(t[1], Bake { ffloat(t[2]), ffloat(t[3]), ffloat(t[4]) })
                 case "soles": bake_soles.set(t[1], map((t.length - 2) / 2) n: float2 { ffloat(t[2 + n * 2]), ffloat(t[3 + n * 2]) })
-                case "span": bake_spans.set(t[1], [float2 { ffloat(t[2]), ffloat(t[3]) }, float2 { ffloat(t[4]), ffloat(t[5]) }])
+                case "span": bake_spans.set(t[1], [ float2 { ffloat(t[2]), ffloat(t[3]) }, float2 { ffloat(t[4]), ffloat(t[5]) } ])
                 case "modelled":
                     modelled.set(t[1], 1)
                     modelled_listed = true
@@ -60,7 +60,7 @@ def jf(o:JV, k:string, fallback:float) -> float:
 
 // ---- colours (UnitView.colours_for)
 
-def hex_of(html:string) -> string:   // "#RRGGBB(AA)" -> "rrggbb", as Color.to_html(false)
+def hex_of(html:string) -> string:  // "#RRGGBB(AA)" -> "rrggbb", as Color.to_html(false)
     let h = if html.length and html[0] == '#': substring(html, 1, html.length - 1) else: html
     return lowercase(substring(h, 0, 6))
 
@@ -121,7 +121,7 @@ class Wanted:
 
 let bake_wanted = []::Wanted
 let bake_wanted_set = dictionary<string, bool>(256)
-var bake_gen = 0   // goes up when the wanted parts are all baked (views made before are made again, on the new rigs)
+var bake_gen = 0  // goes up when the wanted parts are all baked (views made before are made again, on the new rigs)
 
 def want_bake(n:VNode):
     let cols = n.cols

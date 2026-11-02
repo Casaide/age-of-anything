@@ -56,12 +56,12 @@ let args = command_line_arguments()
 let map_id = if args.length > 0: args[0] else: "reed_meadow"
 let before = if args.length > 1: string_to_int(args[1]) else: 6000
 let after = if args.length > 2: string_to_int(args[2]) else: 3000
-let path = "save_check.sav"   // (Lobster writes only under its own folders)
+let path = "save_check.sav"  // (Lobster writes only under its own folders)
 lib_load("../data")
 id_load("../data")
 let rules = load_rules("default")
 set(rules, "animals", jbool(true))
-let races = map(["sewer rats with cheese hammers", "frogs with spears"]) p: generate(p, rules, 0)
+let races = map([ "sewer rats with cheese hammers", "frogs with spears" ]) p: generate(p, rules, 0)
 setup_world(20261010, map_id, races, rules, [])
 events_on = true
 var bots = map(num_players) p: new_bot(p)

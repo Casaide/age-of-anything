@@ -13,7 +13,7 @@ let LINE_STEP = 333
 let ROOM_CHUNK = 2
 
 let TICKS_PER_TURN = 4
-let ARRIVE_SETTLE = 4          // SETTLE_FACTOR
+let ARRIVE_SETTLE = 4  // SETTLE_FACTOR
 let SEPARATION_DIV = 4
 let REPLAN_EVERY = 8
 let LOOKAHEAD = 6
@@ -34,9 +34,9 @@ let STRAIGHT_PER_CHECK = 10
 let FIELD_CELL = 0
 let FIELD_CELL_NEAR = 1
 let FIELD_BUILDING_NEAR = 2
-let SEP_DX = [0, 1, -1, 0, 1]
-let SEP_DY = [0, 0, 1, 1, 1]
-let KEY_BITS = 21              // slot bits in a formation sort key
+let SEP_DX = [ 0, 1, -1, 0, 1 ]
+let SEP_DY = [ 0, 0, 1, 1, 1 ]
+let KEY_BITS = 21  // slot bits in a formation sort key
 
 // combat.gd: units.stance (what it is doing) and units.posture (the player's stance).
 let NONE = 0
@@ -57,7 +57,7 @@ let T_NONE = 0
 let GATHER = 1
 let T_RETURN = 2
 let BUILD = 3
-let REACH = 250                // milli-tiles between a body's edge and what it works on
+let REACH = 250  // milli-tiles between a body's edge and what it works on
 let SEARCH_TILES = 8
 let SPREAD_TILES = 2
 let BUSY_COST = 4000000
@@ -67,10 +67,10 @@ let BACK_TO_WORK_TILES = 10
 let WAIT_TICKS = 20
 let SPOTS = 8
 let SIDES = 2
-let SPOT_GAP = 100             // (World.SPOT_GAP too)
+let SPOT_GAP = 100  // (World.SPOT_GAP too)
 let SPOT_NEAR = 150
-let SPOT_DX = [0, 1, 1, 1, 0, -1, -1, -1]
-let SPOT_DY = [-1, -1, 0, 1, 1, 1, 0, -1]
+let SPOT_DX = [ 0, 1, 1, 1, 0, -1, -1, -1 ]
+let SPOT_DY = [ -1, -1, 0, 1, 1, 1, 0, -1 ]
 let SPOT_BUSY = 3
 let NEAR_CUTOFF = 160
 let FIELD_BUILDING = 3
@@ -113,7 +113,6 @@ let SIN = [
     -724, -706, -688, -669, -650, -630, -610, -590, -569, -548, -526, -505, -483, -460, -438, -415,
     -392, -369, -345, -321, -297, -273, -249, -224, -200, -175, -150, -125, -100, -75, -50, -25,
 ]
-
 
 // commands.gd: the command codes (export.gd CMD_CODES).
 let CMD_MOVE = 0

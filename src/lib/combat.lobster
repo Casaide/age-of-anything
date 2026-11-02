@@ -12,7 +12,7 @@ var c_hurt_by = []::int
 var c_engaged = []::int
 var c_inbound = []::int
 var c_bhurt = []::int
-var c_aura = []::int           // this tick's auras per unit slot (heroes.gd AURA ints), empty with none
+var c_aura = []::int  // this tick's auras per unit slot (heroes.gd AURA ints), empty with none
 
 let AURA = 3
 
@@ -30,7 +30,7 @@ def is_target(id:int, p:int) -> bool:
     let i = index_of(id)
     if i >= 0: return is_enemy(u_owner[i], p) or (u_owner[i] == p and t_animal[u_kind[i]] != 0)
     let b = b_index_of(id)
-    if b < 0: return bridge_target(id)   // a map bridge: anyone may break it
+    if b < 0: return bridge_target(id)  // a map bridge: anyone may break it
     return is_enemy(b_owner[b], p)
 
 def cmd_attack(p:int, ids:[int], target:int):
@@ -80,7 +80,7 @@ def sight_of(i:int) -> int:
 
 def look(i:int) -> int:
     let k = u_kind[i]
-    if u_perch[i] != 0: return t_reach[k] + u_radius[i] + TILE / 2 + (if t_ranged[k]: r_high_reach else: TILE)   // up on a wall it never chases
+    if u_perch[i] != 0: return t_reach[k] + u_radius[i] + TILE / 2 + (if t_ranged[k]: r_high_reach else: TILE)  // up on a wall it never chases
     if u_posture[i] == DEFENSIVE: return max(r_defend_sight, t_reach[k] + u_radius[i] + TILE / 2)
     if u_posture[i] == STAND: return t_reach[k] + u_radius[i] + TILE / 2
     return sight_of(i)
@@ -126,7 +126,7 @@ def gap(i:int, j:int) -> int:
     return isqrt(dist2(u_x[i], u_y[i], u_x[j], u_y[j])) - u_radius[i] - u_radius[j]
 
 def gap_b(i:int, b:int) -> int:
-    if b_diag[b] != 0:   // to the nearest cell of a diagonal gate (Buildings.gap)
+    if b_diag[b] != 0:  // to the nearest cell of a diagonal gate (Buildings.gap)
         var best = 1 << 30
         for(b_sy[b]) k:
             let gx0 = (b_cx[b] + (if b_diag[b] == 1: k else: b_sx[b] - 1 - k)) * TILE
@@ -174,14 +174,14 @@ def fog_sees_area(p:int, b:int) -> bool:
 // those the shots in the air will kill); then, `buildings_too`, the nearest enemy building it sees.
 def nearest_foe(i:int, sight:int, buildings_too:bool, spread:int, use_inbound:bool, near:int, units_too:bool) -> int:
     let me = u_owner[i]
-    if me == gaia: return 0   // animals don't go looking for a fight
+    if me == gaia: return 0  // animals don't go looking for a fight
     var best = 0
     var best_d = 1 << 40
     let r = sight / TILE + 1
     let cx = u_x[i] / TILE
     let cy = u_y[i] / TILE
     let counters = t_counters[u_kind[i]]
-    let lvl = if t_ranged[u_kind[i]]: -1 elif u_perch[i] != 0: 1 else: 0   // melee: only foes up on a wall if it is, the ground if not
+    let lvl = if t_ranged[u_kind[i]]: -1 elif u_perch[i] != 0: 1 else: 0  // melee: only foes up on a wall if it is, the ground if not
     let xi = u_x[i]
     let yi = u_y[i]
     if units_too:
@@ -197,7 +197,7 @@ def nearest_foe(i:int, sight:int, buildings_too:bool, spread:int, use_inbound:bo
                 while k < e:
                     let j = sp_items[k]
                     k++
-                    if not is_foe(u_owner[j], me) or t_animal[u_kind[j]] != 0: continue   // a rival's sheep is stolen, not killed
+                    if not is_foe(u_owner[j], me) or t_animal[u_kind[j]] != 0: continue  // a rival's sheep is stolen, not killed
                     if lvl >= 0 and (if u_perch[j] != 0: 1 else: 0) != lvl: continue
                     if use_inbound and c_inbound[j] >= u_hp[j]: continue
                     let d2 = dist2(xi, yi, u_x[j], u_y[j])
@@ -250,7 +250,7 @@ def loose(by:int, owner:int, sx:int, sy:int, j:int, b:int, d:int, src:int, up:in
         ax = b_cx[b] * TILE + b_sx[b] * TILE / 2
         ay = b_cy[b] * TILE + b_sy[b] * TILE / 2
     let f = flight(sx, sy, ax, ay, speed)
-    for([tick + f, to, by, owner, d, src, up, ax, ay, sx, sy]) v: shots.push(v)
+    for([ tick + f, to, by, owner, d, src, up, ax, ay, sx, sy ]) v: shots.push(v)
     if events_on: events.push(Event { EV_SHOT, by, to, 0, ax, ay })
 
 def take_shots(t:int) -> [int]:
@@ -324,10 +324,10 @@ def land():
         let b = if j < 0: b_index_of(to) else: -1
         let src = recs[o + SHOT_SRC]
         if src >= 0 and t_splash[src] > 0:
-            splash(o, recs, b)   // a stone lands on its spot, whoever is there
+            splash(o, recs, b)  // a stone lands on its spot, whoever is there
             o += SHOT_STRIDE
             continue
-        if src >= 0 and t_pass_len[src] > 0: pass_through(o, recs, j)   // a bolt goes through those in its way
+        if src >= 0 and t_pass_len[src] > 0: pass_through(o, recs, j)  // a bolt goes through those in its way
         if b >= 0:
             c_bhurt[b] += d
             if events_on: events.push(Event { EV_HIT, by, to, d, ax, ay })
@@ -371,7 +371,7 @@ def towers():
                     let far = reach + s / 2 + (if has_heights: r_high_reach else: 0)
                     let limit = far * far + 1
                     let lv = level[b_cy[b] * W + b_cx[b]]
-                    let near = []::int    // d * 2^24 + j... sorted: (distance squared, slot)
+                    let near = []::int  // d * 2^24 + j... sorted: (distance squared, slot)
                     let ups = map(u_x.length): 0
                     let tr = far / TILE + 1
                     let tx = mx / TILE
@@ -500,7 +500,7 @@ def surround(b:int, chasers:[int], hitters:[int]):
         else:
             claimed[best] = 1
             if not mine or px[best] != u_tx[i] or py[best] != u_ty[i] or
-               (u_moving[i] == 0 and dist2(u_x[i], u_y[i], px[best], py[best]) > SLOT_ARRIVE * SLOT_ARRIVE * 16):
+                    (u_moving[i] == 0 and dist2(u_x[i], u_y[i], px[best], py[best]) > SLOT_ARRIVE * SLOT_ARRIVE * 16):
                 order_beside(i, px[best], py[best], x0r, y0r, x1r, y1r, fkey)
 
 // Land this tick's hits together, then remove the dead units and buildings (by descending slot).
@@ -510,9 +510,9 @@ def apply_hits(n:int):
         if c_hurt[j] != 0:
             u_hp[j] -= c_hurt[j]
             let k = u_kind[j]
-            if t_animal[k] != 0: animal_hurt(j, c_hurt_by[j])   // a deer bolts, a sheep stands for the knife
+            if t_animal[k] != 0: animal_hurt(j, c_hurt_by[j])  // a deer bolts, a sheep stands for the knife
             if u_foe[j] == 0 and (u_stance[j] == NONE or u_stance[j] == RETURN) and u_task[j] == T_NONE and not t_worker[k] and
-               not t_harmless[k] and not t_healer[k] and not t_buildings_only[k] and u_posture[j] != PASSIVE:
+                    not t_harmless[k] and not t_healer[k] and not t_buildings_only[k] and u_posture[j] != PASSIVE:
                 engage(j, c_hurt_by[j])
     // Bounties (Combat._bounties): a killer with kill_gold earns it for each enemy unit (not animals)
     // its last blow killed this tick. (Sticky hits: abilities, not ported, asserted by the exporter.)
@@ -528,7 +528,7 @@ def apply_hits(n:int):
     while j >= 0:
         if u_hp[j] <= 0:
             if events_on: events.push(Event { EV_DIE, u_id[j], 0, 0, u_x[j], u_y[j] })
-            if t_animal[u_kind[j]] != 0: animal_died(j)   // a carcass to gather (food, not a unit lost)
+            if t_animal[u_kind[j]] != 0: animal_died(j)  // a carcass to gather (food, not a unit lost)
             else: lost[u_owner[j]]++
             remove_unit(j)
         j--
@@ -541,14 +541,14 @@ def apply_hits(n:int):
                 clear_farm(b)
                 pen_gone(b)
                 spill(b)
-                breach(b)   // a wall piece leaves rubble
+                breach(b)  // a wall piece leaves rubble
                 occupy(footprint(b), 0)
                 remove_building(b)
         b--
 
 // One tick of fighting (Combat.tick). The spatial buckets must be built from the current positions.
 def combat_tick():
-    let brhurt = map(br_id.length): 0   // this tick's damage to each map bridge
+    let brhurt = map(br_id.length): 0  // this tick's damage to each map bridge
     let n = u_x.length
     let nb = b_id.length
     for(n) i:
@@ -599,7 +599,7 @@ def combat_tick():
         var j = index_of(u_foe[i])
         let b = if j >= 0: -1 else: b_index_of(u_foe[i])
         let br = if j < 0 and b < 0 and br_id.length > 0: bridge_index(u_foe[i]) else: -1
-        if br >= 0 and br_up[br] == 1:   // breaking a bridge: walk up to it and hack away
+        if br >= 0 and br_up[br] == 1:  // breaking a bridge: walk up to it and hack away
             if bridge_gap(i, br) <= t_reach[k]:
                 u_moving[i] = 0
                 if u_cooldown[i] == 0:
@@ -623,17 +623,17 @@ def combat_tick():
                 lost_foe(i)
             continue
         if j >= 0 and not t_ranged[k] and (u_perch[i] != 0) != (u_perch[j] != 0):
-            lost_foe(i)   // melee can't reach up onto a wall, nor down off one
+            lost_foe(i)  // melee can't reach up onto a wall, nor down off one
             continue
         let g = gap_to(i, j, b)
         var up = if t_ranged[k]: height_step(i, j, b) else: 0
         if t_min_range[k] > 0 and g < t_min_range[k]:
-            too_close(i, j, b)   // an engine can't hit what's under its nose
+            too_close(i, j, b)  // an engine can't hit what's under its nose
             continue
         if g <= t_reach[k] + up * r_high_reach + (if (t_ranged[k] or b >= 0) and u_moving[i] == 0: HOLD else: 0):
             u_moving[i] = 0
             if b >= 0: hitters[b].push(i)
-            if t_unpack[k] > 0 and u_ready[i] < t_unpack[k]: continue   // still unpacking: it throws once it's set up
+            if t_unpack[k] > 0 and u_ready[i] < t_unpack[k]: continue  // still unpacking: it throws once it's set up
             if u_cooldown[i] == 0 and j >= 0 and t_ranged[k] and c_inbound[j] >= u_hp[j] and u_stance[i] != ORDERED:
                 let f = nearest_foe(i, t_reach[k] + u_radius[i] + TILE / 2, false, SPREAD, true, near_of(i), true)
                 let fj = if f != 0: index_of(f) else: -1
@@ -663,18 +663,18 @@ def combat_tick():
                     if t_ranged[k]:
                         loose(u_id[i], u_owner[i], u_x[i], u_y[i], -1, b, d, k, up, t_shot_speed[k])
                     elif t_blast[k] > 0:
-                        blast(i, b, d)   // the sapper's charge goes off, and the sapper with it
+                        blast(i, b, d)  // the sapper's charge goes off, and the sapper with it
                     else:
                         c_bhurt[b] += d
                         if events_on: events.push(Event { EV_HIT, u_id[i], b_id[b], d, u_x[i], u_y[i] })
         elif u_perch[i] != 0:
             if j >= 0 and u_perch[j] != 0 and not t_ranged[k] and on_net(dist_from(u_perch[i] - 1), u_perch[j] - 1):
                 if u_wgoal[i] != u_perch[j] and u_wtime[i] == 0:
-                    wall_walk(i, u_perch[j] - 1)   // along the walkway to the foe up here
+                    wall_walk(i, u_perch[j] - 1)  // along the walkway to the foe up here
                     u_foe[i] = u_id[j]
                     u_stance[i] = AUTO
             else:
-                u_foe[i] = 0   // up on a wall: out of reach, let it go (it never chases off the wall)
+                u_foe[i] = 0  // up on a wall: out of reach, let it go (it never chases off the wall)
                 u_stance[i] = NONE
         elif u_stance[i] == AUTO and posture == STAND:
             u_foe[i] = 0
@@ -688,7 +688,7 @@ def combat_tick():
             chasers[b].push(i)
         else:
             chase(i, j, b)
-    for(nb) b:   // (slots ascending: GDScript sorts the besieged buildings' slots)
+    for(nb) b:  // (slots ascending: GDScript sorts the besieged buildings' slots)
         if chasers[b].length: surround(b, chasers[b], hitters[b])
     towers()
     pour()

@@ -73,21 +73,21 @@ import gen.reset
 import testkit.kit
 
 let SEED = 7
-let LIMIT = 20 * 60 * 30    // 30 minutes: a match must end, however slowly
+let LIMIT = 20 * 60 * 30  // 30 minutes: a match must end, however slowly
 
 // The pieces in test_ai.gd's order: name, tier.
-let PIECES = ["pick", "wonder", "respond", "shelter", "walled_fords", "rams", "hills", "guard", "age3", "surrender",
-              "easy", "siege_bot", "trade_bot", "walls_bot",
-              "passive_frogs", "passive_rats", "bvb", "bvb_again", "centaurs_frogs", "rats_centaurs", "hard",
-              "walled_palisade", "walled_wall", "walled_gap", "land", "siege_mode"]
-let SLOW_FROM = 14          // PIECES from here on are slow
-let GROUPS = [["age3", "age3"], ["levels", "levels_easy,levels_normal,levels_hard"], ["rams", "rams,siege_bot"],
-              ["walls", "rams,walled_palisade,walled_wall,walled_gap,walls_bot"], ["pick", "pick"], ["hills", "hills,guard"],
-              ["land", "land,guard,hills"], ["reach", "respond,shelter,walled_fords"]]
+let PIECES = [ "pick", "wonder", "respond", "shelter", "walled_fords", "rams", "hills", "guard", "age3", "surrender",
+               "easy", "siege_bot", "trade_bot", "walls_bot",
+               "passive_frogs", "passive_rats", "bvb", "bvb_again", "centaurs_frogs", "rats_centaurs", "hard",
+               "walled_palisade", "walled_wall", "walled_gap", "land", "siege_mode" ]
+let SLOW_FROM = 14  // PIECES from here on are slow
+let GROUPS = [ [ "age3", "age3" ], [ "levels", "levels_easy,levels_normal,levels_hard" ], [ "rams", "rams,siege_bot" ],
+               [ "walls", "rams,walled_palisade,walled_wall,walled_gap,walls_bot" ], [ "pick", "pick" ], [ "hills", "hills,guard" ],
+               [ "land", "land,guard,hills" ], [ "reach", "respond,shelter,walled_fords" ] ]
 
 var map_id = "flat_test"
 var piece = ""
-let stats = dictionary<string, int>(64)   // "piece key" -> value (printed as "@@ piece key value")
+let stats = dictionary<string, int>(64)  // "piece key" -> value (printed as "@@ piece key value")
 
 def stat(key:string, v:int):
     stats.set(piece + " " + key, v)
@@ -118,16 +118,16 @@ def issued_since(p:int, seq:int) -> [Cmd]: return filter(pending) c: c.player ==
 class MatchResult:
     winner:int
     end_tick:int
-    hashes:int              // state hashes taken (every 30 ticks) ...
-    hash:int                // ... and a hash of them
-    most:[int]              // healers: the most each side had at once
+    hashes:int  // state hashes taken (every 30 ticks) ...
+    hash:int    // ... and a hash of them
+    most:[int]  // healers: the most each side had at once
     heals:[int]
     behind = 0
     samples = 0
     heroes_up:[int]
     revived:[int]
     fell:[int]
-    kinds:[[int]]           // per side: hero slots it fielded
+    kinds:[[int]]  // per side: hero slots it fielded
 
 // Healers: the most each side had, and whether they keep behind their army: when soldiers are out (3 or
 // more over 10 tiles from home), the healers' middle is nearer home than theirs. Soldiers posted with far
@@ -135,8 +135,8 @@ class MatchResult:
 def watch_healers(r:MatchResult, sides:[Side]):
     for(2) p:
         let hx, hy = start_of(p)
-        let n = [0, 0]
-        let d = [0, 0]
+        let n = [ 0, 0 ]
+        let d = [ 0, 0 ]
         let f = sides[p].full
         for(u_id.length) i:
             let k = u_kind[i]
@@ -153,9 +153,9 @@ def watch_healers(r:MatchResult, sides:[Side]):
 
 def play(races:[JV], sides:[Side], title:string, quiet:bool) -> MatchResult:
     if not quiet: print "\n== " + title
-    let res = MatchResult { -1, 0, 0, 0, [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [[], []] }
-    let aged = [-1, -1]
-    let bought = [[]::string, []::string]
+    let res = MatchResult { -1, 0, 0, 0, [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ [], [] ] }
+    let aged = [ -1, -1 ]
+    let bought = [ []::string, []::string ]
     let wt = new_watch()
     var h = 0
     while tick < LIMIT and winner < 0:
@@ -219,15 +219,15 @@ def match_stats(r:MatchResult):
 
 def play_pair(races:[JV], title:string, quiet:bool) -> MatchResult:
     world(races, rules)
-    return play(races, [full_side(0), full_side(1)], title, quiet)
+    return play(races, [ full_side(0), full_side(1) ], title, quiet)
 
 def test_passive(a:JV, b:JV):
-    world([a, b], rules)
-    let r = play([a, b], [full_side(0), eco_side(1)], "bot {rname(a)} vs passive {rname(b)}", false)
+    world([ a, b ], rules)
+    let r = play([ a, b ], [ full_side(0), eco_side(1) ], "bot {rname(a)} vs passive {rname(b)}", false)
     check(r.winner == 0, "the bot beats a passive {rname(b)} (winner {r.winner} at {clock(r.end_tick)})")
 
 def test_bvb():
-    let a = play_pair([frogs, rats], "bot vs bot", false)
+    let a = play_pair([ frogs, rats ], "bot vs bot", false)
     check(a.winner >= 0, "bot vs bot ends with a winner ({a.winner} at {clock(a.end_tick)})")
     // Healers (Dominic, 2026-10-12): a couple from age 2, kept behind the army, and they heal.
     let most = max(a.most[0], a.most[1])
@@ -238,19 +238,19 @@ def test_bvb():
     match_stats(a)
 
 def test_races(pa:JV, pb:JV):
-    let r = play_pair([pa, pb], "bot {rname(pa)} vs bot {rname(pb)}", false)
+    let r = play_pair([ pa, pb ], "bot {rname(pa)} vs bot {rname(pb)}", false)
     check(r.winner >= 0, "{rname(pa)} vs {rname(pb)} ends with a winner")
     match_stats(r)
 
 def test_hard():
-    world([rats, frogs], rules)
+    world([ rats, frogs ], rules)
     level_config("hard")
     let hard = full_side(0)
     hard.lv = level_now()
     level_config("normal")
     let normal = full_side(1)
     normal.lv = level_now()
-    let r = play([rats, frogs], [hard, normal], "hard bot {rname(rats)} vs normal bot {rname(frogs)}", false)
+    let r = play([ rats, frogs ], [ hard, normal ], "hard bot {rname(rats)} vs normal bot {rname(frogs)}", false)
     check(r.winner == 0, "hard beats normal (winner {r.winner} at {clock(r.end_tick)})")
 
 // The checks across pieces: the same match twice is the same; the bots' healers heal someone over their
@@ -260,7 +260,7 @@ def combine():
     if g("bvb hash") != -(1 << 40) and g("bvb_again hash") != -(1 << 40):
         check(g("bvb hash") == g("bvb_again hash") and g("bvb hashes") == g("bvb_again hashes") and g("bvb winner") == g("bvb_again winner"),
               "bot vs bot is deterministic")
-    let ms = ["bvb", "centaurs_frogs", "rats_centaurs"]
+    let ms = [ "bvb", "centaurs_frogs", "rats_centaurs" ]
     let missing = exists(ms) m: g(m + " tick") == -(1 << 40)
     if not missing:
         var heals = 0
@@ -276,9 +276,9 @@ def combine():
 
 // Easy against a passive player: a small army, and the first loss no earlier than its first wave.
 def test_easy(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     level_config("easy")
-    let sides = [full_side(0), eco_side(1)]
+    let sides = [ full_side(0), eco_side(1) ]
     var most = 0
     var first_loss = -1
     let hx, hy = start_of(0)
@@ -302,9 +302,9 @@ def test_easy(a:JV, b:JV):
 // In age 3 the bot raises a University and a Castle and buys some of their research; it starts there with
 // a full stock against a passive side, topped up each minute, for fifteen minutes.
 def test_age_three(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     ai_config("normal") c: no_waves(c)
-    let sides = [full_side(0), eco_side(1)]
+    let sides = [ full_side(0), eco_side(1) ]
     ages[0] = 3
     let bought = []::string
     let wt = new_watch()
@@ -318,7 +318,7 @@ def test_age_three(a:JV, b:JV):
     let done = []::string
     for(b_id.length) bi:
         if b_owner[bi] == 0 and b_done[bi] == 1 and not contains_str(done, bt_name[b_kind[bi]]): done.push(bt_name[b_kind[bi]])
-    let theirs = filter(bought) id: contains_str(["stonecutting", "lifting_frames", "slit_windows", "thick_walls", "siege_wrights", "war_drums", "creature_research", "culture_research"], id)
+    let theirs = filter(bought) id: contains_str([ "stonecutting", "lifting_frames", "slit_windows", "thick_walls", "siege_wrights", "war_drums", "creature_research", "culture_research" ], id)
     var workers = 0
     for(u_id.length) i:
         if u_owner[i] == 0 and t_worker[u_kind[i]]: workers++
@@ -330,9 +330,9 @@ def test_age_three(a:JV, b:JV):
 // (Normal, Hard), age 3 by 16 (Easy, Normal), by 20 minutes a University, a Castle, a tower and ten
 // research (Easy, Normal); Normal's army still growing at 30.
 def test_level(a:JV, b:JV, lvl:string):
-    world([a, b], rules)
+    world([ a, b ], rules)
     ai_config(lvl) c: no_waves(c)
-    let sides = [full_side(0), eco_side(1)]
+    let sides = [ full_side(0), eco_side(1) ]
     var a2 = -1
     var a3 = -1
     let bought = []::string
@@ -375,7 +375,7 @@ def test_level(a:JV, b:JV, lvl:string):
         return if n >= 0: built_counts[n] else: 0
     let towers = built("watchtower") + built("bastion")
     print "\n== {lvl}, left alone: age 2 at {clock(a2)}, age 3 at {clock(a3)}; by 20:00 built " + concat_string(map(built_names) id, n: "{id} {built_counts[n]}", ", ") +
-          "; research by 20:00 ({bought.length}) {bought}; army pop at 10/20/30 min {army[10]}/{army[20]}/{army[30]}"
+        "; research by 20:00 ({bought.length}) {bought}; army pop at 10/20/30 min {army[10]}/{army[20]}/{army[30]}"
     if lvl != "easy":
         check(a2 >= 0 and a2 <= 20 * 60 * 8, "{lvl}: age 2 by 8:00 ({clock(a2)})")
     if lvl != "hard":
@@ -407,13 +407,13 @@ def seen_tags(slot:string) -> [int], [int]:
 // The Barracks' counter-pick: spears with nothing seen, and against cavalry; swords against spears and
 // skirmishers. The Range's: mounted archers against swordsmen only. The Castle's great sling first.
 def test_pick():
-    for(["greeks", "swamp frogs", "sewer rats", "egyptians"]) prompt:
+    for([ "greeks", "swamp frogs", "sewer rats", "egyptians" ]) prompt:
         let race = generate(prompt, rules, 0)
-        world([race, race], rules)
-        for([1, 2]) age:
+        world([ race, race ], rules)
+        for([ 1, 2 ]) age:
             ages[0] = age
             let bot = new_bot(0)
-            let barracks = ["spear", "infantry"]
+            let barracks = [ "spear", "infantry" ]
             let none = map(num_classes): 0
             let lt, lb = seen_tags("large")
             let st, sb = seen_tags("spear")
@@ -424,16 +424,16 @@ def test_pick():
             check(pick_slot(bot, barracks, st, sb) == "infantry", "pick {prompt} age {age}: swords against spears")
             check(pick_slot(bot, barracks, kt, kb) == "infantry", "pick {prompt} age {age}: swords against skirmishers")
             if age == 2:
-                let range_lines = ["skirmisher", "archer", "mounted_archer"]
+                let range_lines = [ "skirmisher", "archer", "mounted_archer" ]
                 check(pick_slot(bot, range_lines, none, none) != "mounted_archer", "pick {prompt}: archers, not mounted archers, with nothing seen")
                 check(pick_slot(bot, range_lines, it, ib) == "mounted_archer", "pick {prompt}: mounted archers against swordsmen")
                 check(pick_slot(bot, range_lines, st, sb) != "mounted_archer", "pick {prompt}: no mounted archers against spears")
-                check(pick_slot(bot, ["large", "scout"], none, none) == "large", "pick {prompt}: the Stable\'s cavalry with nothing seen")
+                check(pick_slot(bot, [ "large", "scout" ], none, none) == "large", "pick {prompt}: the Stable\'s cavalry with nothing seen")
                 ages[0] = 3
-                let castle = ["unique", "great_sling"]
+                let castle = [ "unique", "great_sling" ]
                 let first = pick_slot(bot, castle, none, none)
                 check(first == "great_sling", "pick {prompt}: the Castle\'s great sling first ({first})")
-                check(pick_slot(bot, ["trader"], none, none) == "", "pick {prompt}: trade carts aren\'t picked as soldiers")
+                check(pick_slot(bot, [ "trader" ], none, none) == "", "pick {prompt}: trade carts aren\'t picked as soldiers")
                 ages[0] = 2
             if cfg("military.building_foes") > 0:
                 bot.aim = 1
@@ -442,7 +442,7 @@ def test_pick():
 
 // An enemy Wonder, finished, is the first thing its soldiers go for; a bot rich in age 3 builds its own.
 def test_wonder(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     let bot = full_side(0)
     let k = btype_index("wonder")
     var tc1 = -1
@@ -482,7 +482,7 @@ def test_wonder(a:JV, b:JV):
     check(first > 0 and first < 20 * 200, "wonder bot: its soldiers go for a finished enemy Wonder at once (first blow at {clock(first)}, waves start at {wave_at[0]} s)")
     check(tc_hit == 0, "wonder bot: the Wonder before the Town Center (Town Center hit at " + (if tc_hit > 0: clock(tc_hit) else: "never") + ")")
     // Rich in age 3: it builds its own.
-    world([a, b], rules)
+    world([ a, b ], rules)
     let bot2 = full_side(0)
     while tick < 20 * 60:
         think(bot2)
@@ -505,7 +505,7 @@ def builder_lane(p:int) -> int: return lane_base[p] + t_mclass[worker_type(p)]
 // beside it, and a few enemy soldiers hacking at both: within seconds the bot sends soldiers there, pulls
 // the worker away, and its soldiers come to blows with the raiders.
 def test_respond(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     let side = full_side(1)
     while tick < 1200:
         think(side)
@@ -539,7 +539,7 @@ def test_respond(a:JV, b:JV):
     let camp_id = b_id[camp]
     let cx = spx * 1000 + 1000
     let cy = spy * 1000 + 1000
-    spawn(1, "spear", 4, tx * 1000 + 500, ty * 1000 + 3500)   // a home guard
+    spawn(1, "spear", 4, tx * 1000 + 500, ty * 1000 + 3500)  // a home guard
     spawn(1, "worker", 1, cx + 2000, cy)
     spawn(0, "spear", 3, cx - 2500, cy)
     for(12):
@@ -572,7 +572,7 @@ def test_respond(a:JV, b:JV):
                     if bi >= 0 and u_owner[bi] == 1: blows++
         if blows > 0 and sent >= 0 and pulled >= 0 and tick >= max(sent, pulled): break
     print "\n== respond: first blow {clock(first_hit)}, soldiers sent " + (if sent >= 0: clock(sent) else: "never") + ", worker pulled back " +
-          (if pulled >= 0: clock(pulled) else: "never") + ", blows on the raiders {blows}"
+        (if pulled >= 0: clock(pulled) else: "never") + ", blows on the raiders {blows}"
     check(first_hit >= 0 and sent >= 0 and sent - first_hit <= 100, "respond: soldiers are sent to a raided camp within 5 s ({sent - first_hit} ticks)")
     check(pulled >= 0 and pulled - first_hit <= 100, "respond: the worker by it is pulled back within 5 s")
     check(blows > 0, "respond: the bot\'s soldiers fight the raiders")
@@ -580,7 +580,7 @@ def test_respond(a:JV, b:JV):
 // A big raid by the Town Center: the bot calls its workers to arms within seconds, and sends them back to
 // work afterwards.
 def test_shelter(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     let side = full_side(1)
     while tick < 1200:
         think(side)
@@ -609,7 +609,7 @@ def test_shelter(a:JV, b:JV):
         wstep()
         inside = max(inside, sheltered(1))
     print "\n== shelter: {raiders.length} raiders; call to arms " + (if called >= 0: clock(called) else: "never") + ", most inside {inside}, back to work " +
-          (if back >= 0: clock(back) else: "never")
+        (if back >= 0: clock(back) else: "never")
     check(called >= 0 and called - t_start <= 20 * 10, "shelter: a raid on the Town Center calls the workers to arms within 10 s")
     check(inside >= 3, "shelter: ...and they go inside ({inside})")
     check(back >= 0, "shelter: ...and back to work afterwards")
@@ -618,7 +618,7 @@ def test_shelter(a:JV, b:JV):
 // bridge down: the bot's half is cut off. Its workers keep working, it builds and ages on its own side,
 // and its army goes for the walls rather than standing about.
 def test_walled_fords(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     let ford = terrain_named("ford")
     let has_ford = exists(terrain) t: t == ford
     if ford < 0 or not has_ford:
@@ -633,7 +633,7 @@ def test_walled_fords(a:JV, b:JV):
             b_hp[bi] = bm_hp[0][wk]
             walls++
     for(br_id.length) k: bridge_hurt(k, 1 << 20)
-    let sides = [eco_side(0), full_side(1)]
+    let sides = [ eco_side(0), full_side(1) ]
     let reach = Reach {}
     let ln = builder_lane(1)
     let s0x, s0y = start_of(0)
@@ -645,7 +645,7 @@ def test_walled_fords(a:JV, b:JV):
     var far = -1
     var r = 6
     while r < 14:
-        for([int2 { r, 0 }, int2 { 0, r }, int2 { r, r }]) d:
+        for([ int2 { r, 0 }, int2 { 0, r }, int2 { r, r } ]) d:
             if far < 0 and can_place(1, bk, s0x / 1000 + d.x, s0y / 1000 + d.y): far = place(1, bk, s0x / 1000 + d.x, s0y / 1000 + d.y)
         r++
     let far_id = if far >= 0: b_id[far] else: -1
@@ -689,7 +689,7 @@ def test_walled_fords(a:JV, b:JV):
             blds++
             if b_kind[bi] == bk and b_done[bi] == 1: barracks++
     print "\n== walled fords ({map_id}): at {clock(tick)} the bot has {workers} workers, {blds} buildings, age {ages[1]}; idle {idle_looks} of {looks} worker looks, longest idle {worst * 5} s; workers sent to the cut-off foundation {stranded} looks; barracks built {barracks}; new foundations it can\'t reach {cut_off}; blows on the walls {wall_hits}; a bridge mended " +
-          (if mended >= 0: clock(mended) else: "never")
+        (if mended >= 0: clock(mended) else: "never")
     check(cut_off == 0, "walled fords: the bot lays no foundation it can\'t reach")
     check(stranded == 0, "walled fords: nobody is sent to the foundation over the river ({stranded} looks)")
     check(barracks >= 1, "walled fords: it builds a barracks on its own side instead")
@@ -705,8 +705,8 @@ def test_walled_fords(a:JV, b:JV):
 // An early scout tours and sees round the enemy's start; then a Normal bot match to the end, reporting
 // what each bot did with the land. Checks what the map calls for.
 def test_land(a:JV, b:JV):
-    world([b, a], rules)
-    let sides = [full_side(0), eco_side(1)]
+    world([ b, a ], rules)
+    let sides = [ full_side(0), eco_side(1) ]
     while tick < 20 * 60 * 4:
         think_all(sides)
         wstep()
@@ -729,11 +729,11 @@ def test_land(a:JV, b:JV):
     check(tours >= 1, "land: a scout tours early")
     check(seen * 100 >= cells * 25, "land: ...and sees round the enemy\'s start ({seen} of {cells} cells)")
     // A whole Normal match: what the bots did with the land.
-    world([a, b], rules)
-    let pair = [full_side(0), full_side(1)]
-    let camps_laid = [0, 0]
+    world([ a, b ], rules)
+    let pair = [ full_side(0), full_side(1) ]
+    let camps_laid = [ 0, 0 ]
     let camp_kinds = []::int
-    for(["food", "gold", "stone", "wood"]) res:
+    for([ "food", "gold", "stone", "wood" ]) res:
         let cl = cfg_list("expand.camps.{res}")
         if cl.length: camp_kinds.push(btype_index(cl[0]))
     while tick < LIMIT and winner < 0:
@@ -765,9 +765,9 @@ def test_land(a:JV, b:JV):
 // A level that guards (Normal), on the back foot, left to build up against a passive side (its stock
 // topped up from 6:00), puts a Watchtower on the key crossing by 16 minutes.
 def test_guard(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     ai_config("normal") c: no_waves(c)
-    let sides = [full_side(0), eco_side(1)]
+    let sides = [ full_side(0), eco_side(1) ]
     let bot = assert sides[0].full
     bot.on_back_foot = true
     while tick < 20 * 60 * 16:
@@ -790,7 +790,7 @@ def test_guard(a:JV, b:JV):
 // High ground: four of our archers a few steps from a ramp up a hill, enemy soldiers coming at them: the
 // bot sends the archers up.
 def test_hills(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     if has_heights == 0: return
     let side = full_side(0)
     let walk0 = walks[0]
@@ -800,7 +800,7 @@ def test_hills(a:JV, b:JV):
         if foot < 0 and ramp[c] != 0 and level[c] == 0:
             let steps = dictionary<int, int>(64)
             steps.set(c, 0)
-            let queue = [c]
+            let queue = [ c ]
             var head = 0
             var f = -1
             var e = -1
@@ -809,7 +809,7 @@ def test_hills(a:JV, b:JV):
                 head++
                 if steps.get(here, 0) == 3 and f < 0: f = here
                 if steps.get(here, 0) == 8 and e < 0: e = here
-                for([1, -1, W, -W]) d:
+                for([ 1, -1, W, -W ]) d:
                     let n = here + d
                     if n >= 0 and n < walk0.length and walk0[n] == 1 and level[n] == 0 and ramp[n] == 0 and steps.get(n, -1) < 0 and abs(n % W - here % W) <= 1:
                         steps.set(n, steps.get(here, 0) + 1)
@@ -832,7 +832,7 @@ def test_hills(a:JV, b:JV):
     for(u_id.length) i:
         if u_owner[i] == 0 and t_slot[u_kind[i]] == "archer": ours.push(u_id[i])
         elif u_owner[i] == 1 and t_slot[u_kind[i]] == "spear": theirs.push(u_id[i])
-    issue_cmd(1, CMD_STANCE, theirs, STAND, 0, 0, 0)   // (they wait, then come on)
+    issue_cmd(1, CMD_STANCE, theirs, STAND, 0, 0, 0)  // (they wait, then come on)
     let below = (filter(ours) id: level[cell_of(u_x[index_of(id)], u_y[index_of(id)])] == 0).length
     var up = 0
     while tick < 20 * 25:
@@ -858,7 +858,7 @@ def test_walled_base(a:JV, b:JV, wall:string, gap:bool):
     if map_id != "flat_test":
         print "\n== {title}: laid out for flat_test, skipped on {map_id}"
         return
-    world([a, b], rules)
+    world([ a, b ], rules)
     let lox = 5
     let loy = 3
     let hix = 24
@@ -876,7 +876,7 @@ def test_walled_base(a:JV, b:JV, wall:string, gap:bool):
                 b_hp[bi] = bm_hp[0][wk]
             x++
         y++
-    let gates = if gap: [int3 { hix, 11, 1 }] else: [int3 { hix, 11, 1 }, int3 { 12, hiy, 0 }]   // east (along y), south (along x)
+    let gates = if gap: [ int3 { hix, 11, 1 } ] else: [ int3 { hix, 11, 1 }, int3 { 12, hiy, 0 } ]  // east (along y), south (along x)
     for(gates) g:
         let sx, sy = dims(gk, g.z)
         for(cells_of(g.x, g.y, sx, sy, 0)) c:
@@ -884,8 +884,8 @@ def test_walled_base(a:JV, b:JV, wall:string, gap:bool):
         let bi = place(0, gk, g.x, g.y, g.z)
         b_done[bi] = 1
         b_hp[bi] = bm_hp[0][gk]
-    ai_config("normal") c: erase(at(c, "military"), "hero")   // no heroes (D-138): with them the battle\'s timing shifts
-    let sides = [eco_side(0), full_side(1)]
+    ai_config("normal") c: erase(at(c, "military"), "hero")  // no heroes (D-138): with them the battle\'s timing shifts
+    let sides = [ eco_side(0), full_side(1) ]
     let bot = assert sides[1].full
     let reach = Reach {}
     let ln = lane_base[1]
@@ -944,8 +944,8 @@ def test_walled_base(a:JV, b:JV, wall:string, gap:bool):
     let top12 = spread_l.slice(0, min(12, spread_l.length))
     print "  blows per ring piece hit (most first) {top12}, damage dealt {dealt}"
     print "\n== {title}: winner {winner} at {clock(tick)}; first blow on the ring " + (if first_hit >= 0: clock(first_hit) else: "never") + ", {ring_hits} blows in all" +
-          (if gap: "" else: ", the Town Center in reach from " + (if breach_at >= 0: clock(breach_at) else: "never")) +
-          "; first bot soldier inside " + (if first_in >= 0: clock(first_in) else: "never") + " ({hits_before_in} blows on the ring by then); gates\' hp left {hp_left}; soldiers out by the ring idle {idle} of {looks} looks, longest {worst * 5} s"
+        (if gap: "" else: ", the Town Center in reach from " + (if breach_at >= 0: clock(breach_at) else: "never")) +
+        "; first bot soldier inside " + (if first_in >= 0: clock(first_in) else: "never") + " ({hits_before_in} blows on the ring by then); gates\' hp left {hp_left}; soldiers out by the ring idle {idle} of {looks} looks, longest {worst * 5} s"
     check(winner == 1, "{title}: the bot wins (winner {winner} at {clock(tick)})")
     check(first_in >= 0, "{title}: the bot\'s soldiers get inside the ring")
     check(looks == 0 or idle * 100 <= looks * 20, "{title}: soldiers out by the ring keep at it (idle {idle} of {looks} looks)")
@@ -966,9 +966,9 @@ def test_rams(race:JV):
     set(st, "buildings", jarr([]))
     set(st, "workers", jint(0))
     set(r, "animals", jbool(false))
-    for(["ram", "spear", "large", "great_sling"]) slot:
-        for(["stone_gate", "wall"]) target:
-            world([race, race], r)
+    for([ "ram", "spear", "large", "great_sling" ]) slot:
+        for([ "stone_gate", "wall" ]) target:
+            world([ race, race ], r)
             let k = type_of_slot(0, slot)
             assert k >= 0
             var cost = 0
@@ -986,9 +986,9 @@ def test_rams(race:JV):
             while b_index_of(bid) >= 0 and tick < 20 * 600: wstep()
             times.set(slot + ":" + target, tick)
             print "  {n} {unit_name(k)} ({cost} resources each) break a {target} in {clock(tick)}"
-    for(["stone_gate", "wall"]) target:
+    for([ "stone_gate", "wall" ]) target:
         let ram = times.get("ram:" + target, 0)
-        for(["spear", "large"]) slot:
+        for([ "spear", "large" ]) slot:
             let t = times.get(slot + ":" + target, 0)
             check(ram * 3 <= t, "rams break a {target} at least 3 times faster than the same cost in {slot} ({clock(ram)} vs {clock(t)})")
         let gs = times.get("great_sling:" + target, 0)
@@ -997,12 +997,12 @@ def test_rams(race:JV):
 // Siege: a bot already in age 3 with resources to spare, against a passive side: once it has a Siege
 // Workshop it keeps a few engines, and its engines strike buildings.
 def test_siege_bot(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     ai_config("normal") c:
-        for(glist(at(c, "military"), "waves")) wv: set(wv, "at", jint(as_int(at(wv, "at")) + 600))   // ten minutes to build up first
-        set(c, "wonder", jobj())               // no Wonder
-        erase(at(c, "military"), "hero")       // no heroes (D-138)
-    let sides = [full_side(0), eco_side(1)]
+        for(glist(at(c, "military"), "waves")) wv: set(wv, "at", jint(as_int(at(wv, "at")) + 600))  // ten minutes to build up first
+        set(c, "wonder", jobj())                                                                    // no Wonder
+        erase(at(c, "military"), "hero")                                                            // no heroes (D-138)
+    let sides = [ full_side(0), eco_side(1) ]
     ages[0] = 3
     let slots = cfg_list("military.siege.max_order")
     let engine_kind = map(slots) s: type_of_slot(0, s)
@@ -1049,15 +1049,15 @@ def test_siege_bot(a:JV, b:JV):
 // Trade: a bot in age 2 with two markets of its own far enough apart trains a few trade carts and keeps
 // them on the route, and they bring gold home; they never join its army.
 def test_trade_bot(a:JV, b:JV):
-    world([a, b], rules)
+    world([ a, b ], rules)
     ai_config("normal") c: no_waves(c)
-    let sides = [full_side(0), eco_side(1)]
+    let sides = [ full_side(0), eco_side(1) ]
     ages[0] = 2
     let mk = btype_index("market")
     let sx = start_x[0] / 1000
     let sy = start_y[0] / 1000
-    let placed = []::int   // market ids
-    for([int2 { sx + 4, sy - 2 }, int2 { sx + 4, sy + 24 }, int2 { sx + 24, sy }]) want:
+    let placed = []::int  // market ids
+    for([ int2 { sx + 4, sy - 2 }, int2 { sx + 4, sy + 24 }, int2 { sx + 24, sy } ]) want:
         if placed.length < 2:
             var r = 0
             var done = false
@@ -1122,13 +1122,13 @@ def test_walls_bot(a:JV, b:JV):
         return
     let r = deep_copy(rules)
     set(r, "animals", jbool(false))
-    world([a, b], r)
+    world([ a, b ], r)
     for(2) p:
         ages[p] = 3
         retype(p)
         tech_refresh(p)
     let s0x, s0y = start_of(0)
-    fortify_ring(0, s0x / 1000, s0y / 1000, 7, ring_spec(["n", "e", "s", "w"]))
+    fortify_ring(0, s0x / 1000, s0y / 1000, 7, ring_spec([ "n", "e", "s", "w" ]))
     spawn(0, "archer", 10, s0x + 2000, s0y + 2000)
     spawn(1, "spear", 6, s0x + 13000, s0y + 13000)
     let side = full_side(0)
@@ -1141,12 +1141,12 @@ def test_walls_bot(a:JV, b:JV):
     print "\n== walls bot: {up} of 10 shooters up on the wall after a minute"
     check(up >= 4, "walls bot: the bot mans its wall facing the enemy ({up} of 10 up)")
     // Storming: player 1\'s swordsmen and a siege tower by the ring\'s south-east, attacking.
-    world([a, b], r)
+    world([ a, b ], r)
     for(2) p:
         ages[p] = 3
         retype(p)
         tech_refresh(p)
-    fortify_ring(0, s0x / 1000, s0y / 1000, 7, ring_spec(["n", "w"]))
+    fortify_ring(0, s0x / 1000, s0y / 1000, 7, ring_spec([ "n", "w" ]))
     spawn(1, "infantry", 8, s0x + 11000, s0y + 4000)
     spawn(1, "siege_tower", 1, s0x + 11000, s0y + 2000)
     for(12): wstep()
@@ -1179,8 +1179,8 @@ def test_walls_bot(a:JV, b:JV):
 def test_siege_mode(a:JV, b:JV):
     let r = deep_copy(rules)
     set(r, "mode", jstr("siege"))
-    new_world(SEED, "siege_vale", [a, b], r, [])
-    let sides = [full_side(0), full_side(1)]
+    new_world(SEED, "siege_vale", [ a, b ], r, [])
+    let sides = [ full_side(0), full_side(1) ]
     var most_up = 0
     while tick < 20 * 60 * 21 and winner < 0:
         think_all(sides)
@@ -1205,7 +1205,7 @@ def run_piece(name:string):
     elif name == "passive_frogs": test_passive(frogs, rats)
     elif name == "passive_rats": test_passive(rats, frogs)
     elif name == "bvb": test_bvb()
-    elif name == "bvb_again": match_stats(play_pair([frogs, rats], "bot vs bot, again", true))   // the same match again: same hashes, same winner
+    elif name == "bvb_again": match_stats(play_pair([ frogs, rats ], "bot vs bot, again", true))  // the same match again: same hashes, same winner
     elif name == "centaurs_frogs": test_races(generate("centaur romans", rules, 0), frogs)
     elif name == "rats_centaurs": test_races(rats, generate("centaur romans", rules, 0))
     elif name == "easy": test_easy(rats, frogs)
@@ -1229,7 +1229,7 @@ def run_piece(name:string):
     elif name == "levels_normal": test_level(frogs, rats, "normal")
     elif name == "levels_hard": test_level(frogs, rats, "hard")
     elif name == "surrender":
-        world([frogs, rats], rules)
+        world([ frogs, rats ], rules)
         issue_cmd(1, CMD_SURRENDER, []::int, 0, 0, 0, 0)
         for(40): wstep()
         check(defeated[1] > 0 and winner == 0, "surrendering ends the match")

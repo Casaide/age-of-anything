@@ -2,7 +2,7 @@
 // Part ids may carry a hold after "@" (a body posed for its weapon: "body.frog@throw"; a third part, the
 // pose it rests in), a sling ("shield.bottlecap@slung") and, after "~", the body it's worn on or cut by.
 // Each model file has a build_<file>(base, colours) that knows its own parts (nil for the rest).
-import .carts   // (the trade cart concepts: staged, never in play)
+import .carts  // (the trade cart concepts: staged, never in play)
 
 def sling_of(id:string) -> string:
     let at = find_string(id, "@")
@@ -26,7 +26,7 @@ def build_model(id:string, c:Colours) -> Spec?:
     let base = bits[0]
     // each model file's parts (model/all.lobster imports them; a file answers nil for parts it doesn't have)
     return build_units(base, c) or build_units2(base, c) or build_units3(base, c) or build_units4(base, c) or build_units5(base, c) or
-           build_kit(base, c) or build_siege(base, c) or build_heroes(base, c) or build_bears(base, c) or build_carts(base, c) or
-           build_mods(base, c)   // (the active mods' Lobster models: model/mods_active.lobster)
+        build_kit(base, c) or build_siege(base, c) or build_heroes(base, c) or build_bears(base, c) or build_carts(base, c) or
+        build_mods(base, c)  // (the active mods' Lobster models: model/mods_active.lobster)
 
 def has_model(id:string, c:Colours) -> bool: return build_model(id, c) != nil

@@ -6,12 +6,12 @@
 // pixelized without the units' outline. With ground shadows: where the sun's shadow falls on the ground
 // (the sun shadow), and a contact band under the model (the occlusion where it meets the ground).
 
-let WB_SS = 4                                   // ArtKit.SS
-let WB_ART = ART_SCALE                          // ArtKit.ART_SCALE: art px a canvas unit
-let WB_PX = 32.0 / 0.70710678 * WB_ART          // art px a world unit (Baker.PX_PER_UNIT x the art scale)
-let WB_AO_RADIUS = 0.35                         // Baker's environment: ssao_radius (world units), ssao_intensity
-let WB_AO_INTENSITY = 0.88                      // (2.2 in Godot's terms, scaled as view/baker.lobster's)
-var wb_ao_tex:resource<texture>? = nil          // the bake under way's AO map
+let WB_SS = 4                           // ArtKit.SS
+let WB_ART = ART_SCALE                  // ArtKit.ART_SCALE: art px a canvas unit
+let WB_PX = 32.0 / 0.70710678 * WB_ART  // art px a world unit (Baker.PX_PER_UNIT x the art scale)
+let WB_AO_RADIUS = 0.35                 // Baker's environment: ssao_radius (world units), ssao_intensity
+let WB_AO_INTENSITY = 0.88              // (2.2 in Godot's terms, scaled as view/baker.lobster's)
+var wb_ao_tex:resource<texture>? = nil  // the bake under way's AO map
 
 let WORLD_SHADERS = """
 SHADER worlddepth
@@ -206,7 +206,7 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
             dhi = max(dhi, dot(p, cz))
             ylo = min(ylo, p.y)
             if shadow and p.y > 0.0:
-                let g = p + sun * (p.y / -sun.y)   // its shadow on the ground
+                let g = p + sun * (p.y / -sun.y)  // its shadow on the ground
                 let sg = float2 { dot(g, cx), -dot(g, cy) }
                 lo = min(lo, sg)
                 hi = max(hi, sg)
@@ -302,8 +302,8 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
     let ao_tex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap | texture_format_clamp)
     gl.switch_to_framebuffer(ao_tex, false)
     gl.ortho(false, false)
-    let full = gl.new_mesh("P", [float3 { 0.0, 0.0, 0.0 }, float3 { float(w), 0.0, 0.0 }, float3 { float(w), float(h), 0.0 }, float3 { 0.0, float(h), 0.0 }],
-                           []::float4, []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
+    let full = gl.new_mesh("P", [ float3 { 0.0, 0.0, 0.0 }, float3 { float(w), 0.0, 0.0 }, float3 { float(w), float(h), 0.0 }, float3 { 0.0, float(h), 0.0 } ],
+                           []::float4, []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ])
     gl.set_mesh_texture(full, 0, 0, vtex)
     gl.set_shader("bakeao")
     gl.set_uniform("aosize", float2 { float(w), float(h) })
@@ -323,7 +323,7 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
         // the ground: a plane at y 0 under the whole frame, white, lit by the sun alone, the model only
         // shadowing it (not drawn: its own pixels are masked out below by the art's alpha)
         let gpts = []::float3
-        for([float2 { lo.x, lo.y }, float2 { hi.x, lo.y }, float2 { hi.x, hi.y }, float2 { lo.x, hi.y }]) s:
+        for([ float2 { lo.x, lo.y }, float2 { hi.x, lo.y }, float2 { hi.x, hi.y }, float2 { lo.x, hi.y } ]) s:
             // the ground point seen at screen point s: along the view from x cx + y up the screen onto y = 0
             let o = cx * s.x - cy * s.y
             let g = o - cz * (o.y / cz.y)
@@ -333,7 +333,7 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
         gl.ortho(false, true)
         gl.clear(float4_0)
         let gpos = map(gpts) p: to_px(p)
-        let ground = gl.new_mesh("PNTC", gpos, map(4): float4_1, map(4): float3 { 0.0, 1.0, 0.0 }, map(4): float2_0, []::float2, [0, 1, 2, 0, 2, 3])
+        let ground = gl.new_mesh("PNTC", gpos, map(4): float4_1, map(4): float3 { 0.0, 1.0, 0.0 }, map(4): float2_0, []::float2, [ 0, 1, 2, 0, 2, 3 ])
         gl.set_mesh_texture(ground, 0, 1, smap)
         gl.set_shader("worldlit")
         set_common()
@@ -352,8 +352,8 @@ def world_bake(model:MNode, shadow:bool, reach:float = 1.0) -> string, int, int,
 
 // Baker._paint_shadows: the sun's shadow where the mask went dark, and the hand-drawn contact band (a short
 // dark strip of ground right below the lowest pixels in every column) so things sit on the ground.
-let WB_SHADOW = [15, 13, 8, 107]     // Pixelize.SHADOW (0.06, 0.05, 0.03, 0.42)
-let WB_CONTACT = [15, 13, 8, 61]     // Pixelize.CONTACT (alpha 0.24)
+let WB_SHADOW = [ 15, 13, 8, 107 ]  // Pixelize.SHADOW (0.06, 0.05, 0.03, 0.42)
+let WB_CONTACT = [ 15, 13, 8, 61 ]  // Pixelize.CONTACT (alpha 0.24)
 def paint_ground_shadows(art:string, w:int, h:int, mask:string, mw:int, mh:int):
     let bottom = map(w) x:
         var b = -1

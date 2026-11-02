@@ -38,7 +38,7 @@ def bridge(seed_value:int, length:int, style:int = 0, broken:int = 0, wide:int =
                 add_child(n, rod(a, b, r, r * 0.95, if k % 3 != 0: wood else: dark, true))
     else:
         let rise = if style == 2: 0.14 else: 0.0
-        for([-1.0, 1.0]) side:
+        for([ -1.0, 1.0 ]) side:
             let z = side * width * 0.36
             let segs = 8
             for(segs) k:
@@ -50,7 +50,7 @@ def bridge(seed_value:int, length:int, style:int = 0, broken:int = 0, wide:int =
             let x = -float(length) * 0.5 + float(k)
             let top = BRIDGE_DECK + bridge_hump(x, half, rise)
             let stub = gone(x)
-            for([-1.0, 1.0]) side:
+            for([ -1.0, 1.0 ]) side:
                 let z = side * width * 0.42
                 let h = (if stub: 0.12 else: top + 0.02) + 0.25
                 add_child(n, rod(float3 { x, -0.1, z }, float3 { x, h - 0.25, z }, 0.045, 0.04, dark, true))
@@ -66,7 +66,7 @@ def bridge(seed_value:int, length:int, style:int = 0, broken:int = 0, wide:int =
                 let pz = randf_range(rng, -0.02, 0.02)
                 let ry = randf_range(rng, -0.04, 0.04)
                 add_child(n, box(float3 { 0.075, 0.025, deep }, m, float3 { x, y, pz }, float3 { 0.0, rad(ry), atan2(float2 { 1.0, bridge_slope(x, half, rise) }) }))
-        for([-1.0, 1.0]) side:
+        for([ -1.0, 1.0 ]) side:
             let z = side * width * 0.47
             let posts = length + 2
             var prev = float3_0
@@ -106,10 +106,10 @@ def bridge_crib(n:MNode, x:float, h:float, wood:MMat, width:float):
     for(layers) k:
         let y = -0.15 + float(k) * (top + 0.15) / float(layers)
         if k % 2 == 0:
-            for([-width * 0.4, width * 0.4]) z:
+            for([ -width * 0.4, width * 0.4 ]) z:
                 add_child(n, rod(float3 { x - 0.2, y, z }, float3 { x + 0.2, y, z }, 0.035, 0.035, wood, true))
         else:
-            for([-0.17, 0.17]) dx:
+            for([ -0.17, 0.17 ]) dx:
                 add_child(n, rod(float3 { x + dx, y, -width * 0.45 }, float3 { x + dx, y, width * 0.45 }, 0.035, 0.035, wood, true))
     let stone = surf("rock", float3 { 0.7, 0.68, 0.6 }, 0.5)
     for(5):

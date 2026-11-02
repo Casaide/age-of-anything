@@ -5,13 +5,13 @@
 
 // ---- small helpers this file shares with the kit
 
-def u3_col_or(c:Colours, ch:string, fallback:float3) -> float3: return if has_col(c, ch): col(c, ch) else: fallback   // c.get(ch, fallback)
+def u3_col_or(c:Colours, ch:string, fallback:float3) -> float3: return if has_col(c, ch): col(c, ch) else: fallback  // c.get(ch, fallback)
 def u3_lerpf(a:float, b:float, t:float) -> float: return a + (b - a) * t
 def u3_lerp(a:float3, b:float3, t:float) -> float3: return a + (b - a) * t
-def u3_smooth(a:float, b:float, s:float) -> float:   // Godot's smoothstep
+def u3_smooth(a:float, b:float, s:float) -> float:  // Godot's smoothstep
     let t = clamp((s - a) / (b - a), 0.0, 1.0)
     return t * t * (3.0 - 2.0 * t)
-def u3_rot2(v:float2, deg:float) -> float2:   // Vector2.rotated (degrees here)
+def u3_rot2(v:float2, deg:float) -> float2:  // Vector2.rotated (degrees here)
     let cs = cos(deg)
     let sn = sin(deg)
     return float2 { v.x * cs - v.y * sn, v.x * sn + v.y * cs }
@@ -20,7 +20,7 @@ def u3_mat(d:dictionary<string, MMat>, k:string) -> MMat:
     let m = d.get(k)
     assert m
     return m
-def u3_rot_z(n:MNode, deg:float):   // rotation_degrees.z = deg
+def u3_rot_z(n:MNode, deg:float):  // rotation_degrees.z = deg
     n.rot = float3 { n.rot.x, n.rot.y, deg }
 let U3_ZUP = float3 { 0.0, 0.0, 1.0 }
 
@@ -36,8 +36,8 @@ let CAT_HEAD_AT = float3 { 15.2, 15.2 - CAT_DROP, 0.0 }
 let CAT_SEAT = float3 { -2.0, 19.3 - CAT_DROP, 0.0 }
 let CAT_SIT_LIFT = 0.8
 let CAT_SIT_OUT = 1.6
-let CAT_HIND = [5.4, 5.9, 4.3]
-let CAT_FORE = [5.0, 5.5, 1.4]
+let CAT_HIND = [ 5.4, 5.9, 4.3 ]
+let CAT_FORE = [ 5.0, 5.5, 1.4 ]
 let CAT_PAD = 0.75
 let CAT_STRIDE = 7.5
 let CAT_STANCE = 0.62
@@ -60,9 +60,9 @@ def cat_xf(pose:string) -> Xform:
 
 def cat_coat(c:Colours) -> dictionary<string, MMat>:
     let pale = u3_col_or(c, "skin3", html("#e8e2d6"))
-    return mats_of([surf("hide", col(c, "skin"), 4.0), surf("hide", col(c, "skin2"), 4.0), surf("hide", pale, 4.0),
-                    plain(CAT_NOSE), plain(INK), plain(CAT_EYE), plain(lightened(CAT_NOSE, 0.2))],
-                   ["fur", "stripe", "pale", "nose", "eye", "iris", "ear_in"])
+    return mats_of([ surf("hide", col(c, "skin"), 4.0), surf("hide", col(c, "skin2"), 4.0), surf("hide", pale, 4.0),
+                     plain(CAT_NOSE), plain(INK), plain(CAT_EYE), plain(lightened(CAT_NOSE, 0.2)) ],
+                   [ "fur", "stripe", "pale", "nose", "eye", "iris", "ear_in" ])
 
 def body_cat(c:Colours) -> Spec:
     let pose = if hold == "low": "" else: hold
@@ -80,16 +80,16 @@ def body_cat(c:Colours) -> Spec:
     if pose == "sit":
         let b = xf(t, float3 { -12.0, 14.0 - CAT_DROP, 0.0 })
         let paw = xf(t, CAT_SHOULDER).x + 0.9
-        cat_tail(n, [b, float3 { b.x + 0.5, 1.1, 1.8 }, float3 { b.x + 1.6, 1.0, 3.4 }, float3 { b.x + 3.4, 1.0, 4.8 },
-                     float3 { paw - 6.5, 1.0, 5.2 }, float3 { paw - 3.0, 1.1, 4.9 }, float3 { paw - 1.2, 2.0, 4.3 }],
+        cat_tail(n, [ b, float3 { b.x + 0.5, 1.1, 1.8 }, float3 { b.x + 1.6, 1.0, 3.4 }, float3 { b.x + 3.4, 1.0, 4.8 },
+                      float3 { paw - 6.5, 1.0, 5.2 }, float3 { paw - 3.0, 1.1, 4.9 }, float3 { paw - 1.2, 2.0, 4.3 } ],
                  1.35, 0.95, u3_mat(m, "fur"), u3_mat(m, "stripe"))
     elif pose == "sit1" or pose == "sit2":
         let b = xf(t, float3 { -12.0, 14.4 - CAT_DROP, 0.0 })
-        cat_tail(n, [b, b + float3 { -2.8, -0.9, 0.2 }, float3 { b.x - 4.8, max(2.6, b.y - 3.6), 0.5 },
-                     float3 { b.x - 5.6, 1.2, 0.9 }, float3 { b.x - 4.6, 1.0, 1.6 }], 1.6, 1.1, u3_mat(m, "fur"), u3_mat(m, "stripe"))
+        cat_tail(n, [ b, b + float3 { -2.8, -0.9, 0.2 }, float3 { b.x - 4.8, max(2.6, b.y - 3.6), 0.5 },
+                      float3 { b.x - 5.6, 1.2, 0.9 }, float3 { b.x - 4.6, 1.0, 1.6 } ], 1.6, 1.1, u3_mat(m, "fur"), u3_mat(m, "stripe"))
     else:
-        cat_tail(low, [float3 { -12.0, 14.6, 0.0 }, float3 { -15.2, 18.8, 0.0 }, float3 { -16.6, 23.4, 0.3 }, float3 { -16.2, 27.6, 0.5 },
-                       float3 { -14.5, 30.0, 0.6 }, float3 { -12.6, 30.2, 0.6 }], 1.6, 1.1, u3_mat(m, "fur"), u3_mat(m, "stripe"))
+        cat_tail(low, [ float3 { -12.0, 14.6, 0.0 }, float3 { -15.2, 18.8, 0.0 }, float3 { -16.6, 23.4, 0.3 }, float3 { -16.2, 27.6, 0.5 },
+                        float3 { -14.5, 30.0, 0.6 }, float3 { -12.6, 30.2, 0.6 } ], 1.6, 1.1, u3_mat(m, "fur"), u3_mat(m, "stripe"))
     let seat = CAT_SEAT + (if pose == "sit": float3 { 0.0, CAT_SIT_LIFT, 0.0 } else: float3_0)
     let s = spec_of(n)
     sock(s, "head", xf(t, CAT_HEAD_AT))
@@ -101,8 +101,8 @@ def body_cat(c:Colours) -> Spec:
     sock(s, "wings", xf(t, seat + float3 { 7.0, -1.5, 0.0 }))
     sock(s, "girth", xf(t, float3 { seat.x, 11.5, 0.0 }))
     let z = float3 { 0.0, 0.0, CAT_LEG_Z }
-    s.anchors = [anchor(xf(t, CAT_SHOULDER + z), MPI * 1.5, 1, [0.0, 0.0]), anchor(xf(t, CAT_HIP + z), 0.0, 1, [0.0, 1.0]),
-                 anchor(xf(t, CAT_SHOULDER - z), MPI * 0.5, -1, [0.0, 0.0]), anchor(xf(t, CAT_HIP - z), MPI, -1, [0.0, 1.0])]
+    s.anchors = [ anchor(xf(t, CAT_SHOULDER + z), MPI * 1.5, 1, [ 0.0, 0.0 ]), anchor(xf(t, CAT_HIP + z), 0.0, 1, [ 0.0, 1.0 ]),
+                  anchor(xf(t, CAT_SHOULDER - z), MPI * 0.5, -1, [ 0.0, 0.0 ]), anchor(xf(t, CAT_HIP - z), MPI, -1, [ 0.0, 1.0 ]) ]
     spec_num(s, "torso_scale", float3 { 1.3, 1.0, 0.0 })
     spec_str(s, "carry", "harness")
     return scaled(s, CAT_K)
@@ -116,8 +116,8 @@ def head_cat(c:Colours) -> Spec:
     cat_bridle(root, c, float3 { 4.6, -0.4, 0.0 } * CAT_HEAD_K, 1.8 * CAT_HEAD_K, float3 { -0.3, 1.2, 0.0 } * CAT_HEAD_K, 3.35 * CAT_HEAD_K, -4.0)
     let white = plain(lightened(u3_col_or(c, "skin3", html("#e8e2d6")), 0.3))
     let q = axis_angle(U3_ZUP, -4.0)
-    for([1.0, -1.0]) s:
-        for([-0.5, 0.0, 0.5]) w:
+    for([ 1.0, -1.0 ]) s:
+        for([ -0.5, 0.0, 0.5 ]) w:
             let a = float3 { 4.9, -0.7 + w * 0.5, 1.2 * s }
             add_child(root, rod(bxf(q, a) * CAT_HEAD_K, bxf(q, a + float3 { 1.2, w, 2.4 * s }) * CAT_HEAD_K, 0.09, 0.06, white, false))
     return scaled(sock(spec_of(root), "top", float3 { 1.6, 4.2, 0.0 } * CAT_HEAD_K), CAT_K)
@@ -201,7 +201,7 @@ def cat_joints(hind:bool, pose:string) -> CatJ:
             x = 0.9
             tilt = 2.0
     var paw = float2 { x, -h + CAT_PAD + lift }
-    let r = tilt   // (degrees)
+    let r = tilt  // (degrees)
     let j = CatJ {}
     if hind:
         var hock = paw + float2 { -sin(r), cos(r) } * CAT_HIND[2]
@@ -239,7 +239,7 @@ def cat_saddle(n:MNode, c:Colours, x:float, y:float, half:float, girth_c:float3,
     let cloth = plain(col(c, "team"))
     let trim = surf("cloth", html("#e8e0d0"), 3.0)
     add_child(n, box(float3 { length, 0.7, half * 1.7 }, cloth, float3 { x, y, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { length, drop, 0.5 }, cloth, float3 { x, y - drop * 0.5 - 0.2, (half * 0.85) * side }, float3 { 10.0 * side, 0.0, 0.0 }))
         add_child(n, box(float3 { length + 0.2, 0.7, 0.6 }, trim, float3 { x, y - drop - 0.1, (half * 0.85 + 0.35) * side }, float3 { 10.0 * side, 0.0, 0.0 }))
     add_child(n, box(float3 { min(5.5, length - 1.5), 1.2, half * 1.2 }, surf("leather", float3 { 0.7, 0.5, 0.35 }, 3.0), float3 { x, y + 0.8, 0.0 }))
@@ -267,13 +267,13 @@ let HB_BELLY = html("#e6e2d2")
 let HB_BEAK = html("#1c1816")
 let HB_BLUR = html("#e2f6e8")
 
-def hb_gloss(cl:float3) -> MMat: return plain(cl)   // (metallic, roughness, rim: not the baker's)
+def hb_gloss(cl:float3) -> MMat: return plain(cl)  // (metallic, roughness, rim: not the baker's)
 def hb_blur_mat(cl:float3) -> MMat: return glow(cl)
 
 def hb_wing(m:MMat, root:float3, tip:float3, w:float, up:float3) -> MNode:
     let d = tip - root
     let l = magnitude(d)
-    let pts = [float2 { 0.0, -w * 0.2 }, float2 { l * 0.3, w }, float2 { l * 0.75, w * 0.85 }, float2 { l, w * 0.2 }, float2 { l * 0.95, -w * 0.2 }, float2 { l * 0.5, -w * 0.3 }]
+    let pts = [ float2 { 0.0, -w * 0.2 }, float2 { l * 0.3, w }, float2 { l * 0.75, w * 0.85 }, float2 { l, w * 0.2 }, float2 { l * 0.95, -w * 0.2 }, float2 { l * 0.5, -w * 0.3 } ]
     let mi = slab(pts, 0.4, m, float3_0)
     let x = normalize(d)
     let z = normalize(cross(x, up))
@@ -284,7 +284,7 @@ def hb_wing(m:MMat, root:float3, tip:float3, w:float, up:float3) -> MNode:
 
 def hb_ghosts(count:int, spread:float, tones:[float3]) -> MNode:
     let n = mnode()
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         for(count) k:
             let a = 8.0 + float(k) * spread
             let tip = float3 { -2.0 - float(k) * 1.5, 3.0 + 21.0 * cos(a), (2.0 + 19.0 * sin(a)) * side }
@@ -305,7 +305,7 @@ def body_hummingbird(c:Colours) -> Spec:
         let end = base + float3 { -9.0 + abs(float(f - 2)) * 1.2, -4.5, sin(-30.0 + float(f) * 15.0) * 4.5 }
         add_child(n, rod(base, end, 0.9, 1.3, dark))
         add_child(n, blob(float3 { 1.1, 0.5, 1.0 }, plain(HB_BELLY), end + float3 { -0.6, -0.2, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.3, 0.7, 0.7 }, plain(INK), float3 { 1.5, 7.6, 1.8 * side }))
     let seat = float3 { -2.5, 19.6, 0.0 }
     add_child(n, blob(float3 { 4.8, 1.2, 5.6 }, plain(col(c, "team")), seat + float3 { 0.0, -0.5, 0.0 }, float3 { 0.0, 0.0, 20.0 }))
@@ -325,7 +325,7 @@ def head_hummingbird(c:Colours) -> Spec:
     let green = hb_gloss(col(c, "skin"))
     add_child(n, blob(float3 { 4.5, 4.2, 4.0 }, green, float3_0))
     add_child(n, blob(float3 { 3.2, 1.6, 3.1 }, hb_gloss(darkened(col(c, "skin"), 0.45)), float3 { -0.7, 2.9, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.1, 1.1, 0.7 }, plain(INK), float3 { 1.9, 0.9, 3.1 * side }))
         add_child(n, blob(float3 { 0.4, 0.4, 0.3 }, plain(float3_1), float3 { 2.4, 1.4, 3.5 * side }))
         add_child(n, blob(float3 { 1.0, 0.5, 0.4 }, plain(float3_1), float3 { -0.1, 1.8, 3.4 * side }))
@@ -334,17 +334,17 @@ def head_hummingbird(c:Colours) -> Spec:
     let bronze = surf("bronze", float3_1, 2.0)
     add_child(n, cone(0.0, 0.9, 4.0, bronze, tip + float3 { -1.2, 0.1, 0.0 }, float3 { 0.0, 0.0, -95.0 }))
     add_child(n, ring(0.8, 1.15, bronze, float3 { 12.5, -0.6, 0.0 }, float3 { 0.0, 0.0, 90.0 }))
-    add_child(n, slab([float2 { 0.0, 0.0 }, float2 { -6.0, 1.0 }, float2 { -4.5, -1.6 }, float2 { -6.5, -3.8 }, float2 { 0.0, -2.4 }], 0.3, plain(col(c, "team")), float3 { 13.0, -0.8, 0.0 }))
+    add_child(n, slab([ float2 { 0.0, 0.0 }, float2 { -6.0, 1.0 }, float2 { -4.5, -1.6 }, float2 { -6.5, -3.8 }, float2 { 0.0, -2.4 } ], 0.3, plain(col(c, "team")), float3 { 13.0, -0.8, 0.0 }))
     return sock(spec_of(n), "top", float3 { -0.5, 4.0, 0.0 })
 
 def wings_hummingbird(c:Colours) -> Spec:
-    return spec_of(hb_ghosts(3, 36.0, [HB_BLUR, lightened(col(c, "skin"), 0.55), darkened(HB_BLUR, 0.08)]))
+    return spec_of(hb_ghosts(3, 36.0, [ HB_BLUR, lightened(col(c, "skin"), 0.55), darkened(HB_BLUR, 0.08) ]))
 
 // ------------------------------------------------------------------ animals (milestone 11)
 
 def four_legs(front:float, back:float, y:float, z:float) -> [Anchor]:
-    return [anchor(float3 { front, y, z }, 0.0, 1, [0.0]), anchor(float3 { back, y, z }, MPI, 1, [0.0]),
-            anchor(float3 { front - 1.0, y, -z }, MPI, -1, [0.0]), anchor(float3 { back - 1.0, y, -z }, 0.0, -1, [0.0])]
+    return [ anchor(float3 { front, y, z }, 0.0, 1, [ 0.0 ]), anchor(float3 { back, y, z }, MPI, 1, [ 0.0 ]),
+             anchor(float3 { front - 1.0, y, -z }, MPI, -1, [ 0.0 ]), anchor(float3 { back - 1.0, y, -z }, 0.0, -1, [ 0.0 ]) ]
 
 def body_deer(c:Colours) -> Spec:
     let n = mnode()
@@ -367,7 +367,7 @@ def head_deer(c:Colours) -> Spec:
     add_child(n, rod(float3 { 1.5, 0.3, 0.0 }, float3 { 5.2, -1.6, 0.0 }, 1.5, 0.8, coat))
     add_child(n, blob(float3 { 0.7, 0.6, 0.7 }, plain(INK), float3 { 5.3, -1.6, 0.0 }))
     let antler = plain(html("#d8c8a4"))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.5, 1.3, 0.7 }, coat, float3 { -0.6, 2.4, 1.6 * side }, float3 { 0.0, 0.0, -20.0 }))
         add_child(n, blob(float3 { 0.45, 0.45, 0.4 }, plain(INK), float3 { 2.0, 1.2, 1.5 * side }))
         let base = float3 { 0.2, 2.2, 0.8 * side }
@@ -380,7 +380,7 @@ def head_deer(c:Colours) -> Spec:
 def leg_deer(c:Colours) -> Spec:
     let n = mnode()
     let coat = surf("hide", col(c, "skin"), 4.0)
-    let knee, foot = stepped(float3 { 0.3, -7.0, 0.0 }, float3 { 0.6, -13.0, 0.0 }, if hold == "low": "" else: hold, 9.0)   // (D-179: baked per walk step)
+    let knee, foot = stepped(float3 { 0.3, -7.0, 0.0 }, float3 { 0.6, -13.0, 0.0 }, if hold == "low": "" else: hold, 9.0)  // (D-179: baked per walk step)
     add_child(n, rod(float3_0, knee, 1.2, 0.6, coat))
     add_child(n, rod(knee, foot, 0.55, 0.45, coat))
     add_child(n, blob(float3 { 0.7, 0.6, 0.6 }, plain(col(c, "skin2")), foot + float3 { 0.2, -0.3, 0.0 }))
@@ -410,7 +410,7 @@ def head_boar(c:Colours) -> Spec:
     add_child(n, rod(float3 { 3.0, -1.2, 0.0 }, float3 { 5.6, -2.0, 0.0 }, 1.9, 1.5, plain(html("#9a6e58"))))
     add_child(n, blob(float3 { 1.0, 1.9, 2.0 }, plain(html("#e0a898")), float3 { 6.1, -1.9, 0.0 }))
     let tusk = plain(html("#f8f2e2"))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, rod(float3 { 4.4, -2.6, 1.5 * side }, float3 { 5.6, 0.4, 2.6 * side }, 0.6, 0.2, tusk))
         add_child(n, blob(float3 { 0.4, 0.4, 0.4 }, plain(INK), float3 { 2.6, 1.0, 1.9 * side }))
         add_child(n, blob(float3 { 0.6, 1.2, 0.5 }, hide, float3 { 0.4, 2.6, 1.8 * side }, float3 { 0.0, 0.0, -25.0 }))
@@ -418,7 +418,7 @@ def head_boar(c:Colours) -> Spec:
 
 def leg_boar(c:Colours) -> Spec:
     let n = mnode()
-    let knee, foot = stepped(float3 { 0.35, -3.3, 0.0 }, float3 { 0.3, -6.6, 0.0 }, if hold == "low": "" else: hold, 5.0)   // (D-179: baked per walk step)
+    let knee, foot = stepped(float3 { 0.35, -3.3, 0.0 }, float3 { 0.3, -6.6, 0.0 }, if hold == "low": "" else: hold, 5.0)  // (D-179: baked per walk step)
     let hide = surf("hide", col(c, "skin"), 4.0)
     add_child(n, rod(float3_0, knee, 1.6, 1.25, hide))
     add_child(n, rod(knee, foot, 1.25, 0.9, hide))
@@ -452,14 +452,14 @@ def head_sheep(c:Colours) -> Spec:
     let face = surf("hide", col(c, "skin2"), 4.0)
     add_child(n, blob(float3 { 1.8, 1.4, 1.6 }, plain(col(c, "skin")), float3 { -0.4, 1.2, 0.0 }))
     add_child(n, blob(float3 { 2.6, 1.7, 1.5 }, face, float3 { 1.6, -0.6, 0.0 }, float3 { 0.0, 0.0, -25.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.5, 0.4, 0.7 }, face, float3 { 0.0, 0.4, 1.9 * side }, float3 { 0.0, 25.0 * side, -10.0 }))
         add_child(n, blob(float3 { 0.3, 0.3, 0.3 }, plain(html("#d8c8a0")), float3 { 1.2, 0.0, 1.1 * side }))
     return sock(spec_of(n), "top", float3 { 0.0, 2.0, 0.0 })
 
 def leg_sheep(c:Colours) -> Spec:
     let n = mnode()
-    let knee, foot = stepped(float3 { 0.3, -3.3, 0.0 }, float3 { 0.2, -6.6, 0.0 }, if hold == "low": "" else: hold, 4.5)   // (D-179: baked per walk step)
+    let knee, foot = stepped(float3 { 0.3, -3.3, 0.0 }, float3 { 0.2, -6.6, 0.0 }, if hold == "low": "" else: hold, 4.5)  // (D-179: baked per walk step)
     let shank = surf("hide", col(c, "skin2"), 4.0)
     add_child(n, rod(float3_0, knee, 0.8, 0.7, shank))
     add_child(n, rod(knee, foot, 0.7, 0.6, shank))
@@ -473,7 +473,7 @@ def body_beetle_rear(c:Colours) -> Spec:
     let shell = surf("chitin", col(c, "skin"), 5.0)
     let plate = surf("chitin", col(c, "skin2"), 4.0)
     let limb = surf("chitin", darkened(col(c, "skin"), 0.45), 3.0)
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 8.0, 4.6, 3.4 }, shell, float3 { -4.5, 9.5, 2.3 * side }, float3 { 0.0, 0.0, 12.0 }))
     add_child(n, rod(float3 { -11.5, 8.0, 0.0 }, float3 { 1.5, 12.5, 0.0 }, 0.35, 0.35, plain(darkened(col(c, "skin"), 0.6)), false))
     add_child(n, blob(float3 { 4.2, 7.0, 5.4 }, plate, float3 { 2.5, 16.0, 0.0 }, float3 { 0.0, 0.0, -18.0 }))
@@ -493,8 +493,8 @@ def body_beetle_rear(c:Colours) -> Spec:
     sock(s, "back", float3 { -6.0, 14.0, 0.0 })
     sock(s, "drape", float3 { -10.5, 12.5, 0.0 })
     sock(s, "sling", float3 { -9.5, 14.4, 0.0 })
-    s.anchors = [anchor(float3 { 0.5, 8.0, 3.2 }, 0.0, 1, [0.0]), anchor(float3 { -6.0, 8.0, 3.2 }, MPI, 1, [1.0]),
-                 anchor(float3 { 0.5, 8.0, -3.2 }, MPI, -1, [0.0]), anchor(float3 { -6.0, 8.0, -3.2 }, 0.0, -1, [1.0])]
+    s.anchors = [ anchor(float3 { 0.5, 8.0, 3.2 }, 0.0, 1, [ 0.0 ]), anchor(float3 { -6.0, 8.0, 3.2 }, MPI, 1, [ 1.0 ]),
+                  anchor(float3 { 0.5, 8.0, -3.2 }, MPI, -1, [ 0.0 ]), anchor(float3 { -6.0, 8.0, -3.2 }, 0.0, -1, [ 1.0 ]) ]
     return spec_num(s, "torso_scale", float3 { 0.55, 0.65, 0.0 })
 
 // ------------------------------------------------------------------ beetle (a mount)
@@ -505,7 +505,7 @@ def body_beetle(c:Colours) -> Spec:
     let plate = surf("chitin", col(c, "skin2"), 4.0)
     let under = plain(darkened(col(c, "skin"), 0.55))
     add_child(n, blob(float3 { 13.5, 4.0, 7.6 }, under, float3 { 0.0, 9.6, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 14.0, 6.8, 4.6 }, shell, float3 { -2.5, 13.5, 3.0 * side }))
     add_child(n, rod(float3 { -15.5, 14.5, 0.0 }, float3 { 10.0, 19.4, 0.0 }, 0.45, 0.45, plain(darkened(col(c, "skin"), 0.6)), false))
     add_child(n, blob(float3 { 5.6, 5.4, 7.4 }, plate, float3 { 11.0, 13.0, 0.0 }))
@@ -519,8 +519,8 @@ def body_beetle(c:Colours) -> Spec:
     sock(s, "back", float3 { -8.0, 19.0, 0.0 })
     sock(s, "seat", float3 { -1.5, 21.5, 0.0 })
     sock(s, "wings", float3 { 6.0, 19.5, 0.0 })
-    s.anchors = [anchor(float3 { 10.0, 9.5, 6.0 }, 0.0, 1, [0.0]), anchor(float3 { 2.0, 9.5, 6.5 }, 2.1, 1, [0.0]), anchor(float3 { -7.0, 9.5, 6.0 }, 4.2, 1, [1.0]),
-                 anchor(float3 { 11.0, 9.5, -6.0 }, 3.14, -1, [0.0]), anchor(float3 { 3.0, 9.5, -6.5 }, 5.2, -1, [0.0]), anchor(float3 { -6.0, 9.5, -6.0 }, 1.0, -1, [1.0])]
+    s.anchors = [ anchor(float3 { 10.0, 9.5, 6.0 }, 0.0, 1, [ 0.0 ]), anchor(float3 { 2.0, 9.5, 6.5 }, 2.1, 1, [ 0.0 ]), anchor(float3 { -7.0, 9.5, 6.0 }, 4.2, 1, [ 1.0 ]),
+                  anchor(float3 { 11.0, 9.5, -6.0 }, 3.14, -1, [ 0.0 ]), anchor(float3 { 3.0, 9.5, -6.5 }, 5.2, -1, [ 0.0 ]), anchor(float3 { -6.0, 9.5, -6.0 }, 1.0, -1, [ 1.0 ]) ]
     spec_num(s, "torso_scale", float3 { 0.65, 0.6, 0.0 })
     return spec_str(s, "carry", "harness")
 
@@ -529,13 +529,13 @@ def head_beetle(c:Colours) -> Spec:
     let shell = surf("chitin", col(c, "skin"), 4.0)
     let horn = surf("chitin", col(c, "skin2"), 3.0)
     add_child(n, blob(float3 { 4.6, 3.6, 4.4 }, shell, float3 { 2.5, 0.0, 0.0 }))
-    let pts = [float3 { 5.5, 1.0, 0.0 }, float3 { 9.5, 3.5, 0.0 }, float3 { 12.0, 8.0, 0.0 }, float3 { 12.6, 12.0, 0.0 }]
-    let r = [2.0, 1.5, 1.0, 0.4]
+    let pts = [ float3 { 5.5, 1.0, 0.0 }, float3 { 9.5, 3.5, 0.0 }, float3 { 12.0, 8.0, 0.0 }, float3 { 12.6, 12.0, 0.0 } ]
+    let r = [ 2.0, 1.5, 1.0, 0.4 ]
     for(pts.length - 1) i:
         let k = i + 1
         add_child(n, rod(pts[k - 1], pts[k], r[k - 1], r[k], horn))
     add_child(n, rod(float3 { 10.6, 5.5, 0.0 }, float3 { 13.4, 6.5, 0.0 }, 0.6, 0.3, horn))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.1, 1.1, 0.8 }, plain(html("#141018")), float3 { 4.6, 0.8, 3.3 * side }))
         add_child(n, blob(float3 { 0.4, 0.4, 0.3 }, plain(html("#c8c0d8")), float3 { 5.0, 1.2, 3.8 * side }))
         add_child(n, rod(float3 { 6.2, -1.0, 2.0 * side }, float3 { 9.0, -0.5, 4.2 * side }, 0.25, 0.2, plain(darkened(col(c, "skin"), 0.5))))
@@ -545,7 +545,7 @@ def head_beetle(c:Colours) -> Spec:
 def leg_insect(c:Colours) -> Spec:
     let n = mnode()
     let shell = surf("chitin", darkened(col(c, "skin"), 0.45), 3.0)
-    let knee, foot = stepped(float3 { 4.0, -1.8, 2.0 }, float3 { 6.2, -8.2, 3.0 }, if hold == "low": "" else: hold, 5.5)   // (D-179: baked per walk step)
+    let knee, foot = stepped(float3 { 4.0, -1.8, 2.0 }, float3 { 6.2, -8.2, 3.0 }, if hold == "low": "" else: hold, 5.5)  // (D-179: baked per walk step)
     add_child(n, rod(float3_0, knee, 1.3, 1.0, shell))
     add_child(n, rod(knee, foot, 0.9, 0.6, shell))
     add_child(n, rod(foot, foot + float3 { 1.8, -0.4, 0.3 }, 0.45, 0.3, shell))
@@ -581,11 +581,11 @@ class NewtLobe:
     r:float3
 
 def newt_spots(n:MNode, m:NewtMats, centres:[NewtLobe], big:float = 1.0):
-    let dirs = [float3 { 0.2, 0.8, 0.55 }, float3 { -0.3, 0.7, -0.6 }, float3 { 0.1, 0.35, 0.95 }, float3 { -0.25, 0.4, -0.9 },
-                float3 { 0.35, 0.9, 0.1 }]
+    let dirs = [ float3 { 0.2, 0.8, 0.55 }, float3 { -0.3, 0.7, -0.6 }, float3 { 0.1, 0.35, 0.95 }, float3 { -0.25, 0.4, -0.9 },
+                 float3 { 0.35, 0.9, 0.1 } ]
     var i = 0
     for(centres) c:
-        let pair = [dirs[i % dirs.length], dirs[(i + 2) % dirs.length]]
+        let pair = [ dirs[i % dirs.length], dirs[(i + 2) % dirs.length] ]
         for(pair) d:
             let at = on_surface(c.at, c.r, d, -0.15)
             let r = (1.6 + 0.5 * float(i % 3)) * big
@@ -597,13 +597,13 @@ def newt_spots(n:MNode, m:NewtMats, centres:[NewtLobe], big:float = 1.0):
 def newt_body(c:Colours) -> Spec:
     let n = mnode()
     let m = newt_mats(c)
-    let lobes = [NewtLobe { float3 { 9.0, 9.8, 0.0 }, float3 { 9.0, 5.4, 7.6 } }, NewtLobe { float3 { -1.0, 10.2, 0.0 }, float3 { 10.0, 5.8, 8.4 } },
-                 NewtLobe { float3 { -11.0, 9.8, 0.0 }, float3 { 8.5, 5.4, 7.6 } }]
+    let lobes = [ NewtLobe { float3 { 9.0, 9.8, 0.0 }, float3 { 9.0, 5.4, 7.6 } }, NewtLobe { float3 { -1.0, 10.2, 0.0 }, float3 { 10.0, 5.8, 8.4 } },
+                  NewtLobe { float3 { -11.0, 9.8, 0.0 }, float3 { 8.5, 5.4, 7.6 } } ]
     for(lobes) l: add_child(n, blob(l.r, m.skin, l.at))
     add_child(n, blob(float3 { 19.0, 3.0, 7.2 }, m.belly, float3 { -1.0, 6.4, 0.0 }))
     add_child(n, blob(float3 { 5.0, 4.2, 6.2 }, m.skin, float3 { 16.0, 9.8, 0.0 }))
-    let tail = [float3 { -18.0, 9.8, 0.0 }, float3 { -27.0, 8.4, 1.5 }, float3 { -35.0, 6.4, 3.5 }, float3 { -43.0, 4.2, 4.0 }, float3 { -49.0, 2.4, 2.5 }]
-    let r = [4.8, 3.9, 2.8, 1.7, 0.5]
+    let tail = [ float3 { -18.0, 9.8, 0.0 }, float3 { -27.0, 8.4, 1.5 }, float3 { -35.0, 6.4, 3.5 }, float3 { -43.0, 4.2, 4.0 }, float3 { -49.0, 2.4, 2.5 } ]
+    let r = [ 4.8, 3.9, 2.8, 1.7, 0.5 ]
     for(tail.length - 1) i:
         let k = i + 1
         let seg = rod(tail[k - 1], tail[k], r[k - 1], r[k], m.skin)
@@ -620,11 +620,11 @@ def newt_body(c:Colours) -> Spec:
             add_child(n, cone(0.1, 1.3, h, crest, at + float3 { 0.0, u3_lerpf(r[0], r[3], float(k) / 8.0) * 0.92 + h * 0.4, 0.0 }, float3 { 0.0, 0.0, 18.0 }, 6))
         for(3) k:
             add_child(n, cone(0.1, 1.1, 2.8, crest, float3 { 13.0 - float(k) * 3.0, 15.4, 0.0 }, float3 { 0.0, 0.0, 18.0 }, 6))
-    let spot_on = [lobes[0], lobes[1], lobes[2],
-                   NewtLobe { float3 { -26.0, 9.0, 1.0 }, float3 { 8.0, 3.9, 2.6 } }, NewtLobe { float3 { -36.0, 6.2, 3.0 }, float3 { 7.0, 2.8, 1.9 } }]
+    let spot_on = [ lobes[0], lobes[1], lobes[2],
+                    NewtLobe { float3 { -26.0, 9.0, 1.0 }, float3 { 8.0, 3.9, 2.6 } }, NewtLobe { float3 { -36.0, 6.2, 3.0 }, float3 { 7.0, 2.8, 1.9 } } ]
     newt_spots(n, m, spot_on)
     add_child(n, blob(float3 { 7.5, 1.4, 8.8 }, plain(col(c, "team")), float3 { -1.5, 15.8, 0.0 }, float3 { 0.0, 0.0, -4.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { 10.0, 6.0, 0.5 }, plain(col(c, "team")), float3 { -1.5, 12.4, 8.6 * side }, float3 { 12.0 * side, 0.0, 0.0 }))
     let reed = surf("thatch", float3 { 1.0, 0.95, 0.82 }, 7.0)
     add_child(n, rod(float3 { -7.6, 16.8, -5.5 }, float3 { -7.6, 16.8, 5.5 }, 1.9, 1.9, reed))
@@ -638,8 +638,8 @@ def newt_body(c:Colours) -> Spec:
     sock(s, "back", float3 { -9.0, 15.5, 0.0 })
     sock(s, "seat", float3 { -1.0, NEWT_SEAT, 0.0 })
     sock(s, "wings", float3 { 6.0, 15.5, 0.0 })
-    s.anchors = [anchor(float3 { 10.0, 7.6, 6.4 }, 0.0, 1, [0.0]), anchor(float3 { -10.0, 7.6, 6.4 }, MPI, 1, [0.0]),
-                 anchor(float3 { 11.0, 7.6, -6.4 }, MPI, -1, [0.0]), anchor(float3 { -9.0, 7.6, -6.4 }, 0.0, -1, [0.0])]
+    s.anchors = [ anchor(float3 { 10.0, 7.6, 6.4 }, 0.0, 1, [ 0.0 ]), anchor(float3 { -10.0, 7.6, 6.4 }, MPI, 1, [ 0.0 ]),
+                  anchor(float3 { 11.0, 7.6, -6.4 }, MPI, -1, [ 0.0 ]), anchor(float3 { -9.0, 7.6, -6.4 }, 0.0, -1, [ 0.0 ]) ]
     spec_num(s, "torso_scale", float3 { 0.8, 0.6, 0.0 })
     return spec_str(s, "carry", "harness")
 
@@ -652,12 +652,12 @@ def newt_head(c:Colours) -> Spec:
     add_child(n, rod(float3 { 13.0, -0.4, 0.0 }, float3 { 11.8, -0.5, 4.4 }, 0.32, 0.32, plain(INK)))
     add_child(n, rod(float3 { 11.8, -0.5, 4.4 }, float3 { 4.0, -0.2, 6.2 }, 0.3, 0.3, plain(INK)))
     add_child(n, rod(float3 { 11.8, -0.5, -4.4 }, float3 { 4.0, -0.2, -6.2 }, 0.3, 0.3, plain(INK)))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.9, 1.7, 1.6 }, m.skin, float3 { 7.6, 3.0, 3.6 * side }))
         add_child(n, blob(float3 { 1.1, 1.1, 0.9 }, plain(html("#c8a030")), float3 { 8.4, 3.4, 4.3 * side }))
         add_child(n, blob(float3 { 0.45, 0.8, 0.4 }, plain(html("#100c08")), float3 { 9.0, 3.5, 4.8 * side }))
         add_child(n, blob(float3 { 0.4, 0.3, 0.3 }, plain(INK), float3 { 12.6, 1.2, 1.4 * side }))
-    newt_spots(n, m, [NewtLobe { float3 { 5.0, 0.6, 0.0 }, float3 { 8.0, 3.6, 6.4 } }], 0.7)
+    newt_spots(n, m, [ NewtLobe { float3 { 5.0, 0.6, 0.0 }, float3 { 8.0, 3.6, 6.4 } } ], 0.7)
     let crest = m.crest
     if crest:
         add_child(n, cone(0.1, 1.0, 2.4, crest, float3 { 1.0, 4.4, 0.0 }, float3 { 0.0, 0.0, 18.0 }, 6))
@@ -668,7 +668,7 @@ def newt_head(c:Colours) -> Spec:
 def newt_leg(c:Colours) -> Spec:
     let n = mnode()
     let m = newt_mats(c)
-    let elbow, wrist = stepped(float3 { 1.8, 1.4, 6.0 }, float3 { 3.4, -5.6, 8.0 }, if hold == "low": "" else: hold, 7.0)   // (D-179: baked per walk step)
+    let elbow, wrist = stepped(float3 { 1.8, 1.4, 6.0 }, float3 { 3.4, -5.6, 8.0 }, if hold == "low": "" else: hold, 7.0)  // (D-179: baked per walk step)
     add_child(n, rod(float3_0, elbow, 3.0, 2.4, m.skin))
     add_child(n, rod(elbow, wrist, 2.3, 1.7, m.skin))
     for(4) t:

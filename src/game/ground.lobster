@@ -5,19 +5,19 @@
 // and scree, trails worn by walkers, water with a sandy bank, a wet edge, depth, the sky and
 // ripples. The fog is drawn over it, per tile. Each culture's paths come from game/paths.lobster.
 
-let MASK_K = 4    // mask samples per tile
-let LEVEL_PX = 20.0               // canvas px a level (Iso.LEVEL_PX); art px: x 1.5
+let MASK_K = 4       // mask samples per tile
+let LEVEL_PX = 20.0  // canvas px a level (Iso.LEVEL_PX); art px: x 1.5
 let OCCLUDE_BACK = 2
 let OCCLUDE_SORT = 6.0
-var relief = []::float            // per cell: corner heights (levels): top, right, bottom, left
-var relief_faces = []::resource<mesh>?   // per level group 1..3
+var relief = []::float                  // per cell: corner heights (levels): top, right, bottom, left
+var relief_faces = []::resource<mesh>?  // per level group 1..3
 var relief_tops = []::resource<mesh>?
 var relief_rims = []::resource<mesh>?
 class Occluder:
-    sort_y:float                  // art px: the row's top corner, as units are keyed on the base plane
+    sort_y:float  // art px: the row's top corner, as units are keyed on the base plane
     tops:resource<mesh>
     rims:resource<mesh>?
-    cells:[int]                   // its tops' cells, and the fog over them (drawn after them: build_fog)
+    cells:[int]  // its tops' cells, and the fog over them (drawn after them: build_fog)
     fog:resource<mesh>? = nil
 var occluders = []::Occluder
 let TERRAIN_SHADERS = """
@@ -286,7 +286,7 @@ SHADER cliff
 """
 
 var mask_tex:resource<texture>? = nil
-var mask_bytes = []::int          // the masks as Godot's image holds them (RGBA bytes, MASK_K a tile)
+var mask_bytes = []::int  // the masks as Godot's image holds them (RGBA bytes, MASK_K a tile)
 var paths_tex:resource<texture>? = nil
 var arc_tex:resource<texture>? = nil
 var wear_tex:resource<texture>? = nil
@@ -336,7 +336,7 @@ def build_masks():
     mask_bytes = map(w * h * 4) i: clamp(int(a[i] * 255.0 + 0.5), 0, 255)
     let rows = map(h) y: map(w) x: float4 { byte_of(a[(y * w + x) * 4]), byte_of(a[(y * w + x) * 4 + 1]), byte_of(a[(y * w + x) * 4 + 2]), byte_of(a[(y * w + x) * 4 + 3]) }
     mask_tex = gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap)
-    if not paths_tex:   // (until the paths are painted: game/paths.lobster)
+    if not paths_tex:  // (until the paths are painted: game/paths.lobster)
         let zero = map(4): map(4): float4_0
         paths_tex = gl.create_texture(zero, texture_format_clamp | texture_format_nomipmap)
         arc_tex = gl.create_texture(zero, texture_format_clamp | texture_format_nomipmap)
@@ -344,8 +344,8 @@ def build_masks():
     let c1 = iso(float(W * 1000), 0.0)
     let c2 = iso(float(W * 1000), float(H * 1000))
     let c3 = iso(0.0, float(H * 1000))
-    ground_quad = gl.new_mesh("PT", [float3 { c0.x, c0.y, 0.0 }, float3 { c1.x, c1.y, 0.0 }, float3 { c2.x, c2.y, 0.0 }, float3 { c3.x, c3.y, 0.0 }],
-                              []::float4, []::float3, map(4): float2_0, []::float2, [0, 2, 1, 0, 3, 2])
+    ground_quad = gl.new_mesh("PT", [ float3 { c0.x, c0.y, 0.0 }, float3 { c1.x, c1.y, 0.0 }, float3 { c2.x, c2.y, 0.0 }, float3 { c3.x, c3.y, 0.0 } ],
+                              []::float4, []::float3, map(4): float2_0, []::float2, [ 0, 2, 1, 0, 3, 2 ])
 
 def byte_of(v:float) -> float: return float(clamp(int(v * 255.0 + 0.5), 0, 255)) / 255.0
 
@@ -365,7 +365,7 @@ def build_fog(me:int):
         let vy = v / (W + 1)
         var sum = 0.0
         var n = 0
-        for([int2 { -1, -1 }, int2 { 0, -1 }, int2 { -1, 0 }, int2 { 0, 0 }]) d:
+        for([ int2 { -1, -1 }, int2 { 0, -1 }, int2 { -1, 0 }, int2 { 0, 0 } ]) d:
             let x = vx + d.x
             let y = vy + d.y
             if x >= 0 and y >= 0 and x < W and y < H:
@@ -398,11 +398,11 @@ def fog_cell(pos:[float3], col:[float4], idx:[int], c:int, dark:[float], corner:
     let m = iso(float(cx * 1000 + 500), float(cy * 1000 + 500)) - float2 { 0.0, lift_at(float(cx * 1000 + 500), float(cy * 1000 + 500)) * 1.5 }
     pos.push(float3 { m.x, m.y, 0.0 })
     col.push(float4 { 0.0, 0.0, 0.0, dark[c] })
-    for([int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }]) d:
+    for([ int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 } ]) d:
         let p = iso(float((cx + d.x) * 1000), float((cy + d.y) * 1000)) - float2 { 0.0, (if relief.length: relief[c * 4 + (if d.y == 0: d.x else: 3 - d.x)] else: 0.0) * LEVEL_PX * 1.5 }
         pos.push(float3 { p.x, p.y, 0.0 })
         col.push(float4 { 0.0, 0.0, 0.0, corner[(cy + d.y) * (W + 1) + cx + d.x] })
-    for([0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4]) v: idx.push(n + v)
+    for([ 0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4 ]) v: idx.push(n + v)
 
 // The fog down a cliff face: the edge a-b shared by tile c (its corners ca, cb) and its near neighbour n (na, nb),
 // when c stands above n there (a face that shows; one facing away lies under n's top, fogged already).
@@ -413,19 +413,18 @@ def fog_face(pos:[float3], col:[float4], idx:[int], corner:[float], c:int, n:int
     let hnb = relief[n * 4 + nb]
     if hca < hna or hcb < hnb or hca + hcb <= hna + hnb: return
     let k = pos.length
-    for([a, b, b, a]) v, i:
-        let h = [hca, hcb, hnb, hna][i]
+    for([ a, b, b, a ]) v, i:
+        let h = [ hca, hcb, hnb, hna ][i]
         let p = iso(float(v.x * 1000), float(v.y * 1000)) - float2 { 0.0, h * LEVEL_PX * 1.5 }
         pos.push(float3 { p.x, p.y, 0.0 })
         col.push(float4 { 0.0, 0.0, 0.0, corner[v.y * (W + 1) + v.x] })
-    for([0, 1, 2, 0, 2, 3]) v: idx.push(k + v)
+    for([ 0, 1, 2, 0, 2, 3 ]) v: idx.push(k + v)
 
 // ---- high ground (Iso.corner_heights, TerrainView.build_relief): raised tops, cliff faces, rims
 
-
 def corner_heights():
     relief = map(W * H * 4): 0.0
-    let corners = [int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }]
+    let corners = [ int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 } ]
     for(H) y:
         for(W) x:
             let c = y * W + x
@@ -434,7 +433,7 @@ def corner_heights():
                 var v = float(lv)
                 let cx = x + corners[k].x
                 let cy = y + corners[k].y
-                let around = [int2 { cx - 1, cy - 1 }, int2 { cx, cy - 1 }, int2 { cx - 1, cy }, int2 { cx, cy }]
+                let around = [ int2 { cx - 1, cy - 1 }, int2 { cx, cy - 1 }, int2 { cx - 1, cy }, int2 { cx, cy } ]
                 if ramp[c] == 0 and lv > 0:
                     var below = -1
                     for(around) n:
@@ -483,12 +482,12 @@ class MeshParts:
 def corner_px(x:int, y:int) -> float2: return iso(float(x * 1000), float(y * 1000))
 
 def top_quad(out:MeshParts, x:int, y:int, c:int):
-    let corners = [int2 { x, y }, int2 { x + 1, y }, int2 { x + 1, y + 1 }, int2 { x, y + 1 }]
-    let hk = [relief[c * 4], relief[c * 4 + 1], relief[c * 4 + 2], relief[c * 4 + 3]]
+    let corners = [ int2 { x, y }, int2 { x + 1, y }, int2 { x + 1, y + 1 }, int2 { x, y + 1 } ]
+    let hk = [ relief[c * 4], relief[c * 4 + 1], relief[c * 4 + 2], relief[c * 4 + 3] ]
     let gx = (hk[1] + hk[2] - hk[0] - hk[3]) * 0.5
     let gy = (hk[2] + hk[3] - hk[0] - hk[1]) * 0.5
     let shade = 0.05 * (hk[0] + hk[1] + hk[2] + hk[3]) * 0.25 + clamp(gx * 0.8 + gy * 0.3, -1.0, 1.0) * 0.16
-    for([0, 1, 2, 0, 2, 3]) k:
+    for([ 0, 1, 2, 0, 2, 3 ]) k:
         let lift = hk[k] * LEVEL_PX
         let q = corner_px(corners[k].x, corners[k].y) - float2 { 0.0, lift * 1.5 }
         out.pos.push(float3 { q.x, q.y, 0.0 })
@@ -496,8 +495,8 @@ def top_quad(out:MeshParts, x:int, y:int, c:int):
         out.col.push(float4_1)
 
 def band(out:MeshParts, a:float2, b:float2, y0:float, y1:float, col:float4):
-    let q = [a + float2 { 0.0, y0 }, b + float2 { 0.0, y0 }, b + float2 { 0.0, y1 }, a + float2 { 0.0, y1 }]
-    for([0, 1, 2, 0, 2, 3]) k:
+    let q = [ a + float2 { 0.0, y0 }, b + float2 { 0.0, y0 }, b + float2 { 0.0, y1 }, a + float2 { 0.0, y1 } ]
+    for([ 0, 1, 2, 0, 2, 3 ]) k:
         out.pos.push(float3 { q[k].x, q[k].y, 0.0 })
         out.tc.push(float2_0)
         out.col.push(col)
@@ -506,10 +505,10 @@ def rims_of(out:MeshParts, x:int, y:int, c:int):
     let edges = []::[float]
     if x > 0:
         let n = c - 1
-        edges.push([float(x), float(y), float(x), float(y + 1), relief[c * 4], relief[c * 4 + 3], relief[n * 4 + 1], relief[n * 4 + 2]])
+        edges.push([ float(x), float(y), float(x), float(y + 1), relief[c * 4], relief[c * 4 + 3], relief[n * 4 + 1], relief[n * 4 + 2] ])
     if y > 0:
         let n = c - W
-        edges.push([float(x), float(y), float(x + 1), float(y), relief[c * 4], relief[c * 4 + 1], relief[n * 4 + 3], relief[n * 4 + 2]])
+        edges.push([ float(x), float(y), float(x + 1), float(y), relief[c * 4], relief[c * 4 + 1], relief[n * 4 + 3], relief[n * 4 + 2] ])
     for(edges) e:
         if not (e[4] - e[6] < 0.5 and e[5] - e[7] < 0.5):
             let a = iso(e[0] * 1000.0, e[1] * 1000.0) - float2 { 0.0, e[4] * LEVEL_PX * 1.5 }
@@ -525,8 +524,8 @@ def face_of(out:MeshParts, ax:float, ay:float, bx:float, by:float, ha:float, hb:
     let pb = iso(bx * 1000.0, by * 1000.0)
     let along_a = if side == 0.0: ay else: ax
     let along_b = if side == 0.0: by else: bx
-    let quad = [[pa.x, pa.y, ha, along_a, ha, na], [pb.x, pb.y, hb, along_b, hb, nb], [pb.x, pb.y, nb, along_b, hb, nb], [pa.x, pa.y, na, along_a, ha, na]]
-    for([0, 1, 2, 0, 2, 3]) k:
+    let quad = [ [ pa.x, pa.y, ha, along_a, ha, na ], [ pb.x, pb.y, hb, along_b, hb, nb ], [ pb.x, pb.y, nb, along_b, hb, nb ], [ pa.x, pa.y, na, along_a, ha, na ] ]
+    for([ 0, 1, 2, 0, 2, 3 ]) k:
         let q = quad[k]
         out.pos.push(float3 { q[0], q[1] - q[2] * LEVEL_PX * 1.5, 0.0 })
         out.tc.push(float2 { q[3], q[2] })
@@ -586,7 +585,7 @@ def build_relief():
                     if rm: top_quad(rm, x, y, c)
                     let cs = row_cells.get(d)
                     if cs: cs.push(c)
-                    else: row_cells.set(d, [c])
+                    else: row_cells.set(d, [ c ])
                     if rr: rims_of(rr, x, y, c)
     var g = 1
     while g < 4:

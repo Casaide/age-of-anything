@@ -24,14 +24,14 @@ let PANEL_SHORT = float4 { 0.88, 0.44, 0.38, 1.0 }  // #e07060: a cost you can\'
 let HP_GOOD = float4 { 0.36, 0.72, 0.29, 1.0 }      // #5cb84a
 let HP_HURT = float4 { 0.88, 0.66, 0.23, 1.0 }      // #e0a83a
 let HP_LOW = float4 { 0.85, 0.31, 0.24, 1.0 }       // #d8503c
-let STANCE_NAMES = ["Aggressive", "Defensive", "Stand ground", "No attack"]
-let STANCE_ICONS = ["stance_aggressive", "stance_defensive", "stance_stand", "stance_passive"]
-let STANCE_TIPS = ["Go for any foe in sight and keep chasing it.", "Fight foes that come near, chase them a short way, then walk back.",
-                   "Never move to fight: hit only what is already in reach.", "Never fight on their own, not even back."]
-let TASK_NAMES = ["Idle", "Gathering", "Carrying back", "Building", "Going inside", "Trading", "Climbing", "Repairing"]
+let STANCE_NAMES = [ "Aggressive", "Defensive", "Stand ground", "No attack" ]
+let STANCE_ICONS = [ "stance_aggressive", "stance_defensive", "stance_stand", "stance_passive" ]
+let STANCE_TIPS = [ "Go for any foe in sight and keep chasing it.", "Fight foes that come near, chase them a short way, then walk back.",
+                    "Never move to fight: hit only what is already in reach.", "Never fight on their own, not even back." ]
+let TASK_NAMES = [ "Idle", "Gathering", "Carrying back", "Building", "Going inside", "Trading", "Climbing", "Repairing" ]
 
-var panel_rect = float4_0         // where the panel is (x, y, w, h): clicks there aren't the world's
-var build_page = -1               // workers' build page: -1 the two page buttons, 0 civilian, 1 military
+var panel_rect = float4_0  // where the panel is (x, y, w, h): clicks there aren't the world's
+var build_page = -1        // workers' build page: -1 the two page buttons, 0 civilian, 1 military
 var hud_culture = "?"
 var hud_crest = "sun"
 
@@ -89,7 +89,7 @@ var build_menu_ids = []::[string]
 def page_buildings(page:int) -> [int]:
     if not build_menu_ids.length:
         let menu = gobj(load_json(lib_root + "/buildings.json"), "menu")
-        build_menu_ids = [gstrs(menu, "civilian"), gstrs(menu, "military")]
+        build_menu_ids = [ gstrs(menu, "civilian"), gstrs(menu, "military") ]
     let can = buildable()
     let out = []::int
     for(build_menu_ids[page]) id:
@@ -145,7 +145,7 @@ def panel_buttons() -> [Btn]:
             b.group = "Age up"
             b.tip = if b.enabled: "On to the next age." else: "Needs its buildings first, or you can\'t pay for it yet."
             out.push(b)
-        if capacity(bi) > 0:   // a building that holds a garrison: everyone out
+        if capacity(bi) > 0:  // a building that holds a garrison: everyone out
             let inside = b_inside[bi].length / REC_SIZE
             let b = Btn { "Ungarrison", "", 12, 0 }
             b.icon = "ungarrison"
@@ -155,7 +155,7 @@ def panel_buttons() -> [Btn]:
             b.tip = "Everyone inside comes out (to the rally point, if it has one)."
             out.push(b)
         let anchor_cell = b_cy[bi] * W + b_cx[bi]
-        if b_done[bi] != 0 and pool[anchor_cell] >= 0:   // a farm: Reseed when it's worked out, and Auto-reseed for all farms
+        if b_done[bi] != 0 and pool[anchor_cell] >= 0:  // a farm: Reseed when it's worked out, and Auto-reseed for all farms
             let fk = btype_named("farm")
             let reseed = if fk >= 0: bt_reseed[fk] else: []::int
             if left_at(anchor_cell) <= 0:
@@ -183,9 +183,9 @@ def panel_buttons() -> [Btn]:
             b.group = "Orders"
             b.tip = "The animals walk out and stand in front of the pen."
             out.push(b)
-        if is_market(bi):   // buy and sell a lot of each resource for gold
+        if is_market(bi):  // buy and sell a lot of each resource for gold
             let g = resource_index("gold")
-            for([true, false]) buy:
+            for([ true, false ]) buy:
                 for(resource_names) rn, r:
                     if r != g:
                         let price = quote(ME, r, buy)
@@ -197,7 +197,7 @@ def panel_buttons() -> [Btn]:
                         b.group = verb
                         b.tip = "{if buy: "Costs" else: "Pays"} {price} gold. Each trade moves the price: buying pushes it up, selling down."
                         out.push(b)
-        if bt_name[b_kind[bi]] == "town_center" and b_done[bi] != 0:   // one bell, rung and unrung
+        if bt_name[b_kind[bi]] == "town_center" and b_done[bi] != 0:  // one bell, rung and unrung
             let rung = (filter(b_id.length) b: b_owner[b] == ME and (filter(b_inside[b].length / REC_SIZE) k: t_worker[b_inside[b][k * REC_SIZE + REC_KIND]] != 0).length > 0).length > 0
             let b = Btn { if rung: "Back to work" else: "Call to arms", "", if rung: 9 else: 8, 0 }
             b.icon = if rung: "back_to_work" else: "call_to_arms"
@@ -210,7 +210,7 @@ def panel_buttons() -> [Btn]:
     let workers = selected_workers()
     let soldiers = filter(ids) id: t_worker[u_kind[index_of(id)]] == 0 and t_animal[u_kind[index_of(id)]] == 0
     let herd = filter(ids) id: t_animal[u_kind[index_of(id)]] != 0
-    if herd.length and workers.length:   // workers and our sheep: the workers slaughter them
+    if herd.length and workers.length:  // workers and our sheep: the workers slaughter them
         let b = Btn { "Slaughter", "", 17, 0 }
         b.icon = "slaughter"
         b.group = "Orders"
@@ -225,7 +225,7 @@ def panel_buttons() -> [Btn]:
         out.push(am)
         let ab = my_ability()
         let users = ability_users()
-        if ab and users.length:   // the race's ability: ready on the first that's ready, else its wait
+        if ab and users.length:  // the race's ability: ready on the first that's ready, else its wait
             var wait = 1000000
             for(users) id: wait = min(wait, ability_wait(index_of(id)))
             let b = Btn { gstr(ab, "name", "Ability"), gstr(ab, "hotkey", ""), 11, 0 }
@@ -251,13 +251,13 @@ def panel_buttons() -> [Btn]:
             b.tip = STANCE_TIPS[k]
             out.push(b)
     if workers.length:
-        if build_menu:   // (B: every building, on the number keys)
+        if build_menu:  // (B: every building, on the number keys)
             for(buildable()) k:
                 let b = build_btn(k)
                 b.group = "Build"
                 out.push(b)
         elif build_page < 0:
-            for(["Civilian", "Military"]) name, page:
+            for([ "Civilian", "Military" ]) name, page:
                 let b = Btn { "Build: " + name, "", 6, page }
                 b.building = btype_named(if page == 0: "house" else: "barracks")
                 b.glyph = if page == 0: "house" else: "barracks"
@@ -298,7 +298,7 @@ def press(b:Btn):
         case 14: issue_cmd(ME, CMD_AUTO_RESEED, []::int, if auto_reseed[ME] == 1: 0 else: 1, 0, 0, 0)
         case 15: issue_cmd(ME, CMD_RELEASE, []::int, sel_building, 0, 0, 0)
         case 16: issue_cmd(ME, CMD_TRADE, []::int, sel_building, b.arg / 2, b.arg % 2, 0)
-        case 17:   // the workers go for the first of the selected animals (sim_debug.slaughter_selected)
+        case 17:  // the workers go for the first of the selected animals (sim_debug.slaughter_selected)
             let herd = filter(selected_units()) id: t_animal[u_kind[index_of(id)]] != 0
             if herd.length: issue_cmd(ME, CMD_ATTACK, selected_workers(), herd[0], 0, 0, 0)
         default:
@@ -335,7 +335,7 @@ def draw_figure(key:int, recipe:JV, owner:int, at:float2, z:float):
     let tc = team_col(owner)
     for(draw_list(pv, ID_XF)) d:
         let f = frame_index("p:" + d.key)
-        if f >= 0: sprite_xf(f, xf_mul([1.5 * z, 0.0, 0.0, 1.5 * z, at.x, at.y], d.xf), float4 { tc.x, tc.y, tc.z, d.alpha })
+        if f >= 0: sprite_xf(f, xf_mul([ 1.5 * z, 0.0, 0.0, 1.5 * z, at.x, at.y ], d.xf), float4 { tc.x, tc.y, tc.z, d.alpha })
 
 // A portrait (art_kit.gd's bust_icon): the figure drawn once into a texture, then a square cut on its body
 // (thin rows, a pole or a tail, trimmed off; the top ICON_BUST of it, centred on its weight), and the role
@@ -378,7 +378,7 @@ def bust(key:int, recipe:JV, owner:int) -> Portrait?:
     gl.ortho()
     let px = gl.read_texture(tex) or ""
     let n = PT_CELL
-    def alpha(x:int, y:int) -> bool: return px.length >= n * n * 4 and px[((n - 1 - y) * n + x) * 4 + 3] > 25   // (rows come bottom up)
+    def alpha(x:int, y:int) -> bool: return px.length >= n * n * 4 and px[((n - 1 - y) * n + x) * 4 + 3] > 25  // (rows come bottom up)
     let rows = map(n): 0
     var x0 = n
     var x1 = -1
@@ -420,10 +420,10 @@ def draw_bust(key:int, recipe:JV, owner:int, at:float2, side:float):
     gl.set_shader("textured_color")
     gl.set_primitive_texture(0, p.tex)
     gl.color(float4_1):
-        gl.draw_mesh("PCT", [float3 { at.x, at.y, 0.0 }, float3 { at.x + side, at.y, 0.0 }, float3 { at.x + side, at.y + side, 0.0 }, float3 { at.x, at.y + side, 0.0 }],
-                     [w, w, w, w], []::float3,
-                     [float2 { p.uv0.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv1.y }, float2 { p.uv0.x, 1.0 - p.uv1.y }],
-                     []::float2, [0, 2, 1, 0, 3, 2])
+        gl.draw_mesh("PCT", [ float3 { at.x, at.y, 0.0 }, float3 { at.x + side, at.y, 0.0 }, float3 { at.x + side, at.y + side, 0.0 }, float3 { at.x, at.y + side, 0.0 } ],
+                     [ w, w, w, w ], []::float3,
+                     [ float2 { p.uv0.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv0.y }, float2 { p.uv1.x, 1.0 - p.uv1.y }, float2 { p.uv0.x, 1.0 - p.uv1.y } ],
+                     []::float2, [ 0, 2, 1, 0, 3, 2 ])
     gl.set_shader("color")
     if p.glyph != "":
         let g = side * 0.375
@@ -440,7 +440,7 @@ def draw_building_icon(k:int, at:float2, size:float):
     let fr = frames[f]
     let s = size / float(max(fr.w, fr.h))
     let tc = team_col(ME)
-    sprite_xf(f, [s, 0.0, 0.0, s, at.x + size / 2.0 - float(fr.w) / 2.0 * s, at.y + size / 2.0 - float(fr.h) / 2.0 * s], float4 { tc.x, tc.y, tc.z, 1.0 })
+    sprite_xf(f, [ s, 0.0, 0.0, s, at.x + size / 2.0 - float(fr.w) / 2.0 * s, at.y + size / 2.0 - float(fr.h) / 2.0 * s ], float4 { tc.x, tc.y, tc.z, 1.0 })
 
 // ---- pieces of the look
 
@@ -462,8 +462,8 @@ def groove(x:float, top:float, bottom:float, major:bool):
         let d = 4.0 * s
         gl.set_shader("color_attr")
         let c = float4 { 0.63, 0.53, 0.35, 1.0 }
-        gl.draw_mesh("PC", [float3 { m.x, m.y - d, 0.0 }, float3 { m.x + d, m.y, 0.0 }, float3 { m.x, m.y + d, 0.0 }, float3 { m.x - d, m.y, 0.0 }],
-                     [c, c, c, c], []::float3, []::float2, []::float2, [0, 1, 2, 0, 2, 3])
+        gl.draw_mesh("PC", [ float3 { m.x, m.y - d, 0.0 }, float3 { m.x + d, m.y, 0.0 }, float3 { m.x, m.y + d, 0.0 }, float3 { m.x - d, m.y, 0.0 } ],
+                     [ c, c, c, c ], []::float3, []::float2, []::float2, [ 0, 1, 2, 0, 2, 3 ])
         gl.set_shader("color")
 
 // A slim bar (theme.gd's bar_back and bar_fill): a dark sunk track, the fill raised.
@@ -503,12 +503,12 @@ def card_lines(k:int) -> [string]:
         let reach = gint(cb, "heal_range", 0) / 100
         def tenths(n:int) -> string: return if n % 10 == 0: string(n / 10) else: "{n / 10}.{n % 10}"
         let heals = if gint(cb, "heal_amount", 0) > 0: "Heals {gint(cb, "heal_amount", 0) * t_heal[k]} hp every {tenths(every)} s, range {tenths(reach)}" else: "Heals wounded friends"
-        return [heals + "    HP {t_hp[k]}", "Never fights"]
+        return [ heals + "    HP {t_hp[k]}", "Never fights" ]
     let range = gint(e, "range", 1)
     let attack = if t_eval_attack[k] > 0: t_eval_attack[k] else: gint(e, "attack", 0)
     let arm = t_arm[k]
-    return ["Attack {attack} {gstr(e, "damage", "melee")}" + (if range > 1: ", range {range}" else: "") + "    HP {t_hp[k]}",
-            "Armour {if C > 0: arm[0] else: 0} melee / {if C > 1: arm[1] else: 0} pierce    Speed {t_speed[k] / SPEED_SCALE}"]
+    return [ "Attack {attack} {gstr(e, "damage", "melee")}" + (if range > 1: ", range {range}" else: "") + "    HP {t_hp[k]}",
+             "Armour {if C > 0: arm[0] else: 0} melee / {if C > 1: arm[1] else: 0} pierce    Speed {t_speed[k] / SPEED_SCALE}" ]
 
 // The culture's look on the HUD (sim_debug: the HUD wears the culture of the side you command) and its crest.
 def hud_look():
@@ -521,7 +521,7 @@ def hud_look():
 
 // ---- the panel
 
-class PItem:                      // a button's place this frame
+class PItem:  // a button's place this frame
     b:Btn
     at:float2
     side:float
@@ -553,8 +553,8 @@ def draw_panel():
     var hp_now = -1
     var hp_max = 1
     var info = []::string
-    var portrait = -1             // a unit type
-    var b_pic = -1                // or a building type
+    var portrait = -1  // a unit type
+    var b_pic = -1     // or a building type
     let tray_k = []::int
     let tray_n = []::int
     var has_queue = false
@@ -606,7 +606,7 @@ def draw_panel():
             for(tray_k) kk, n: tray_n[n] = (filter(ids) id: u_kind[index_of(id)] == kk).length
     else:
         info.push("Select units or a building.")
-    if placing >= 0: info = ["Placing {bname(placing)}: left-click to build, shift keeps placing, right-click/Esc cancels"]
+    if placing >= 0: info = [ "Placing {bname(placing)}: left-click to build, shift keeps placing, right-click/Esc cancels" ]
     // Lay it out (UI px times s): the who column, the button groups, the queue.
     let pad_l = 16.0 * s
     let pad_t = 16.0 * s
@@ -619,7 +619,7 @@ def draw_panel():
     let title_h = 30.0 * s
     let hp_h = if hp_now >= 0: 20.0 * s else: 0.0
     let tray_rows = (tray_k.length + 6) / 7
-    let line_n = info_lines.length + (if has_queue and not b_queue[bi].length: 1 else: 0)   // (room for "Training ..." before it starts)
+    let line_n = info_lines.length + (if has_queue and not b_queue[bi].length: 1 else: 0)  // (room for "Training ..." before it starts)
     let who_h = title_h + 5.0 * s + hp_h + (if hp_now >= 0: 5.0 * s else: 0.0) + float(line_n) * 20.0 * s + (if tray_k.length: 5.0 * s + float(tray_rows) * 43.0 * s else: 0.0)
     let show_pic = portrait >= 0 or b_pic >= 0
     // Button grps, in the order their captions first appear.
@@ -636,7 +636,7 @@ def draw_panel():
     var acts_w = 0.0
     for(group_w) w, n: acts_w += w + (if n > 0: 10.0 * s + 10.0 * s + 10.0 * s else: 0.0)
     let queue = if has_queue: b_queue[bi] else: []::int
-    let q_rest = max(0, r_queue_max - 1)   // (the well sized for a full queue, so training doesn't grow the panel)
+    let q_rest = max(0, r_queue_max - 1)  // (the well sized for a full queue, so training doesn't grow the panel)
     let q_rows = (q_rest + P_QCOLS - 1) / P_QCOLS
     let q_inner_w = P_QFIRST * s + (if q_rest > 0: 6.0 * s + float(min(q_rest, P_QCOLS)) * (P_QSLOT + 3.0) * s - 3.0 * s else: 0.0)
     let q_w = 20.0 * s + max(q_inner_w, 70.0 * s)
@@ -655,7 +655,7 @@ def draw_panel():
     hud_box(float2 { x0, py }, float2 { pw, ph }, 8.0, ui_look.face, true, 12.0)
     // The crest on the top edge, cast in the look's metal.
     let crest_h = 36.0 * s
-    let cy = py   // (ui_box.gd: centred on the top edge)
+    let cy = py  // (ui_box.gd: centred on the top edge)
     // Who.
     var x = x0 + pad_l
     let y = py + pad_t
@@ -749,7 +749,7 @@ def draw_panel():
             let ct = string(tray_n[n])
             edged_text(float2 { who_x + float(n % 7) * 43.0 * s + 38.0 * s - tb_text_w(ct, int(13.0 * s), 1), tray_y + float(n / 7) * 43.0 * s + 22.0 * s }, ct, int(13.0 * s), float4_1, 1)
     if acts:
-        for(grps) g:   // each group's caption over its first button
+        for(grps) g:  // each group's caption over its first button
             let first = filter(items) it: it.b.group == g
             if first.length and g != " ": tb_text(float2 { first[0].at.x, y - 1.0 * s }, g.uppercase(), int(12.0 * s), ui_look.dim * float4 { 0.95, 0.85, 0.7, 1.0 }, 2)
     for(items) it:
@@ -797,7 +797,7 @@ let WHEEL_BIG = 1.35
 let WHEEL_PAGE_MAX = 10
 let WHEEL_GAP = 34.0
 
-def wheel_items() -> [Btn]:   // (workers: their orders, then the civilian and the military buildings, a page each)
+def wheel_items() -> [Btn]:  // (workers: their orders, then the civilian and the military buildings, a page each)
     if not selected_workers().length: return panel_buttons()
     let was_page = build_page
     let was_menu = build_menu
@@ -812,14 +812,14 @@ def wheel_items() -> [Btn]:   // (workers: their orders, then the civilian and t
     build_menu = was_menu
     return out
 
-def wheel_open():   // (a worker's wheel opens on its civilian buildings)
+def wheel_open():  // (a worker's wheel opens on its civilian buildings)
     pad_wheel = wheel_items()
     pad_pick = 0
     pad_page = max(0, find_s(wheel_groups(), "Civilian"))
 
-def wheel_groups() -> [string]:   // the pages' captions ("": one page)
+def wheel_groups() -> [string]:  // the pages' captions ("": one page)
     let builds = (filter(pad_wheel) b: b.group == "Civilian").length > 0
-    if pad_wheel.length <= WHEEL_PAGE_MAX and not builds: return [""]
+    if pad_wheel.length <= WHEEL_PAGE_MAX and not builds: return [ "" ]
     let out = []::string
     for(pad_wheel) b:
         if not has_s(out, b.group): out.push(b.group)
@@ -836,7 +836,7 @@ def wheel_page_items() -> [Btn]:
 def wheel_choose(b:Btn):
     if not b.enabled: return
     press(b)
-    pad_wheel = if placing >= 0: []::Btn else: wheel_items()   // (a building to place: the wheel gives way to it)
+    pad_wheel = if placing >= 0: []::Btn else: wheel_items()  // (a building to place: the wheel gives way to it)
 
 // The ring's buttons this frame, and its radius.
 def wheel_layout() -> [PItem], float:
@@ -851,7 +851,7 @@ def wheel_layout() -> [PItem], float:
     return out, r
 
 def wheel_draw():
-    pad_wheel = wheel_items()   // (costs and what can be afforded, as they change)
+    pad_wheel = wheel_items()  // (costs and what can be afforded, as they change)
     if not pad_wheel.length: return
     pad_page = clamp(pad_page, 0, wheel_pages() - 1)
     hud_look()
@@ -866,7 +866,7 @@ def wheel_draw():
     for(items) it, n:
         if mpos.x >= it.at.x and mpos.y >= it.at.y and mpos.x <= it.at.x + it.side and mpos.y <= it.at.y + it.side: hot = n
     if hot < 0 and not touch_play and pad_pick < items.length: hot = pad_pick
-    if hot >= 0:   // (lifted)
+    if hot >= 0:  // (lifted)
         let it = items[hot]
         items[hot] = PItem { it.b, it.at - float2_1 * it.side * 0.09, it.side * 1.18 }
     var pressed = -1
@@ -887,7 +887,7 @@ def wheel_draw():
             edged_text(it.at + float2 { (it.side - tb_text_w(it.b.note, fsz, 1)) * 0.5, it.side - 19.0 * s }, it.b.note, fsz, float4_1, 1)
     let bw = P_BUTTON * s * WHEEL_BIG
     let gs = wheel_groups()
-    if gs.length > 1:   // the pages, over the ring (LB or a tap in the middle turns them)
+    if gs.length > 1:  // the pages, over the ring (LB or a tap in the middle turns them)
         let fsz = int(16.0 * s)
         let caps = map(gs) g: if g.length: g.uppercase() else: "MORE"
         var w = 0.0
@@ -945,13 +945,13 @@ def build_button():
             var best = pick[0]
             for(pick) i:
                 if magnitude(to_screen(iso(float(u_x[i]), float(u_y[i]))) - mid) < magnitude(to_screen(iso(float(u_x[best]), float(u_y[best]))) - mid): best = i
-            selected = [u_id[best]]
+            selected = [ u_id[best] ]
             sel_building = 0
         wheel_open()
 
 def tip_card(m:float2, name:string, cost:string, line:string, ok:bool):
     let s = hud_s()
-    let tlines = filter([cost, line]) l: l != ""
+    let tlines = filter([ cost, line ]) l: l != ""
     var w = tb_text_w(name, int(16.0 * s), 1)
     for(tlines) l: w = max(w, tb_text_w(l, int(14.0 * s), 0))
     w += 28.0 * s

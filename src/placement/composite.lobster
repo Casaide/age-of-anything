@@ -10,23 +10,23 @@
 //      rest of the engine, a member, or the ground.
 // And each member is checked as a unit of its own (A1 to A4) under the composite's label.
 
-let CREW_IN = 0.12         // a crew member at most this share inside its engine
-let HITCH_TOL = 1.5        // a harness's trace end within this of its hitch on the cart, standing...
-let HITCH_WALK_TOL = 2.5   // ...and walking (the beast rides on its planted foot, the cart doesn't)
-let HITCH_R = 3.0          // a hauler may meet its engine only this near a hitch
-let THIN = 0.6             // (a rope this thin or thinner: thicker is a pole)
-let LOOSE_TOL = 1.0        // ...ends within this of something (beyond the rod's own radius)
-let HARNESS_OFF = 1.5      // a harness hugs its wearer: at most HARNESS_OFF_SHARE of it more than HARNESS_OFF off the
-let HARNESS_OFF_SHARE = 0.1   // body, leaving out the trace tails behind the rump
+let CREW_IN = 0.12           // a crew member at most this share inside its engine
+let HITCH_TOL = 1.5          // a harness's trace end within this of its hitch on the cart, standing...
+let HITCH_WALK_TOL = 2.5     // ...and walking (the beast rides on its planted foot, the cart doesn't)
+let HITCH_R = 3.0            // a hauler may meet its engine only this near a hitch
+let THIN = 0.6               // (a rope this thin or thinner: thicker is a pole)
+let LOOSE_TOL = 1.0          // ...ends within this of something (beyond the rod's own radius)
+let HARNESS_OFF = 1.5        // a harness hugs its wearer: at most HARNESS_OFF_SHARE of it more than HARNESS_OFF off the
+let HARNESS_OFF_SHARE = 0.1  // body, leaving out the trace tails behind the rump
 
 class Member:
-    name:string                      // its socket
+    name:string  // its socket
     recipe:JV
-    t:Xform                          // on its socket, turned to its facing
+    t:Xform  // on its socket, turned to its facing
     hold:string
     top:bool
     hauls:bool
-    box:bool                         // in a walled howdah: its legs not drawn (D-176)
+    box:bool  // in a walled howdah: its legs not drawn (D-176)
 
 def engine_turn(name:string) -> int:
     var turn = 0
@@ -48,9 +48,9 @@ def members(r:JV, sockets:dictionary<string, float3>) -> [Member]:
             if has_s(WORK_HOLDS, w): held = w
             elif w == "top" or w == "box": top = true
         let recipe = if hauls: haul_recipe(r) else: crew_recipe(r, held)
-        let s = float(gint(recipe, "scale", 100)) / 100.0   // (a tiny race's crew are drawn tiny)
+        let s = float(gint(recipe, "scale", 100)) / 100.0  // (a tiny race's crew are drawn tiny)
         var t = Xform { bscaled_global(axis_angle(float3 { 0.0, 1.0, 0.0 }, -45.0 * float(engine_turn(name))), float3_1 * s), sockets.get(name, float3_0) }
-        if not top:   // (standing back by its lean, UnitView._build_engine: a frog crew, creatures.json crew_back)
+        if not top:  // (standing back by its lean, UnitView._build_engine: a frog crew, creatures.json crew_back)
             t = Xform { t.b, t.o - bxf(t.b, float3 { float(gint(gobj(lib_creatures, gstr(recipe, "creature", "")), "crew_back", 0)), 0.0, 0.0 }) }
         out.push(Member { name, recipe, t, if hauls: "" else: held, top, hauls, ends_with(name, "_box") })
     return out
@@ -82,7 +82,7 @@ def check_composite(label:string, r:JV):
         if m.hauls:
             let hn = tokenize(m.name, "_", "")[0]
             let n = substring(hn, 4, hn.length - 4)
-            for(["near", "far"]) side:
+            for([ "near", "far" ]) side:
                 let h = "hitch{n}_{side}"
                 note("C2 a hauler\'s hitches on the cart", label, m.name, not shas(sockets, h), "no {h} socket")
                 if shas(sockets, h):
@@ -122,9 +122,9 @@ def composite_pose(label:string, view:string, walk:float, sockets:dictionary<str
             var harness:Piece? = nil
             for(a.pieces) p:
                 if p.kind == "armour" and shas(p.sockets, "trace_near"): harness = p
-            for(["near", "far"]) side:
+            for([ "near", "far" ]) side:
                 let h = "hitch{n}_{side}"
-                if harness and shas(sockets, h):   // (else C2's other rules say so)
+                if harness and shas(sockets, h):  // (else C2's other rules say so)
                     let at_ = xf(m.t, xf(harness.xf, harness.sockets.get("trace_" + side, float3_0)))
                     let d = magnitude(at_ - sockets.get(h, float3_0))
                     let tol = if walk < 0.0: HITCH_TOL else: HITCH_WALK_TOL
@@ -197,9 +197,9 @@ def loose_ends(label:string, es:Spec, ev:Vox, ms:[Member]):
     let loose = []::string
     for(rods) rd:
         let own = voxels(rd.node, rd.t)
-        for([rd.a, rd.b]) e:
+        for([ rd.a, rd.b ]) e:
             let reach = rd.r + LOOSE_TOL
-            if not (e.y <= LOOSE_TOL + rd.r or near_cells(ev, own, e, reach) or near_cells(mv, new_vox(), e, reach)):   // (on the ground, or touching)
+            if not (e.y <= LOOSE_TOL + rd.r or near_cells(ev, own, e, reach) or near_cells(mv, new_vox(), e, reach)):  // (on the ground, or touching)
                 loose.push("{if rd.node.meta != "": rd.node.meta else: "rod"} end at ({round(e.x)}, {round(e.y)}, {round(e.z)})")
     note("C3 no loose ends", label, "stand", loose.length > 0, "{loose.length} ropes end in the air: {concat_string(loose.slice(0, min(3, loose.length)), ", ")}")
 

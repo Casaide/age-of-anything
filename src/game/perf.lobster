@@ -5,20 +5,20 @@
 // The laptop ran hot (2026-10-31): every gl.text made and deleted a buffer, macOS waited on each delete, and the game
 // drew 120 frames a second on a ProMotion display. Headless runs never saw it.
 
-let PERF_WARM = 4.0            // seconds of play first (the armies bake, the first frames build their buffers)
+let PERF_WARM = 4.0  // seconds of play first (the armies bake, the first frames build their buffers)
 // Measured 2026-10-31 on the MacBook (ProMotion, 3024x1834): 3.3 ms median, 4.6 ms 95th, 0 buffers, 60 a second.
 // Before the UI's meshes were drawn from the pool: 13.7 ms, 18.4 ms and 1500 buffers a frame (81% of the main thread).
-let PERF_WORK_MEDIAN = 0.006   // seconds of work a frame, the median
-let PERF_WORK_P95 = 0.009      // and the 95th percentile
-let PERF_FPS_MAX = 66.0        // frames a second (the cap is 60: a 120 Hz display uncapped draws twice as often)
-let PERF_BUFFERS_P95 = 0       // GPU buffers made a frame, the 95th percentile (pooled: none once the pool is full)
+let PERF_WORK_MEDIAN = 0.006  // seconds of work a frame, the median
+let PERF_WORK_P95 = 0.009     // and the 95th percentile
+let PERF_FPS_MAX = 66.0       // frames a second (the cap is 60: a 120 Hz display uncapped draws twice as often)
+let PERF_BUFFERS_P95 = 0      // GPU buffers made a frame, the 95th percentile (pooled: none once the pool is full)
 
-var perf_for = 0.0             // perf:<seconds> (0: off)
+var perf_for = 0.0  // perf:<seconds> (0: off)
 var perf_work = []::float
 var perf_made = []::int
-var perf_t = -1.0              // the frame's start (after gl.frame)
+var perf_t = -1.0  // the frame's start (after gl.frame)
 var perf_b = 0
-var perf_wall0 = -1.0          // the measure's start
+var perf_wall0 = -1.0  // the measure's start
 
 def perf_sorted_at(xs, q:float):
     let s = copy(xs)

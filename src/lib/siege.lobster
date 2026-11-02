@@ -4,9 +4,9 @@
 // the last stretch of its flight; a sapper's charge blows up a building, everyone near, and itself;
 // the great sling unpacks before it throws and packs up before it rolls.
 
-let BASE_RADIUS = 300   // a foot soldier's body, for minimum-range looks
-let BACK_OFF = 1500     // how far beyond its minimum range an engine steps back
-let MAX_BODY = 500      // the biggest body's radius: how far round a spot to look
+let BASE_RADIUS = 300  // a foot soldier's body, for minimum-range looks
+let BACK_OFF = 1500    // how far beyond its minimum range an engine steps back
+let MAX_BODY = 500     // the biggest body's radius: how far round a spot to look
 
 var r_splash_friend_pct = 100
 

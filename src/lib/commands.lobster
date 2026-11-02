@@ -4,13 +4,13 @@
 // empties the queues of the units it's for. A group MOVE / ATTACK_MOVE gets its formation first, and
 // each queued copy keeps its own slot. Left out: walls you stand on (World._wall_orders).
 
-let QUEUEABLE = [CMD_MOVE, CMD_GATHER, CMD_BUILD, CMD_HELP_BUILD, CMD_ATTACK, CMD_ATTACK_MOVE, CMD_DROP_OFF, CMD_GARRISON, CMD_REPAIR]
+let QUEUEABLE = [ CMD_MOVE, CMD_GATHER, CMD_BUILD, CMD_HELP_BUILD, CMD_ATTACK, CMD_ATTACK_MOVE, CMD_DROP_OFF, CMD_GARRISON, CMD_REPAIR ]
 
 // Doing something: a job, a move, a fight, or a way along or off a wall (World.busy).
 def busy(i:int) -> bool:
     return u_task[i] != T_NONE or u_moving[i] == 1 or u_foe[i] != 0 or u_patient[i] != 0 or wall_busy(i)
 
-let WALL_ORDERS = [CMD_MOVE, CMD_ATTACK, CMD_ATTACK_MOVE, CMD_GATHER, CMD_BUILD, CMD_HELP_BUILD, CMD_DROP_OFF, CMD_GARRISON, CMD_PEN, CMD_RESEED, CMD_REPAIR]
+let WALL_ORDERS = [ CMD_MOVE, CMD_ATTACK, CMD_ATTACK_MOVE, CMD_GATHER, CMD_BUILD, CMD_HELP_BUILD, CMD_DROP_OFF, CMD_GARRISON, CMD_PEN, CMD_RESEED, CMD_REPAIR ]
 
 // Where an order sends a unit (milli-tiles), for climbing down towards it; -1, -1 if nowhere (World._order_point).
 def order_point(c:Cmd) -> int, int:
@@ -46,8 +46,8 @@ def wall_orders(c:Cmd) -> Cmd:
         let climbers = filter(now) uid: u_perch[index_of(uid)] == 0 and not t_ranged[u_kind[index_of(uid)]]
         for(order_onto(p, climbers, u_perch[foe] - 1)) uid:
             done.push(uid)
-            let one = Cmd { c.run_tick, CMD_ATTACK, p, c.a, 0, 0, 0, [uid], c.seq }
-            u_orders[index_of(uid)] = [one]
+            let one = Cmd { c.run_tick, CMD_ATTACK, p, c.a, 0, 0, 0, [ uid ], c.seq }
+            u_orders[index_of(uid)] = [ one ]
     for(now) uid:
         let i = index_of(uid)
         if not contains(done, uid) and u_perch[i] != 0:
@@ -57,8 +57,8 @@ def wall_orders(c:Cmd) -> Cmd:
                 let ax, ay = order_point(c)
                 if ax >= 0 and wall_leave(i, ax, ay):
                     if c.queue == 0: u_orders[i] = []::Cmd
-                    if c.code != CMD_MOVE:   // (a move is where it walks once down)
-                        let one = copy_cmd(c, [uid])
+                    if c.code != CMD_MOVE:  // (a move is where it walks once down)
+                        let one = copy_cmd(c, [ uid ])
                         one.queue = 0
                         u_orders[i].insert(0, one)
     if not done.length: return c
@@ -84,7 +84,7 @@ def queue_or_clear(c:Cmd, formed:bool) -> [int]:
         let i = index_of(uid)
         if i >= 0 and u_owner[i] == c.player:
             if c.queue == 1 and busy(i):
-                let one = copy_cmd(c, [uid])
+                let one = copy_cmd(c, [ uid ])
                 one.queue = 0
                 if formed:
                     one.slotted = 1
@@ -163,7 +163,7 @@ def run(c0:Cmd):
         c.queue = 1
     if contains(WALL_ORDERS, c.code):
         let a = wall_orders(c)
-        if not a.ids.length and c.ids.length: return   // (every unit dealt with there)
+        if not a.ids.length and c.ids.length: return  // (every unit dealt with there)
         c = a
     var formed = false
     if (c.code == CMD_MOVE or c.code == CMD_ATTACK_MOVE) and c.slotted == 0:
@@ -229,9 +229,9 @@ def next_orders():
                 if b >= 0 and b_owner[b] == p and b_done[b] == 0 and o.a >= 0 and b_kind[b] == upgraded_type(p, o.a):
                     o = Cmd { o.run_tick, CMD_HELP_BUILD, p, bid, 0, 0, 0, o.ids, o.seq }
             let r = copy_cmd(o, o.ids)
-            r.queue = 1   // run now (the unit's free) without wiping the rest of its queue
+            r.queue = 1  // run now (the unit's free) without wiping the rest of its queue
             run(r)
 
 // A queued order as the hash sees it (export.gd order_ints).
 def order_ints(o:Cmd) -> [int]:
-    return [o.code, o.a, o.b, o.c, o.d, o.slotted, o.sx, o.sy, o.group, o.fx, o.fy, o.pace]
+    return [ o.code, o.a, o.b, o.c, o.d, o.slotted, o.sx, o.sy, o.group, o.fx, o.fy, o.pace ]

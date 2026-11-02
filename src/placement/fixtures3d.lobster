@@ -5,10 +5,10 @@
 
 class Fixture:
     what:string
-    label:string                     // the case it runs on
-    rules:[string]                   // it must fail one of these, and the unit as it is now none of them
-    which:int                        // its setup (fixture_set)
-    recipe:JV? = nil                 // its own unit (else the case's)
+    label:string      // the case it runs on
+    rules:[string]    // it must fail one of these, and the unit as it is now none of them
+    which:int         // its setup (fixture_set)
+    recipe:JV? = nil  // its own unit (else the case's)
 
 // The bear mount's neck in round B2 (data/later/bears.json before B3): short, sloping down from the hump to a head
 // set on it, a step between them ("mounted bears I think have broken neck still").
@@ -97,27 +97,27 @@ def fixtures_3d(cases:[Case]) -> bool, [string]:
     let human = deep_copy(case_recipe("romans spear"))
     set(at(human, "parts"), "head_gear", jstr("helm.cap"))
     let cap_fixture = Fixture { "the leather cap\'s brim across the brows like a headband (the cap before it sat higher)",
-                                "human in a leather cap", ["A2 an open cap clear of the brow"], 7 }
+                                "human in a leather cap", [ "A2 an open cap clear of the brow" ], 7 }
     cap_fixture.recipe = human
     let list = [
         Fixture { "newt legs not reaching the ground facing left (legs not turned to their side: the far legs\' feet under the belly)",
-                  "frog on newt_fire", ["A4 feet out to their own side", "A1 weight over the feet"], 0 },
+                  "frog on newt_fire", [ "A4 feet out to their own side", "A1 weight over the feet" ], 0 },
         Fixture { "the rat\'s head floating ahead of its body with a gap at the neck (its body leaning back: Dominic\'s crossbowman)",
-                  "sewer rats archer", ["A2 head joint on its body\'s surface"], 1 },
+                  "sewer rats archer", [ "A2 head joint on its body\'s surface" ], 1 },
         Fixture { "the rat\'s head on its armour, both in front of the body (the body leaning back out of its bottle-cap armour)",
-                  "sewer rats spear age 2", ["A2 worn armour centred on the torso", "A2 worn armour on its body"], 2 },
-        Fixture { "a walk whose body rose as its legs spread (no foot on the ground mid-stride)", "romans spear", ["A1 walking, a foot planted"], 3 },
+                  "sewer rats spear age 2", [ "A2 worn armour centred on the torso", "A2 worn armour on its body" ], 2 },
+        Fixture { "a walk whose body rose as its legs spread (no foot on the ground mid-stride)", "romans spear", [ "A1 walking, a foot planted" ], 3 },
         Fixture { "a frog sunk into the hummingbird it rides (riders dropped a fixed amount below the seat)",
-                  "frog on hummingbird", ["A2 rider not sunk into its mount", "A2 the seat on its mount\'s back"], 4 },
+                  "frog on hummingbird", [ "A2 rider not sunk into its mount", "A2 the seat on its mount\'s back" ], 4 },
         Fixture { "a beetle\'s legs as one sprite for every hip (far feet under the belly, rear legs facing forward)",
-                  "rat on beetle", ["A2 one-sided legs baked at each hip", "A4 feet out to their own side"], 5 },
+                  "rat on beetle", [ "A2 one-sided legs baked at each hip", "A4 feet out to their own side" ], 5 },
         Fixture { "the bear mount\'s head on a short neck below the hump, a notch between them (round B2: \"broken neck\")",
-                  "kit: human on bear bear_brown", ["A2 head joins the neck without a notch"], 6 },
+                  "kit: human on bear bear_brown", [ "A2 head joins the neck without a notch" ], 6 },
         cap_fixture,
         Fixture { "a dead frog propped up on its far hand, the belly in the air (HF2b: the arms still braced as it stood; Dominic: \"looks like it\'s floating\")",
-                  "swamp frogs spear", ["D1 a corpse lies on the ground"], 8 },
+                  "swamp frogs spear", [ "D1 a corpse lies on the ground" ], 8 },
         Fixture { "TC1 A for rats as first drawn (the traces loose lines to the air by the cat\'s chest, no harness, the cart floating behind)",
-                  TC1_RATS, ["C2 a hauler wears its harness", "C2 a hauler\'s hitches on the cart", "C3 no loose ends"], 9 },
+                  TC1_RATS, [ "C2 a hauler wears its harness", "C2 a hauler\'s hitches on the cart", "C3 no loose ends" ], 9 },
     ]
     var ok = true
     let said = []::string
@@ -132,5 +132,5 @@ def fixtures_3d(cases:[Case]) -> bool, [string]:
         ok = ok and passed
         let msg = if caught.length: bad.get(caught[0]) or "" else: "no failure"
         said.push((if passed: "PASS" else: "BROKEN") + " fixture: {f.what}\n      FAILS " + (if caught.length: concat_string(caught, ", ") else: "{f.rules}") +
-                   " ({msg})" + (if still.length: "\n      but the control fails too: " + concat_string(still, ", ") else: ""))
+                  " ({msg})" + (if still.length: "\n      but the control fails too: " + concat_string(still, ", ") else: ""))
     return ok, said

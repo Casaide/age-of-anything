@@ -4,8 +4,8 @@
 // working, drawn as whole-unit frames (collect_units). Wild animals and the dead aren't made yet.
 
 let VX_MODES = [ "idle", "walk", "attack", "work" ]
-let vx_frames = dictionary<string, int>(4096)   // "kind.mode.facing.step" -> frame
-let VX_DRAW_K = 1.1 / ART_K   // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
+let vx_frames = dictionary<string, int>(4096)  // "kind.mode.facing.step" -> frame
+let VX_DRAW_K = 1.1 / ART_K                    // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
 
 def vx_has(id:string, words:[string]) -> bool:
     for(words) w: if find_string(id, w) >= 0: return true
@@ -19,11 +19,11 @@ def vx_part(r:JV, slot:string) -> string:
 def vx_def_of(k:int) -> vx_unit_def:
     let r = su_type_recipe[k]
     let body = rstr(r, "body")
-    let kind = if find_string(body, "rat") >= 0: vx_RAT elif find_string(body, "frog") >= 0: vx_FROG else: vx_HUMAN   // (no voxel bears yet)
+    let kind = if find_string(body, "rat") >= 0: vx_RAT elif find_string(body, "frog") >= 0: vx_FROG else: vx_HUMAN  // (no voxel bears yet)
     let skins = at(lib_palettes, "skins")
     let skin = rstr(r, "skin")
     var rc = kind
-    if has(skins, skin):   // the race's own colours (palettes.json)
+    if has(skins, skin):  // the race's own colours (palettes.json)
         let cs = gstrs(skins, skin)
         rc = vx_race { kind.kind, xyz(hex_col(hex_of(cs[0]))), xyz(hex_col(hex_of(cs[1]))), kind.size, kind.fur }
     let hr = vx_part(r, "hand_r")
@@ -42,7 +42,7 @@ def vx_def_of(k:int) -> vx_unit_def:
     let torso = vx_part(r, "torso")
     let armour = if vx_has(torso, [ "lorica" ]): "lorica" elif vx_has(torso, [ "bronze" ]): "bronze" elif vx_has(torso, [ "leather" ]): "leather" else: ""
     let mount = if find_string(body, "centaur") >= 0: "horse" elif not has(r, "mount"): "" elif rstr(at(r, "mount"), "creature") == "cat": "cat" else: "horse"
-    var coat = float3_0   // a horse's or pony's coat (palettes.json); the cat keeps its own
+    var coat = float3_0  // a horse's or pony's coat (palettes.json); the cat keeps its own
     if mount == "horse" and has(r, "mount") and has(skins, rstr(at(r, "mount"), "skin")): coat = xyz(hex_col(hex_of(gstrs(skins, rstr(at(r, "mount"), "skin"))[0])))
     return vx_unit_def { rstr(r, "name"), rc, right, left, vx_part(r, "head_gear") != "", torso != "", mount,
                          if vx_has(vx_part(r, "head_gear"), [ "galea" ]): "galea" else: "", armour,
@@ -55,7 +55,7 @@ let vx_cycle = dictionary<int, float>(256)    // type -> milli-tiles a walk cycl
 let vx_walked = dictionary<int, float>(1024)  // unit id -> milli-tiles walked
 let vx_last = dictionary<int, float2>(1024)   // unit id -> where it was last drawn
 
-def vx_reach(u:vx_unit_def) -> float:   // how far a foot swings out from under the hip, body units (as the builders step)
+def vx_reach(u:vx_unit_def) -> float:  // how far a foot swings out from under the hip, body units (as the builders step)
     if u.mount == "cat": return 3.4 * vx_CAT_SIZE
     if u.mount == "horse": return 4.0
     return (if u.rc.kind == "rat": 5.5 elif u.rc.kind == "frog": 2.0 else: 4.6) * u.rc.size
@@ -66,14 +66,14 @@ def vx_reach(u:vx_unit_def) -> float:   // how far a foot swings out from under 
 // the builder bakes it again.
 let VX_ATLAS = 2048
 let VX_FORMATS = texture_format_clamp | texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min
-var vx_rows = []::[float4]   // the atlas being packed: its rows, VX_ATLAS wide
-var vx_at = int2_0           // where the next cell goes
-var vx_row_h = 0             // the tallest cell in the row
-var vx_lines = []::string    // the look's manifest
-var vx_frame0 = 0            // the look's first frame
-let vx_looks = dictionary<string, int>(256)   // a look's key -> the type that baked it
-let vx_shadow_of = dictionary<int, int>(4096)   // a unit's frame -> its ground shadow's frame
-var vx_source = ""           // the builder's source's hash (the cache key's part that changes with the code)
+var vx_rows = []::[float4]                     // the atlas being packed: its rows, VX_ATLAS wide
+var vx_at = int2_0                             // where the next cell goes
+var vx_row_h = 0                               // the tallest cell in the row
+var vx_lines = []::string                      // the look's manifest
+var vx_frame0 = 0                              // the look's first frame
+let vx_looks = dictionary<string, int>(256)    // a look's key -> the type that baked it
+let vx_shadow_of = dictionary<int, int>(4096)  // a unit's frame -> its ground shadow's frame
+var vx_source = ""                             // the builder's source's hash (the cache key's part that changes with the code)
 
 // A cell just drawn (its box in a cell cw wide, the ground at anchor), packed: its frame.
 def vx_pack_cell(cell:[float4], box:int4, cw:int, anchor:int2) -> int:
@@ -112,7 +112,7 @@ def vx_load_look(k:int, v:int, stem:string) -> bool:
             vx_shadow_of.set(f0 + string_to_int(t[2]), f0 + string_to_int(t[3]))
     return true
 
-let vx_nlooks = dictionary<int, int>(256)   // type -> how many looks it has (humans 3, the rest 1)
+let vx_nlooks = dictionary<int, int>(256)  // type -> how many looks it has (humans 3, the rest 1)
 
 // One type's frames, in each of its looks: steps per mode and facing. Returns how many looks it baked (a type that
 // looks like one baked before takes its frames; a look in the cache is loaded).
@@ -138,7 +138,7 @@ def vx_bake_type(k:int) -> int:
     return baked
 
 def vx_bake_look(k:int, u:vx_unit_def, v:int, stem:string):
-    let worker = vx_unit_def { u.label, u.rc, "axe", "", u.helm, u.armour, u.mount, u.helm_kind, u.armour_kind, u.back, u.coat }   // (work: chopping)
+    let worker = vx_unit_def { u.label, u.rc, "axe", "", u.helm, u.armour, u.mount, u.helm_kind, u.armour_kind, u.back, u.coat }  // (work: chopping)
     vx_set_look(u.rc, v)
     vx_rows = []::[float4]
     vx_at = int2_0
@@ -162,7 +162,7 @@ def vx_bake_look(k:int, u:vx_unit_def, v:int, stem:string):
     let h = vx_rows.length
     assert h <= 4096
     add_sheet(gl.create_texture(vx_rows, VX_FORMATS), float2 { float(VX_ATLAS), float(h) })
-    if bake_cache_dir != "":   // (kept for the next start)
+    if bake_cache_dir != "":  // (kept for the next start)
         let rgba = []::int
         for(vx_rows) row: for(row) c: for(4) ch: rgba.push(clamp(int(c[ch] * 255.0 + 0.5), 0, 255))
         write_file(stem + ".png", bmat_png(rgba, VX_ATLAS, h))
@@ -174,7 +174,7 @@ def vx_bake_types():
     var n = 0
     var baked = 0
     vx_source = sha256_text(read_file("view/voxel.lobster") or "")
-    vx_mat_cols[vx_mat_team] = float3 { 0.85, 0.12, 0.85 }   // (the sprite shader's team key)
+    vx_mat_cols[vx_mat_team] = float3 { 0.85, 0.12, 0.85 }  // (the sprite shader's team key)
     for(t_slot.length) k:
         if t_animal[k] == 0:
             baked += vx_bake_type(k)
@@ -192,7 +192,7 @@ def vx_walk_step(id:int, k:int, x:float, y:float) -> int:
 // The frame for unit id's state (unit_state's names) facing d (dir_of's), in its look (from its id: view only).
 def vx_frame_for(id:int, k:int, state:string, d:int, n:int) -> int:
     let v = ((id * 2654435761) >> 13 & 1023) % vx_nlooks.get(k, 1)
-    let f = (d + 2) % 8   // (d: the screen direction it moves in, dir_of; facing 2 faces screen right)
+    let f = (d + 2) % 8  // (d: the screen direction it moves in, dir_of; facing 2 faces screen right)
     let mode = if state == "attack": "attack" elif state == "walk" or find_string(state, "carry") == 0: "walk" elif find_string(state, "work") == 0: "work" else: "idle"
     let st = if mode == "idle": 0 elif mode == "attack": min(n, 7) else: n % 8
     let fr = vx_frames.get("{k}.{v}.{mode}.{f}.{st}", -1)
