@@ -1,7 +1,7 @@
 // Prices calibrated offline (D-186): what a part is worth, from fights, once, not per match. Run from src:
 //   ./shards.sh calibrate.lobster lines <age> <races> [jobs=4]
 //       <races> races from the lexicon's words (training prompts, the lobby's dice made deterministic); each of
-//       their lines in <age> is fought against a fixed panel (every line of PANEL's races) at equal cost, its
+//       their lines in <age> is fought against a fixed panel (every line of a few random races) at equal cost, its
 //       price moved until it wins half: its fair price. The combine writes the samples to ../build/calibrate/.
 //   lobster calibrate.lobster -- fit [lambda:<n>] [write]
 //       each sample's fair price -> its target points (the cost curve's inverse), then every part's
@@ -64,10 +64,10 @@ import gen.start
 import gen.reset
 import gen.balance
 
-let PANEL = ["greek hoplites", "sewer rats with cheese hammers"]
+let PANEL_RACES = 3   // the panel: every line of a few races from the dice (seed "panel"; no creature or culture twice)
 let PRICE_LO = 40     // percent of the generator's price: the search's bracket
 let PRICE_HI = 250
-let STEPS = 5         // halvings of the bracket (in ratio): about 3% at the end
+let STEPS = 4         // halvings of the bracket (in ratio): about 6% at the end
 let TOLERANCE = 10    // win-rate points off the group's mean
 let OUT_DIR = "../build/calibrate"
 
@@ -97,7 +97,7 @@ let bare = bare_rules(rules)
 
 // ---- prompts: the lobby's dice (fe_random_words), from a seed
 
-def lexicon_words() -> [string], [string], [string], [string]:
+def lexicon_words(even:bool) -> [string], [string], [string], [string]:
     let creatures = []::string
     let cultures = []::string
     let kit = []::string
@@ -108,10 +108,19 @@ def lexicon_words() -> [string], [string], [string], [string]:
         elif has(e, "family") and not has(e, "creature"): cultures.push(w)
         elif e.keys.length == 1 and has(e, "tags"): kit.push(w)
         elif e.keys.length == 1 and has(e, "size"): sizes.push(w)
-    return sorted_strs(creatures), sorted_strs(cultures), sorted_strs(kit), sorted_strs(sizes)
+    if not even: return sorted_strs(creatures), sorted_strs(cultures), sorted_strs(kit), sorted_strs(sizes)
+    // even: one word a creature (its first), so every creature is as likely as any other, however many words it has
+    let firsts = []::string
+    let seen = []::string
+    for(sorted_strs(creatures)) w:
+        let cr = gstr(at(lib_lexicon, w), "creature", "")
+        if find_index(seen, cr) < 0:
+            seen.push(cr)
+            firsts.push(w)
+    return firsts, sorted_strs(cultures), sorted_strs(kit), sorted_strs(sizes)
 
 def random_prompts(seed:string, count:int) -> [string]:
-    let cr, cu, ki, si = lexicon_words()
+    let cr, cu, ki, si = lexicon_words(seed != "held")   // (the held-out prompts as first measured: the lobby's odds)
     let r = new_rng(hash_text(seed))
     return map(count):
         let words = []::string
@@ -122,6 +131,14 @@ def random_prompts(seed:string, count:int) -> [string]:
             words.push("with " + rpick(r, ki))
             if chance(r, 35): words.push("and " + rpick(r, ki))
         concat_string(words, " ")
+
+def panel_of() -> [JV]:
+    let out = []::JV
+    for(random_prompts("panel", 60)) p:
+        let r = generate(p, rules, 0)
+        let seen = filter(out) o: rstr(o, "creature") == rstr(r, "creature") or rstr(o, "family") == rstr(r, "family")
+        if out.length < PANEL_RACES and not seen.length: out.push(r)
+    return out
 
 // ---- a line's parts (as evaluate adds them up) and the rest of its points
 
@@ -173,8 +190,9 @@ def fair_pct(races:[JV], age:int, unit:RRUnit, panel:[RRUnit]) -> int:
     return isqrt(lo * hi)
 
 def run_lines(age:int, count:int):
-    let panel_races = map(PANEL) p: generate(p, rules, 0)
+    let panel_races = panel_of()
     let panel = rr_units(panel_races, age)
+    if shard == 0: print "panel ({panel.length} lines): " + concat_string(map(panel) u: u.label, ", ")
     let prompts = random_prompts("train", count)
     var k = 0
     for(prompts) prompt, n:
@@ -190,7 +208,9 @@ def run_lines(age:int, count:int):
                     var sum = 0
                     for(parts) id: sum += price_of(part(id))
                     let points = as_int(at(e, "points"))
-                    print "@@ {age} {u.slot} {pct} {points} {points - sum} {concat_string(parts, ",")} {unspaced(u.label)}"
+                    let tags = eval_tags(e)
+                    let size = if has_s(tags, "giant"): "giant" elif has_s(tags, "tiny"): "tiny" else: "-"
+                    print "@@ {age} {u.slot} {pct} {points} {points - sum} {concat_string(parts, ",")} {unspaced(u.label)} {size}"
                 k++
 
 // ---- fit: price points from the samples
@@ -203,14 +223,15 @@ class Sample:
     fixed:int
     parts:[string]
     label:string
+    size:string       // giant, tiny or -
 
 def read_samples(paths:[string]) -> [Sample]:
     let out = []::Sample
     for(paths) path:
         for(tokenize(read_file(path) or "", "\n", "")) line:
             let w = tokenize(line, " ", "")
-            if w.length == 8 and w[0] == "@@":
-                out.push(Sample { string_to_int(w[1]), w[2], string_to_int(w[3]), string_to_int(w[4]), string_to_int(w[5]), tokenize(w[6], ",", ""), spaced(w[7]) })
+            if w.length == 9 and w[0] == "@@":
+                out.push(Sample { string_to_int(w[1]), w[2], string_to_int(w[3]), string_to_int(w[4]), string_to_int(w[5]), tokenize(w[6], ",", ""), spaced(w[7]), w[8] })
     return out
 
 // The points (real) whose curve value is c: the cost curve's inverse, between its steps.
@@ -239,6 +260,11 @@ def targets(samples:[Sample]) -> [float]:
 def writable_parts() -> [string]:
     return sorted_strs(map(load_json("../data/parts.json").a) p: as_str(at(p, "id")))
 
+// What a giant adds to the price, and a tiny one takes off (rules.cost), fitted as "size:giant" and "size:tiny".
+def size_points(size:string) -> int:
+    let c = at(rules, "cost")
+    return if size == "giant": gint(c, "giant_price_points", GIANT_POINTS) elif size == "tiny": -gint(c, "tiny_price_points", 1) else: 0
+
 // A line's own price points (the rules' roster: what its slot's stats add), fitted with the parts as "slot:<slot>".
 def roster_points(slot:string) -> int:
     for(glist(rules, "roster")) sd:
@@ -252,16 +278,19 @@ def run_fit(lambda:float, write:bool):
     let ids = writable_parts()
     for(RR_SLOTS) slot: ids.push("slot:" + slot)
     for(RR_SLOTS_AGE3) slot: ids.push("slot:" + slot)
+    ids.push("size:giant")
+    ids.push("size:tiny")
     let index = dictionary<string, int>(ids.length * 2)
     for(ids) id, n: index.set(id, n)
-    let x0 = map(ids) id: float(if starts_with(id, "slot:"): roster_points(id.substring(5, id.length - 5)) else: price_of(part(id)))
+    let x0 = map(ids) id: float(if starts_with(id, "slot:"): roster_points(id.substring(5, id.length - 5)) elif starts_with(id, "size:"): size_points(id.substring(5, id.length - 5)) else: price_of(part(id)))
     let rows = map(samples) s:
         let r = filter(map(s.parts) id: index.get(id, -1)) n: n >= 0
         r.push(index.get("slot:" + s.slot, -1))
+        if s.size != "-": r.push(index.get("size:" + s.size, -1))
         r
     // what the samples want of the parts and lines: target - fixed points - the parts it holds that aren't fitted
     let want = map(samples) s, k:
-        var rest = float(s.fixed - roster_points(s.slot))
+        var rest = float(s.fixed - roster_points(s.slot) - size_points(s.size))
         for(s.parts) id:
             if index.get(id, -1) < 0: rest += float(price_of(part(id)))
         t[k] - rest
@@ -298,7 +327,7 @@ def run_fit(lambda:float, write:bool):
                 for(uses[n]) k:
                     num += weight[k] * (want[k] - (pred[k] - x[n]))
                     den += weight[k]
-                let v = if starts_with(ids[n], "slot:"): num / den else: max(0.0, num / den)
+                let v = if starts_with(ids[n], "slot:") or ids[n] == "size:tiny": num / den else: max(0.0, num / den)
                 for(uses[n]) k: pred[k] += v - x[n]
                 x[n] = v
     // to whole points, then one point at a time while it helps
@@ -310,7 +339,7 @@ def run_fit(lambda:float, write:bool):
                 xi[n] += 1.0
                 if objective(xi) >= here:
                     xi[n] -= 2.0
-                    if (xi[n] < 0.0 and not starts_with(ids[n], "slot:")) or objective(xi) >= here: xi[n] += 1.0
+                    if (xi[n] < 0.0 and not starts_with(ids[n], "slot:") and ids[n] != "size:tiny") or objective(xi) >= here: xi[n] += 1.0
     // the report: how far the lines' points are from their targets, before and after
     def misses(xs:[float]) -> float, int:
         var e = 0.0
@@ -365,7 +394,7 @@ def measure_groups() -> [[string]]:
 
 // The method's best: every held-out line at its own fair price against the panel (no fit), for measure oracle.
 def run_oracle():
-    let panel_races = map(PANEL) p: generate(p, rules, 0)
+    let panel_races = panel_of()
     let panel = rr_units(panel_races, 2)
     var k = 0
     for(measure_groups()) g:
