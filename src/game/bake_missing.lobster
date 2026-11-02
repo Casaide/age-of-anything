@@ -42,23 +42,23 @@ def add_baked(full:string, tris:[BakeTri], facing:int, cols:Colours):
 // those its player can field in the age it starts in baked now, counted on the loader; the later ages' steps
 // (two thirds of the parts) queued for play to bake a facing a frame, the next age's first. Returns how many
 // facings were baked now.
-let WALK_SAMPLES = 16   // walk phases looked at (the most steps a leg or body has is 8)
+let WALK_SAMPLES = 16  // walk phases looked at (the most steps a leg or body has is 8)
 
 def bake_missing_parts() -> int:
     baked_here = 0
     let todo = []::Wanted
-    let later = []::[Wanted]   // by age
-    let holds = []::Wanted     // the workers' work poses (raise, thrust, reach): baked first in play
+    let later = []::[Wanted]  // by age
+    let holds = []::Wanted    // the workers' work poses (raise, thrust, reach): baked first in play
     let seen = dictionary<string, bool>(1024)
     for(t_slot.length) k:
         let line = su_type_line[k]
         for(max(1, line.length)) step:
             let age = if line.length: as_int(at(line[step], "age")) else: t_age[k]
-            let ahead = age - (if t_player[k] < ages.length: ages[t_player[k]] else: 1)   // (nature's animals: age 1)
+            let ahead = age - (if t_player[k] < ages.length: ages[t_player[k]] else: 1)  // (nature's animals: age 1)
             while later.length < ahead: later.push([])
             let v = make_view(k, t_player[k], step)
             for(WALK_SAMPLES + 1) w:
-                if w > 0:   // (walking: the legs' and body's steps; uv_process picks them by phase)
+                if w > 0:  // (walking: the legs' and body's steps; uv_process picks them by phase)
                     v.walking = true
                     v.phase = float(w - 1) * TAU / float(WALK_SAMPLES)
                     uv_process(v, 0.0)
@@ -80,7 +80,7 @@ def bake_missing_parts() -> int:
                         if not bakes.get(key + facing_suffix(1)) and not seen.get(key, false):
                             seen.set(key, true)
                             holds.push(Wanted { id, key, cols })
-            bake_corpse_frames(v.recipe)   // (a body that lies down in 3D when it dies: its fall's frames)
+            bake_corpse_frames(v.recipe)  // (a body that lies down in 3D when it dies: its fall's frames)
             remove_child(view_stage, v.node)
             free_tree(v.node)
     bake_total = todo.length
@@ -99,7 +99,7 @@ def bake_missing_parts() -> int:
                     if tt and tt.length: add_baked(full, tt, f, key_colours(t.key))
         bake_count++
     bake_total = 0
-    for(later.length) a:   // (the queue is taken from its end: the next age's last in)
+    for(later.length) a:  // (the queue is taken from its end: the next age's last in)
         for(later[later.length - 1 - a]) w:
             if not bake_wanted_set.get(w.key, false):
                 bake_wanted_set.set(w.key, true)
@@ -132,7 +132,7 @@ def bake_wanted_tick(budget:float):
             bake_gen++
             break
     bake_live = live
-    gl.ortho()   // (back on the screen, a framebuffer's projection stays: the frame would draw at a bake's scale)
+    gl.ortho()  // (back on the screen, a framebuffer's projection stays: the frame would draw at a bake's scale)
 
 // The parts a view wears that the pack lacks, baked (the Race Lab's rosters with no pack). How many facings.
 def bake_view_parts(n:VNode) -> int:

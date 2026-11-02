@@ -9,13 +9,13 @@ class Frame:
     y:int
     w:int
     h:int
-    ox:int          // the anchor inside the frame
+    ox:int  // the anchor inside the frame
     oy:int
-    k:float         // world art px a texture px (world art baked at ART_SCALE: 1 / ART_K)
+    k:float  // world art px a texture px (world art baked at ART_SCALE: 1 / ART_K)
 
 class Look:
     body:string
-    stages:[string] // the four construction stages ("-": none)
+    stages:[string]  // the four construction stages ("-": none)
     front:string
     arms:[string] = []        // a wall's arm towards each neighbour (Models.LINKS order), "-": none
     arms_front:[string] = []  // their near merlons
@@ -23,10 +23,10 @@ class Look:
 
 var sheet_size = 4096
 let sheet_tex = []::resource<texture>
-let sheet_dims = []::float2        // each sheet's size in px (the pack's are all sheet_size; a part baked in the game is its own)
-let sheet_file = []::string        // a sheet not loaded yet: its PNG, loaded when it's first drawn ("": loaded)
-let sheet_formats = []::int        // and the texture formats to load it with
-let sheet_none = []::resource<texture>   // (the one stand-in texture for sheets not loaded yet)
+let sheet_dims = []::float2             // each sheet's size in px (the pack's are all sheet_size; a part baked in the game is its own)
+let sheet_file = []::string             // a sheet not loaded yet: its PNG, loaded when it's first drawn ("": loaded)
+let sheet_formats = []::int             // and the texture formats to load it with
+let sheet_none = []::resource<texture>  // (the one stand-in texture for sheets not loaded yet)
 
 // A sheet: its texture now, or its PNG (shipped or cached art) to load when it's first drawn.
 def add_sheet(tex:resource<texture>, dims:float2):
@@ -36,7 +36,7 @@ def add_sheet(tex:resource<texture>, dims:float2):
     sheet_formats.push(0)
 
 def add_sheet_later(file:string, dims:float2, formats:int):
-    if not sheet_none.length: sheet_none.push(gl.create_texture([[float4_0]], texture_format_nomipmap))
+    if not sheet_none.length: sheet_none.push(gl.create_texture([ [ float4_0 ] ], texture_format_nomipmap))
     sheet_tex.push(sheet_none[0])
     sheet_dims.push(dims)
     sheet_file.push(file)
@@ -49,26 +49,26 @@ def sheet_texture(i:int) -> resource<texture>:
     return sheet_tex[i]
 let frames = []::Frame
 let frame_at = dictionary<string, int>(32768)
-let anims = dictionary<string, int>(1024)     // "<type>.<state>" -> frames
+let anims = dictionary<string, int>(1024)  // "<type>.<state>" -> frames
 let looks = dictionary<string, Look>(512)
-var arch_of = []::string                      // per player
+var arch_of = []::string  // per player
 let doodads = dictionary<string, int>(64)
-var pack_rules = "default"                   // the host rules the pack's races were made with
-var pack_mods = []::string                   // the mods they were made with
+var pack_rules = "default"                    // the host rules the pack's races were made with
+var pack_mods = []::string                    // the mods they were made with
 let prop_of = dictionary<string, string>(64)  // terrain id -> prop kind
 let ground_a = []::float4                     // per terrain: its two colours
 let ground_b = []::float4
-var species = []::string                      // per cell: a tree's species, or "-"
-let team_rgb = []::float4                     // per player
+var species = []::string   // per cell: a tree's species, or "-"
+let team_rgb = []::float4  // per player
 let unit_names = dictionary<int, string>(128)
 let unit_blow = dictionary<int, string>(128)  // per unit type: its melee blow's sound, its shot's
 let unit_shot = dictionary<int, string>(128)
-let unit_shotk = dictionary<int, string>(128)   // the shot each unit type looses (combat_fx.shot_kind)
+let unit_shotk = dictionary<int, string>(128)  // the shot each unit type looses (combat_fx.shot_kind)
 let building_names = dictionary<int, string>(64)
 let research_names = dictionary<int, string>(128)
-var pack_map = ""                             // the match the art was baked for: its map and races' prompts
+var pack_map = ""  // the match the art was baked for: its map and races' prompts
 let pack_prompts = []::string
-var pack_library = false                      // the pack is the part library: every race's units, any race
+var pack_library = false  // the pack is the part library: every race's units, any race
 let pack_formats = texture_format_nearest_mag | texture_format_nearest_min | texture_format_nomipmap | texture_format_clamp
 
 // Where a building look's chimney smokes, its lantern and windows glow (canvas units from its anchor;
@@ -76,7 +76,7 @@ let pack_formats = texture_format_nearest_mag | texture_format_nearest_min | tex
 class BFx:
     smoke:float2
     has_smoke:bool
-    lights:[float2]               // the lantern first, if it has one
+    lights:[float2]  // the lantern first, if it has one
 
 let bfx = dictionary<string, BFx>(256)
 
@@ -115,7 +115,7 @@ def load_pack(dir:string):
                     frames.push(Frame { num(2), num(3), num(4), num(5), num(6), num(7), num(8), 1.0 })
                 case "anim": anims.set(t[1] + "." + t[2], num(3))
                 case "arch": arch_of.push(t[2])
-                case "look": looks.set(t[1], Look { t[2], [t[3], t[4], t[5], t[6]], t[7] })
+                case "look": looks.set(t[1], Look { t[2], [ t[3], t[4], t[5], t[6] ], t[7] })
                 case "arms":
                     let lk = looks.get(t[1])
                     if lk: lk.arms = t.slice(2, -1)
@@ -270,11 +270,11 @@ def sprite_xf(f:int, xf:[float], col:float4):
         b_sheet = fr.sheet
     let s = sheet_dims[fr.sheet]
     let n = b_pos.length
-    for([float2 { 0.0, 0.0 }, float2 { float(fr.w), 0.0 }, float2 { float(fr.w), float(fr.h) }, float2 { 0.0, float(fr.h) }]) c:
+    for([ float2 { 0.0, 0.0 }, float2 { float(fr.w), 0.0 }, float2 { float(fr.w), float(fr.h) }, float2 { 0.0, float(fr.h) } ]) c:
         b_pos.push(float3 { xf[0] * c.x + xf[2] * c.y + xf[4], xf[1] * c.x + xf[3] * c.y + xf[5], 0.0 })
     b_tc.push(float2 { fr.x / s.x, fr.y / s.y })
     b_tc.push(float2 { (fr.x + fr.w) / s.x, fr.y / s.y })
     b_tc.push(float2 { (fr.x + fr.w) / s.x, (fr.y + fr.h) / s.y })
     b_tc.push(float2 { fr.x / s.x, (fr.y + fr.h) / s.y })
     for(4): b_col.push(col)
-    for([n, n + 2, n + 1, n, n + 3, n + 2]) k: b_idx.push(k)
+    for([ n, n + 2, n + 1, n, n + 3, n + 2 ]) k: b_idx.push(k)

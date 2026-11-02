@@ -5,8 +5,8 @@
 // colour to the foe. A crowd heading for one spot shares one first leg from its middle. A selected building shows
 // its rally flag. View only: it reads the sim. Drawn on the ground with the selection rings (draw_rings).
 
-let OM_RING = float4 { 0.95, 0.91, 0.79, 1.0 }   // #f2e9c9
-let OM_FOE = float4 { 0.89, 0.40, 0.29, 1.0 }    // #e2654a
+let OM_RING = float4 { 0.95, 0.91, 0.79, 1.0 }  // #f2e9c9
+let OM_FOE = float4 { 0.89, 0.40, 0.29, 1.0 }   // #e2654a
 let OM_EDGE = float4 { 0.0, 0.0, 0.0, 0.5 }
 let OM_FADE_STEP = 0.16
 let OM_FADE_MIN = 0.4
@@ -17,7 +17,7 @@ class OmSpot:
     kind:int
     at:float2
     order:int
-    cx:int = 0      // a footprint's top cell and size (build, gather, drop, plan); unit >= 0 for a unit target
+    cx:int = 0  // a footprint's top cell and size (build, gather, drop, plan); unit >= 0 for a unit target
     cy:int = 0
     sx:int = 0
     sy:int = 0
@@ -111,7 +111,7 @@ def om_diamond(s:OmSpot, col:float4, px:float, fill:bool):
     let y0 = float(s.cy * TILE)
     let x1 = float((s.cx + s.sx) * TILE)
     let y1 = float((s.cy + s.sy) * TILE)
-    let pts = [iso(x0, y0), iso(x1, y0), iso(x1, y1), iso(x0, y1)]
+    let pts = [ iso(x0, y0), iso(x1, y0), iso(x1, y1), iso(x0, y1) ]
     if fill:
         gl.color(col * float4 { 1.0, 1.0, 1.0, 0.14 }): gl.polygon(pts)
     for(4) k:
@@ -122,8 +122,8 @@ def om_diamond(s:OmSpot, col:float4, px:float, fill:bool):
 def om_flag(at:float2, team:float4, a:float, px:float):
     let top = at - float2 { 0.0, 16.0 }
     ui_line(at, top, 2.5 * px, float4 { 0.2, 0.15, 0.1, a })
-    gl.color(float4 { 0.0, 0.0, 0.0, 0.5 * a }): gl.polygon([top + float2 { 0.5, -0.5 }, top + float2 { 10.5, 3.0 }, top + float2 { 0.5, 6.5 }])
-    gl.color(float4 { team.x, team.y, team.z, a }): gl.polygon([top, top + float2 { 10.0, 3.0 }, top + float2 { 0.0, 6.0 }])
+    gl.color(float4 { 0.0, 0.0, 0.0, 0.5 * a }): gl.polygon([ top + float2 { 0.5, -0.5 }, top + float2 { 10.5, 3.0 }, top + float2 { 0.5, 6.5 } ])
+    gl.color(float4 { team.x, team.y, team.z, a }): gl.polygon([ top, top + float2 { 10.0, 3.0 }, top + float2 { 0.0, 6.0 } ])
 
 def om_spot(s:OmSpot, team:float4, px:float, alpha:float):
     let a = om_fade(s.order)
@@ -141,14 +141,14 @@ def om_spot(s:OmSpot, team:float4, px:float, alpha:float):
 
 def draw_orders(alpha:float):
     gl.set_shader("color")
-    let px = ui() / zoom   // (a UI pixel in the world's units)
+    let px = ui() / zoom  // (a UI pixel in the world's units)
     let team = team_col(ME)
-    let legs = []::[float2]        // from, to
+    let legs = []::[float2]  // from, to
     let leg_order = []::int
     let leg_foe = []::bool
     let spots = []::OmSpot
     let seen = dictionary<string, int>(32)
-    let firsts = dictionary<string, int>(16)   // a first spot -> its index in first_spots
+    let firsts = dictionary<string, int>(16)  // a first spot -> its index in first_spots
     let first_spots = []::OmSpot
     let first_from = []::[float2]
     for(selected_units()) id:
@@ -168,7 +168,7 @@ def draw_orders(alpha:float):
             let foe = s.kind == 5 or s.kind == 1
             let key = "{s.kind}@{int(s.at.x)},{int(s.at.y)}"
             if s.order == 0 and s.kind == 5 and s.unit >= 0 and u_id[s.unit] == fighting:
-                pass()   // (its fight line shows it; the route goes on from the unit)
+                pass()  // (its fight line shows it; the route goes on from the unit)
             else:
                 if s.order == 0:
                     var k = firsts.get(key, -1)
@@ -182,7 +182,7 @@ def draw_orders(alpha:float):
                     let lk = "{int(start.x)},{int(start.y)}>{key}"
                     if seen.get(lk, -1) < 0:
                         seen.set(lk, 1)
-                        legs.push([if prev: om_edge(prev, s.at) else: start, om_edge(s, start)])
+                        legs.push([ if prev: om_edge(prev, s.at) else: start, om_edge(s, start) ])
                         leg_order.push(s.order)
                         leg_foe.push(foe)
                 if seen.get(key, -1) < 0:
@@ -190,14 +190,14 @@ def draw_orders(alpha:float):
                     spots.push(s)
                 start = s.at
                 prev = s
-    for(first_spots) s, k:   // a few units: a leg each; a crowd: one leg from its middle, not a sheaf
+    for(first_spots) s, k:  // a few units: a leg each; a crowd: one leg from its middle, not a sheaf
         var starts = first_from[k]
         if starts.length > OM_GROUP_LEGS:
             var mid = float2_0
             for(starts) p: mid += p / float(starts.length)
-            starts = [mid]
+            starts = [ mid ]
         for(starts) p:
-            legs.push([p, om_edge(s, p)])
+            legs.push([ p, om_edge(s, p) ])
             leg_order.push(0)
             leg_foe.push(s.kind == 5 or s.kind == 1)
     for(legs) l, k:

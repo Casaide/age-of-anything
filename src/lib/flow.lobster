@@ -7,8 +7,8 @@ class Flow:
     dist:[int]
     next:[int]
 
-var field_keys = []::int       // World.field_order: cached field keys, oldest first
-var field_vals = []::Flow      // alongside
+var field_keys = []::int   // World.field_order: cached field keys, oldest first
+var field_vals = []::Flow  // alongside
 var field_queue = []::int
 var ring = []::[int]
 
@@ -117,7 +117,7 @@ def solve(srcs:[int], cutoff:int, k:int) -> Flow:
                 pending++
         bucket.remove_range(0, bucket.length)
         cost++
-    for(ring) b: b.remove_range(0, b.length)   // (a cutoff can leave some queued)
+    for(ring) b: b.remove_range(0, b.length)  // (a cutoff can leave some queued)
     return Flow { srcs, cutoff, pops, dist, next }
 
 // The walkable cell closest to `cell` (itself if walkable). Ties go to the lower index.
@@ -304,12 +304,11 @@ def solve_queued():
             field_keys.remove(0)
             field_vals.remove(0)
 
-
 // ------------------------------------------------------------------ patching fields (flow.gd)
 // The map changed under a cached field: lower or raise just the costs the change touches. The costs
 // come out as a fresh solve's; where two ways cost the same, `next` may pick the other one.
 
-var bad_mark = []::int     // patch_closed's set of cells, by generation
+var bad_mark = []::int  // patch_closed's set of cells, by generation
 var bad_gen = 0
 
 // The cost of the field spreading from c to its neighbour n (n walkable): straight 10, diagonal 14

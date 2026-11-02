@@ -4,20 +4,20 @@
 
 var lib_root = "data"
 var lib_parts = jobj()
-var lib_part_ids:[string] = []           // sorted
+var lib_part_ids:[string] = []  // sorted
 var lib_creatures = jobj()
 var lib_families = jobj()
 var lib_uniques = jobj()
 var lib_heroes = jobj()
 var lib_palettes = jobj()
 var lib_lexicon = jobj()
-var lib_stopwords:[string] = []          // sorted
+var lib_stopwords:[string] = []  // sorted
 var lib_resources:[string] = []
 let lib_curves = dictionary<string, [int]>(17)
-var lib_cands = dictionary<string, [JV]>(31)   // slot|eras -> candidates
+var lib_cands = dictionary<string, [JV]>(31)  // slot|eras -> candidates
 var lib_mods:[string] = []
-var lib_mod_data = []::JV               // the mods in use, in load order: their data (path -> parsed)
-var lib_mod_dirs = []::string           // ...and their data folders
+var lib_mod_data = []::JV      // the mods in use, in load order: their data (path -> parsed)
+var lib_mod_dirs = []::string  // ...and their data folders
 
 def has_s(xs:[string], s:string) -> bool:
     for(xs) x:
@@ -169,8 +169,8 @@ def architecture(race:JV) -> string:
 
 // Every architecture a race can have (the creatures' and cultures', and the default), sorted.
 def all_architectures() -> [string]:
-    let out = ["thatch"]
-    for([lib_creatures, lib_families]) table:
+    let out = [ "thatch" ]
+    for([ lib_creatures, lib_families ]) table:
         for(table.keys) k:
             let a = gstr(at(table, k), "architecture", "")
             if a != "" and not has_s(out, a): out.push(a)

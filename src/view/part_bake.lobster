@@ -21,13 +21,13 @@ def leg_basis(a:Anchor, cut:bool) -> Basis:
 // or nil to fit the generic one.
 // The materials a fitted armour's .glb names (tools/blender/human_armour.py, creature_armour.py): [texture, tint, size];
 // no texture: plain.
-let ARMOUR_MAT_NAMES = ["leather", "trim", "bronze", "iron", "tin", "brass", "mail", "bark", "label"]
-let ARMOUR_MAT_TEX = ["leather", "leather", "bronze", "iron", "iron", "bronze", "mail", "bark_plate", ""]
-let ARMOUR_MAT_TINT = ["#ffffff", "#5a3a20", "#ffffff", "#ffffff", "#f2f6ff", "#fff0c8", "#ffffff", "#ffffff", "#c8a040"]
-let ARMOUR_MAT_SIZE = [5.0, 3.0, 4.0, 3.0, 2.0, 1.2, 2.5, 6.0, 0.0]
+let ARMOUR_MAT_NAMES = [ "leather", "trim", "bronze", "iron", "tin", "brass", "mail", "bark", "label" ]
+let ARMOUR_MAT_TEX = [ "leather", "leather", "bronze", "iron", "iron", "bronze", "mail", "bark_plate", "" ]
+let ARMOUR_MAT_TINT = [ "#ffffff", "#5a3a20", "#ffffff", "#ffffff", "#f2f6ff", "#fff0c8", "#ffffff", "#ffffff", "#c8a040" ]
+let ARMOUR_MAT_SIZE = [ 5.0, 3.0, 4.0, 3.0, 2.0, 1.2, 2.5, 6.0, 0.0 ]
 
 def fitted(armour_id:string, body_id:string, c:Colours) -> Spec?:
-    if starts_with(armour_id, "harness."): return harness_fitted(armour_id, body_id, c)   // a draught harness, on its beast (model/siege.lobster)
+    if starts_with(armour_id, "harness."): return harness_fitted(armour_id, body_id, c)  // a draught harness, on its beast (model/siege.lobster)
     let kind = armour_id.substring(7, armour_id.length - 7)
     let name = "armour_{kind}_{body_id.substring(5, body_id.length - 5)}" + (if body_id == "body.human": HUMAN_LOOK else: "")
     if not read_file(models_dir + "/" + name + ".glb", true): return nil
@@ -44,12 +44,12 @@ def jnum(f:float) -> JV:
     let o = JV { J_FLOAT }
     o.f = f
     return o
-def jv2(v:float2) -> JV: return jarr([jnum(v.x), jnum(v.y)])
+def jv2(v:float2) -> JV: return jarr([ jnum(v.x), jnum(v.y) ])
 
 // ---- the bake
 
 let BAKE_FACINGS = 8
-var baked_here = 0                   // facings baked in this game (bake_missing_parts counts them)
+var baked_here = 0  // facings baked in this game (bake_missing_parts counts them)
 
 // A sprite's opaque box and 2 px round it (part_baker.gd's crop: used.grow(SS * 2)): the sprite cropped to it,
 // the origin moved with it.
@@ -82,15 +82,15 @@ def crop_sprite(sprite:string, w:int, h:int, origin:float2) -> string, int, int,
 // beast's legs in every walk step took most of a minute). BAKE_VERSION goes up when the models or the baker
 // change, so old bakes aren't reused.
 
-let BAKE_VERSION = 10   // (2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27; 7: Godot's bicubic shrink in pixelize, in Godot's square frame; 8: the art at 2x (D-173), 2026-10-28; 9: the bears' neck leans with them, 2026-10-31; 10: the bears lofted (D-189))
-var bake_cache_dir = "bake_cache"   // (play.sh makes it; Lobster can't make a folder)
-var bake_shipped_dir = "baked"      // the buildings and props a build ships, baked by prebake.sh (read before bake_cache/)
-var cache_lines = []::string        // the manifest of the part being baked
-var cache_stem = ""                 // its file names' stem ("" while not recording)
-var bake_job_done = false            // bake_job made no job: true when the part was in the cache, false with no model
+let BAKE_VERSION = 10              // (2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27; 7: Godot's bicubic shrink in pixelize, in Godot's square frame; 8: the art at 2x (D-173), 2026-10-28; 9: the bears' neck leans with them, 2026-10-31; 10: the bears lofted (D-189))
+var bake_cache_dir = "bake_cache"  // (play.sh makes it; Lobster can't make a folder)
+var bake_shipped_dir = "baked"     // the buildings and props a build ships, baked by prebake.sh (read before bake_cache/)
+var cache_lines = []::string       // the manifest of the part being baked
+var cache_stem = ""                // its file names' stem ("" while not recording)
+var bake_job_done = false          // bake_job made no job: true when the part was in the cache, false with no model
 
 class BakeOpts:
-    sprite_formats = texture_format_clamp | texture_format_nomipmap   // (the sheet tool draws them nearest: crisp close-ups)
+    sprite_formats = texture_format_clamp | texture_format_nomipmap  // (the sheet tool draws them nearest: crisp close-ups)
 
 let bake_opts = BakeOpts {}
 
@@ -100,7 +100,7 @@ def cache_stem_of(id:string, full:string) -> string:
 def sprite_texture(name:string, sprite:string, w:int, h:int) -> resource<texture>:
     let rows = map(h) y: map(w) x: float4 { float(sprite[(y * w + x) * 4]) / 255.0, float(sprite[(y * w + x) * 4 + 1]) / 255.0,
                                             float(sprite[(y * w + x) * 4 + 2]) / 255.0, float(sprite[(y * w + x) * 4 + 3]) / 255.0 }
-    if cache_stem != "":   // (kept for the next start)
+    if cache_stem != "":  // (kept for the next start)
         let file = "{cache_stem}_{cache_lines.length}.png"
         write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
         cache_lines.push("sprite {name} {file} {w} {h}")
@@ -117,7 +117,7 @@ def add_part_frame(full:string, w:int, h:int, origin:float2):
 
 // One sprite into the pack: its own sheet, a frame, its bake (origin and scale for the composer).
 def keep_sprite(full:string, sprite:string, w:int, h:int, origin:float2):
-    if w == 0:   // (nothing of it shows from here, a cut leg behind its body: baked all the same, as Godot keeps it, drawn as nothing)
+    if w == 0:  // (nothing of it shows from here, a cut leg behind its body: baked all the same, as Godot keeps it, drawn as nothing)
         bakes.set(full, Bake { origin.x, origin.y, bake_art() })
         if cache_stem != "": cache_lines.push("empty {full} {origin.x} {origin.y}")
         return
@@ -133,12 +133,12 @@ def load_cached(id:string, full:string) -> bool:
         let t = tokenize(line, " ", "")
         if t.length:
             switch t[0]:
-                case "sprite":   // (its PNG loaded when it's first drawn)
+                case "sprite":  // (its PNG loaded when it's first drawn)
                     add_sheet_later(t[2], float2 { string_to_float(t[3]), string_to_float(t[4]) }, bake_opts.sprite_formats)
                     add_part_frame(t[1], string_to_int(t[3]), string_to_int(t[4]), float2 { string_to_float(t[5]), string_to_float(t[6]) })
                 case "empty": bakes.set(t[1], Bake { string_to_float(t[2]), string_to_float(t[3]), bake_art() })
                 case "soles": bake_soles.set(t[1], map((t.length - 2) / 2) n: float2 { string_to_float(t[2 + n * 2]), string_to_float(t[3 + n * 2]) })
-                case "span": bake_spans.set(t[1], [float2 { string_to_float(t[2]), string_to_float(t[3]) }, float2 { string_to_float(t[4]), string_to_float(t[5]) }])
+                case "span": bake_spans.set(t[1], [ float2 { string_to_float(t[2]), string_to_float(t[3]) }, float2 { string_to_float(t[4]), string_to_float(t[5]) } ])
                 case "rig": set(rigs, t[1], parse_json(line.substring(5 + t[1].length, line.length - 5 - t[1].length)))
                 default: pass()
     return true
@@ -165,7 +165,7 @@ def keep_soles(full:string, sprite:string, w:int, h:int, origin:float2):
                 count++
         if count > 0: rows.push((float2 { xs / float(count), float(y) + 0.5 } - origin) / bake_art())
     if rows.length:
-        bake_spans.set(full, [rows[0], rows[rows.length - 1]])
+        bake_spans.set(full, [ rows[0], rows[rows.length - 1] ])
         if cache_stem != "": cache_lines.push("span {full} {rows[0].x} {rows[0].y} {rows[rows.length - 1].x} {rows[rows.length - 1].y}")
 
 // Where the drawn part reaches furthest from its grip (sprite px from the origin): a weapon's tip.
@@ -190,8 +190,8 @@ def bake_camera(k:int) -> float3, float3, float3:
 // under it by which is in front where they overlap on screen, not by the socket's depth alone (part_baker.gd
 // _members_front, placement C4): for each, true when it stands in front of most of the engine it overlaps. The engine
 // is sampled through its meshes' boxes on a 2-unit grid.
-let MEMBER_COLUMN = [3.0, 8.0, 13.0, 18.0]   // a member standing on its socket: points up its middle...
-let MEMBER_HALF = float2 { 4.0, 2.5 }       // ...each as wide and tall as this on screen (part units)
+let MEMBER_COLUMN = [ 3.0, 8.0, 13.0, 18.0 ]  // a member standing on its socket: points up its middle...
+let MEMBER_HALF = float2 { 4.0, 2.5 }         // ...each as wide and tall as this on screen (part units)
 
 def member_samples(n:MNode, parent:Xform, right:float3, up:float3, view:float3, out:[float3]) -> void:
     let t = xmul(parent, node_xform(n))
@@ -211,8 +211,8 @@ def member_samples(n:MNode, parent:Xform, right:float3, up:float3, view:float3, 
                     out.push(float3 { dot(q, right), dot(q, up), dot(q, view) })
     for(n.kids) kid: member_samples(kid, t, right, up, view, out)
 
-let MEMBER_AHEAD = [float2 { 5.0, 10.0 }, float2 { 9.0, 12.0 }]   // ...and ahead of it at chest height, [forward, up]: a body
-                                                                  // leaning into the work is mostly in front of its hips (C4)
+let MEMBER_AHEAD = [ float2 { 5.0, 10.0 }, float2 { 9.0, 12.0 } ]  // ...and ahead of it at chest height, [forward, up]: a body
+// leaning into the work is mostly in front of its hips (C4)
 
 // Two members' sample points close enough on screen that their bodies overlap.
 def samples_meet(a:[float2], b:[float2]) -> bool:
@@ -227,19 +227,19 @@ def members_front(model:MNode, sockets:dictionary<string, float3>, names:[string
     let pts = []::float3
     member_samples(model, XF_ID, right, up, view, pts)
     let front = dictionary<string, int>(7)
-    let cover = dictionary<string, int>(7)   // how much of the engine is in front of each member
-    let seen = dictionary<string, [float2]>(7)   // each member's sample points on screen
-    let apart = []::string   // members the engine is neither in front of nor behind
+    let cover = dictionary<string, int>(7)      // how much of the engine is in front of each member
+    let seen = dictionary<string, [float2]>(7)  // each member's sample points on screen
+    let apart = []::string                      // members the engine is neither in front of nor behind
     for(names) name:
         var nearer = 0
         var farther = 0
         let sock = sockets.get(name, float3_0)
-        var turn = 0.0   // the member's facing on the engine ("crew2_f2_reach": two steps round from it)
+        var turn = 0.0  // the member's facing on the engine ("crew2_f2_reach": two steps round from it)
         for(tokenize(name, "_", "")) t:
             if t.length == 2 and t[0] == 'f' and t[1] >= '0' and t[1] <= '9': turn = 45.0 * float(t[1] - '0')
         let fwd = float3 { cos(turn), 0.0, sin(turn) }
         let samples = map(MEMBER_COLUMN) h: float3 { 0.0, h, 0.0 }
-        if find_string(name, "_reach") >= 0 or find_string(name, "_raise") >= 0:   // (leaning into the work; a rider sits upright)
+        if find_string(name, "_reach") >= 0 or find_string(name, "_raise") >= 0:  // (leaning into the work; a rider sits upright)
             for(MEMBER_AHEAD) a: samples.push(fwd * a.x + float3 { 0.0, a.y, 0.0 })
         let mine = []::float2
         for(samples) o:
@@ -261,7 +261,7 @@ def members_front(model:MNode, sockets:dictionary<string, float3>, names:[string
     // camera that's drawn under it covers it on screen; one nowhere against the engine goes over it with the member
     // it stands in front of (a siege tower's pusher); hunched bodies reaching into each other go both over or both
     // under, by which the engine hides less of (part_baker.gd _members_front).
-    let order = copy(names)   // nearest the camera first, so it carries on down a file
+    let order = copy(names)  // nearest the camera first, so it carries on down a file
     insertion_sort(order) a, b: dot(sockets.get(a, float3_0), view) > dot(sockets.get(b, float3_0), view)
     for(order) name:
         if front.get(name, 0) == 1:
@@ -301,14 +301,14 @@ def bake_rig(s:Spec, k:int) -> JV:
     let members = filter(sorted_strs(s.sockets.get_keys())) n: (starts_with(n, "crew") or starts_with(n, "haul")) and not ends_with(n, "_in") and not ends_with(n, "_top")
     if members.length: set(r, "front", members_front(s.node, s.sockets, members, view))
     set(r, "dir", jv2(normalize(to2d(float3 { 20.0, 0.0, 0.0 }))))
-    set(r, "ahead", jv2(to2d(float3 { 1.0, 0.0, 0.0 })))   // one unit forward on screen (part units): a crew member standing back from its place
+    set(r, "ahead", jv2(to2d(float3 { 1.0, 0.0, 0.0 })))  // one unit forward on screen (part units): a crew member standing back from its place
     if s.anchors.length:
         let hips = []::JV
         for(s.anchors) a:
             let v = to2d(a.pos)
             let side = if k == 0: a.side elif dot(a.pos, flat) > 0.0: 1 else: -1
-            hips.push(jarr([jnum(v.x), jnum(v.y), jnum(a.phase), jint(side), jint(if a.more.length > 0: int(a.more[0]) else: 0),
-                            jbool(a.more.length > 1 and a.more[1] > 0.5), jbool(a.pos.z * flat.z > 0.0)]))
+            hips.push(jarr([ jnum(v.x), jnum(v.y), jnum(a.phase), jint(side), jint(if a.more.length > 0: int(a.more[0]) else: 0),
+                             jbool(a.more.length > 1 and a.more[1] > 0.5), jbool(a.pos.z * flat.z > 0.0) ]))
         set(r, "anchors", jarr(hips))
     let none = float3 { -1000000000.0, 0.0, 0.0 }
     let ts = s.nums.get("torso_scale", none)
@@ -332,7 +332,7 @@ def find_s(xs:[string], x:string) -> int:
 // baking (bake_quit; the game then quits). The game turns it on; checks bake without it.
 var bake_live = false
 var bake_quit = false
-var bake_done = 0                    // things baked since the game began
+var bake_done = 0  // things baked since the game began
 // The progress drawn by the game's match loader while it's up (game.lobster sets it to fe_loader, game/lobby.lobster):
 // its bar runs from bake_progress_from to bake_progress_to over this bake.
 def bake_progress_fn(status:string, frac:float) -> void
@@ -340,8 +340,8 @@ var bake_progress:bake_progress_fn = fn(s, f): pass()
 var bake_progress_on = false
 var bake_progress_from = 0.0
 var bake_progress_to = 1.0
-var bake_what = ""                   // what's baking (the game says: "the armies", "the town")
-var bake_total = 0                   // how many things this bake has to make (0: not counted), and how many it has
+var bake_what = ""  // what's baking (the game says: "the armies", "the town")
+var bake_total = 0  // how many things this bake has to make (0: not counted), and how many it has
 var bake_count = 0
 var bake_said = 0.0
 
@@ -354,7 +354,7 @@ def bake_breath():
     gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
     gl.set_shader("color")
     let ws = float(gl.window_size())
-    if bake_progress_on:   // the game's match loader, its bar this bake's share
+    if bake_progress_on:  // the game's match loader, its bar this bake's share
         let done = if bake_total > 0: float(bake_count) / float(bake_total) else: 0.0
         bake_progress("Making {bake_what}", bake_progress_from + (bake_progress_to - bake_progress_from) * done)
         if not gl.frame(): bake_quit = true
@@ -372,13 +372,13 @@ def bake_breath():
 // size units are drawn): no model, a flat shape, baked here as Godot bakes it when it builds its atlas.
 let SHADOW_CENTRE = float2 { 3.0, 1.0 }
 let SHADOW_RADII = float2 { 15.0, 4.5 }
-let SHADOW_RGBA = [15, 13, 8, 107]   // (Color(0.06, 0.05, 0.03, 0.42) in bytes)
+let SHADOW_RGBA = [ 15, 13, 8, 107 ]  // (Color(0.06, 0.05, 0.03, 0.42) in bytes)
 
 def bake_flat_shadow(full:string):
     let r = SHADOW_RADII * bake_art()
     let w = int(ceiling(r.x * 2.0)) + 2
     let h = int(ceiling(r.y * 2.0)) + 2
-    let sprite = ensure_size("", w * h * 4, 0)   // (the write_ functions write into it in place)
+    let sprite = ensure_size("", w * h * 4, 0)  // (the write_ functions write into it in place)
     for(h) y:
         for(w) x:
             let q = (float2 { float(x), float(y) } + float2_1 * 0.5 - float2_1 - r) / r
@@ -403,7 +403,7 @@ def key_size(full:string) -> int:
 def bake_model_part(id:string, full:string, c:Colours) -> bool:
     if bake_quit: return false
     let sz = key_size(full)
-    if sz != 100 and bake_art_k == 1.0: return bake_model_part_at(id, full, c, sz)   // (a sized key bakes at its size)
+    if sz != 100 and bake_art_k == 1.0: return bake_model_part_at(id, full, c, sz)  // (a sized key bakes at its size)
     if id == "unit_shadow":
         bake_flat_shadow(full)
         return true
@@ -434,8 +434,7 @@ class BakeJob:
     art_k:float
     stem:string
     lines:[string]
-    k:int                            // the next facing
-
+    k:int  // the next facing
 
 // The job for a part (nil: loaded from the cache, or nothing to bake: bake_job_done says which).
 def bake_job(id:string, full:string, c:Colours) -> BakeJob?:
@@ -446,10 +445,10 @@ def bake_job(id:string, full:string, c:Colours) -> BakeJob?:
     let s = built
     var hide = []::BakeTri
     var model = s.node
-    var own = s.node                 // the part's own model (Godot's `model`, measured in its own frame)
-    var wearer:MNode? = nil          // the body that cuts or wears it
+    var own = s.node         // the part's own model (Godot's `model`, measured in its own frame)
+    var wearer:MNode? = nil  // the body that cuts or wears it
     var pivot = float3_0
-    var join = float3_0              // a seam: where a neck runs into its head, and how far round it reaches
+    var join = float3_0  // a seam: where a neck runs into its head, and how far round it reaches
     var join_r = 0.0
     let tilde = find_string(id, "~")
     let after = if tilde >= 0: id.substring(tilde + 1, id.length - tilde - 1) else: ""
@@ -467,7 +466,7 @@ def bake_job(id:string, full:string, c:Colours) -> BakeJob?:
         add_child(wrap, model)
         if at == "head":
             pivot = b.sockets.get("head", float3_0)
-            if b.strs.get("seam_head"):   // a head its neck runs into: no outline where the body hides it
+            if b.strs.get("seam_head"):  // a head its neck runs into: no outline where the body hides it
                 join = b.sockets.get("join", float3_0)
                 join_r = b.nums.get("seam_r", float3_0).x
         else:
@@ -475,7 +474,7 @@ def bake_job(id:string, full:string, c:Colours) -> BakeJob?:
             pivot = a.pos
             set_basis(wrap, leg_basis(a, true))
             let seam_r = b.nums.get("seam_legs", float3_0).x
-            if seam_r > 0.0:   // a leg growing out of its body: no outline where the body hides it, near the hip
+            if seam_r > 0.0:  // a leg growing out of its body: no outline where the body hides it, near the hip
                 join = a.pos
                 join_r = seam_r
         wrap.pos = pivot
@@ -501,7 +500,7 @@ def bake_job(id:string, full:string, c:Colours) -> BakeJob?:
             wrap.rot = float3 { 0.0, 0.0, b.nums.get("torso_tilt", float3_0).x }
             model = wrap
         s.sockets = dictionary<string, float3>(3)
-    if not has_mesh(model): return nil   // (a model with nothing in it, a harness off its wearer: nothing to bake)
+    if not has_mesh(model): return nil  // (a model with nothing in it, a harness off its wearer: nothing to bake)
     let seam_head = s.strs.get("seam_head")
     if seam_head and tilde < 0:
         // a body whose neck runs into its head: the head in place hides it, and they join without a line
@@ -531,7 +530,7 @@ def bake_job(id:string, full:string, c:Colours) -> BakeJob?:
     // with it (part_baker.gd: size = ceil(2 r px), cam.size = 2 r).
     var blo = float3_1 * 1000000000.0
     var bhi = float3_1 * -1000000000.0
-    let measured = [own]
+    let measured = [ own ]
     let wn = wearer
     if wn: measured.push(wn)
     if front: measured.push(front)
@@ -576,7 +575,7 @@ def bake_job_step(j:BakeJob) -> bool:
     keep_sprite(j.full + suffix, sprite, w, h, origin)
     if starts_with(j.id, "leg."): keep_soles(j.full + suffix, sprite, w, h, origin)
     let rig_id = j.id + suffix
-    let r = if s.sockets.get_keys().length: bake_rig(s, k) else: jobj()   // (a leg, worn armour: no rig but the tip)
+    let r = if s.sockets.get_keys().length: bake_rig(s, k) else: jobj()  // (a leg, worn armour: no rig but the tip)
     if j.ftris.length:
         let fs0, fw0, fh0, fo0 = bake_facing(j.ftris, k)
         let fs, fw, fh, fo = crop_sprite(fs0, fw0, fh0, fo0)
@@ -605,7 +604,7 @@ def local_box(n:MNode) -> float3, float3:
         for(mesh.p) p:
             lo = min(lo, p)
             hi = max(hi, p)
-        boxes.push([lo, hi])
+        boxes.push([ lo, hi ])
     for(n.kids) kid: mesh_boxes(kid, XF_ID, boxes)
     var lo = float3_1 * 1000000000.0
     var hi = float3_1 * -1000000000.0

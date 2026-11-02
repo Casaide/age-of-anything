@@ -24,9 +24,9 @@ class Bot:
     next_wave_tick = 0
     assault = false
     next_build = 0
-    threat_ids:[int] = []          // enemy unit or building id -> the tick it last hit ours (in the order first noted)
+    threat_ids:[int] = []  // enemy unit or building id -> the tick it last hit ours (in the order first noted)
     threat_ticks:[int] = []
-    sent_ids:[int] = []            // our soldier id -> the tick it was sent to trouble
+    sent_ids:[int] = []  // our soldier id -> the tick it was sent to trouble
     sent_ticks:[int] = []
     aln = 0
     harea = 0
@@ -52,7 +52,7 @@ def new_bot(p:int) -> Bot:
     let eco = EcoBot { p }
     eco.mix_ages = []::int
     eco.mixes = []::[int]
-    for([1, 2, 3]) a:
+    for([ 1, 2, 3 ]) a:
         if has_mix(a):
             eco.mix_ages.push(a)
             eco.mixes.push(map(resource_names) res: cfg_or("economy.mix.{a}.{res}", 0))
@@ -301,7 +301,7 @@ def upgrade_lines(bot:Bot, army:[int]):
         else:
             counts[at]++
     let keep = map(num_resources) r: if r < bot.eco.goal.length: bot.eco.goal[r] else: 0
-    let wanted = []::int   // research index * 2 + old
+    let wanted = []::int  // research index * 2 + old
     let economy_r = cfg_list("research.economy")
     let buildings_r = cfg_list("research.buildings")
     for(research) r, ri:
@@ -367,7 +367,7 @@ def enemy_tags(bot:Bot) -> [int], [int]:
     for(bot.scout.seen_kind) k:
         for(t_tags[k]) c: tags[c]++
         for(lines_bonus(k)) v, c: bonus[c] += v
-    if bot.aim != 0: tags[2] = cfg("military.building_foes")   // "building"
+    if bot.aim != 0: tags[2] = cfg("military.building_foes")  // "building"
     return tags, bonus
 
 // The bonus vector of a type's current line step (t.eval.bonus).
@@ -435,7 +435,7 @@ def bot_siege(bot:Bot, army:[int], hx:int, hy:int):
                     if id == best: at = n
                 if at < 0:
                     targets.push(best)
-                    groups.push([u_id[i]])
+                    groups.push([ u_id[i] ])
                 else: groups[at].push(u_id[i])
             elif ram and u_foe[i] == 0 and u_moving[i] == 0: march.push(u_id[i])
     let order = map(targets.length) n: n
@@ -457,7 +457,7 @@ def train_soldiers(bot:Bot, workers:[int], count:int):
         if u_owner[i] == p and not t_worker[k] and not t_healer[k] and t_animal[k] == 0 and not t_trader[k]: guard_pop += t_pop[k]
     if lv_army_ratio > 0 and guard_pop * 100 >= count * lv_army_ratio * ages[p]: return
     if (bot.saving_age or (((lv_build_up and bot.blocked_save >= 1) or bot.blocked_save >= 2) and equal(bot.eco.goal, bot.blocked))) and
-       (guard_pop >= cfg("military.guard") or ages[p] == 1) and not bot.threat_ids.length:
+            (guard_pop >= cfg("military.guard") or ages[p] == 1) and not bot.threat_ids.length:
         for(bot.eco.goal) g, r: reserve[r] = g
     for(bot.expand.want) v, r: reserve[r] += v
     for(bot.land.want) v, r: reserve[r] += v
@@ -510,7 +510,7 @@ def heroes_think(bot:Bot, tc:int, army:[int], hx:int, hy:int):
     if k < 0: k = ks[0]
     bot.hero_want = []::int
     if not hero_barred(p, k) and ages[p] >= t_age[k] and army.length >= cfg("military.hero.army") + out * cfg("military.hero.more") and
-       b_queue[tc].length < cfg("military.queue"):
+            b_queue[tc].length < cfg("military.queue"):
         let cost = unit_cost(k)
         if affords(p, cost, t_cost[worker_type(p)]):
             issue_cmd(p, 6, []::int, b_id[tc], k, 1, 0)
@@ -527,7 +527,7 @@ def heroes_think(bot:Bot, tc:int, army:[int], hx:int, hy:int):
             let resting = contains(bot.resting, id)
             if not resting and pct < cfg("military.hero.retreat_pct") and dist2(hx, hy, u_x[i], u_y[i]) > home_r * home_r / 4:
                 still.push(id)
-                issue_cmd(p, 0, [id], hx, hy, 0, 0)
+                issue_cmd(p, 0, [ id ], hx, hy, 0, 0)
             elif resting and pct < cfg("military.hero.back_pct"):
                 still.push(id)
     bot.resting = still
@@ -578,7 +578,7 @@ def defend(bot:Bot, army:[int], hx:int, hy:int):
     var intruder = -1
     var best_d2 = r * r
     for(u_x.length) i:
-        if is_foe(bot.player, u_owner[i]) and t_animal[u_kind[i]] == 0 and fog_visible(bot.player, u_x[i], u_y[i]):   // (a rival's sheep is no intruder)
+        if is_foe(bot.player, u_owner[i]) and t_animal[u_kind[i]] == 0 and fog_visible(bot.player, u_x[i], u_y[i]):  // (a rival's sheep is no intruder)
             let d2 = dist2(hx, hy, u_x[i], u_y[i])
             if d2 < best_d2:
                 best_d2 = d2
@@ -709,7 +709,7 @@ def respond(bot:Bot, tc:int, army:[int], workers:[int], hx:int, hy:int):
     let keys = []::int
     let pops = dictionary<int, int>(127)
     for(army) i:
-        if not ((u_foe[i] != 0 and index_of(u_foe[i]) >= 0) or is_climbing(bot.land, i) or u_perch[i] != 0):   // (up on our wall: it shoots from there)
+        if not ((u_foe[i] != 0 and index_of(u_foe[i]) >= 0) or is_climbing(bot.land, i) or u_perch[i] != 0):  // (up on our wall: it shoots from there)
             let d2 = dist2(u_x[i], u_y[i], fx, fy)
             if not (dist2(u_x[i], u_y[i], hx, hy) > home_r * home_r and d2 > RESPOND_TILES * RESPOND_TILES * 1000000):
                 keys.push(d2 * (1 << 20) + u_id[i])
@@ -764,7 +764,7 @@ def known_enemy_town(bot:Bot, hx:int, hy:int) -> int:
     var best_d2 = 1 << 62
     for(b_id.length) b:
         if b_kind[b] == tk and is_enemy(bot.player, b_owner[b]) and fog[bot.player][b_cy[b] * W + b_cx[b]] != UNSEEN and
-           reaches_building(bot.eco.reach, bot.aln, bot.harea, b):
+                reaches_building(bot.eco.reach, bot.aln, bot.harea, b):
             let d2 = dist2(hx, hy, b_cx[b] * 1000, b_cy[b] * 1000)
             if d2 < best_d2:
                 best_d2 = d2
@@ -807,7 +807,7 @@ def sides(bot:Bot, b:int, area:int) -> int:
     let cells = footprint(b)
     let counted = []::int
     for(cells) c:
-        for([[-1, 0], [1, 0], [0, -1], [0, 1]]) dd:
+        for([ [ -1, 0 ], [ 1, 0 ], [ 0, -1 ], [ 0, 1 ] ]) dd:
             let x = c % W + dd[0]
             let y = c / W + dd[1]
             let o = y * W + x
@@ -1070,7 +1070,7 @@ def waves(bot:Bot, army:[int], hx:int, hy:int):
     if wonder <= 0 and cx >= 0 and pop_of(army) < cfg("military.contain_pop") and not has_siege(army):
         issue_cmd(bot.player, 1, ids, cx, cy, 0, 0)
         return
-    var tc_id = if wonder > 0: wonder else: known_enemy_town(bot, hx, hy)   // (a Wonder first)
+    var tc_id = if wonder > 0: wonder else: known_enemy_town(bot, hx, hy)  // (a Wonder first)
     if tc_id <= 0: tc_id = bot.aim
     if tc_id <= 0:
         issue_cmd(bot.player, 1, ids, tx, ty, 0, 0)
@@ -1112,7 +1112,7 @@ def bot_trade(bot:Bot):
     bot.next_trade = tick + cfg("economy.trade.every") * 20
     let g = resource_index("gold")
     var low = -1
-    for(["food", "wood"]) res:
+    for([ "food", "wood" ]) res:
         let r = resource_index(res)
         if stock[r][p] < cfg("economy.trade.below") and (low < 0 or stock[r][p] < stock[low][p]): low = r
     if low >= 0 and stock[g][p] >= cfg("economy.trade.above") + saving_of(bot, g):
@@ -1135,7 +1135,7 @@ def trade_pair(p:int) -> [int]:
                     let d = market_tiles(a, b)
                     if d > best_d:
                         best_d = d
-                        best = [a, b]
+                        best = [ a, b ]
     return best
 
 // One market of ours, two Town Centers: a second market by the Town Center farthest from it.
@@ -1192,7 +1192,7 @@ def full_bot_think(bot:Bot):
     if tick % BOT_THINK_EVERY != bot_phase(bot): return
     let tc = town_center(p)
     if tc < 0:
-        besiege(bot)   // no town (the Siege mode's attackers): all on the attack
+        besiege(bot)  // no town (the Siege mode's attackers): all on the attack
         return
     let workers = []::int
     let army = []::int
@@ -1205,7 +1205,7 @@ def full_bot_think(bot:Bot):
             if t_worker[k]: workers.push(i)
             elif t_healer[k]: healers.push(i)
             elif t_trader[k]: carts.push(i)
-            elif t_animal[k] != 0: pass()   // (our sheep aren't soldiers)
+            elif t_animal[k] != 0: pass()  // (our sheep aren't soldiers)
             else:
                 army.push(i)
                 if t_slot[k] == "scout": scouts++
@@ -1246,5 +1246,5 @@ def full_bot_think(bot:Bot):
     off_walls_army(bot, field, hx, hy)
     bot_siege(bot, field, hx, hy)
     storm_walls(bot, field, bot.target_x, bot.target_y)
-    ability_think(p, army)   // the race's ability (spiders' webs)
+    ability_think(p, army)  // the race's ability (spiders' webs)
     escort_healers(bot, field, healers, hx, hy)

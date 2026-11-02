@@ -6,11 +6,11 @@
 // ground shadow is kept apart ("<name>~shadow"), to lie under everything. Only what the pack lacks is baked
 // (all of it when `rebake` is on), so a pack made without art still plays.
 
-let AK_DOODADS = [["reeds", "6"], ["bush", "6"], ["rock", "6"], ["quarry", "4"], ["gold", "4"], ["carcass", "3"], ["stones", "6"],
-                  ["tuft", "6"], ["flowers", "6"], ["shore", "4"], ["lily", "4"], ["crops", "4"], ["paddy", "4"],
-                  ["tree_broadleaf", "4"], ["tree_pine", "4"], ["tree_swamp", "4"]]
+let AK_DOODADS = [ [ "reeds", "6" ], [ "bush", "6" ], [ "rock", "6" ], [ "quarry", "4" ], [ "gold", "4" ], [ "carcass", "3" ], [ "stones", "6" ],
+                   [ "tuft", "6" ], [ "flowers", "6" ], [ "shore", "4" ], [ "lily", "4" ], [ "crops", "4" ], [ "paddy", "4" ],
+                   [ "tree_broadleaf", "4" ], [ "tree_pine", "4" ], [ "tree_swamp", "4" ] ]
 let AK_STAGES = 4
-let AK_PILE_STYLE = [["food", "a"], ["wood", "a"], ["stone", "b"], ["gold", "a"]]
+let AK_PILE_STYLE = [ [ "food", "a" ], [ "wood", "a" ], [ "stone", "b" ], [ "gold", "a" ] ]
 var ak_rebake = false
 var ak_baked = 0
 
@@ -72,7 +72,7 @@ def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
         let shipped = if bake_shipped_dir != "": read_file(ak_stem_in(bake_shipped_dir, name) + ".bin", true) else: nil
         let data = shipped or read_file(stem + ".bin", true)
         if data:
-            let rec, err = flexbuffers_binary_to_value(typeof [AkFrame], data)
+            let rec, err = flexbuffers_binary_to_value(typeof [ AkFrame ], data)
             let fs = rec
             if not err and fs and ak_load_frames(fs): return
     bake_breath()
@@ -106,7 +106,7 @@ def bake_doodads() -> int:
         for(AK_STAGES) st:
             ak_bake(staged("quarry", v, st), quarry(1300 + v, st, "stone"), true)
             ak_bake(staged("gold", v, st), quarry(1300 + v, st, "gold"), true)
-    for(["broadleaf", "pine", "swamp"]) sp:
+    for([ "broadleaf", "pine", "swamp" ]) sp:
         let kind = "tree_" + sp
         let style = if sp == "swamp": 1 else: 0
         for(ak_count(kind)) v:

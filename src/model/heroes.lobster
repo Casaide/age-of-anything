@@ -3,7 +3,7 @@
 // comments are there. Angles the GDScript works in radians stay in radians here (hero_cos, hero_sin);
 // node rotations are degrees.
 
-var hero_lowering = false            // hero_models.gd `low`: a low-slung variant is being built
+var hero_lowering = false  // hero_models.gd `low`: a low-slung variant is being built
 let HERO_LOW_K = 0.8
 let HERO_TAU = MPI * 2.0
 let HERO_ROPE = html("#c8b48a")
@@ -79,8 +79,8 @@ def hero_weed_crown(c:Colours) -> Spec:
     for(7) k:
         let a = MPI * 0.55 + float(k) * MPI * 0.15
         let at = float3 { hero_cos(a) * 5.0, -1.6, hero_sin(a) * 5.0 }
-        hero_chain_rods(n, [at, at + float3 { -1.2, -3.0, 0.0 }, at + float3 { -1.6, -6.5 - float(k % 3), 0.0 }], [0.6, 0.5, 0.3], weed)
-    hero_chain_rods(n, [float3 { -1.0, 0.6, 0.0 }, float3 { 1.0, 4.0, 1.0 }, float3 { 0.0, 7.0, 0.5 }], [0.4, 0.35, 0.2], plain(html("#e8e4d4")))
+        hero_chain_rods(n, [ at, at + float3 { -1.2, -3.0, 0.0 }, at + float3 { -1.6, -6.5 - float(k % 3), 0.0 } ], [ 0.6, 0.5, 0.3 ], weed)
+    hero_chain_rods(n, [ float3 { -1.0, 0.6, 0.0 }, float3 { 1.0, 4.0, 1.0 }, float3 { 0.0, 7.0, 0.5 } ], [ 0.4, 0.35, 0.2 ], plain(html("#e8e4d4")))
     for(3) k:
         let kf = float(k)
         add_child(n, rod(float3 { 0.6 - kf * 0.4, 3.0 + kf * 1.3, 0.8 }, float3 { 2.2 - kf * 0.3, 3.6 + kf * 1.3, 0.8 }, 0.15, 0.1, plain(html("#e8e4d4"))))
@@ -94,7 +94,7 @@ def hero_lily_hat(c:Colours) -> Spec:
         let a = HERO_TAU * float(k) / 9.0
         add_child(n, blob(float3 { 4.2, 0.9, 1.8 }, petal, float3 { hero_cos(a) * 5.6, 0.6 + float(k % 2) * 0.8, hero_sin(a) * 5.6 }, float3 { 0.0, -rad(a), 25.0 }))
     add_child(n, blob(float3 { 2.0, 1.6, 2.0 }, plain(html("#f0d040")), float3 { 0.0, 1.4, 0.0 }))
-    hero_chain_rods(n, [float3 { -0.5, 2.0, 0.0 }, float3 { -2.0, 9.0, 0.0 }, float3 { -5.0, 14.0, 0.0 }], [0.4, 0.3, 0.2], surf("reed_stalk", float3_1, 4.0))
+    hero_chain_rods(n, [ float3 { -0.5, 2.0, 0.0 }, float3 { -2.0, 9.0, 0.0 }, float3 { -5.0, 14.0, 0.0 } ], [ 0.4, 0.3, 0.2 ], surf("reed_stalk", float3_1, 4.0))
     add_child(n, blob(float3 { 1.2, 3.0, 1.2 }, plain(html("#6a4a2a")), float3 { -5.2, 15.5, 0.0 }, float3 { 0.0, 0.0, 30.0 }))
     return spec_of(n)
 
@@ -106,7 +106,7 @@ def hero_helm_transverse(c:Colours) -> Spec:
     add_child(n, ring(4.8, 5.4, bronze, float3 { 0.3, -2.8, 0.0 }))
     if not hero_lowering:
         add_child(n, blob(float3 { 3.0, 0.6, 5.0 }, iron, float3 { -4.0, -4.2, 0.0 }, float3 { 0.0, 0.0, -25.0 }))
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             add_child(n, blob(float3 { 1.6, 2.6, 0.5 }, iron, float3 { 2.0, -5.6, 4.3 * side }))
     add_child(n, box(float3 { 1.0, 1.6, 9.0 }, bronze, float3 { -0.2, 1.4, 0.0 }))
     add_child(n, decal("plume", 22.0, 9.0, float3 { -0.2, 6.6, 0.0 }, float3 { 1.0, 0.0, 0.0 }, true, float3 { 0.0, 1.0, 0.0 }, col(c, "crimson")))
@@ -121,7 +121,7 @@ def hero_lion_hood(c:Colours) -> Spec:
     let jaw = if hero_lowering: float3 { 1.0, 1.8, 0.0 } else: float3_0
     add_child(n, blob(float3 { 4.0, 2.2, 3.6 }, pelt, float3 { 4.2, -1.0, 0.0 } + jaw))
     add_child(n, blob(float3 { 1.4, 1.0, 2.0 }, plain(html("#3a2418")), float3 { 7.8, -1.2, 0.0 } + jaw))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, cone(0.1, 0.6, 2.0, plain(html("#f0ead8")), float3 { 6.4, -2.6, 1.6 * side } + jaw, float3 { 0.0, 0.0, 180.0 }, 6))
         add_child(n, blob(float3 { 1.2, 1.4, 0.7 }, pelt, float3 { 0.5, 2.2, 3.6 * side }))
         add_child(n, blob(float3 { 0.6, 0.4, 0.5 }, plain(html("#c89020")), float3 { 5.6, 0.6, 2.2 * side }))
@@ -137,12 +137,12 @@ def hero_helm_plume(c:Colours) -> Spec:
     add_child(n, dome(float3 { 5.0, 6.4, 4.8 }, steel, float3 { -0.4, -3.6, 0.0 }))
     add_child(n, ring(4.8, 5.4, hero_gold(), float3 { -0.2, -2.8, 0.0 }))
     add_child(n, cone(0.6, 1.0, 2.0, hero_gold(), float3 { -0.6, 3.6, 0.0 }))
-    let cols = [col(c, "team"), html("#f4f0e4"), html("#d8b030"), col(c, "team"), html("#f4f0e4")]
+    let cols = [ col(c, "team"), html("#f4f0e4"), html("#d8b030"), col(c, "team"), html("#f4f0e4") ]
     for(5) k:
         let a = float(k - 2) * 0.32
         let off = abs(float(k - 2))
         add_child(n, decal("plume", 7.0, 15.0, float3 { -2.0 - off * 1.0, 11.0 - off * 1.4, hero_sin(a) * 4.0 }, float3 { hero_sin(a) * 0.4, 0.0, hero_cos(a) }, true, normalize(float3 { -0.5, 1.0, hero_sin(a) }), cols[k]))
-    lift_kids(n, 0.8)   // (0.5 before the heroic head, D-173)
+    lift_kids(n, 0.8)  // (0.5 before the heroic head, D-173)
     return spec_of(n)
 
 def hero_wolf_hat(c:Colours) -> Spec:
@@ -153,7 +153,7 @@ def hero_wolf_hat(c:Colours) -> Spec:
     let jaw = if hero_lowering: float3 { 0.6, 1.6, 0.0 } else: float3_0
     add_child(n, rod(float3 { 2.5, 0.0, 0.0 } + jaw, float3 { 8.0, -0.8, 0.0 } + jaw, 2.4, 1.3, fur))
     add_child(n, blob(float3 { 0.9, 0.7, 0.9 }, plain(html("#1a1412")), float3 { 8.8, -0.6, 0.0 } + jaw))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, cone(0.1, 1.5, 3.6, dark, float3 { 0.6, 2.8, 2.4 * side }, float3 { 10.0 * side, 0.0, -8.0 }, 6))
         add_child(n, blob(float3 { 0.5, 0.4, 0.4 }, plain(html("#e0c040")), float3 { 4.2, 0.9, 1.8 * side }))
     if not hero_lowering:
@@ -166,7 +166,7 @@ def hero_helm_wings(c:Colours) -> Spec:
     let black = plain(html("#1c1a22"))
     add_child(n, dome(float3 { 5.0, 5.2, 4.8 }, iron, float3 { 0.0, -3.8, 0.0 }))
     add_child(n, ring(4.8, 5.4, plain(col(c, "team")), float3 { 0.0, -3.4, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         for(3) k:
             let kf = float(k)
             add_child(n, blob(float3 { 0.9, 3.6 - kf * 0.5, 0.35 }, black, float3 { -0.6 - kf * 1.5, 0.6 + kf * 0.2, (4.6 + kf * 0.3) * side }, float3 { 10.0 * side, 0.0, 30.0 + kf * 16.0 }))
@@ -179,9 +179,9 @@ def hero_double_crown(c:Colours) -> Spec:
     add_child(n, cone(4.6, 5.2, 4.0, plain(html("#b02828")), float3 { -0.3, -1.2, 0.0 }, float3_0, 24))
     add_child(n, cone(1.6, 3.6, 7.0, white, float3 { -0.6, 4.2, 0.0 }, float3_0, 20))
     add_child(n, blob(float3 { 1.8, 1.8, 1.8 }, white, float3 { -0.6, 7.8, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.4, 8.0, 0.5 }, hero_gold(), float3 { -1.6, 9.0, 1.2 * side }, float3 { 0.0, 0.0, 8.0 }))
-    hero_chain_rods(n, [float3 { 4.6, -1.0, 0.0 }, float3 { 5.4, 0.6, 0.0 }, float3 { 5.0, 2.0, 0.0 }], [0.6, 0.5, 0.7], hero_gold())
+    hero_chain_rods(n, [ float3 { 4.6, -1.0, 0.0 }, float3 { 5.4, 0.6, 0.0 }, float3 { 5.0, 2.0, 0.0 } ], [ 0.6, 0.5, 0.7 ], hero_gold())
     lift_kids(n, 0.2)
     return spec_of(n)
 
@@ -193,7 +193,7 @@ def hero_jaguar_helm(c:Colours) -> Spec:
     let jaw = if hero_lowering: float3 { 1.0, 1.8, 0.0 } else: float3_0
     add_child(n, blob(float3 { 4.2, 2.6, 4.2 }, pelt, float3 { 4.0, -0.8, 0.0 } + jaw))
     add_child(n, blob(float3 { 1.4, 1.0, 2.0 }, spot, float3 { 8.0, -0.4, 0.0 } + jaw))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, cone(0.1, 0.7, 2.6, plain(html("#f4eedc")), float3 { 6.6, -2.8, 2.2 * side } + jaw, float3 { 0.0, 0.0, 180.0 }, 6))
         add_child(n, blob(float3 { 1.2, 1.3, 0.7 }, pelt, float3 { -0.2, 2.4, 3.6 * side }))
         add_child(n, blob(float3 { 0.6, 0.5, 0.5 }, plain(html("#d8c020")), float3 { 5.6, 1.0, 2.4 * side }))
@@ -202,7 +202,7 @@ def hero_jaguar_helm(c:Colours) -> Spec:
     for(12) k:
         let a = float(k) * 2.39996
         add_child(n, blob(float3_1 * 0.55, spot, on_surface(float3 { -0.4, -3.2, 0.0 }, float3 { 5.6, 5.4, 5.4 }, float3 { hero_cos(a) * 0.8 - 0.3, 0.4 + (float(k) * 0.37) % 0.6, hero_sin(a) }, 0.05)))
-    let feather = [html("#20a060"), html("#e8c030"), html("#2060c0")]
+    let feather = [ html("#20a060"), html("#e8c030"), html("#2060c0") ]
     for(3) k:
         add_child(n, blob(float3 { 0.6, 4.0, 1.2 }, plain(feather[k]), float3 { -2.0 - float(k) * 0.8, 3.8, float(k - 1) * 1.6 }, float3 { 0.0, 0.0, 24.0 }))
     lift_kids(n, 0.35)
@@ -235,7 +235,7 @@ def hero_widow_hat(c:Colours) -> Spec:
     let lace = surf("cloth", float3 { 0.14, 0.12, 0.16 }, 3.0)
     add_child(n, cone(1.2, 4.0, 8.0, lace, float3 { -0.8, 2.6, 0.0 }, float3 { 0.0, 0.0, 14.0 }, 16))
     add_child(n, cone(5.4, 5.4, 0.5, lace, float3 { 0.0, -1.0, 0.0 }, float3_0, 24))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, box(float3 { 0.3, 9.0, 4.0 }, lace, float3 { -4.6, -5.2, 2.0 * side }, float3 { 0.0, 20.0 * side, -6.0 }))
     add_child(n, rod(float3 { 1.0, 1.0, 3.0 }, float3 { -2.0, 6.0, -1.0 }, 0.3, 0.3, surf("bone", float3_1, 2.0)))
     add_child(n, blob(float3_1 * 0.9, surf("bone", float3_1, 2.0), float3 { -2.0, 6.0, -1.0 }))
@@ -246,7 +246,7 @@ def hero_laurel_gold(c:Colours) -> Spec:
     add_child(n, ring(4.6, 5.2, hero_gold(), float3 { 0.0, -1.8, 0.0 }))
     for(14) k:
         let a = MPI * 0.2 + float(k) * MPI * 0.115
-        for([1.0, -1.0]) side:
+        for([ 1.0, -1.0 ]) side:
             let at = float3 { hero_cos(a) * 5.0, -1.5 + 0.35 * hero_sin(float(k) * 1.3), hero_sin(a) * 5.0 * side }
             add_child(n, blob(float3 { 1.4, 0.4, 0.7 }, hero_gold(1.05), at + float3 { 0.0, 0.6, 0.0 }, float3 { 0.0, -rad(a) * side, 35.0 }))
     return spec_of(n)
@@ -271,8 +271,8 @@ def hero_nightcap(c:Colours) -> Spec:
     let a = plain(html("#e8e0f0"))
     let b = plain(html("#4a5ab0"))
     add_child(n, ring(4.5, 5.2, a, float3 { -0.5, -1.6, 0.0 }))
-    let pts = [float3 { -0.5, -1.0, 0.0 }, float3 { 0.2, 3.0, 0.6 }, float3 { -0.6, 5.6, 3.2 }, float3 { -2.2, 5.0, 6.2 }, float3 { -3.4, 2.0, 7.8 }]
-    let r = [4.6, 3.4, 2.4, 1.5, 0.8]
+    let pts = [ float3 { -0.5, -1.0, 0.0 }, float3 { 0.2, 3.0, 0.6 }, float3 { -0.6, 5.6, 3.2 }, float3 { -2.2, 5.0, 6.2 }, float3 { -3.4, 2.0, 7.8 } ]
+    let r = [ 4.6, 3.4, 2.4, 1.5, 0.8 ]
     for(pts.length - 1) i:
         let k = i + 1
         add_child(n, rod(pts[k - 1], pts[k], r[k - 1], r[k], if k % 2 == 0: a else: b))
@@ -285,8 +285,8 @@ def hero_cape_ermine(c:Colours) -> Spec:
     let n = mnode()
     let velvet = surf("cloth", col(c, "team"), 4.0)
     let ermine = plain(html("#f4f0e8"))
-    for([1.0, -1.0]) side:
-        let panel = slab([float2 { 2.0, 1.0 }, float2 { 3.0, -1.0 }, float2 { -2.0, -15.0 }, float2 { -14.0, -16.5 }, float2 { -15.0, -14.0 }, float2 { -1.5, 0.5 }], 0.7, velvet)
+    for([ 1.0, -1.0 ]) side:
+        let panel = slab([ float2 { 2.0, 1.0 }, float2 { 3.0, -1.0 }, float2 { -2.0, -15.0 }, float2 { -14.0, -16.5 }, float2 { -15.0, -14.0 }, float2 { -1.5, 0.5 } ], 0.7, velvet)
         panel.pos = float3 { 0.0, 0.0, 3.2 * side }
         panel.rot = float3 { 0.0, -8.0 * side, 0.0 }
         add_child(n, panel)
@@ -310,8 +310,8 @@ def hero_roach_pet(c:Colours) -> Spec:
     let at = float3_0
     add_child(n, blob(float3 { 3.0, 1.4, 2.0 }, shell, at))
     add_child(n, blob(float3 { 1.0, 0.9, 1.2 }, plain(html("#2a1a10")), at + float3 { 3.0, 0.0, 0.0 }))
-    for([1.0, -1.0]) side:
-        hero_chain_rods(n, [at + float3 { 3.6, 0.4, 0.5 * side }, at + float3 { 7.0, 3.0, 2.0 * side }, at + float3 { 9.0, 2.0, 3.0 * side }], [0.15, 0.12, 0.1], plain(html("#2a1a10")))
+    for([ 1.0, -1.0 ]) side:
+        hero_chain_rods(n, [ at + float3 { 3.6, 0.4, 0.5 * side }, at + float3 { 7.0, 3.0, 2.0 * side }, at + float3 { 9.0, 2.0, 3.0 * side } ], [ 0.15, 0.12, 0.1 ], plain(html("#2a1a10")))
         for(3) k:
             let kf = float(k)
             add_child(n, rod(at + float3 { 1.5 - kf * 1.5, -0.6, 1.2 * side }, at + float3 { 2.0 - kf * 2.0, -1.6, 2.6 * side }, 0.18, 0.12, plain(html("#2a1a10"))))
@@ -330,7 +330,7 @@ def hero_moss_mantle(c:Colours) -> Spec:
     for(4) k:
         let kf = float(k)
         let a = -0.6 + kf * 0.4
-        hero_chain_rods(n, [float3 { -6.0, 2.0, -2.0 }, float3 { -8.0, 6.0, -2.0 + hero_sin(a) * 2.0 }, float3 { -11.0, 8.0 + kf * 0.5, -2.0 + hero_sin(a) * 4.0 }], [0.4, 0.5, 0.2], surf("reed_leaf", float3 { 0.6, 0.85, 0.4 }, 3.0))
+        hero_chain_rods(n, [ float3 { -6.0, 2.0, -2.0 }, float3 { -8.0, 6.0, -2.0 + hero_sin(a) * 2.0 }, float3 { -11.0, 8.0 + kf * 0.5, -2.0 + hero_sin(a) * 4.0 } ], [ 0.4, 0.5, 0.2 ], surf("reed_leaf", float3 { 0.6, 0.85, 0.4 }, 3.0))
     return spec_of(n)
 
 def hero_conch_horn(c:Colours) -> Spec:
@@ -349,8 +349,8 @@ def hero_conch_horn(c:Colours) -> Spec:
 def hero_cape_long(c:Colours) -> Spec:
     let n = mnode()
     let cloth = surf("cloth", col(c, "crimson"), 4.0)
-    for([1.0, -1.0]) side:
-        let panel = slab([float2 { 2.0, 1.0 }, float2 { 3.0, -1.0 }, float2 { -5.0, -15.0 }, float2 { -13.0, -16.0 }, float2 { -13.5, -12.0 }, float2 { -1.5, 0.5 }], 0.6, cloth)
+    for([ 1.0, -1.0 ]) side:
+        let panel = slab([ float2 { 2.0, 1.0 }, float2 { 3.0, -1.0 }, float2 { -5.0, -15.0 }, float2 { -13.0, -16.0 }, float2 { -13.5, -12.0 }, float2 { -1.5, 0.5 } ], 0.6, cloth)
         panel.pos = float3 { 0.0, 0.0, 3.0 * side }
         panel.rot = float3 { 0.0, -10.0 * side, 0.0 }
         add_child(n, panel)
@@ -360,10 +360,10 @@ def hero_cape_long(c:Colours) -> Spec:
 def hero_lion_pelt(c:Colours) -> Spec:
     let n = mnode()
     let pelt = surf("hide", float3 { 0.95, 0.72, 0.42 }, 5.0)
-    add_child(n, slab([float2 { 2.0, 1.0 }, float2 { 2.0, -2.0 }, float2 { -1.0, -15.0 }, float2 { -6.0, -16.0 }, float2 { -7.0, -12.0 }, float2 { -2.0, 1.0 }], 1.4, pelt, float3_0))
-    for([1.0, -1.0]) side:
-        hero_chain_rods(n, [float3 { 0.5, 0.0, 3.0 * side }, float3 { 3.0, -2.0, 3.6 * side }], [1.2, 1.0], pelt)
-    hero_chain_rods(n, [float3 { -5.0, -15.0, 0.0 }, float3 { -8.0, -17.0, 0.0 }, float3 { -9.5, -18.0, 0.0 }], [0.6, 0.5, 0.4], pelt)
+    add_child(n, slab([ float2 { 2.0, 1.0 }, float2 { 2.0, -2.0 }, float2 { -1.0, -15.0 }, float2 { -6.0, -16.0 }, float2 { -7.0, -12.0 }, float2 { -2.0, 1.0 } ], 1.4, pelt, float3_0))
+    for([ 1.0, -1.0 ]) side:
+        hero_chain_rods(n, [ float3 { 0.5, 0.0, 3.0 * side }, float3 { 3.0, -2.0, 3.6 * side } ], [ 1.2, 1.0 ], pelt)
+    hero_chain_rods(n, [ float3 { -5.0, -15.0, 0.0 }, float3 { -8.0, -17.0, 0.0 }, float3 { -9.5, -18.0, 0.0 } ], [ 0.6, 0.5, 0.4 ], pelt)
     add_child(n, blob(float3 { 1.0, 1.6, 1.0 }, surf("mane", float3 { 0.5, 0.3, 0.18 }, 2.0), float3 { -10.0, -18.4, 0.0 }))
     return spec_of(n)
 
@@ -371,12 +371,12 @@ def hero_cape_heraldic(c:Colours) -> Spec:
     let n = mnode()
     let team = surf("cloth", col(c, "team"), 4.0)
     let gold_cloth = surf("cloth", html("#d8b030"), 4.0)
-    for([1, -1]) side:
+    for([ 1, -1 ]) side:
         for(2) half:
             let hf = float(half)
             let top = if half == 0: 1.0 else: -7.0
             let back = hf * 1.5
-            let pts = [float2 { 2.0 - back, top }, float2 { 2.5 - back, top - 1.0 }, float2 { 0.5 - hf * 1.5 - back * 2.0, top - 8.5 }, float2 { -4.5 - hf * 3.0 - back * 2.0, top - 9.0 }, float2 { -4.0 - hf * 1.5 - back, top - 1.0 }]
+            let pts = [ float2 { 2.0 - back, top }, float2 { 2.5 - back, top - 1.0 }, float2 { 0.5 - hf * 1.5 - back * 2.0, top - 8.5 }, float2 { -4.5 - hf * 3.0 - back * 2.0, top - 9.0 }, float2 { -4.0 - hf * 1.5 - back, top - 1.0 } ]
             let panel = slab(pts, 0.6, if (half + (side + 1) / 2) % 2 == 0: team else: gold_cloth)
             panel.pos = float3 { 0.0, 0.0, 3.0 * float(side) }
             panel.rot = float3 { 0.0, -10.0 * float(side), 0.0 }
@@ -392,7 +392,7 @@ def hero_horsetail_standard(c:Colours) -> Spec:
     for(7) k:
         let a = HERO_TAU * float(k) / 7.0
         let hair = if k % 2 == 0: float3 { 0.85, 0.82, 0.75 } else: float3 { 0.25, 0.2, 0.18 }
-        hero_chain_rods(n, [float3 { hero_cos(a) * 1.8, 23.6, hero_sin(a) * 1.8 }, float3 { hero_cos(a) * 2.4, 18.0, hero_sin(a) * 2.4 }, float3 { hero_cos(a) * 2.0, 13.0 + float(k % 2), hero_sin(a) * 2.0 }], [0.6, 0.6, 0.3], surf("mane", hair, 2.0))
+        hero_chain_rods(n, [ float3 { hero_cos(a) * 1.8, 23.6, hero_sin(a) * 1.8 }, float3 { hero_cos(a) * 2.4, 18.0, hero_sin(a) * 2.4 }, float3 { hero_cos(a) * 2.0, 13.0 + float(k % 2), hero_sin(a) * 2.0 } ], [ 0.6, 0.6, 0.3 ], surf("mane", hair, 2.0))
     return spec_of(n)
 
 def hero_cat_pet(c:Colours) -> Spec:
@@ -408,10 +408,10 @@ def hero_cat_pet(c:Colours) -> Spec:
     add_child(n, blob(float3 { 2.0, 2.8, 1.8 }, fur, at + float3 { -0.4, 2.0, 0.0 }))
     add_child(n, blob(float3 { 1.5, 1.4, 1.4 }, fur, at + float3 { 0.8, 5.0, 0.0 }))
     add_child(n, ring(1.2, 1.7, hero_gold(), at + float3 { 0.2, 3.6, 0.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, cone(0.05, 0.6, 1.6, fur, at + float3 { 0.6, 6.6, 0.8 * side }, float3 { 0.0, 0.0, -8.0 }, 6))
         add_child(n, blob(float3 { 0.3, 0.35, 0.25 }, plain(html("#30a040")), at + float3 { 2.0, 5.3, 0.6 * side }))
-    hero_chain_rods(n, [at + float3 { -1.8, 0.4, 0.0 }, at + float3 { -3.4, -1.6, -0.6 }, at + float3 { -3.0, -4.2, -1.0 }], [0.4, 0.35, 0.3], fur)
+    hero_chain_rods(n, [ at + float3 { -1.8, 0.4, 0.0 }, at + float3 { -3.4, -1.6, -0.6 }, at + float3 { -3.0, -4.2, -1.0 } ], [ 0.4, 0.35, 0.3 ], fur)
     return spec_of(root)
 
 def hero_raven_pet(c:Colours) -> Spec:
@@ -425,7 +425,7 @@ def hero_raven_pet(c:Colours) -> Spec:
     add_child(n, blob(float3 { 1.1, 1.1, 1.0 }, black, float3 { 1.6, 2.8, 0.0 }))
     add_child(n, cone(0.05, 0.45, 1.6, plain(html("#3a3640")), float3 { 2.9, 2.6, 0.0 }, float3 { 0.0, 0.0, -100.0 }, 6))
     add_child(n, blob(float3 { 1.6, 0.4, 1.0 }, black, float3 { -2.4, 0.6, 0.0 }, float3 { 0.0, 0.0, 25.0 }))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 0.22, 0.22, 0.2 }, plain(html("#e0c040")), float3 { 2.1, 3.1, 0.75 * side }))
     add_child(n, ring(0.7, 1.1, plain(col(c, "team")), float3 { 0.2, 0.2, 0.0 }))
     return spec_of(root)
@@ -440,7 +440,7 @@ def hero_back_flags(c:Colours) -> Spec:
         let foot = float3 { -1.0, -2.0, z }
         let top = foot + float3 { -1.5, 17.0, z * 2.4 }
         add_child(n, rod(foot, top, 0.3, 0.25, wood, false))
-        let flag = slab([float2 { 0.0, 0.0 }, float2 { 0.0, -7.0 }, float2 { -5.0, -0.5 }], 0.3, surf("cloth", if k % 2 == 0: col(c, "team") else: html("#e8d040"), 3.0), top + float3 { 0.0, -0.5, 0.0 })
+        let flag = slab([ float2 { 0.0, 0.0 }, float2 { 0.0, -7.0 }, float2 { -5.0, -0.5 } ], 0.3, surf("cloth", if k % 2 == 0: col(c, "team") else: html("#e8d040"), 3.0), top + float3 { 0.0, -0.5, 0.0 })
         flag.rot = float3 { tilt, 0.0, 0.0 }
         add_child(n, flag)
     return spec_of(n)
@@ -448,7 +448,7 @@ def hero_back_flags(c:Colours) -> Spec:
 def hero_quetzal_fan(c:Colours) -> Spec:
     let n = mnode()
     add_child(n, box(float3 { 1.4, 4.0, 5.0 }, surf("wicker", float3_1, 3.0), float3 { -0.8, -0.6, 0.0 }))
-    let cols = [html("#1aa060"), html("#18c080"), html("#e8c030"), html("#c02828")]
+    let cols = [ html("#1aa060"), html("#18c080"), html("#e8c030"), html("#c02828") ]
     let from_ = float3 { -2.4, 1.0, 0.0 }
     for(9) k:
         let a = float(k - 4) * 0.28
@@ -462,8 +462,8 @@ def hero_sapling(c:Colours) -> Spec:
     let moss = surf("foliage", float3 { 0.7, 0.9, 0.45 }, 5.0)
     let leaves = surf("foliage", float3 { 0.85, 1.05, 0.6 }, 6.0)
     add_child(n, blob(float3 { 3.6, 3.0, 5.4 }, moss, float3 { -2.0, -1.0, 0.0 }))
-    hero_chain_rods(n, [float3 { -2.0, 0.0, 0.0 }, float3 { -3.0, 8.0, 0.0 }, float3 { -2.0, 16.0, 0.0 }], [1.2, 0.9, 0.6], bark)
-    hero_chain_rods(n, [float3 { -3.0, 8.0, 0.0 }, float3 { -6.0, 12.0, 2.0 }], [0.6, 0.4], bark)
+    hero_chain_rods(n, [ float3 { -2.0, 0.0, 0.0 }, float3 { -3.0, 8.0, 0.0 }, float3 { -2.0, 16.0, 0.0 } ], [ 1.2, 0.9, 0.6 ], bark)
+    hero_chain_rods(n, [ float3 { -3.0, 8.0, 0.0 }, float3 { -6.0, 12.0, 2.0 } ], [ 0.6, 0.4 ], bark)
     add_child(n, blob(float3 { 5.0, 4.4, 5.0 }, leaves, float3 { -2.0, 18.0, 0.0 }))
     add_child(n, blob(float3 { 3.2, 3.0, 3.2 }, leaves, float3 { -6.4, 13.6, 2.4 }))
     add_child(n, blob(float3 { 0.7, 0.7, 0.7 }, plain(html("#c83a2a")), float3 { 0.0, 17.0, 4.0 }))
@@ -479,7 +479,7 @@ def hero_web_wheel(c:Colours) -> Spec:
     for(8) k:
         let a = HERO_TAU * float(k) / 8.0
         add_child(n, rod(at, at + float3 { 0.0, hero_cos(a) * 7.6, hero_sin(a) * 7.6 }, 0.12, 0.12, silk, false))
-    for([2.6, 5.0]) r:
+    for([ 2.6, 5.0 ]) r:
         add_child(n, ring(r - 0.1, r + 0.1, silk, at, float3 { 0.0, 0.0, 90.0 }))
     add_child(n, blob(float3 { 1.0, 1.0, 1.0 }, plain(html("#1a1418")), at + float3 { 0.2, 2.0, 2.4 }))
     return spec_of(n)
@@ -492,7 +492,7 @@ def hero_aquila(c:Colours) -> Spec:
     add_child(n, blob(float3 { 1.6, 1.4, 1.2 }, hero_gold(), float3 { 0.4, 25.2, 0.0 }))
     add_child(n, blob(float3 { 0.9, 0.8, 0.7 }, hero_gold(), float3 { 1.8, 26.4, 0.0 }))
     add_child(n, cone(0.05, 0.4, 1.0, hero_gold(), float3 { 2.8, 26.2, 0.0 }, float3 { 0.0, 0.0, -100.0 }, 6))
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         add_child(n, blob(float3 { 1.0, 3.0, 2.6 }, hero_gold(), float3 { -0.2, 27.0, 2.6 * side }, float3 { 30.0 * side, 0.0, 0.0 }))
     add_child(n, ring(1.4, 2.2, hero_gold(), float3 { 0.0, 23.6, 0.0 }))
     return spec_of(n)
@@ -516,7 +516,7 @@ def hero_pillow(c:Colours) -> Spec:
     let n = mnode()
     let linen = surf("cloth", float3 { 0.92, 0.9, 0.96 }, 4.0)
     add_child(n, blob(float3 { 2.4, 6.0, 5.4 }, linen, float3 { -2.8, -2.0, 0.0 }, float3 { 0.0, 0.0, 8.0 }))
-    for([float3 { -2.6, 3.6, 4.6 }, float3 { -2.6, 3.6, -4.6 }, float3 { -3.4, -7.4, 4.4 }, float3 { -3.4, -7.4, -4.4 }]) corner:
+    for([ float3 { -2.6, 3.6, 4.6 }, float3 { -2.6, 3.6, -4.6 }, float3 { -3.4, -7.4, 4.4 }, float3 { -3.4, -7.4, -4.4 } ]) corner:
         add_child(n, blob(float3 { 1.0, 1.0, 1.0 }, linen, corner))
     add_child(n, ring(5.0, 5.6, surf("leather", float3_1, 2.0), float3 { -1.6, -2.0, 0.0 }, float3 { 90.0, 0.0, 0.0 }, float3 { 0.6, 1.0, 1.2 }))
     for(3) k:
@@ -531,14 +531,14 @@ def hero_sceptre_cheese(c:Colours) -> Spec:
     add_child(n, rod(float3 { -1.0, -4.0, 0.0 }, float3 { 3.0, 14.0, 0.0 }, 0.6, 0.6, hero_gold()))
     add_child(n, ring(0.6, 1.2, hero_gold(), float3 { 1.2, 6.0, 0.0 }, float3 { 0.0, 0.0, -12.0 }))
     add_child(n, cone(2.4, 0.8, 2.0, hero_gold(), float3 { 3.2, 15.0, 0.0 }, float3 { 0.0, 0.0, -12.0 }))
-    add_child(n, slab([float2 { -2.5, 0.0 }, float2 { 3.0, 0.0 }, float2 { 0.5, 4.5 }], 3.0, surf("cheese", float3_1, 3.0), float3 { 3.4, 16.0, 0.0 }))
+    add_child(n, slab([ float2 { -2.5, 0.0 }, float2 { 3.0, 0.0 }, float2 { 0.5, 4.5 } ], 3.0, surf("cheese", float3_1, 3.0), float3 { 3.4, 16.0, 0.0 }))
     return spec_of(n)
 
 def hero_cleaver(c:Colours) -> Spec:
     let n = mnode()
     let rust = surf("iron", float3 { 1.15, 1.05, 1.0 }, 3.0)
     add_child(n, rod(float3 { 4.0, -4.0, 0.0 }, float3 { -2.0, 7.0, 0.0 }, 0.8, 0.8, surf("wood_grain", float3_1, 3.0)))
-    let b = slab([float2 { 0.0, 0.0 }, float2 { 15.0, 0.0 }, float2 { 16.0, 8.0 }, float2 { 1.0, 8.0 }], 0.7, rust)
+    let b = slab([ float2 { 0.0, 0.0 }, float2 { 15.0, 0.0 }, float2 { 16.0, 8.0 }, float2 { 1.0, 8.0 } ], 0.7, rust)
     b.pos = float3 { -2.0, 7.0, 0.0 }
     b.rot = float3 { 0.0, 0.0, 118.0 }
     add_child(n, b)
@@ -548,7 +548,7 @@ def hero_cleaver(c:Colours) -> Spec:
 def hero_lantern_staff(c:Colours) -> Spec:
     let n = mnode()
     let wood = surf("bark_plate", float3 { 0.75, 0.65, 0.55 }, 3.0)
-    hero_chain_rods(n, [float3 { -1.0, -8.0, 0.0 }, float3 { 1.0, 6.0, 0.0 }, float3 { 3.0, 16.0, 0.0 }, float3 { 7.0, 19.0, 0.0 }, float3 { 8.0, 17.0, 0.0 }], [0.8, 0.75, 0.7, 0.6, 0.5], wood)
+    hero_chain_rods(n, [ float3 { -1.0, -8.0, 0.0 }, float3 { 1.0, 6.0, 0.0 }, float3 { 3.0, 16.0, 0.0 }, float3 { 7.0, 19.0, 0.0 }, float3 { 8.0, 17.0, 0.0 } ], [ 0.8, 0.75, 0.7, 0.6, 0.5 ], wood)
     add_child(n, rod(float3 { 8.0, 17.0, 0.0 }, float3 { 8.0, 14.5, 0.0 }, 0.15, 0.15, plain(HERO_ROPE), false))
     add_child(n, cone(1.2, 1.6, 3.0, surf("wicker", float3_1, 2.0), float3 { 8.0, 13.0, 0.0 }))
     add_child(n, blob(float3 { 1.1, 1.3, 1.1 }, glow(html("#d8f060")), float3 { 8.0, 13.0, 0.0 }))
@@ -564,9 +564,9 @@ def hero_anchor(c:Colours) -> Spec:
     let across = float3 { -d.y, d.x, 0.0 }
     add_child(n, rod(b - across * 3.5, b + across * 3.5, 0.6, 0.6, rust))
     add_child(n, ring(1.0, 1.7, rust, b + d * 1.6, float3 { 90.0, 0.0, 0.0 }))
-    for([1.0, -1.0]) side:
-        hero_chain_rods(n, [a, a + across * 3.5 * side - d * 1.0, a + across * 5.0 * side + d * 2.5], [0.9, 0.8, 0.4], rust)
-    hero_chain_rods(n, [b + d * 0.5, b - across * 2.0 - d * 4.0, b + across * 1.0 - d * 8.0], [0.4, 0.3, 0.2], surf("reed_leaf", float3 { 0.55, 0.75, 0.45 }, 3.0))
+    for([ 1.0, -1.0 ]) side:
+        hero_chain_rods(n, [ a, a + across * 3.5 * side - d * 1.0, a + across * 5.0 * side + d * 2.5 ], [ 0.9, 0.8, 0.4 ], rust)
+    hero_chain_rods(n, [ b + d * 0.5, b - across * 2.0 - d * 4.0, b + across * 1.0 - d * 8.0 ], [ 0.4, 0.3, 0.2 ], surf("reed_leaf", float3 { 0.55, 0.75, 0.45 }, 3.0))
     return spec_of(n)
 
 def hero_guandao(c:Colours) -> Spec:
@@ -576,7 +576,7 @@ def hero_guandao(c:Colours) -> Spec:
     add_child(n, rod(a, b, 0.75, 0.7, surf("wood_grain", float3 { 0.7, 0.35, 0.25 }, 4.0), false))
     let d = normalize(b - a)
     let ang = atan2(float2 { d.x, d.y })
-    add_child(n, blade([float2 { 0.0, -1.0 }, float2 { 5.0, -2.6 }, float2 { 10.0, -2.4 }, float2 { 12.5, 0.5 }, float2 { 9.0, 1.2 }, float2 { 7.0, 2.6 }, float2 { 6.0, 1.2 }, float2 { 0.0, 1.4 }], 0.6, surf("iron", float3 { 1.1, 1.1, 1.15 }, 3.0), b, ang))
+    add_child(n, blade([ float2 { 0.0, -1.0 }, float2 { 5.0, -2.6 }, float2 { 10.0, -2.4 }, float2 { 12.5, 0.5 }, float2 { 9.0, 1.2 }, float2 { 7.0, 2.6 }, float2 { 6.0, 1.2 }, float2 { 0.0, 1.4 } ], 0.6, surf("iron", float3 { 1.1, 1.1, 1.15 }, 3.0), b, ang))
     add_child(n, ring(0.7, 1.4, hero_gold(), b - d * 0.3, float3 { 0.0, 0.0, ang - 90.0 }))
     add_child(n, blob(float3 { 1.0, 1.6, 1.0 }, plain(html("#c02828")), b - d * 1.6))
     return spec_of(n)
@@ -584,11 +584,11 @@ def hero_guandao(c:Colours) -> Spec:
 def hero_root_club(c:Colours) -> Spec:
     let n = mnode()
     let bark = surf("bark_plate", float3 { 0.8, 0.7, 0.6 }, 3.0)
-    hero_chain_rods(n, [float3 { 1.5, -1.5, 0.0 }, float3 { -3.0, 5.0, 1.5 }, float3 { -10.0, 12.0, 3.5 }], [0.9, 1.3, 2.4], bark)
+    hero_chain_rods(n, [ float3 { 1.5, -1.5, 0.0 }, float3 { -3.0, 5.0, 1.5 }, float3 { -10.0, 12.0, 3.5 } ], [ 0.9, 1.3, 2.4 ], bark)
     add_child(n, blob(float3 { 3.2, 2.8, 2.8 }, bark, float3 { -11.5, 13.5, 3.5 }))
     for(3) k:
         let a = float(k) * 2.1
-        hero_chain_rods(n, [float3 { -11.5, 13.5, 3.5 }, float3 { -11.5 + hero_cos(a) * 3.5, 16.0 + hero_sin(a) * 2.0, 3.5 + hero_sin(a) * 2.5 }], [1.0, 0.4], bark)
+        hero_chain_rods(n, [ float3 { -11.5, 13.5, 3.5 }, float3 { -11.5 + hero_cos(a) * 3.5, 16.0 + hero_sin(a) * 2.0, 3.5 + hero_sin(a) * 2.5 } ], [ 1.0, 0.4 ], bark)
     add_child(n, blob(float3 { 1.4, 0.5, 1.0 }, surf("leaf", float3 { 0.7, 1.0, 0.5 }, 3.0), float3 { -9.0, 16.5, 5.0 }, float3 { 0.0, 0.0, 30.0 }))
     return spec_of(n)
 
@@ -602,15 +602,15 @@ def hero_cane(c:Colours) -> Spec:
 def hero_trunk_club(c:Colours) -> Spec:
     let n = mnode()
     let bark = surf("bark_plate", float3 { 0.85, 0.75, 0.62 }, 4.0)
-    hero_chain_rods(n, [float3 { 5.0, -5.0, 0.0 }, float3 { -4.0, 9.0, 0.0 }, float3 { -11.0, 21.0, 0.0 }], [1.2, 1.9, 2.8], bark)
+    hero_chain_rods(n, [ float3 { 5.0, -5.0, 0.0 }, float3 { -4.0, 9.0, 0.0 }, float3 { -11.0, 21.0, 0.0 } ], [ 1.2, 1.9, 2.8 ], bark)
     add_child(n, cone(2.6, 2.6, 0.6, plain(html("#d8b888")), float3 { -11.3, 21.5, 0.0 }, float3 { 0.0, 0.0, 30.0 }, 14))
-    hero_chain_rods(n, [float3 { -6.0, 12.0, 0.0 }, float3 { -3.0, 16.0, 1.6 }], [0.6, 0.3], bark)
+    hero_chain_rods(n, [ float3 { -6.0, 12.0, 0.0 }, float3 { -3.0, 16.0, 1.6 } ], [ 0.6, 0.3 ], bark)
     return spec_of(n)
 
 def hero_log_club(c:Colours) -> Spec:
     let n = mnode()
     let bark = surf("bark_plate", float3 { 0.7, 0.6, 0.5 }, 4.0)
-    hero_chain_rods(n, [float3 { -1.0, -3.0, 0.0 }, float3 { 2.0, 6.0, 0.0 }, float3 { 5.0, 16.0, 0.0 }], [1.1, 1.8, 2.6], bark)
+    hero_chain_rods(n, [ float3 { -1.0, -3.0, 0.0 }, float3 { 2.0, 6.0, 0.0 }, float3 { 5.0, 16.0, 0.0 } ], [ 1.1, 1.8, 2.6 ], bark)
     add_child(n, cone(2.5, 2.5, 0.5, plain(html("#d8b888")), float3 { 5.2, 16.6, 0.0 }, float3 { 0.0, 0.0, -16.0 }, 14))
     add_child(n, blob(float3 { 2.0, 1.0, 1.6 }, plain(html("#c8d0f0")), float3 { 3.2, 10.0, 1.8 }, float3 { 0.0, 0.0, 20.0 }))
     return spec_of(n)
@@ -630,7 +630,7 @@ def hero_cheese_wheel(c:Colours) -> Spec:
         let hole = disc(0.6 + (kf * 0.37) % 0.6, 0.4, plain(html("#b08420")), 1.35)
         hole.pos = float3 { hero_cos(a) * (1.8 + kf * 0.8), hero_sin(a) * (1.8 + kf * 0.8), 1.35 }
         add_child(h, hole)
-    let bite = slab([float2 { 0.0, 0.0 }, float2 { 7.4, 2.3 }, float2 { 7.4, -2.3 }], 2.8, plain(html("#3a2a1a")))
+    let bite = slab([ float2 { 0.0, 0.0 }, float2 { 7.4, 2.3 }, float2 { 7.4, -2.3 } ], 2.8, plain(html("#3a2a1a")))
     bite.rot = float3 { 0.0, 0.0, rad(0.9) }
     add_child(h, bite)
     return spec_of(n)
@@ -638,7 +638,7 @@ def hero_cheese_wheel(c:Colours) -> Spec:
 def hero_gold_shield(c:Colours) -> Spec:
     let n = mnode()
     let h = facing(n, float3 { 4.4, 0.5, 0.4 }, SHIELD_FACE)
-    let outline = [float2 { 0.0, 9.0 }, float2 { 4.0, 5.0 }, float2 { 5.0, -1.0 }, float2 { 3.0, -6.0 }, float2 { 0.0, -9.0 }, float2 { -3.0, -6.0 }, float2 { -5.0, -1.0 }, float2 { -4.0, 5.0 }]
+    let outline = [ float2 { 0.0, 9.0 }, float2 { 4.0, 5.0 }, float2 { 5.0, -1.0 }, float2 { 3.0, -6.0 }, float2 { 0.0, -9.0 }, float2 { -3.0, -6.0 }, float2 { -5.0, -1.0 }, float2 { -4.0, 5.0 } ]
     add_child(h, slab(outline, 0.8, hero_gold(1.1)))
     add_child(h, rod(float3 { 0.0, 8.5, 0.5 }, float3 { 0.0, -8.5, 0.5 }, 0.35, 0.35, hero_gold(0.8)))
     for(3) k:

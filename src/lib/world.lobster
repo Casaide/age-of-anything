@@ -5,10 +5,10 @@
 // ------------------------------------------------------------------ the tick
 
 var scenario_mode = ""
-var cmds = []::Cmd             // recorded orders, in run order (replaying a scenario's)
+var cmds = []::Cmd  // recorded orders, in run order (replaying a scenario's)
 var next_cmd = 0
-var pending = []::Cmd          // orders the bots issued, waiting for their turn (bots mode)
-var next_seq = []::int         // per player
+var pending = []::Cmd   // orders the bots issued, waiting for their turn (bots mode)
+var next_seq = []::int  // per player
 
 // Issue an order this turn: it runs at the start of turn + 2, after the turn's earlier orders,
 // by (player, seq) (Commands.issue and take).
@@ -31,14 +31,14 @@ def take_pending() -> [Cmd]:
 // The scratch arrays grow with the units (training adds them).
 def grow_scratch():
     let n = u_x.length
-    for([sp_items, sp_cell, slot_x, slot_y, f_ahead, f_side, s_pushx, s_pushy, s_settle, s_stood, s_yields, s_role, s_planted,
-         c_hurt, c_hurt_by, c_engaged, c_inbound]) a:
+    for([ sp_items, sp_cell, slot_x, slot_y, f_ahead, f_side, s_pushx, s_pushy, s_settle, s_stood, s_yields, s_role, s_planted,
+          c_hurt, c_hurt_by, c_engaged, c_inbound ]) a:
         while a.length < n: a.push(0)
 
 // World.step, for the systems ported: commands, training, jobs, combat, fog, map changes,
 // flow-field solves, moves, separation.
 def step():
-    events.remove_range(0, events.length)   // (World.step: the last tick's events go)
+    events.remove_range(0, events.length)  // (World.step: the last tick's events go)
     if tick % TICKS_PER_TURN == 0:
         while next_cmd < cmds.length and cmds[next_cmd].run_tick == tick:
             run(cmds[next_cmd])
@@ -54,7 +54,7 @@ def step():
     garrison_tick()
     walls_tick()
     animals_tick()
-    grow_scratch()   // (a lamb born in a pen)
+    grow_scratch()  // (a lamb born in a pen)
     spatial_build()
     let alive = unit_changes
     heal_tick()
@@ -122,7 +122,7 @@ def state_hash() -> int:
     for(market_price) v: h = mix(h, v)
     h = walls_hash(h)
     for(br_id) id, k:
-        for([id, br_hp[k], br_up[k], br_work[k], br_payer[k]]) v: h = mix(h, v)
+        for([ id, br_hp[k], br_up[k], br_work[k], br_payer[k] ]) v: h = mix(h, v)
     h = abilities_hash(h)
     h = wear_hash(h)
     h = mix(h, shots.length / SHOT_STRIDE)
@@ -152,9 +152,9 @@ def dump_state() -> string:
         for(building_columns()) col: s += " {col[b]}"
         s += " q {b_queue[b]}\n"
     for(t_hp.length) k:
-        let v = [t_hp[k], t_speed[k], t_reach[k], t_reload[k], t_pop[k], t_train_ticks[k], t_carry_add[k], t_build_pct[k], t_shot_speed[k],
-                 t_ranged[k], t_sight_add[k]]
-        for([t_cost[k], t_atk[k], t_arm[k]]) xs:
+        let v = [ t_hp[k], t_speed[k], t_reach[k], t_reload[k], t_pop[k], t_train_ticks[k], t_carry_add[k], t_build_pct[k], t_shot_speed[k],
+                  t_ranged[k], t_sight_add[k] ]
+        for([ t_cost[k], t_atk[k], t_arm[k] ]) xs:
             for(xs) x: v.push(x)
         var line = "type {k}"
         for(v) x: line += " {x}"
@@ -251,8 +251,8 @@ def load(path:string):
     num_classes = next_int()
     for(nt):
         let v = read_ints(22)
-        for([t_speed, t_radius, t_role, t_gap, t_worker, t_harmless, t_healer, t_ranged, t_reach, t_reload, t_shot_speed,
-             t_min_damage, t_sight, t_mclass, t_pop, t_train_ticks, t_hp, t_posture, t_carry_add, t_build_pct, t_player, t_age]) col, k:
+        for([ t_speed, t_radius, t_role, t_gap, t_worker, t_harmless, t_healer, t_ranged, t_reach, t_reload, t_shot_speed,
+              t_min_damage, t_sight, t_mclass, t_pop, t_train_ticks, t_hp, t_posture, t_carry_add, t_build_pct, t_player, t_age ]) col, k:
             col.push(v[k])
         t_slot.push(next_tok())
         t_trader.push(next_int())
@@ -273,13 +273,13 @@ def load(path:string):
         bm_cost.push([]::[int])
     for(nb):
         let v = read_ints(14)
-        for([bt_size, bt_build_ticks, bt_pop, bt_sight, bt_age, bt_more_from_age, bt_water, bt_line, bt_tower, bt_farm, bt_land,
-             bt_wet, bt_workers, bt_special]) col, k:
+        for([ bt_size, bt_build_ticks, bt_pop, bt_sight, bt_age, bt_more_from_age, bt_water, bt_line, bt_tower, bt_farm, bt_land,
+              bt_wet, bt_workers, bt_special ]) col, k:
             col.push(v[k])
         bt_name.push(tokens[tp])
         tp++
         let a = read_ints(10)
-        for([bt_attacks, bt_atk_class, bt_atk, bt_range, bt_reload, bt_arrows, bt_garrison, bt_gate, bt_wall, bt_over_trees]) col, n:
+        for([ bt_attacks, bt_atk_class, bt_atk, bt_range, bt_reload, bt_arrows, bt_garrison, bt_gate, bt_wall, bt_over_trees ]) col, n:
             col.push(a[n])
         bt_cost.push(read_ints(num_resources))
         bt_drop.push(read_ints(num_resources))
@@ -318,14 +318,14 @@ def load(path:string):
     for(next_int()):
         let f = read_ints(cols.length)
         for(cols) col, k: col.push(f[k])
-        u_orders.push([]::Cmd)   // (no queued orders at the start: asserted)
+        u_orders.push([]::Cmd)  // (no queued orders at the start: asserted)
     expect("BUILDINGS")
     let bcols = building_columns()
     for(next_int()):
         let f = read_ints(bcols.length)
         for(bcols) col, k: col.push(f[k])
         b_queue.push(read_ints(next_int()))
-        b_inside.push([]::int)   // (nobody sheltering at the start: asserted)
+        b_inside.push([]::int)  // (nobody sheltering at the start: asserted)
     expect("SHOTS")
     shots = read_ints(next_int() * SHOT_STRIDE)
     expect("FOG")
@@ -367,19 +367,19 @@ def load_extras():
     t_animal = extra("t_animal")
     let g = extra("gaia")
     gaia = num_players
-    teams.push(-1)       // gaia: everyone's quarry, nobody's ally
+    teams.push(-1)  // gaia: everyone's quarry, nobody's ally
     lane_base.push(g[0])
     lost.push(0)
     claim_tiles = g[1]
     t_behave = extra("t_behave")
     t_flee = extra("t_flee")
     t_food = extra("t_food")
-    let bc = extra("bridge_cfg")   // hp, ticks, then cost per resource, armour per class
+    let bc = extra("bridge_cfg")  // hp, ticks, then cost per resource, armour per class
     br_full_hp = bc[0]
     br_ticks = bc[1]
     br_cost = bc.slice(2, num_resources)
     br_arm = bc.slice(2 + num_resources, -1)
-    let bv = extra("bridges")      // per bridge: id x0 y0 x1 y1 hp up work payer, its cells
+    let bv = extra("bridges")  // per bridge: id x0 y0 x1 y1 hp up work payer, its cells
     var o = 0
     while o < bv.length:
         br_id.push(bv[o])
@@ -403,7 +403,7 @@ def load_extras():
     wonder_ids = wd.slice(0, nw)
     wonder_since = wd.slice(nw, nw)
     wonder_owners = wd.slice(nw * 2, nw)
-    let bw = extra("bt_walls")   // per building type: length stairs ladder walkway blocks_flyers, its replaces, its pour
+    let bw = extra("bt_walls")  // per building type: length stairs ladder walkway blocks_flyers, its replaces, its pour
     var o2 = 0
     while o2 < bw.length:
         bt_length.push(bw[o2])
@@ -439,7 +439,7 @@ def load_extras():
         pour_at.set(pa[o4], pa[o4 + 1])
         pour_ids.push(pa[o4])
         o4 += 2
-    let ab = extra("abilities")   // per player: kind range radius lasts slow_pct cooldown
+    let ab = extra("abilities")  // per player: kind range radius lasts slow_pct cooldown
     for(num_players) p:
         ab_kind.push(ab[p * 6])
         ab_range.push(ab[p * 6 + 1])
@@ -453,7 +453,7 @@ def load_extras():
     for(ar.length / 2) k: ids_set(ready_ids, ready_at, ar[k * 2], ar[k * 2 + 1])
     let sl = extra("slowed")
     for(sl.length / 2) k: ids_set(slowed_ids, slowed_until, sl[k * 2], sl[k * 2 + 1])
-    let tc = extra("trails")   // every add max decay_every decay trail speed_pct, then the wear per cell
+    let tc = extra("trails")  // every add max decay_every decay trail speed_pct, then the wear per cell
     tr_every = tc[0]
     tr_add = tc[1]
     tr_max = tc[2]
@@ -547,13 +547,13 @@ def load_tech(nt:int):
         lines.push(steps)
     expect("RESEARCHED")
     for(num_players):
-        next_int()   // (its age: in ECON)
+        next_int()  // (its age: in ECON)
         researched.push(read_ints(nr))
     for(num_players):
         bm_arm.push(map(bt_size.length): []::int)
-        for([bm_research_time, bm_age_time, bm_research_cost, bm_range, bm_cost_pct, bm_trade_fee]) col: col.push(map(bt_size.length): 0)
-    for([t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
-         t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal]) col:
+        for([ bm_research_time, bm_age_time, bm_research_cost, bm_range, bm_cost_pct, bm_trade_fee ]) col: col.push(map(bt_size.length): 0)
+    for([ t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
+          t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal ]) col:
         for(nt): col.push(0)
     for(nt):
         t_tags.push([]::int)
@@ -601,7 +601,6 @@ def add_room(k:int):
     roomy.push(room)
     tight.push(tg)
 
-
 // Load a scenario file and set up what the sim works out at the start.
 def start_world(path:string):
     load(path)
@@ -614,7 +613,7 @@ def start_world(path:string):
     grow_scratch()
     make_room()
     make_chunks()
-    for(num_players) p:   // the numbers research and bonuses give, worked out here as the sim does
+    for(num_players) p:  // the numbers research and bonuses give, worked out here as the sim does
         retype(p)
         tech_refresh(p)
     next_seq = map(num_players): 0

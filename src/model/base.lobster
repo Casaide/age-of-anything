@@ -5,14 +5,14 @@
 
 // ---- colours (Godot's Color: sRGB floats)
 
-def html(h:string) -> float3:       // Color("#rrggbb")
+def html(h:string) -> float3:  // Color("#rrggbb")
     let s = if h.length and h[0] == '#': h.substring(1, h.length - 1) else: h
     def byte(i:int) -> float:
         let v, _ok = string_to_int(s.substring(i, 2), 16)
         return float(v) / 255.0
     return float3 { byte(0), byte(2), byte(4) }
 
-def lerp3(a:float3, b:float3, t:float) -> float3: return a + (b - a) * t   // Vector3.lerp, Color.lerp
+def lerp3(a:float3, b:float3, t:float) -> float3: return a + (b - a) * t  // Vector3.lerp, Color.lerp
 def darkened(c:float3, a:float) -> float3: return c * (1.0 - a)
 def lightened(c:float3, a:float) -> float3: return c + (float3_1 - c) * a
 
@@ -38,7 +38,7 @@ def from_hsv(h:float, s:float, v:float) -> float3:
     let p = v * (1.0 - s)
     let q = v * (1.0 - s * f)
     let t = v * (1.0 - s * (1.0 - f))
-    return [float3 { v, t, p }, float3 { q, v, p }, float3 { p, v, t }, float3 { p, q, v }, float3 { t, p, v }, float3 { v, p, q }][i % 6]
+    return [ float3 { v, t, p }, float3 { q, v, p }, float3 { p, v, t }, float3 { p, q, v }, float3 { t, p, v }, float3 { v, p, q } ][i % 6]
 
 // A race colour by channel (skin, skin2, cloth, team...; the team is the team key while baking).
 def col(c:Colours, ch:string) -> float3:
@@ -51,9 +51,9 @@ def has_col(c:Colours, ch:string) -> bool: return ch == "team" or c.hex.get(ch) 
 
 // ---- a built part
 
-class Anchor:                        // a leg's hip: where, its phase (radians, as Godot's), its side, and what else
-    pos:float3                       // the body says (unit_models.gd's anchor arrays: a spider's leg pair,
-    phase:float                      // fan; booleans as 0 or 1)
+class Anchor:    // a leg's hip: where, its phase (radians, as Godot's), its side, and what else
+    pos:float3   // the body says (unit_models.gd's anchor arrays: a spider's leg pair,
+    phase:float  // fan; booleans as 0 or 1)
     side:int
     more:[float]
 
@@ -62,12 +62,12 @@ def anchor(pos:float3, phase:float, side:int, more:[float]) -> Anchor: return An
 
 class Spec:
     node:MNode
-    front:MNode? = nil               // drawn over the body's other parts (the near arm)
+    front:MNode? = nil  // drawn over the body's other parts (the near arm)
     sockets = dictionary<string, float3>(11)
     anchors = []::Anchor
-    nums = dictionary<string, float3>(11)    // the spec's other numbers (torso_scale, gear_scale...; a Vector2 in x, y)
-    strs = dictionary<string, string>(5)     // and words (carry: "harness")
-    flags = []::string                       // its true flags (legs_under...)
+    nums = dictionary<string, float3>(11)  // the spec's other numbers (torso_scale, gear_scale...; a Vector2 in x, y)
+    strs = dictionary<string, string>(5)   // and words (carry: "harness")
+    flags = []::string                     // its true flags (legs_under...)
 
 def spec_of(n:MNode) -> Spec: return Spec { n }
 def sock(s:Spec, k:string, v:float3) -> Spec:
@@ -86,7 +86,7 @@ def spec_flag(s:Spec, k:string) -> Spec:
 
 // ---- materials
 
-def surf(name:string, tint:float3, units:float) -> MMat:   // a tileable texture wrapped triplanar, tinted
+def surf(name:string, tint:float3, units:float) -> MMat:  // a tileable texture wrapped triplanar, tinted
     let m = MMat { tint }
     m.tex = name
     m.triplanar = true
@@ -112,7 +112,7 @@ def decal(name:string, w:float, h:float, pos:float3, facing:float3, lit:bool, up
     n.pos = pos
     let f = normalize(facing)
     let u = if abs(dot(f, up)) < 0.95: up else: float3 { 0.0, 0.0, -1.0 }
-    set_basis(n, basis_looking_at(-f, u))   // a QuadMesh faces +z; point that along `facing`
+    set_basis(n, basis_looking_at(-f, u))  // a QuadMesh faces +z; point that along `facing`
     return n
 
 def decal(name:string, w:float, h:float, pos:float3, facing:float3, lit:bool) -> MNode:
@@ -194,17 +194,17 @@ def slab_mesh(pts:[float2], thick:float) -> MMesh:
     let m = new_mesh()
     let tris = triangulate(pts)
     let h = thick * 0.5
-    for([1.0, -1.0]) face:
+    for([ 1.0, -1.0 ]) face:
         var k = 0
         while k + 2 < tris.length:
-            let order = if face > 0.0: [tris[k], tris[k + 1], tris[k + 2]] else: [tris[k], tris[k + 2], tris[k + 1]]
+            let order = if face > 0.0: [ tris[k], tris[k + 1], tris[k + 2] ] else: [ tris[k], tris[k + 2], tris[k + 1] ]
             for(order) i: add_vertex(m, float3 { pts[i].x, pts[i].y, h * face }, float3 { 0.0, 0.0, face }, float2_0)
             k += 3
     for(pts.length) i:
         let a = pts[i]
         let b = pts[(i + 1) % pts.length]
         let nrm = normalize(float3 { b.y - a.y, a.x - b.x, 0.0 })
-        for([float3 { a.x, a.y, h }, float3 { b.x, b.y, h }, float3 { b.x, b.y, -h }, float3 { a.x, a.y, h }, float3 { b.x, b.y, -h }, float3 { a.x, a.y, -h }]) v:
+        for([ float3 { a.x, a.y, h }, float3 { b.x, b.y, h }, float3 { b.x, b.y, -h }, float3 { a.x, a.y, h }, float3 { b.x, b.y, -h }, float3 { a.x, a.y, -h } ]) v:
             add_vertex(m, v, nrm, float2_0)
     m.idx = map(m.p.length) i: i
     return m
@@ -258,7 +258,7 @@ def kerchief(into:MNode, c:Colours, neck:float3, r:float, lean:float):
     add_child(into, ring(r * 0.75, r * 1.3, team, neck, float3 { 0.0, 0.0, lean }, float3 { 1.0, 1.6, 1.0 }))
     let knot = neck + float3 { r * 0.95, -r * 0.2, r * 0.35 }
     add_child(into, blob(float3 { 1.1, 1.1, 1.0 } * r * 0.32, team, knot))
-    add_child(into, slab([float2 { 0.0, 0.0 }, float2 { r * 0.45, -r * 0.2 }, float2 { r * 0.25, -r * 1.3 }, float2 { -r * 0.15, -r * 1.1 }], 0.5, team, knot + float3 { -r * 0.1, -r * 0.1, 0.3 }))
+    add_child(into, slab([ float2 { 0.0, 0.0 }, float2 { r * 0.45, -r * 0.2 }, float2 { r * 0.25, -r * 1.3 }, float2 { -r * 0.15, -r * 1.1 } ], 0.5, team, knot + float3 { -r * 0.1, -r * 0.1, 0.3 }))
 
 // ---- helpers the model files share (unit_models.gd: harness, _sword, curved, grip, tassel, _bright_iron,
 // _box; creature_kit.gd: _ik)
@@ -345,7 +345,7 @@ def walk_step(pose:string) -> float:
     let b, _b = string_to_int(nums[1])
     return float(a) / float(b)
 
-def rot2d(v:float2, deg:float) -> float2:   // Vector2.rotated (degrees)
+def rot2d(v:float2, deg:float) -> float2:  // Vector2.rotated (degrees)
     let cs = cos(deg)
     let sn = sin(deg)
     return float2 { v.x * cs - v.y * sn, v.x * sn + v.y * cs }
@@ -394,7 +394,7 @@ def glb_named(n:MNode, name:string) -> MNode?:
         if deeper: return deeper
     return nil
 
-def coat_mat(d:dictionary<string, MMat>, k:string) -> MMat:   // a coat's material by name (it must have it)
+def coat_mat(d:dictionary<string, MMat>, k:string) -> MMat:  // a coat's material by name (it must have it)
     let m = d.get(k)
     assert m
     return m

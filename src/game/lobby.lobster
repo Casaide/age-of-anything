@@ -13,62 +13,62 @@
 // after the lobby's helpers (roster_views, balance_for_match).
 
 let FE_DESIGN = float2 { 1600.0, 950.0 }
-let FE_UNIT_INCHES = 0.6        // the setup page's stage: a unit for each this much of its width on the screen
-let FE_GRASS = float4 { 0.306, 0.431, 0.165, 1.0 }   // #4e6e2a
-let FE_LEVELS = ["Easy", "Normal", "Hard"]
-let FE_NOT_MAPS = ["choke_test", "river_test", "hill_test"]   // test maps (the debug view lists them)
-let FE_STAGE_ROLES = ["spear", "infantry", "archer", "large", "skirmisher", "worker", "catapult", "healer"]
-let FE_BAKE_AFTER = 0.6         // seconds of no typing before a side's army is made again
-let FE_RULES = ["default", "bronze", "anything"]   // the Race Lab's rules
-let FE_TRAIT_COLS = [float4 { 0.66, 0.85, 0.47, 1.0 }, float4 { 0.95, 0.79, 0.3, 1.0 }, float4 { 0.91, 0.54, 0.44, 1.0 }, float4 { 0.95, 0.79, 0.3, 1.0 }, float4 { 0.85, 0.78, 0.63, 1.0 }]
-let FE_STRUCK = float4 { 0.91, 0.54, 0.44, 1.0 }   // #e88a70: a lacked line
+let FE_UNIT_INCHES = 0.6                            // the setup page's stage: a unit for each this much of its width on the screen
+let FE_GRASS = float4 { 0.306, 0.431, 0.165, 1.0 }  // #4e6e2a
+let FE_LEVELS = [ "Easy", "Normal", "Hard" ]
+let FE_NOT_MAPS = [ "choke_test", "river_test", "hill_test" ]  // test maps (the debug view lists them)
+let FE_STAGE_ROLES = [ "spear", "infantry", "archer", "large", "skirmisher", "worker", "catapult", "healer" ]
+let FE_BAKE_AFTER = 0.6                             // seconds of no typing before a side's army is made again
+let FE_RULES = [ "default", "bronze", "anything" ]  // the Race Lab's rules
+let FE_TRAIT_COLS = [ float4 { 0.66, 0.85, 0.47, 1.0 }, float4 { 0.95, 0.79, 0.3, 1.0 }, float4 { 0.91, 0.54, 0.44, 1.0 }, float4 { 0.95, 0.79, 0.3, 1.0 }, float4 { 0.85, 0.78, 0.63, 1.0 } ]
+let FE_STRUCK = float4 { 0.91, 0.54, 0.44, 1.0 }  // #e88a70: a lacked line
 
 class FeSide:
-    typed = ""                  // what's in the box
-    rolled = ""                 // what the dice rolled (shown when the box is empty)
+    typed = ""   // what's in the box
+    rolled = ""  // what the dice rolled (shown when the box is empty)
     reroll = 0
-    level = 0                   // the AI's level (FE_LEVELS)
+    level = 0  // the AI's level (FE_LEVELS)
     team = 0
     race:JV
-    gen = 0                     // bumped by each new race; its army is made once typing stops
+    gen = 0  // bumped by each new race; its army is made once typing stops
     views_gen = -1
-    views_bake = -1               // bake_gen when its views were made (made again when wanted parts are baked)
+    views_bake = -1  // bake_gen when its views were made (made again when wanted parts are baked)
     dirty_at = -1.0
-    views:[UV] = []             // the few the stage shows (fe_stage_pick)
+    views:[UV] = []  // the few the stage shows (fe_stage_pick)
     picks:[JV] = []
-    traits:[[string]] = []      // per group (bonuses, own research, lacks, heroes, notes): its lines
+    traits:[[string]] = []  // per group (bonuses, own research, lacks, heroes, notes): its lines
 
 class FeTrait:
     title:string
     one:string
 
-let FE_TRAITS = [FeTrait { "Bonuses", "bonus" }, FeTrait { "Own research", "own research" }, FeTrait { "Lacks", "lack" }, FeTrait { "Heroes", "hero" }, FeTrait { "Notes", "note" }]
+let FE_TRAITS = [ FeTrait { "Bonuses", "bonus" }, FeTrait { "Own research", "own research" }, FeTrait { "Lacks", "lack" }, FeTrait { "Heroes", "hero" }, FeTrait { "Notes", "note" } ]
 
 var fe_sides = []::FeSide
-var fe_page = "title"           // title, setup, lab, saves, net
-var fe_back = "title"           // where the saves and network pages go back to
-var fe_k = 1.0                  // screen px per design px
-var fe_w = 1600.0               // the window's width in design px
-var fe_field = -1               // the box that has the keyboard: a side (0..3), 10 + a lab side, 20 the address; -1 none
+var fe_page = "title"  // title, setup, lab, saves, net
+var fe_back = "title"  // where the saves and network pages go back to
+var fe_k = 1.0         // screen px per design px
+var fe_w = 1600.0      // the window's width in design px
+var fe_field = -1      // the box that has the keyboard: a side (0..3), 10 + a lab side, 20 the address; -1 none
 var fe_maps = []::string
 var fe_map_k = 0
 var fe_map_json = jobj()
 var fe_mode_k = 0
-var fe_modes = []::[string]     // id, name, desc
+var fe_modes = []::[string]  // id, name, desc
 var fe_rules = jobj()
-var fe_tip_lines = []::string   // the hover card this frame
-var fe_hosting = false          // the battle setup is for hosting a network game
-var fe_note = ""                // a line at the foot (the saves page, the network page)
+var fe_tip_lines = []::string  // the hover card this frame
+var fe_hosting = false         // the battle setup is for hosting a network game
+var fe_note = ""               // a line at the foot (the saves page, the network page)
 var fe_frames = 0
-var fe_pad = false              // the pad was used last (its hints shown)
+var fe_pad = false  // the pad was used last (its hints shown)
 var fe_hosts = []::LanHost
 var fe_scanned = false
 var fe_address = "127.0.0.1"
 var fe_lab_rules = 0
-let fe_lab_scroll = [0.0, 0.0]
-var fe_lab_views = [[]::UV, []::UV]
-let fe_lab_gen = [-1, -1]
-let fe_lab_bake = [-1, -1]          // bake_gen when the lab's views were made
+let fe_lab_scroll = [ 0.0, 0.0 ]
+var fe_lab_views = [ []::UV, []::UV ]
+let fe_lab_gen = [ -1, -1 ]
+let fe_lab_bake = [ -1, -1 ]  // bake_gen when the lab's views were made
 
 // The lobby's views let go (a view's tree is a cycle: parent and kids, freed only by free_tree).
 def fe_free_views():
@@ -76,12 +76,12 @@ def fe_free_views():
         uv_free_all(s.views)
         s.views = []
     for(fe_lab_views) vs: uv_free_all(vs)
-    fe_lab_views = [[]::UV, []::UV]
+    fe_lab_views = [ []::UV, []::UV ]
 var fe_test_lines = []::string
 var fe_tip_k = 0
 var fe_tip_t = 0.0
 var fe_tips = []::string
-var loop_round = 0              // (tests: lobbyloop's matches so far)
+var loop_round = 0  // (tests: lobbyloop's matches so far)
 
 // ---- layout
 
@@ -122,9 +122,9 @@ def fe_well(at:float2, size:float2): ui_box(at, size, -1, ui_look.well, false)
 def fe_gem(c:float2, r:float, col:float4):
     let dark = col * float4 { 0.75, 0.75, 0.75, 1.0 }
     let lit = col + (float4_1 - col) * 0.15
-    let pts = [c + float2 { 0.0, -r }, c + float2 { r, 0.0 }, c + float2 { 0.0, r }, c + float2 { -r, 0.0 }]
-    ui_paint_poly(pts, [dark, dark, dark, dark], [0, 1, 2, 0, 2, 3], ui_material("lacquer"))
-    ui_paint_poly([pts[0], pts[1], c, pts[3]], [lit, lit, lit, lit], [0, 1, 2, 0, 2, 3], ui_material("lacquer"))
+    let pts = [ c + float2 { 0.0, -r }, c + float2 { r, 0.0 }, c + float2 { 0.0, r }, c + float2 { -r, 0.0 } ]
+    ui_paint_poly(pts, [ dark, dark, dark, dark ], [ 0, 1, 2, 0, 2, 3 ], ui_material("lacquer"))
+    ui_paint_poly([ pts[0], pts[1], c, pts[3] ], [ lit, lit, lit, lit ], [ 0, 1, 2, 0, 2, 3 ], ui_material("lacquer"))
     for(4) k: ui_line(pts[k], pts[(k + 1) % 4], 1.2, float4 { 0.0, 0.0, 0.0, 0.7 })
 
 // The cast "vs": a lacquered medallion in a bronze rim.
@@ -147,13 +147,13 @@ def fe_banner_cut(at:float2, size:float2, shape:string, tail:float) -> [float2]:
     let yb = at.y + size.y
     let w = size.x
     let out = []::float2
-    if shape == "swallowtail": return [float2 { x1, yb }, float2 { x0 + w * 0.5, yb - tail }, float2 { x0, yb }]
-    if shape == "pointed": return [float2 { x1, yb - tail }, float2 { x0 + w * 0.5, yb }, float2 { x0, yb - tail }]
+    if shape == "swallowtail": return [ float2 { x1, yb }, float2 { x0 + w * 0.5, yb - tail }, float2 { x0, yb } ]
+    if shape == "pointed": return [ float2 { x1, yb - tail }, float2 { x0 + w * 0.5, yb }, float2 { x0, yb - tail } ]
     if shape == "notched":
         out.push(float2 { x1, yb })
-        for([0.72, 0.28]) kk:
+        for([ 0.72, 0.28 ]) kk:
             let cx = x0 + w * kk
-            for([float2 { cx + tail * 0.6, yb }, float2 { cx, yb - tail * 0.8 }, float2 { cx - tail * 0.6, yb }]) p: out.push(p)
+            for([ float2 { cx + tail * 0.6, yb }, float2 { cx, yb - tail * 0.8 }, float2 { cx - tail * 0.6, yb } ]) p: out.push(p)
         out.push(float2 { x0, yb })
         return out
     if shape == "tongues":
@@ -190,7 +190,7 @@ def fe_banner_cut(at:float2, size:float2, shape:string, tail:float) -> [float2]:
             k--
         return out
     let lift = if shape == "fringe": tail * 0.4 else: 0.0
-    return [float2 { x1, yb - lift }, float2 { x0, yb - lift }]
+    return [ float2 { x1, yb - lift }, float2 { x0, yb - lift } ]
 
 def fe_banner(at:float2, size:float2, lk:UiLook, team:float4, tail_d:float):
     let rod_w = 7.0 * fe_k
@@ -206,7 +206,7 @@ def fe_banner(at:float2, size:float2, lk:UiLook, team:float4, tail_d:float):
             pts.push(p + off)
             if k > 0:
                 let a = (k - 1) * 2
-                for([a, a + 2, a + 1, a + 1, a + 2, a + 3]) q: idx.push(q)
+                for([ a, a + 2, a + 1, a + 1, a + 2, a + 3 ]) q: idx.push(q)
         ui_paint_poly(pts, map(pts): cols, idx, kind)
     cloth(float2 { 5.0, 7.0 } * fe_k * 0.6, float4 { 0.0, 0.0, 0.0, 0.35 }, ui_material("felt"))
     let lum = lk.cloth.x * 0.3 + lk.cloth.y * 0.59 + lk.cloth.z * 0.11
@@ -243,7 +243,7 @@ def fe_banner(at:float2, size:float2, lk:UiLook, team:float4, tail_d:float):
     ui_line(ra + float2 { 0.0, 2.0 * fe_k }, rb + float2 { 0.0, 2.0 * fe_k }, rod_w, float4 { 0.0, 0.0, 0.0, 0.5 })
     ui_line(ra, rb, rod_w, lk.metal * float4 { 0.75, 0.75, 0.75, 1.0 })
     ui_line(ra - float2 { 0.0, rod_w * 0.22 }, rb - float2 { 0.0, rod_w * 0.22 }, rod_w * 0.3, lk.metal + (float4_1 - lk.metal) * 0.25)
-    for([ra, rb]) p: ui_stud(p, rod_w * 0.9, lk.metal)
+    for([ ra, rb ]) p: ui_stud(p, rod_w * 0.9, lk.metal)
 
 // A toggle (the AI's level): a button, the lit one outlined in the accent.
 def fe_toggle(at:float2, size:float2, label:string, on:bool) -> bool:
@@ -265,7 +265,7 @@ def fe_box(id:int, at:float2, size:float2, text:string, placeholder:string, fs:i
     if fe_field == id: ui_outline(at + float2_1 * 2.0, size - float2_1 * 4.0, 2.0 * fe_k, float4 { ui_look.accent.x, ui_look.accent.y, ui_look.accent.z, 0.6 })
     if gl.button("mouse1") == 1 and fe_over(at, size): fe_focus(id, text)
     let caret = if fe_field == id and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""
-    let s = if text == "": placeholder else: text + caret   // (empty: the placeholder stays, the caret before it)
+    let s = if text == "": placeholder else: text + caret  // (empty: the placeholder stays, the caret before it)
     let col = if text == "": ui_look.dim else: ui_look.text
     var f = fs
     while f > 10 and ui_text_wf(s, f, 0) > size.x - 28.0 * fe_k: f -= 2
@@ -303,7 +303,7 @@ def fe_tip(rows:[string]): fe_tip_lines = rows
 
 def fe_draw_tip():
     if not fe_tip_lines.length: return
-    ui_flush()   // (what's under it first)
+    ui_flush()  // (what's under it first)
     let fs = fz(15.0)
     var w = 0.0
     for(fe_tip_lines) l: w = max(w, ui_text_w(l, fs))
@@ -324,7 +324,7 @@ def fe_load_maps():
     let ids = filter(map_ids()) m: not has_s(FE_NOT_MAPS, m)
     fe_maps = append(filter(ids) m: find_string(m, "test") < 0, filter(ids) m: find_string(m, "test") >= 0)
     let d = at(load_json(lib_root + "/modes.json"), "modes")
-    fe_modes = map(d.keys) id: [id, gstr(at(d, id), "name", id), gstr(at(d, id), "desc", "")]
+    fe_modes = map(d.keys) id: [ id, gstr(at(d, id), "name", id), gstr(at(d, id), "desc", "") ]
     fe_tips = map(glist(load_json(lib_root + "/tips.json"), "tips")) t: as_str(t)
 
 let fe_map_meshes = dictionary<string, resource<mesh>>(16)
@@ -345,10 +345,10 @@ def fe_map_mesh(id:string, m:JV) -> resource<mesh>:
     let idx = []::int
     def quad(c:float2, r:float2, col:float4):
         let n = pos.length
-        for([float2 { 0.0, -r.y }, float2 { r.x, 0.0 }, float2 { 0.0, r.y }, float2 { -r.x, 0.0 }]) d:
+        for([ float2 { 0.0, -r.y }, float2 { r.x, 0.0 }, float2 { 0.0, r.y }, float2 { -r.x, 0.0 } ]) d:
             pos.push(float3 { c.x + d.x, c.y + d.y, 0.0 })
             cols.push(col)
-        for([0, 1, 2, 0, 2, 3]) q: idx.push(n + q)
+        for([ 0, 1, 2, 0, 2, 3 ]) q: idx.push(n + q)
     for(h) y:
         let row = as_str(rows[y])
         for(w) x:
@@ -443,9 +443,9 @@ def fe_regen(i:int):
     s.gen++
     s.dirty_at = seconds_elapsed()
     let words = race_words_of(race, identity_of(rstr(race, "creature"), rstr(race, "family")), fe_rules)
-    s.traits = [words.bonuses, words.own, words.lacks,
-                map(glist(race, "heroes")) h: "{gstr(h, "name", "?")}: {gstr(h, "temper", "")} ({gstr(h, "aura", "")})",
-                map(glist(race, "notes")) n: as_str(n)]
+    s.traits = [ words.bonuses, words.own, words.lacks,
+                 map(glist(race, "heroes")) h: "{gstr(h, "name", "?")}: {gstr(h, "temper", "")} ({gstr(h, "aura", "")})",
+                 map(glist(race, "notes")) n: as_str(n) ]
 
 // The few that show off a race on the stage, a line each, in this order while there's room.
 def fe_stage_pick(units:[JV], room:int) -> [JV]:
@@ -461,7 +461,7 @@ def fe_stage_pick(units:[JV], room:int) -> [JV]:
 
 def fe_view(u:JV, p:int, right:bool) -> UV:
     let tc = team_rgb[p % team_rgb.length]
-    let v = uv_new()   // (parts not baked yet are wanted as it's drawn: baked between frames, then the view made again)
+    let v = uv_new()  // (parts not baked yet are wanted as it's drawn: baked between frames, then the view made again)
     uv_build(v, at(u, "recipe"), float3 { tc.x, tc.y, tc.z }, 20)
     v.node.scl = float2_1 * 0.85
     v.pose_steps = 8
@@ -479,8 +479,8 @@ def fe_muster(now:float):
             s.views = map(s.picks) u: fe_view(u, i, s.team != fe_sides[0].team or (fe_sides.length == 2 and i == 1))
             s.views_gen = s.gen
             s.views_bake = bake_gen
-            return   // (one a frame)
-        if s.views_gen == s.gen and s.views_bake != bake_gen:   // (its parts baked since: on their rigs now)
+            return                                             // (one a frame)
+        if s.views_gen == s.gen and s.views_bake != bake_gen:  // (its parts baked since: on their rigs now)
             uv_free_all(s.views)
             s.views = map(s.picks) u: fe_view(u, i, s.team != fe_sides[0].team or (fe_sides.length == 2 and i == 1))
             s.views_bake = bake_gen
@@ -495,12 +495,12 @@ def fe_draw_units(vs:[UV], spots:[float2], z:float, p:int, alpha:float, dt:float
         let v = vs[k]
         v.node.pos = float2_0
         uv_process(v, dt)
-        let screen = [1.5 * z, 0.0, 0.0, 1.5 * z, spots[k].x, spots[k].y]
+        let screen = [ 1.5 * z, 0.0, 0.0, 1.5 * z, spots[k].x, spots[k].y ]
         let ds = draw_list(v, ID_XF)
         let fs = map(ds) d: frame_index("p:" + d.key)
-        if (find(ds) d: not bakes.get(d.key)) < 0:   // (a unit shows once all its parts are baked: not a weapon on its own)
+        if (find(ds) d: not bakes.get(d.key)) < 0:  // (a unit shows once all its parts are baked: not a weapon on its own)
             for(ds) d, n:
-                if fs[n] >= 0: sprite_xf(fs[n], xf_mul(screen, d.xf), float4 { tc.x, tc.y, tc.z, d.alpha * alpha })   // (none: hidden from here)
+                if fs[n] >= 0: sprite_xf(fs[n], xf_mul(screen, d.xf), float4 { tc.x, tc.y, tc.z, d.alpha * alpha })  // (none: hidden from here)
     flush_sprites()
 
 // The roster in words: each line's name, the creature's noun left off when most share it; a line the race lacks
@@ -537,8 +537,8 @@ def fe_lack_reason(race:JV, slot:string) -> string:
     let blds = at(load_json(lib_root + "/buildings.json"), "buildings")
     let cr = creature(rstr(race, "creature"))
     let fam = family(rstr(race, "family"))
-    let srcs = [cr, fam]
-    let who = [gstr(cr, "plural", "They"), capitalize(rstr(race, "family")) + " folk"]
+    let srcs = [ cr, fam ]
+    let who = [ gstr(cr, "plural", "They"), capitalize(rstr(race, "family")) + " folk" ]
     for(srcs) src, k:
         for(gstrs(src, "lacks")) id:
             if id == slot: return "{who[k]} have no such line"
@@ -547,7 +547,7 @@ def fe_lack_reason(race:JV, slot:string) -> string:
 
 // The roster on hover: every line, age by age.
 def fe_lines_card(race:JV) -> [string]:
-    let rows = ["{rstr(race, "name")}: every line"]
+    let rows = [ "{rstr(race, "name")}: every line" ]
     for(glist(race, "units")) u:
         let r = at(u, "recipe")
         let why = fe_lack_reason(race, rstr(r, "slot"))
@@ -611,7 +611,7 @@ def fe_traits(s:FeSide, at:float2, w:float, h:float, fs:int):
                 ui_fill(float2 { x, at.y }, float2 { cw, h }, float4 { 0.0, 0.0, 0.0, 0.55 })
                 ui_outline(float2 { x, at.y }, float2 { cw, h }, max(1.0, fe_k), ui_look.frame * float4 { 0.7, 0.7, 0.7, 1.0 })
                 ui_text_f(float2 { x + 8.0 * fe_k, at.y + (h - float(fs)) / 2.0 - 1.0 * fe_k }, label, fs, FE_TRAIT_COLS[g], 1, 0.0)
-                if fe_over(float2 { x, at.y }, float2 { cw, h }): fe_tip(append([t.title], map(rows_) l: "-  " + l))
+                if fe_over(float2 { x, at.y }, float2 { cw, h }): fe_tip(append([ t.title ], map(rows_) l: "-  " + l))
             x += cw + 6.0 * fe_k
     if first_note != "" and x < at.x + w - 40.0 * fe_k:
         let room = int((at.x + w - x) / (0.52 * float(fs + 2)))
@@ -639,7 +639,7 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
     if ui_button(float2 { x + w - tw, y }, float2 { tw, top_h }, "", false): fe_open_tree(i)
     tb_icon("research", float2 { x + w - tw + 12.0 * fe_k, y + 8.0 * fe_k }, 20.0 * fe_k, 1.0)
     ui_text(float2 { x + w - tw + 40.0 * fe_k, y + 7.0 * fe_k }, "Tech tree", fz(17.0), lk.text)
-    if fe_over(float2 { x + w - tw, y }, float2 { tw, top_h }): fe_tip(["Everything this race can build, train and research, and its bonuses"])
+    if fe_over(float2 { x + w - tw, y }, float2 { tw, top_h }): fe_tip([ "Everything this race can build, train and research, and its bonuses" ])
     if compact and i > 0 and not (fe_hosting and i == 1):
         var lx = x + w - tw - 8.0 * fe_k
         var k = FE_LEVELS.length - 1
@@ -659,7 +659,7 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
     let line_y = y + (if compact: 42.0 else: 56.0) * fe_k
     let lfs = fz(if compact: 17.0 else: 19.0)
     ui_text_f(float2 { x + 20.0 * fe_k, line_y }, line, lfs, lk.text, 1, 1.5 * fe_k)
-    if fe_over(float2 { x, y }, float2 { w, bh }) and glist(s.race, "notes").length: fe_tip(append(["The generator\'s notes"], map(glist(s.race, "notes")) n: as_str(n)))
+    if fe_over(float2 { x, y }, float2 { w, bh }) and glist(s.race, "notes").length: fe_tip(append([ "The generator\'s notes" ], map(glist(s.race, "notes")) n: as_str(n)))
     if compact:
         let tx = x + 20.0 * fe_k + ui_text_wf(line, lfs, 1) + 14.0 * fe_k
         fe_traits(s, float2 { tx, line_y - 1.0 * fe_k }, x + w - tx - 8.0 * fe_k, 24.0 * fe_k, fz(12.0))
@@ -687,7 +687,7 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
             let along = (float(k) + 0.75) / (float(n) + 0.5)
             in_at + float2 { in_size.x * (if right: 1.0 - along else: along), in_size.y * feet }
         fe_draw_units(vs, spots, zm / 1.5, i, if forging: 0.32 else: 1.0, dt)
-    if forging:   // the forge veil: the old army dims while the new one is made
+    if forging:  // the forge veil: the old army dims while the new one is made
         ui_fill(in_at, in_size, float4 { 0.05, 0.03, 0.01, 0.35 })
         ui_text_c(in_at.x + in_size.x / 2.0, in_at.y + in_size.y / 2.0 - 12.0 * fe_k, "Forging the army...", fz(20.0), lk.accent, 2, 1.5 * fe_k)
     elif not compact:
@@ -732,7 +732,7 @@ def fe_title_page(dt:float) -> string:
     for(ny) j:
         for(nx) i:
             let a = j * (nx + 1) + i
-            for([a, a + nx + 2, a + 1, a, a + nx + 1, a + nx + 2]) q: idx.push(q)
+            for([ a, a + nx + 2, a + 1, a, a + nx + 1, a + nx + 2 ]) q: idx.push(q)
     ui_paint_poly(pts, cols, idx, ui_material("felt"))
     let zm = 3.0 * fe_k
     let cw = ws.x / zm
@@ -740,7 +740,7 @@ def fe_title_page(dt:float) -> string:
         let s = fe_sides[i]
         if s.views.length and s.views_gen == s.gen:
             let n = s.views.length
-            let vs = map(n) k: s.views[n - 1 - k]   // the big ones at the front
+            let vs = map(n) k: s.views[n - 1 - k]  // the big ones at the front
             let spots = map(n) k: float2 { (if i == 0: cw * (0.42 - 0.055 * float(k)) else: cw * (0.58 + 0.055 * float(k))) * zm, hill_at.y + hill_h * (if k % 2 == 0: 0.7 else: 0.86) }
             fe_draw_units(vs, spots, zm / 1.5, i, 1.0, dt)
     // the column: crest, title, tag line, the plaque of buttons, the foot
@@ -754,7 +754,7 @@ def fe_title_page(dt:float) -> string:
     ui_box(plaque_at, plaque_size, 1, lk.frame * float4 { 0.6, 0.6, 0.6, 1.0 }, true)
     var y = plaque_at.y + 18.0 * fe_k
     var go = ""
-    for([["Battle the AI", "setup"], ["Play on the network", "net"], ["Load game", "saves"], ["Race Lab", "lab"], ["Quit", "quit"]]) item, k:
+    for([ [ "Battle the AI", "setup" ], [ "Play on the network", "net" ], [ "Load game", "saves" ], [ "Race Lab", "lab" ], [ "Quit", "quit" ] ]) item, k:
         let h = (if k == 0: 72.0 else: 52.0) * fe_k
         if ui_button(float2 { cx - 164.0 * fe_k, y }, float2 { 328.0 * fe_k, h }, "", k == 0): go = item[1]
         if k == 0: ui_text_c(cx, y + h / 2.0 - 19.0 * fe_k, item[0], fz(30.0), lk.title, 2, 1.5 * fe_k)
@@ -769,7 +769,7 @@ def fe_title_page(dt:float) -> string:
 // Returns the rows' height.
 def volume_rows(at:float2, w:float, h:float, gap:float) -> float:
     let lk = ui_look
-    for(["Music", "Sound"]) name, k:
+    for([ "Music", "Sound" ]) name, k:
         let y = at.y + float(k) * (h + gap)
         let lv = if k == 0: music_level else: sound_level
         var nv = lv
@@ -800,7 +800,7 @@ def fe_setup_page(dt:float) -> string:
     let col_w = (fe_w - 52.0 - centre_w - 44.0) / 2.0
     let left = filter(n) i: fe_sides[i].team == fe_sides[0].team
     let right = filter(n) i: fe_sides[i].team != fe_sides[0].team
-    for([left, right]) col, c:
+    for([ left, right ]) col, c:
         let x = 26.0 + float(c) * (col_w + 22.0 + centre_w + 22.0)
         let each = (row_h - 30.0 * float(col.length - 1)) / float(max(1, col.length))
         for(col) i, r:
@@ -836,7 +836,7 @@ def fe_setup_page(dt:float) -> string:
     if ui_button(D(cx + 30.0, y), D(36.0, 36.0), "<", false): fe_mode_k = (fe_mode_k + fe_modes.length - 1) % fe_modes.length
     if ui_button(D(cx + centre_w - 66.0, y), D(36.0, 36.0), ">", false): fe_mode_k = (fe_mode_k + 1) % fe_modes.length
     ui_text_c(mid * fe_k, (y + 6.0) * fe_k, "Mode: " + fe_modes[fe_mode_k][1], fz(19.0), lk.text, 0, 0.0)
-    if fe_over(D(cx + 70.0, y), D(centre_w - 140.0, 36.0)) and fe_modes[fe_mode_k][2] != "": fe_tip(append([fe_modes[fe_mode_k][1]], fe_wrap(fe_modes[fe_mode_k][2], fz(15.0), 520.0 * fe_k)))
+    if fe_over(D(cx + 70.0, y), D(centre_w - 140.0, 36.0)) and fe_modes[fe_mode_k][2] != "": fe_tip(append([ fe_modes[fe_mode_k][1] ], fe_wrap(fe_modes[fe_mode_k][2], fz(15.0), 520.0 * fe_k)))
     lobby_mode = fe_modes[fe_mode_k][0]
     // the AI's level (1v1; a team game has it in each AI's panel), Start, the hint
     let by = 950.0 - 22.0 - 30.0 - 100.0
@@ -852,13 +852,13 @@ def fe_setup_page(dt:float) -> string:
     if ui_button(D(cx + 8.0, by), D(card_w, 100.0), "", true): go = "start"
     ui_text_c(mid * fe_k, (by + 24.0) * fe_k, if fe_hosting: "Host the Battle" else: "Start Battle", fz(40.0), lk.title * float4 { breathe, breathe, breathe, 1.0 }, 2, 2.0 * fe_k)
     ui_text_c(mid * fe_k, (by + 112.0) * fe_k, if fe_pad: "X: roll the dice  -  Start: start  -  B: back" elif fe_hosting: "Start: wait for the other player to join" else: "Esc in battle: pause and menu", fz(16.0), lk.dim, 0, 0.0)
-    if fe_frames == 1 and fe_pad: ui_focus = start_k   // (a pad starts on Start)
+    if fe_frames == 1 and fe_pad: ui_focus = start_k  // (a pad starts on Start)
     // the pad: X rolls the dice of the panel the focus is in (yours when it's elsewhere), Start starts, B goes back
     if gl.button("controller_x") == 1:
         var k = 0
         if ui_focus >= 0 and ui_focus < ui_hits_last.length:
             let f = ui_hits_last[ui_focus].at
-            for([left, right]) col, c:
+            for([ left, right ]) col, c:
                 if (c == 0 and f.x < cx * fe_k) or (c == 1 and f.x > (cx + centre_w) * fe_k):
                     let each = (row_h - 30.0 * float(col.length - 1)) / float(max(1, col.length))
                     for(col) i, r:
@@ -871,7 +871,7 @@ def fe_setup_page(dt:float) -> string:
 
 // Load a game: the saved matches, newest first (gen/save.lobster files in saves/, each with a line about it).
 let FE_SAVES = 8
-def fe_saves() -> [string], [string]:   // paths, rows_
+def fe_saves() -> [string], [string]:  // paths, rows_
     let names, _, times = scan_folder("saves", true)
     let found = []::string
     let when = []::int
@@ -965,34 +965,34 @@ def fe_net_page() -> string:
 // ---- the Race Lab (scenes/race_lab.gd): a prompt per side, each race's card, both armies lined up on the turf
 
 // A race as a card of rows_ (name, prompt, creature and culture, the key, notes, every unit with its stats).
-def fe_card_lines(race:JV, rules_name:string) -> [[string]]:   // [text, style]: t title, d dim, f faint, n note, b bold, plain
+def fe_card_lines(race:JV, rules_name:string) -> [[string]]:  // [text, style]: t title, d dim, f faint, n note, b bold, plain
     let out = []::[string]
     let cr = creature(rstr(race, "creature"))
-    out.push([rstr(race, "name"), "t"])
-    out.push(["\"" + gstr(race, "prompt", "") + "\"", ""])
-    out.push(["{gstr(cr, "plural", "")}  -  {rstr(race, "family")}  -  {rules_name}  -  reroll {gint(race, "reroll", 0)}", "d"])
-    out.push(["key " + substring(gstr(race, "key", ""), 0, min(16, gstr(race, "key", "").length)) + "...", "f"])
-    out.push(["", ""])
-    for(glist(race, "notes")) n: out.push(["-  " + as_str(n), "n"])
-    if glist(race, "notes").length: out.push(["", ""])
+    out.push([ rstr(race, "name"), "t" ])
+    out.push([ "\"" + gstr(race, "prompt", "") + "\"", "" ])
+    out.push([ "{gstr(cr, "plural", "")}  -  {rstr(race, "family")}  -  {rules_name}  -  reroll {gint(race, "reroll", 0)}", "d" ])
+    out.push([ "key " + substring(gstr(race, "key", ""), 0, min(16, gstr(race, "key", "").length)) + "...", "f" ])
+    out.push([ "", "" ])
+    for(glist(race, "notes")) n: out.push([ "-  " + as_str(n), "n" ])
+    if glist(race, "notes").length: out.push([ "", "" ])
     for(glist(race, "units")) u:
         let r = at(u, "recipe")
         let e = at(u, "eval")
         let cost = gobj(e, "cost")
-        out.push(["{rstr(r, "name")}   ({gstr(r, "role", "")}, tier {gint(r, "tier", 1)})", "b"])
-        out.push(["   {gint(cost, "food", 0)} food  {gint(cost, "wood", 0)} wood" + (if gint(cost, "gold", 0) > 0: "  {gint(cost, "gold", 0)} gold" else: "") + "  -  {gint(e, "train_time", 0)}s  -  pop {gint(e, "pop", 1)}  -  {gint(e, "points", 0)} pts", ""])
+        out.push([ "{rstr(r, "name")}   ({gstr(r, "role", "")}, tier {gint(r, "tier", 1)})", "b" ])
+        out.push([ "   {gint(cost, "food", 0)} food  {gint(cost, "wood", 0)} wood" + (if gint(cost, "gold", 0) > 0: "  {gint(cost, "gold", 0)} gold" else: "") + "  -  {gint(e, "train_time", 0)}s  -  pop {gint(e, "pop", 1)}  -  {gint(e, "points", 0)} pts", "" ])
         let arm = gobj(e, "armour")
-        out.push(["   HP {gint(e, "hp", 0)}  ATK {gint(e, "attack", 0)} {gstr(e, "damage", "")}  ARM {gint(arm, "melee", 0)}/{gint(arm, "pierce", 0)}  RNG {gint(e, "range", 0)}  SPD {gint(e, "speed", 0)}", ""])
+        out.push([ "   HP {gint(e, "hp", 0)}  ATK {gint(e, "attack", 0)} {gstr(e, "damage", "")}  ARM {gint(arm, "melee", 0)}/{gint(arm, "pierce", 0)}  RNG {gint(e, "range", 0)}  SPD {gint(e, "speed", 0)}", "" ])
         let bonus = gobj(e, "bonus")
-        if bonus.keys.length: out.push(["   " + concat_string(map(sorted_strs(bonus.keys)) k: "+{gint(bonus, k, 0)} vs {k}", ", "), ""])
+        if bonus.keys.length: out.push([ "   " + concat_string(map(sorted_strs(bonus.keys)) k: "+{gint(bonus, k, 0)} vs {k}", ", "), "" ])
         var tl = "  "
         for(gstrs(e, "tags")) t:
             if tl.length + t.length > 48:
-                out.push([tl, "f"])
+                out.push([ tl, "f" ])
                 tl = "  "
             tl += " " + t
-        out.push([tl, "f"])
-        out.push(["", ""])
+        out.push([ tl, "f" ])
+        out.push([ "", "" ])
     return out
 
 def fe_lab_page(dt:float) -> string:
@@ -1015,7 +1015,7 @@ def fe_lab_page(dt:float) -> string:
             s.reroll++
             fe_regen(k)
         if ui_button(float2 { x + half - bw - 10.0 * fe_k, top.y }, float2 { bw, 46.0 * fe_k }, "Save", false):
-            launch_subprocess(["/bin/mkdir", "-p", "races"])
+            launch_subprocess([ "/bin/mkdir", "-p", "races" ])
             let path = "races/" + substring(rstr(s.race, "key"), 0, 12) + ".json"
             fe_note = if write_file(path, stringify(s.race)): "Saved " + path else: "Could not save " + path
     if ui_button(float2 { 138.0 * fe_k + half + 10.0 * fe_k, top.y }, float2 { mid_w - 20.0 * fe_k, 46.0 * fe_k }, rules_name, false):
@@ -1189,7 +1189,7 @@ def run_front(page0:string, typed:[string]) -> string:
     front_shown = true
     fe_frames = 0
     fe_field = -1
-    var typing = false   // text input on: only while a box has the keyboard (on a phone it brings up the keyboard)
+    var typing = false  // text input on: only while a box has the keyboard (on a phone it brings up the keyboard)
     var shot_frame = -1
     while gl.frame():
         if bake_quit: return ""
@@ -1231,7 +1231,7 @@ def run_front(page0:string, typed:[string]) -> string:
             tree_tick()
             ui_flush()
             fe_frames++
-            if shot != "" and fe_frames == shot_frame + 5:   // (captures: lobbytree)
+            if shot != "" and fe_frames == shot_frame + 5:  // (captures: lobbytree)
                 gl.screenshot(shot)
                 return ""
             continue
@@ -1274,7 +1274,7 @@ def run_front(page0:string, typed:[string]) -> string:
                 gl.frame()
                 fe_loader("Balancing the armies by fighting them: round 1 of 4", 0.16)
                 gl.screenshot(shot + ".loader.png")
-                bake_progress = fn(st, f): fe_loader(st, f)   // (the loader as the bake drives it: bake_breath)
+                bake_progress = fn(st, f): fe_loader(st, f)  // (the loader as the bake drives it: bake_breath)
                 gl.frame()
                 bake_progress("Making the armies", 0.5 + 0.45 * 60.0 / 165.0)
                 gl.screenshot(shot + ".bake.png")
@@ -1298,9 +1298,9 @@ def run_front(page0:string, typed:[string]) -> string:
                 fe_hosts = []
                 fe_field = 20
                 gl.set_text_input(fe_address)
-            if go == "lab" and fe_sides.length != 2:   // (the lab is two sides)
+            if go == "lab" and fe_sides.length != 2:  // (the lab is two sides)
                 fe_set_map(max(0, str_index(fe_maps, "reed_meadow")))
-        elif go == "host":   // from the network page: the battle setup, for hosting
+        elif go == "host":  // from the network page: the battle setup, for hosting
             fe_hosting = true
             if fe_sides.length != 2: fe_set_map(max(0, str_index(fe_maps, "reed_meadow")))
             fe_page = "setup"
@@ -1322,7 +1322,7 @@ def run_front(page0:string, typed:[string]) -> string:
                 hosting = true
                 net_people = 2
                 return "host"
-            fe_loader("Setting up the battle", 0.02)   // (shown at once: the start's work comes before the next frame)
+            fe_loader("Setting up the battle", 0.02)  // (shown at once: the start's work comes before the next frame)
             gl.frame()
             fe_loader("Setting up the battle", 0.02)
             return "play"

@@ -14,7 +14,7 @@ let TRADE_OUT = 0
 let TRADE_HOME = 1
 let CHUNKS = 20
 
-var market_price = []::int     // per resource: gold per lot
+var market_price = []::int  // per resource: gold per lot
 var r_repair_speed = 0
 var r_repair_cost = 0
 var r_trade_min = 0

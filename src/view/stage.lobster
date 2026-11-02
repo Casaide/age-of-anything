@@ -31,7 +31,7 @@ def kit_stubs(body:JV):
     let k = kit_kits.get(rstr(body, "kit"))
     if not k: return
     let parts = at(k, "parts")
-    for([["head", "head"], ["leg", "leg"], ["hind", "leg"]]) rs:
+    for([ [ "head", "head" ], [ "leg", "leg" ], [ "hind", "leg" ] ]) rs:
         if has(parts, rs[0]) and (rs[0] != "head" or has(k, "head")):
             let id = rstr(parts, rs[0])
             if not has(lib_parts, id):

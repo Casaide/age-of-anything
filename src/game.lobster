@@ -82,42 +82,42 @@ let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
 var watch = false
-var composed = false            // the pack has part bakes: units are composed (view/), not flipbooks
-var voxel_units = false         // `voxels`: every unit a procedural voxel body (game/voxel_units.lobster), a trial
-var follow = false              // the camera follows the fighting (captures)
-var selftest = false            // play a few orders through the controls, check the sim took them, quit
+var composed = false     // the pack has part bakes: units are composed (view/), not flipbooks
+var voxel_units = false  // `voxels`: every unit a procedural voxel body (game/voxel_units.lobster), a trial
+var follow = false       // the camera follows the fighting (captures)
+var selftest = false     // play a few orders through the controls, check the sim took them, quit
 var shot = ""
 var shot_at = 0.0
 var start_speed = 1.0
 var look_x = -1
-var swap_arg = ""              // swap:<prompt>@<seconds>: become that race then (tests and captures)
+var swap_arg = ""  // swap:<prompt>@<seconds>: become that race then (tests and captures)
 var swap_at = -1.0
-var rules_arg = ""               // rules:<id>: the host rules (else the pack's)
-var mods_arg = ""                // mods:a,b: mods to merge over the data (else the pack's)
-var lobby_rerolls = [0, 0]      // each side's reroll (the generator's other takes on the same prompt)
-var rebake_art = false          // rebake: every prop baked in Lobster, even those the pack has
-var mesh_dir = ""               // meshes:<dir>: the mesh library (mesh_export.gd library): parts the pack lacks are baked here
-var mode_arg = ""               // mode:<id>: the lobby's game mode (data/modes.json)
-var map_arg = ""                // map:<id>: the lobby's map (tests and captures)
-var races_arg = ""             // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
+var rules_arg = ""            // rules:<id>: the host rules (else the pack's)
+var mods_arg = ""             // mods:a,b: mods to merge over the data (else the pack's)
+var lobby_rerolls = [ 0, 0 ]  // each side's reroll (the generator's other takes on the same prompt)
+var rebake_art = false        // rebake: every prop baked in Lobster, even those the pack has
+var mesh_dir = ""             // meshes:<dir>: the mesh library (mesh_export.gd library): parts the pack lacks are baked here
+var mode_arg = ""             // mode:<id>: the lobby's game mode (data/modes.json)
+var map_arg = ""              // map:<id>: the lobby's map (tests and captures)
+var races_arg = ""            // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
 var look_y = -1
-var place_arg = ""              // place:<building>: one finished by your Town Center at the start (captures)
-var skirmish = false            // the lobby's Skirmish: both armies on the map at once, marching on each other
-var army_n = 0                  // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
-var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
-var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
-var page_arg = ""               // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
-var lab_arg = false             // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
-var tree_arg = false            // tree: the tech tree page open from the start (captures)
-var tree_hover_arg = ""         // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
-var padtest = false             // padtest: a fake pad plays a few seconds, then quit
-var net_people = 2              // people in a network match (host:<n>)
-var net_others = []::Link       // a host's joiners after the first
-var hosting = false             // host: a network match, waiting for a player to join (net/lockstep.lobster)
-var join_ip = ""                // join:<ip>: play the second side of the match a host there sets up
-var reload_at = -1.0            // reload:<seconds>: save then, load 5 s later (tests and captures)
+var place_arg = ""         // place:<building>: one finished by your Town Center at the start (captures)
+var skirmish = false       // the lobby's Skirmish: both armies on the map at once, marching on each other
+var army_n = 0             // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+var hurt_pct = -1          // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
+var raze_at = -1.0         // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
+var page_arg = ""          // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
+var lab_arg = false        // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
+var tree_arg = false       // tree: the tech tree page open from the start (captures)
+var tree_hover_arg = ""    // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
+var padtest = false        // padtest: a fake pad plays a few seconds, then quit
+var net_people = 2         // people in a network match (host:<n>)
+var net_others = []::Link  // a host's joiners after the first
+var hosting = false        // host: a network match, waiting for a player to join (net/lockstep.lobster)
+var join_ip = ""           // join:<ip>: play the second side of the match a host there sets up
+var reload_at = -1.0       // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
-var touch_play = false          // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
+var touch_play = false  // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
 for(args) a, k:
     if k >= 2:
         if a == "watch": watch = true
@@ -125,7 +125,7 @@ for(args) a, k:
         let key, val = split_string(a, ":")
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
-        if key == "perf": perf_for = string_to_float(val)   // (game/perf.lobster: the drawing's cost in the window)
+        if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
         if a == "follow": follow = true
@@ -139,7 +139,7 @@ for(args) a, k:
         if key == "mods": mods_arg = val
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
-        if key == "host":   // host:<n>: n people (more than two: a 2v2 on the four-player map)
+        if key == "host":  // host:<n>: n people (more than two: a 2v2 on the four-player map)
             hosting = true
             net_people = max(2, string_to_int(val))
         if a == "padtest": padtest = true
@@ -167,12 +167,12 @@ for(args) a, k:
 // Tests and captures are silent (Dominic: no sound from testing); `mute` silences a game too.
 if has_s(args, "mute") or shot != "" or selftest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0: sound_on = false
 
-var ME = 0                      // the side you command (1 for the one who joins a network match)
+var ME = 0  // the side you command (1 for the one who joins a network match)
 var in_net_match = false
-let TEAM_COLS = [float4 { 0.85, 0.22, 0.18, 1.0 }, float4 { 0.20, 0.42, 0.85, 1.0 }, float4 { 0.85, 0.75, 0.2, 1.0 },
-                 float4 { 0.25, 0.7, 0.3, 1.0 }]
+let TEAM_COLS = [ float4 { 0.85, 0.22, 0.18, 1.0 }, float4 { 0.20, 0.42, 0.85, 1.0 }, float4 { 0.85, 0.75, 0.2, 1.0 },
+                  float4 { 0.25, 0.7, 0.3, 1.0 } ]
 let WHITE = float4 { 1.0, 1.0, 1.0, 1.0 }
-let ANIMAL_COL = float4 { 0.54, 0.48, 0.35, 1.0 }   // ArtKit.ANIMAL_TEAM: nobody's
+let ANIMAL_COL = float4 { 0.54, 0.48, 0.35, 1.0 }  // ArtKit.ANIMAL_TEAM: nobody's
 
 def team_col(p:int) -> float4:
     if p == gaia: return ANIMAL_COL
@@ -186,14 +186,14 @@ def iso_inv(p:float2) -> float2:
     let b = p.y / 0.024
     return float2 { (a + b) / 2.0, (b - a) / 2.0 }
 
-var cam = float2_0          // art px at the middle of the window
-var zoom = 2.0              // screen px per art px
+var cam = float2_0  // art px at the middle of the window
+var zoom = 2.0      // screen px per art px
 
 def to_screen(p:float2) -> float2: return (p - cam) * zoom + float(gl.window_size()) / 2.0
 def from_screen(p:float2) -> float2: return (p - float(gl.window_size()) / 2.0) / zoom + cam
-var fake_mouse = float2 { -1.0, -1.0 }   // the self-test's mouse (screen px), when set
+var fake_mouse = float2 { -1.0, -1.0 }  // the self-test's mouse (screen px), when set
 def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))
-def mouse_milli() -> float2: return pick_milli(from_screen(mouse_px()))   // (on raised ground: the hill under the mouse)
+def mouse_milli() -> float2: return pick_milli(from_screen(mouse_px()))  // (on raised ground: the hill under the mouse)
 
 // ------------------------------------------------------------------ the ground
 
@@ -219,7 +219,7 @@ def build_ground():
         let vy = v / (W + 1)
         var sum = float4_0
         var n = 0
-        for([int2 { -1, -1 }, int2 { 0, -1 }, int2 { -1, 0 }, int2 { 0, 0 }]) d:
+        for([ int2 { -1, -1 }, int2 { 0, -1 }, int2 { -1, 0 }, int2 { 0, 0 } ]) d:
             let x = vx + d.x
             let y = vy + d.y
             if x >= 0 and y >= 0 and x < W and y < H:
@@ -236,12 +236,12 @@ def build_ground():
         let m = iso(float(cx * 1000 + 500), float(cy * 1000 + 500))
         pos.push(float3 { m.x, m.y, 0.0 })
         col.push(float4 { cols[c].x, cols[c].y, cols[c].z, 1.0 })
-        for([int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }]) d:
+        for([ int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 } ]) d:
             let p = iso(float((cx + d.x) * 1000), float((cy + d.y) * 1000))
             let k = corner[(cy + d.y) * (W + 1) + cx + d.x]
             pos.push(float3 { p.x, p.y, 0.0 })
             col.push(float4 { k.x, k.y, k.z, 1.0 })
-        for([0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4]) v: idx.push(n + v)
+        for([ 0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4 ]) v: idx.push(n + v)
     ground_mesh = gl.new_mesh("PC", pos, col, []::float3, []::float2, []::float2, idx)
 
 // ------------------------------------------------------------------ what the view remembers
@@ -254,15 +254,15 @@ class Corpse:
     dir:int
     t0:float
 
-var clock_s = 0.0                       // seconds of play shown
-var p_id = []::int                  // the last tick's positions, for drawing between ticks
+var clock_s = 0.0   // seconds of play shown
+var p_id = []::int  // the last tick's positions, for drawing between ticks
 var p_x = []::int
 var p_y = []::int
 let unit_dir = dictionary<int, int>(1024)
 let attack_t0 = dictionary<int, float>(1024)
 var corpses = []::Corpse
-let hit_t0 = dictionary<int, float>(1024)      // when a unit was last hit (the flash)
-var shot_from = dictionary<int, int>(1024)     // a shot (its by * 65536 + landing tick) -> the tick it was first seen
+let hit_t0 = dictionary<int, float>(1024)   // when a unit was last hit (the flash)
+var shot_from = dictionary<int, int>(1024)  // a shot (its by * 65536 + landing tick) -> the tick it was first seen
 let last_kind = dictionary<int, int>(1024)
 let last_owner = dictionary<int, int>(1024)
 
@@ -284,9 +284,9 @@ def on_screen(x:int, y:int) -> bool:
 var my_units = 0
 var my_age = 1
 var my_researched = 0
-var my_done = []::int        // ids of my finished buildings, last tick
+var my_done = []::int  // ids of my finished buildings, last tick
 
-var last_battle = -100.0          // when there was last fighting on screen (the theme's battle layer)
+var last_battle = -100.0  // when there was last fighting on screen (the theme's battle layer)
 
 def sounds_after_step():
     for(events) e:
@@ -357,13 +357,13 @@ def after_step():
 // ------------------------------------------------------------------ drawing the world
 
 class Drawable:
-    y:float          // sort point (art px)
-    seq:int          // then the order added (a unit's parts, in its draw order)
-    f:int            // frame
+    y:float  // sort point (art px)
+    seq:int  // then the order added (a unit's parts, in its draw order)
+    f:int    // frame
     x:float
-    ay:float         // anchor y
+    ay:float  // anchor y
     col:float4
-    xf:[float]       // a composed part's transform (else empty: drawn at its anchor)
+    xf:[float]  // a composed part's transform (else empty: drawn at its anchor)
 
 var draws = []::Drawable
 
@@ -388,9 +388,9 @@ class Ghost:
     puffed:bool = false
 var ghosts = []::Ghost
 var frame_dt = 1.0 / 60.0
-let view_stage = VNode {}       // canvas units to art px
+let view_stage = VNode {}  // canvas units to art px
 view_stage.scl = float2_1 * 1.5
-let ID_XF = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]
+let ID_XF = [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
 
 // The line step a type is drawn in (as retype picks it): the recipe its units look like now.
 def type_step(k:int) -> int:
@@ -435,7 +435,7 @@ import .model.bears
 import .model.mods_active
 import .model.models
 import .view.part_bake
-import .view.geom      // (the dead laid down in 3D and baked: view/corpse.lobster)
+import .view.geom  // (the dead laid down in 3D and baked: view/corpse.lobster)
 import .view.rig3d
 import .view.corpse
 import .model.props
@@ -450,14 +450,14 @@ import .game.art_kit
 import .game.ruin
 import .game.art_kit_buildings
 import .game.pack_data
-import .game.bake_missing   // (here: it makes views to see what parts they wear)
+import .game.bake_missing  // (here: it makes views to see what parts they wear)
 import .view.voxel
 import .game.voxel_units
 
 def job_of(i:int) -> string:
     if u_moving[i] != 0: return ""
     if u_task[i] == GATHER:
-        let r = (u_carry_kind[i] - 1 + num_resources) % num_resources   // (GDScript: a -1 index is the last)
+        let r = (u_carry_kind[i] - 1 + num_resources) % num_resources  // (GDScript: a -1 index is the last)
         let name = resource_names[r]
         return if name == "wood": "chop" elif name == "stone" or name == "gold": "mine" else: "forage"
     if u_task[i] == BUILD: return "build"
@@ -503,7 +503,7 @@ def add_view(v:UV, sort_y:float, tc:float4, shade:float):
     for(draw_list(v, ID_XF)) d:
         add_xf(frame_index("p:" + d.key), xf_mul(sx, d.xf), sort_y, float4 { tc.x, tc.y, tc.z, d.alpha * shade })
 
-import .game.town   // (here: it uses the views)
+import .game.town  // (here: it uses the views)
 
 def collect_views(alpha:float):
     let alive = dictionary<int, int>(1024)
@@ -553,7 +553,7 @@ def collect_views(alpha:float):
     for(ghosts) g:
         uv_process(g.view, frame_dt)
         for(g.view.crew) c: crew_tick(c)
-        if clock_s - g.t0 >= 1.9 and not g.puffed:   // (combat_fx: the body goes in a puff of dust)
+        if clock_s - g.t0 >= 1.9 and not g.puffed:  // (combat_fx: the body goes in a puff of dust)
             g.puffed = true
             fx_puff(g.view.node.pos - float2 { 0.0, g.view.lift }, g.view.die_tip)
         let fade = clamp(1.0 - (clock_s - g.t0 - 2.2) / 1.8, 0.0, 1.0)
@@ -672,10 +672,10 @@ def collect_units(alpha:float):
             let tc = team_col(u_owner[i])
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
             let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
-            let up = if voxel_units: lift_at(x, y) * 1.5 else: 0.0   // standing on the hill (canvas px; iso is 1.5x), as the views do
+            let up = if voxel_units: lift_at(x, y) * 1.5 else: 0.0  // standing on the hill (canvas px; iso is 1.5x), as the views do
             add(f, p.x, p.y - up, p.y, float4 { tc.x, tc.y, tc.z, flash })
-            if voxel_units and f >= 0:   // its shadow on the ground, sorted just under it: in the ground layer a hill's
-                let sf = vx_shadow_for(f)   // near edge (draw_occluder) was painted over it under the feet, and it floated
+            if voxel_units and f >= 0:     // its shadow on the ground, sorted just under it: in the ground layer a hill's
+                let sf = vx_shadow_for(f)  // near edge (draw_occluder) was painted over it under the feet, and it floated
                 if sf >= 0: add(sf, p.x, p.y - up, p.y - 0.5, float4 { 1.0, 1.0, 1.0, 1.0 })
 
 def collect_corpses():
@@ -690,7 +690,7 @@ def collect_corpses():
             add(f, p.x, p.y, p.y - 2.0, float4 { tc.x, tc.y, tc.z, 0.35 + 0.65 * fade })
 
 // Models.LINKS: a wall tile's eight neighbours, in its arms' order.
-let LINKS = [int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { -1, 0 }, int2 { -1, -1 }, int2 { 0, -1 }, int2 { 1, -1 }]
+let LINKS = [ int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { -1, 0 }, int2 { -1, -1 }, int2 { 0, -1 }, int2 { 1, -1 } ]
 
 def wall_like(b:int) -> bool:
     let k = b_kind[b]
@@ -722,7 +722,7 @@ class BldSeen:
     damage:float
 
 var bld_seen = dictionary<int, BldSeen>(256)
-let RUIN_AT = [0.3, 0.55, 0.8]   // damage at which a building shows its battered, breaking and collapsed stages (D-171)
+let RUIN_AT = [ 0.3, 0.55, 0.8 ]  // damage at which a building shows its battered, breaking and collapsed stages (D-171)
 
 // A finished building's damage (0 whole .. 1 nearly down).
 def damage_of(b:int) -> float:
@@ -743,7 +743,7 @@ def collect_buildings():
         let k = b_kind[b]
         let p = b_owner[b]
         let cell = b_cy[b] * W + b_cx[b]
-        if fx_ruins.length: fx_clear_ruins(int4 { b_cx[b], b_cy[b], b_sx[b], b_sy[b] })   // built over a ruin (D-172)
+        if fx_ruins.length: fx_clear_ruins(int4 { b_cx[b], b_cy[b], b_sx[b], b_sy[b] })  // built over a ruin (D-172)
         if teams[p] == teams[ME] or fog[ME][cell] != 0:
             let pick = (b_id[b] * 7 + b_cx[b] * 3 + b_cy[b]) % 4
             let key = building_key(arch_of[p], bt_name[k], ages[p], pick)
@@ -753,7 +753,7 @@ def collect_buildings():
                 if b_done[b] == 0:
                     let st = clamp(b_progress[b] * 4 / max(1, bt_build_ticks[k]), 0, 3)
                     if look.stages[st] != "-": name = look.stages[st]
-                else:   // broken up as it's damaged (BuildingArt._broken)
+                else:  // broken up as it's damaged (BuildingArt._broken)
                     let damage = damage_of(b)
                     for(RUIN_AT) at_least, n:
                         if damage >= at_least and n < look.ruins.length: name = look.ruins[n]
@@ -764,7 +764,7 @@ def collect_buildings():
                 let flat = walk_over[cell] == 1
                 if b_done[b] == 1: seen.set(b_id[b], BldSeen { look, float2 { at.x, at.y - up }, at.y, flat, p, int4 { b_cx[b], b_cy[b], b_sx[b], b_sy[b] }, damage_of(b) })
                 let col = float4 { tc.x, tc.y, tc.z, shade }
-                if look.arms.length and b_done[b] == 1:   // a wall joined to its neighbours: arms going up the screen under its post, coming down over it
+                if look.arms.length and b_done[b] == 1:  // a wall joined to its neighbours: arms going up the screen under its post, coming down over it
                     let links = wall_links(b)
                     for(2) pass:
                         if pass == 1: add(frame_index(name), at.x, at.y - up, at.y, col)
@@ -779,8 +779,8 @@ def collect_buildings():
                     add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
                     if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
     bld_seen = seen
-    fx_ruins = filter(fx_ruins) r: clock_s - r.t0 < RUIN_STAYS + RUIN_FADE   // (they burn out, lie there, fade)
-    for(fx_ruins) r:   // the fallen buildings' ruins, fading at the end
+    fx_ruins = filter(fx_ruins) r: clock_s - r.t0 < RUIN_STAYS + RUIN_FADE  // (they burn out, lie there, fade)
+    for(fx_ruins) r:                                                        // the fallen buildings' ruins, fading at the end
         let f = frame_index(r.frame)
         let shade = if fog[ME][r.cells.y * W + r.cells.x] == 2 or teams[r.owner] == teams[ME]: 1.0 else: 0.6
         let tc = team_col(r.owner)
@@ -788,7 +788,7 @@ def collect_buildings():
         let sort_y = if r.flat: -100000.0 + r.sort_y else: r.sort_y
         let fade = ruin_fade(r, clock_s)
         if fade >= 1.0: add(f, r.at.x, r.at.y, sort_y, col)
-        elif f >= 0: draws.push(Drawable { sort_y, draws.length, -5, r.at.x, r.at.y, col, [fade, float(f)] })   // (fading: drawn alone)
+        elif f >= 0: draws.push(Drawable { sort_y, draws.length, -5, r.at.x, r.at.y, col, [ fade, float(f) ] })  // (fading: drawn alone)
 
 var map_name_now = "reed_meadow"
 
@@ -829,7 +829,7 @@ def refresh_paths() -> bool:
             if path_anchor_hub.get(p, float2 { -9.0, -9.0 }).x < -8.0:
                 let at = door_of(mine[0])
                 let res = []::float2
-                for(["food", "wood"]) kind:
+                for([ "food", "wood" ]) kind:
                     let t = nearest_resource_edge(str_index(resource_names, kind) + 1, at)
                     if t.x >= 0.0: res.push(t)
                 path_anchor_hub.set(p, at)
@@ -859,7 +859,7 @@ def collect_doodads():
                 if d.scale == 1.0: add(f, at.x, ay, at.y, float4 { 1.0, 1.0, 1.0, shade })
                 else:
                     let fr = frames[f]
-                    add_xf(f, [d.scale * fr.k, 0.0, 0.0, d.scale * fr.k, at.x - d.scale * fr.k * float(fr.ox), ay - d.scale * fr.k * float(fr.oy)], at.y, float4 { 1.0, 1.0, 1.0, shade })
+                    add_xf(f, [ d.scale * fr.k, 0.0, 0.0, d.scale * fr.k, at.x - d.scale * fr.k * float(fr.ox), ay - d.scale * fr.k * float(fr.oy) ], at.y, float4 { 1.0, 1.0, 1.0, shade })
 
 def collect_props():
     collect_doodads()
@@ -897,7 +897,7 @@ def draw_world(alpha:float):
         if not relief_built:
             build_relief()
             relief_built = true
-            refresh_paths()   // (doodads keep off the paths, so they must be there first)
+            refresh_paths()  // (doodads keep off the paths, so they must be there first)
             build_doodads(map_name_now, doodads) t: keep_clear(t) or on_path(t)
         mask_version = map_version
         mask_tick = tick
@@ -907,7 +907,7 @@ def draw_world(alpha:float):
         gl.scale(zoom):
             gl.translate(-float2 { floor(cam.x), floor(cam.y) }):
                 draw_ground(zoom / ART_K)
-                draw_relief(zoom / ART_K)   // (screen px an art px: finer art, D-173)
+                draw_relief(zoom / ART_K)  // (screen px an art px: finer art, D-173)
                 draw_fog()
                 draws = []::Drawable
                 collect_props()
@@ -917,8 +917,8 @@ def draw_world(alpha:float):
                 else:
                     collect_units(alpha)
                     collect_corpses()
-                for(occluders) o, k: draws.push(Drawable { o.sort_y, draws.length, -2, float(k), 0.0, float4_1, [] })   // a hill's near-edge tops: what's behind it hides
-                draws.push(Drawable { -50000.0, draws.length, -4, 0.0, 0.0, float4_1, [] })   // the selection rings: on the ground, over its flat props and shadows, under everything standing
+                for(occluders) o, k: draws.push(Drawable { o.sort_y, draws.length, -2, float(k), 0.0, float4_1, [] })  // a hill's near-edge tops: what's behind it hides
+                draws.push(Drawable { -50000.0, draws.length, -4, 0.0, 0.0, float4_1, [] })                            // the selection rings: on the ground, over its flat props and shadows, under everything standing
                 qsort_in_place(draws) a, b: a.y < b.y or (a.y == b.y and a.seq < b.seq)
                 b_sheet = -1
                 for(draws) d:
@@ -931,11 +931,11 @@ def draw_world(alpha:float):
                         draw_rings(alpha)
                         draw_orders(alpha)
                         b_sheet = -1
-                    elif d.f == -3:   // a damaged building's cracks, sorted with it (game/town.lobster)
+                    elif d.f == -3:  // a damaged building's cracks, sorted with it (game/town.lobster)
                         flush_sprites()
                         gl.scale(1.5): draw_cracks_of(int(d.x))
                         b_sheet = -1
-                    elif d.f == -5: sprite_faded(int(d.xf[1]), d.x, d.ay, d.col, d.xf[0])   // a ruin fading out
+                    elif d.f == -5: sprite_faded(int(d.xf[1]), d.x, d.ay, d.col, d.xf[0])  // a ruin fading out
                     elif d.xf.length: sprite_xf(d.f, d.xf, d.col)
                     else: sprite(d.f, d.x, d.ay, d.col)
                 flush_sprites()
@@ -947,7 +947,6 @@ def draw_world(alpha:float):
                         if v and v.node.visible: v.node.pos - float2 { 0.0, v.lift } else: float2 { -1000000000.0, 0.0 }
                 draw_marks(alpha)
 
-
 // ------------------------------------------------------------------ the lobby (type your races; Lobster makes, balances and sets them up)
 // Two prompts, each race shown as you type (the generator takes a few milliseconds); Enter balances
 // them by fighting every line against every other (gen/balance.lobster) and starts the match with
@@ -955,7 +954,7 @@ def draw_world(alpha:float):
 
 def rules_id() -> string: return if rules_arg != "": rules_arg else: pack_rules
 var lobby_map = "reed_meadow"
-let MODE_IDS = ["standard", "fortress", "siege"]   // data/modes.json (gen/modes.lobster)
+let MODE_IDS = [ "standard", "fortress", "siege" ]  // data/modes.json (gen/modes.lobster)
 var lobby_mode = "standard"
 var lobby_prompts = []::string  // each side's words (the lobby's, or races:A|B)
 var lobby_teams = []::int       // each side's team (a team game from the lobby)
@@ -994,7 +993,7 @@ def balance_for_match(races:[JV], rules:JV, rounds:int) -> [string]:
     auto_balance(races, rules, 2, rounds, 10) round, units, rates, mean, off:
         report.push("round {round + 1}: {off} of {units.length} lines more than 10 points off the mean ({rr_fights} fights, {seconds_elapsed() - t0} s)")
         gl.frame()
-        if front_shown:   // (from the lobby's pages: the match loader, game/lobby.lobster)
+        if front_shown:  // (from the lobby's pages: the match loader, game/lobby.lobster)
             fe_loader("Balancing the armies by fighting them: round {round + 1} of {rounds}", 0.05 + 0.45 * float(round + 1) / float(rounds))
         else:
             gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
@@ -1007,7 +1006,7 @@ def balance_for_match(races:[JV], rules:JV, rounds:int) -> [string]:
             for(units) un, k:
                 let pct = rr_price_pct.get(price_key(races, un), 100)
                 lobby_text(float2 { 40.0 * u + float(k / 18) * 560.0 * u, 260.0 * u + float(k % 18) * 22.0 * u },
-                    "{rates[k]}%  {un.label}" + (if pct != 100: "  price {pct}%" else: ""), float4 { 0.75, 0.72, 0.66, 1.0 })
+                           "{rates[k]}%  {un.label}" + (if pct != 100: "  price {pct}%" else: ""), float4 { 0.75, 0.72, 0.66, 1.0 })
     return report
 
 // The fights' prices on the races: every step of a priced line costs its percent.
@@ -1027,7 +1026,7 @@ def apply_prices(races:[JV]):
 
 // CombatFx.shot_kind: what a unit's shots are, by its weapon's tags.
 def shot_kind_of(tags:[string]) -> string:
-    for(sorted_strs(mod_shots.keys)) k:   // (a mod's look first, by its tag)
+    for(sorted_strs(mod_shots.keys)) k:  // (a mod's look first, by its tag)
         if has_s(tags, gstr(at(mod_shots, k), "tag", "")): return k
     if has_s(tags, "great_sling"): return "sling_stone"
     if has_s(tags, "catapult"): return "boulder"
@@ -1051,7 +1050,6 @@ def race_facts(races:[JV]):
         let kind = shot_kind_of(tags)
         unit_shotk.set(k, kind)
         unit_shot.set(k, if kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
-
 
 // ------------------------------------------------------------------ becoming another race mid-match (gen/swap.lobster)
 // N: type a race; Enter: it's balanced against the others by fights (the match waits), then your
@@ -1081,8 +1079,8 @@ def become(prompt:string):
     let old = rstr(su_races[ME], "name")
     swap_race(ME, race)
     race_facts(su_races)
-    bake_missing_parts()   // (the newcomer's parts the pack lacks, before any of its views are built: with no pack, all of them)
-    bake_buildings_for(arch_of)   // (and its culture's buildings)
+    bake_missing_parts()         // (the newcomer's parts the pack lacks, before any of its views are built: with no pack, all of them)
+    bake_buildings_for(arch_of)  // (and its culture's buildings)
     banner = old + " become " + rstr(race, "name") + " (" + rstr(race, "creature") + ", " + rstr(race, "family") + "): balanced in {rr_fights} fights, {int((seconds_elapsed() - t0) * 1000.0)} ms"
     banner_t = seconds_elapsed()
     print banner
@@ -1119,15 +1117,15 @@ def draw_banner():
 
 // ------------------------------------------------------------------ selection and orders
 
-var selected = []::int          // unit ids
-let groups = dictionary<int, [int]>(10)   // control group (0 for key 1) -> unit ids
+var selected = []::int                   // unit ids
+let groups = dictionary<int, [int]>(10)  // control group (0 for key 1) -> unit ids
 var last_group = -1
 var last_group_at = -10.0
-var sel_building = 0            // building id
+var sel_building = 0  // building id
 var drag_from = float2_0
 var dragging = false
 var build_menu = false
-var placing = -1                // building type being placed
+var placing = -1                 // building type being placed
 var wall_from = int2 { -1, -1 }  // where a wall's drag began (a cell), while placing walls or gates (bt_line)
 
 def selected_units() -> [int]: return filter(selected) id: index_of(id) >= 0
@@ -1171,7 +1169,7 @@ def click_select(m:float2):
 def box_select(a:float2, b:float2):
     let lo = float2 { min(a.x, b.x), min(a.y, b.y) }
     let hi = float2 { max(a.x, b.x), max(a.y, b.y) }
-    if not shift_held() or sel_building != 0: selected = []::int   // (shift adds to the selection)
+    if not shift_held() or sel_building != 0: selected = []::int  // (shift adds to the selection)
     sel_building = 0
     for(u_x.length) i:
         if u_owner[i] == ME:
@@ -1179,9 +1177,9 @@ def box_select(a:float2, b:float2):
             if s.x >= lo.x and s.x <= hi.x and s.y >= lo.y and s.y <= hi.y and not contains(selected, u_id[i]): selected.push(u_id[i])
     if selected.length: say(ME, "select")
 
-var arming_attack = false       // the Attack-move button (or R): the next left click is where
-var arming_ability = false      // the race's ability button: the next left click is where
-var pad_lb_held = false         // LB held on a pad (game/pad.lobster): orders queue, A adds to the selection
+var arming_attack = false   // the Attack-move button (or R): the next left click is where
+var arming_ability = false  // the race's ability button: the next left click is where
+var pad_lb_held = false     // LB held on a pad (game/pad.lobster): orders queue, A adds to the selection
 
 // The armed order (attack-move or the race's ability) given at m.
 def give_armed(m:float2):
@@ -1211,7 +1209,7 @@ def order(m:float2, attack_move:bool = false):
     let x = int(mm.x)
     let y = int(mm.y)
     if x < 0 or y < 0 or x >= W * TILE or y >= H * TILE: return
-    let q = if gl.button("left shift") >= 1 or pad_lb_held: 1 else: 0   // (shift, or LB held on a pad: queued)
+    let q = if gl.button("left shift") >= 1 or pad_lb_held: 1 else: 0  // (shift, or LB held on a pad: queued)
     if sel_building != 0 and not selected.length:
         issue_cmd(ME, CMD_RALLY, []::int, sel_building, x, y, 0)
         return
@@ -1227,45 +1225,45 @@ def order(m:float2, attack_move:bool = false):
     let mine = unit_at_screen(m, true)
     if herd.length:
         if b >= 0 and b_owner[b] == ME and b_done[b] == 1 and is_pen(b): issue_cmd(ME, CMD_PEN, herd, b_id[b], 0, 0, 0)
-        else: issue_cmd(ME, CMD_MOVE, herd, x, y, 0, 0, q)   // (our sheep only ever walk)
+        else: issue_cmd(ME, CMD_MOVE, herd, x, y, 0, 0, q)  // (our sheep only ever walk)
     if not ids.length: return
     let others = filter(ids) id: not contains(workers, id)
     let bridge = bridge_on(c)
-    let am = attack_move or gl.button("left ctrl") >= 1 or gl.button("right ctrl") >= 1   // (Ctrl: attack-move; A is the camera's)
+    let am = attack_move or gl.button("left ctrl") >= 1 or gl.button("right ctrl") >= 1  // (Ctrl: attack-move; A is the camera's)
     if am and bridge >= 0 and br_up[bridge] == 1 and foe < 0:
-        issue_cmd(ME, CMD_ATTACK, ids, br_id[bridge], 0, 0, 0, q)   // attack-click a bridge: break it
+        issue_cmd(ME, CMD_ATTACK, ids, br_id[bridge], 0, 0, 0, q)  // attack-click a bridge: break it
     elif am:
         issue_cmd(ME, CMD_ATTACK_MOVE, ids, x, y, 0, 0, q)
     elif foe >= 0:
-        issue_cmd(ME, CMD_ATTACK, ids, u_id[foe], 0, 0, 0, q)   // a foe, or an animal to hunt
+        issue_cmd(ME, CMD_ATTACK, ids, u_id[foe], 0, 0, 0, q)  // a foe, or an animal to hunt
     elif mine >= 0 and u_owner[mine] == ME and is_animal(mine) and workers.length:
-        issue_cmd(ME, CMD_ATTACK, ids, u_id[mine], 0, 0, 0, q)   // slaughter one of our sheep for its food
+        issue_cmd(ME, CMD_ATTACK, ids, u_id[mine], 0, 0, 0, q)  // slaughter one of our sheep for its food
     elif b >= 0 and is_enemy(b_owner[b], ME) and fog[ME][c] != 0:
         issue_cmd(ME, CMD_ATTACK, ids, b_id[b], 0, 0, 0, q)
     elif res_at(c) != 0 and workers.length:
         issue_cmd(ME, CMD_GATHER, workers, c, 0, 0, 0, q)
         if others.length: issue_cmd(ME, CMD_MOVE, others, x, y, 0, 0, q)
     elif bridge >= 0 and br_up[bridge] == 0 and workers.length:
-        issue_cmd(ME, CMD_HELP_BUILD, ids, br_id[bridge], 0, 0, 0, q)   // rebuild a broken bridge
+        issue_cmd(ME, CMD_HELP_BUILD, ids, br_id[bridge], 0, 0, 0, q)  // rebuild a broken bridge
     elif mine >= 0 and workers.length and can_mend(ME, u_id[mine]):
-        issue_cmd(ME, CMD_REPAIR, ids, u_id[mine], 0, 0, 0, q)   // mend our siege engine
+        issue_cmd(ME, CMD_REPAIR, ids, u_id[mine], 0, 0, 0, q)  // mend our siege engine
     elif b < 0 and workers.length and rubble.get(c) and rubble.get(c, []::int)[1] == ME and not build_barred(ME, rubble.get(c, []::int)[2]):
-        let r = rubble.get(c, []::int)   // wall up our breach again
+        let r = rubble.get(c, []::int)  // wall up our breach again
         issue_cmd(ME, CMD_BUILD, ids, r[2], r[3], r[4], r[5], q)
     elif b >= 0 and workers.length and can_mend(ME, b_id[b]):
-        issue_cmd(ME, CMD_REPAIR, ids, b_id[b], 0, 0, 0, q)   // mend our damaged building
+        issue_cmd(ME, CMD_REPAIR, ids, b_id[b], 0, 0, 0, q)  // mend our damaged building
     elif b >= 0 and places(c) > 0 and teams[b_owner[b]] == teams[ME] and not workers.length:
-        issue_cmd(ME, CMD_MOVE, ids, x, y, 0, 0, q)   // up onto our wall
+        issue_cmd(ME, CMD_MOVE, ids, x, y, 0, 0, q)  // up onto our wall
     elif b >= 0 and b_owner[b] == ME and b_done[b] == 0:
         issue_cmd(ME, CMD_HELP_BUILD, ids, b_id[b], 0, 0, 0, q)
     elif b >= 0 and is_market(b) and not is_enemy(b_owner[b], ME) and (filter(ids) id: t_trader[u_kind[index_of(id)]] != 0).length:
-        issue_cmd(ME, CMD_ROUTE, ids, b_id[b], 0, 0, 0)   // trade carts: trade with that market
+        issue_cmd(ME, CMD_ROUTE, ids, b_id[b], 0, 0, 0)  // trade carts: trade with that market
     elif b >= 0 and b_owner[b] == ME and b_done[b] == 1 and (filter(ids) id: takes_in(b, index_of(id))).length:
-        issue_cmd(ME, CMD_DROP_OFF, ids, b_id[b], 0, 0, 0, q)   // take what they carry in
+        issue_cmd(ME, CMD_DROP_OFF, ids, b_id[b], 0, 0, 0, q)  // take what they carry in
     elif b >= 0 and pool[c] >= 0 and b_owner[b] == ME:
-        issue_cmd(ME, CMD_RESEED, ids, b_id[b], 0, 0, 0)   // a fallow farm of ours
+        issue_cmd(ME, CMD_RESEED, ids, b_id[b], 0, 0, 0)  // a fallow farm of ours
     elif b >= 0 and b_owner[b] == ME and room(b) > 0 and (filter(ids) id: can_hold(b, index_of(id))).length:
-        issue_cmd(ME, CMD_GARRISON, ids, b_id[b], 0, 0, 0, q)   // inside our Town Center or tower
+        issue_cmd(ME, CMD_GARRISON, ids, b_id[b], 0, 0, 0, q)  // inside our Town Center or tower
     else:
         issue_cmd(ME, CMD_MOVE, ids, x, y, 0, 0, q)
 
@@ -1279,7 +1277,7 @@ def buildable() -> [int]:
 def trainable(b:int) -> [int]:
     return bm_trains[ME][b_kind[b]]
 
-let RESEARCH_KEYS = ["q", "e", "r", "t", "y", "f", "g", "h", "j"]   // (not W A S D: the camera's)
+let RESEARCH_KEYS = [ "q", "e", "r", "t", "y", "f", "g", "h", "j" ]  // (not W A S D: the camera's)
 
 // The research building b offers player 0 now (not done, not queued, open to its race, its age and
 // the one before it reached; affordable or not), in research order.
@@ -1287,8 +1285,8 @@ def offered(b:int) -> [int]:
     let out = []::int
     for(research) item, r:
         if item.building == b_kind[b] and researched[ME][r] == 0 and (item.after < 0 or researched[ME][item.after] != 0) and
-           item.line_has[ME] and (item.before[ME] < 0 or researched[ME][item.before[ME]] != 0) and ages[ME] >= item.age and
-           item.open[ME] and not tech_queued(ME, r): out.push(r)
+            item.line_has[ME] and (item.before[ME] < 0 or researched[ME][item.before[ME]] != 0) and ages[ME] >= item.age and
+            item.open[ME] and not tech_queued(ME, r): out.push(r)
     return out
 
 def research_name(r:int) -> string: return research_names.get(r, research[r].id)
@@ -1351,7 +1349,7 @@ def recall_group(n:int):
 
 def keys():
     if gl.button("m") == 1: sound_on = not sound_on
-    if gl.button("n") == 1 and composed and pack_library and not in_net_match:   // a new race, mid-match
+    if gl.button("n") == 1 and composed and pack_library and not in_net_match:  // a new race, mid-match
         typing_race = true
         gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
         gl.set_text_input("")
@@ -1386,7 +1384,7 @@ def keys():
         if gl.button("x") == 1 and b_queue[b].length: issue_cmd(ME, CMD_CANCEL, []::int, sel_building, b_queue[b].length - 1, 0, 0)
     if gl.button("x") == 1 and b < 0 and selected.length: issue_cmd(ME, CMD_STOP, selected_units(), 0, 0, 0, 0)
     if b < 0 and selected_soldiers().length:
-        if gl.button("r") == 1: arming_attack = true   // R then click: attack-move there
+        if gl.button("r") == 1: arming_attack = true  // R then click: attack-move there
         let hk = ability_hotkey()
         if hk != "" and gl.button(hk) == 1 and ability_users().length: arming_ability = true
 
@@ -1404,7 +1402,7 @@ def ability_users() -> [int]: return filter(selected_units()) id: t_ability[u_ki
 
 def mouse():
     let m = mouse_px()
-    if arming_attack or arming_ability:   // the armed order goes where the next left click is
+    if arming_attack or arming_ability:  // the armed order goes where the next left click is
         if gl.button("mouse1") == 1:
             give_armed(m)
             return
@@ -1414,15 +1412,15 @@ def mouse():
             return
     if placing < 0: wall_from = int2 { -1, -1 }
     if placing >= 0:
-        if touch_play: return   // (touch places for itself: game/touch.lobster)
-        if bt_line[placing] != 0:   // walls and gates are dragged: press at one end, release at the other
+        if touch_play: return      // (touch places for itself: game/touch.lobster)
+        if bt_line[placing] != 0:  // walls and gates are dragged: press at one end, release at the other
             if gl.button("mouse1") == 1: wall_from = place_cell()
             elif gl.button("mouse1") == 0 and wall_from.x >= 0: place_wall(wall_from, place_cell(), gl.button("left shift") >= 1)
         elif gl.button("mouse1") == 1: place_here(gl.button("left shift") >= 1)
         if gl.button("mouse3") == 1 or gl.button("escape") == 1: placing = -1
         return
     if in_minimap(m):
-        if gl.button("mouse1") >= 1: cam = (m - mm_top()) / mm_scale()   // look there
+        if gl.button("mouse1") >= 1: cam = (m - mm_top()) / mm_scale()  // look there
         if gl.button("mouse3") == 1:
             let p = iso_inv((m - mm_top()) / mm_scale())
             let ids = selected_units()
@@ -1430,7 +1428,7 @@ def mouse():
                 say(ME, "ack")
                 issue_cmd(ME, if gl.button("left ctrl") >= 1 or gl.button("right ctrl") >= 1: CMD_ATTACK_MOVE else: CMD_MOVE, ids, int(p.x), int(p.y), 0, 0, if gl.button("left shift") >= 1: 1 else: 0)
         return
-    if gl.button("mouse1") == 1 and not touch_play:   // (touch selects for itself; a touch here is on the HUD)
+    if gl.button("mouse1") == 1 and not touch_play:  // (touch selects for itself; a touch here is on the HUD)
         drag_from = m
         dragging = true
     if dragging and gl.button("mouse1") == 0:
@@ -1444,11 +1442,11 @@ def scroll():
     let m = float(gl.mouse_pos(0))
     let sp = 1400.0 * gl.delta_time() / zoom
     var d = float2_0
-    if gl.button("left") >= 1 or gl.button("a") >= 1: d.x -= 1.0   // (the arrows or WASD)
+    if gl.button("left") >= 1 or gl.button("a") >= 1: d.x -= 1.0  // (the arrows or WASD)
     if gl.button("right") >= 1 or gl.button("d") >= 1: d.x += 1.0
     if gl.button("up") >= 1 or gl.button("w") >= 1: d.y -= 1.0
     if gl.button("down") >= 1 or gl.button("s") >= 1: d.y += 1.0
-    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y   // (outside the window the mouse reads 0, 0)
+    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y  // (outside the window the mouse reads 0, 0)
     if inside and shot == "":
         if m.x <= 3.0: d.x -= 1.0
         if m.y <= 3.0: d.y -= 1.0
@@ -1499,12 +1497,12 @@ def draw_shots(alpha:float):
             let ahead = at(min(t + 0.03, 1.0))
             let dir = if magnitude(ahead - p) > 0.0001: normalize(ahead - p) else: normalize(b - a + float2 { 0.0001, 0.0 })
             let lift = h * 4.0 * t * (1.0 - t)
-            if st.glow.w > 0.0:   // a bolt of light: a soft halo under its core
+            if st.glow.w > 0.0:  // a bolt of light: a soft halo under its core
                 ui_line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2, float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 })
             if st.len > 0.0: ui_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w, st.col)
             else: fx_circle(p, st.w, st.col)
             fx_circle(p + float2 { 0.0, lift + 1.0 }, 0.8, float4 { 0.0, 0.0, 0.0, 0.25 })
-    if tick % 200 == 0: shot_from = dictionary<int, int>(1024)   // (forget the landed ones now and then)
+    if tick % 200 == 0: shot_from = dictionary<int, int>(1024)  // (forget the landed ones now and then)
 
 // Health bars over hurt units you can see, and over the selected.
 def draw_bars(alpha:float):
@@ -1543,9 +1541,9 @@ def draw_marks(alpha:float):
     if placing >= 0:
         let here = place_cell()
         let s = bt_size[placing]
-        for(if bt_line[placing] != 0 and wall_from.x >= 0: wall_cells(wall_from, here) else: [here]) g:
+        for(if bt_line[placing] != 0 and wall_from.x >= 0: wall_cells(wall_from, here) else: [ here ]) g:
             let ok = can_place(ME, placing, g.x, g.y)
-            let pts = map([int2 { 0, 0 }, int2 { s, 0 }, int2 { s, s }, int2 { 0, s }]) d: iso(float((g.x + d.x) * 1000), float((g.y + d.y) * 1000))
+            let pts = map([ int2 { 0, 0 }, int2 { s, 0 }, int2 { s, s }, int2 { 0, s } ]) d: iso(float((g.x + d.x) * 1000), float((g.y + d.y) * 1000))
             gl.color(if ok: float4 { 0.3, 0.9, 0.3, 0.35 } else: float4 { 0.9, 0.2, 0.2, 0.35 }):
                 gl.polygon(pts)
 
@@ -1555,8 +1553,8 @@ def draw_marks(alpha:float):
 // point); your buildings as squares and units as dots in team colours (enemies only where you see them,
 // animals pale); the camera's view outlined. A click there looks there (only the diamond takes it).
 
-let MM_SIZE = 300.0          // its width in UI px (minimap.gd's SIZE)
-let MM_RIM = 12.0            // the frame round the diamond
+let MM_SIZE = 300.0  // its width in UI px (minimap.gd's SIZE)
+let MM_RIM = 12.0    // the frame round the diamond
 
 // The UI's size: its numbers are for a window 1000 px high (a retina screen has twice the pixels).
 def ui() -> float: return max(1.0, float(gl.window_size().y) / 1000.0)
@@ -1584,7 +1582,7 @@ def in_minimap(m:float2) -> bool:
 def mm_poly(pts:[float2], cols:[float4]):
     gl.set_shader("color_attr")
     gl.draw_mesh("PC", map(pts) p: float3 { p.x, p.y, 0.0 }, cols, []::float3, []::float2, []::float2,
-                 if pts.length == 4: [0, 1, 2, 0, 2, 3] else: [0, 1, 2])
+                 if pts.length == 4: [ 0, 1, 2, 0, 2, 3 ] else: [ 0, 1, 2 ])
     gl.set_shader("color")
 
 // The diamond's frame (minimap.gd's _draw_frame).
@@ -1594,8 +1592,8 @@ def mm_frame():
     let size = MM_SIZE * s
     let rim = MM_RIM * s
     let c = b + float2 { size * 0.5, size * 0.25 }
-    let o = [float2 { c.x, b.y - rim * 0.6 }, float2 { b.x + size + rim, c.y }, float2 { c.x, b.y + size * 0.5 + rim * 0.6 }, float2 { b.x - rim, c.y }]
-    let i = [float2 { c.x, b.y - 1.0 }, float2 { b.x + size + 1.5, c.y }, float2 { c.x, b.y + size * 0.5 + 1.0 }, float2 { b.x - 1.5, c.y }]
+    let o = [ float2 { c.x, b.y - rim * 0.6 }, float2 { b.x + size + rim, c.y }, float2 { c.x, b.y + size * 0.5 + rim * 0.6 }, float2 { b.x - rim, c.y } ]
+    let i = [ float2 { c.x, b.y - 1.0 }, float2 { b.x + size + 1.5, c.y }, float2 { c.x, b.y + size * 0.5 + 1.0 }, float2 { b.x - 1.5, c.y } ]
     mm_poly(map(o) p: p + float2 { 3.0, 6.0 } * s, map(4): float4 { 0.0, 0.0, 0.0, 0.4 })
     // the frame's material, painted by the UI's shader on the diamond
     gl.set_shader("uimat")
@@ -1603,13 +1601,13 @@ def mm_frame():
     gl.set_uniform("kind", 1.0)
     gl.set_uniform("win_h", float(gl.window_size().y))
     gl.set_uniform("px", max(1.0, ui()))
-    gl.draw_mesh("P", map(o) p: float3 { p.x, p.y, 0.0 }, []::float4, []::float3, []::float2, []::float2, [0, 1, 2, 0, 2, 3])
+    gl.draw_mesh("P", map(o) p: float3 { p.x, p.y, 0.0 }, []::float4, []::float3, []::float2, []::float2, [ 0, 1, 2, 0, 2, 3 ])
     gl.set_shader("color")
-    let light = [float4 { 1.0, 0.95, 0.85, 0.3 }, float4 { 0.0, 0.0, 0.0, 0.35 }, float4 { 0.0, 0.0, 0.0, 0.5 }, float4 { 1.0, 0.95, 0.85, 0.15 }]
+    let light = [ float4 { 1.0, 0.95, 0.85, 0.3 }, float4 { 0.0, 0.0, 0.0, 0.35 }, float4 { 0.0, 0.0, 0.0, 0.5 }, float4 { 1.0, 0.95, 0.85, 0.15 } ]
     for(4) k:
         let l = light[k]
         let none = float4 { l.x, l.y, l.z, 0.0 }
-        mm_poly([o[k], o[(k + 1) % 4], i[(k + 1) % 4], i[k]], [l, l, none, none])
+        mm_poly([ o[k], o[(k + 1) % 4], i[(k + 1) % 4], i[k] ], [ l, l, none, none ])
     mm_poly(i, map(4): float4 { 0.07, 0.05, 0.03, 1.0 })
     for(4) k:
         ui_line(o[k], o[(k + 1) % 4], 1.5, float4 { 0.0, 0.0, 0.0, 0.75 })
@@ -1621,7 +1619,7 @@ def mm_studs():
     let size = MM_SIZE * s
     let rim = MM_RIM * s
     let c = b + float2 { size * 0.5, size * 0.25 }
-    for([float2 { c.x, b.y - rim * 0.6 }, float2 { b.x + size + rim, c.y }, float2 { c.x, b.y + size * 0.5 + rim * 0.6 }, float2 { b.x - rim, c.y }]) p:
+    for([ float2 { c.x, b.y - rim * 0.6 }, float2 { b.x + size + rim, c.y }, float2 { c.x, b.y + size * 0.5 + rim * 0.6 }, float2 { b.x - rim, c.y } ]) p:
         ui_stud(p, 4.8 * s, ui_look.metal)
 
 def draw_minimap():
@@ -1634,7 +1632,7 @@ def draw_minimap():
             gl.set_shader("color_attr")
             gl.render_mesh(gm)
     gl.set_shader("color")
-    let per_tile = MM_SIZE * s / float(W + H) * 2.0   // a tile's width on it
+    let per_tile = MM_SIZE * s / float(W + H) * 2.0  // a tile's width on it
     for(b_id.length) b:
         let cell = b_cy[b] * W + b_cx[b]
         if teams[b_owner[b]] == teams[ME] or fog[ME][cell] != 0:
@@ -1648,7 +1646,7 @@ def draw_minimap():
             let dot = if u_owner[i] == gaia or t_animal[u_kind[i]] != 0: float4 { 0.85, 0.82, 0.72, 1.0 } else: float4 { tc.x + (1.0 - tc.x) * 0.2, tc.y + (1.0 - tc.y) * 0.2, tc.z + (1.0 - tc.z) * 0.2, 1.0 }
             ui_fill(p - float2_1 * s, float2_1 * 2.0 * s, dot)
     let ws = float(gl.window_size())
-    let corners = map([float2_0, float2 { ws.x, 0.0 }, ws, float2 { 0.0, ws.y }]) c: mm_point(from_screen(c))
+    let corners = map([ float2_0, float2 { ws.x, 0.0 }, ws, float2 { 0.0, ws.y } ]) c: mm_point(from_screen(c))
     for(4) k: ui_line(corners[k], corners[(k + 1) % 4], 2.0 * s, float4 { 1.0, 1.0, 1.0, 0.9 })
     mm_studs()
 
@@ -1668,8 +1666,8 @@ def draw_hud(paused:bool, speed:float):
     gl.set_shader("color")
     let ws = float(gl.window_size())
     let u = ui()
-    draw_topbar(speed, paused)   // (game/topbar.lobster)
-    gl.set_shader("color")   // (placing: the panel's info line says how)
+    draw_topbar(speed, paused)  // (game/topbar.lobster)
+    gl.set_shader("color")      // (placing: the panel's info line says how)
     if winner >= 0:
         gl.set_font_size(int(48.0 * u))
         gl.color(float4 { 1.0, 0.85, 0.3, 1.0 }):
@@ -1680,7 +1678,7 @@ def draw_hud(paused:bool, speed:float):
         let lo = float2 { min(m.x, drag_from.x), min(m.y, drag_from.y) }
         let hi = float2 { max(m.x, drag_from.x), max(m.y, drag_from.y) }
         gl.color(float4 { 0.95, 0.91, 0.79, 0.8 }):
-            for([[lo, float2 { hi.x, lo.y }], [float2 { hi.x, lo.y }, hi], [hi, float2 { lo.x, hi.y }], [float2 { lo.x, hi.y }, lo]]) e:
+            for([ [ lo, float2 { hi.x, lo.y } ], [ float2 { hi.x, lo.y }, hi ], [ hi, float2 { lo.x, hi.y } ], [ float2 { lo.x, hi.y }, lo ] ]) e:
                 ui_line(e[0], e[1], 1.5, float4 { 0.95, 0.91, 0.79, 0.8 })
 
 // ------------------------------------------------------------------ the self-test
@@ -1723,7 +1721,7 @@ def self_test() -> bool:
         let pick = selected_units()
         expect_ok((filter(pick) id: u_task[index_of(id)] == GATHER).length == pick.length, "right click on reeds sends the workers gathering")
         let all = filter(u_id) id: u_owner[index_of(id)] == ME and t_worker[u_kind[index_of(id)]]
-        selected = [all[all.length - 1]]
+        selected = [ all[all.length - 1] ]
         placing = btype_named("house")
         let spot = nearest_cell(tx, ty) c: can_place(ME, placing, c % W - 0, c / W - 0) and (c % W - tx) * (c % W - tx) + (c / W - ty) * (c / W - ty) > 9
         fake_mouse = screen_of_cell(spot)
@@ -1769,12 +1767,12 @@ def self_test() -> bool:
         return true
     return false
 
-import .game.pad   // (here: it plays through the controls above)
+import .game.pad  // (here: it plays through the controls above)
 import .game.techtree
 import .game.panel
 import .game.topbar
 import .game.order_marks
-import .game.touch   // (here: it plays through the pad, and leaves the panel, top bar and minimap to the mouse)
+import .game.touch  // (here: it plays through the pad, and leaves the panel, top bar and minimap to the mouse)
 import .game.lobby
 import .game.boot
 
@@ -1786,7 +1784,7 @@ import .game.boot
 def label_size(s:string, fs:int) -> float2: return float2 { 0.6 * float(fs) * float(s.length), float(fs) }
 
 def outlined_text(p:float2, s:string, col:float4, u:float):
-    for([float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 }]) d:
+    for([ float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 } ]) d:
         lobby_text(p + d * 1.5 * u, s, float4 { 0.05, 0.04, 0.02, 0.9 })
     lobby_text(p, s, col)
 
@@ -1801,7 +1799,7 @@ def draw_groups():
     let first = dictionary<int, int>(64)
     for(keys) n, k:
         for(live[k]) id:
-            if first.get(id, -1) < 0 and contains(selected, id): first.set(id, n)   // (only on what's selected: Dominic)
+            if first.get(id, -1) < 0 and contains(selected, id): first.set(id, n)  // (only on what's selected: Dominic)
     let ws = float(gl.window_size())
     for(first.get_keys()) id:
         let i = index_of(id)
@@ -1811,7 +1809,7 @@ def draw_groups():
                 let label = string(first.get(id, 0) + 1)
                 outlined_text(at - label_size(label, fs) / 2.0, label, float4 { 1.0, 0.88, 0.5, 1.0 }, u)
     var x = 16.0 * u
-    let y = topbar_bottom() + 8.0 * u   // under the top bar (game/topbar.lobster)
+    let y = topbar_bottom() + 8.0 * u  // under the top bar (game/topbar.lobster)
     let fs2 = int(15.0 * u)
     gl.set_font_size(fs2)
     for(keys) n, k:
@@ -1830,19 +1828,19 @@ var pad_spot = float2_0
 var pad_houses = 0
 def pad_script() -> PadIn:
     let t = clock_s
-    let none = PadIn { [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [] }
+    let none = PadIn { [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ], [] }
     let tc = town_center(ME)
     if pad_step == 0 and t >= 1.0:
         pad_spot = cam
         pad_step++
     if pad_step == 1:
-        if t < 1.5: return PadIn { [1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [] }
+        if t < 1.5: return PadIn { [ 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 ], [] }
         expect_ok(cam.x > pad_spot.x + 50.0, "the left stick pans (camera {pad_spot.x} -> {cam.x})")
         let mine = filter(u_id.length) i: u_owner[i] == ME and t_animal[u_kind[i]] == 0
         cam = iso(float(fold(mine, 0) acc, i: acc + u_x[i]) / float(mine.length), float(fold(mine, 0) acc, i: acc + u_y[i]) / float(mine.length))
         pad_step++
     if pad_step == 2:
-        if t < 3.5: return PadIn { none.axes, ["a"] }
+        if t < 3.5: return PadIn { none.axes, [ "a" ] }
         pad_step++
         return none
     if pad_step == 3:
@@ -1853,30 +1851,30 @@ def pad_script() -> PadIn:
         let i = index_of(selected[0])
         cam = iso(float(u_x[i]), float(u_y[i]))
         pad_off = float2_0
-        test_pause = true   // (the worker stays under the reticle)
+        test_pause = true  // (the worker stays under the reticle)
         pad_step++
         return none
     if pad_step == 4:
         pad_step++
-        return PadIn { none.axes, ["a"] }
+        return PadIn { none.axes, [ "a" ] }
     if pad_step == 5:
         pad_step++
         return none
-    if pad_step == 6 and wheel_pages() > 1 and not pad_paged:   // (more than a page: LB turns it, and back)
+    if pad_step == 6 and wheel_pages() > 1 and not pad_paged:  // (more than a page: LB turns it, and back)
         pad_paged = true
         pad_step = 60
-        return PadIn { none.axes, ["leftshoulder"] }
+        return PadIn { none.axes, [ "leftshoulder" ] }
     if pad_step == 60:
         expect_ok(pad_page == 1, "LB turns the wheel\'s page ({wheel_pages()} pages)")
         pad_step = 61
         return none
     if pad_step == 61:
         pad_step = 62
-        return PadIn { none.axes, ["leftshoulder"] }
+        return PadIn { none.axes, [ "leftshoulder" ] }
     if pad_step == 62:
         pad_step = 6
         return none
-    if pad_step == 6 and has_s(args, "wheelshot") and shot != "": gl.screenshot(shot + ".wheel.png")   // (captures: the wheel as it opened)
+    if pad_step == 6 and has_s(args, "wheelshot") and shot != "": gl.screenshot(shot + ".wheel.png")  // (captures: the wheel as it opened)
     if pad_step == 6 and pad_page == 0:
         expect_ok(pad_wheel.length > 0, "A on a selected worker opens its wheel ({pad_wheel.length} things to build)")
         var house = 0
@@ -1885,10 +1883,10 @@ def pad_script() -> PadIn:
             if w.act == 3 and bt_name[w.arg] == "house": house = n
         let a = float(house) / float(max(1, items.length)) * 360.0 - 90.0
         pad_step++
-        return PadIn { [cos(a), sin(a), 0.0, 0.0, 0.0, 0.0], [] }
+        return PadIn { [ cos(a), sin(a), 0.0, 0.0, 0.0, 0.0 ], [] }
     if pad_step == 7:
         pad_step++
-        return PadIn { none.axes, ["a"] }
+        return PadIn { none.axes, [ "a" ] }
 
     if pad_step == 8:
         expect_ok(placing >= 0 and bt_name[placing] == "house", "pointing at the house and A starts placing one")
@@ -1899,29 +1897,29 @@ def pad_script() -> PadIn:
         return none
     if pad_step == 9:
         pad_step++
-        return PadIn { none.axes, ["x"] }
+        return PadIn { none.axes, [ "x" ] }
     if pad_step == 10 and t >= 9.0:
         let houses = (filter(b_id.length) b: b_owner[b] == ME and bt_name[b_kind[b]] == "house").length
         expect_ok(houses > pad_houses, "X lays the house down ({pad_houses} -> {houses})")
         pad_step++
-        return PadIn { none.axes, ["b"] }
+        return PadIn { none.axes, [ "b" ] }
     if pad_step == 11:
         expect_ok(not selected.length, "B lets the selection go")
         pad_step++
-        return PadIn { none.axes, ["dpleft"] }
+        return PadIn { none.axes, [ "dpleft" ] }
     if pad_step == 12:
         pad_step++
         return none
     if pad_step == 13:
         expect_ok(selected.length > 0 and selected.length == (filter(groups.get(0, [])) id: index_of(id) >= 0).length, "a tap on d-pad left brings group 1 back ({selected.length})")
-        for(t_slot.length) k:   // (a soldier by the workers, so there's more than one kind to cycle)
+        for(t_slot.length) k:  // (a soldier by the workers, so there's more than one kind to cycle)
             if t_player[k] == ME and not t_worker[k] and t_animal[k] == 0 and t_trader[k] == 0 and t_healer[k] == 0 and pad_step == 13:
                 mode_put(ME, k, start_x[ME] + 4000, start_y[ME] + 4000)
                 pad_step = 69
         selected = map(filter(u_id.length) i: u_owner[i] == ME and t_animal[u_kind[i]] == 0) i: u_id[i]
         pad_step = 70
-        return PadIn { none.axes, ["leftshoulder"] }
-    if pad_step == 70:   // (LB let go: a tap)
+        return PadIn { none.axes, [ "leftshoulder" ] }
+    if pad_step == 70:  // (LB let go: a tap)
         pad_step++
         return none
     if pad_step == 71:
@@ -1932,13 +1930,13 @@ def pad_script() -> PadIn:
         selected = filter(pad_cycle_all) id: index_of(id) >= 0
         arming_attack = true
         pad_step++
-        return PadIn { none.axes, ["a"] }
+        return PadIn { none.axes, [ "a" ] }
     if pad_step == 72:
         expect_ok(not arming_attack, "A gives the armed attack-move")
         let mine = filter(u_id.length) i: u_owner[i] == ME and t_animal[u_kind[i]] == 0
         cam = iso(float(fold(mine, 0) acc, i: acc + u_x[i]) / float(mine.length), float(fold(mine, 0) acc, i: acc + u_y[i]) / float(mine.length))
         pad_step = 14
-        return PadIn { none.axes, ["rightshoulder"] }
+        return PadIn { none.axes, [ "rightshoulder" ] }
     if pad_step == 14:
         pad_step++
         print test_log
@@ -1956,14 +1954,14 @@ note("start")
 // (a capture runs without vsync: with the display asleep, vsync never lets a frame through)
 fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if shot != "" or selftest or padtest: gl.window_init_no_vsync else: 0))
 gl.set_target_delta_time(1.0 / 60.0)   // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
-gl.window_icon("icons/game_icon.png")   // (the Dock's icon on the Mac)
+gl.window_icon("icons/game_icon.png")  // (the Dock's icon on the Mac)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))
 fatal(gl.load_materials(BAKE_SHADERS, true))
 fatal(gl.load_materials(WORLD_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
-bake_live = shot == "" and not selftest and not padtest   // (the window kept alive while art bakes; captures and tests bake quietly)
+bake_live = shot == "" and not selftest and not padtest  // (the window kept alive while art bakes; captures and tests bake quietly)
 
 // Something on the screen from the first moment (not a black window): the boot screen (game/boot), until the title.
 def startup_frame(what:string, done:float):
@@ -1971,7 +1969,7 @@ def startup_frame(what:string, done:float):
     boot_draw(what, done)
     gl.frame()
 
-fatal(gl.load_materials(UI_SHADERS, true))   // (the boot screen paints the UI's wood)
+fatal(gl.load_materials(UI_SHADERS, true))  // (the boot screen paints the UI's wood)
 ui_ready = true
 // page:boot shot:<png>: a picture of the boot screen, then quit
 if page_arg == "boot":
@@ -1982,9 +1980,9 @@ if page_arg == "boot":
     if shot != "": gl.screenshot(shot)
     return from program
 startup_frame("Loading...", 0.05)
-for(args) a:   // cache:<folder>: the parts kept there instead of bake_cache/ ("cache:" alone: baked afresh, kept nowhere)
+for(args) a:  // cache:<folder>: the parts kept there instead of bake_cache/ ("cache:" alone: baked afresh, kept nowhere)
     if starts_with(a, "cache:"): bake_cache_dir = a.substring(6, a.length - 6)
-zoom = 2.0 * floor(ui() + 0.5)   // two screen points an art pixel, as the game's camera
+zoom = 2.0 * floor(ui() + 0.5)  // two screen points an art pixel, as the game's camera
 // A pack is optional (args[0] "none", or a folder without one): its tables come from data then
 // (game/pack_data.lobster), the units are composed from their parts, and every picture is baked at the start.
 let have_pack = read_file(args[0] + "/index.txt") != nil
@@ -2003,14 +2001,14 @@ let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mod
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 startup_frame("Loading the parts...", 0.8)
 id_load("../data")
-complete_kit_parts()   // (the creature kit's bodies: with no pack, made here; a pack's kit_parts.json fills them in first)
+complete_kit_parts()  // (the creature kit's bodies: with no pack, made here; a pack's kit_parts.json fills them in first)
 composed = not have_pack or read_file(args[0] + "/rigs.json") != nil
 if composed and have_pack: load_part_data(args[0])
 // prebake: every prop and every architecture's buildings baked into the shipped folder (src/prebake.sh), then quit.
 if has_s(args, "prebake"):
     bake_cache_dir = bake_shipped_dir
     bake_shipped_dir = ""
-    bake_live = false   // (no progress drawn: the window's frames aren't needed, and a hidden one can stop the bake)
+    bake_live = false  // (no progress drawn: the window's frames aren't needed, and a hidden one can stop the bake)
     let t0 = seconds_elapsed()
     print "prebake: {bake_doodads()} prop frames in {int(seconds_elapsed() - t0)} s"
     let archs = all_architectures()
@@ -2033,11 +2031,11 @@ var link = Link {}
 var joined_bots = []::Bot
 var bots = []::Bot
 var net_on = false
-var lockstep = Lockstep { Link {}, 0, [0], [] }
-var back_to_lobby = false       // the pause menu's Back to the menu (or the match won or lost from the lobby)
+var lockstep = Lockstep { Link {}, 0, [ 0 ], [] }
+var back_to_lobby = false  // the pause menu's Back to the menu (or the match won or lost from the lobby)
 var quit_app = false
-var next_choice = ""            // the next match without the lobby (the pause menu's Load game)
-var front_choice = ""           // what the lobby chose (game/lobby.lobster: play, host, join, fight, load:<path>)
+var next_choice = ""   // the next match without the lobby (the pause menu's Load game)
+var front_choice = ""  // what the lobby chose (game/lobby.lobster: play, host, join, fight, load:<path>)
 
 // A saved match from the lobby's Load game: its world and bots, as a joiner takes the host's.
 def load_saved(path:string) -> bool:
@@ -2063,7 +2061,7 @@ def log_tick():
     if log_ages.length != ages.length: log_ages = copy(ages)
     for(ages) a, p:
         if a > log_ages[p]:
-            log_age_ups.push(jarr([jint(p), jint(a), jint(tick / 20)]))
+            log_age_ups.push(jarr([ jint(p), jint(a), jint(tick / 20) ]))
             log_ages[p] = a
     if winner >= 0 and not log_done:
         log_done = true
@@ -2100,18 +2098,18 @@ def make_match() -> bool:
                 msg = "Joined {join_ip}: the host is sending the match..."
                 let later = []::[string]
                 for(net_poll(link)) f:
-                    if f[0] == "W": ME = string_to_int(f[1])   // (our seat)
+                    if f[0] == "W": ME = string_to_int(f[1])  // (our seat)
                     elif f[0] == "S": joined_bots = load_world_bytes(f[1])
                     elif f[0] == "X": link.error = f[1]
-                    elif joined_bots.length: later.push(f)   // (a turn that came with the match: kept for the lockstep)
+                    elif joined_bots.length: later.push(f)  // (a turn that came with the match: kept for the lockstep)
                 net_unread(link, later)
-        if ME == 0: ME = 1   // (a host that sends no seat: the second one)
+        if ME == 0: ME = 1  // (a host that sends no seat: the second one)
         net_people = num_players
         map_name_now = gstr(su_map, "id", "reed_meadow")
         load_species(map_name_now)
         if pack_library: race_facts(su_races)
     elif joined_bots.length: pass()
-    elif args[1] == "-" or args[1] == "lobby":   // the races from their prompts and the match start, made here (gen/)
+    elif args[1] == "-" or args[1] == "lobby":  // the races from their prompts and the match start, made here (gen/)
         let rules = load_rules(rules_id())
         set(rules, "animals", jbool(true))
         let prompts = lobby_prompts
@@ -2127,9 +2125,9 @@ def make_match() -> bool:
             apply_prices(races)
             reset_world()
         let map_id = if args[1] == "lobby": lobby_map elif pack_map != "": pack_map else: "reed_meadow"
-        if args[1] == "lobby": set(rules, "mode", jstr(lobby_mode))   // (after the balance fights: they're plain fights)
-        let picked = args[1] == "lobby" and lobby_teams.length == races.length and races.length > 2   // (a team game picked in the lobby: its map and teams)
-        let four = races.length > 2 and not picked   // (host:<n> with more people: the 2v2 map)
+        if args[1] == "lobby": set(rules, "mode", jstr(lobby_mode))                                  // (after the balance fights: they're plain fights)
+        let picked = args[1] == "lobby" and lobby_teams.length == races.length and races.length > 2  // (a team game picked in the lobby: its map and teams)
+        let four = races.length > 2 and not picked                                                   // (host:<n> with more people: the 2v2 map)
         let real_map = if four: "reed_meadow_2v2" else: map_id
         setup_world(20261010, real_map, races, rules, if picked: lobby_teams elif four: map(races.length) k: k % 2 else: [])
         load_species(real_map)
@@ -2137,9 +2135,9 @@ def make_match() -> bool:
         if pack_library: race_facts(races)
         print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
     else:
-        if composed:   // a scenario has no recipes: set its races up (as export.gd did) for the composer, then load it over a clean world
+        if composed:  // a scenario has no recipes: set its races up (as export.gd did) for the composer, then load it over a clean world
             let rules = load_rules(rules_id())
-            let races = map(if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]) pr: generate(pr, rules, 0)
+            let races = map(if pack_prompts.length >= 2: pack_prompts else: [ "sewer rats with cheese hammers", "angry swamp frogs with reed spears" ]) pr: generate(pr, rules, 0)
             setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
             let keep_recipe = su_type_recipe
             let keep_line = su_type_line
@@ -2159,7 +2157,7 @@ def make_match() -> bool:
         else: start_world(args[1])
     note("world")
     events_on = true
-    if args[1] == "lobby" and lobby_levels.length == num_players and not joined_bots.length: ai_levels_set(lobby_levels)   // (each AI at its level)
+    if args[1] == "lobby" and lobby_levels.length == num_players and not joined_bots.length: ai_levels_set(lobby_levels)  // (each AI at its level)
     bots = map(num_players) p: new_bot(p)
     if joined_bots.length: bots = joined_bots
     if hosting:
@@ -2193,7 +2191,7 @@ def make_match() -> bool:
                             cam = iso(float(x * 1000 + 1500), float(y * 1000 + 1500))
                             done = true
     if skirmish: army_n = max(army_n, 3)
-    if army_n > 0:   // (a skirmish: both sides, marching on each other)
+    if army_n > 0:  // (a skirmish: both sides, marching on each other)
         for(num_players) p:
             if p == ME or skirmish:
                 let slots = []::string
@@ -2212,12 +2210,12 @@ def make_match() -> bool:
             let mid_x = (start_x[0] + start_x[1]) / 2
             let mid_y = (start_y[0] + start_y[1]) / 2
             cam = iso(float(mid_x), float(mid_y))
-            follow = true   // (the camera goes where they fight)
+            follow = true  // (the camera goes where they fight)
     if hurt_pct >= 0:
         for(b_id.length) b:
             if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
     in_net_match = net_on
-    lockstep = new_lockstep(link, ME, if net_on: map(net_people) k: k else: [ME])
+    lockstep = new_lockstep(link, ME, if net_on: map(net_people) k: k else: [ ME ])
     lockstep.more = net_others
     lockstep.relay = hosting
     return true
@@ -2229,7 +2227,7 @@ def quick_save(): save_to(SAVE_PATH)
 
 // The pause menu's Save game: a new file in saves/ each time, with a line about it beside it (the lobby's Load game lists them).
 def save_game():
-    launch_subprocess(["/bin/mkdir", "-p", "saves"])
+    launch_subprocess([ "/bin/mkdir", "-p", "saves" ])
     let stamp = date_time_string_format("%Y-%m-%d_%H-%M-%S")
     let names = concat_string(map(su_races) r: rstr(r, "name"), " vs ")
     let secs = tick / 20
@@ -2303,10 +2301,10 @@ var speed = start_speed
 var steps = 0
 var frame_no = 0
 var step_time = 0.0
-var menu_open = false           // the pause menu (Esc)
-var menu_saves = false          // ...showing the saved games (Load game)
+var menu_open = false   // the pause menu (Esc)
+var menu_saves = false  // ...showing the saved games (Load game)
 var quit_game = false
-var told_end = false            // the match's end was shown (the menu opens once)
+var told_end = false  // the match's end was shown (the menu opens once)
 
 // The pause menu (Esc, or Start on the pad): a panel of buttons over the dimmed match. In a network
 // match the world goes on (only you stop looking), and Load isn't offered.
@@ -2314,11 +2312,11 @@ def pause_menu():
     let u = ui()
     let ws = float(gl.window_size())
     ui_frame(true)
-    if menu_saves:   // Load game: the saves (game/lobby.lobster)
+    if menu_saves:  // Load game: the saves (game/lobby.lobster)
         fe_fit()
         let picked = fe_saves_card("")
         if picked == "back": menu_saves = false
-        elif picked != "":   // (a new match from the save: its map may be another)
+        elif picked != "":  // (a new match from the save: its map may be another)
             next_choice = "load:" + picked
             back_to_lobby = true
             quit_game = true
@@ -2345,7 +2343,7 @@ def pause_menu():
     if item("Tech tree", false):
         menu_open = false
         open_tree(ME)
-    if winner < 0 and defeated[ME] == 0 and item("Surrender", false):   // (the match ends as a defeat for your side)
+    if winner < 0 and defeated[ME] == 0 and item("Surrender", false):  // (the match ends as a defeat for your side)
         issue_cmd(ME, CMD_SURRENDER, []::int, 0, 0, 0, 0)
         menu_open = false
     if from_lobby and item("Back to the menu", false):
@@ -2372,13 +2370,13 @@ def play_match():
     told_end = false
     note("loop")
     while gl.frame() and not quit_game and not bake_quit:
-        if perf_for > 0.0:   // (the Town Center selected: its panel and queue drawn, the HUD full)
+        if perf_for > 0.0:  // (the Town Center selected: its panel and queue drawn, the HUD full)
             perf_begin()
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
         if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
         if gl.button("controller_start") == 1 and not typing_race: menu_open = not menu_open
-        if has_s(args, "menu") and frame_no == 2: menu_open = true   // (captures)
-        if has_s(args, "orders") and frame_no == 30:   // (captures: your units sent off, and the Town Center's rally set)
+        if has_s(args, "menu") and frame_no == 2: menu_open = true  // (captures)
+        if has_s(args, "orders") and frame_no == 30:                // (captures: your units sent off, and the Town Center's rally set)
             selected = filter(u_id) id: u_owner[index_of(id)] == ME
             let tc = town_center(ME)
             if tc >= 0 and selected.length:
@@ -2390,7 +2388,7 @@ def play_match():
         if gl.button("escape") == 1: build_menu = false
         if gl.button("space") == 1 and not net_on: paused = not paused
         let ctrl = gl.button("left ctrl") >= 1 or gl.button("right ctrl") >= 1 or gl.button("left gui") >= 1 or gl.button("right gui") >= 1
-        if ctrl and (gl.button("=") == 1 or gl.button("-") == 1):   // Ctrl/Cmd + and -: the HUD's size (saved)
+        if ctrl and (gl.button("=") == 1 or gl.button("-") == 1):  // Ctrl/Cmd + and -: the HUD's size (saved)
             hud_size = clamp(hud_size + (if gl.button("=") == 1: 10 else: -10), 70, 200)
             volume_save()
         elif gl.button("=") == 1 and not net_on: speed = min(8.0, speed * 2.0)
@@ -2398,14 +2396,14 @@ def play_match():
         let dt = gl.delta_time()
         frame_dt = dt
         fx_tick(dt)
-        bake_wanted_tick(0.008)   // (a part drawn before it was baked: a pose, a step the start didn't see)
+        bake_wanted_tick(0.008)  // (a part drawn before it was baked: a pose, a step the start didn't see)
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
         frame_no++
-        if frame_no == 1:   // (inside a frame: a bake outside one leaves the window drawing nothing)
+        if frame_no == 1:  // (inside a frame: a bake outside one leaves the window drawing nothing)
             let t0 = seconds_elapsed()
-            if bake_live and fe_sides.length == num_players and front_choice != "":   // (the match loader shows the bake's progress)
+            if bake_live and fe_sides.length == num_players and front_choice != "":  // (the match loader shows the bake's progress)
                 bake_progress = fn(st, f): fe_loader(st, f)
                 bake_progress_on = true
             bake_progress_from = 0.5
@@ -2451,7 +2449,7 @@ def play_match():
             if lockstep.desync != "" or link.closed: banner_t = gl.time()
         while acc >= 0.05:
             if net_on and tick % TICKS_PER_TURN == 0 and not may_run(lockstep, tick / TICKS_PER_TURN):
-                acc = min(acc, 0.05)   // (waiting on the other player: don't save up time to rush through after)
+                acc = min(acc, 0.05)  // (waiting on the other player: don't save up time to rush through after)
                 break
             p_id = copy(u_id)
             p_x = copy(u_x)
@@ -2460,7 +2458,7 @@ def play_match():
             for(bots) bot, p:
                 if (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):
                     ai_level_for(p)
-                    full_bot_think(bot)   // (watch: your own bot plays your side)
+                    full_bot_think(bot)  // (watch: your own bot plays your side)
             step()
             if net_on: ls_after_step(lockstep)
             step_time += seconds_elapsed() - t0
@@ -2477,7 +2475,7 @@ def play_match():
                     fx += u_x[i]
                     fy += u_y[i]
                     nf++
-            if nf == 0:   // (no fighting yet: the armies)
+            if nf == 0:  // (no fighting yet: the armies)
                 for(u_x.length) i:
                     if t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0:
                         fx += u_x[i]
@@ -2506,11 +2504,11 @@ def play_match():
         if menu_open: pause_menu()
         draw_banner()
         if typing_race: typing_tick()
-        if has_s(args, "savegame") and clock_s >= 3.0:   // (tests: the pause menu's Save game, then quit)
+        if has_s(args, "savegame") and clock_s >= 3.0:  // (tests: the pause menu's Save game, then quit)
             save_game()
             quit_app = true
             return
-        if has_s(args, "lobbyloop") and loop_round == 0 and clock_s >= 2.0:   // (tests: back to the lobby, then a second match)
+        if has_s(args, "lobbyloop") and loop_round == 0 and clock_s >= 2.0:  // (tests: back to the lobby, then a second match)
             loop_round++
             back_to_lobby = true
             quit_game = true
@@ -2523,7 +2521,7 @@ def play_match():
             quit_app = true
             return
         if not net_on or ME == 0: log_tick()
-        if has_s(args, "tillend") and (winner >= 0 or (shot_at > 0.0 and clock_s >= shot_at)):   // a whole match to its end (tests: with watch)
+        if has_s(args, "tillend") and (winner >= 0 or (shot_at > 0.0 and clock_s >= shot_at)):  // a whole match to its end (tests: with watch)
             if shot != "": gl.screenshot(shot)
             print "match over: {if winner >= 0: "team {winner} won" else: "no winner yet"} at {int(clock_s) / 60}:{int(clock_s) % 60}, tick {tick}"
             quit_app = true
@@ -2595,7 +2593,7 @@ def new_match_reset():
 if args[1] == "lobby":
     if map_arg != "": lobby_map = map_arg
     if mode_arg != "": lobby_mode = mode_arg
-    lobby_prompts = if pack_prompts.length >= 2: pack_prompts else: ["sewer rats with cheese hammers", "angry swamp frogs with reed spears"]
+    lobby_prompts = if pack_prompts.length >= 2: pack_prompts else: [ "sewer rats with cheese hammers", "angry swamp frogs with reed spears" ]
     if races_arg != "": lobby_prompts = tokenize(races_arg, "|", " ")
 var front_first = args[1] == "lobby" and join_ip == "" and not hosting and (races_arg == "" or lab_arg or page_arg != "")
 while not quit_app and not bake_quit:
@@ -2610,7 +2608,7 @@ while not quit_app and not bake_quit:
     if quit_app or bake_quit or not back_to_lobby: break
     new_match_reset()
     front_first = true
-view_reset()   // (every view let go: their trees are cycles)
+view_reset()  // (every view let go: their trees are cycles)
 uv_free_dict(portraits)
 uv_free_dict(tethered)
 fe_free_views()

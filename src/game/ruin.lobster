@@ -21,16 +21,16 @@ class RuinStage:
     beams:int
     cut:float
 
-let RUIN_STAGES = [RuinStage { 1.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0 },
-                   RuinStage { 0.55, 0.3, 0.25, 12.0, 0.2, 26, 0, 0.0 },
-                   RuinStage { 0.4, 0.6, 0.6, 26.0, 0.45, 70, 3, 0.0 },
-                   RuinStage { 0.3, 1.0, 0.3, 18.0, 0.7, 140, 6, 0.42 },
-                   RuinStage { 0.12, 1.0, 0.0, 0.0, 1.0, 190, 8, 0.16 }]
+let RUIN_STAGES = [ RuinStage { 1.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0 },
+                    RuinStage { 0.55, 0.3, 0.25, 12.0, 0.2, 26, 0, 0.0 },
+                    RuinStage { 0.4, 0.6, 0.6, 26.0, 0.45, 70, 3, 0.0 },
+                    RuinStage { 0.3, 1.0, 0.3, 18.0, 0.7, 140, 6, 0.42 },
+                    RuinStage { 0.12, 1.0, 0.0, 0.0, 1.0, 190, 8, 0.16 } ]
 
 class RuinMesh:
     node:MNode
-    parents:Xform     // the transform of its parents, from the body
-    lo:float3         // its box in body space
+    parents:Xform  // the transform of its parents, from the body
+    lo:float3      // its box in body space
     hi:float3
 
 def ruin_roll(rng:Rng) -> float: return float(next_u32(rng) % 10000) / 10000.0
@@ -82,7 +82,7 @@ def ruin_apply(body:MNode, s:int, seed_value:int):
     let asize = ahi - alo
     let h = asize.y
     let base = alo.y
-    let mats = []::MMat   // what fell: the rubble is made of it
+    let mats = []::MMat  // what fell: the rubble is made of it
     for(meshes) mi:
         let n = mi.node
         if not n.visible: continue
@@ -95,7 +95,7 @@ def ruin_apply(body:MNode, s:int, seed_value:int):
             // A wall stump: what stands on the ground is squashed down from its foot to a ragged height.
             let top = base + h * st.cut * (0.55 + 0.6 * ruin_roll(rng))
             if m and (bsize.x > asize.x * 0.35 or bsize.z > asize.z * 0.35):
-                n.visible = false   // a whole wall (or a hall's core) as one block: ragged stumps along its sides
+                n.visible = false  // a whole wall (or a hall's core) as one block: ragged stumps along its sides
                 ruin_stumps(body, mi.lo, mi.hi, top, m, rng)
             else:
                 let k = (top - mi.lo.y) / max(bsize.y, 0.001)
@@ -143,7 +143,7 @@ def ruin_rubble(body:MNode, alo:float3, ahi:float3, n:int, cut:float, mats:[MMat
         let a = ruin_roll(rng) * 360.0
         let x = c.x + cos(a) * r * half.x
         let z = c.z + sin(a) * r * half.y
-        let u = max(size.x, size.z) * 0.045   // pieces sized to the building: a hall breaks into bigger blocks
+        let u = max(size.x, size.z) * 0.045  // pieces sized to the building: a hall breaks into bigger blocks
         let sx = u * (0.6 + 1.2 * ruin_roll(rng))
         let sy = u * (0.4 + 0.7 * ruin_roll(rng))
         let sz = u * (0.6 + 1.0 * ruin_roll(rng))
@@ -158,14 +158,14 @@ def ruin_rubble(body:MNode, alo:float3, ahi:float3, n:int, cut:float, mats:[MMat
 // height up to `top`, some missing (the breaches).
 def ruin_stumps(body:MNode, lo:float3, hi:float3, top:float, m:MMat, rng:Rng):
     let t = min(hi.x - lo.x, hi.z - lo.z) * 0.12
-    let corners = [float3 { lo.x, 0.0, lo.z }, float3 { hi.x, 0.0, lo.z }, float3 { hi.x, 0.0, hi.z }, float3 { lo.x, 0.0, hi.z }]
+    let corners = [ float3 { lo.x, 0.0, lo.z }, float3 { hi.x, 0.0, lo.z }, float3 { hi.x, 0.0, hi.z }, float3 { lo.x, 0.0, hi.z } ]
     for(4) e:
         let a = corners[e]
         let c = corners[(e + 1) % 4]
         let run = magnitude(c - a)
         let n = max(2, int(run / (t * 2.2)))
         for(n) i:
-            if ruin_roll(rng) < 0.18: continue   // a breach
+            if ruin_roll(rng) < 0.18: continue  // a breach
             let f0 = float(i) / float(n)
             let f1 = float(i + 1) / float(n)
             let at = a + (c - a) * ((f0 + f1) * 0.5)

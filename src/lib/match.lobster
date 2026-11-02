@@ -6,11 +6,11 @@
 
 let CHECK_EVERY = 20
 
-var wonder_hold = 0              // ticks a Wonder must stand (0: no Wonder victory)
-var wonder_ids = []::int         // standing finished Wonders, in id order
-var wonder_since = []::int       // the tick each was finished
+var wonder_hold = 0         // ticks a Wonder must stand (0: no Wonder victory)
+var wonder_ids = []::int    // standing finished Wonders, in id order
+var wonder_since = []::int  // the tick each was finished
 var wonder_owners = []::int
-var mode_hold = -1               // the Siege mode: hold ticks (0: no time limit); -1: no such mode
+var mode_hold = -1  // the Siege mode: hold ticks (0: no time limit); -1: no such mode
 
 def towns(p:int) -> int:
     let tk = btype_named("town_center")

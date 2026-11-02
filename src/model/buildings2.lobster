@@ -5,8 +5,8 @@
 // Godot's node metadata goes in MNode.meta, as words: a parapet mesh "parapet <along x y z> [about <x y z>]
 // [roof]"; a gatehouse's tower node "gate_part <side> gate_centre <x y z>".
 
-let UNIVERSITY_LOOKS = ["observatory", "cloister", "builders"]
-let CASTLE_LOOKS = ["curtain", "motte", "great_tower"]
+let UNIVERSITY_LOOKS = [ "observatory", "cloister", "builders" ]
+let CASTLE_LOOKS = [ "curtain", "motte", "great_tower" ]
 
 def university_look(arch:string) -> string:
     switch arch:
@@ -48,18 +48,18 @@ def bld_fort_tower(body:MNode, arch:string, at:float3, r:float, h:float) -> floa
             add_child(body, bring(r * 1.0, r * 1.07, stone, at + bv(0.0, h * 0.62, 0.0)))
             add_child(body, bcyl(r + 0.05, r + 0.03, 0.1, stone, at + bv(0.0, h + 0.05, 0.0), float3_0, 20))
             bld_merlon_ring(body, at, r + 0.0, h + 0.1, stone, 8)
-            for([0.0, 90.0]) turn:
+            for([ 0.0, 90.0 ]) turn:
                 bld_slit(body, at + bv(sin(turn), 0.0, cos(turn)) * (r * 1.02) + bv(0.0, h * 0.45, 0.0), turn)
             return h + 0.22
         case "thatch":
             let mud = bm("mud")
             bld_footing(body, arch, r * 2.0 + 0.1, r * 2.0 + 0.1, 0.1, at)
             add_child(body, bbox(bv(r * 2.0, h, r * 2.0), mud, at + bv(0.0, h / 2.0 + 0.1, 0.0)))
-            for([-1.0, 1.0]) x:
-                for([-1.0, 1.0]) z:
+            for([ -1.0, 1.0 ]) x:
+                for([ -1.0, 1.0 ]) z:
                     add_child(body, bbox(bv(0.08, h, 0.08), wood, at + bv(x * r, h / 2.0 + 0.1, z * r)))
             add_child(body, beam(at + bv(-r, 0.15, r + 0.01), at + bv(r, h * 0.8, r + 0.01), 0.03, wood, 4))   // a brace across the front
-            add_child(body, bbox(bv(r * 2.0 + 0.16, 0.3, r * 2.0 + 0.16), wood, at + bv(0.0, h + 0.25, 0.0)))   // the jetty
+            add_child(body, bbox(bv(r * 2.0 + 0.16, 0.3, r * 2.0 + 0.16), wood, at + bv(0.0, h + 0.25, 0.0)))  // the jetty
             bld_slit(body, at + bv(0.0, h + 0.25, r + 0.09), 0.0, 0.14)
             let rr = (r + 0.18) * 1.414
             add_child(body, bcyl(0.0, rr, r * 1.5, bm("thatch"), at + bv(0.0, h + 0.4 + r * 0.75, 0.0), bv(0.0, 45.0, 0.0), 4))
@@ -78,13 +78,13 @@ def bld_fort_tower(body:MNode, arch:string, at:float3, r:float, h:float) -> floa
                 y += ch
                 k += 1
             bld_slit(body, at + bv(0.0, h * 0.55, r * 0.95), 0.0)
-            add_child(body, bcyl(0.0, r + 0.12, r * 0.9, tin, at + bv(0.0, y + r * 0.45, 0.0), float3_0, 18))   // the funnel roof
+            add_child(body, bcyl(0.0, r + 0.12, r * 0.9, tin, at + bv(0.0, y + r * 0.45, 0.0), float3_0, 18))  // the funnel roof
             add_child(body, bcyl(0.05, 0.05, r * 1.4, bflat(html("#4a4a48"), 0.5, 0.6), at + bv(r * 0.35, y + r * 0.7, 0.0), float3_0, 8))
             return y + r * 0.9
         case "tent":
             let felt = bm("felt")
-            for([-1.0, 1.0]) x:
-                for([-1.0, 1.0]) z:
+            for([ -1.0, 1.0 ]) x:
+                for([ -1.0, 1.0 ]) z:
                     add_child(body, beam(at + bv(x * r * 1.15, 0.0, z * r * 1.15), at + bv(x * r * 0.85, h, z * r * 0.85), 0.04, wood))
             add_child(body, bcyl(r * 1.02, r * 1.12, h * 0.55, felt, at + bv(0.0, h * 0.275, 0.0), bv(0.0, 45.0, 0.0), 4))
             add_child(body, bbox(bv(r * 2.0 + 0.1, 0.07, r * 2.0 + 0.1), wood, at + bv(0.0, h, 0.0)))
@@ -95,7 +95,7 @@ def bld_fort_tower(body:MNode, arch:string, at:float3, r:float, h:float) -> floa
             let deck_y = bld_stilt_deck(body, at, r * 2.0 + 0.2, r * 2.0 + 0.2)
             let weave = bm("weave")
             add_child(body, bcyl(r * 0.88, r, h - deck_y, weave, at + bv(0.0, deck_y + (h - deck_y) / 2.0, 0.0), float3_0, 22))
-            for([0.25, 0.7]) t:
+            for([ 0.25, 0.7 ]) t:
                 add_child(body, bring(r * (1.0 - 0.12 * t) - 0.02, r * (1.0 - 0.12 * t) + 0.04, bm("mud"), at + bv(0.0, deck_y + (h - deck_y) * t, 0.0)))
             bld_slit(body, at + bv(0.0, deck_y + (h - deck_y) * 0.5, r * 0.95), 0.0)
             add_child(body, bdome(r * 0.98, bm("thatch"), at + bv(0.0, h - 0.02, 0.0), bv(1.0, 1.0, 1.0)))
@@ -121,7 +121,7 @@ def bld_fort_wall(body:MNode, arch:string, a:float3, b:float3, h:float, thick:fl
     holder.pos = (a + b) / 2.0
     set_basis(holder, axis_angle(BLD_UP, atan2(float2 { b.x - a.x, -(b.z - a.z) })))
     add_child(body, holder)
-    let l = f32(magnitude(b - a))   // (Godot's distance_to is a 32-bit float: 3.1 / 0.1 stakes is 30 there)
+    let l = f32(magnitude(b - a))  // (Godot's distance_to is a 32-bit float: 3.1 / 0.1 stakes is 30 there)
     let wood = bm("wood")
     switch arch:
         case "stone":
@@ -141,7 +141,7 @@ def bld_fort_wall(body:MNode, arch:string, a:float3, b:float3, h:float, thick:fl
                 let sh = h - base + (if k % 2 == 0: 0.04 else: -0.02)
                 add_child(holder, bcyl(0.05, 0.055, sh, wood, bv(x, base + sh / 2.0, 0.0), bv(randf_range(brng, -3.0, 3.0), 0.0, 0.0), 7))
                 add_child(holder, bcyl(0.0, 0.05, 0.1, wood, bv(x, base + sh + 0.05, 0.0), float3_0, 7))
-            add_child(holder, bbox(bv(l, 0.04, 0.03), wood, bv(0.0, base + (h - base) * 0.7, thick * 0.3)))   // a rail binding them
+            add_child(holder, bbox(bv(l, 0.04, 0.03), wood, bv(0.0, base + (h - base) * 0.7, thick * 0.3)))  // a rail binding them
             if arch == "tent":
                 add_child(holder, bbox(bv(l, h * 0.42, 0.03), bm("felt"), bv(0.0, h * 0.3, 0.07)))
         case "junk":
@@ -163,7 +163,7 @@ def bld_fort_wall(body:MNode, arch:string, a:float3, b:float3, h:float, thick:fl
                 let rx = randf_range(brng, -5.0, 5.0)
                 let rz = randf_range(brng, -4.0, 4.0)
                 add_child(holder, bcyl(0.04, 0.055, h - 0.1, reed, bv(x, 0.1 + (h - 0.1) / 2.0, 0.0), bv(rx, 0.0, rz), 7))
-            for([0.35, 0.75]) y:
+            for([ 0.35, 0.75 ]) y:
                 add_child(holder, bbox(bv(l, 0.035, thick * 0.5), wood, bv(0.0, h * y, 0.0)))
         case "mound":
             let mud = bm("mud")
@@ -188,15 +188,15 @@ def bld_keep(body:MNode, arch:string, at:float3, w:float, d:float, h:float, team
                     let t = -along / 2.0 + (float(k) + 0.5) * along / float(n)
                     let p = if side == 0: bv(t, h + 0.14, d / 2.0) elif side == 1: bv(w / 2.0, h + 0.14, t) elif side == 2: bv(t, h + 0.14, -d / 2.0) else: bv(-w / 2.0, h + 0.14, t)
                     add_child(holder, bbox(bv(if side % 2 == 0: 0.11 else: 0.09, 0.12, if side % 2 == 0: 0.09 else: 0.11), stone, p))
-            for([-1.0, 1.0]) x:
-                for([-1.0, 1.0]) z:
+            for([ -1.0, 1.0 ]) x:
+                for([ -1.0, 1.0 ]) z:
                     add_child(holder, bcyl(0.13, 0.13, h + 0.35, stone, bv(x * w / 2.0, (h + 0.35) / 2.0, z * d / 2.0), float3_0, 12))
                     add_child(holder, bcyl(0.0, 0.17, 0.3, bm("terracotta"), bv(x * w / 2.0, h + 0.5, z * d / 2.0), float3_0, 12))
-            for([-w * 0.25, w * 0.25]) x:
+            for([ -w * 0.25, w * 0.25 ]) x:
                 bld_slit(holder, bv(x, h * 0.7, d / 2.0 + 0.01), 0.0)
             bld_slit(holder, bv(w / 2.0 + 0.01, h * 0.6, 0.0), 90.0)
-            add_child(holder, bbox(bv(0.36, 0.5, 0.04), bflat(html("#3a2416"), 0.9), bv(0.0, 0.39, d / 2.0 + 0.02)))   // the door
-            add_child(holder, bbox(bv(0.2, 0.42, 0.02), bcloth(team), bv(w * 0.3, h * 0.55, d / 2.0 + 0.02)))   // a banner hung on the face
+            add_child(holder, bbox(bv(0.36, 0.5, 0.04), bflat(html("#3a2416"), 0.9), bv(0.0, 0.39, d / 2.0 + 0.02)))  // the door
+            add_child(holder, bbox(bv(0.2, 0.42, 0.02), bcloth(team), bv(w * 0.3, h * 0.55, d / 2.0 + 0.02)))         // a banner hung on the face
             return at.y + h + 0.65
         case "tent":
             return at.y + bld_yurt(holder, float3_0, min(w, d) / 2.0 + 0.15, h * 0.55, team)
@@ -218,7 +218,7 @@ def bld_keep(body:MNode, arch:string, at:float3, w:float, d:float, h:float, team
     let base = bld_hall(holder, arch, w, d, h)
     let rise = bld_roof(holder, arch, bv(0.0, base + h, 0.0), w, d)
     add_child(holder, bbox(bv(0.36, 0.5, 0.04), bflat(html("#2a1e14"), 0.9), bv(0.0, base + 0.25, d / 2.0 + 0.02)))
-    add_child(holder, bbox(bv(0.42, 0.07, 0.06), bcloth(team), bv(0.0, base + 0.53, d / 2.0 + 0.03)))   // a team cloth over the door
+    add_child(holder, bbox(bv(0.42, 0.07, 0.06), bcloth(team), bv(0.0, base + 0.53, d / 2.0 + 0.03)))  // a team cloth over the door
     return at.y + base + h + rise
 
 // A standard on a pole at `at`, `tall` high: the live banner and its pivot.
@@ -245,8 +245,8 @@ def bld_castle_look(name:string, arch:string, team:float3) -> BSpec:
         case "curtain":
             let tr = 0.34
             let th = 1.25
-            for([-1.0, 1.0]) x:
-                for([-1.0, 1.0]) z:
+            for([ -1.0, 1.0 ]) x:
+                for([ -1.0, 1.0 ]) z:
                     bld_fort_tower(body, arch, bv(x * c, 0.0, z * c), tr, th + (if z < 0.0: 0.15 else: 0.0))
             let wh = 0.82
             bld_fort_wall(body, arch, bv(-c, 0.0, -c), bv(c, 0.0, -c), wh)
@@ -267,7 +267,7 @@ def bld_castle_look(name:string, arch:string, team:float3) -> BSpec:
             add_child(body, bdome(mr, bm("mud"), mx, bv(1.0, mh / mr, 1.0)))
             bld_grass_tufts(body, mx + bv(0.0, mh * 0.6, 0.5), 0.45, 8)
             top = bld_keep(body, arch, mx + bv(0.0, mh - 0.1, 0.0), 1.2, 1.05, 1.4, team)
-            for(5) k:   // steps up the mound's front
+            for(5) k:  // steps up the mound's front
                 add_child(body, bbox(bv(0.36, 0.06, 0.16), wood, mx + bv(0.45, mh * (float(k) + 0.5) / 5.0, mr * 0.95 - float(k) * 0.14), bv(0.0, 25.0, 0.0)))
             let wh = 0.62
             let fz = 1.6
@@ -308,16 +308,16 @@ def bld_castle_look(name:string, arch:string, team:float3) -> BSpec:
 def bld_gate(body:MNode, arch:string, at:float3, h:float, team:float3):
     let post = bm(if arch == "stone": "stone" elif arch == "junk": "brick" elif arch == "mound": "mud" else: "wood")
     let gh = h + 0.3
-    for([-0.42, 0.42]) x:
+    for([ -0.42, 0.42 ]) x:
         add_child(body, bbox(bv(0.2, gh, 0.32), post, at + bv(x, gh / 2.0, 0.0)))
     add_child(body, bbox(bv(1.04, 0.2, 0.34), post, at + bv(0.0, gh - 0.1, 0.0)))
     if arch == "stone":
-        for([-0.42, 0.0, 0.42]) x:
+        for([ -0.42, 0.0, 0.42 ]) x:
             add_child(body, bbox(bv(0.12, 0.12, 0.1), post, at + bv(x, gh + 0.06, 0.12)))
-    add_child(body, bbox(bv(0.62, gh - 0.22, 0.05), bflat(html("#3a2416"), 0.9), at + bv(0.0, (gh - 0.22) / 2.0, 0.02)))   // the doors, shut
+    add_child(body, bbox(bv(0.62, gh - 0.22, 0.05), bflat(html("#3a2416"), 0.9), at + bv(0.0, (gh - 0.22) / 2.0, 0.02)))  // the doors, shut
     add_child(body, bbox(bv(0.6, 0.04, 0.06), bm("wood"), at + bv(0.0, (gh - 0.22) * 0.3, 0.05)))
     add_child(body, bbox(bv(0.6, 0.04, 0.06), bm("wood"), at + bv(0.0, (gh - 0.22) * 0.75, 0.05)))
-    add_child(body, bbox(bv(0.16, 0.24, 0.02), bcloth(team), at + bv(-0.42, gh * 0.6, 0.17)))   // a small team cloth on a pier
+    add_child(body, bbox(bv(0.16, 0.24, 0.02), bcloth(team), at + bv(-0.42, gh * 0.6, 0.17)))  // a small team cloth on a pier
 
 // A University (3 x 3 tiles): observatory, cloister or builders.
 def bld_university_look(name:string, arch:string, team:float3) -> BSpec:
@@ -335,18 +335,18 @@ def bld_university_look(name:string, arch:string, team:float3) -> BSpec:
             let r = 0.42
             let th = 2.0
             var scope_from = at + bv(0.0, th + r * 0.45, r * 0.45)
-            if arch == "mound":   // a spire with a glass poking out near its top
+            if arch == "mound":  // a spire with a glass poking out near its top
                 top = max(top, bld_fort_tower(body, arch, at, r, th))
                 scope_from = at + bv(0.0, th * 0.8, r * 0.35)
-            elif arch == "reed":   // the woven tower, under its own reed dome
+            elif arch == "reed":  // the woven tower, under its own reed dome
                 top = max(top, bld_fort_tower(body, arch, at, r, th))
             else:
                 bld_plain_tower(body, arch, at, r, th)
                 let dome_mat = if arch == "stone": bflat(html("#6a9a86"), 0.5, 0.4) elif arch == "junk": bm("tin") elif arch == "tent": bm("felt") else: bm("thatch")
                 add_child(body, bdome(r + 0.06, dome_mat, at + bv(0.0, th, 0.0)))
-                add_child(body, bbox(bv(0.1, r * 0.8, 0.03), bflat(html("#1a140e"), 1.0), at + bv(0.0, th + r * 0.35, r * 0.62), bv(-35.0, 0.0, 0.0)))   // the slot in the dome
+                add_child(body, bbox(bv(0.1, r * 0.8, 0.03), bflat(html("#1a140e"), 1.0), at + bv(0.0, th + r * 0.35, r * 0.62), bv(-35.0, 0.0, 0.0)))  // the slot in the dome
                 top = max(top, th + r + 0.06)
-            add_child(body, beam(scope_from, scope_from + bv(0.12, 0.32, 0.3), 0.04, bflat(html("#b07a36"), 0.4, 0.7), 10))   // the brass glass
+            add_child(body, beam(scope_from, scope_from + bv(0.12, 0.32, 0.3), 0.04, bflat(html("#b07a36"), 0.4, 0.7), 10))  // the brass glass
             add_child(body, bcyl(0.13, 0.15, 0.3, stone_like, bv(0.95, 0.15, 0.85), float3_0, 12))
             add_child(body, bcyl(0.18, 0.18, 0.03, bflat(html("#c8b48a"), 0.6), bv(0.95, 0.315, 0.85), float3_0, 16))
             add_child(body, slab_tri(float2 { 0.0, 0.0 }, float2 { 0.14, 0.0 }, float2 { 0.0, 0.12 }, 0.012, bflat(html("#b07a36"), 0.4, 0.7)))
@@ -355,18 +355,18 @@ def bld_university_look(name:string, arch:string, team:float3) -> BSpec:
             lights.push(at + bv(r * 0.9, th * 0.6, r * 0.4))
         case "cloister":
             top = bld_uni_hall(body, arch, bv(0.0, 0.0, -0.85), 2.4, 0.8, 0.8, team)
-            for([-1.0, 1.0]) side:   // the covered walks down the sides, open to the yard
+            for([ -1.0, 1.0 ]) side:  // the covered walks down the sides, open to the yard
                 bld_walk(body, arch, bv(side * 1.1, 0.0, 0.25), 0.5, 1.5, true)
             bld_walk(body, arch, bv(0.0, 0.0, 1.15), 1.7, 0.42, false)
-            add_child(body, bcyl(0.05, 0.06, 0.4, wood, bv(0.15, 0.2, 0.25), float3_0, 8))   // a tree in the yard
+            add_child(body, bcyl(0.05, 0.06, 0.4, wood, bv(0.15, 0.2, 0.25), float3_0, 8))  // a tree in the yard
             add_child(body, bball(0.32, bflat(html("#4e7a30"), 0.9), bv(0.15, 0.62, 0.25), bv(1.0, 0.9, 1.0)))
             add_child(body, bball(0.2, bflat(html("#5e8a38"), 0.9), bv(0.0, 0.75, 0.35)))
-            add_child(body, bcyl(0.12, 0.14, 0.12, stone_like, bv(-0.35, 0.06, 0.3), float3_0, 12))   // a well
+            add_child(body, bcyl(0.12, 0.14, 0.12, stone_like, bv(-0.35, 0.06, 0.3), float3_0, 12))  // a well
             let bt = bv(-1.05, 0.0, -1.05)
             let bh = 1.55
             add_child(body, bbox(bv(0.5, bh, 0.5), bm(k.wall), bt + bv(0.0, bh / 2.0, 0.0)))
-            for([-1.0, 1.0]) x:
-                for([-1.0, 1.0]) z:
+            for([ -1.0, 1.0 ]) x:
+                for([ -1.0, 1.0 ]) z:
                     add_child(body, bbox(bv(0.07, 0.42, 0.07), bm(k.frame), bt + bv(x * 0.22, bh + 0.21, z * 0.22)))
             add_child(body, bcyl(0.05, 0.1, 0.14, bflat(html("#b07a36"), 0.4, 0.7), bt + bv(0.0, bh + 0.22, 0.0), float3_0, 12))
             add_child(body, bcyl(0.0, 0.45, 0.4, bld_roof_mat(k), bt + bv(0.0, bh + 0.62, 0.0), bv(0.0, 45.0, 0.0), 4))
@@ -374,20 +374,20 @@ def bld_university_look(name:string, arch:string, team:float3) -> BSpec:
         case "builders":
             top = bld_uni_hall(body, arch, bv(-0.5, 0.0, -0.6), 1.6, 1.1, 0.85, team)
             let f = bv(0.8, 0.0, 0.15)
-            for([-0.35, 0.35]) z:
+            for([ -0.35, 0.35 ]) z:
                 add_child(body, beam(f + bv(-0.45, 0.0, z), f + bv(0.0, 1.75, z * 0.3), 0.055, wood))
                 add_child(body, beam(f + bv(0.45, 0.0, z), f + bv(0.0, 1.75, z * 0.3), 0.055, wood))
             add_child(body, beam(f + bv(0.0, 1.72, -0.15), f + bv(0.0, 1.72, 0.15), 0.04, wood))
             add_child(body, beam(f + bv(0.0, 1.72, 0.0), f + bv(0.0, 0.84, 0.0), 0.015, bflat(html("#8a6a3c"), 0.9), 4))
             add_child(body, bbox(bv(0.42, 0.28, 0.3), stone_like, f + bv(0.0, 0.7, 0.0)))
-            add_child(body, bcyl(0.1, 0.1, 0.5, wood, f + bv(-0.3, 0.3, 0.0), bv(90.0, 0.0, 0.0), 10))   // the winding drum
-            for([bv(-0.2, 0.11, 0.85), bv(0.15, 0.11, 0.9), bv(-0.03, 0.33, 0.87)]) p:
+            add_child(body, bcyl(0.1, 0.1, 0.5, wood, f + bv(-0.3, 0.3, 0.0), bv(90.0, 0.0, 0.0), 10))  // the winding drum
+            for([ bv(-0.2, 0.11, 0.85), bv(0.15, 0.11, 0.9), bv(-0.03, 0.33, 0.87) ]) p:
                 add_child(body, bbox(bv(0.32, 0.22, 0.24), stone_like, p, bv(0.0, randf_range(brng, -8.0, 8.0), 0.0)))
-            for([-1.05, -0.55]) x:
+            for([ -1.05, -0.55 ]) x:
                 add_child(body, bbox(bv(0.16, 0.5, 0.18), stone_like, bv(x, 0.25, 0.7)))
             add_child(body, bbox(bv(0.66, 0.14, 0.18), stone_like, bv(-0.8, 0.57, 0.7)))
-            add_child(body, bbox(bv(0.3, 0.03, 0.22), bflat(html("#e8dcc0"), 0.9), bv(0.45, 0.42, 1.05), bv(0.0, 10.0, 0.0)))   // a plan on a trestle
-            for([0.33, 0.57]) x:
+            add_child(body, bbox(bv(0.3, 0.03, 0.22), bflat(html("#e8dcc0"), 0.9), bv(0.45, 0.42, 1.05), bv(0.0, 10.0, 0.0)))  // a plan on a trestle
+            for([ 0.33, 0.57 ]) x:
                 add_child(body, beam(bv(x, 0.0, 0.98), bv(x, 0.4, 1.06), 0.015, wood, 4))
                 add_child(body, beam(bv(x, 0.0, 1.14), bv(x, 0.4, 1.06), 0.015, wood, 4))
             top = max(top, 1.75)
@@ -409,7 +409,7 @@ def bld_uni_hall(body:MNode, arch:string, at:float3, w:float, d:float, h:float, 
     let rise = bld_roof(holder, arch, bv(0.0, base + h, 0.0), w, d)
     add_child(holder, bbox(bv(0.36, 0.5, 0.04), bflat(html("#2a1e14"), 0.9), bv(-w * 0.2, base + 0.25, d / 2.0 + 0.02)))
     add_child(holder, bbox(bv(0.42, 0.07, 0.06), bcloth(team), bv(-w * 0.2, base + 0.53, d / 2.0 + 0.03)))
-    for([w * 0.1, w * 0.32]) x:   // tall windows: a place of reading
+    for([ w * 0.1, w * 0.32 ]) x:  // tall windows: a place of reading
         add_child(holder, bbox(bv(0.14, 0.32, 0.03), bglow(html("#ffcf6a"), 1.2), bv(x, base + h * 0.55, d / 2.0 + 0.01)))
     return at.y + base + h + rise
 
@@ -422,15 +422,15 @@ def bld_plain_tower(body:MNode, arch:string, at:float3, r:float, h:float) -> flo
         add_child(body, bring(r * 1.02, r * 1.08, bm("stone"), at + bv(0.0, 0.06, 0.0)))
     elif arch == "junk":
         add_child(body, bcyl(r, r, h, bm("tin"), at + bv(0.0, h / 2.0, 0.0), float3_0, 20))
-        for([0.3, 0.75]) y:
+        for([ 0.3, 0.75 ]) y:
             add_child(body, bring(r - 0.01, r + 0.03, bflat(html("#9a9c96"), 0.5, 0.5), at + bv(0.0, h * y, 0.0)))
     elif arch == "tent":
         add_child(body, bcyl(r, r * 1.1, h, bm("felt"), at + bv(0.0, h / 2.0, 0.0), float3_0, 20))
-        for([0.3, 0.7]) y:
+        for([ 0.3, 0.7 ]) y:
             add_child(body, bring(r * 1.02, r * 1.08, bflat(html("#8a6a3c"), 0.9), at + bv(0.0, h * y, 0.0)))
     else:
         add_child(body, bcyl(r, r * 1.05, h, bm(k.wall), at + bv(0.0, h / 2.0, 0.0), float3_0, 20))
-        for([0.0, 120.0, 240.0]) a:
+        for([ 0.0, 120.0, 240.0 ]) a:
             add_child(body, bbox(bv(0.07, h, 0.07), bm(k.frame), at + bv(sin(a) * r, h / 2.0, cos(a) * r)))
     add_child(body, bbox(bv(0.1, 0.24, 0.03), bglow(html("#ffcf6a"), 1.2), at + bv(0.0, h * 0.6, r + 0.005)))
     return at.y + h
@@ -454,9 +454,9 @@ def bld_walk(body:MNode, arch:string, at:float3, w:float, d:float, along_z:bool)
 def bld_books(body:MNode, at:float3):
     let wood = bm("wood")
     add_child(body, bbox(bv(0.5, 0.04, 0.18), wood, at + bv(0.0, 0.2, 0.0)))
-    for([-0.2, 0.2]) x:
+    for([ -0.2, 0.2 ]) x:
         add_child(body, bbox(bv(0.04, 0.2, 0.14), wood, at + bv(x, 0.1, 0.0)))
-    let covers = [html("#7a2a22"), html("#2a4a6a"), html("#5a6a2a")]
+    let covers = [ html("#7a2a22"), html("#2a4a6a"), html("#5a6a2a") ]
     for(3) i:
         add_child(body, bbox(bv(0.16, 0.04, 0.12), bflat(covers[i], 0.8), at + bv(-0.08, 0.24 + float(i) * 0.04, 0.0), bv(0.0, float(i) * 12.0, 0.0)))
     add_child(body, bcyl(0.03, 0.03, 0.18, bflat(html("#e8dcc0"), 0.9), at + bv(0.14, 0.25, 0.0), bv(0.0, 30.0, 90.0), 8))
@@ -467,16 +467,16 @@ def bld_books(body:MNode, at:float3):
 def walk_h(type:string) -> float:
     switch type:
         case "wall_tower": return 2.32
-        default: return 1.36   // wall, stone_gate
+        default: return 1.36  // wall, stone_gate
 let wall_rescale = 1.0
-let BLD_NONE = float3 { -999.0, -999.0, -999.0 }   // no `about` point
-let WALL_D = 0.72        // the curtain's thickness
-let TOWER_W = 1.0        // a wall tower fills its tile
-let HOARD_H = 0.3        // a tower's hoarding, this high
-let HOARD_POST = 0.8     // the posts from the floor up to the roof's eaves
+let BLD_NONE = float3 { -999.0, -999.0, -999.0 }  // no `about` point
+let WALL_D = 0.72                                 // the curtain's thickness
+let TOWER_W = 1.0                                 // a wall tower fills its tile
+let HOARD_H = 0.3                                 // a tower's hoarding, this high
+let HOARD_POST = 0.8                              // the posts from the floor up to the roof's eaves
 let GATE_TOWER_W = 0.6
 let GATE_TOWER_D = 1.1
-let GATE_ARCH = 0.95     // the passage's height under the walk
+let GATE_ARCH = 0.95  // the passage's height under the walk
 
 def gate_tower_from(span:float) -> float: return span / 2.0 - GATE_TOWER_W
 
@@ -511,7 +511,7 @@ def bld_crenel(body:MNode, arch:string, m:MMat, size:float3, pos:float3, along:f
         return
     let wood = bm("wood")
     let dir = if magnitude(along) > 0.001: along else: bv(1.0, 0.0, 0.0)
-    for([-1.0, 1.0]) s:
+    for([ -1.0, 1.0 ]) s:
         let h = size.y * (if s < 0.0: 1.25 else: 1.1)
         let p = pos + dir * (s * size.x * 0.25)
         add_child(body, parapet(bcyl(0.04, 0.045, h, wood, p + bv(0.0, h / 2.0, 0.0), float3_0, 7), along, about))
@@ -534,16 +534,16 @@ def bld_tower_top(body:MNode, arch:string, at:float3, w:float, d:float, h:float)
     let dark = bflat(html("#1e1a16"), 1.0)
     let about = at + bv(0.0, h, 0.0)
     let t = 0.05
-    for([-1.0, 1.0]) side:   // the gallery
+    for([ -1.0, 1.0 ]) side:  // the gallery
         add_child(body, parapet(bbox(bv(w + 0.02, HOARD_H, t), hoard, at + bv(0.0, h + HOARD_H / 2.0, side * (d / 2.0 - t / 2.0 + 0.01))), float3_0, about))
         add_child(body, parapet(bbox(bv(t, HOARD_H, d + 0.02), hoard, at + bv(side * (w / 2.0 - t / 2.0 + 0.01), h + HOARD_H / 2.0, 0.0)), float3_0, about))
         add_child(body, parapet(bbox(bv(min(0.14, w * 0.3), 0.09, 0.01), dark, at + bv(0.0, h + HOARD_H * 0.55, side * (d / 2.0 + 0.016))), float3_0, about))
         add_child(body, parapet(bbox(bv(0.01, 0.09, min(0.14, d * 0.3)), dark, at + bv(side * (w / 2.0 + 0.016), h + HOARD_H * 0.55, 0.0)), float3_0, about))
-    for([-1.0, 1.0]) x:   // the corner posts up to the eaves
-        for([-1.0, 1.0]) z:
+    for([ -1.0, 1.0 ]) x:  // the corner posts up to the eaves
+        for([ -1.0, 1.0 ]) z:
             add_child(body, parapet(bbox(bv(0.06, HOARD_POST, 0.06), wood, at + bv(x * (w / 2.0 - 0.03), h + HOARD_POST / 2.0, z * (d / 2.0 - 0.03))), float3_0, about))
     let eave = h + HOARD_POST
-    for([-1.0, 1.0]) side:   // the wall plates the roof sits on
+    for([ -1.0, 1.0 ]) side:  // the wall plates the roof sits on
         add_child(body, bld_roof_tag(bbox(bv(w + 0.04, 0.05, 0.05), wood, at + bv(0.0, eave, side * (d / 2.0 - 0.03))), about - bv(5.0, 0.0, 5.0)))
         add_child(body, bld_roof_tag(bbox(bv(0.05, 0.05, d + 0.04), wood, at + bv(side * (w / 2.0 - 0.03), eave, 0.0)), about - bv(5.0, 0.0, 5.0)))
     let rise = max(w, d) * 0.5
@@ -553,7 +553,7 @@ def bld_tower_top(body:MNode, arch:string, at:float3, w:float, d:float, h:float)
     add_child(body, holder)
     add_child(holder, bld_roof_tag(bcyl(0.0, 1.0, rise, bm(roof_name), float3_0, bv(0.0, 45.0, 0.0), 4), bv(-1.0, 0.0, -1.0)))
 
-let BLD_LINKS = [int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { -1, 0 }, int2 { -1, -1 }, int2 { 0, -1 }, int2 { 1, -1 }]
+let BLD_LINKS = [ int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { -1, 0 }, int2 { -1, -1 }, int2 { 0, -1 }, int2 { 1, -1 } ]
 
 // Does the arm in direction k own the stake or merlon on its far edge?
 def owns(k:int) -> bool:
@@ -604,8 +604,8 @@ def bld_stone_arm(arch:string, k:int) -> MNode:
     let mud = wall_stone(arch) == "mud"
     let right = bv(1.0, 0.0, 0.0)
     add_child(body, bbox(bv(l, h, WALL_D), m, bv(l / 2.0, h / 2.0, 0.0)))
-    add_child(body, bbox(bv(l, 0.01, WALL_D - 0.24), bld_walk_mat(arch), bv(l / 2.0, h + 0.003, 0.0)))   // the walk
-    for([-1.0, 1.0]) z:
+    add_child(body, bbox(bv(l, 0.01, WALL_D - 0.24), bld_walk_mat(arch), bv(l / 2.0, h + 0.003, 0.0)))  // the walk
+    for([ -1.0, 1.0 ]) z:
         add_child(body, bbox(bv(l, 0.16, 0.06), m, bv(l / 2.0, 0.08, z * (WALL_D / 2.0 + 0.03))))
         if not mud:
             add_child(body, merlon(bv(l, 0.08, 0.12), m, bv(l / 2.0, h + 0.04, z * (WALL_D / 2.0 - 0.06)), right))
@@ -613,16 +613,16 @@ def bld_stone_arm(arch:string, k:int) -> MNode:
             add_child(body, merlon(bv(l, 0.03, 0.03), bm("wood"), bv(l / 2.0, h + 0.15, z * (WALL_D / 2.0 - 0.06)), right))
         bld_crenel(body, arch, m, bv(0.18, 0.24, 0.12), bv(l / 2.0, h, z * (WALL_D / 2.0 - 0.06)), right)
     brng = grng(93 + k)
-    if arch == "junk" and k == 5:   // a tin patch nailed over the brick
+    if arch == "junk" and k == 5:  // a tin patch nailed over the brick
         add_child(body, bbox(bv(0.3, 0.3, 0.02), bm("tin"), bv(l * 0.5, h * 0.45, WALL_D / 2.0 + 0.01), bv(0.0, 0.0, 6.0)))
-    elif mud:   // field stones pressed into the earth
+    elif mud:  // field stones pressed into the earth
         for(2) n:
             let side = if n == 0: 1.0 else: -1.0
             let px = randf_range(brng, 0.1, l - 0.1)
             let py = randf_range(brng, 0.2, h - 0.25)
             add_child(body, bball(0.08, bm("stone"), bv(px, py, (WALL_D / 2.0) * side), bv(1.2, 0.8, 0.6)))
-    elif k == 0:   // an arrow loop down each face, once a tile
-        for([-1.0, 1.0]) z:
+    elif k == 0:  // an arrow loop down each face, once a tile
+        for([ -1.0, 1.0 ]) z:
             add_child(body, bbox(bv(0.05, 0.28, 0.02), bflat(html("#1e1a16"), 1.0), bv(l * 0.5, h * 0.55, z * (WALL_D / 2.0 + 0.005))))
     return body
 
@@ -634,7 +634,7 @@ def bld_stake_post(arch:string) -> MNode:
     let body = mnode()
     brng = grng(91)
     bld_stake(body, float3_0, 0.88, bm("wood"), 0.095)
-    bld_palisade_dress(body, arch, [float3_0], 0.0)
+    bld_palisade_dress(body, arch, [ float3_0 ], 0.0)
     return body
 
 def bld_stake_arm(arch:string, k:int) -> MNode:
@@ -650,8 +650,8 @@ def bld_stake_arm(arch:string, k:int) -> MNode:
         spots.push(bv(l * (float(j) + 0.5) / float(n), 0.0, -0.1))
     for(spots) p:
         bld_stake(body, p, randf_range(brng, 0.72, 0.86), wood)
-    for([0.25, 0.55]) y:
-        for([-0.18, 0.18]) z:   // rails lashed on both faces
+    for([ 0.25, 0.55 ]) y:
+        for([ -0.18, 0.18 ]) z:  // rails lashed on both faces
             add_child(body, bbox(bv(l, 0.04, 0.04), wood, bv(l / 2.0, y, z)))
     bld_palisade_dress(body, arch, spots, l, k)
     return body
@@ -669,19 +669,19 @@ def bld_palisade_dress(body:MNode, arch:string, spots:[float3], l:float, k:int =
     let run = max(l, 0.24)
     let mid = bv(l / 2.0, 0.0, 0.0)
     switch arch:
-        case "stone":   // a dry-stone footing the stakes are set in
+        case "stone":  // a dry-stone footing the stakes are set in
             add_child(body, bbox(bv(run, 0.14, 0.46), bm("stone"), mid + bv(0.0, 0.07, 0.0)))
-        case "junk":   // tin sheets nailed on where the stakes ran short (a few arms only)
+        case "junk":  // tin sheets nailed on where the stakes ran short (a few arms only)
             if l > 0.0 and (k == 1 or k == 5):
                 add_child(body, bbox(bv(0.3, 0.24, 0.02), bm("tin"), mid + bv(0.0, 0.42, 0.2), bv(0.0, 0.0, 8.0)))
-        case "reed":   // every stake bound with reed at two heights
+        case "reed":  // every stake bound with reed at two heights
             for(spots) p:
-                for([0.3, 0.6]) y:
+                for([ 0.3, 0.6 ]) y:
                     add_child(body, bcyl(0.1, 0.1, 0.06, bm("thatch"), p + bv(0.0, y, 0.0), float3_0, 8))
-        case "tent":   // a felt strip along the top rail
+        case "tent":  // a felt strip along the top rail
             if l > 0.0:
                 add_child(body, bbox(bv(l, 0.08, 0.03), bm("felt"), mid + bv(0.0, 0.6, 0.2)))
-        case "mound":   // an earth bank heaped against the foot
+        case "mound":  // an earth bank heaped against the foot
             add_child(body, bbox(bv(run, 0.2, 0.56), bm("mud"), mid + bv(0.0, 0.08, 0.0)))
         default: pass()
 
@@ -700,22 +700,22 @@ def bld_stake_gate(arch:string, team:float3, open:bool) -> MNode:
     brng = grng(95)
     let wood = bm("wood")
     let post = gate_span / 2.0 - GATE_POST
-    let posts = [bv(-post, 0.0, 0.0), bv(post, 0.0, 0.0)]
-    for(posts) p:   // the gate posts, propped from behind
+    let posts = [ bv(-post, 0.0, 0.0), bv(post, 0.0, 0.0) ]
+    for(posts) p:  // the gate posts, propped from behind
         add_child(body, bcyl(GATE_POST_R, GATE_POST_R + 0.01, GATE_TOP + 0.13, wood, p + bv(0.0, (GATE_TOP + 0.13) / 2.0, 0.0), float3_0, 10))
-        add_child(body, bcyl(0.0, GATE_POST_R, 0.16, wood, p + bv(0.0, GATE_TOP + 0.21, 0.0), float3_0, 10))   // its point
+        add_child(body, bcyl(0.0, GATE_POST_R, 0.16, wood, p + bv(0.0, GATE_TOP + 0.21, 0.0), float3_0, 10))  // its point
         add_child(body, beam(p + bv(0.0, 0.0, -0.42), p + bv(0.0, 0.72, -GATE_POST_R + 0.02), 0.045, wood))   // a prop
     add_child(body, bbox(bv(2.0 * (post + GATE_POST_R), 0.13, 0.17), wood, bv(0.0, GATE_TOP + 0.065, 0.0)))
-    for([-1.0, 1.0]) side:
+    for([ -1.0, 1.0 ]) side:
         add_child(body, beam(bv(side * (post - GATE_POST_R + 0.02), GATE_TOP - 0.36, 0.0), bv(side * (post - 0.46), GATE_TOP + 0.01, 0.0), 0.035, wood))
     let batten = GATE_TOP - 0.08
-    for([-0.2, 0.2]) x:
+    for([ -0.2, 0.2 ]) x:
         add_child(body, beam(bv(x, GATE_TOP + 0.01, 0.07), bv(x, batten, 0.07), 0.012, bm("thatch"), 4))
     add_child(body, bbox(bv(0.52, 0.04, 0.04), wood, bv(0.0, batten, 0.07)))
     add_child(body, bbox(bv(0.44, 0.32, 0.02), bcloth(team), bv(0.0, batten - 0.18, 0.07)))
     let leaf_w = post - GATE_POST_R
-    for([-1.0, 1.0]) side:
-        let leaf = mnode()   // hinged on its post; it swings back when open
+    for([ -1.0, 1.0 ]) side:
+        let leaf = mnode()  // hinged on its post; it swings back when open
         leaf.pos = bv(side * leaf_w, 0.0, 0.0)
         leaf.rot = bv(0.0, if open: 90.0 * -side else: 0.0, 0.0)
         add_child(body, leaf)
@@ -723,16 +723,16 @@ def bld_stake_gate(arch:string, team:float3, open:bool) -> MNode:
             let x = -side * (0.06 + float(k) * 0.12)
             add_child(leaf, bcyl(0.05, 0.055, 0.76, wood, bv(x, 0.4, 0.0), float3_0, 6))
             add_child(leaf, bcyl(0.0, 0.05, 0.1, wood, bv(x, 0.83, 0.0), float3_0, 6))
-        for([0.22, 0.6]) y:
+        for([ 0.22, 0.6 ]) y:
             add_child(leaf, bbox(bv(leaf_w - 0.05, 0.05, 0.03), wood, bv(-side * (leaf_w / 2.0 - 0.015), y, 0.05)))
-        add_child(leaf, beam(bv(-side * 0.05, 0.22, 0.06), bv(-side * (leaf_w - 0.11), 0.6, 0.06), 0.022, wood))   // a brace across
-    for(posts) p:   // the culture's touch at each post's foot
+        add_child(leaf, beam(bv(-side * 0.05, 0.22, 0.06), bv(-side * (leaf_w - 0.11), 0.6, 0.06), 0.022, wood))  // a brace across
+    for(posts) p:                                                                                                 // the culture's touch at each post's foot
         let foot = mnode()
         foot.pos = p
-        bld_palisade_dress(foot, arch, [float3_0], 0.0)
+        bld_palisade_dress(foot, arch, [ float3_0 ], 0.0)
         add_child(body, foot)
         if arch == "reed":
-            for([0.3, 0.6, 0.95]) y:
+            for([ 0.3, 0.6, 0.95 ]) y:
                 add_child(body, bcyl(GATE_POST_R + 0.025, GATE_POST_R + 0.025, 0.06, bm("thatch"), p + bv(0.0, y, 0.0), float3_0, 8))
     return body
 
@@ -743,14 +743,14 @@ def bld_wall_tower(arch:string, team:float3) -> BSpec:
     let h = bld_wh("wall_tower")
     let dark = bflat(html("#1e1a16"), 1.0)
     add_child(body, bbox(bv(TOWER_W, h, TOWER_W), m, bv(0.0, h / 2.0, 0.0)))
-    add_child(body, bbox(bv(TOWER_W - 0.2, 0.01, TOWER_W - 0.2), bld_walk_mat(arch), bv(0.0, h + 0.003, 0.0)))   // its floor
+    add_child(body, bbox(bv(TOWER_W - 0.2, 0.01, TOWER_W - 0.2), bld_walk_mat(arch), bv(0.0, h + 0.003, 0.0)))  // its floor
     let about = bv(0.0, h, 0.0)
-    for([-1.0, 1.0]) side:   // a corbel band under the hoarding
+    for([ -1.0, 1.0 ]) side:  // a corbel band under the hoarding
         add_child(body, parapet(bbox(bv(TOWER_W + 0.04, 0.1, 0.04), m, bv(0.0, h - 0.07, side * (TOWER_W / 2.0))), float3_0, about))
         add_child(body, parapet(bbox(bv(0.04, 0.1, TOWER_W + 0.04), m, bv(side * (TOWER_W / 2.0), h - 0.07, 0.0)), float3_0, about))
     add_child(body, parapet(bbox(bv(TOWER_W, h - 0.02, 0.002), m, bv(0.0, (h - 0.02) / 2.0, TOWER_W / 2.0 + 0.001)), float3_0, about))
     add_child(body, parapet(bbox(bv(0.002, h - 0.02, TOWER_W), m, bv(TOWER_W / 2.0 + 0.001, (h - 0.02) / 2.0, 0.0)), float3_0, about))
-    for([h * 0.32, h * 0.62]) y:   // arrow loops on the two faces towards the camera
+    for([ h * 0.32, h * 0.62 ]) y:  // arrow loops on the two faces towards the camera
         add_child(body, parapet(bbox(bv(0.06, 0.26, 0.02), dark, bv(0.0, y, TOWER_W / 2.0 + 0.005)), float3_0, about))
         add_child(body, parapet(bbox(bv(0.02, 0.26, 0.06), dark, bv(TOWER_W / 2.0 + 0.005, y, 0.0)), float3_0, about))
     add_child(body, parapet(bbox(bv(0.26, 0.36, 0.02), bcloth(team), bv(-0.2, h - 0.34, TOWER_W / 2.0 + 0.03)), float3_0, about))
@@ -763,7 +763,7 @@ def bld_ladder(arch:string, team:float3) -> BSpec:
     let wood = bm("wood")
     let h = bld_wh("wall") + 0.2
     let head = bv(-(1.0 - WALL_D / 2.0 - 0.02), h, 0.0)
-    for([-0.14, 0.14]) z:
+    for([ -0.14, 0.14 ]) z:
         add_child(body, beam(bv(0.0, 0.0, z), head + bv(0.0, 0.0, z), 0.03, wood, 6))
     let rungs = int(h / 0.14)
     for(rungs) k1:
@@ -791,9 +791,9 @@ def bld_wall_tower_look(name:string, arch:string, team:float3) -> BSpec:
     else:
         let h = 1.55
         add_child(body, bbox(bv(0.8, h, 0.8), m, bv(0.0, h / 2.0, 0.0)))
-        add_child(body, bbox(bv(1.02, 0.34, 1.02), wood, bv(0.0, h + 0.1, 0.0)))   // the hoarding
-        for([-0.45, 0.45]) x:
-            for([-0.45, 0.45]) z:
+        add_child(body, bbox(bv(1.02, 0.34, 1.02), wood, bv(0.0, h + 0.1, 0.0)))  // the hoarding
+        for([ -0.45, 0.45 ]) x:
+            for([ -0.45, 0.45 ]) z:
                 add_child(body, bbox(bv(0.05, 0.4, 0.05), wood, bv(x, h - 0.12, z)))
         add_child(body, bcyl(0.0, 0.78, 0.5, bld_roof_mat(bkit(arch)), bv(0.0, h + 0.52, 0.0), bv(0.0, 45.0, 0.0), 4))
         add_child(body, bbox(bv(0.07, 0.24, 0.03), dark, bv(0.0, 0.8, 0.41)))
@@ -807,14 +807,14 @@ def bld_ladder_look(name:string, arch:string, team:float3) -> BSpec:
     let body = spec.body
     let iron = bflat(html("#4a4c50"), 0.5, 0.7)
     if name == "hooked":
-        for([-0.14, 0.14]) z:
+        for([ -0.14, 0.14 ]) z:
             add_child(body, bbox(bv(0.12, 0.03, 0.03), iron, bv(-0.3, 1.04, z)))
             add_child(body, bbox(bv(0.03, 0.08, 0.03), iron, bv(-0.36, 1.0, z)))
         add_child(body, bcyl(0.012, 0.012, 0.9, bflat(html("#c8b48a"), 0.9), bv(0.1, 0.5, 0.2), bv(0.0, 0.0, 20.0), 5))
     else:
         let wicker = bm("weave")
         add_child(body, bbox(bv(0.06, 0.62, 0.62), wicker, bv(0.28, 0.36, 0.0), bv(0.0, 0.0, -8.0)))
-        for([-0.26, 0.26]) z:
+        for([ -0.26, 0.26 ]) z:
             add_child(body, bbox(bv(0.04, 0.5, 0.04), bm("wood"), bv(0.42, 0.22, z), bv(0.0, 0.0, 25.0)))
     return spec
 
@@ -859,9 +859,9 @@ def bld_gatehouse(arch:string, team:float3, open:bool) -> MNode:
     let arch_h = GATE_ARCH * wall_rescale
     let right = bv(1.0, 0.0, 0.0)
     add_child(body, bbox(bv(2.0 * inner, h - arch_h, WALL_D), m, bv(0.0, (arch_h + h) / 2.0, 0.0)))
-    add_child(body, bbox(bv(2.0 * inner, 0.01, WALL_D - 0.24), bld_walk_mat(arch), bv(0.0, h + 0.003, 0.0)))   // the walk's floor over the passage
-    for([-1.0, 1.0]) z:
-        add_child(body, bbox(bv(2.0 * inner, 0.05, 0.04), if not mud: bm("stone") else: wood, bv(0.0, arch_h + 0.025, z * (WALL_D / 2.0 - 0.02))))   // the lintel's soffit
+    add_child(body, bbox(bv(2.0 * inner, 0.01, WALL_D - 0.24), bld_walk_mat(arch), bv(0.0, h + 0.003, 0.0)))  // the walk's floor over the passage
+    for([ -1.0, 1.0 ]) z:
+        add_child(body, bbox(bv(2.0 * inner, 0.05, 0.04), if not mud: bm("stone") else: wood, bv(0.0, arch_h + 0.025, z * (WALL_D / 2.0 - 0.02))))  // the lintel's soffit
         if not mud:
             add_child(body, merlon(bv(2.0 * inner, 0.08, 0.12), m, bv(0.0, h + 0.04, z * (WALL_D / 2.0 - 0.06)), right))
         else:
@@ -874,9 +874,9 @@ def bld_gatehouse(arch:string, team:float3, open:bool) -> MNode:
             add_child(body, bbox(bv(0.06, 0.12, 0.07), m, bv(-inner + 0.05 + (float(k) + 0.5) * (2.0 * inner - 0.1) / float(n * 2), h - 0.2, z * (WALL_D / 2.0 + 0.035))))
     let tl = GATE_TOWER_W
     let proud = (GATE_TOWER_D - WALL_D) / 2.0
-    for([-1, 1]) side:
+    for([ -1, 1 ]) side:
         let cx = float(side) * (half - tl / 2.0)
-        let tower = mnode()   // a part of its own: ArtKit bakes it apart
+        let tower = mnode()  // a part of its own: ArtKit bakes it apart
         tower.meta = "gate_part {side} gate_centre {cx} 0.0 0.0"
         add_child(body, tower)
         bld_gate_tower(tower, arch, cx, tl, ht, proud, m, dark)
@@ -884,27 +884,27 @@ def bld_gatehouse(arch:string, team:float3, open:bool) -> MNode:
     add_child(body, bbox(bv(0.36, 0.3, 0.02), bcloth(team), bv(0.0, h - 0.43, WALL_D / 2.0 + 0.03)))
     let leaf_w = inner
     let leaf_z = WALL_D / 2.0 - 0.08
-    for([-1.0, 1.0]) side:
+    for([ -1.0, 1.0 ]) side:
         let leaf = mnode()
         leaf.pos = bv(side * inner, 0.0, leaf_z)
         leaf.rot = bv(0.0, if open: 90.0 * -side else: 0.0, 0.0)
         add_child(body, leaf)
         add_child(leaf, bbox(bv(leaf_w, arch_h - 0.02, 0.08), wood, bv(-side * leaf_w / 2.0, (arch_h - 0.02) / 2.0, -0.04)))
-        for([arch_h * 0.2, arch_h * 0.7]) y:
+        for([ arch_h * 0.2, arch_h * 0.7 ]) y:
             add_child(leaf, bbox(bv(leaf_w, 0.05, 0.02), iron, bv(-side * leaf_w / 2.0, y, 0.005)))
-        add_child(leaf, bball(0.035, iron, bv(-side * (leaf_w - 0.14), arch_h * 0.46, 0.01)))   // the ring pull
+        add_child(leaf, bball(0.035, iron, bv(-side * (leaf_w - 0.14), arch_h * 0.46, 0.01)))  // the ring pull
     return body
 
 // One of a gatehouse's flanking towers, its middle at x = cx.
 def bld_gate_tower(body:MNode, arch:string, cx:float, tl:float, ht:float, proud:float, m:MMat, dark:MMat):
     let right = bv(1.0, 0.0, 0.0)
     add_child(body, bbox(bv(tl, ht, WALL_D), m, bv(cx, ht / 2.0, 0.0)))
-    add_child(body, merlon(bv(tl, ht, proud), m, bv(cx, ht / 2.0, WALL_D / 2.0 + proud / 2.0), right))   // the near half
+    add_child(body, merlon(bv(tl, ht, proud), m, bv(cx, ht / 2.0, WALL_D / 2.0 + proud / 2.0), right))  // the near half
     add_child(body, bbox(bv(tl, ht, proud), m, bv(cx, ht / 2.0, -WALL_D / 2.0 - proud / 2.0)))
-    add_child(body, bbox(bv(tl - 0.2, 0.01, GATE_TOWER_D - 0.2), bld_walk_mat(arch), bv(cx, ht + 0.003, 0.0)))   // its floor
-    add_child(body, merlon(bv(tl + 0.04, 0.1, 0.02 + proud), m, bv(cx, ht - 0.07, WALL_D / 2.0 + proud / 2.0 + 0.02), right))   // the corbel band, near
+    add_child(body, bbox(bv(tl - 0.2, 0.01, GATE_TOWER_D - 0.2), bld_walk_mat(arch), bv(cx, ht + 0.003, 0.0)))                 // its floor
+    add_child(body, merlon(bv(tl + 0.04, 0.1, 0.02 + proud), m, bv(cx, ht - 0.07, WALL_D / 2.0 + proud / 2.0 + 0.02), right))  // the corbel band, near
     add_child(body, bbox(bv(tl + 0.04, 0.1, WALL_D + proud + 0.02), m, bv(cx, ht - 0.07, -proud / 2.0 - 0.01)))
-    for([ht * 0.3, ht * 0.62]) y:   // arrow loops on the tower's front
+    for([ ht * 0.3, ht * 0.62 ]) y:  // arrow loops on the tower's front
         add_child(body, merlon(bv(0.06, 0.24, 0.02), dark, bv(cx, y, GATE_TOWER_D / 2.0 + 0.005), right))
     bld_tower_top(body, arch, bv(cx, 0.0, 0.0), tl, GATE_TOWER_D, ht)
 
@@ -990,7 +990,7 @@ def model_by_name(name:string, team:float3) -> BSpec?:
         case "wonder_tent": return wonder_tent(team)
         case "wonder_reed": return wonder_reed(team)
         case "wonder_mound": return wonder_mound(team)
-        default:   // barracks_thatch, stable_stone, watchtower_tent...: the type and its architecture
+        default:  // barracks_thatch, stable_stone, watchtower_tent...: the type and its architecture
             let last = find_string_reverse(name, "_")
             if last < 0: return nil
             return building(name.substring(0, last), name.substring(last + 1, name.length - last - 1), team)

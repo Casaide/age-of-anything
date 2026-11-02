@@ -20,7 +20,7 @@ def set_deck(cells:[int], on:bool):
 def bridge_damage(atk:[int], min_damage:int) -> int:
     var d = 0
     for(atk) a, c:
-        if a > 0 and c < 3: d += max(0, a - br_arm[c])   // (melee, pierce, building)
+        if a > 0 and c < 3: d += max(0, a - br_arm[c])  // (melee, pierce, building)
     return max(min_damage, d)
 
 def bridge_hurt(k:int, d:int):

@@ -5,9 +5,9 @@
 // GDScript events told (research, ages, heroes, trade, webs) read off the state, shards, the clock.
 // Imported after every sim, bot and setup module.
 
-let KIT_JITTER = 400            // World.SPAWN_JITTER
-var kit_dump = -1               // dump:<tick>: the state then (dump_state, as export.gd's), to diff against GDScript's
-var kit_trace = 0               // trace:<n> on a tool's command line: the state hash every n ticks ("h <tick> <hash>")
+let KIT_JITTER = 400  // World.SPAWN_JITTER
+var kit_dump = -1     // dump:<tick>: the state then (dump_state, as export.gd's), to diff against GDScript's
+var kit_trace = 0     // trace:<n> on a tool's command line: the state hash every n ticks ("h <tick> <hash>")
 
 // ---- checks
 
@@ -78,7 +78,7 @@ class Spawn:
     y:int
 
 var spawns = []::Spawn
-var id_owner = []::int          // unit id -> its owner, kept as units appear (a dead unit's owner, for deaths)
+var id_owner = []::int  // unit id -> its owner, kept as units appear (a dead unit's owner, for deaths)
 var id_kind = []::int
 
 // A fresh world (World.new): the old one's globals reset first; the bots read events.
@@ -126,7 +126,6 @@ def run_spawns():
             if t_hero[k] and hero_id[hero_slot(k)] == 0: hero_spawned(i)
     grow_scratch()
 
-
 // One tick: the spawns due, World.step, the ids seen.
 def wstep():
     run_spawns()
@@ -147,7 +146,7 @@ class LevelCfg:
     wave_at:[int]
     wave_min:[int]
     lv:[int]
-    keys:[string]          // the config numbers a level changes (repeat_min_army...)
+    keys:[string]  // the config numbers a level changes (repeat_min_army...)
     vals:[int]
 
 // ---- the sides: a full bot or an eco bot (a passive player)
@@ -156,7 +155,7 @@ class Side:
     player:int
     full:Bot?
     eco:EcoBot?
-    lv:LevelCfg?          // its level's config, put in place before it thinks (two levels in one match)
+    lv:LevelCfg?  // its level's config, put in place before it thinks (two levels in one match)
 
 def full_side(p:int) -> Side: return Side { p, new_bot(p), nil, nil }
 def eco_side(p:int) -> Side: return Side { p, nil, EcoBot { p }, nil }
@@ -221,7 +220,7 @@ def ai_config(lvl:string, tweak):
     ai_walk(cfg0, "", nums, strs)
     let smax = gobj(gobj(at(cfg0, "military"), "siege"), "max")
     strs.push("military.siege.max_order " + string(smax.keys.length) + (if smax.keys.length: " " + concat_string(smax.keys, " ") else: " "))
-    let toks = ["AI", string(nums.length), string(strs.length)]
+    let toks = [ "AI", string(nums.length), string(strs.length) ]
     for(nums) x: for(prompt_words(x)) t: toks.push(t)
     for(strs) x: for(prompt_words(x)) t: toks.push(t)
     let order = glist(cfg0, "build_order")
@@ -230,8 +229,8 @@ def ai_config(lvl:string, tweak):
     for(order) st:
         toks.push(rstr(st, "building"))
         toks.push(gstr(st, "near", "-"))
-        for([gint(st, "age", 1), as_int(at(st, "workers")), gint(st, "count", -1), gint(st, "builders", 2), gint(st, "away", 0),
-             gint(st, "own_side", 0), gint(st, "guard", 0), gint(st, "save", 0), gint(st, "push", -1), gint(st, "expand_workers", -1)]) v: toks.push(string(v))
+        for([ gint(st, "age", 1), as_int(at(st, "workers")), gint(st, "count", -1), gint(st, "builders", 2), gint(st, "away", 0),
+              gint(st, "own_side", 0), gint(st, "guard", 0), gint(st, "save", 0), gint(st, "push", -1), gint(st, "expand_workers", -1) ]) v: toks.push(string(v))
     let wvs = glist(at(cfg0, "military"), "waves")
     toks.push("WAVES")
     toks.push(string(wvs.length))
@@ -239,7 +238,7 @@ def ai_config(lvl:string, tweak):
         toks.push(string(as_int(at(wv, "at"))))
         toks.push(string(as_int(at(wv, "min_army"))))
     toks.push("LEVEL")
-    for([lv_ratio, lv_wave, lv_up, lv_age3, lv_tow, lv_all, lv_shelter, lv_guard, lv_raids_, lv_from]) v: toks.push(string(v))
+    for([ lv_ratio, lv_wave, lv_up, lv_age3, lv_tow, lv_all, lv_shelter, lv_guard, lv_raids_, lv_from ]) v: toks.push(string(v))
     tokens = toks
     tp = 0
     load_ai()
@@ -259,8 +258,8 @@ def level_now() -> LevelCfg:
             keys.push(key)
             vals.push(cfg(key))
     return LevelCfg { copy(wave_at), copy(wave_min),
-        [lv_army_ratio, lv_wave_pct, lv_build_up, lv_age3_workers, lv_towers, lv_all_in, lv_shelter_pop, lv_guard_crossing, lv_raids, lv_raid_from],
-        keys, vals }
+                      [ lv_army_ratio, lv_wave_pct, lv_build_up, lv_age3_workers, lv_towers, lv_all_in, lv_shelter_pop, lv_guard_crossing, lv_raids, lv_raid_from ],
+                      keys, vals }
 
 def apply_level(l:LevelCfg):
     wave_at = l.wave_at
@@ -280,21 +279,21 @@ def apply_level(l:LevelCfg):
 // ---- what GDScript's events said, read off the state
 
 class Watch:
-    research_was:[[int]] = []    // per player: researched, last tick
+    research_was:[[int]] = []  // per player: researched, last tick
     ages_was:[int] = []
-    hero_was:[int] = []          // per hero type: its id last tick
+    hero_was:[int] = []  // per hero type: its id last tick
     fell_was:[int] = []
-    carry_ids:[int] = []         // trade carts carrying gold, last tick
+    carry_ids:[int] = []  // trade carts carrying gold, last tick
     carry_amt:[int] = []
 
 class Happened:
-    research_p:[int] = []        // research done this tick: player, research index
+    research_p:[int] = []  // research done this tick: player, research index
     research_k:[int] = []
-    aged_p:[int] = []            // players that reached a new age this tick
-    hero_up_n:[int] = []         // hero slots (hero_types) trained or revived this tick
+    aged_p:[int] = []     // players that reached a new age this tick
+    hero_up_n:[int] = []  // hero slots (hero_types) trained or revived this tick
     hero_revived:[int] = []
     hero_fell_n:[int] = []
-    paid_p:[int] = []            // trade carts home: owner and gold
+    paid_p:[int] = []  // trade carts home: owner and gold
     paid:[int] = []
 
 def new_watch() -> Watch:

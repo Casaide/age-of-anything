@@ -18,4 +18,3 @@ def spatial_build():
         let c = sp_cell[i]
         sp_items[sp_cursor[c]] = i
         sp_cursor[c]++
-

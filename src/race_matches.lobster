@@ -59,8 +59,8 @@ import gen.reset
 import testkit.kit
 
 let SEED = 11
-let LIMIT = 20 * 60 * 35   // 35 minutes, then a draw
-let RACES = ["swamp frogs", "sewer rats", "imperial humans", "spooky spiders", "forest beetles", "steppe centaurs"]
+let LIMIT = 20 * 60 * 35  // 35 minutes, then a draw
+let RACES = [ "swamp frogs", "sewer rats", "imperial humans", "spooky spiders", "forest beetles", "steppe centaurs" ]
 
 class Played:
     a:string
@@ -68,7 +68,7 @@ class Played:
     winner:int
     end_tick:int
     webs:[int]
-    own:[string]       // per side: its own research bought, "id m:ss, ..."
+    own:[string]  // per side: its own research bought, "id m:ss, ..."
 
 def spaced(s:string) -> string: return concat_string(tokenize(s, "_", ""), " ")
 
@@ -77,11 +77,11 @@ id_load("../data")
 let rules = load_rules("default")
 
 def play_match(map_id:string, pa:string, pb:string) -> Played:
-    let races = [generate(pa, rules, 0), generate(pb, rules, 0)]
+    let races = [ generate(pa, rules, 0), generate(pb, rules, 0) ]
     new_world(SEED, map_id, races, rules, [])
-    let sides = [full_side(0), full_side(1)]
-    let webs_n = [0, 0]
-    let own = [[]::string, []::string]
+    let sides = [ full_side(0), full_side(1) ]
+    let webs_n = [ 0, 0 ]
+    let own = [ []::string, []::string ]
     let mine = map(2) p: gstrs(su_idents[p], "research")
     let wt = new_watch()
     while tick < LIMIT and winner < 0:
@@ -103,13 +103,13 @@ def line_of(m:Played) -> string:
     return "  " + pad_right(m.a + " vs " + m.b, 40) + "  {result} at {clock(m.end_tick)}   webs {m.webs}   own research [" + m.own[0] + "] [" + m.own[1] + "]"
 
 // "@@" lines carry a match through a log: fields split by tabs.
-def to_log(m:Played) -> string: return concat_string(["@@", m.a, m.b, string(m.winner), string(m.end_tick), string(m.webs[0]), string(m.webs[1]), m.own[0], m.own[1]], "\t")
+def to_log(m:Played) -> string: return concat_string([ "@@", m.a, m.b, string(m.winner), string(m.end_tick), string(m.webs[0]), string(m.webs[1]), m.own[0], m.own[1] ], "\t")
 
 def from_log(line:string) -> Played?:
     let f = tokenize(line, "\t", "")
     if f.length < 7 or f[0] != "@@": return nil
-    return Played { f[1], f[2], string_to_int(f[3]), string_to_int(f[4]), [string_to_int(f[5]), string_to_int(f[6])],
-                    [if f.length > 7: f[7] else: "", if f.length > 8: f[8] else: ""] }
+    return Played { f[1], f[2], string_to_int(f[3]), string_to_int(f[4]), [ string_to_int(f[5]), string_to_int(f[6]) ],
+                    [ if f.length > 7: f[7] else: "", if f.length > 8: f[8] else: "" ] }
 
 def tables(map_id:string, races:[string], played:[Played]):
     print "\n== matches ({map_id})"

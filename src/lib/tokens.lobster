@@ -22,4 +22,3 @@ def read_ints(n:int) -> [int]:
     out.vector_capacity(n)
     for(n): out.push(next_int())
     return out
-

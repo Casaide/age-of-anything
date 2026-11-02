@@ -144,7 +144,7 @@ SHADER uimatv
         frag_color = vec4(uipaint(icol.rgb, int(kind + 0.5), p), icol.a);
 """
 
-let UI_MATERIALS = ["wood", "bronze", "gold", "iron", "marble", "stone", "sandstone", "parchment", "felt", "leather", "reed", "lacquer", "bone"]
+let UI_MATERIALS = [ "wood", "bronze", "gold", "iron", "marble", "stone", "sandstone", "parchment", "felt", "leather", "reed", "lacquer", "bone" ]
 def ui_material(name:string) -> int:
     for(UI_MATERIALS) m, k:
         if m == name: return k
@@ -161,13 +161,13 @@ class UiLook:
     dim:float4
     title:float4
     metal:float4
-    frame_mat = 1                // each role's painted material (UI_MATERIALS): the frames, the panels' faces, the buttons
+    frame_mat = 1  // each role's painted material (UI_MATERIALS): the frames, the panels' faces, the buttons
     panel_mat = 0
     button_mat = 0
     primary_mat = 11
-    ornament = "sun"             // the crest (icons/crest_<ornament>.png)
-    banner = "swallowtail"       // the cut of a race's banner (src/view/ui/ui_banner.gd)
-    cloth = float4_1             // the banner's cloth (the culture's first cloth colour)
+    ornament = "sun"        // the crest (icons/crest_<ornament>.png)
+    banner = "swallowtail"  // the cut of a race's banner (src/view/ui/ui_banner.gd)
+    cloth = float4_1        // the banner's cloth (the culture's first cloth colour)
 
 var ui_look = UiLook { float4_1, float4_1, float4_1, float4_1, float4_1, float4_1, float4_1, float4_1, float4_1, float4_1 }
 var ui_ready = false
@@ -220,11 +220,11 @@ class UiText:
     s:string
     size:int
     col:float4
-    font:int                     // 0 the text face, 1 bold, 2 the display face (titles, names)
-    edge:float                   // a dark outline this thick (0: none)
+    font:int    // 0 the text face, 1 bold, 2 the display face (titles, names)
+    edge:float  // a dark outline this thick (0: none)
 
 var ui_texts = []::UiText
-let UI_FONTS = ["data/fonts/Droid_Sans/DroidSans.ttf", "data/fonts/Droid_Sans/DroidSans-Bold.ttf", "../assets/fonts/display.ttf"]
+let UI_FONTS = [ "data/fonts/Droid_Sans/DroidSans.ttf", "data/fonts/Droid_Sans/DroidSans-Bold.ttf", "../assets/fonts/display.ttf" ]
 
 def ui_text(at:float2, s:string, size:int, col:float4): ui_texts.push(UiText { at, s, size, col, 0, 0.0 })
 
@@ -255,7 +255,7 @@ def ui_flush():
             gl.set_font_name(UI_FONTS[font])
         gl.set_font_size(t.size)
         if t.edge > 0.0:
-            for([float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 }]) d:
+            for([ float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 } ]) d:
                 gl.color(float4 { 0.0, 0.0, 0.0, 0.85 * t.col.w }): gl.translate(t.at + d * t.edge): gl.text(t.s)
         gl.color(t.col):
             gl.translate(t.at): gl.text(t.s)
@@ -267,14 +267,14 @@ def ui_flush():
 // A quad in the current transform's coordinates, coloured per vertex (a raw mesh render doesn't pass
 // gl.color's colour to the colour shader, so fills use color_attr).
 def ui_quad(at:float2, size:float2, col:float4 = float4_1):
-    gl.draw_mesh("PC", [float3 { at.x, at.y, 0.0 }, float3 { at.x + size.x, at.y, 0.0 }, float3 { at.x + size.x, at.y + size.y, 0.0 }, float3 { at.x, at.y + size.y, 0.0 }],
-                 [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
+    gl.draw_mesh("PC", [ float3 { at.x, at.y, 0.0 }, float3 { at.x + size.x, at.y, 0.0 }, float3 { at.x + size.x, at.y + size.y, 0.0 }, float3 { at.x, at.y + size.y, 0.0 } ],
+                 [ col, col, col, col ], []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ])
 
 def ui_fill(at:float2, size:float2, col:float4):
     if size.x <= 0.0 or size.y <= 0.0: return
     gl.set_shader("color_attr")
     ui_quad(at, size, col)
-    gl.set_shader("color")   // (what the callers' own shapes expect next)
+    gl.set_shader("color")  // (what the callers' own shapes expect next)
 
 // A line as a quad (gl.line draws nothing once a custom shader has been used, in this build).
 def ui_line(a:float2, b:float2, w:float, col:float4):
@@ -283,8 +283,8 @@ def ui_line(a:float2, b:float2, w:float, col:float4):
     if l <= 0.0001: return
     let n = float2 { -d.y, d.x } / l * (w * 0.5)
     gl.set_shader("color_attr")
-    gl.draw_mesh("PC", [float3 { a.x + n.x, a.y + n.y, 0.0 }, float3 { b.x + n.x, b.y + n.y, 0.0 }, float3 { b.x - n.x, b.y - n.y, 0.0 }, float3 { a.x - n.x, a.y - n.y, 0.0 }],
-                 [col, col, col, col], []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
+    gl.draw_mesh("PC", [ float3 { a.x + n.x, a.y + n.y, 0.0 }, float3 { b.x + n.x, b.y + n.y, 0.0 }, float3 { b.x - n.x, b.y - n.y, 0.0 }, float3 { a.x - n.x, a.y - n.y, 0.0 } ],
+                 [ col, col, col, col ], []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ])
     gl.set_shader("color")
 
 // A painted rect; `role` picks the look's material: 0 a panel's face, 1 a frame, 2 a button.
@@ -297,13 +297,13 @@ def ui_mat(at:float2, size:float2, col:float4, role:int):
         print "ui: a uniform did not set"
         ui_warned = true
     // (a mesh in screen coordinates: gl.rect with this shader doesn't land where asked)
-    gl.draw_mesh("P", [float3 { at.x, at.y, 0.0 }, float3 { at.x + size.x, at.y, 0.0 }, float3 { at.x + size.x, at.y + size.y, 0.0 }, float3 { at.x, at.y + size.y, 0.0 }],
-                 []::float4, []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
+    gl.draw_mesh("P", [ float3 { at.x, at.y, 0.0 }, float3 { at.x + size.x, at.y, 0.0 }, float3 { at.x + size.x, at.y + size.y, 0.0 }, float3 { at.x, at.y + size.y, 0.0 } ],
+                 []::float4, []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ])
     gl.set_shader("color")
 
 // A rect painted in a material by name (felt turf, a lacquered medallion...), whatever the look's roles are.
 def ui_paint(at:float2, size:float2, col:float4, material:string):
-    ui_paint_poly([at, float2 { at.x + size.x, at.y }, at + size, float2 { at.x, at.y + size.y }], [col, col, col, col], [0, 2, 1, 0, 3, 2], ui_material(material))
+    ui_paint_poly([ at, float2 { at.x + size.x, at.y }, at + size, float2 { at.x, at.y + size.y } ], [ col, col, col, col ], [ 0, 2, 1, 0, 3, 2 ], ui_material(material))
 
 // Any shape painted in a material (UI_MATERIALS index), its colour and alpha per vertex.
 def ui_paint_poly(pts:[float2], cols:[float4], idx:[int], kind:int):
@@ -328,7 +328,7 @@ def ui_shade(at:float2, size:float2, nx:int, ny:int, f) -> void:
     for(ny) j:
         for(nx) i:
             let a = j * (nx + 1) + i
-            for([a, a + nx + 2, a + 1, a, a + nx + 1, a + nx + 2]) q: idx.push(q)
+            for([ a, a + nx + 2, a + 1, a, a + nx + 1, a + nx + 2 ]) q: idx.push(q)
     gl.set_shader("color_attr")
     gl.draw_mesh("PC", pos, cols, []::float3, []::float2, []::float2, idx)
     gl.set_shader("color")
@@ -365,7 +365,7 @@ def ui_box(at:float2, size:float2, depth:int, face:float4, studs:bool):
     let u = ui()
     let fw = max(3.0, 6.0 * u)
     if depth > 0:
-        for(4) k: ui_fill(at + float2 { -1.0, 2.0 } * float(k + 1) * u, size, float4 { 0.0, 0.0, 0.0, 0.08 })   // a soft drop shadow
+        for(4) k: ui_fill(at + float2 { -1.0, 2.0 } * float(k + 1) * u, size, float4 { 0.0, 0.0, 0.0, 0.08 })  // a soft drop shadow
     ui_mat(at, size, ui_look.frame, 1)
     ui_bevel(at, size, max(1.0, 1.5 * u), 0.32, 0.5)
     let inner = at + float2_1 * fw
@@ -383,7 +383,7 @@ def ui_box(at:float2, size:float2, depth:int, face:float4, studs:bool):
     ui_outline(at, size, 1.0, float4 { 0.0, 0.0, 0.0, 0.8 })
     if studs:
         let m = fw * 0.5
-        for([at + float2_1 * m, float2 { at.x + size.x - m, at.y + m }, at + size - float2_1 * m, float2 { at.x + m, at.y + size.y - m }]) c:
+        for([ at + float2_1 * m, float2 { at.x + size.x - m, at.y + m }, at + size - float2_1 * m, float2 { at.x + m, at.y + size.y - m } ]) c:
             ui_stud(c, max(2.5, fw * 0.8), ui_look.metal)
 
 // ---- buttons, with the pad's focus
@@ -392,9 +392,9 @@ class UiHit:
     at:float2
     size:float2
 
-var ui_hits = []::UiHit            // the buttons drawn this frame, in order (for the pad's focus)
+var ui_hits = []::UiHit  // the buttons drawn this frame, in order (for the pad's focus)
 var ui_hits_last = []::UiHit
-var ui_focus = -1                  // index into last frame's buttons; -1: the mouse has it
+var ui_focus = -1  // index into last frame's buttons; -1: the mouse has it
 var ui_pad_a = false
 var ui_stick_ready = true
 

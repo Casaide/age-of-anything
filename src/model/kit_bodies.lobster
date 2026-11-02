@@ -6,12 +6,12 @@
 // Kits are read once from the data (bases and head_of resolved as CreatureKit._resolved does). Staging
 // data/later files (CreatureKit.stage) is for tests and sheets only: not here.
 
-let KIT_PATH = "../data/creature_kit.json"   // (the model check runs from src)
+let KIT_PATH = "../data/creature_kit.json"  // (the model check runs from src)
 let KIT_INF = 1000000000.0
 
-let kit_kits = dictionary<string, JV>(17)       // kit name -> its parameters (bases merged in)
-let kit_part = dictionary<string, string>(31)   // part id -> its kit
-let kit_role = dictionary<string, string>(31)   // part id -> "body", "head", "leg", "hind"
+let kit_kits = dictionary<string, JV>(17)      // kit name -> its parameters (bases merged in)
+let kit_part = dictionary<string, string>(31)  // part id -> its kit
+let kit_role = dictionary<string, string>(31)  // part id -> "body", "head", "leg", "hind"
 var kit_loaded = false
 
 // ---- data
@@ -39,7 +39,7 @@ def kit_resolved(name:string, all:JV) -> JV:
 def kit_register(name:string, k:JV):
     kit_kits.set(name, k)
     let p = at(k, "parts")
-    for(["body", "head", "leg", "hind"]) role:
+    for([ "body", "head", "leg", "hind" ]) role:
         if has(p, role) and (role != "head" or has(k, "head")):
             let id = as_str(at(p, role))
             kit_part.set(id, name)
@@ -58,7 +58,7 @@ def kget(o:JV, k:string) -> JV?:
 def kf(o:JV, k:string, fallback:float) -> float:
     let v = kget(o, k)
     return if v: as_float(v) else: fallback
-def kobj(o:JV, k:string) -> JV:   // k.get(name, {})
+def kobj(o:JV, k:string) -> JV:  // k.get(name, {})
     let v = kget(o, k)
     return v or jobj()
 def kv3(a:JV) -> float3: return float3 { as_float(a.a[0]), as_float(a.a[1]), if a.a.length > 2: as_float(a.a[2]) else: 0.0 }
@@ -81,7 +81,7 @@ def kit_sit_pose(k:JV, pose:string) -> JV: return kobj(kobj(kobj(k, "sit"), "pos
 
 class KitSk:
     sockets:dictionary<string, float3>
-    names:[string]                   // the sockets in order
+    names:[string]  // the sockets in order
     anchors:[Anchor]
     t:Xform
 
@@ -107,7 +107,7 @@ def quad_skeleton(k:JV, pose:string) -> KitSk:
     let mid_y = (top_at(k, seat.x) + bottom_at(k, seat.x)) * 0.5
     let half = half_width_at(k, seat.x) + 0.4
     let hrj = kget(s, "hand")
-    let hr = if hrj: map(hrj.a) v: as_float(v) else: [3.0, mid_y - seat.y]
+    let hr = if hrj: map(hrj.a) v: as_float(v) else: [ 3.0, mid_y - seat.y ]
     let hz = if hr.length > 2: hr[2] else: half
     let sk = KitSk { dictionary<string, float3>(11), [], [], t }
     ksock(sk, "head", kv3(at(at(k, "neck"), "to")) + head_lift(k, pose))
@@ -121,9 +121,9 @@ def quad_skeleton(k:JV, pose:string) -> KitSk:
     for(sk.names) n: sk.sockets.set(n, xf(t, ksock_at(sk, n)))
     let z = float3 { 0.0, 0.0, kf(k, "leg_z", 0.0) }
     let phj = kget(kobj(k, "walk"), "phases")
-    let ph = if phj: map(phj.a) v: as_float(v) else: [1.5, 0.0, 0.5, 1.0]
-    sk.anchors = [anchor(xf(t, sh + z), MPI * ph[0], 1, [0.0, 0.0]), anchor(xf(t, hip + z), MPI * ph[1], 1, [0.0, 1.0]),
-                  anchor(xf(t, sh - z), MPI * ph[2], -1, [0.0, 0.0]), anchor(xf(t, hip - z), MPI * ph[3], -1, [0.0, 1.0])]
+    let ph = if phj: map(phj.a) v: as_float(v) else: [ 1.5, 0.0, 0.5, 1.0 ]
+    sk.anchors = [ anchor(xf(t, sh + z), MPI * ph[0], 1, [ 0.0, 0.0 ]), anchor(xf(t, hip + z), MPI * ph[1], 1, [ 0.0, 1.0 ]),
+                   anchor(xf(t, sh - z), MPI * ph[2], -1, [ 0.0, 0.0 ]), anchor(xf(t, hip - z), MPI * ph[3], -1, [ 0.0, 1.0 ]) ]
     return sk
 
 def head_lift(k:JV, pose:string) -> float3:
@@ -155,7 +155,7 @@ def biped_skeleton(k:JV, pose:string) -> KitSk:
         if n != "back": ksock(sk, n, kit_lean(k, kv3(s.a[i])))
     let leg_hip = hip + float3 { kf(at(k, "leg"), "hip_dx", 0.0), 0.0, 0.0 }
     let z = float3 { 0.0, 0.0, kf(k, "leg_z", 0.0) }
-    sk.anchors = [anchor(leg_hip - z, 0.0, -1, [0.0, 0.0]), anchor(leg_hip + z, MPI, 1, [0.0, 0.0])]
+    sk.anchors = [ anchor(leg_hip - z, 0.0, -1, [ 0.0, 0.0 ]), anchor(leg_hip + z, MPI, 1, [ 0.0, 0.0 ]) ]
     return sk
 
 def kit_lean(k:JV, p:float3) -> float3:
@@ -169,8 +169,8 @@ def torso_fit(k:JV) -> float3:
     var rx = r.x
     var rz = r.z
     let lo = kget(at(k, "body"), "loft")
-    if lo:   // a lofted torso: armour fitted to the loft round the chest (the shoulders left out: the arms move there),
-             // out to its corners (a squarer section's)
+    if lo:  // a lofted torso: armour fitted to the loft round the chest (the shoulders left out: the arms move there),
+        // out to its corners (a squarer section's)
         let ys, fr, bk, hz = loft_profile(k, false)
         let cy = kn(at(chest, "at"), 1)
         let corner = pow(0.5, 1.0 / kf(lo, "n", 2.0)) / pow(0.5, 0.5) + (if gbool(lo, "flat", false): 0.08 else: 0.0)
@@ -190,7 +190,7 @@ class KitVol:
 def kit_volumes(k:JV) -> [KitVol]:
     let out = []::KitVol
     let body = at(k, "body")
-    for(["rump", "waist", "belly", "chest", "pelvis", "hump"]) name:
+    for([ "rump", "waist", "belly", "chest", "pelvis", "hump" ]) name:
         let v = kget(body, name)
         if v: out.push(KitVol { kv3(at(v, "at")), kv3(at(v, "r")), gstr(v, "mat", "fur"), kf(v, "rot", 0.0), name })
     return out
@@ -265,7 +265,7 @@ def quad_joints(k:JV, hind:bool, pose:string) -> CatJ:
             x = kn(at(at(k, "sit"), "fore"), 0)
             tilt = kn(at(at(k, "sit"), "fore"), 1)
     var paw = float2 { x, -h + pad + lift }
-    let r = tilt   // (degrees)
+    let r = tilt  // (degrees)
     let j = CatJ {}
     if hind:
         var hock = paw + float2 { -sin(r), cos(r) } * kn(b, 2)
@@ -339,7 +339,7 @@ def biped_joints(k:JV, pose:string) -> BipJ:
             out = kf(ip, "out", 0.0)
             pitch = kf(ip, "pitch", 0.0)
     var toe = float2 { x - heel_back + foot, -h + pad + lift }
-    let r = pitch   // (degrees)
+    let r = pitch  // (degrees)
     var heel = toe + float2 { -foot * cos(r), foot * sin(r) }
     var ankle = heel + u3_rot2(float2 { heel_back, ankle_h - pad }, -r)
     let bones = at(l, "bones")
@@ -387,12 +387,12 @@ def kit_coat(k:JV, c:Colours) -> dictionary<string, MMat>:
     let units = kf(k, "fur_units", 4.0)
     let pale = u3_col_or(c, "skin3", lightened(col(c, "skin"), 0.35))
     let h = kobj(k, "head")
-    return mats_of([surf(tex, col(c, "skin"), units), surf(tex, col(c, "skin2"), units), surf(tex, col(c, "skin2"), units),
-                    surf(tex, pale, units), surf(tex, u3_col_or(c, "skin4", col(c, "skin")), units),
-                    plain(kit_hexcol(k, "pad_colour", "#2a2020")), plain(kit_hexcol(k, "claw_colour", "#e8e0cc")),
-                    plain(kit_hexcol(kobj(h, "nose"), "colour", "#1c1614")), plain(INK),
-                    plain(kit_hexcol(kobj(h, "eyes"), "iris", "#3a2412")), plain(kit_hexcol(kobj(h, "ears"), "inner", "#3a2a24"))],
-                   ["fur", "dark", "stripe", "pale", "sock", "pad", "claw", "nose", "eye", "iris", "ear_in"])
+    return mats_of([ surf(tex, col(c, "skin"), units), surf(tex, col(c, "skin2"), units), surf(tex, col(c, "skin2"), units),
+                     surf(tex, pale, units), surf(tex, u3_col_or(c, "skin4", col(c, "skin")), units),
+                     plain(kit_hexcol(k, "pad_colour", "#2a2020")), plain(kit_hexcol(k, "claw_colour", "#e8e0cc")),
+                     plain(kit_hexcol(kobj(h, "nose"), "colour", "#1c1614")), plain(INK),
+                     plain(kit_hexcol(kobj(h, "eyes"), "iris", "#3a2412")), plain(kit_hexcol(kobj(h, "ears"), "inner", "#3a2a24")) ],
+                   [ "fur", "dark", "stripe", "pale", "sock", "pad", "claw", "nose", "eye", "iris", "ear_in" ])
 
 // The torso's volumes as blobs (or the body's mesh); `leaning`: a biped's, turned by its lean.
 def kit_torso(k:JV, mats:dictionary<string, MMat>, into:MNode, leaning:bool, lift:float3 = float3_0, pose_basis:Basis = BASIS_ID):
@@ -415,7 +415,7 @@ def kit_torso(k:JV, mats:dictionary<string, MMat>, into:MNode, leaning:bool, lif
     let nk = kget(k, "neck")
     if nk and not kget(body, "loft"):
         let fr = kv3(at(nk, "from"))
-        let to = neck_end(k, lift, pose_basis)   // a biped's neck ends under its head, which leans with the torso
+        let to = neck_end(k, lift, pose_basis)  // a biped's neck ends under its head, which leans with the torso
         add_child(into, rod(if leaning: kit_lean(k, fr) else: fr, if leaning: kit_lean(k, to) else: to, kn(at(nk, "r"), 0), kn(at(nk, "r"), 1), u3_mat(mats, "fur")))
 
 def neck_end(k:JV, lift:float3, pose_basis:Basis) -> float3:
@@ -450,7 +450,7 @@ def loft_balls(k:JV, shoulders:bool) -> [KitBall]:
         out.push(KitBall { lerp3(a, b, t), float3_1 * u3_lerpf(kn(at(nk, "r"), 0), kn(at(nk, "r"), 1), t) })
     if shoulders and loft_shoulders(k):
         let arm = at(k, "arm")
-        for([1.0, -1.0]) side: out.push(KitBall { kv3(at(arm, "shoulder")) * float3 { 1.0, 1.0, side }, float3_1 * kpair(at(arm, "r"), 0, 0) * 0.9 })   // (a little inside the arm's top: a hand held at ease clears it)
+        for([ 1.0, -1.0 ]) side: out.push(KitBall { kv3(at(arm, "shoulder")) * float3 { 1.0, 1.0, side }, float3_1 * kpair(at(arm, "r"), 0, 0) * 0.9 })  // (a little inside the arm's top: a hand held at ease clears it)
     return out
 
 def kit_spow(x:float, e:float) -> float: return if x < 0.0: -pow(-x, e) else: pow(x, e)
@@ -489,7 +489,7 @@ def loft_profile(k:JV, shoulders:bool) -> [float], [float], [float], [float]:
             let u = (y - b.at.y) / b.r.y
             if abs(u) < 1.0: f = max(f, abs(b.at.z) + b.r.z * sqrt(1.0 - u * u))
         f
-    for(rings) i: assert fr[i] > bk[i]   // the volumes overlap all the way up
+    for(rings) i: assert fr[i] > bk[i]  // the volumes overlap all the way up
     for(gint(lo, "smooth", 3)):
         fr = loft_smooth(fr)
         bk = loft_smooth(bk)
@@ -502,7 +502,7 @@ def kit_loft(k:JV, mat:MMat) -> MNode:
     let sides = gint(lo, "sides", 24)
     let e = 2.0 / kf(lo, "n", 2.0)
     let ys, fr, bk, hz = loft_profile(k, true)
-    let y0 = ys[rings - 1] - (ys[0] - ys[1]) * 0.5   // (the ends: half a level past the last)
+    let y0 = ys[rings - 1] - (ys[0] - ys[1]) * 0.5  // (the ends: half a level past the last)
     let y1 = ys[0] + (ys[0] - ys[1]) * 0.5
     let m = new_mesh()
     let rows = []::[float3]
@@ -525,9 +525,9 @@ def kit_loft(k:JV, mat:MMat) -> MNode:
     for(rows.length - 1) j:
         let a = j * (sides + 1)
         let b = a + sides + 1
-        for(sides) i: append_into(m.idx, [a + i, a + i + 1, b + i, a + i + 1, b + i + 1, b + i])
+        for(sides) i: append_into(m.idx, [ a + i, a + i + 1, b + i, a + i + 1, b + i + 1, b + i ])
     if not gbool(lo, "flat", false): return mesh_node(m, mat)
-    let f = new_mesh()   // each face its own normal
+    let f = new_mesh()  // each face its own normal
     var t = 0
     while t < m.idx.length:
         let a = m.p[m.idx[t]]
@@ -536,7 +536,7 @@ def kit_loft(k:JV, mat:MMat) -> MNode:
         if magnitude(kit_cross(b - a, c - a)) > 0.000001:
             var nrm = normalize(kit_cross(b - a, c - a))
             if dot(nrm, m.n[m.idx[t]] + m.n[m.idx[t + 1]] + m.n[m.idx[t + 2]]) < 0.0: nrm = -nrm
-            for([a, b, c]) v: add_vertex(f, v, nrm, float2_0)
+            for([ a, b, c ]) v: add_vertex(f, v, nrm, float2_0)
         t += 3
     f.idx = map(f.p.length) i: i
     return mesh_node(f, mat)
@@ -556,13 +556,13 @@ def kit_tail(k:JV, mats:dictionary<string, MMat>, into:MNode, t:Xform, pose:stri
     if sit.keys.length and kget(sit, "fold"):
         let b = xf(t, root)
         let paw = xf(t, kv3(at(k, "shoulder"))).x + 0.9
-        cat_tail(into, [b, float3 { b.x + 0.5, 1.1, 1.8 }, float3 { b.x + 1.6, 1.0, 3.4 }, float3 { b.x + 3.4, 1.0, 4.8 },
-                        float3 { paw - 6.5, 1.0, 5.2 }, float3 { paw - 3.0, 1.1, 4.9 }, float3 { paw - 1.2, 2.0, 4.3 }],
+        cat_tail(into, [ b, float3 { b.x + 0.5, 1.1, 1.8 }, float3 { b.x + 1.6, 1.0, 3.4 }, float3 { b.x + 3.4, 1.0, 4.8 },
+                         float3 { paw - 6.5, 1.0, 5.2 }, float3 { paw - 3.0, 1.1, 4.9 }, float3 { paw - 1.2, 2.0, 4.3 } ],
                  kn(r, 0) * 0.85, kn(r, 1) * 0.85, fur, dark)
     elif sit.keys.length:
         let b = xf(t, root + float3 { 0.0, 0.4, 0.0 })
-        cat_tail(into, [b, b + float3 { -2.8, -0.9, 0.2 }, float3 { b.x - 4.8, max(2.6, b.y - 3.6), 0.5 },
-                        float3 { b.x - 5.6, 1.2, 0.9 }, float3 { b.x - 4.6, 1.0, 1.6 }], kn(r, 0), kn(r, 1), fur, dark)
+        cat_tail(into, [ b, b + float3 { -2.8, -0.9, 0.2 }, float3 { b.x - 4.8, max(2.6, b.y - 3.6), 0.5 },
+                         float3 { b.x - 5.6, 1.2, 0.9 }, float3 { b.x - 4.6, 1.0, 1.6 } ], kn(r, 0), kn(r, 1), fur, dark)
     else:
         let pts = map(glist(tl, "pts")) p: xf(t, kv3(p))
         cat_tail(into, pts, kn(r, 0), kn(r, 1), fur, dark)
@@ -612,7 +612,7 @@ def biped_body(k:JV, c:Colours, pose:string) -> Spec:
     var near_hand = float3_0
     let front = mnode()
     let ar = at(a, "r")
-    for([1.0, -1.0]) side:
+    for([ 1.0, -1.0 ]) side:
         let into = if side == 1.0: front else: n
         let sh = kit_lean(k, kv3(at(a, "shoulder")) * float3 { 1.0, 1.0, side })
         var elbow = sh + kv3(at(a, "elbow")) * float3 { 1.0, 1.0, side }
@@ -642,7 +642,7 @@ def quad_leg(k:JV, c:Colours, hind:bool, pose:string) -> Spec:
     let mats = kit_coat(k, c)
     let r = at(l, "r")
     let msj = kget(l, "mats")
-    let ms = if msj: map(msj.a) v: as_str(v) else: ["fur", "fur", "fur", "fur", "fur"]
+    let ms = if msj: map(msj.a) v: as_str(v) else: [ "fur", "fur", "fur", "fur", "fur" ]
     let n = mnode()
     let out = float3 { 0.0, 0.0, j.out }
     if hind:
@@ -661,7 +661,7 @@ def quad_leg(k:JV, c:Colours, hind:bool, pose:string) -> Spec:
     add_child(n, blob(kv3(at(l, "paw")), u3_mat(mats, gstr(l, "paw_mat", "pale")), p, float3 { 0.0, 0.0, atan2(toe) }))
     if gbool(l, "claws", false):
         let ps = kv3(at(l, "paw"))
-        for([-1.0, 0.0, 1.0]) t:
+        for([ -1.0, 0.0, 1.0 ]) t:
             add_child(n, blob(float3 { 0.45, 0.28, 0.3 }, u3_mat(mats, "claw"), p + float3 { toe.x * ps.x * 0.95, toe.y * ps.x * 0.95 - ps.y * 0.6, t * ps.z * 0.55 }))
     return spec_of(n)
 
@@ -685,7 +685,7 @@ def biped_leg(k:JV, c:Colours, pose:string) -> Spec:
     let d = toe - heel
     add_child(n, blob(float3 { magnitude(d) * 0.55, fr.x, fr.y }, fur, mid, float3 { 0.0, 0.0, atan2(float2 { d.x, d.y }) }))
     add_child(n, rod(ankle, mid, kpair(r, 1, 1), fr.x, fur))
-    for([-1.0, 0.0, 1.0]) t:
+    for([ -1.0, 0.0, 1.0 ]) t:
         let tip = toe + float3 { 0.2, 0.1, t * fr.y * 0.55 }
         add_child(n, blob(float3 { 0.45, 0.3, 0.32 }, u3_mat(mats, "claw"), tip + float3 { 0.35, -0.05, 0.0 }))
     return spec_of(n)
@@ -731,7 +731,7 @@ def kit_head(k:JV, c:Colours) -> Spec:
         let e = kget(h, "eyes")
         if e:
             let er = kf(e, "r", 0.0)
-            for([1.0, -1.0]) side:
+            for([ 1.0, -1.0 ]) side:
                 let look = kv3(at(e, "look")) * float3 { 1.0, 1.0, side }
                 let p = on_surface(sc, sr, look, -0.15)
                 let eye = blob(float3_1 * er, u3_mat(mats, "eye"), p)
@@ -746,7 +746,7 @@ def kit_head(k:JV, c:Colours) -> Spec:
                     add_child(n, brow)
         let ea = kget(h, "ears")
         if ea:
-            for([1.0, -1.0]) side:
+            for([ 1.0, -1.0 ]) side:
                 let p = kv3(at(ea, "at")) * float3 { 1.0, 1.0, side }
                 let size = kv3(at(ea, "size"))
                 if gstr(ea, "shape", "round") == "point":
@@ -764,8 +764,8 @@ def kit_head(k:JV, c:Colours) -> Spec:
         wn.scl = float3_1 * hk
         add_child(root, wn)
         let white = plain(lightened(u3_col_or(c, "skin3", html("#e8e2d6")), 0.3))
-        for([1.0, -1.0]) s:
-            for([-0.5, 0.0, 0.5]) w:
+        for([ 1.0, -1.0 ]) s:
+            for([ -0.5, 0.0, 0.5 ]) w:
                 let a = kv3(wh) + float3 { 0.0, w * 0.5, 1.2 * s }
                 add_child(wn, rod(a, a + float3 { 1.2, w, 2.4 * s }, 0.09, 0.06, white, false))
     let b = kget(h, "bridle")
@@ -785,9 +785,9 @@ def build_kit(base:string, c:Colours) -> Spec?:
 // of kit creatures plays with no pack (the library pack carried Godot's as kit_parts.json)
 
 def ksnap(x:float, step:float) -> float: return floor(x / step + 0.5) * step
-def kjv2(v:float3) -> JV:   // _v2: x, -y, snapped to a tenth
+def kjv2(v:float3) -> JV:  // _v2: x, -y, snapped to a tenth
     let o = JV { J_ARR }
-    o.a = [jnumk(ksnap(v.x, 0.1)), jnumk(ksnap(-v.y, 0.1))]
+    o.a = [ jnumk(ksnap(v.x, 0.1)), jnumk(ksnap(-v.y, 0.1)) ]
     return o
 def jnumk(f:float) -> JV:
     let o = JV { J_FLOAT }
@@ -801,14 +801,14 @@ def kit_complete(p:JV):
     let kk = k
     let sk = kit_skeleton(kk, "")
     let sc = kf(kk, "scale", 1.0)
-    set(p, "cut", jstrs(if kit_quad(kk): ["legs", "head"] else: ["legs"]))
+    set(p, "cut", jstrs(if kit_quad(kk): [ "legs", "head" ] else: [ "legs" ]))
     let socks = jobj()
     for(sk.names) s:
         if s != "sit": set(socks, s, kjv2(ksock_at(sk, s) * sc))
     set(p, "sockets", socks)
     let anchors = map(sk.anchors) a:
-        jarr([jnumk(ksnap(a.pos.x * sc, 0.1)), jnumk(ksnap(-a.pos.y * sc, 0.1)), jnumk(ksnap(a.phase, 0.01)), jint(a.side), jint(0),
-              jbool(a.more.length > 1 and a.more[1] > 0.5)])
+        jarr([ jnumk(ksnap(a.pos.x * sc, 0.1)), jnumk(ksnap(-a.pos.y * sc, 0.1)), jnumk(ksnap(a.phase, 0.01)), jint(a.side), jint(0),
+               jbool(a.more.length > 1 and a.more[1] > 0.5) ])
     let parts = at(kk, "parts")
     let walk = kobj(kk, "walk")
     let legs = jobj()
@@ -825,17 +825,17 @@ def kit_complete(p:JV):
     if has(parts, "hind"): set(legs, "hind", at(parts, "hind"))
     set(p, "legs", legs)
     set(p, "idle_poses", jstrs(kit_idle(kk)))
-    set(p, "torso_scale", jarr(if kit_quad(kk): [jnumk(1.3), jnumk(1.0)] else: [jnumk(0.9), jnumk(1.1)]))
+    set(p, "torso_scale", jarr(if kit_quad(kk): [ jnumk(1.3), jnumk(1.0) ] else: [ jnumk(0.9), jnumk(1.1) ]))
     let chest = kobj(kobj(kk, "body"), "chest")
-    let at_ = if has(chest, "at"): at(chest, "at") else: jarr([jint(0), jint(15)])
-    let r_ = if has(chest, "r"): at(chest, "r") else: jarr([jint(6), jint(6), jint(5)])
+    let at_ = if has(chest, "at"): at(chest, "at") else: jarr([ jint(0), jint(15) ])
+    let r_ = if has(chest, "r"): at(chest, "r") else: jarr([ jint(6), jint(6), jint(5) ])
     let shape = jobj()
     set(shape, "t", jstr("ellipse"))
-    set(shape, "c", jarr([jnumk(as_float(at_.a[0])), jnumk(-as_float(at_.a[1]))]))
-    set(shape, "r", jarr([jnumk(as_float(r_.a[0])), jnumk(as_float(r_.a[1]))]))
+    set(shape, "c", jarr([ jnumk(as_float(at_.a[0])), jnumk(-as_float(at_.a[1])) ]))
+    set(shape, "r", jarr([ jnumk(as_float(r_.a[0])), jnumk(as_float(r_.a[1])) ]))
     set(shape, "ch", jstr("skin"))
-    set(p, "shapes", jarr([shape]))
-    if has(kk, "head") and has(parts, "head"):   // the head part's top socket and shape
+    set(p, "shapes", jarr([ shape ]))
+    if has(kk, "head") and has(parts, "head"):  // the head part's top socket and shape
         let head = get(lib_parts, as_str(at(parts, "head")))
         if head:
             let hs = jobj()
@@ -843,19 +843,19 @@ def kit_complete(p:JV):
             set(head, "sockets", hs)
             let hshape = jobj()
             set(hshape, "t", jstr("circle"))
-            set(hshape, "c", jarr([jint(0), jint(-4)]))
+            set(hshape, "c", jarr([ jint(0), jint(-4) ]))
             set(hshape, "r", jint(4))
             set(hshape, "ch", jstr("skin"))
-            set(head, "shapes", jarr([hshape]))
-    for(["leg", "hind"]) role:
+            set(head, "shapes", jarr([ hshape ]))
+    for([ "leg", "hind" ]) role:
         if has(parts, role):
             let leg = get(lib_parts, as_str(at(parts, role)))
             if leg and not has(leg, "shapes"):
                 let ls = jobj()
                 set(ls, "t", jstr("poly"))
-                set(ls, "p", jarr(map([[-1.5, 0.0], [1.5, 0.0], [1.5, 10.0], [-1.5, 10.0]]) xy: jarr([jnumk(xy[0]), jnumk(xy[1])])))
+                set(ls, "p", jarr(map([ [ -1.5, 0.0 ], [ 1.5, 0.0 ], [ 1.5, 10.0 ], [ -1.5, 10.0 ] ]) xy: jarr([ jnumk(xy[0]), jnumk(xy[1]) ])))
                 set(ls, "ch", jstr("skin"))
-                set(leg, "shapes", jarr([ls]))
+                set(leg, "shapes", jarr([ ls ]))
 
 // Every kit body in the data completed (with no pack: the library pack gives Godot's).
 def complete_kit_parts():

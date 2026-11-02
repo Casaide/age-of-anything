@@ -18,7 +18,7 @@ class JV:
     s = ""
     a:[JV] = []
     keys:[string] = []
-    index:dictionary<string, int>? = nil   // made once an object is looked up often
+    index:dictionary<string, int>? = nil  // made once an object is looked up often
 
 def jnull() -> JV: return JV { J_NULL }
 def jint(v:int) -> JV:
@@ -63,7 +63,7 @@ def get(o:JV, k:string) -> JV?:
 
 def at(o:JV, k:string) -> JV:
     let n = key_at(o, k)
-    if n < 0: print "no key \"{k}\" in {o.keys}"   // (which, before the assertion stops it)
+    if n < 0: print "no key \"{k}\" in {o.keys}"  // (which, before the assertion stops it)
     assert n >= 0
     return o.a[n]
 
@@ -188,14 +188,14 @@ def jp_string() -> string:
                 case 'n': out += "\n"
                 case 't': out += "\t"
                 case 'r': out += "\r"
-                case 'b': out += unicode_to_string([8])
-                case 'f': out += unicode_to_string([12])
+                case 'b': out += unicode_to_string([ 8 ])
+                case 'f': out += unicode_to_string([ 12 ])
                 case 'u':
                     let code, ok = string_to_int(substring(jp_text, jp_at, 4), 16)
                     assert ok
-                    out += unicode_to_string([code])
+                    out += unicode_to_string([ code ])
                     jp_at += 4
-                default: out += unicode_to_string([e])
+                default: out += unicode_to_string([ e ])
             start = jp_at
         else: jp_at++
     out += substring(jp_text, start, jp_at - start)

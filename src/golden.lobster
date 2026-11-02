@@ -15,7 +15,7 @@ import model.buildings2
 import gen.reset
 
 let args = command_line_arguments()
-fatal(gl.window("golden", 64, 64, gl.window_init_no_vsync))   // (models load their textures)
+fatal(gl.window("golden", 64, 64, gl.window_init_no_vsync))  // (models load their textures)
 placement_load()
 
 def r4(x:float) -> string: return string(int(round(x * 10000.0)))
@@ -31,8 +31,8 @@ def digest(n:MNode) -> string:
 
 let section = args[0]
 if section == "starts":
-    for([["flat_test", "", "sewer rats with cheese hammers", "romans"], ["reed_meadow", "", "angry swamp frogs", "moonbears"],
-         ["siege_vale", "siege", "centaur romans", "tiny vikings"], ["reed_meadow_2v2", "", "spiders", "aztecs"]]) m:
+    for([ [ "flat_test", "", "sewer rats with cheese hammers", "romans" ], [ "reed_meadow", "", "angry swamp frogs", "moonbears" ],
+          [ "siege_vale", "siege", "centaur romans", "tiny vikings" ], [ "reed_meadow_2v2", "", "spiders", "aztecs" ] ]) m:
         reset_world()
         let rules = load_rules("default")
         if m[1] != "": set(rules, "mode", jstr(m[1]))
@@ -51,7 +51,7 @@ elif section == "models":
         for(steps) k: ids.push(id + "@w{k}_{steps}")
         if legs:
             let poses = gint(legs, "poses", 0)
-            for([rstr(legs, "part"), gstr(legs, "hind", "")]) leg:
+            for([ rstr(legs, "part"), gstr(legs, "hind", "") ]) leg:
                 if leg != "":
                     for(poses) k: ids.push(leg + "@w{k}_{poses}")
     for(ids) id:
@@ -59,7 +59,7 @@ elif section == "models":
         print id + " " + (if s: digest(s.node) else: "none")
 elif section == "buildings":
     let bt = gobj(load_json("../data/buildings.json"), "buildings")
-    for(["stone", "thatch", "junk", "tent", "reed", "mound"]) arch:
+    for([ "stone", "thatch", "junk", "tent", "reed", "mound" ]) arch:
         for(sorted_strs(bt.keys)) type:
             let s = building_spec(arch, type, float3 { 1.0, 0.0, 1.0 })
             print arch + ":" + type + " " + (if s: digest(s.body) else: "none")

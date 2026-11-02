@@ -1,8 +1,8 @@
 // ------------------------------------------------------------------ Identity (src/identity.gd)
 // A race's bonuses, own research and lacks, from its creature's group, its creature and its culture.
 
-let PRICED_ADD = ["hp", "attack", "speed", "range"]
-let PRICED_PCT = ["speed", "cost", "train_time"]
+let PRICED_ADD = [ "hp", "attack", "speed", "range" ]
+let PRICED_PCT = [ "speed", "cost", "train_time" ]
 
 var id_groups = jobj()
 var id_buildings = jobj()

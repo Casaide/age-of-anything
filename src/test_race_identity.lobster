@@ -60,7 +60,7 @@ import gen.start
 import gen.reset
 
 let SEED = 20261013
-let SPAWN_JITTER = 400   // World.SPAWN_JITTER
+let SPAWN_JITTER = 400  // World.SPAWN_JITTER
 
 var n_checks = 0
 var n_failed = 0
@@ -84,7 +84,7 @@ def new_world(prompts:[string], r:JV):
 
 def new_world_2v2(prompts:[string]):
     reset_world()
-    setup_world(SEED, "reed_meadow_2v2", races_of(prompts), base_rules, [0, 0, 1, 1])
+    setup_world(SEED, "reed_meadow_2v2", races_of(prompts), base_rules, [ 0, 0, 1, 1 ])
 
 def bare() -> JV:
     let r = deep_copy(base_rules)
@@ -157,7 +157,7 @@ def stuck_now(uid:int) -> bool: return ids_get(slowed_ids, slowed_until, uid, 0)
 // Building bonuses: bugs' cheap houses, spiders' cheap walls, imperial buildings, Han walls, rodents'
 // bigger houses, beetles' wood, folk research.
 def g_buildings():
-    new_world(["forest beetles", "sewer rats"], base_rules)
+    new_world([ "forest beetles", "sewer rats" ], base_rules)
     let r0 = su_races[0]
     expect(rstr(r0, "creature") == "beetle" and rstr(r0, "family") == "forest", "the prompt gives forest beetles ({rstr(r0, "creature")}/{rstr(r0, "family")})")
     expect(bcost_of(0, "house", "wood") == 21 and bcost_of(1, "house", "wood") == 30, "bugs: houses cost 30% less ({bcost_of(0, "house", "wood")}, rats {bcost_of(1, "house", "wood")})")
@@ -171,11 +171,11 @@ def g_buildings():
     update_pop()
     expect(pop_cap[1] - cap0 == 6, "rodents: a house holds 6 ({pop_cap[1] - cap0})")
     // Spiders' silk walls; imperial buildings; Han walls.
-    new_world(["spooky spiders", "imperial humans"], base_rules)
+    new_world([ "spooky spiders", "imperial humans" ], base_rules)
     expect(bcost_of(0, "wall", "stone") == 2 and bcost_of(0, "palisade", "wood") == 1, "spiders: walls cost half ({bcost_of(0, "wall", "stone")} stone, {bcost_of(0, "palisade", "wood")} wood)")
     expect(bcost_of(1, "barracks", "wood") == 135, "imperial: buildings 10% cheaper ({bcost_of(1, "barracks", "wood")})")
     expect(bcost_of(1, "house", "wood") == 27, "imperial: ...houses too ({bcost_of(1, "house", "wood")})")
-    new_world(["han humans", "royal humans"], base_rules)
+    new_world([ "han humans", "royal humans" ], base_rules)
     let wk = bk("wall")
     expect(bm_hp[0][wk] == bt_hp_base[wk] * 120 / 100 and bm_hp[1][wk] == bt_hp_base[wk], "han: walls +20% hit points ({bm_hp[0][wk]})")
     // Folk: research 15% faster at every building.
@@ -185,7 +185,7 @@ def g_buildings():
 // Unit bonuses: those in the eval are priced (beetles' shells), the rest are the sim's (centaurs carry,
 // spooky sight, swamp wading, rats' price).
 def g_units():
-    new_world(["steppe centaurs", "spooky beetles"], base_rules)
+    new_world([ "steppe centaurs", "spooky beetles" ], base_rules)
     let cw = type_of_slot(0, "worker")
     expect(t_carry_add[cw] == r_carry * 60 / 100, "centaurs: workers carry 60% more (+{t_carry_add[cw]})")
     let bs = type_of_slot(1, "spear")
@@ -193,7 +193,7 @@ def g_units():
     let plain = generate("forest humans", base_rules, 0)
     let bp = as_int(at(at(su_type_eval[bs], "armour"), "pierce"))
     expect(bp >= 1, "beetles: +1 pierce armour on the spear\'s eval ({bp})")
-    new_world(["swamp humans", "swamp frogs"], base_rules)
+    new_world([ "swamp humans", "swamp frogs" ], base_rules)
     expect(t_wade[type_of_slot(0, "spear")] == 1, "swamp folk: no slowdown in the swamp or fords")
     expect(t_wade[type_of_slot(1, "spear")] == 0, "swamp frogs: amphibious already, so the swamp\'s bonus takes its alt")
     let food = res("food")
@@ -201,7 +201,7 @@ def g_units():
     expect(bm_food[1][farm] == bt_food_base[farm] * 120 / 100, "swamp frogs: ...farms hold 20% more food (rich mud)")
     expect(gather_ticks[1][food] == base_gather_ticks[food] * 80 / 100, "frogs: food gathered 20% faster ({gather_ticks[1][food]})")
     // Team bonuses reach allies (the Nile's granary: 100 more food at the start, for an ally too, not a foe).
-    new_world_2v2(["nile humans", "imperial humans", "imperial humans", "forest humans"])
+    new_world_2v2([ "nile humans", "imperial humans", "imperial humans", "forest humans" ])
     let start_food = as_int(at(at(at(base_rules, "economy"), "start"), "food"))
     expect(stock[food][0] == start_food + 100 and stock[food][1] == start_food + 100 and stock[food][2] == start_food,
            "team: the Nile\'s granary feeds its ally, not its foes ({stock[food][0]} {stock[food][1]} {stock[food][2]})")
@@ -223,7 +223,7 @@ def g_norse():
     expect(rstr(v, "family") == "norse", "vikings: the Norse culture ({rstr(v, "family")})")
     let ident = identity_of(rstr(v, "creature"), rstr(v, "family"))
     expect(has_s(gstrs(ident, "research"), "berserkergang") and has_s(gstrs(ident, "lacks"), "line.archer.3"), "norse: Berserkergang, no archers\' age-3 step")
-    new_world_2v2(["vikings", "forest humans", "imperial humans", "imperial humans"])
+    new_world_2v2([ "vikings", "forest humans", "imperial humans", "imperial humans" ])
     expect(t_wade[type_of_slot(0, "spear")] == 1 and t_wade[type_of_slot(1, "spear")] == 1 and t_wade[type_of_slot(2, "spear")] == 0,
            "norse seafarers: no slowdown in fords, for an ally too, not a foe")
     expect(t_kill_gold[type_of_slot(0, "spear")] == 3 and t_kill_gold[type_of_slot(0, "worker")] == 0, "norse plunder: every kill brings in 3 gold (not a worker\'s)")
@@ -239,7 +239,7 @@ def g_norse():
 // Lacks: research, buildings, lines, a line's step and the market's trade stay shut; the host's full
 // tech tree opens them.
 def g_lacks():
-    new_world(["spooky spiders", "royal humans"], base_rules)
+    new_world([ "spooky spiders", "royal humans" ], base_rules)
     for(2) p: rich_at(p, 3)
     expect(bm_lacks[0][bk("stable")] == 1 and build_barred(0, bk("stable")), "spiders: no Stable")
     expect(ident_lacks(0, "scout") and ident_lacks(0, "large"), "spiders: ...nor its lines")
@@ -252,7 +252,7 @@ def g_lacks():
     expect(not_in_tree(1, ar, "line.skirmisher.3"), "royal: no skirmisher age-3 step")
     expect(not not_in_tree(1, ar, "line.archer.3"), "royal: ...other line upgrades as usual")
     // Age 3 asks for a Stable; a race without one needs an Archery Range instead.
-    new_world(["spooky spiders", "royal humans"], base_rules)
+    new_world([ "spooky spiders", "royal humans" ], base_rules)
     for(2) p: rich_at(p, 2)
     expect(tech_barred(0, 0, -1), "spiders: age 3 needs something first")
     let a2x, a2y = near_start(0, 4)
@@ -261,10 +261,10 @@ def g_lacks():
     // A lacked line can't be trained even with its building standing (the full tree off).
     let free_rules = deep_copy(base_rules)
     set(free_rules, "full_tech_tree", jbool(true))
-    new_world(["spooky spiders", "royal humans"], free_rules)
+    new_world([ "spooky spiders", "royal humans" ], free_rules)
     expect(bm_lacks[0][bk("stable")] == 0, "full tech tree: spiders may build a Stable")
     expect(not ident_lacks(0, "scout"), "full tech tree: ...and train its lines")
-    new_world(["forest beetles", "steppe centaurs"], base_rules)
+    new_world([ "forest beetles", "steppe centaurs" ], base_rules)
     for(2) p: rich_at(p, 3)
     let rx, ry = near_start(0, 4)
     let ra = put(0, "archery_range", rx, ry)
@@ -278,16 +278,16 @@ def g_lacks():
 
 // Own research: each race's, at the Castle in age 3; never another's.
 def g_own_research():
-    new_world(["sewer rats", "hellenic humans"], base_rules)
+    new_world([ "sewer rats", "hellenic humans" ], base_rules)
     for(2) p: rich_at(p, 3)
     let x0, y0 = near_start(0, 3)
     let x1, y1 = near_start(1, 3)
     let c0 = put(0, "castle", x0, y0)
     let c1 = put(1, "castle", x1, y1)
-    for(["gnawing_teeth", "rust_spikes"]) id:
+    for([ "gnawing_teeth", "rust_spikes" ]) id:
         expect(can_research(0, c0, id), "sewer rats: {id} at the Castle")
         expect(not_in_tree(1, c1, id), "hellenic humans: not {id}")
-    for(["clever_hands", "long_spears"]) id: expect(can_research(1, c1, id), "hellenic humans: {id}")
+    for([ "clever_hands", "long_spears" ]) id: expect(can_research(1, c1, id), "hellenic humans: {id}")
     let sp = type_of_slot(0, "spear")
     let b_cls = str_index(su_classes, "building")
     let before = t_atk[sp][b_cls]
@@ -301,7 +301,7 @@ def g_own_research():
 
 // Aztec kills bring in gold.
 def g_kills():
-    new_world(["aztec humans", "imperial humans"], bare())
+    new_world([ "aztec humans", "imperial humans" ], bare())
     let a = type_of_slot(0, "infantry")
     expect(t_kill_gold[a] == 5, "aztec: kills bring in 5 gold ({t_kill_gold[a]})")
     let gold = res("gold")
@@ -314,16 +314,16 @@ def g_kills():
 
 // The same walk (as in g_web) with no web: how far it gets in 120 ticks.
 def walk_without_web() -> int:
-    new_world(["forest spiders", "forest humans"], bare())
+    new_world([ "forest spiders", "forest humans" ], bare())
     let walker = spawn(1, "spear", 14500, 14000, 1)[0]
-    issue_cmd(1, CMD_STANCE, [walker], PASSIVE, 0, 0, 0)
+    issue_cmd(1, CMD_STANCE, [ walker ], PASSIVE, 0, 0, 0)
     steps(36)
-    issue_cmd(1, CMD_MOVE, [walker], 14500, 26000, 0, 0)
+    issue_cmd(1, CMD_MOVE, [ walker ], 14500, 26000, 0, 0)
     steps(120)
     return u_y[index_of(walker)] - 14000
 
 def web_run() -> [int]:
-    new_world(["forest spiders", "forest humans"], bare())
+    new_world([ "forest spiders", "forest humans" ], bare())
     let c = spawn(0, "spear", 10000, 20000, 3)
     let e = spawn(1, "spear", 16000, 20000, 3)
     issue_cmd(0, CMD_ABILITY, c, 15000, 20000, 0, 0)
@@ -338,7 +338,7 @@ def web_run() -> [int]:
 // counter: shooters outside it aren't slowed, and it's gone in 15 s. Deterministic.
 def g_web():
     let df = walk_without_web()
-    new_world(["forest spiders", "forest humans"], bare())
+    new_world([ "forest spiders", "forest humans" ], bare())
     let ab = gobj(su_idents[0], "ability")
     expect(gstr(ab, "kind", "") == "web", "spiders: their ability is the web")
     expect(gobj(su_idents[1], "ability").keys.length == 0, "humans: no ability (their culture\'s, later)")
@@ -347,19 +347,19 @@ def g_web():
     let caster = spawn(0, "spear", 10000, 20000, 1)[0]
     let walker = spawn(1, "spear", 14500, 14000, 1)[0]
     let free_one = spawn(1, "spear", 26000, 14000, 1)[0]
-    issue_cmd(0, CMD_STANCE, [caster], PASSIVE, 0, 0, 0)
-    issue_cmd(1, CMD_STANCE, [walker, free_one], PASSIVE, 0, 0, 0)
-    issue_cmd(0, CMD_ABILITY, [caster], 30000, 20000, 0, 0)   // out of range: nothing
+    issue_cmd(0, CMD_STANCE, [ caster ], PASSIVE, 0, 0, 0)
+    issue_cmd(1, CMD_STANCE, [ walker, free_one ], PASSIVE, 0, 0, 0)
+    issue_cmd(0, CMD_ABILITY, [ caster ], 30000, 20000, 0, 0)  // out of range: nothing
     steps(12)
     expect(webs.length == 0, "web: not past its range")
-    issue_cmd(0, CMD_ABILITY, [caster], 14000, 20000, 0, 0)
+    issue_cmd(0, CMD_ABILITY, [ caster ], 14000, 20000, 0, 0)
     steps(12)
     expect(webs.length == WEB, "web: thrown where asked ({webs.length / WEB})")
-    issue_cmd(0, CMD_ABILITY, [caster], 13000, 20000, 0, 0)
+    issue_cmd(0, CMD_ABILITY, [ caster ], 13000, 20000, 0, 0)
     steps(12)
     expect(webs.length == WEB, "web: one per cooldown")
-    issue_cmd(1, CMD_MOVE, [walker], 14500, 26000, 0, 0)     // straight through the web
-    issue_cmd(1, CMD_MOVE, [free_one], 26000, 26000, 0, 0)   // the same walk in the open
+    issue_cmd(1, CMD_MOVE, [ walker ], 14500, 26000, 0, 0)    // straight through the web
+    issue_cmd(1, CMD_MOVE, [ free_one ], 26000, 26000, 0, 0)  // the same walk in the open
     var slowed = false
     for(120):
         step()
@@ -370,14 +370,14 @@ def g_web():
     steps(as_int(at(ab, "lasts")))
     expect(webs.length == 0, "web: wears off")
     // Sticky Silk (the spiders' own research): their shots slow what they hit.
-    new_world(["forest spiders", "forest humans"], bare())
+    new_world([ "forest spiders", "forest humans" ], bare())
     researched[0][research_index("sticky_silk")] = 1
     retype(0)
     tech_refresh(0)
     expect(t_slow_on_hit[type_of_slot(0, "archer")] > 0 and t_slow_on_hit[type_of_slot(0, "spear")] == 0, "sticky silk: on the shooters only")
     let arch = spawn(0, "archer", 10000, 20000, 2)
     let tgt = spawn(1, "spear", 14000, 20000, 1)[0]
-    issue_cmd(1, CMD_STANCE, [tgt], PASSIVE, 0, 0, 0)
+    issue_cmd(1, CMD_STANCE, [ tgt ], PASSIVE, 0, 0, 0)
     issue_cmd(0, CMD_ATTACK, arch, tgt, 0, 0, 0)
     var stuck = false
     for(300):
@@ -392,7 +392,7 @@ def g_web():
         if same and v != b[i]: same = false
     expect(same, "web: deterministic ({a.length} checkpoints)")
 
-let GROUPS = ["buildings", "units", "lacks", "own_research", "kills", "web", "norse"]
+let GROUPS = [ "buildings", "units", "lacks", "own_research", "kills", "web", "norse" ]
 
 def run_group(name:string):
     switch name:

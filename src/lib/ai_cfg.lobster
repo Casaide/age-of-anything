@@ -2,7 +2,7 @@
 // As export.gd _write_ai writes it: numbers by path ("military.defend_tiles"), string lists by
 // path, the build order and waves as rows, the level's fields (Bot.new with level "normal").
 
-class Bot                      // (declared ahead: the AI modules refer to each other)
+class Bot  // (declared ahead: the AI modules refer to each other)
 class Land
 class Expand
 
@@ -11,17 +11,17 @@ let cfg_strs = dictionary<string, [string]>(127)
 
 class Step:
     building:string
-    near:string            // "-": none
+    near:string  // "-": none
     age:int
     workers:int
-    count:int              // -1: one more than the steps before it for this building
+    count:int  // -1: one more than the steps before it for this building
     builders:int
     away:int
     own_side:int
     guard_step:int
     save:int
-    push:int               // -1: economy.build_push
-    expand_workers:int     // -1: none
+    push:int            // -1: economy.build_push
+    expand_workers:int  // -1: none
 
 var build_order = []::Step
 var wave_at = []::int

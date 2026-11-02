@@ -13,17 +13,17 @@
 // model/buildings2, model/build_mats, view/world_bake, gen/datalib, game/ruin.
 
 let AKB_HOUSE_SCALE = 1.1
-let AKB_BUILD_STAGES = [0.15, 0.4, 0.45, 0.72]
-let AKB_ALONG = ["", "^z", "^d", "^a"]
+let AKB_BUILD_STAGES = [ 0.15, 0.4, 0.45, 0.72 ]
+let AKB_ALONG = [ "", "^z", "^d", "^a" ]
 let AKB_SEEN = float3 { 1.0, 0.0, 1.0 }
-let AKB_TEAM = float3 { 1.0, 0.0, 1.0 }              // PartShape.TEAM_KEY: the sprite shader recolours it
+let AKB_TEAM = float3 { 1.0, 0.0, 1.0 }  // PartShape.TEAM_KEY: the sprite shader recolours it
 let AKB_NONE = float3 { -999999.0, -999999.0, -999999.0 }
-let AKB_WALK_PX = 32.0 / 0.70710678 * 0.8660254      // ArtKit.WALK_PX_PER_UNIT
+let AKB_WALK_PX = 32.0 / 0.70710678 * 0.8660254  // ArtKit.WALK_PX_PER_UNIT
 var akb_data:JV? = nil
 var akb_baked = 0
 var akb_wall_piece = false
-let akb_keep_all = false   // keep every bake's pixels (checks)
-let akb_px = dictionary<string, string>(256)        // a wall piece's pixels (for wall_look), by frame name
+let akb_keep_all = false                      // keep every bake's pixels (checks)
+let akb_px = dictionary<string, string>(256)  // a wall piece's pixels (for wall_look), by frame name
 let akb_size = dictionary<string, int2>(256)
 let akb_origin = dictionary<string, int2>(256)
 
@@ -59,7 +59,7 @@ def akb_variant_look(spec:BSpec, name:string, v:int) -> Basis, bool:
     let mirror = Basis { float3 { 0.0, 0.0, 1.0 }, float3 { 0.0, 1.0, 0.0 }, float3 { 1.0, 0.0, 0.0 } }
     let both = []::Basis
     let door_only = []::Basis
-    for([false, true]) flip:
+    for([ false, true ]) flip:
         for(4) q:
             let r = axis_angle(float3 { 0.0, 1.0, 0.0 }, float(q) * 90.0)
             let b = if flip: bmul(r, mirror) else: r
@@ -93,7 +93,7 @@ def akb_placed(arch:string, type:string, model:string, suffix:string) -> BSpec:
     let v = if hash_at >= 0: string_to_int(suffix.substring(hash_at + 1, suffix.length - hash_at - 1)) else: 0
     if v > 0:
         look, turned = akb_variant_look(spec, "{arch}:{type}", v)
-        s *= [1.0, 0.94, 1.05, 0.9][v % 4]
+        s *= [ 1.0, 0.94, 1.05, 0.9 ][v % 4]
     if suffix == "^z":
         look = axis_angle(float3 { 0.0, 1.0, 0.0 }, 90.0)
         turned = true
@@ -106,7 +106,7 @@ def akb_placed(arch:string, type:string, model:string, suffix:string) -> BSpec:
     spec.banner = akb_hold(spec.banner, b)
     spec.vane = akb_hold(spec.vane, b)
     spec.open = akb_hold(spec.open, b)
-    for(["smoke", "lantern", "banner_pivot", "vane_pivot"]) k:
+    for([ "smoke", "lantern", "banner_pivot", "vane_pivot" ]) k:
         if akb_has(spec, k): spec.pts.set(k, bxf(b, akb_pt(spec, k)))
     spec.lights = map(spec.lights) p: bxf(b, p)
     spec.doorway = map(spec.doorway) p: bxf(b, p)
@@ -186,13 +186,13 @@ def akb_hold_back(body:MNode, stage:int):
     let hi = float3 { ahi.x + 0.04, 0.0, ahi.z + 0.04 }
     let pole_h = max(top + 0.08, 0.22)
     let posts = []::float3
-    for([0.0, 0.5, 1.0]) fx:
-        for([0.0, 0.5, 1.0]) fz:
+    for([ 0.0, 0.5, 1.0 ]) fx:
+        for([ 0.0, 0.5, 1.0 ]) fz:
             if not (fx == 0.5 and fz == 0.5):
                 posts.push(float3 { lo.x + (hi.x - lo.x) * fx, 0.0, lo.z + (hi.z - lo.z) * fz })
     for(posts) q: add_child(body, beam(q, q + float3 { 0.0, pole_h, 0.0 }, 0.016, wood))
-    let around = [posts[0], posts[1], posts[2], posts[4], posts[7], posts[6], posts[5], posts[3]]
-    let levels = if pole_h > 0.3: [pole_h * 0.5, pole_h - 0.03] else: [pole_h - 0.03]
+    let around = [ posts[0], posts[1], posts[2], posts[4], posts[7], posts[6], posts[5], posts[3] ]
+    let levels = if pole_h > 0.3: [ pole_h * 0.5, pole_h - 0.03 ] else: [ pole_h - 0.03 ]
     for(levels) y:
         for(around) a, k:
             let c = around[(k + 1) % around.length]
@@ -235,7 +235,7 @@ class AkbCached:
     fx:BFx
 
 var akb_cache_frames = []::AkbFrame
-var akb_cache_stem = ""                       // the look being baked ("" while not recording)
+var akb_cache_stem = ""  // the look being baked ("" while not recording)
 
 def akb_stem_in(dir:string, name:string) -> string: return dir + "/b" + sha256_text("{BAKE_VERSION}|building|{name}").substring(0, 20)
 def akb_stem(name:string) -> string: return akb_stem_in(bake_cache_dir, name)
@@ -270,7 +270,6 @@ def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, sha
         akb_size.set(name, int2 { w, h })
         akb_origin.set(name, int2 { int(at.x + 0.5), int(at.y + 0.5) })
     akb_baked++
-
 
 // One look of a building, with its stages and extra parts, into the pack; its Look and BFx.
 def akb_bake_look(arch:string, type:string, model:string, suffix:string):
@@ -357,7 +356,7 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
 // The building types in ArtKit's order: town centre and houses first, the menus, then the rest (not planned).
 def akb_types() -> [string]:
     let d = akb_bdata()
-    let types = ["town_center", "house"]
+    let types = [ "town_center", "house" ]
     let menu = gobj(d, "menu")
     for(append(gstrs(menu, "civilian"), gstrs(menu, "military"))) t:
         if not has_s(types, t): types.push(t)
@@ -370,13 +369,13 @@ def akb_types() -> [string]:
 // Every look of a building in an architecture: [model, suffix] (the base, age looks, variants, a gate's ways).
 def akb_looks_of(arch:string, type:string) -> [[string]]:
     let d = akb_bdata()
-    let out = [["", ""]]
+    let out = [ [ "", "" ] ]
     let by_age = gobj(gobj(gobj(d, "age_looks"), arch), type)
-    for(by_age.keys) age: out.push([as_str(at(by_age, age)), "@" + age])
+    for(by_age.keys) age: out.push([ as_str(at(by_age, age)), "@" + age ])
     let nv = gint(gobj(d, "variants"), type, 1)
-    for(nv - 1) v: out.push(["", "#{v + 1}"])
+    for(nv - 1) v: out.push([ "", "#{v + 1}" ])
     if gbool(at(gobj(d, "buildings"), type), "gate", false):
-        for(AKB_ALONG.slice(1, -1)) sfx: out.push(["", sfx])
+        for(AKB_ALONG.slice(1, -1)) sfx: out.push([ "", sfx ])
     return out
 
 // Whether a building look has broken-up stages: not walls and gates, nor what has a near layer.
@@ -393,7 +392,7 @@ def bake_buildings_for(archs:[string]) -> int:
             for(akb_looks_of(arch, type)) ml:
                 let name = "{arch}:{type}{ml[1]}"
                 let lk = looks.get(name)
-                let unbroken = lk and akb_breaks(type, lk) and frame_index(name + ":ruin1") < 0   // (a pack made before D-171)
+                let unbroken = lk and akb_breaks(type, lk) and frame_index(name + ":ruin1") < 0  // (a pack made before D-171)
                 if not bake_quit and (ak_rebake or not lk or frame_index(name) < 0 or unbroken):
                     bake_breath()
                     akb_bake_look(arch, type, ml[0], ml[1])
@@ -437,7 +436,7 @@ def akb_compose(name:string, pieces:[string]) -> int:
     let w = hi.x - lo.x
     let h = hi.y - lo.y
     let out = ensure_size("", w * h * 4, 0)
-    for([false, true]) pass_art:
+    for([ false, true ]) pass_art:
         for(pieces.length) pi:
             let src = pxs[pi]
             let sz = szs[pi]
@@ -468,7 +467,7 @@ def wall_look(name:string, links:int) -> int, int:
         if links & (1 << k):
             if d.x + d.y <= 0: under.push(k) else: over.push(k)
     let front = []::string
-    for(append(append(under, [-1]), over)) k:
+    for(append(append(under, [ -1 ]), over)) k:
         let f = if k < 0: lk.front else: if k < lk.arms_front.length: lk.arms_front[k] else: "-"
         if f != "-" and f != "": front.push(f)
     let pieces = []::string
@@ -484,7 +483,7 @@ def wall_look(name:string, links:int) -> int, int:
 // line for line, but for the `shadow_only` meshes, which go only into the sun's depth map.
 
 def akb_world_bake(model:MNode, shadow:bool, shadow_only:[MNode]) -> string, int, int, float2:
-    assert not shadow   // (a tower's layer bakes without a ground shadow)
+    assert not shadow  // (a tower's layer bakes without a ground shadow)
     let all = []::WDraw
     world_draws(model, XF_ID, all)
     // which draws are shadow-only: world_draws makes one per mesh in tree order; walk the same order

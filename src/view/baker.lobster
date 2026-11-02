@@ -6,11 +6,11 @@
 // meshes come from Godot (mesh_export.gd); the models in Lobster are the next stage. No ambient occlusion yet.
 
 let BAKE_SS = 4
-let BAKE_AO_RADIUS = 1.2            // PartBaker's environment: ssao_radius, ssao_intensity, ssao_power
-let BAKE_AO_INTENSITY = 1.0           // (Godot's 2.5 in this formula: the bodies' brightness then within a level of Godot's bakes)
+let BAKE_AO_RADIUS = 1.2     // PartBaker's environment: ssao_radius, ssao_intensity, ssao_power
+let BAKE_AO_INTENSITY = 1.0  // (Godot's 2.5 in this formula: the bodies' brightness then within a level of Godot's bakes)
 let BAKE_AO_POWER = 1.4
-let BAKE_ART = ART_SCALE * 0.85     // art px a part unit (ArtKit: ART_SCALE x UNIT_SCALE: baked at the size drawn)
-let PX_PER_UNIT = 32.0 / 0.70710678 // the baker's screen px a world unit (Baker.PX_PER_UNIT)
+let BAKE_ART = ART_SCALE * 0.85      // art px a part unit (ArtKit: ART_SCALE x UNIT_SCALE: baked at the size drawn)
+let PX_PER_UNIT = 32.0 / 0.70710678  // the baker's screen px a world unit (Baker.PX_PER_UNIT)
 
 let BAKE_SHADERS = """
 SHADER bakeshrink
@@ -209,11 +209,11 @@ SHADER bakelit
 """
 
 let bake_shadow_debug = false
-var bake_fit = 1.0                  // render px over the art scale's (a part bakes as Godot's whole-pixel viewport: part_bake.lobster)
-var bake_art_k = 1.0                // the size a part bakes at over the art scale (D-180: its unit's draw size / 100; part_bake.lobster)
-var bake_frame_r = 0.0              // > 0: that viewport, 2r across round bake_frame_c (else framed on the model)
+var bake_fit = 1.0      // render px over the art scale's (a part bakes as Godot's whole-pixel viewport: part_bake.lobster)
+var bake_art_k = 1.0    // the size a part bakes at over the art scale (D-180: its unit's draw size / 100; part_bake.lobster)
+var bake_frame_r = 0.0  // > 0: that viewport, 2r across round bake_frame_c (else framed on the model)
 var bake_frame_c = float3_0
-let bake_debug = ""                 // a path stem: save each raw render there (checks)
+let bake_debug = ""  // a path stem: save each raw render there (checks)
 
 class BakeTri:
     p:[float3]
@@ -229,13 +229,13 @@ class BakeMat:
     scale:float2
     offset:float2
     triplanar:bool
-    channel = "*"                   // "*": the colour is on each triangle (a mesh made for one race)
+    channel = "*"  // "*": the colour is on each triangle (a mesh made for one race)
     m = float3_0
     b = float3_0
-    scissor = false                 // alpha scissor (decals)
+    scissor = false  // alpha scissor (decals)
     unshaded = false
     emission = float3_0
-    two_sided = false               // (cull disabled: a face seen from behind turns its normal to the camera)
+    two_sided = false  // (cull disabled: a face seen from behind turns its normal to the camera)
 
 let bake_mats = []::BakeMat
 
@@ -246,7 +246,7 @@ def load_mesh(path:string) -> [BakeTri]:
     let text = read_file(path)
     if not text: return out
     let dir = substring(path, 0, find_string_reverse(path, "/"))
-    let bin = read_file(substring(path, 0, path.length - 5) + ".bin", true) or ""   // (the vertices: 11 floats each)
+    let bin = read_file(substring(path, 0, path.length - 5) + ".bin", true) or ""  // (the vertices: 11 floats each)
     var at = 0
     var mat = -1
     for(tokenize(text, "\n", "")) line:
@@ -262,12 +262,12 @@ def load_mesh(path:string) -> [BakeTri]:
                 let file = dir + "/" + t[0]
                 tex = bake_tex_cache.get(file)
                 if not tex:
-                    let loaded = gl.load_texture(file)   // (mipmapped, as UnitModels.tex: a part is small on screen)
+                    let loaded = gl.load_texture(file)  // (mipmapped, as UnitModels.tex: a part is small on screen)
                     if loaded: bake_tex_cache.set(file, loaded)
                     tex = loaded
             let f = map(t.slice(1, -1)) x: string_to_float(x)
             let bm = if f.length >= 5: BakeMat { tex, float2 { f[0], f[1] }, float2 { f[2], f[3] }, f[4] > 0.5 } else: BakeMat { tex, float2_1, float2_0, false }
-            if halves.length > 1:   // "ch <channel> m.r m.g m.b b.r b.g b.b", or "ch - r g b"
+            if halves.length > 1:  // "ch <channel> m.r m.g m.b b.r b.g b.b", or "ch - r g b"
                 let c = tokenize(halves[1], " ", "")
                 let num = map(c.slice(2, -1)) x: string_to_float(x)
                 if c[1] == "-":
@@ -279,7 +279,7 @@ def load_mesh(path:string) -> [BakeTri]:
                     bm.b = float3 { num[3], num[4], num[5] }
             bake_mats.push(bm)
             mat = bake_mats.length - 1
-            for(tris):   // its triangles from the .bin
+            for(tris):  // its triangles from the .bin
                 let tri = BakeTri { [], [], [], [], mat }
                 for(3):
                     def f(k:int) -> float:
@@ -329,7 +329,7 @@ def channel_colour(cols:Colours?, ch:string) -> float3:
     def byte(i:int) -> float: return float(string_to_int(hex.substring(i, 2), 16)) / 255.0
     return float3 { byte(0), byte(2), byte(4) }
 
-var bake_colours:Colours? = nil     // the race's colours for library meshes (set before bake_facing)
+var bake_colours:Colours? = nil  // the race's colours for library meshes (set before bake_facing)
 
 def mat_albedo(mat:int, tri_c:float3) -> float3:
     if mat < 0: return tri_c
@@ -341,7 +341,7 @@ def mat_albedo(mat:int, tri_c:float3) -> float3:
 // A part's meshes in model space, made once for all its facings and passes (the last part's kept, as its draw order):
 // what casts shadow and has depth (decals left out), and each run of one material and colour for the lit pass.
 class BakeRun:
-    first:int     // its first triangle (its material, colour, and whether it hides the part)
+    first:int  // its first triangle (its material, colour, and whether it hides the part)
     mesh:resource<mesh>
 
 var mesh_part:[BakeTri]? = nil
@@ -349,14 +349,14 @@ var mesh_hide:[BakeTri]? = nil
 var mesh_solid = []::resource<mesh>
 var mesh_runs = []::BakeRun
 let no_points = []::int
-var mesh_points = []::float3   // every distinct corner (the boxes each facing needs: a corner is shared by ~6 triangles)
+var mesh_points = []::float3  // every distinct corner (the boxes each facing needs: a corner is shared by ~6 triangles)
 
 def bake_meshes(tris:[BakeTri], part:[BakeTri], hide:[BakeTri], order:[int]):
     if mesh_part and mesh_part == part and mesh_hide == hide and mesh_solid.length: return
     mesh_part = part
     mesh_hide = hide
     mesh_points = []
-    let seen = dictionary<int, [int]>(1024)   // (exact: a corner by its bits' hash, then compared whole)
+    let seen = dictionary<int, [int]>(1024)  // (exact: a corner by its bits' hash, then compared whole)
     for(tris) t:
         for(t.p) p:
             let key = hash(p)
@@ -374,7 +374,7 @@ def bake_meshes(tris:[BakeTri], part:[BakeTri], hide:[BakeTri], order:[int]):
     for(tris) t:
         if t.mat < 0 or not bake_mats[t.mat].scissor:
             for(t.p) p: solid.push(p)
-    mesh_solid = [gl.new_mesh("P", solid, []::float4, []::float3, []::float2, []::float2, map(solid.length) i: i)]
+    mesh_solid = [ gl.new_mesh("P", solid, []::float4, []::float3, []::float2, []::float2, map(solid.length) i: i) ]
     mesh_runs = []
     var at = 0
     while at < order.length:
@@ -411,7 +411,7 @@ let no_groups = []::int
 def draw_order(tris:[BakeTri], part:[BakeTri], hide:[BakeTri]) -> [int]:
     let n_part = part.length
     if order_part and order_part == part and order_hide == hide and order_kept.length == tris.length: return order_kept
-    let by = dictionary<int, [int]>(64)   // material and side -> its groups
+    let by = dictionary<int, [int]>(64)  // material and side -> its groups
     let colours = []::float3
     let buckets = []::[int]
     for(tris) t, i:
@@ -440,17 +440,17 @@ def draw_order(tris:[BakeTri], part:[BakeTri], hide:[BakeTri]) -> [int]:
 // with it, then cut away (a mask pass, the part white and `hide` black, unlit: only the white is kept).
 // `join_r` > 0: where `hide` covers the part within join_r of `join` is a seam (a neck running into its
 // head): no outline there, so the two join without a line.
-let bake_gpu_shrink = true   // pixelize's shrink on the GPU (gpu_pixelize)
+let bake_gpu_shrink = true  // pixelize's shrink on the GPU (gpu_pixelize)
 def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = float3_0, join_r:float = 0.0) -> string, int, int, float2:
     let tris = append(part, hide)
     // (the depth test does the hiding, so the triangles go in runs of one material and colour: a draw each)
     let order = draw_order(tris, part, hide)
-    bake_meshes(tris, part, hide, order)   // (a decal casts no shadow here: its quad would, where Godot's alpha scissor casts only its picture)
+    bake_meshes(tris, part, hide, order)  // (a decal casts no shadow here: its quad would, where Godot's alpha scissor casts only its picture)
     let az = 35.0 + 45.0 * float(facing)
     let el = 30.0
     let view = float3 { sin(az) * cos(el), sin(el), cos(az) * cos(el) }
     let cx, cy, cz = looking_at(-view, float3 { 0.0, 1.0, 0.0 })
-    let key = normalize(cx * 0.55 + cy * -0.75 + cz * -1.0)   // cam.basis * (0.55, -0.75, -1): from the screen's upper left
+    let key = normalize(cx * 0.55 + cy * -0.75 + cz * -1.0)  // cam.basis * (0.55, -0.75, -1): from the screen's upper left
     // The model's box on screen (part units), with room.
     var lo = float2 { 1000000000.0, 1000000000.0 }
     var hi = float2 { -1000000000.0, -1000000000.0 }
@@ -464,7 +464,7 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
         dhi = max(dhi, dot(p, cz))
     lo -= float2_1 * 2.0
     hi += float2_1 * 2.0
-    var px = BAKE_ART * bake_art_k * float(BAKE_SS)   // render px a part unit (at the part's size, D-180)
+    var px = BAKE_ART * bake_art_k * float(BAKE_SS)  // render px a part unit (at the part's size, D-180)
     if bake_frame_r > 0.0:
         // Godot's bake viewport (part_baker.gd): a square of whole pixels, 2r across, centred on the model's box: the
         // pixel grid, and the resize's sample points on it, fall on the model as there
@@ -496,15 +496,15 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
     let lpx = px
     let lw = int(ceiling((lhi.x - llo.x) * lpx))
     let lh = int(ceiling((lhi.y - llo.y) * lpx))
-    let zs = 1.8 / max(0.001, zhi - zlo)   // depth to -0.9..0.9: nearer the light (larger z, toward it) smaller
+    let zs = 1.8 / max(0.001, zhi - zlo)  // depth to -0.9..0.9: nearer the light (larger z, toward it) smaller
     // (light_z(p) = 0.9 - (dot(p, kz) - zlo) * zs: the shadow pass's third row)
     // (a depth test keeps the nearest: the framebuffer has a depth buffer, gl.ortho turns the test on)
     let smap = gl.create_blank_texture(int3 { lw, lh, 0 }, texture_format_nomipmap | texture_format_float | texture_format_clamp)
     gl.switch_to_framebuffer(smap, true)
-    gl.ortho(false, true)   // (in a framebuffer: its own pixels, depth tested)
+    gl.ortho(false, true)  // (in a framebuffer: its own pixels, depth tested)
     gl.clear(float4 { 1.0, 1.0, 1.0, 1.0 })
     gl.set_shader("bakedepth")
-    set_rows(row(kx * lpx, -llo.x * lpx), row(-ky * lpx, -llo.y * lpx), row(-kz * zs, 0.9 + zlo * zs))   // (light_z)
+    set_rows(row(kx * lpx, -llo.x * lpx), row(-ky * lpx, -llo.y * lpx), row(-kz * zs, 0.9 + zlo * zs))  // (light_z)
     gl.render_mesh(mesh_solid[0])
     if bake_debug != "": gl.save_texture(smap, bake_debug + "_shadow{facing}.png")
     // The lit pass, depth tested, in runs of one material and colour (a draw each); with `mask`, the part
@@ -515,7 +515,7 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
     // radius 1.2, intensity 2.5, power 1.4).
     let view_x = row(cx * px, -lo.x * px)
     let view_y = row(-cy * px, -lo.y * px)
-    let view_d = row(-cz * vz, 0.9 + dlo * vz)   // (view_z)
+    let view_d = row(-cz * vz, 0.9 + dlo * vz)  // (view_z)
     let vmap_tex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap | texture_format_float | texture_format_clamp)
     gl.switch_to_framebuffer(vmap_tex, true)
     gl.ortho(false, true)
@@ -526,8 +526,8 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
     let ao_tex = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap | texture_format_clamp)
     gl.switch_to_framebuffer(ao_tex, false)
     gl.ortho(false, false)
-    let full = gl.new_mesh("P", [float3 { 0.0, 0.0, 0.0 }, float3 { float(w), 0.0, 0.0 }, float3 { float(w), float(h), 0.0 }, float3 { 0.0, float(h), 0.0 }],
-                           []::float4, []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
+    let full = gl.new_mesh("P", [ float3 { 0.0, 0.0, 0.0 }, float3 { float(w), 0.0, 0.0 }, float3 { float(w), float(h), 0.0 }, float3 { 0.0, float(h), 0.0 } ],
+                           []::float4, []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ])
     gl.set_mesh_texture(full, 0, 0, vmap_tex)
     gl.set_shader("bakeao")
     gl.set_uniform("aosize", float2 { float(w), float(h) })
@@ -584,14 +584,14 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
         return gsprite, gw, gh, (float2_0 - lo) * px / float(BAKE_SS)
     let raw = gl.read_texture(lit_tex) or ""
     var seam = ""
-    if hide.length:   // only what the mask shows white is kept
+    if hide.length:  // only what the mask shows white is kept
         let mask = gl.read_texture(hide_tex) or ""
         if join_r > 0.0: seam = ensure_size("", w * h, 0)
         var i = 0
         while i + 3 < raw.length:
             if mask[i] < 128 or mask[i + 3] < 128:
                 write_int8_le(raw, i + 3, 0)
-                if join_r > 0.0 and mask[i + 3] >= 128:   // (the mask reads back bottom row first, as the render)
+                if join_r > 0.0 and mask[i + 3] >= 128:  // (the mask reads back bottom row first, as the render)
                     let pix = i / 4
                     let at = float2 { float(pix % w) + 0.5, float(h - 1 - pix / w) + 0.5 }
                     if magnitude(at - jc) <= reach: write_int8_le(seam, pix, 255)
@@ -610,8 +610,8 @@ def bake_facing(part:[BakeTri], facing:int, hide:[BakeTri] = [], join:float3 = f
 def gpu_pixelize(raw:resource<texture>, mask:resource<texture>, masked:bool, w:int, h:int, factor:int, jc:float2, reach:float, seamed:bool) -> int, int, string:
     let sw = max(1, w / factor)
     let sh = max(1, h / factor)
-    let quad = gl.new_mesh("P", [float3_0, float3 { float(sw), 0.0, 0.0 }, float3 { float(sw), float(sh), 0.0 }, float3 { 0.0, float(sh), 0.0 }],
-                           []::float4, []::float3, []::float2, []::float2, [0, 2, 1, 0, 3, 2])
+    let quad = gl.new_mesh("P", [ float3_0, float3 { float(sw), 0.0, 0.0 }, float3 { float(sw), float(sh), 0.0 }, float3 { 0.0, float(sh), 0.0 } ],
+                           []::float4, []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ])
     gl.set_mesh_texture(quad, 0, 0, raw)
     gl.set_mesh_texture(quad, 0, 1, mask)
     let was = gl.blend(blend_none)
@@ -621,7 +621,7 @@ def gpu_pixelize(raw:resource<texture>, mask:resource<texture>, masked:bool, w:i
     gl.set_shader("bakeshrink")
     gl.set_uniform("shrink", float4 { float(w), float(h), float(w) / float(sw), float(h) / float(sh) })
     gl.set_uniform("masked", if masked: 1.0 else: 0.0)
-    gl.blend(blend_none)   // (set here: the switch and ortho leave it as they find it, but the pass must write, not blend)
+    gl.blend(blend_none)  // (set here: the switch and ortho leave it as they find it, but the pass must write, not blend)
     gl.render_mesh(quad)
     var joined = ""
     if seamed:
@@ -652,7 +652,7 @@ def cubic_kernel(t:float) -> float:
 def pixelize(raw:string, w:int, h:int, factor:int, seam:string = "", outline:bool = true) -> int, int, string:
     let sw = max(1, w / factor)
     let sh = max(1, h / factor)
-    let small = ensure_size("", sw * sh * 4, 0)   // (the write_ functions write into it in place)
+    let small = ensure_size("", sw * sh * 4, 0)  // (the write_ functions write into it in place)
     let joined = ensure_size("", sw * sh, 0)
     // premultiplied, top row first (Image.premultiply_alpha: (c a + 255) >> 8; a framebuffer reads back bottom row first)
     let pm = map(w * h * 4) i:
@@ -665,13 +665,13 @@ def pixelize(raw:string, w:int, h:int, factor:int, seam:string = "", outline:boo
     let n = float(factor * factor)
     for(sh) y:
         let oy = float(y) * yfac - 0.5
-        let oy1 = int(oy)   // (truncated toward zero, as Godot's (int))
+        let oy1 = int(oy)  // (truncated toward zero, as Godot's (int))
         let dy = oy - float(oy1)
         for(sw) x:
             let ox = float(x) * xfac - 0.5
             let ox1 = int(ox)
             let dx = ox - float(ox1)
-            let col = [0.0, 0.0, 0.0, 0.0]
+            let col = [ 0.0, 0.0, 0.0, 0.0 ]
             for(4) nn:
                 let k1 = cubic_kernel(dy - float(nn - 1))
                 let oy2 = clamp(oy1 + nn - 1, 0, h - 1)
@@ -696,10 +696,10 @@ def pixelize_finish(small:string, joined:string, sw:int, sh:int, seamed:bool, ou
         for(sw) x:
             let o = (y * sw + x) * 4
             let a = small[o + 3]
-            if a >= 153 or (seamed and a >= 8 and joined[y * sw + x] >= 64):   // (0.6; along a seam, any cover)
+            if a >= 153 or (seamed and a >= 8 and joined[y * sw + x] >= 64):  // (0.6; along a seam, any cover)
                 for(3) c: write_int8_le(out, o + c, min(255, small[o + c] * 255 / a))
                 write_int8_le(out, o + 3, 255)
-    if seamed:   // grow a pixel into the seam (the two parts' bakes sit on slightly different grids)
+    if seamed:  // grow a pixel into the seam (the two parts' bakes sit on slightly different grids)
         let grown = ensure_size("", sw * sh * 4, 0)
         for(sw * sh * 4) i: write_int8_le(grown, i, out[i])
         for(sh - 2) yy:
@@ -708,7 +708,7 @@ def pixelize_finish(small:string, joined:string, sw:int, sh:int, seamed:bool, ou
                 let x = xx + 1
                 let p = y * sw + x
                 if out[p * 4 + 3] != 255 and joined[p] >= 64:
-                    for([p - 1, p + 1, p - sw, p + sw]) q:
+                    for([ p - 1, p + 1, p - sw, p + sw ]) q:
                         if grown[p * 4 + 3] != 255 and out[q * 4 + 3] == 255:
                             for(4) c: write_int8_le(grown, p * 4 + c, out[q * 4 + c])
         for(sw * sh * 4) i: write_int8_le(out, i, grown[i])
@@ -722,11 +722,11 @@ def pixelize_finish(small:string, joined:string, sw:int, sh:int, seamed:bool, ou
                 var edge = x == 0 or y == 0 or x == sw - 1 or y == sh - 1
                 if not edge:
                     let p = y * sw + x
-                    for([p - 1, p + 1, p - sw, p + sw]) q:
+                    for([ p - 1, p + 1, p - sw, p + sw ]) q:
                         if out[q * 4 + 3] != 255 and (not seamed or joined[q] < 128): edge = true
                 if edge:
                     for(3) c:
                         let v = float(out[i + c]) / 255.0 * 0.45
-                        let inked = v + ([ink.x, ink.y, ink.z][c] - v) * 0.25
+                        let inked = v + ([ ink.x, ink.y, ink.z ][c] - v) * 0.25
                         write_int8_le(edged, i + c, int(inked * 255.0))
     return sw, sh, edged

@@ -17,33 +17,33 @@ class Pose2:
     phase:float
     body_pose = ""
 
-let POSES2 = [Pose2 { "stand", false, 0.0 }, Pose2 { "walk0", true, 0.0 }, Pose2 { "walk1", true, 2.1 }, Pose2 { "walk2", true, 4.2 }]
+let POSES2 = [ Pose2 { "stand", false, 0.0 }, Pose2 { "walk0", true, 0.0 }, Pose2 { "walk1", true, 2.1 }, Pose2 { "walk2", true, 4.2 } ]
 // A hopper's walk on the ground (HOP_KEYS): deep in its crouch, squashed on landing.
-let HOP_POSES = [Pose2 { "hop_crouch", true, 0.2 * 2.0 * 3.141592653589793 }, Pose2 { "hop_land", true, 0.82 * 2.0 * 3.141592653589793 }]
-let WORK_POSES = [Pose2 { "forage", false, 0.0 }]   // drawn for every worker (placement/work2d.lobster)
+let HOP_POSES = [ Pose2 { "hop_crouch", true, 0.2 * 2.0 * 3.141592653589793 }, Pose2 { "hop_land", true, 0.82 * 2.0 * 3.141592653589793 } ]
+let WORK_POSES = [ Pose2 { "forage", false, 0.0 } ]  // drawn for every worker (placement/work2d.lobster)
 
 // Thresholds (art pixels). Tolerant of a pixel or two of outline, strict enough for a leg on a back.
 // Pixel tolerances were set at the art scale before D-173 (1.5); they keep their size on screen at a finer scale (at 2x a
 // pixel is half as big, so the same slack is twice the pixels).
 let PX_SCALE = BAKE_ART / (1.5 * 0.85)
-let MODEL_SLACK = int(round(6.0 * PX_SCALE))   // pixels a leg or head may differ from the 3D model by (the outline, rounding)...
-let MODEL_SHARE = 0.08         // ...or this share of the part's pixels
-let EDGE_PX = int(round(2.0 * PX_SCALE))   // a truth region's edge left out of the count (the bake's outline and rounding)
-let HIDDEN_MIN = 3             // a weapon or shield shows at least this many pixels in every facing
-let ARMOUR_SHARE = 0.8         // worn armour covers at most this share of its body (a whole copy of the body is 1)
-let FACE_TEAM_SHARE = 0.3      // team cloth over at most this share of a head facing the camera
-let FOOT_PX = int(round(2.0 * PX_SCALE))   // a standing foot's lowest pixel within this of its ground point; walking, of the standing line
-let RIDER_REACH = 0.8          // a person riding: its leg reaches at least this share of the way from the seat to the girth...
-let CLING_REACH = 0.1          // ...a clinging or folded-legged rider's at least onto the flank
+let MODEL_SLACK = int(round(6.0 * PX_SCALE))  // pixels a leg or head may differ from the 3D model by (the outline, rounding)...
+let MODEL_SHARE = 0.08                        // ...or this share of the part's pixels
+let EDGE_PX = int(round(2.0 * PX_SCALE))      // a truth region's edge left out of the count (the bake's outline and rounding)
+let HIDDEN_MIN = 3                            // a weapon or shield shows at least this many pixels in every facing
+let ARMOUR_SHARE = 0.8                        // worn armour covers at most this share of its body (a whole copy of the body is 1)
+let FACE_TEAM_SHARE = 0.3                     // team cloth over at most this share of a head facing the camera
+let FOOT_PX = int(round(2.0 * PX_SCALE))      // a standing foot's lowest pixel within this of its ground point; walking, of the standing line
+let RIDER_REACH = 0.8                         // a person riding: its leg reaches at least this share of the way from the seat to the girth...
+let CLING_REACH = 0.1                         // ...a clinging or folded-legged rider's at least onto the flank
 
-var old_truth = false          // fixtures: the truth before 2026-10-13 (the first leg's part at every hip, unturned)
+var old_truth = false  // fixtures: the truth before 2026-10-13 (the first leg's part at every hip, unturned)
 var check_team = float3 { 1.0, 0.0, 0.0 }
 
 // ---- a sprite's pixels (read back from its sheet: the bake keeps them only on the GPU)
 
 class Pixels:
-    pts:[float2]               // opaque pixel centres in part units
-    team:[bool]                // which are team colour
+    pts:[float2]  // opaque pixel centres in part units
+    team:[bool]   // which are team colour
 
 let pixel_cache = dictionary<string, Pixels>(4095)
 let sheet_bytes = dictionary<int, string>(4095)
@@ -68,7 +68,7 @@ def pixels_of(key:string) -> Pixels:
         for(fr.h) y:
             for(fr.w) x:
                 let i = ((fr.y + y) * sw + fr.x + x) * 4
-                if bytes[i + 3] > 25:   // (alpha > 0.1)
+                if bytes[i + 3] > 25:  // (alpha > 0.1)
                     out.pts.push((float2 { float(x), float(y) } + float2_1 * 0.5 - float2 { b.ox, b.oy }) / b.scale)
                     let r = float(bytes[i]) / 255.0
                     let g = float(bytes[i + 1]) / 255.0
@@ -83,15 +83,14 @@ def clear_pixel_caches():
 
 // ---- the composed parts
 
-
-let XF_ID2 = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]   // (the 2D transforms' identity)
+let XF_ID2 = [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]  // (the 2D transforms' identity)
 
 class P2:
     node:VNode
     id:string
-    kind:string                // a part's slot, "arm" (a body's near-arm layer) or "shadow"
-    rig:string                 // main, mount or rider
-    cells:IMap                 // cell -> 1, or 0 where the pixel is team colour
+    kind:string  // a part's slot, "arm" (a body's near-arm layer) or "shadow"
+    rig:string   // main, mount or rider
+    cells:IMap   // cell -> 1, or 0 where the pixel is team colour
     near = true
     team = 0
     unbaked = false
@@ -102,7 +101,6 @@ def parts2(v:UV) -> [P2]:
     let out = []::P2
     collect2(v, v.node, XF_ID2, out)
     return out
-
 
 def collect2(v:UV, n:VNode, t:[float], out:[P2]) -> void:
     for(n.kids) c:
@@ -171,7 +169,7 @@ def check_view(v:UV, label:string, view:string, k:int, r:JV, stand:dictionary<st
     // Shadows under everything.
     let shadow = find2(parts, "main", "shadow")
     note("shadow first", label, view, shadow.length == 0 or shadow[0] != 0, "")
-    for(["main", "mount", "rider"]) rg:
+    for([ "main", "mount", "rider" ]) rg:
         let bodies = find2(parts, rg, "body")
         if bodies.length:
             let body = bodies[0]
@@ -179,13 +177,13 @@ def check_view(v:UV, label:string, view:string, k:int, r:JV, stand:dictionary<st
             let depth = gobj(body_rig, "depth")
             let under = gbool(body_rig, "legs_under", false)
             for(find2(parts, rg, "leg")) i:
-                if not parts[i].near and find_string(parts[i].id, "~") < 0:   // (a leg cut by its body may draw over it: it holds only what shows)
+                if not parts[i].near and find_string(parts[i].id, "~") < 0:  // (a leg cut by its body may draw over it: it holds only what shows)
                     note("far legs behind the body", label, view, over2(parts, i, body) > 0, "{over2(parts, i, body)} px")
                 elif under: note("legs under a skirt", label, view, i > body, "")
             let heads = find2(parts, rg, "head")
             // Legs and head show where the 3D model shows them.
             if rg != "rider" and (ends_with(view, "stand") or v.body_pose != ""): check_model(v, parts, rg, body, label, view, k, r, stand)
-            elif rg != "rider" and stand.get(rg) and v.job == "":   // (at work: work2d)
+            elif rg != "rider" and stand.get(rg) and v.job == "":  // (at work: work2d)
                 let lows = stand.get(rg)
                 if lows: check_walk2(v, parts, rg, label, view, lows)
             // Back parts: behind the body when the back faces away from the camera, over it when it faces it.
@@ -200,7 +198,7 @@ def check_view(v:UV, label:string, view:string, k:int, r:JV, stand:dictionary<st
                 elif k != 0 and d < -0.5: note("back parts behind the body facing the camera", label, view, over2(parts, i, body) > 0, "{over2(parts, i, body)} px")
                 elif k != 0 and d > 0.5: note("back parts over the body facing away", label, view, over2(parts, body, i) > 0, "{over2(parts, body, i)} px")
             // What the near hand holds draws over the body; a weapon or shield never vanishes.
-            for(["hand_r", "hand_l"]) slot:
+            for([ "hand_r", "hand_l" ]) slot:
                 for(find2(parts, rg, slot)) i:
                     if find_string(parts[i].id, "@slung") >= 0:
                         // (a shield slung on the back: upright, drawn as back gear by its sling's depth; flat on top,
@@ -211,7 +209,7 @@ def check_view(v:UV, label:string, view:string, k:int, r:JV, stand:dictionary<st
                         elif k != 0 and ds > 0.5: note("back parts over the body facing away", label, view, over2(parts, body, i) > 0, "{over2(parts, body, i)} px")
                     else:
                         if k != 0 and jdepth(depth, slot) >= 0.5: note("near hand over the body", label, view, over2(parts, body, i) > 0, "{over2(parts, body, i)} px")
-                        if not (k != 0 and jdepth(depth, slot) < -0.5):   // (in the far hand: the body may hide it)
+                        if not (k != 0 and jdepth(depth, slot) < -0.5):  // (in the far hand: the body may hide it)
                             let seen = visible2(parts, i)
                             note("weapons and shields show", label, view, seen < min(HIDDEN_MIN, parts[i].cells.keys.length), "{parts[i].id} {seen} px seen")
             // Worn armour is baked on its body with the body cut away: it never carries a copy of the body.
@@ -263,7 +261,7 @@ def camera(k:int) -> [float3]:
     let z = float3 { sin(az) * cos(el), sin(el), cos(az) * cos(el) }
     let x = normalize(cross(float3 { 0.0, 1.0, 0.0 }, z))
     let y = cross(z, x)
-    return [x, y, z]
+    return [ x, y, z ]
 
 // A 3D point in a body's frame as the bake draws it: part units in the body sprite's 2D frame.
 def project(p:float3, cam:[float3]) -> float2: return float2 { dot(p, cam[0]), -dot(p, cam[1]) }
@@ -276,8 +274,8 @@ class TLeg:
     hip:float2
 
 class Truth:
-    cells:IMap                 // cell -> 0 body, 1 head, 2 + i leg i
-    feet:[Vox]                 // per leg: its cells
+    cells:IMap  // cell -> 0 body, 1 head, 2 + i leg i
+    feet:[Vox]  // per leg: its cells
     legs:[TLeg]
     want_basis:[Basis]
     flipped:bool
@@ -291,7 +289,7 @@ class TPiece:
 
 // Draws the pieces in flat ids from facing k's camera, one pixel an art pixel times the render's size rounding, as
 // the bake's orthographic camera does: its box round them all, 2 units more, the camera at its middle.
-def truth_render(pieces:[TPiece], k:int, at:float = 1.0) -> IMap, int2:   // (at: the size the parts are baked at, D-180)
+def truth_render(pieces:[TPiece], k:int, at:float = 1.0) -> IMap, int2:  // (at: the size the parts are baked at, D-180)
     let cam = camera(k)
     var lo = float3_1 * 1000000.0
     var hi = float3_1 * -1000000.0
@@ -309,7 +307,7 @@ def truth_render(pieces:[TPiece], k:int, at:float = 1.0) -> IMap, int2:   // (at
     let mid = (lo + hi) * 0.5
     let sx0 = float(size) * 0.5 - dot(mid, cam[0]) * ppu
     let sy0 = float(size) * 0.5 + dot(mid, cam[1]) * ppu
-    let origin = float2 { sx0, sy0 }   // (where the world's 0 lands: Camera3D.unproject_position)
+    let origin = float2 { sx0, sy0 }  // (where the world's 0 lands: Camera3D.unproject_position)
     let depth = map(size * size): -1000000.0
     let idbuf = map(size * size): -1
     var t = 0
@@ -353,7 +351,7 @@ def truth_box(n:MNode, t:Xform) -> float3, float3:
     var hi = float3_1 * -1000000.0
     let m = n.mesh
     if m:
-        let mlo, msize = mesh_box([m])
+        let mlo, msize = mesh_box([ m ])
         let a, sz = xf_box(t, mlo, msize)
         lo = min(lo, a)
         hi = max(hi, a + sz)
@@ -390,7 +388,7 @@ def truth_of(body:VNode, v:UV, heads:[VNode], k:int) -> Truth:
     if not spec:
         truth_cache.set(key, tr)
         return tr
-    let pieces = [TPiece { spec.node, XF_ID, 0 }]
+    let pieces = [ TPiece { spec.node, XF_ID, 0 } ]
     let cam = camera(k)
     let legs = gobj(bdata, "legs")
     for(spec.anchors) a, i:
@@ -401,14 +399,14 @@ def truth_of(body:VNode, v:UV, heads:[VNode], k:int) -> Truth:
         if old_truth:
             leg_id = rstr(legs, "part") + pose
             basis = BASIS_ID
-        if not cut and bdet(basis) < 0.0: tr.flipped = true   // (an uncut leg mirrored in 2D: its truth isn't one render)
+        if not cut and bdet(basis) < 0.0: tr.flipped = true  // (an uncut leg mirrored in 2D: its truth isn't one render)
         tr.legs.push(TLeg { tokenize(leg_id, "@", "")[0], basis, project(a.pos, cam) })
         let ls = rig_spec(leg_id, cols)
         if ls: pieces.push(TPiece { ls.node, Xform { basis, a.pos }, 2 + i })
     if head:
         let hs = rig_spec(tokenize(head.part_id, "~", "")[0], cols)
-        if hs: pieces.push(TPiece { hs.node, Xform { BASIS_ID, spec.sockets.get("head", float3_0) - hs.node.pos }, 1 })   // (its position the socket: Godot sets it)
-    let cells, _size = truth_render(pieces, k, float(body.size) / 100.0)   // (on the parts' own grid: baked at the unit's size)
+        if hs: pieces.push(TPiece { hs.node, Xform { BASIS_ID, spec.sockets.get("head", float3_0) - hs.node.pos }, 1 })  // (its position the socket: Godot sets it)
+    let cells, _size = truth_render(pieces, k, float(body.size) / 100.0)                                                 // (on the parts' own grid: baked at the unit's size)
     tr.cells = cells
     tr.feet = map(spec.anchors.length): new_vox()
     for(cells.keys) c:
@@ -441,7 +439,7 @@ def lowest_y(cells:IMap) -> float:
 def interior(cells:IMap, c:int, fits) -> bool:
     let u = cunkey(c)
     for(EDGE_PX) n:
-        for([int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }]) d:
+        for([ int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 } ]) d:
             if not fits(iget(cells, ckey(u.x + d.x * (n + 1), u.y + d.y * (n + 1)), -1)): return false
     return true
 
@@ -466,14 +464,14 @@ def check_model(v:UV, parts:[P2], rg:string, body:int, label:string, view:string
          "truth {map(gt.legs) l: l.base}, composed {map(composed) l: l.base}")
     if gt.flipped: return
     // The composed unit in the rig's own space, at stand: each cell's topmost of body, legs, head.
-    let top = new_imap()   // cell -> part index
-    let order = append(append([body], legs), heads)
+    let top = new_imap()  // cell -> part index
+    let order = append(append([ body ], legs), heads)
     insertion_sort(order) a, b: a < b
     let rig_cells = map(parts.length) i: if has_int(order, i): cells_in_rig(parts[i].node) else: new_imap()
     for(order) i:
         for(rig_cells[i].keys) c: iset(top, c, i)
-    let over = map(parts.length): 0    // pixels drawn over the body where the model hides them
-    let under = map(parts.length): 0   // pixels of it the body covers where the model shows them
+    let over = map(parts.length): 0   // pixels drawn over the body where the model hides them
+    let under = map(parts.length): 0  // pixels of it the body covers where the model shows them
     for(gt.cells.keys) c:
         let want = iget(gt.cells, c, -1)
         guard ihas(top, c)
@@ -512,15 +510,15 @@ def check_model(v:UV, parts:[P2], rg:string, body:int, label:string, view:string
                 var lo = 1000000.0
                 for(vs) q: lo = min(lo, q.y)
                 var want = -1000000.0
-                var sole = float2_0   // (the foot's ground point on screen)
+                var sole = float2_0  // (the foot's ground point on screen)
                 for(vs) q:
                     if q.y <= lo + 0.3 and project(q, cam).y > want:
                         want = project(q, cam).y
                         sole = project(q, cam)
                 let got = lowest_y(cells_in_rig(leg.node))
                 iset(lows, i, int(got))
-                let sz = float(drawn_size(v)) / 100.0   // (the legs' own grid: baked at the unit's size, D-180)
-                let foot = int(round(float(FOOT_PX) * sz))   // (its tolerance the same size on screen)
+                let sz = float(drawn_size(v)) / 100.0       // (the legs' own grid: baked at the unit's size, D-180)
+                let foot = int(round(float(FOOT_PX) * sz))  // (its tolerance the same size on screen)
                 let want_px = want * BAKE_ART * sz
                 // (near: on the flank that faces the camera and on the camera's side of the middle)
                 let flat = float3 { cam[2].x, 0.0, cam[2].z }
@@ -560,7 +558,7 @@ def check_walk2(v:UV, parts:[P2], rg:string, label:string, view:string, lows:IMa
         if not leg.cling and has_node(leg_nodes, leg.node):
             let rest = float(iget(lows, n, 0))
             let now = lowest_y(cells_now(leg.node, v))
-            if rest > -1000000.0 and now > -1000000.0: lift = min(lift, rest - now)   // (a leg out of sight: no foot to stand on)
+            if rest > -1000000.0 and now > -1000000.0: lift = min(lift, rest - now)  // (a leg out of sight: no foot to stand on)
             n++
     if lift == 1000000.0: return
     note("B5 walking, the planted foot on its ground line", label, view, abs(lift) > float(FOOT_PX), "the planted foot {int(-lift)} px off its standing line")
@@ -572,7 +570,7 @@ def cells_now(n:VNode, v:UV) -> IMap:
     let b = bakes.get(key)
     let p = n.parent
     if b and p:
-        let t = xf_mul(xf_mul([1.0, 0.0, 0.0, 1.0, v.bob.pos.x, v.bob.pos.y], xf_local(p)), xf_local(n))
+        let t = xf_mul(xf_mul([ 1.0, 0.0, 0.0, 1.0, v.bob.pos.x, v.bob.pos.y ], xf_local(p)), xf_local(n))
         for(pixels_of(key).pts) q:
             let w = xf_apply(t, q)
             iset(cells, ckey(int(floor(w.x * b.scale)), int(floor(w.y * b.scale))), 1)
@@ -597,7 +595,7 @@ def check_rider_leg(v:UV, parts:[P2], mount_body:int, label:string, view:string,
     let held = if has(rp, "hand_r"): hold_for(ptags_of(rstr(rp, "hand_r"))) else: "low"
     let spec = rig_spec(rstr(r, "body") + (if held == "low": "" else: "@" + held), colours)
     if not spec: return
-    let two_legged = spec.anchors.length == 2   // (many-legged riders grip with several short legs)
+    let two_legged = spec.anchors.length == 2  // (many-legged riders grip with several short legs)
     for(v.legs) leg:
         if leg.cling and spec.anchors.length:
             var hip = spec.anchors[0].pos
@@ -623,7 +621,7 @@ def check_rider_leg(v:UV, parts:[P2], mount_body:int, label:string, view:string,
 // Siege crews by socket: "_in" behind the engine, "_top" over it, the rest by the socket's depth.
 def check_crew(v:UV, label:string, view:string):
     if not v.body_nodes.length: return
-    var engine = v.body_nodes[0]   // (the engine's sprite, or a war beast's rig)
+    var engine = v.body_nodes[0]  // (the engine's sprite, or a war beast's rig)
     while engine.parent and engine.parent != v.bob:
         let up = engine.parent
         engine = up

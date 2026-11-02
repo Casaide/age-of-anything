@@ -3,7 +3,7 @@
 // with far gatherers (escorts); a second Town Center earlier on a big map or when home runs thin.
 
 class Expand:
-    escort_ids:[int] = []        // soldier id -> its post (in the order they were posted)
+    escort_ids:[int] = []  // soldier id -> its post (in the order they were posted)
     escort_x:[int] = []
     escort_y:[int] = []
     next_camp = 0
@@ -35,7 +35,7 @@ def camps(e:Expand, bot:Bot, workers:[int]):
     e.next_camp = tick + cfg("expand.camp_every") * 20
     e.want = []::int
     let p = bot.player
-    for(["food", "gold", "stone", "wood"]) res:   // (the camps' names, sorted)
+    for([ "food", "gold", "stone", "wood" ]) res:  // (the camps' names, sorted)
         let camp = cfg_list("expand.camps.{res}")
         let kind = resource_index(res) + 1
         let k = if camp.length: btype_named(camp[0]) else: -1
@@ -45,7 +45,7 @@ def camps(e:Expand, bot:Bot, workers:[int]):
             let far_i = []::int
             for(workers) i:
                 if (u_task[i] == GATHER or u_task[i] == T_RETURN) and u_carry_kind[i] == kind and u_home[i] >= 0 and pool[u_home[i]] < 0 and
-                   walk_to(drops, u_home[i]) > cfg("expand.camp_tiles"):
+                        walk_to(drops, u_home[i]) > cfg("expand.camp_tiles"):
                     far_cell.push(u_home[i])
                     far_i.push(i)
             if far_cell.length >= cfg("expand.camp_workers"):
@@ -167,7 +167,7 @@ def escort_posts(e:Expand, bot:Bot, workers:[int], army:[int], hx:int, hy:int):
                 if bk == key: at = m
             if at < 0:
                 back_keys.push(key)
-                back_ids.push([id])
+                back_ids.push([ id ])
             else:
                 back_ids[at].push(id)
     for(back_keys) key, m: issue_cmd(p, 1, back_ids[m], key >> 24, key & ((1 << 24) - 1), 0, 0)

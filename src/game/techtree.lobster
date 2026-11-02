@@ -9,7 +9,7 @@
 
 class TNode:
     key:string
-    kind:string                  // building, unit, research
+    kind:string  // building, unit, research
     name:string
     desc:string
     age:int
@@ -17,20 +17,20 @@ class TNode:
     col:int
     lane = -1
     lacks = false
-    race_only = false            // research only some races get, and this race does
+    race_only = false  // research only some races get, and this race does
     cost = ""
-    effect = ""                  // a research's effects in words
+    effect = ""  // a research's effects in words
 
 class TColumn:
     name:string
     lanes:int
-    x = 0.0                      // where it starts on the page (lanes from the left)
+    x = 0.0  // where it starts on the page (lanes from the left)
 
 class TTree:
     ages:[string]
     columns:[TColumn]
     nodes:[TNode]
-    joins:[int2]                 // node indexes: a line's steps, a research track
+    joins:[int2]  // node indexes: a line's steps, a research track
 
 def cost_text(c:JV) -> string:
     let parts = []::string
@@ -76,7 +76,7 @@ def build_tree_of(race:JV, ident:JV, rules:JV) -> TTree:
     ids = append(ids, rest)
     // Research a creature or culture names as its own (Identity.owners).
     let owners = dictionary<string, [string]>(64)
-    for([lib_creatures, lib_families]) src:
+    for([ lib_creatures, lib_families ]) src:
         for(sorted_strs(src.keys)) id:
             for(gstrs(at(src, id), "research")) r:
                 let o = owners.get(r) or []::string
@@ -101,7 +101,7 @@ def build_tree_of(race:JV, ident:JV, rules:JV) -> TTree:
                 let first_age = max(gint(sd, "tier", 1), gint(b, "age", 1))
                 let line_planned = gstr(sd, "status", "") == "planned"
                 let line_name = gstr(sd, "name", slot)
-                if gstr(sd, "role", "") == "hero":   // the race's heroes (D-138): one node each, where they're first trained
+                if gstr(sd, "role", "") == "hero":  // the race's heroes (D-138): one node each, where they're first trained
                     for(glist(race, "units")) hu:
                         let rec = at(hu, "recipe")
                         if rstr(rec, "slot") == slot:
@@ -110,11 +110,11 @@ def build_tree_of(race:JV, ident:JV, rules:JV) -> TTree:
                                             gstr(hs, "temper", "") + "\nAura: " + gstr(gobj(hs, "aura"), "text", ""), first_age, false, col }
                             let st = line_step(hu, first_age)
                             if st: n.cost = cost_text(gobj(at(st, "eval"), "cost"))
-                            lanes_g.push([n])
+                            lanes_g.push([ n ])
                 elif not line_planned and (has_str(glist(race, "lacks"), slot) or race_lacks(ident, slot)):
                     let n = TNode { "u:{slot}@{first_age}", "unit", line_name, gstr(sd, "desc", ""), first_age, false, col }
                     n.lacks = true
-                    lanes_g.push([n])
+                    lanes_g.push([ n ])
                 else:
                     let unit = race_unit(race, slot)
                     let group = []::TNode
@@ -234,13 +234,13 @@ def race_words_of(race:JV, ident:JV, rules:JV) -> RaceWords:
 var tree_words:RaceWords? = nil
 
 var tree_open = false
-var tree_lobby = false          // opened from the lobby: no F1, its race named in tree_title
+var tree_lobby = false  // opened from the lobby: no F1, its race named in tree_title
 var tree_title = ""
 var tree_page:TTree? = nil
 var tree_scroll = 0.0
 
-let TREE_LANE = 150.0           // ui px a lane
-let TREE_ROW = 120.0            // ui px an age
+let TREE_LANE = 150.0  // ui px a lane
+let TREE_ROW = 120.0   // ui px an age
 let TREE_TOP = 120.0
 
 // A filled box and a line on the page; the text waits in page_texts and goes on top at the end.
@@ -306,14 +306,14 @@ def tree_tick() -> bool:
     ui_mat(float2_0, ws, ui_look.face * float4 { 0.5, 0.5, 0.5, 1.0 }, 0)
     page_text(float2 { 30.0 * u, 24.0 * u }, "Tech tree: " + tree_title, int(26.0 * u), ui_look.title)
     page_text(float2 { 30.0 * u, 64.0 * u }, "Crossed out: your race lacks it.  Gold: research only some races get.  " + (if tree_lobby: "Esc or B" else: "F1 or Esc") + ": close.  Arrows or the wheel: scroll.", int(14.0 * u), float4 { 0.75, 0.72, 0.64, 1.0 })
-    for(t.ages) name, a:   // the ages, as bands
+    for(t.ages) name, a:  // the ages, as bands
         let y = TREE_TOP * u + float(a) * TREE_ROW * u
         page_rect(float2 { 0.0, y - 10.0 * u }, float2 { ws.x, TREE_ROW * u }, if a % 2 == 0: float4 { 0.11, 0.09, 0.07, 1.0 } else: float4 { 0.09, 0.08, 0.06, 1.0 })
         page_text(float2 { 20.0 * u, y + 30.0 * u }, name, int(14.0 * u), float4 { 0.85, 0.75, 0.5, 1.0 })
     for(t.joins) j:
         let a = tree_node_at(t, t.nodes[j.x], u) + float2 { 60.0 * u, 30.0 * u }
         let b = tree_node_at(t, t.nodes[j.y], u) + float2 { 60.0 * u, 0.0 }
-        page_rect(float2 { a.x - 1.5 * u, a.y }, float2 { 3.0 * u, max(0.0, b.y - a.y) }, float4 { 0.5, 0.42, 0.28, 1.0 })   // (a line's steps run straight down a lane)
+        page_rect(float2 { a.x - 1.5 * u, a.y }, float2 { 3.0 * u, max(0.0, b.y - a.y) }, float4 { 0.5, 0.42, 0.28, 1.0 })  // (a line's steps run straight down a lane)
     let m = float(gl.mouse_pos(0))
     var hover = -1
     for(t.nodes) n, k:
@@ -321,12 +321,12 @@ def tree_tick() -> bool:
         if at.x > -TREE_LANE * u and at.x < ws.x:
             let size = float2 { 140.0 * u, 40.0 * u }
             let fill = if n.kind == "building": ui_look.button elif n.kind == "unit": float4 { 0.24, 0.3, 0.4, 1.0 } else: float4 { 0.28, 0.34, 0.2, 1.0 }
-            if n.planned: ui_box(at, size, -1, fill, false)   // (planned: an empty frame)
+            if n.planned: ui_box(at, size, -1, fill, false)  // (planned: an empty frame)
             else: ui_box(at, size, 1, fill, false)
             if n.race_only: page_rect(at, float2 { 4.0 * u, size.y }, float4 { 0.95, 0.78, 0.3, 1.0 })
             let col = if n.planned: float4 { 0.45, 0.43, 0.4, 1.0 } elif n.lacks: float4 { 0.55, 0.5, 0.45, 1.0 } else: float4 { 0.92, 0.88, 0.78, 1.0 }
             page_text(at + float2 { 11.0 * u, 10.0 * u }, if n.name.length > 17: n.name.substring(0, 16) + "." else: n.name, int(14.0 * u), col)
-            if n.lacks: page_rect(at + float2 { 0.0, size.y * 0.5 - 1.5 * u }, float2 { size.x, 3.0 * u }, float4 { 0.8, 0.25, 0.2, 0.9 })   // struck through
+            if n.lacks: page_rect(at + float2 { 0.0, size.y * 0.5 - 1.5 * u }, float2 { size.x, 3.0 * u }, float4 { 0.8, 0.25, 0.2, 0.9 })  // struck through
             if m.x >= at.x and m.y >= at.y and m.x <= at.x + size.x and m.y <= at.y + size.y: hover = k
         if n.key == tree_hover_arg: hover = k
     let words = tree_words or race_words(ME)
@@ -345,13 +345,13 @@ def tree_tick() -> bool:
     column(0, "Bonuses", words.bonuses)
     column(1, "Its own research", words.own)
     column(2, "It lacks", words.lacks)
-    if hover >= 0:   // what it is, at the foot of the page
+    if hover >= 0:  // what it is, at the foot of the page
         let n = t.nodes[hover]
-        let foot_lines = filter(append(tokenize(n.desc, "\n", ""), [n.effect])) l: l.length > 0
+        let foot_lines = filter(append(tokenize(n.desc, "\n", ""), [ n.effect ])) l: l.length > 0
         let foot = 52.0 * u + 22.0 * u * float(foot_lines.length)
         page_rect(float2 { 0.0, ws.y - foot }, float2 { ws.x, foot }, float4 { 0.0, 0.0, 0.0, 0.85 })
         page_text(float2 { 30.0 * u, ws.y - foot + 10.0 * u }, n.name + (if n.cost != "": "   (" + n.cost + ")" else: "") + (if n.lacks: "   - your race lacks it" else: ""), int(18.0 * u), ui_look.title)
-        for(foot_lines) l, k:   // (its description, then a research's effect in words)
+        for(foot_lines) l, k:  // (its description, then a research's effect in words)
             page_text(float2 { 30.0 * u, ws.y - foot + 42.0 * u + 22.0 * u * float(k) }, l, int(14.0 * u), if k == foot_lines.length - 1 and n.effect != "": ui_look.title else: float4 { 0.8, 0.78, 0.7, 1.0 })
     page_flush()
     return true

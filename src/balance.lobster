@@ -57,13 +57,13 @@ import gen.start
 import gen.reset
 import gen.balance
 
-let PROMPTS = ["angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "greek hoplites", "spooky beetle knights"]
+let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "greek hoplites", "spooky beetle knights" ]
 
-let TOLERANCE = 20   // percent off the mean
+let TOLERANCE = 20  // percent off the mean
 // Within one race, who should beat whom at equal cost (the genre's counters).
-let COUNTERS = [["spear", "large"], ["large", "archer"], ["skirmisher", "archer"], ["archer", "spear"],
-    ["infantry", "spear"], ["infantry", "skirmisher"], ["archer", "infantry"],
-    ["mounted_archer", "infantry"], ["skirmisher", "mounted_archer"], ["spear", "mounted_archer"], ["scout", "skirmisher"], ["spear", "scout"]]
+let COUNTERS = [ [ "spear", "large" ], [ "large", "archer" ], [ "skirmisher", "archer" ], [ "archer", "spear" ],
+                 [ "infantry", "spear" ], [ "infantry", "skirmisher" ], [ "archer", "infantry" ],
+                 [ "mounted_archer", "infantry" ], [ "skirmisher", "mounted_archer" ], [ "spear", "mounted_archer" ], [ "scout", "skirmisher" ], [ "spear", "scout" ] ]
 
 let args0 = command_line_arguments()
 def shard_arg(xs:[string]) -> int, int:
@@ -108,11 +108,11 @@ def table(units:[RRUnit], rates:[int], mean:int):
         print "  {rates[k]}%  {units[k].label}" + (if pct != 100: "  (price {pct}%)" else: "")
 
 let t0 = seconds_elapsed()
-if mode == "hash":   // one fight's state hash every tick: hash <age> <a> <b> [dump tick]
+if mode == "hash":  // one fight's state hash every tick: hash <age> <a> <b> [dump tick]
     let units = rr_units(races, age)
     let dumpat = if args.length > 4: string_to_int(args[4]) else: -1
     rr_fight(races, bare_rules(rules), age, units[string_to_int(args[2])], units[string_to_int(args[3])], true, dumpat)
-elif mode == "pairs":   // every fight's result, one line a pair (rr_dump.gd's format)
+elif mode == "pairs":  // every fight's result, one line a pair (rr_dump.gd's format)
     let units = rr_units(races, age)
     let bare = bare_rules(rules)
     for(units.length) i:
@@ -194,8 +194,8 @@ elif mode == "rr":
             let dmg = get(e, "damage")
             let pct = rr_price_pct.get(price_key(races, u), 100)
             print pad("{rates[k]}%", 5, true) + "  " + pad((if dev >= 0: "+" else: "") + "{dev}%", 5, true) + "  " + pad(u.label, 48, false) + " cost " + pad(string(cost), 3, true) +
-                  "  hp " + pad(string(gint(e, "hp", 0)), 3, true) + "  atk " + pad(string(gint(e, "attack", 0)), 2, true) + " " + (if dmg: jv_plain(dmg) else: "") + flag +
-                  (if pct != 100: "  (price {pct}%)" else: "")
+                "  hp " + pad(string(gint(e, "hp", 0)), 3, true) + "  atk " + pad(string(gint(e, "attack", 0)), 2, true) + " " + (if dmg: jv_plain(dmg) else: "") + flag +
+                (if pct != 100: "  (price {pct}%)" else: "")
         print "\n{off} of {units.length} units more than {TOLERANCE}% off the mean; counters won {counter_won * 100 / max(1, counter_fights)}% of same-race counter fights"
 else:
     let rounds = string_to_int(args[2])

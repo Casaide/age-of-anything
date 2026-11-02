@@ -6,7 +6,7 @@
 // memo); new buildings add branches. Smoothed, then painted into the terrain shader's path mask
 // (a channel a style, blurred) and its distance-along texture (boards laid across the walk).
 
-let PATH_STYLES = ["trail", "boardwalk", "cobble", "road"]
+let PATH_STYLES = [ "trail", "boardwalk", "cobble", "road" ]
 let PATH_SUB = 2
 let PATH_REACH = 10.0
 let PATH_FINE = 16
@@ -27,8 +27,8 @@ let path_done = dictionary<string, int>(64)
 var path_out = []::PathLaid
 let path_anchor_hub = dictionary<int, float2>(8)
 let path_anchor_res = dictionary<int, [float2]>(8)
-var path_count = -1                 // finished buildings when last planned
-var path_bytes = []::int            // the path mask (RGBA, MASK_K a tile), for the scatter's on_path
+var path_count = -1       // finished buildings when last planned
+var path_bytes = []::int  // the path mask (RGBA, MASK_K a tile), for the scatter's on_path
 
 def ground_blocked(t:float2) -> bool:
     if t.x < 0.2 or t.y < 0.2 or t.x > float(W) - 0.2 or t.y > float(H) - 0.2: return true
@@ -41,7 +41,7 @@ def on_path(t:float2) -> bool:
     let x = clamp(int(t.x * float(MASK_K)), 0, w - 1)
     let y = clamp(int(t.y * float(MASK_K)), 0, H * MASK_K - 1)
     let o = (y * w + x) * 4
-    return max(max(path_bytes[o], path_bytes[o + 1]), max(path_bytes[o + 2], path_bytes[o + 3])) > 64   // (> 0.25)
+    return max(max(path_bytes[o], path_bytes[o + 1]), max(path_bytes[o + 2], path_bytes[o + 3])) > 64  // (> 0.25)
 
 def door_of(b:int) -> float2: return float2 { float(b_cx[b]) + float(b_sx[b]) * 0.5, float(b_cy[b] + b_sy[b]) + 0.45 }
 
@@ -53,7 +53,7 @@ def nearest_resource_edge(kind:int, hub:float2) -> float2:
             let x = c % W
             let y = c / W
             if vlen(float2 { float(x), float(y) } - hub) <= best_d + 2.0:
-                for([int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }]) d:
+                for([ int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 } ]) d:
                     let t = float2 { float(x + d.x) + 0.5, float(y + d.y) + 0.5 }
                     if not ground_blocked(t) and vlen(t - hub) < best_d:
                         best_d = vlen(t - hub)
@@ -75,14 +75,14 @@ def path_route(gw:int, gh:int, src:float2, dst:float2) -> [int]:
     let dist = dictionary<int, float>(1024)
     let prev = dictionary<int, int>(1024)
     dist.set(start, 0.0)
-    let heap_f = [path_heur(gw, start, goal)]
-    let heap_c = [start]
-    let dirs = [int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }, int2 { 1, 1 }, int2 { 1, -1 }, int2 { -1, 1 }, int2 { -1, -1 }]
+    let heap_f = [ path_heur(gw, start, goal) ]
+    let heap_c = [ start ]
+    let dirs = [ int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 }, int2 { 1, 1 }, int2 { 1, -1 }, int2 { -1, 1 }, int2 { -1, -1 } ]
     var seen = 0
     var reached = false
     while heap_c.length and seen < 20000:
         var bi = 0
-        for(heap_c) c, i:   // (the smallest (f, cell): what sorting the open list and taking its front gives)
+        for(heap_c) c, i:  // (the smallest (f, cell): what sorting the open list and taking its front gives)
             if heap_f[i] < heap_f[bi] or (heap_f[i] == heap_f[bi] and c < heap_c[bi]): bi = i
         let cur = heap_c[bi]
         heap_c.remove(bi)
@@ -109,7 +109,7 @@ def path_route(gw:int, gh:int, src:float2, dst:float2) -> [int]:
                         heap_f.push(nd + path_heur(gw, nc, goal))
                         heap_c.push(nc)
     if prev.get(goal, -1) < 0: return []
-    let back = [goal]
+    let back = [ goal ]
     var c = goal
     while prev.get(c, -1) >= 0:
         c = prev.get(c, -1)
@@ -118,7 +118,7 @@ def path_route(gw:int, gh:int, src:float2, dst:float2) -> [int]:
 
 def path_smooth(pts:[float2]) -> [float2]:
     if pts.length < 3: return pts
-    let out = [pts[0]]
+    let out = [ pts[0] ]
     for(pts.length - 1) i:
         out.push(pts[i] + (pts[i + 1] - pts[i]) * 0.25)
         out.push(pts[i] + (pts[i + 1] - pts[i]) * 0.75)
