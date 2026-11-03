@@ -1,163 +1,18 @@
 {
  "_doc": "A broadleaf tree: a crown of melted balls on a forked trunk.",
- "points": {
-  "o": {
-   "at": [
-    0,
-    0,
-    0
-   ]
-  }
- },
+ "size": 1.6,
+ "points": {"o": {"at": [0, 0, 0]}},
  "shapes": [
-  {
-   "cap": [
-    "o",
-    0,
-    0,
-    0
-   ],
-   "to": [
-    "o",
-    0,
-    0,
-    22
-   ],
-   "r": [
-    3.0,
-    2.0
-   ],
-   "mat": "bark",
-   "hard": false
-  },
-  {
-   "cap": [
-    "o",
-    0,
-    0,
-    18
-   ],
-   "to": [
-    "o",
-    7,
-    3,
-    28
-   ],
-   "r": [
-    1.4,
-    1.0
-   ],
-   "mat": "bark",
-   "hard": true
-  },
-  {
-   "cap": [
-    "o",
-    0,
-    0,
-    18
-   ],
-   "to": [
-    "o",
-    -6,
-    -4,
-    27
-   ],
-   "r": [
-    1.4,
-    1.0
-   ],
-   "mat": "bark",
-   "hard": true
-  },
-  {
-   "ball": [
-    "o",
-    0,
-    0,
-    34
-   ],
-   "r": 12,
-   "mat": "leaf",
-   "hard": false
-  },
-  {
-   "ball": [
-    "o",
-    9,
-    4,
-    30
-   ],
-   "r": 9,
-   "mat": "leaf_dark",
-   "hard": false
-  },
-  {
-   "ball": [
-    "o",
-    -9,
-    -3,
-    30
-   ],
-   "r": 9,
-   "mat": "leaf",
-   "hard": false
-  },
-  {
-   "ball": [
-    "o",
-    4,
-    -9,
-    32
-   ],
-   "r": 8,
-   "mat": "leaf_dark",
-   "hard": false
-  },
-  {
-   "ball": [
-    "o",
-    -4,
-    9,
-    32
-   ],
-   "r": 8,
-   "mat": "leaf",
-   "hard": false
-  },
-  {
-   "ball": [
-    "o",
-    2,
-    2,
-    42
-   ],
-   "r": 8,
-   "mat": "leaf_dark",
-   "hard": false
-  },
-  {
-   "ball": [
-    "o",
-    -7,
-    6,
-    38
-   ],
-   "r": 7,
-   "mat": "leaf",
-   "hard": false
-  },
-  {
-   "ball": [
-    "o",
-    7,
-    -6,
-    38
-   ],
-   "r": 7,
-   "mat": "leaf_dark",
-   "hard": false
-  }
- ],
- "size": 1.6
+  {"cap":["o",0.0,0.0,0.0],"hard":false,"mat":"bark","r":[3.0,2.0],"to":["o",0.0,0.0,22.0]},
+  {"cap":["o",0.0,0.0,18.0],"hard":true,"mat":"bark","r":[1.4,1.0],"to":["o",7.0,3.0,28.0]},
+  {"cap":["o",0.0,0.0,18.0],"hard":true,"mat":"bark","r":[1.4,1.0],"to":["o",-6.0,-4.0,27.0]},
+  {"ball":["o",0.0,0.0,34.0],"hard":false,"mat":"leaf","r":12.0},
+  {"ball":["o",9.0,4.0,30.0],"hard":false,"mat":"leaf_dark","r":9.0},
+  {"ball":["o",-9.0,-3.0,30.0],"hard":false,"mat":"leaf","r":9.0},
+  {"ball":["o",4.0,-9.0,32.0],"hard":false,"mat":"leaf_dark","r":8.0},
+  {"ball":["o",-4.0,9.0,32.0],"hard":false,"mat":"leaf","r":8.0},
+  {"ball":["o",2.0,2.0,42.0],"hard":false,"mat":"leaf_dark","r":8.0},
+  {"ball":["o",-7.0,6.0,38.0],"hard":false,"mat":"leaf","r":7.0},
+  {"ball":["o",7.0,-6.0,38.0],"hard":false,"mat":"leaf_dark","r":7.0}
+ ]
 }
