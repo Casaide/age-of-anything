@@ -59,43 +59,87 @@ def say(p:int, kind:string):
     let ch = play_wav("{AUDIO_DIR}/voice/{voice_of[p]}_{kind}_{n}.wav")
     if ch > 0: sound_volume(ch, db_to_volume(buses.get("Voice", 0.0)) * float(sound_level) / 10.0)
 
-// ---- the theme (Audio.music, battle): its stems play together, in step, each faded to the mix
-// (data/audio.json music: the lobby's, then by the player's age; the battle layer while there's
-// fighting on screen; none with the sound off). Each stem is a music track of its own.
+// ---- the music (Audio.music, battle): three pieces (data/audio.json music.pieces, each a loop's
+// seconds), each in the same stems. A piece's stems play together, in step, each faded to the mix
+// (the lobby's, then by the player's age; the battle layer while there's fighting on screen; none
+// with the sound off). The lobby plays the rotation's first piece; a match turns the rotation over
+// every `plays` loops, and tense_after_s of fighting brings the tense piece in at once, kept till the
+// fighting has cooled off and its loop is done. Each stem is a music track; a piece going out fades
+// down and is halted.
 
 let music_ids = []::int
-let music_names = []::string
-let music_now = []::float  // each stem's volume now (0..1)
+let music_names = []::string  // each track's stem
+let music_gens = []::int      // and which start of a piece it belongs to
+let music_now = []::float     // each track's volume now (0..1)
 var music_cfg:JV? = nil
+var music_piece = ""
+var music_gen = 0
+var music_since = 0.0  // when the piece playing started
+var music_turn = 0     // the rotation's piece
+var music_heat = 0.0   // seconds of recent fighting
 
-def music_start():
-    let a = load_json("../data/audio.json")
-    let m = at(a, "music")
-    music_cfg = m
+def music_play(m:JV, piece:string):
+    music_piece = piece
+    music_gen++
+    music_since = gl.time()
     for(gstrs(m, "stems")) stem:
-        let id = play_music("{AUDIO_DIR}/music/theme_{stem}.ogg", -1)
+        let id = play_music("{AUDIO_DIR}/music/{piece}_{stem}.ogg", -1)
         if id > 0:
             music_volume(id, 0.0)
             music_ids.push(id)
             music_names.push(stem)
+            music_gens.push(music_gen)
             music_now.push(0.0)
-    print "music: {music_ids.length} stems playing"
+    print "music: {piece}, {music_ids.length} tracks playing"
+
+def music_start():
+    let m = at(load_json("../data/audio.json"), "music")
+    music_cfg = m
+    music_play(m, gstrs(m, "rotation")[0])
 
 def music_tick(mix:string, battle:bool, dt:float):
     let m = music_cfg
     if not m: return
+    let rotation = gstrs(m, "rotation")
+    let tense = gstr(m, "tense", "")
+    let after = as_float(at(m, "tense_after_s"))
+    music_heat = if battle and mix != "lobby": min(music_heat + dt, after * 2.0) else: max(0.0, music_heat - dt)
+    let played = gl.time() - music_since
+    let loop_s = as_float(at(gobj(m, "pieces"), music_piece))
+    var piece = music_piece
+    if mix == "lobby":
+        music_turn = 0
+        piece = rotation[0]
+    elif music_heat >= after: piece = tense
+    elif music_piece == tense:
+        if music_heat <= 0.0 and played >= loop_s: piece = rotation[music_turn % rotation.length]
+    elif played >= loop_s * float(gint(m, "plays", 1)):
+        music_turn++
+        piece = rotation[music_turn % rotation.length]
+        music_since = gl.time()  // (a rotation of one goes round again)
+    if piece != music_piece: music_play(m, piece)
     let levels = gobj(gobj(m, "mixes"), mix)
     let master = db_to_volume(buses.get("Music", 0.0)) * float(music_level) / 10.0
     let rate = dt / max(0.1, as_float(at(m, "fade_s")))
-    for(music_ids) id, k:
+    var k = 0
+    while k < music_ids.length:
         let stem = music_names[k]
+        let current = music_gens[k] == music_gen
         var want = 0.0
-        if sound_on:
+        if sound_on and current:
             if stem == "battle":
                 if battle and mix != "lobby": want = db_to_volume(as_float(at(m, "battle_db"))) * master
             elif has(levels, stem): want = db_to_volume(as_float(at(levels, stem))) * master
         music_now[k] = move_toward(music_now[k], want, rate)
-        music_volume(id, music_now[k])
+        if not current and music_now[k] <= 0.0:
+            music_halt(music_ids[k])
+            music_ids.remove(k)
+            music_names.remove(k)
+            music_gens.remove(k)
+            music_now.remove(k)
+        else:
+            music_volume(music_ids[k], music_now[k])
+            k++
 
 // ---- the ambience (Audio.ambience, town): the meadow loop under a match, the town's quiet and busy
 // loops on top by town_level (0: no town or the camera far away .. 1: a big town right below): the

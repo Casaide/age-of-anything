@@ -1,6 +1,6 @@
 """Renders the game's audio into assets/audio/: sfx/<name>_<take>.wav, voice/<creature>_<kind>_<take>.wav
-and music/theme_<stem>.ogg (via ffmpeg). Deterministic: the same files every time.
-Run: python3 tools/audio/render.py [all|sfx|voices|music|<sound name>...] [--out DIR]
+and music/<piece>_<stem>.ogg (via ffmpeg). Deterministic: the same files every time.
+Run: python3 tools/audio/render.py [all|sfx|voices|music|<sound name>|<piece>|<stem>...] [--out DIR]
 """
 import os
 import random
@@ -43,17 +43,17 @@ def render_voice(creature):
     return "voice %-9s %s" % (creature, " ".join("%s x%d" % kv for kv in voices.KINDS.items()))
 
 
-def render_music(stem):
-    loop, p = music.render_stem(stem)
+def render_music(piece, stem):
+    loop, p = music.render_stem(piece, stem)
     loop = normalize(loop, -3.0)
     left, right = pan(loop, p)
     left, right = widen(left, 0.003)[0], widen(right, 0.003)[1]
-    wav = os.path.join(OUT, "music", "theme_%s.wav" % stem)
+    wav = os.path.join(OUT, "music", "%s_%s.wav" % (piece, stem))
     write_wav(wav, left, right)
     ogg = wav[:-4] + ".ogg"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav, "-c:a", "vorbis", "-strict", "-2", "-b:a", "160k", ogg], check=True)
     os.remove(wav)
-    return "music %-8s %.1fs loop, rms %.1f dB" % (stem, len(loop) / RATE, 20 * __import__("math").log10(rms(loop) + 1e-9))
+    return "music %-6s %-8s %.1fs loop, rms %.1f dB" % (piece, stem, len(loop) / RATE, 20 * __import__("math").log10(rms(loop) + 1e-9))
 
 
 def main(args):
@@ -71,14 +71,16 @@ def main(args):
     if "all" in what or "voices" in what:
         jobs += [(render_voice, c) for c in voices.CREATURES]
     if "all" in what or "music" in what:
-        jobs += [(render_music, s) for s in music.STEMS]
+        jobs += [(render_music, p, s) for p in music.PIECES for s in music.STEMS]
     for w in what:
         if w in sfx.TABLE:
             jobs.append((render_sfx, w))
         elif w in voices.CREATURES:
             jobs.append((render_voice, w))
+        elif w in music.PIECES:
+            jobs += [(render_music, w, s) for s in music.STEMS]
         elif w in music.STEMS:
-            jobs.append((render_music, w))
+            jobs += [(render_music, p, w) for p in music.PIECES]
     t = time.time()
     with Pool() as pool:
         for line in pool.starmap(_run, jobs):
@@ -86,8 +88,8 @@ def main(args):
     print("rendered %d jobs in %.0fs into %s" % (len(jobs), time.time() - t, OUT))
 
 
-def _run(fn, arg):
-    return fn(arg)
+def _run(fn, *args):
+    return fn(*args)
 
 
 if __name__ == "__main__":

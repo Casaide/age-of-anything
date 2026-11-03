@@ -573,7 +573,7 @@ def g_cat():
     expect(has(asked, "mount") and rstr(at(asked, "mount"), "creature") == "cat", "\'cats\' asks for the cat mount")
 
 // Every sound data/audio.json names has its takes on disk; every creature's voice has its files; every
-// music stem is there (all rendered by tools/audio/render.py).
+// music piece has every stem, a loop long (all rendered by tools/audio/render.py).
 def g_audio():
     let cfg = load_json(DATA + "/audio.json")
     let buses = at(cfg, "buses")
@@ -594,9 +594,13 @@ def g_audio():
                 expect(read_file(path, true) != nil, "creature {id} has its voice: {path}")
     let music = at(cfg, "music")
     let stems = gstrs(music, "stems")
-    for(stems) stem:
-        let path = "../assets/audio/music/theme_{stem}.ogg"
-        expect(ogg_seconds(path) > 60.0, "music stem loads: " + path)
+    let pieces = at(music, "pieces")
+    for(pieces.keys) piece, k:
+        for(stems) stem:
+            let path = "../assets/audio/music/{piece}_{stem}.ogg"
+            expect(abs(ogg_seconds(path) - as_float(pieces.a[k])) < 0.05, "music stem loads, a loop long: " + path)
+    for(gstrs(music, "rotation")) piece: expect(has(pieces, piece), "music rotation plays a piece: {piece}")
+    expect(has(pieces, gstr(music, "tense", "")), "the tense music is a piece")
     let mixes = at(music, "mixes")
     for(mixes.keys) mix, k:
         for(mixes.a[k].keys) stem: expect(has_s(stems, stem), "mix {mix} uses a known stem: {stem}")
