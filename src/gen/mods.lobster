@@ -9,7 +9,7 @@
 let MOD_GAME_VERSION = "0.21"
 let mod_roots = [ "../mods", "../mods_private" ]  // (a later folder's copy of a mod wins)
 let MOD_DATA_FILES = [ "parts.json", "creatures.json", "families.json", "palettes.json", "lexicon.json", "shots.json" ]
-let MOD_DATA_DIRS = [ "rules", "maps" ]
+let MOD_DATA_DIRS = [ "rules", "maps", "voxel" ]
 let MOD_BASE_ERAS = [ "bronze", "medieval", "gunpowder" ]
 
 class ModRec:
@@ -74,7 +74,7 @@ def mod_read(rec:ModRec) -> string:
     for(mod_files(root, "")) f:
         let base = if has_char(f, '/'): substring(f, 0, find_string(f, "/")) else: ""
         if not (has_s(MOD_DATA_FILES, f) or (has_s(MOD_DATA_DIRS, base) and ends_with(f, ".json"))):
-            return "data/{f} can\'t be modded yet (moddable: {concat_string(MOD_DATA_FILES, ", ")}, rules/*.json, maps/*.json)"
+            return "data/{f} can\'t be modded yet (moddable: {concat_string(MOD_DATA_FILES, ", ")}, rules/*.json, maps/*.json, voxel/**.json)"
         let text = read_file(root + "/" + f)
         if not text: return "data/{f} can\'t be read"
         set(rec.data, f, parse_json(text))

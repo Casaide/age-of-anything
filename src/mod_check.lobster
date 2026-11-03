@@ -24,9 +24,11 @@ else:
     let rules_id = gstr(check, "rules", "default")
     let rules = load_rules(rules_id)
     let own = []::string  // the mod's own part ids
-    let mod_parts = load_json("../mods/{id}/data/parts.json")
-    if mod_parts.kind == J_ARR:
-        for(mod_parts.a) p: own.push(rstr(p, "id"))
+    let parts_text = read_file("../mods/{id}/data/parts.json")   // (a mod may bring no parts: voxel bodies, sounds, rules)
+    if parts_text:
+        let mod_parts = parse_json(parts_text)
+        if mod_parts.kind == J_ARR:
+            for(mod_parts.a) p: own.push(rstr(p, "id"))
     var units = 0
     for(gstrs(check, "prompts")) prompt:
         let race = generate(prompt, rules, 0)
