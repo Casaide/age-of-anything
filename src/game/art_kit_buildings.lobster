@@ -313,6 +313,13 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
         for(spec.arms) a, k: akb_keep("{name}:arm{k}", a, true)
         let ic = spec.icon
         if ic: akb_keep(name + ":icon", ic, true)
+        // its post turned 45 degrees, for a tile on a diagonal run (joined only corner to corner): the square post's
+        // corners stuck out of the run's face and its sides crossed it, a sawtooth of piers (Dominic)
+        let turned = akb_placed(arch, type, model, suffix)
+        let pivot = mnode()
+        pivot.rot = float3 { 0.0, 45.0, 0.0 }
+        add_child(pivot, turned.body)
+        akb_keep(name + ":diag", pivot, true)
         lk.arms = map(spec.arms.length) k: "{name}:arm{k}"
         lk.arms_front = map(spec.arms.length): "-"
         if with_front.length:

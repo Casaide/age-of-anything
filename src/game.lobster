@@ -643,8 +643,10 @@ def collect_buildings():
                 let col = float4 { tc.x, tc.y, tc.z, shade }
                 if look.arms.length and b_done[b] == 1:  // a wall joined to its neighbours: arms going up the screen under its post, coming down over it
                     let links = wall_links(b)
+                    // (on a diagonal run, joined only corner to corner: its post turned along the run)
+                    let post = if links != 0 and (links & 0x55) == 0 and frame_index(name + ":diag") >= 0: name + ":diag" else: name
                     for(2) pass:
-                        if pass == 1: add(frame_index(name), at.x, at.y - up, at.y, col)
+                        if pass == 1: add(frame_index(post), at.x, at.y - up, at.y, col)
                         for(LINKS) d, n:
                             if (links >> n) & 1 and (d.x + d.y <= 0) == (pass == 0) and look.arms[n] != "-":
                                 add(frame_index(look.arms[n]), at.x, at.y - up, at.y, col)
@@ -1808,7 +1810,7 @@ note("start")
 let no_vsync = shot != "" or selftest or padtest or has_s(args, "novsync")
 fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if no_vsync: gl.window_init_no_vsync else: 0))
 pace(PACE_MATCH)                       // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
-gl.window_icon("icons/game_icon.png")  // (the Dock's icon on the Mac)
+gl.window_icon("icons/game_icon_mac.png")  // (the Dock's icon on the Mac)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))

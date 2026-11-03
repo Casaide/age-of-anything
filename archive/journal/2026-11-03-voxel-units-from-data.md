@@ -223,3 +223,8 @@ borderlands. I think we should soften". Three causes, three fixes: each voxel to
 facet of a low-poly stake a hard edge: now the model's smooth normals, blended with their neighbours'), the light was
 five hard bands (now a smooth ramp), and an outline at 30% went round every gap between stakes (now 55%, half seen).
 Pictures 45-46, before and after.
+
+A diagonal wall run read as a row of square piers with deep notches between them (Dominic: "the genre's walls have
+the same bug, some directions don't give you the smooth wall"): diagonal tiles only touch at their corners, and each
+square post stood square to the grid, its corners out of the run's face. A tile joined only corner to corner now
+draws its post turned 45 degrees (`:diag`, baked with the wall's look): the face is one plane (picture 49).
