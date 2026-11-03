@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------ the buildings baked in the game (src/view/art/art_kit.gd: buildings)
-// Every look of every building of a culture, as ArtKit names it, baked by the world baker (view/world_bake.lobster)
+// Every look of every building of a culture, as ArtKit names it, baked as voxels (view/voxel_mesh.lobster, D-203)
 // from the Lobster models (model/buildings, buildings2) in the team key (magenta) into the pack: the body
 // ("arch:type<suffix>"), its four construction stages (":stage0".. ":stage3"), a walkway's near merlons (":front"),
 // its broken-up stages (":ruin1".. ":ruin4", game/ruin.lobster), a gate's open look (":open", ":open:front") and its flanking towers that stand down the screen (":tower<side>",
@@ -8,9 +8,9 @@
 // turned or mirrored, "^z" "^d" "^a" a gate along sim y and the two diagonals. Fills `looks` and `bfx` (the
 // chimney smoke, lantern and windows, as building_fx.gd computes them). The originals: _building_jobs,
 // _building_job, _bake_building, _placed, _variant_look, front_split, _bake_front, _bake_gate_parts, _hold_back,
-// wall_look, _compose (art_kit.gd).
+// (art_kit.gd).
 // Needs (imported by the game before this file): game/pack, game/art_kit (keep_frame, ak_rebake), model/buildings,
-// model/buildings2, model/build_mats, view/world_bake, gen/datalib, game/ruin.
+// model/buildings2, model/build_mats, view/voxel_mesh, gen/datalib, game/ruin.
 
 let AKB_HOUSE_SCALE = 1.1
 let AKB_BUILD_STAGES = [ 0.15, 0.4, 0.45, 0.72 ]
@@ -18,14 +18,8 @@ let AKB_ALONG = [ "", "^z", "^d", "^a" ]
 let AKB_SEEN = float3 { 1.0, 0.0, 1.0 }
 let AKB_TEAM = float3 { 1.0, 0.0, 1.0 }  // PartShape.TEAM_KEY: the sprite shader recolours it
 let AKB_NONE = float3 { -999999.0, -999999.0, -999999.0 }
-let AKB_WALK_PX = 32.0 / 0.70710678 * 0.8660254  // ArtKit.WALK_PX_PER_UNIT
 var akb_data:JV? = nil
 var akb_baked = 0
-var akb_wall_piece = false
-let akb_keep_all = false                      // keep every bake's pixels (checks)
-let akb_px = dictionary<string, string>(256)  // a wall piece's pixels (for wall_look), by frame name
-let akb_size = dictionary<string, int2>(256)
-let akb_origin = dictionary<string, int2>(256)
 
 def akb_bdata() -> JV:
     let d = akb_data
@@ -265,10 +259,6 @@ def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, sha
         let file = "{akb_cache_stem}_{akb_cache_frames.length}.png"
         write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
         akb_cache_frames.push(AkbFrame { name, file, w, h, int(at.x + 0.5), int(at.y + 0.5) })
-    if akb_wall_piece or akb_keep_all:
-        akb_px.set(name, sprite)
-        akb_size.set(name, int2 { w, h })
-        akb_origin.set(name, int2 { int(at.x + 0.5), int(at.y + 0.5) })
     akb_baked++
 
 // One look of a building, with its stages and extra parts, into the pack; its Look and BFx.
@@ -278,7 +268,6 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
     akb_cache_stem = if bake_cache_dir != "": akb_stem(name) else: ""
     akb_cache_frames = []
     let spec = akb_placed(arch, type, model, suffix)
-    akb_wall_piece = spec.arms.length > 0
     // where the chimney smokes, the lantern and windows glow (building_fx.gd)
     let lights = []::float2
     if akb_has(spec, "lantern"): lights.push(akb_project(akb_pt(spec, "lantern")))
@@ -334,7 +323,6 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
                 lk.arms_front[k] = "{name}:arm{k}:front"
     let vane = spec.vane
     if vane: akb_keep(name + ":vane", vane, false, akb_pt(spec, "vane_pivot"))
-    akb_wall_piece = false
     for(4) st:
         let p = akb_placed(arch, type, model, suffix)
         akb_hold_back(p.body, st)
@@ -397,207 +385,6 @@ def bake_buildings_for(archs:[string]) -> int:
                     bake_breath()
                     akb_bake_look(arch, type, ml[0], ml[1])
     return akb_baked
-
-// ---- a wall tile with its arms (ArtKit.wall_look, _compose)
-
-// A frame's pixels: from a bake this run, else read off its pack sheet. bytes, size, origin.
-let akb_sheet_px = dictionary<int, string>(16)
-def akb_frame_px(name:string) -> string, int2, int2:
-    let mine = akb_px.get(name)
-    if mine: return mine, akb_size.get(name, int2_0), akb_origin.get(name, int2_0)
-    let f = frame_index(name)
-    assert f >= 0
-    let fr = frames[f]
-    var px = akb_sheet_px.get(fr.sheet, "")
-    if px == "":
-        px = gl.read_texture(sheet_texture(fr.sheet)) or ""
-        akb_sheet_px.set(fr.sheet, px)
-    let sw = int(sheet_dims[fr.sheet].x)
-    let out = ensure_size("", fr.w * fr.h * 4, 0)
-    for(fr.h) y:
-        for(fr.w * 4) i: write_int8_le(out, y * fr.w * 4 + i, px[((fr.y + y) * sw + fr.x) * 4 + i])
-    return out, int2 { fr.w, fr.h }, int2 { fr.ox, fr.oy }
-
-// Baked pieces (frame names, bottom first) on one image, anchored on the same point: every piece's ground shadow
-// first (the darkest wins where they overlap), then the art. Kept as frame `name`; its index.
-def akb_compose(name:string, pieces:[string]) -> int:
-    var lo = int2_1 * 1048576
-    var hi = -lo
-    let pxs = []::string
-    let szs = []::int2
-    let os = []::int2
-    for(pieces) p:
-        let px, sz, o = akb_frame_px(p)
-        lo = min(lo, -o)
-        hi = max(hi, sz - o)
-        pxs.push(px)
-        szs.push(sz)
-        os.push(o)
-    let w = hi.x - lo.x
-    let h = hi.y - lo.y
-    let out = ensure_size("", w * h * 4, 0)
-    for([ false, true ]) pass_art:
-        for(pieces.length) pi:
-            let src = pxs[pi]
-            let sz = szs[pi]
-            let o = os[pi]
-            let at = -o - lo
-            for(sz.y) y:
-                for(sz.x) x:
-                    let s = (y * sz.x + x) * 4
-                    let a = src[s + 3]
-                    if a == 0 or (a == 255) != pass_art: continue
-                    let d = ((at.y + y) * w + at.x + x) * 4
-                    if not pass_art and out[d + 3] >= a: continue
-                    for(4) k: write_int8_le(out, d + k, src[s + k])
-    keep_frame(name, out, w, h, float2 { float(-lo.x), float(-lo.y) })
-    return frame_index(name)
-
-// A wall tile's look with arms to the neighbours in `links` (bit k: BLD_LINKS[k]), made on first use and kept:
-// the frame of the tile, and of its near merlons (-1: none). Arms going up the screen lie under the post, those
-// coming down over it.
-def wall_look(name:string, links:int) -> int, int:
-    let key = "{name}|{links}"
-    let known = frame_index(key)
-    if known >= 0: return known, frame_index(key + ":front")
-    let lk = assert looks.get(name)
-    let under = []::int
-    let over = []::int
-    for(BLD_LINKS) d, k:
-        if links & (1 << k):
-            if d.x + d.y <= 0: under.push(k) else: over.push(k)
-    let front = []::string
-    for(append(append(under, [ -1 ]), over)) k:
-        let f = if k < 0: lk.front else: if k < lk.arms_front.length: lk.arms_front[k] else: "-"
-        if f != "-" and f != "": front.push(f)
-    let pieces = []::string
-    for(under) k: pieces.push(lk.arms[k])
-    pieces.push(lk.body)
-    for(over) k: pieces.push(lk.arms[k])
-    let body = akb_compose(key, pieces)
-    let fr = if front.length: akb_compose(key + ":front", front) else: -1
-    return body, fr
-
-// ---- the world baker with some meshes casting shadows only (Godot's SHADOW_CASTING_SETTING_SHADOWS_ONLY, for a
-// gatehouse tower's layer: the rest of the gate shadows it but isn't drawn). view/world_bake.lobster's world_bake
-// line for line, but for the `shadow_only` meshes, which go only into the sun's depth map.
-
-def akb_world_bake(model:MNode, shadow:bool, shadow_only:[MNode]) -> string, int, int, float2:
-    assert not shadow  // (a tower's layer bakes without a ground shadow)
-    let all = []::WDraw
-    world_draws(model, XF_ID, all)
-    // which draws are shadow-only: world_draws makes one per mesh in tree order; walk the same order
-    let only = []::bool
-    akb_mark(model, shadow_only, only)
-    let wdraws = []::WDraw
-    let casters = []::WDraw
-    for(all) d, i:
-        casters.push(d)
-        if not only[i]: wdraws.push(d)
-    let wcam = euler(float3 { -30.0, 45.0, 0.0 })
-    let cx = wcam.x
-    let cy = wcam.y
-    let cz = wcam.z
-    let sun = light_along(float3 { -48.0, -58.0, 0.0 })
-    let px = WB_PX * float(WB_SS)
-    var lo = float2_1 * 1000000000.0
-    var hi = float2_1 * -1000000000.0
-    var dlo = 1000000000.0
-    var dhi = -1000000000.0
-    for(wdraws) d:
-        for(d.p) p:
-            let s = float2 { dot(p, cx), -dot(p, cy) }
-            lo = min(lo, s)
-            hi = max(hi, s)
-            dlo = min(dlo, dot(p, cz))
-            dhi = max(dhi, dot(p, cz))
-            if shadow and p.y > 0.0:
-                let g = p + sun * (p.y / -sun.y)
-                let sg = float2 { dot(g, cx), -dot(g, cy) }
-                lo = min(lo, sg)
-                hi = max(hi, sg)
-    let room = 4.0 / px * float(WB_SS)
-    lo -= float2_1 * room
-    hi += float2_1 * room
-    let w = int(ceiling((hi.x - lo.x) * px))
-    let h = int(ceiling((hi.y - lo.y) * px))
-    let kx, ky, kz = looking_at(sun, float3 { 0.0, 1.0, 0.0 })
-    var llo = float2_1 * 1000000000.0
-    var lhi = float2_1 * -1000000000.0
-    var zlo = 1000000000.0
-    var zhi = -1000000000.0
-    for(casters) d:
-        for(d.p) p:
-            let s = float2 { dot(p, kx), -dot(p, ky) }
-            llo = min(llo, s)
-            lhi = max(lhi, s)
-            zlo = min(zlo, dot(p, kz))
-            zhi = max(zhi, dot(p, kz))
-    llo -= float2_1 * 0.5
-    lhi += float2_1 * 0.5
-    let lpx = px * 0.5
-    let lw = int(ceiling((lhi.x - llo.x) * lpx))
-    let lh = int(ceiling((lhi.y - llo.y) * lpx))
-    let zs = 1.8 / max(0.001, zhi - zlo)
-    let spos = []::float3
-    for(casters) d:
-        if not d.mat.scissor:
-            for(d.p) p: spos.push(float3 { (dot(p, kx) - llo.x) * lpx, (-dot(p, ky) - llo.y) * lpx, 0.9 - (dot(p, kz) - zlo) * zs })
-    let smap = gl.create_blank_texture(int3 { lw, lh, 0 }, texture_format_nomipmap | texture_format_float | texture_format_clamp)
-    gl.switch_to_framebuffer(smap, true)
-    gl.ortho(false, true)
-    gl.clear(float4_1)
-    gl.set_shader("worlddepth")
-    gl.render_mesh(gl.new_mesh("P", spos, []::float4, []::float3, []::float2, []::float2, map(spos.length) i: i))
-    let vz = 1.8 / max(0.001, dhi - dlo + 40.0)
-    let dbase = dlo - 20.0
-    def to_px(p:float3) -> float3: return float3 { (dot(p, cx) - lo.x) * px, (-dot(p, cy) - lo.y) * px, 0.9 - (dot(p, cz) - dbase) * vz }
-    let art = gl.create_blank_texture(int3 { w, h, 0 }, texture_format_nomipmap)
-    gl.switch_to_framebuffer(art, true)
-    gl.ortho(false, true)
-    gl.clear(float4_0)
-    for(wdraws) d:
-        let m = d.mat
-        let pos = map(d.p) p: to_px(p)
-        let cols = map(d.c) c: float4 { c.x, c.y, c.z, 1.0 }
-        let mesh = gl.new_mesh("PNTC", pos, cols, d.n, d.uv, []::float2, map(pos.length) i: i)
-        let t0 = wb_texture(m.tex)
-        let t2 = if m.normal_enabled: wb_texture(m.normal_tex) else: nil
-        if t0: gl.set_mesh_texture(mesh, 0, 0, t0)
-        gl.set_mesh_texture(mesh, 0, 1, smap)
-        if t2: gl.set_mesh_texture(mesh, 0, 2, t2)
-        gl.set_shader("worldlit")
-        gl.set_uniform("cam_x", cx)
-        gl.set_uniform("cam_y", cy)
-        gl.set_uniform("cam_z", cz)
-        gl.set_uniform("vmap", float4 { px, lo.x, lo.y, 0.0 })
-        gl.set_uniform("dmap", float2 { dbase, vz })
-        gl.set_uniform("sun_dir", sun)
-        gl.set_uniform("fill_dir", light_along(float3 { -20.0, -60.0, 0.0 }))
-        gl.set_uniform("rim_dir", light_along(float3 { -15.0, -135.0, 0.0 }))
-        gl.set_uniform("view_dir", cz)
-        gl.set_uniform("lx", float4 { kx.x * lpx, kx.y * lpx, kx.z * lpx, -llo.x * lpx })
-        gl.set_uniform("ly", float4 { -ky.x * lpx, -ky.y * lpx, -ky.z * lpx, -llo.y * lpx })
-        gl.set_uniform("lz", float4 { -kz.x * zs, -kz.y * zs, -kz.z * zs, 0.9 + zlo * zs })
-        gl.set_uniform("lsize", float2 { float(lw), float(lh) })
-        gl.set_uniform("albedo", float4 { m.albedo.x, m.albedo.y, m.albedo.z, 1.0 })
-        gl.set_uniform("uvmap", float4 { m.uv_scale.x, m.uv_scale.y, m.uv_scale.z, 0.0 })
-        gl.set_uniform("uvmap2", float4 { m.uv_offset.x, m.uv_offset.y, m.uv_offset.z, 0.0 })
-        gl.set_uniform("mat0", float4 { if not t0: 0.0 elif m.triplanar: 2.0 else: 1.0, m.triplanar_sharpness, m.roughness, m.metallic_specular })
-        gl.set_uniform("mat1", float4 { m.metallic, if t2: 1.0 else: 0.0, m.normal_scale, if m.unshaded: 1.0 else: 0.0 })
-        gl.set_uniform("pass", float4 { 0.0, if m.scissor: 1.0 else: 0.0, 0.0, 0.0 })
-        gl.render_mesh(mesh)
-    gl.switch_to_framebuffer(nil)
-    let raw = gl.read_texture(art) or ""
-    let sw, sh, sprite = pixelize(raw, w, h, WB_SS, "", false)
-    let anchor = float2 { (0.0 - lo.x) * px, (0.0 - lo.y) * px } / float(WB_SS)
-    return sprite, sw, sh, anchor
-
-// world_draws' order (visible meshes, depth first): whether each is in `only`.
-def akb_mark(n:MNode, only:[MNode], out:[bool]) -> void:
-    if not n.visible: return
-    if n.mesh and n.mat: out.push(exists(only) o: o == n)
-    for(n.kids) k: akb_mark(k, only, out)
 
 // ---- the buildings' checks as voxels (`vbcheck`, milestone 24): every look of every building in every architecture
 // baked as voxels (its whole look, not its stages): no specks (an island of a few pixels apart from the rest), its

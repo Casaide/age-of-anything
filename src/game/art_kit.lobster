@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------ the props baked in the game (src/view/art/art_kit.gd: doodads)
-// Every prop the map draws, as ArtKit names and seeds them, baked by the world baker (view/world_bake.lobster)
+// Every prop the map draws, as ArtKit names and seeds them, baked as voxels (view/voxel_mesh.lobster, D-203)
 // from the Lobster models (model/props, trees, town_props) into the pack: reed beds, bug bushes, rocks,
 // quarries (stone and gold), carcasses and trees in each variant and stage; field stones, tufts, shore reeds,
 // lily pads, crops, paddies flat on the ground; drop-off piles, yards, gardens, the tether post. A tree's long
