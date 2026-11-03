@@ -369,11 +369,14 @@ def vx_start():
         bake_count++
         bake_breath()
     bake_total = 0
-    if perf_for > 0.0:  // (perf: measures the drawing, not a new race's one-off bakes: all of them now)
-        for(vx_queue) j:
+    if perf_for > 0.0:  // (perf: measures the drawing, not a new race's one-off bakes: the start's first looks in every
+        // mode now, the rest left queued and not baked while it measures, vx_bake_tick)
+        let start = if by_age.length: by_age[0] else: []::int
+        def now(j:vx_job) -> bool: return j.v == 0 and (find(start) lk: lk == j.lk) >= 0  // (first looks: the others draw as them)
+        for(filter(vx_queue) j: now(j)) j:
             while not vx_job_step(j, seconds_elapsed() + 0.2): bake_breath()
             vx_save(j)
-        vx_queue = []::vx_job
+        vx_queue = filter(vx_queue) j: not now(j)
     vx_refresh()
     print "voxel units: {vx_lks.length} looks, {now.length} baked now, {vx_queue.length} queued, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
 
@@ -402,6 +405,7 @@ def vx_tick(budget:float):
 
 // The queue baked on for up to `budget` seconds of this frame (in play, and on the lobby's pages).
 def vx_bake_tick(budget:float):
+    if perf_for > 0.0: return  // (a perf run measures the drawing alone)
     let us = vx_unsaved
     if us:
         vx_save(us)
