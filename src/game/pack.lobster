@@ -213,6 +213,39 @@ SHADER sprite_copy
         frag_color = texture(tex0, itc);
 """
 
+// Fills and lines gathered into one draw (ui_batch, game/ui.lobster draws them): many small ones (a button's bevels, dashes, rings) are a
+// draw call each otherwise. Anything else drawn inside a batch calls ui_batch_flush first, so it lands on top.
+var ui_batching = false
+var ui_bpos = []::float3
+var ui_bcol = []::float4
+var ui_bidx = []::int
+
+// The fills and lines gathered so far, drawn.
+def ui_batch_flush():
+    if ui_bpos.length:
+        gl.set_shader("color_attr")
+        gl.draw_mesh("PC", ui_bpos, ui_bcol, []::float3, []::float2, []::float2, ui_bidx)
+        gl.set_shader("color")
+    ui_bpos = []
+    ui_bcol = []
+    ui_bidx = []
+
+// The ui_fills and ui_lines in body drawn together (until something else is drawn).
+def ui_batch(body):
+    ui_batching = true
+    body()
+    ui_batch_flush()
+    ui_batching = false
+
+def ui_batch_quad(a:float2, b:float2, c:float2, d:float2, col:float4):
+    let v = ui_bpos.length
+    ui_bpos.push(float3 { a.x, a.y, 0.0 })
+    ui_bpos.push(float3 { b.x, b.y, 0.0 })
+    ui_bpos.push(float3 { c.x, c.y, 0.0 })
+    ui_bpos.push(float3 { d.x, d.y, 0.0 })
+    for(4): ui_bcol.push(col)
+    for([ 0, 2, 1, 0, 3, 2 ]) q: ui_bidx.push(v + q)
+
 var b_pos = []::float3
 var b_col = []::float4
 var b_tc = []::float2
@@ -220,6 +253,7 @@ var b_idx = []::int
 var b_sheet = -1
 
 def flush_sprites():
+    ui_batch_flush()  // (fills batched before these sprites go under them; and out before a bust's framebuffer)
     if b_pos.length:
         gl.set_shader("sprite")
         gl.set_primitive_texture(0, sheet_texture(b_sheet))
