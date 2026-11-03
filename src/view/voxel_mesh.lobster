@@ -2,9 +2,57 @@
 // A model (model/kit.lobster's meshes: the buildings, props, trees) rasterized into a shell of voxels, each voxel the
 // colour its triangles' material gives there (the material's texture sampled, tinted, triplanar where the material
 // is; a lit or unshaded one glows), then drawn as the voxel units are: light in bands, its own shadow, occlusion in the
-// creases, an outline, its shadow on the ground. The sprite is in world_bake's frame exactly (its camera, art px a
-// world unit, the world origin as its anchor), so whatever bakes a model through world_bake bakes it as voxels.
+// creases, an outline, its shadow on the ground. The sprite is in the old baker's frame (its camera, art px a world
+// unit, the world origin as its anchor), so the art kits place every frame as they did.
 
+let WB_ART = ART_SCALE                  // art px a canvas unit
+let WB_PX = 32.0 / 0.70710678 * WB_ART  // art px a world unit (the old baker's camera: buildings keep their size)
+
+let WB_SHADOW = [ 15, 13, 8, 107 ]  // the ground shadow's colour (0.06, 0.05, 0.03, 0.42), as the old baker's
+let WB_CONTACT = [ 15, 13, 8, 61 ]  // the contact shadow's (alpha 0.24)
+
+// ---- the model as wdraws: one per mesh, its MMat whole (the building materials carry more than BakeMat)
+
+class WDraw:
+    mat:MMat
+    p:[float3]
+    n:[float3]
+    uv:[float2]
+    c:[float3]
+
+def world_draws(n:MNode, parent:Xform, out:[WDraw]) -> void:
+    if not n.visible: return
+    let t = xmul(parent, node_xform(n))
+    let mesh = n.mesh
+    let mat = n.mat
+    if mesh and mat:
+        let nb = btransposed(binverse(t.b))
+        let d = WDraw { mat, [], [], [], [] }
+        for(mesh.idx) i:
+            d.p.push(xf(t, mesh.p[i]))
+            d.n.push(normalize(bxf(nb, mesh.n[i])))
+            d.uv.push(mesh.uv[i])
+            d.c.push(if mat.vertex_colours and mesh.c.length > i: mesh.c[i] else: float3_1)
+        out.push(d)
+    for(n.kids) kid: world_draws(kid, t, out)
+
+let wb_tex = dictionary<string, resource<texture>>(64)
+def wb_texture(name:string) -> resource<texture>?:
+    if name == "": return nil
+    let file = if find_string(name, "/") >= 0: name + ".png" else: model_tex_dir + "/" + name + ".png"
+    let known = wb_tex.get(file)
+    if known: return known
+    let t = gl.load_texture(file)
+    assert t
+    wb_tex.set(file, t)
+    return t
+
+// Godot's DirectionalLight3D shines along its -z: rotation_degrees -> where the light goes.
+// Godot's DirectionalLight3D shines along its -z: rotation_degrees -> where the light goes.
+def light_along(r:float3) -> float3: return -euler(r).z
+
+// One model baked: its pixel sprite (RGBA bytes), w, h, and where its anchor (the world origin) is on it.
+// shadow: paint its ground shadows; reach: room for them (trees cast long ones: 2).
 let VM_PX = 1.5  // art px a voxel (the voxel units are about 1.1: buildings a little chunkier; a TC about 270 across)
 
 class vm_shell:

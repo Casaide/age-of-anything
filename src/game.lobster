@@ -420,7 +420,6 @@ def type_step(k:int) -> int:
 
 def canvas(x:float, y:float) -> float2: return iso(x, y) / 1.5
 
-import .view.baker
 import .model.kit
 import .model.grng
 import .model.base
@@ -430,7 +429,6 @@ import .model.trees
 import .model.town_props
 import .model.bridges
 import .model.build_mats
-import .view.world_bake
 import .view.voxel_mesh
 import .model.buildings
 import .model.buildings2
@@ -1814,8 +1812,6 @@ gl.window_icon("icons/game_icon.png")  // (the Dock's icon on the Mac)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))
-fatal(gl.load_materials(BAKE_SHADERS, true))
-fatal(gl.load_materials(WORLD_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 bake_live = shot == "" and not selftest and not padtest  // (the window kept alive while art bakes; captures and tests bake quietly)
 
