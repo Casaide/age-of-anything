@@ -118,6 +118,7 @@
   "house": 4
  },
  "_variants_doc": "how many looks a type bakes (turned a quarter round, nudged in size); each building picks one, like rocks",
+ "_roles_doc": "\"roles\": what a building is to the sim and the bots, which look buildings up by role, never by id (D-192): hub (the town's heart: a player who started with one is out with none left; herds come home to it; the bots' home and first target), housing (the bots build it for room), trade (a market: buying, selling, trade carts), barracks (the bots' first army building, before the first age), tower (the tower the bots put up where they were raided), defence (a strong point that guards a crossing), wonder (stood long enough, it wins). Where several types share a role the bots build the first by id. A farm (becomes), a pen (pen) and a drop-off (drop_off) are known by those fields",
  "buildings": {
   "archery_range": {
    "name": "Archery Range",
@@ -169,6 +170,9 @@
   },
   "barracks": {
    "name": "Barracks",
+   "roles": [
+    "barracks"
+   ],
    "desc": "Trains your foot soldiers: spearmen, who hold against riders and big beasts, and swordsmen, who cut through spearmen and skirmishers and break buildings.",
    "size": 3,
    "hp": 1200,
@@ -227,6 +231,9 @@
   },
   "house": {
    "name": "House",
+   "roles": [
+    "housing"
+   ],
    "desc": "Room for more of your people. Every unit needs space; without houses, training stops.",
    "size": 2,
    "hp": 550,
@@ -302,6 +309,9 @@
   },
   "market": {
    "name": "Market",
+   "roles": [
+    "trade"
+   ],
    "desc": "Buy and sell food, wood and stone for gold. Prices move with what everyone trades.",
    "size": 3,
    "hp": 1300,
@@ -401,6 +411,9 @@
   },
   "town_center": {
    "name": "Town Center",
+   "roles": [
+    "hub"
+   ],
    "desc": "The heart of your town: trains workers, takes in every resource, and is where you age up. People inside shoot from it. Lose every one and you lose.",
    "size": 3,
    "hp": 1600,
@@ -469,6 +482,10 @@
   "watchtower": {
    "sees_over_trees": true,
    "name": "Watchtower",
+   "roles": [
+    "tower",
+    "defence"
+   ],
    "desc": "A lookout that shoots the nearest enemy in range and sees far into the fog. Each unit inside adds an arrow.",
    "size": 1,
    "hp": 700,
@@ -729,6 +746,9 @@
   "castle": {
    "sees_over_trees": true,
    "name": "Castle",
+   "roles": [
+    "defence"
+   ],
    "desc": "A stone fortress that looses a volley of arrows at every enemy in reach and shelters your soldiers. Its own research: War Drums and your race's two tricks.",
    "size": 4,
    "hp": 4800,
@@ -763,6 +783,9 @@
   },
   "wonder": {
    "name": "Wonder",
+   "roles": [
+    "wonder"
+   ],
    "desc": "A great work of your people. Build it and keep it standing long enough, and your side wins. Everyone sees the countdown.",
    "size": 5,
    "hp": 4800,
@@ -789,6 +812,9 @@
   "bastion": {
    "sees_over_trees": true,
    "name": "Bastion",
+   "roles": [
+    "defence"
+   ],
    "desc": "A stone tower, taller and tougher than a watchtower: it hits harder and further. Each unit inside adds an arrow.",
    "size": 1,
    "hp": 1300,

@@ -109,24 +109,26 @@ def trains_workers(p:int, k:int) -> bool:
         if t_worker[t]: return true
     return false
 
-// The building type research turns into `id` (a Watchtower for a Bastion), or "".
-def upgrade_of(id:string) -> string:
+// The building type research turns into type k (a Watchtower for a Bastion), or -1.
+def upgrade_of(k:int) -> int:
     for(research) r:
         for(r.effects) fx:
-            if fx.kind == 8 and bt_name[fx.value] == id: return bt_name[fx.stat]
-    return ""
+            if fx.kind == 8 and fx.value == k: return fx.stat
+    return -1
 
-def has_any(p:int, id:string) -> bool:
-    let k = btype_named(id)
+def has_any(p:int, k:int) -> bool:
     for(b_id.length) b:
         if b_owner[b] == p and b_kind[b] == k: return true
     return false
 
+def upgraded_tower(k:int) -> bool:
+    let was = upgrade_of(k)
+    return was >= 0 and has_role(was, ROLE_TOWER)
+
 def towers_up(p:int) -> int:
     var n = 0
     for(b_id.length) b:
-        let id = bt_name[b_kind[b]]
-        if b_owner[b] == p and (id == "watchtower" or upgrade_of(id) == "watchtower"): n++
+        if b_owner[b] == p and (has_role(b_kind[b], ROLE_TOWER) or upgraded_tower(b_kind[b])): n++
     return n
 
 // The nearest free spot for a building within r tiles of (ax, ay) (rings out), off `avoid`.
@@ -199,10 +201,9 @@ def build_order_step(bot:Bot, tc:int, workers:[int], count:int):
         return 0
     for(b_id.length) b:
         if b_owner[b] == p and (b_done[b] == 1 or reaches_building(bot.eco.reach, bot.eco.wln, bot.eco.home, b)):
-            let id = bt_name[b_kind[b]]
-            add_have(id)
-            let was = upgrade_of(id)
-            if was != "": add_have(was)
+            add_have(bt_name[b_kind[b]])  // (the build order names buildings by id: it's data)
+            let was = upgrade_of(b_kind[b])
+            if was >= 0: add_have(bt_name[was])
     let wanted_ids = []::string
     let wanted_n = []::int
     for(build_order) step:
@@ -263,12 +264,12 @@ def goal_of(bot:Bot, count:int) -> [int]:
     if a >= 0 and count >= at and not tech_queued(p, AGE_UP_ENTRY):
         let cost = copy(ages_list[a].cost)
         for(ages_list[a].needs[p]) k:
-            if not has_any(p, bt_name[k]):
+            if not has_any(p, k):
                 for(cost) v, r: cost[r] = v + bm_cost[p][k][r]
         bot.saving_age = true
         return cost
     if bot.blocked.length: return bot.blocked
-    if bot.tower_x >= 0 and towers_up(p) < lv_towers: return bm_cost[p][btype_named("watchtower")]
+    if bot.tower_x >= 0 and towers_up(p) < lv_towers: return bm_cost[p][btype_with(ROLE_TOWER)]
     return []::int
 
 def age_three(bot:Bot, tc:int, count:int):
@@ -740,7 +741,7 @@ def tower_after_raid(bot:Bot, workers:[int]):
         bot.tower_x = -1
         bot.tower_y = -1
         return
-    let k = btype_named("watchtower")
+    let k = btype_with(ROLE_TOWER)
     if building_underway(bot.eco, true) or not can_afford(p, bm_cost[p][k]) or not workers.length: return
     let sx, sy = house_spot(bot.eco, bot.tower_x / 1000, bot.tower_y / 1000, bt_size[k])
     bot.tower_x = -1
@@ -753,17 +754,16 @@ def tower_after_raid(bot:Bot, workers:[int]):
 
 def known(p:int, b:int) -> bool:
     if fog[p][b_cy[b] * W + b_cx[b]] != UNSEEN: return true
-    if b_kind[b] != btype_named("town_center"): return false
+    if not has_role(b_kind[b], ROLE_HUB): return false
     for(start_x) sx, q:
         if abs(sx / 1000 - b_cx[b] - 1) <= 2 and abs(start_y[q] / 1000 - b_cy[b] - 1) <= 2: return true
     return false
 
 def known_enemy_town(bot:Bot, hx:int, hy:int) -> int:
-    let tk = btype_named("town_center")
     var best = 0
     var best_d2 = 1 << 62
     for(b_id.length) b:
-        if b_kind[b] == tk and is_enemy(bot.player, b_owner[b]) and fog[bot.player][b_cy[b] * W + b_cx[b]] != UNSEEN and
+        if has_role(b_kind[b], ROLE_HUB) and is_enemy(bot.player, b_owner[b]) and fog[bot.player][b_cy[b] * W + b_cx[b]] != UNSEEN and
                 reaches_building(bot.eco.reach, bot.aln, bot.harea, b):
             let d2 = dist2(hx, hy, b_cx[b] * 1000, b_cy[b] * 1000)
             if d2 < best_d2:
@@ -774,19 +774,17 @@ def known_enemy_town(bot:Bot, hx:int, hy:int) -> int:
 // Where to attack: the nearest enemy Town Center we've seen, else the nearest enemy building we've
 // seen but walls, else an enemy's start (Bot._enemy_target); a Wonder we know of before all.
 def enemy_target(bot:Bot, hx:int, hy:int) -> int, int:
-    let tk = btype_named("town_center")
-    let wk = btype_named("wonder")
     var bx = -1
     var by = -1
     var best_d2 = 1 << 62
     var best_rank = -2
     var best_ok = false
     for(b_id.length) b:
-        let wonder = b_kind[b] == wk
+        let wonder = has_role(b_kind[b], ROLE_WONDER)
         if is_enemy(bot.player, b_owner[b]) and (known(bot.player, b) or (wonder and knows_wonder(bot, b))):
             let x = b_cx[b] * 1000 + b_sx[b] * 500
             let y = b_cy[b] * 1000 + b_sy[b] * 500
-            let rank = if wonder: 2 elif b_kind[b] == tk: 1 elif bt_wall[b_kind[b]] or bt_gate[b_kind[b]]: -1 else: 0
+            let rank = if wonder: 2 elif has_role(b_kind[b], ROLE_HUB): 1 elif bt_wall[b_kind[b]] or bt_gate[b_kind[b]]: -1 else: 0
             let ok = reaches_building(bot.eco.reach, bot.aln, bot.harea, b)
             let d2 = dist2(hx, hy, x, y)
             if (ok and not best_ok) or (ok == best_ok and (rank > best_rank or (rank == best_rank and d2 < best_d2))):
@@ -993,11 +991,10 @@ def knows_wonder(bot:Bot, b:int) -> bool:
 
 // The id of the nearest enemy Wonder we know of and can get to, finished ones first, or 0.
 def known_enemy_wonder(bot:Bot, hx:int, hy:int) -> int:
-    let wk = btype_named("wonder")
     var best = 0
     var best_key = 1 << 62
     for(b_id.length) b:
-        if wk >= 0 and b_kind[b] == wk and is_enemy(bot.player, b_owner[b]) and knows_wonder(bot, b) and reaches_building(bot.eco.reach, bot.aln, bot.harea, b):
+        if has_role(b_kind[b], ROLE_WONDER) and is_enemy(bot.player, b_owner[b]) and knows_wonder(bot, b) and reaches_building(bot.eco.reach, bot.aln, bot.harea, b):
             let key = dist2(hx, hy, b_cx[b] * 1000, b_cy[b] * 1000) / 1000 + (if b_done[b] == 1: 0 else: 1 << 40)
             if key < best_key:
                 best_key = key
@@ -1008,7 +1005,7 @@ def known_enemy_wonder(bot:Bot, hx:int, hy:int) -> int:
 // stock is spare_pct percent of its cost; laid by the Town Center (Bot._wonder).
 def bot_wonder(bot:Bot, tc:int, workers:[int]):
     let p = bot.player
-    let k = btype_named("wonder")
+    let k = btype_with(ROLE_WONDER)
     if not has_cfg("wonder.age") or k < 0 or ages[p] < cfg("wonder.age") or tick < bot.next_build: return
     for(b_id.length) b:
         if b_owner[b] == p and b_kind[b] == k: return
@@ -1107,7 +1104,7 @@ def bot_trade(bot:Bot):
     if not has_cfg("economy.trade.every") or tick < bot.next_trade or trade_lacked[p]: return
     var mk = -1
     for(b_id.length) b:
-        if mk < 0 and b_owner[b] == p and b_done[b] == 1 and bt_name[b_kind[b]] == "market": mk = b
+        if mk < 0 and b_owner[b] == p and b_done[b] == 1 and has_role(b_kind[b], ROLE_TRADE): mk = b
     if mk < 0: return
     bot.next_trade = tick + cfg("economy.trade.every") * 20
     let g = resource_index("gold")
@@ -1129,9 +1126,9 @@ def trade_pair(p:int) -> [int]:
     var best = []::int
     var best_d = -1
     for(b_id.length) a:
-        if b_owner[a] == p and b_done[a] == 1 and bt_name[b_kind[a]] == "market":
+        if b_owner[a] == p and b_done[a] == 1 and has_role(b_kind[a], ROLE_TRADE):
             for(b_id.length) b:
-                if b != a and b_done[b] == 1 and bt_name[b_kind[b]] == "market" and not route_barred(p, a, b):
+                if b != a and b_done[b] == 1 and has_role(b_kind[b], ROLE_TRADE) and not route_barred(p, a, b):
                     let d = market_tiles(a, b)
                     if d > best_d:
                         best_d = d
@@ -1141,15 +1138,15 @@ def trade_pair(p:int) -> [int]:
 // One market of ours, two Town Centers: a second market by the Town Center farthest from it.
 def second_market(bot:Bot, workers:[int]):
     let p = bot.player
-    let mk = btype_named("market")
+    let mk = btype_with(ROLE_TRADE)
     let ours = []::int
     for(b_id.length) b:
-        if b_owner[b] == p and b_kind[b] == mk: ours.push(b)
+        if b_owner[b] == p and has_role(b_kind[b], ROLE_TRADE): ours.push(b)
     if ours.length != 1 or b_done[ours[0]] == 0 or tick < bot.next_build or not can_afford(p, bt_cost[mk]) or bot.saving_age: return
     var far = -1
     var far_d = r_trade_min + 4
     for(b_id.length) b:
-        if b_owner[b] == p and b_done[b] == 1 and bt_name[b_kind[b]] == "town_center":
+        if b_owner[b] == p and b_done[b] == 1 and has_role(b_kind[b], ROLE_HUB):
             let d = market_tiles(ours[0], b)
             if d >= far_d:
                 far = b

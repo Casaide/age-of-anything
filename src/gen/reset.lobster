@@ -260,6 +260,7 @@ var stashed_bm_trains = []::[[int]]
 var stashed_bm_cost = []::[[int]]
 var stashed_bt_name = []::string
 var stashed_bt_cost = []::[int]
+var stashed_bt_roles = []::int
 var stashed_map_version = 0
 var stashed_num_resources = 0
 var stashed_gather_spots = []::int
@@ -727,6 +728,7 @@ def reset_world():
     bm_cost = []::[[int]]
     bt_name = []::string
     bt_cost = []::[int]
+    bt_roles = []::int
     map_version = 0
     num_resources = 0
     gather_spots = []::int
@@ -1183,6 +1185,7 @@ def stash_world():
     stashed_bm_cost = bm_cost
     stashed_bt_name = bt_name
     stashed_bt_cost = bt_cost
+    stashed_bt_roles = bt_roles
     stashed_map_version = map_version
     stashed_num_resources = num_resources
     stashed_gather_spots = gather_spots
@@ -1633,6 +1636,7 @@ def unstash_world():
     bm_cost = stashed_bm_cost
     bt_name = stashed_bt_name
     bt_cost = stashed_bt_cost
+    bt_roles = stashed_bt_roles
     map_version = stashed_map_version
     num_resources = stashed_num_resources
     gather_spots = stashed_gather_spots
