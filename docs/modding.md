@@ -104,6 +104,13 @@ Look at every picture close up (3x) and at game size (1x) before showing anyone.
 `./play.sh lobby mods:<id> rules:anything "races:<prompt>|romans" watch mute shot:/tmp/m.png at:600`.
 A private mod's pictures stay in its own folder (`mods_private/<id>/renders/`), never in `archive/`.
 
+## 5b. Voxel units (optional)
+
+With the `voxels` option a unit is drawn from `data/voxel/` (docs/rendering.md, "Voxel units"). A mod can bring its
+own `data/voxel/`: `bodies/<creature>.json` for its creatures, `gear.json` with its gear and `parts` rules mapping its
+parts to it (a rule by part id or tag), `materials.json` for new colours. Same ids replace the game's. Check it with
+`src/voxel_proto.lobster` and a match with `voxels`.
+
 ## 6. Pack
 
 ```sh
