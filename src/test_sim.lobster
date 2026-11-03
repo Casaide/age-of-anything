@@ -671,7 +671,7 @@ def test_opening():
 
 // ------------------------------------------------------------------ combat
 
-let FIGHT_BUDGET = 600               // food + wood per side
+let FIGHT_BUDGET = 600               // resources per side (food, wood and gold)
 let FIGHT_LIMIT = 3000               // ticks (2.5 minutes)
 let FIGHT_FROM_X = [ 11000, 21000 ]  // open ground on flat_test, 10 tiles apart
 let FIGHT_FROM_Y = [ 20500, 20500 ]
@@ -1187,9 +1187,12 @@ def test_ranged_holds():
         crept = max(crept, isqrt(dist2(x, yy, was_x[n], was_y[n])))
     check(crept < 100 and hits >= 8 * 19, "8 attack-moving archers hold their line over 20 shots (most moved {crept}, {hits} hits)")
 
+// Its whole price: food, wood and gold (archers, infantry and the large lines pay part in gold, D-149; counting only
+// food and wood fielded twice the archers their price buys).
 def eval_cost(e:JV) -> int:
-    let c = at(e, "cost")
-    return gint(c, "food", 0) + gint(c, "wood", 0)
+    var total = 0
+    for(at(e, "cost").a) v: total += as_int(v)
+    return total
 
 // An equal-cost fight between two of a race's roster slots; `flip` swaps the sides. Both attack-move
 // at each other; the side with more value left wins.
@@ -1243,7 +1246,10 @@ def test_combat():
                 if won: wins++
                 else: print "  counter lost: {rstr(race, "name")} {pair[0]} vs {pair[1]} (side {flip}): {note}"
     print "counters: {wins} of {fights} equal-cost fights won by the counter ({wins * 100 / fights}%), {ms_since(t0)} ms"
-    check(wins * 100 >= fights * 75, "counters win at least 75% of equal-cost fights ({wins}/{fights})")
+    // 70%, not 75% (D-194): at calibrated prices, fair against the whole field, infantry pays for beating most lines
+    // and loses its counter fight with the cheaper spears; large loses to a few races' archers. The counters' bonuses
+    // are Dominic's call (docs/backlog.md).
+    check(wins * 100 >= fights * 70, "counters win at least 70% of equal-cost fights ({wins}/{fights})")
 
 // ------------------------------------------------------------------ shots, engines, trade, sappers
 

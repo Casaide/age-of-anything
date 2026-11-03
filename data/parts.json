@@ -148,7 +148,7 @@
   "slot": "body",
   "noun": "Folk",
   "points": 3,
-  "price_points": 4,
+  "price_points": 5,
   "cost_mix": {"food": 100},
   "tags": [
    "infantry"
@@ -340,7 +340,7 @@
   "cut": ["legs"],
   "noun": "Beetle",
   "points": 5,
-  "price_points": 6,
+  "price_points": 7,
   "cost_mix": {"food": 100},
   "tags": [
    "insect",
@@ -465,7 +465,7 @@
   "noun": "Beetle",
   "points": 12,
   "cost_mix": {"food": 100},
-  "price_points": 13,
+  "price_points": 11,
   "rider_loses": [
    "infantry"
   ],
@@ -1101,7 +1101,7 @@
   "cut": ["legs", "head"],
   "points": 9,
   "cost_mix": {"food": 100},
-  "price_points": 9,
+  "price_points": 8,
   "rider_loses": [
    "infantry"
   ],
@@ -1229,7 +1229,7 @@
   "noun": "Pony",
   "cut": ["legs"],
   "points": 9,
-  "price_points": 11,
+  "price_points": 10,
   "cost_mix": {"food": 100},
   "large": false,
   "large_note": "a centaur is one body, not a rider on a big beast: mounted (cavalry, quick), but not large (one place in a house, and spears' bonus against large beasts doesn't reach it)",
@@ -2166,7 +2166,7 @@
   "tags": [],
   "stats": {},
   "points": 0,
-  "price_points": 1
+  "price_points": 2
  },
  {
   "id": "head.beetle",
@@ -2559,6 +2559,7 @@
    }
   },
   "points": 3,
+  "price_points": 4,
   "cost_mix": {"food": 40, "wood": 60},
   "tier": 1
  },
@@ -2663,7 +2664,7 @@
    "attack": 8
   },
   "points": 6,
-  "price_points": 8,
+  "price_points": 9,
   "era": [
    "medieval",
    "gunpowder"
@@ -2750,7 +2751,7 @@
    }
   },
   "points": 6,
-  "price_points": 7,
+  "price_points": 8,
   "two_handed": true,
   "cost_mix": {"food": 80, "wood": 20},
   "tier": 1
@@ -2807,7 +2808,7 @@
    }
   },
   "points": 5,
-  "price_points": 8,
+  "price_points": 9,
   "era": [
    "medieval",
    "gunpowder"
@@ -2869,6 +2870,7 @@
    }
   },
   "points": 3,
+  "price_points": 2,
   "cost_mix": {"food": 60, "wood": 40},
   "tier": 1
  },
@@ -2925,7 +2927,7 @@
    }
   },
   "points": 4,
-  "price_points": 4,
+  "price_points": 5,
   "two_handed": true,
   "cost_mix": {"food": 20, "wood": 80},
   "tier": 1
@@ -2993,7 +2995,7 @@
    "damage": "pierce"
   },
   "points": 3,
-  "price_points": 4,
+  "price_points": 0,
   "two_handed": true,
   "cost_mix": {"wood": 60, "gold": 40},
   "tier": 1
@@ -3057,7 +3059,7 @@
    "damage": "pierce"
   },
   "points": 4,
-  "price_points": 5,
+  "price_points": 1,
   "era": [
    "medieval",
    "gunpowder"
@@ -3754,7 +3756,7 @@
    }
   },
   "points": 3,
-  "price_points": 1,
+  "price_points": 2,
   "cost_mix": {"food": 40, "wood": 60},
   "shapes": [
    {
@@ -3836,6 +3838,7 @@
    "speed": -1
   },
   "points": 3,
+  "price_points": 2,
   "cost_mix": {"wood": 50, "gold": 50},
   "era": [
    "medieval",
@@ -4060,6 +4063,7 @@
    }
   },
   "points": 3,
+  "price_points": 2,
   "cost_mix": {"gold": 100},
   "era": [
    "medieval",
@@ -4211,7 +4215,7 @@
    }
   },
   "points": 2,
-  "price_points": 0,
+  "price_points": 1,
   "cost_mix": {"wood": 50, "gold": 50},
   "shapes": [
    {
@@ -4319,6 +4323,7 @@
    "speed": -1
   },
   "points": 3,
+  "price_points": 2,
   "cost_mix": {"wood": 50, "gold": 50},
   "shapes": [
    {
@@ -4354,7 +4359,7 @@
    "speed": -1
   },
   "points": 3,
-  "price_points": 4,
+  "price_points": 2,
   "cost_mix": {"wood": 50, "gold": 50},
   "shapes": [
    {
@@ -4755,6 +4760,7 @@
    }
   },
   "points": 1,
+  "price_points": 0,
   "cost_mix": {"food": 100},
   "shapes": [
    {
@@ -5057,7 +5063,7 @@
    }
   },
   "points": 7,
-  "price_points": 6,
+  "price_points": 4,
   "era": [
    "bronze",
    "medieval"
@@ -5121,7 +5127,7 @@
    }
   },
   "points": 3,
-  "price_points": 3,
+  "price_points": 4,
   "era": [
    "bronze",
    "medieval"
@@ -5145,7 +5151,7 @@
    "speed": -1
   },
   "points": 3,
-  "price_points": 2,
+  "price_points": 1,
   "cost_mix": {"wood": 50, "gold": 50},
   "era": [
    "bronze",
@@ -5317,7 +5323,7 @@
    }
   },
   "points": 2,
-  "price_points": 1,
+  "price_points": 2,
   "cost_mix": {"gold": 100},
   "era": [
    "bronze",
@@ -5584,6 +5590,7 @@
    "hp": -4
   },
   "points": 4,
+  "price_points": 0,
   "cost_mix": {"food": 100},
   "shapes": [
    {
@@ -6430,7 +6437,7 @@
    }
   },
   "points": 1,
-  "price_points": 1,
+  "price_points": 0,
   "cost_mix": {"food": 100},
   "tier": 1,
   "note": "a linen head bag, gathered behind"
@@ -6496,6 +6503,7 @@
    }
   },
   "points": 3,
+  "price_points": 2,
   "cost_mix": {"gold": 100},
   "tier": 3,
   "note": "a bronze helmet, a ridge and cheek guards"
@@ -6562,6 +6570,7 @@
    }
   },
   "points": 2,
+  "price_points": 1,
   "cost_mix": {"food": 100},
   "tier": 2,
   "note": "a stiff black cap with two tails"
@@ -6769,7 +6778,7 @@
    }
   },
   "points": 2,
-  "price_points": 1,
+  "price_points": 2,
   "cost_mix": {"wood": 100},
   "tier": 1,
   "note": "lacquered red with a black border, a pointed top"
@@ -9457,7 +9466,7 @@
    "attack": 8
   },
   "points": 6,
-  "price_points": 8,
+  "price_points": 9,
   "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
@@ -9512,7 +9521,7 @@
    "attack": 8
   },
   "points": 6,
-  "price_points": 8,
+  "price_points": 11,
   "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
@@ -9569,7 +9578,7 @@
    "attack": 8
   },
   "points": 6,
-  "price_points": 8,
+  "price_points": 9,
   "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
@@ -9626,7 +9635,7 @@
    "attack": 8
   },
   "points": 6,
-  "price_points": 8,
+  "price_points": 9,
   "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
@@ -9683,7 +9692,7 @@
    }
   },
   "points": 6,
-  "price_points": 8,
+  "price_points": 7,
   "cost_mix": {"food": 40, "wood": 60},
   "tier": 3,
   "requires_role": [
@@ -9798,7 +9807,7 @@
    "attack": 8
   },
   "points": 6,
-  "price_points": 8,
+  "price_points": 9,
   "cost_mix": {"wood": 20, "gold": 80},
   "tier": 3,
   "requires_role": [
@@ -9827,6 +9836,7 @@
    }
   },
   "points": 3,
+  "price_points": 2,
   "cost_mix": {"gold": 100},
   "shapes": [
    {
@@ -9962,7 +9972,7 @@
   "cut": ["legs", "head"],
   "points": 10,
   "cost_mix": {"food": 100},
-  "price_points": 8,
+  "price_points": 9,
   "rider_loses": [
    "infantry"
   ],
@@ -10993,7 +11003,7 @@
  {"id": "hero.log_club", "slot": "hand_r", "tags": ["melee", "blunt", "hero"], "stats": {}, "points": 0, "tier": 1, "only_if": ["hero_only"], "shapes": [{"t": "circle", "c": [0, -4], "r": 3, "ch": "team"}], "note": "a log with bedding stuck to it (a hero's look: data/heroes.json; model: scenes/art_pixel/hero_models.gd)"},
  {"id": "hero.cheese_wheel", "slot": "hand_l", "tags": ["shield", "hero"], "stats": {}, "points": 0, "tier": 1, "only_if": ["hero_only"], "shapes": [{"t": "circle", "c": [0, -4], "r": 3, "ch": "team"}], "note": "a whole cheese wheel, a wedge bitten out (a hero's look: data/heroes.json; model: scenes/art_pixel/hero_models.gd)"},
  {"id": "hero.gold_shield", "slot": "hand_l", "tags": ["shield", "hero"], "stats": {}, "points": 0, "tier": 1, "only_if": ["hero_only"], "shapes": [{"t": "circle", "c": [0, -4], "r": 3, "ch": "team"}], "note": "a gilded leaf shield (a hero's look: data/heroes.json; model: scenes/art_pixel/hero_models.gd)"},
- {"id": "weapon.axe.bearded", "slot": "hand_r", "noun": "Axeman", "shapes": [{"t": "line", "p": [[0, 0], [2, -13]], "w": 1.5, "ch": "wood"}, {"t": "poly", "p": [[1, -13], [6, -14], [7, -9], [2, -10]], "ch": "iron"}], "tags": ["melee", "blade", "axe", "viking", "norse"], "stats": {"attack": 7}, "points": 5, "price_points": 5, "cost_mix": {"wood": 40, "gold": 60}, "tier": 2, "requires_role": ["large", "infantry", "scout"], "favour": 5, "note": "the bearded axe: an ash haft and an iron head whose lower edge hangs down like a beard"},
+ {"id": "weapon.axe.bearded", "slot": "hand_r", "noun": "Axeman", "shapes": [{"t": "line", "p": [[0, 0], [2, -13]], "w": 1.5, "ch": "wood"}, {"t": "poly", "p": [[1, -13], [6, -14], [7, -9], [2, -10]], "ch": "iron"}], "tags": ["melee", "blade", "axe", "viking", "norse"], "stats": {"attack": 7}, "points": 5, "price_points": 7, "cost_mix": {"wood": 40, "gold": 60}, "tier": 2, "requires_role": ["large", "infantry", "scout"], "favour": 5, "note": "the bearded axe: an ash haft and an iron head whose lower edge hangs down like a beard"},
  {"id": "weapon.axe.broad", "slot": "hand_r", "noun": "Broad Axeman", "shapes": [{"t": "line", "p": [[0, 0], [3, -17]], "w": 1.5, "ch": "wood"}, {"t": "poly", "p": [[2, -17], [8, -19], [9, -12], [3, -13]], "ch": "iron"}], "tags": ["melee", "blade", "axe", "viking", "norse"], "stats": {"attack": 8}, "points": 6, "price_points": 8, "cost_mix": {"wood": 30, "gold": 70}, "tier": 3, "requires_role": ["infantry"], "only_if": ["norse"], "favour": 5, "note": "a long-hafted broad axe with a wide crescent edge, a team band under the head"},
  {"id": "helm.norse_fur", "slot": "head_gear", "shapes": [{"t": "poly", "p": [[-6, 2], [-5, -3], [0, -5], [5, -3], [6, 2]], "ch": "wood"}], "tags": ["helmet", "viking", "norse", "light"], "stats": {"armour": {"melee": 0, "pierce": 1}}, "points": 1, "price_points": 1, "cost_mix": {"food": 100}, "tier": 1, "note": "a round leather cap with a thick fur brim (round 1 Viking C, without its braids and beard: a hanging beard cuts into a frog's or a beetle's chest)"},
  {"id": "helm.norse_conical", "slot": "head_gear", "face": "covered", "shapes": [{"t": "poly", "p": [[-6, 2], [-4, -5], [0, -10], [4, -5], [6, 2]], "ch": "iron"}, {"t": "line", "p": [[5, 1], [6, 5]], "w": 1, "ch": "iron"}], "tags": ["helmet", "viking", "norse"], "stats": {"armour": {"melee": 1, "pierce": 1}}, "points": 2, "price_points": 1, "cost_mix": {"gold": 100}, "tier": 2, "note": "a conical iron cap rising to a short spike, a nose guard (round 1 Viking D)"},
@@ -11002,12 +11012,12 @@
  {"id": "hero.helm_wings", "slot": "head_gear", "face": "covered", "tags": ["hat", "hero"], "stats": {}, "points": 0, "tier": 1, "only_if": ["hero_only"], "shapes": [{"t": "circle", "c": [0, -4], "r": 3, "ch": "team"}], "note": "an iron helm with two black raven wings swept up from its sides (a hero's look: data/heroes.json; model: scenes/art_pixel/hero_models.gd)"},
  {"id": "hero.raven_pet", "slot": "back", "tags": ["banner", "hero"], "stats": {}, "points": 0, "tier": 1, "only_if": ["hero_only"], "shapes": [{"t": "circle", "c": [0, -4], "r": 3, "ch": "team"}], "note": "a raven riding on the far shoulder (a hero's look: data/heroes.json; model: scenes/art_pixel/hero_models.gd)"},
  {"id": "body.bear", "crew": "wide", "_crew_doc": "too big for an engine's frame: works it from beside it (the _wide sockets), as a centaur does", "kit": "bear_brown", "slot": "body", "noun": "Bear", "points": 6, "price_points": 8, "tags": ["infantry", "beast"], "stats": {"hp": 46, "speed": 10, "armour": {"melee": 1, "pierce": 0}}, "note": "the brown bear on two legs (a shoulder hump, a dished face)", "cost_mix": {"food": 100}},
- {"id": "body.bear_black", "crew": "wide", "_crew_doc": "too big for an engine's frame: works it from beside it (the _wide sockets), as a centaur does", "kit": "bear_black", "slot": "body", "noun": "Bear", "points": 5, "price_points": 7, "tags": ["infantry", "beast"], "stats": {"hp": 40, "speed": 11, "armour": {"melee": 1, "pierce": 0}}, "note": "the black 'moon' bear on two legs (slimmer, big ears, a tan muzzle, a pale chest crescent)", "cost_mix": {"food": 100}},
+ {"id": "body.bear_black", "crew": "wide", "_crew_doc": "too big for an engine's frame: works it from beside it (the _wide sockets), as a centaur does", "kit": "bear_black", "slot": "body", "noun": "Bear", "points": 5, "price_points": 8, "tags": ["infantry", "beast"], "stats": {"hp": 40, "speed": 11, "armour": {"melee": 1, "pierce": 0}}, "note": "the black 'moon' bear on two legs (slimmer, big ears, a tan muzzle, a pale chest crescent)", "cost_mix": {"food": 100}},
  {"id": "body.bear_polar", "crew": "wide", "_crew_doc": "too big for an engine's frame: works it from beside it (the _wide sockets), as a centaur does", "kit": "bear_polar", "slot": "body", "noun": "Bear", "points": 6, "tags": ["infantry", "beast"], "stats": {"hp": 48, "speed": 10, "armour": {"melee": 1, "pierce": 0}}, "note": "the polar bear on two legs (a long neck, a long roman-nosed head)", "cost_mix": {"food": 100}},
  {"id": "body.bear_mount", "ridden_idle_poses": ["sit1"], "_ridden_idle_poses_doc": "under a rider it only settles back a little: sitting up, its raised head met a rider's lance and a frog's head (the placement check, A3)", "kit": "bear_mount", "slot": "body", "noun": "Bear", "points": 12, "price_points": 13, "rider_loses": ["infantry"], "tags": ["beast", "mount", "large"], "stats": {"hp": 70, "speed": 13, "armour": {"melee": 1, "pierce": 1}}, "note": "a bear on four legs, saddled for a rider", "cost_mix": {"food": 100}},
  {"id": "helm.bear_crest", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic", "bear"], "favour": 2, "stats": {"armour": {"melee": 1, "pierce": 1}}, "points": 2, "price_points": 3, "era": ["bronze", "medieval"], "tier": 1, "only_if": ["bear"], "requires_role": ["large", "unique"], "note": "(D-126: the giants' and elites' helmet, a visible step up from the line's open cap): a bronze helmet made for a bear's head: ear cups over the ears, cheek guards behind the eyes, a tall team crest on a stand", "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}], "cost_mix": {"food": 100}},
- {"id": "helm.bear_open", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic", "bear"], "favour": 2, "stats": {"armour": {"melee": 1, "pierce": 0}}, "points": 1, "price_points": 0, "era": ["bronze", "medieval"], "tier": 1, "only_if": ["bear"], "requires_role": ["spear", "infantry", "skirmisher", "archer", "mounted_archer", "scout"], "note": "(D-126: the line soldiers' helmet, so the small bears read as bears; not the workers' hat): an open-faced bronze cap for a bear: the ears come out through holes, no cheek guards, the face and brow bare, the same tall team crest (more bear showing on the small soldiers)", "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}], "cost_mix": {"food": 100}},
- {"id": "helm.bear_open_2", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic", "bear"], "favour": 2, "stats": {"armour": {"melee": 1, "pierce": 1}}, "points": 2, "price_points": 1, "era": ["bronze", "medieval"], "tier": 2, "only_if": ["bear"], "requires_role": ["spear", "infantry", "skirmisher", "archer", "mounted_archer", "scout"], "note": "(D-126): the open-faced cap at age 2 (the same model, better armour), so the line keeps its bear's face as it ages instead of taking the stock helmets", "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}], "cost_mix": {"gold": 100}},
+ {"id": "helm.bear_open", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic", "bear"], "favour": 2, "stats": {"armour": {"melee": 1, "pierce": 0}}, "points": 1, "price_points": 1, "era": ["bronze", "medieval"], "tier": 1, "only_if": ["bear"], "requires_role": ["spear", "infantry", "skirmisher", "archer", "mounted_archer", "scout"], "note": "(D-126: the line soldiers' helmet, so the small bears read as bears; not the workers' hat): an open-faced bronze cap for a bear: the ears come out through holes, no cheek guards, the face and brow bare, the same tall team crest (more bear showing on the small soldiers)", "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}], "cost_mix": {"food": 100}},
+ {"id": "helm.bear_open_2", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic", "bear"], "favour": 2, "stats": {"armour": {"melee": 1, "pierce": 1}}, "points": 2, "price_points": 2, "era": ["bronze", "medieval"], "tier": 2, "only_if": ["bear"], "requires_role": ["spear", "infantry", "skirmisher", "archer", "mounted_archer", "scout"], "note": "(D-126): the open-faced cap at age 2 (the same model, better armour), so the line keeps its bear's face as it ages instead of taking the stock helmets", "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}], "cost_mix": {"gold": 100}},
  {"id": "helm.bear_open_3", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic", "bear"], "favour": 2, "stats": {"armour": {"melee": 2, "pierce": 1}}, "points": 3, "era": ["bronze", "medieval"], "tier": 3, "only_if": ["bear"], "requires_role": ["spear", "infantry", "skirmisher", "archer", "mounted_archer", "scout"], "note": "(D-126): the open-faced cap at age 3 (the same model)", "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}], "cost_mix": {"gold": 100}},
- {"id": "helm.bear_crest_3", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic", "bear"], "favour": 2, "stats": {"armour": {"melee": 2, "pierce": 2}}, "points": 3, "era": ["bronze", "medieval"], "tier": 3, "only_if": ["bear"], "requires_role": ["large", "unique"], "note": "(D-126): the ear-cup helmet at age 3 (the same model), so giants and elites keep it", "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}], "cost_mix": {"gold": 100}}
+ {"id": "helm.bear_crest_3", "slot": "head_gear", "tags": ["helmet", "crest", "hellenic", "bear"], "favour": 2, "stats": {"armour": {"melee": 2, "pierce": 2}}, "points": 3, "price_points": 6, "era": ["bronze", "medieval"], "tier": 3, "only_if": ["bear"], "requires_role": ["large", "unique"], "note": "(D-126): the ear-cup helmet at age 3 (the same model), so giants and elites keep it", "shapes": [{"t": "circle", "c": [0, -3], "r": 4, "ch": "skin"}], "cost_mix": {"gold": 100}}
 ]
