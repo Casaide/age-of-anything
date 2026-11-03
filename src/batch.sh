@@ -34,6 +34,7 @@ add lint python3 lint.py   # lobsterfmt leaves every file as it is, every progra
 add test_heroes "$L" test_heroes.lobster
 add race_identity "$L" test_race_identity.lobster
 add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand in their shadows as drawn (the voxels option)
+add voxel_check "$L" voxel_check.lobster                # the voxel units' art: straight standing knees, skins that never clip or grey, kit that keeps the creature's shape, no look-alikes, no specks
 for i in 0 1 2 3; do add test_sim.$i "$L" test_sim.lobster -- shard:$i/4; done
 for a in 2 3; do add counters.$a "$L" calibrate.lobster -- pairs $a; done   # the counter chain, each pair in ages 2 and 3 (D-200)
 if [ $quick = 1 ]; then

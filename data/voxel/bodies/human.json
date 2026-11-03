@@ -430,5 +430,10 @@
     "look:2"
    ]
   }
- ]
+ ],
+ "check": {
+  "knees": 15,
+  "shows": 0.2,
+  "_doc": "shows: a human in plate is mostly its clothes"
+ }
 }

@@ -324,5 +324,8 @@
    "mirror": true
   }
  ],
- "mark": "#f0ebe0"
+ "mark": "#f0ebe0",
+ "check": {
+  "knees": 70
+ }
 }

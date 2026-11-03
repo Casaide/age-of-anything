@@ -144,3 +144,24 @@ Dominic didn't accept the "what's lost" list as inherent, and he was right: each
   12.3 s twice as fine. Fewer shapes than round 1 (13-39 a building; 260-760 lines of JSON, 320 for the materials).
 - Still apart: the baked roof tiles are deeper (each tile a shape, shadowed by the one above); the voxel rust is
   heavier; the baked Town Center's blue band and medallion read bolder. Pictures 30 (Rome), 31 (rats), 32 (props).
+
+## Checks for the voxel art (Dominic: "voxels should make it easier... need more tooling and tests?")
+
+Dominic, after a day of "bears too trunky", "the human looks unwell in every way: colour, legs bent, shape of the head",
+"beetles look too much like spiders", then: "our art was really good, but with problems, now it looks cheaper, AND
+with problems. Rat for some reason continues to be the best". He's right: the rat was the only body iterated round
+after round with him; the rest were ported for coverage and fixed by eye, one complaint at a time (my first fix for
+the white skin made it grey). He wants a skill and tools so an agent can do this well. Voxels stay the default
+meanwhile (his call).
+
+`src/voxel_check.lobster` (in the quick batch) puts numbers on what he caught, for every body a race can be:
+- **knees:** standing, a leg bends no more than its body allows (12-15 degrees for a biped; a frog's folded legs are
+  its build, so a body's own limits live in its file's `check`). It found the "legs bent": every standing frame had
+  one foot lifted mid-step (idle shared the walk's phase 0). Now standing (idle, blows, work, falls) plants every
+  foot, and a standing leg may be straight (the dip at full stride is for walking).
+- **skin:** every palette of the creature in every look, as drawn: the lit band never clips white, the colour
+  (saturation) kept. The white came from a light palette times the human's 1.3 lift; now only a dark palette is
+  lifted, and a colour too bright is scaled whole (hue and saturation kept).
+- **kit:** worn kit doesn't swell the silhouette, and enough of the creature still shows through it.
+- **apart:** no two bodies' silhouettes alike, side on and three quarters on.
+- **whole:** one piece (it found the rat's tail tip breaking into specks on the ground: thicker at the tip).

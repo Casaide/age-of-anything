@@ -78,9 +78,10 @@ if args.length > 1 and args[1] == "animals":
 if args.length > 2 and args[1] == "legs":
     while rows.length: rows.pop()
     let b = args[2]
-    let u = if b == "human": units[1] elif b == "rat": units[1 - 1] elif b == "cat": units[2] elif b == "pony": units[9] else: unit(b, b, float3_0, float3_0, [ "spear", "shield", "cap" ], "", float3_0)
-    let lu = if b == "rat": units[1] else: u
-    for([ "stand", "walk", "attack" ]) m: rows.push(row { if b == "human": units[5] else: lu, m, "scarf", true, 0 })
+    let kit = if args.length > 3: tokenize(args[3], ",", "") else: [ "spear", "shield", "cap" ]  // (legs <body> [gear,gear])
+    let u = if args.length > 3: unit(b, b, float3_0, float3_0, kit, "", float3_0) elif b == "human": units[1] elif b == "rat": units[1 - 1] elif b == "cat": units[2] elif b == "pony": units[9] else: unit(b, b, float3_0, float3_0, kit, "", float3_0)
+    let lu = if b == "rat" and args.length <= 3: units[1] elif b == "human" and args.length <= 3: units[5] else: u
+    for([ "stand", "walk", "attack" ]) m: rows.push(row { lu, m, "scarf", true, 0 })
 // `skins`: a worker in each human palette, each look (no skin may clip to white)
 if args.length > 1 and args[1] == "skins":
     while rows.length: rows.pop()
@@ -105,7 +106,8 @@ if args.length > 1 and args[1] == "check":
         vx_set_look(u, 0)
         vx_act = ""
         for(9) st:
-            let g = vx_fill(vx_unit_prims(u, float(st) * 45.0), vx_size_of(u), vx_flies(u))
+            vx_stand = st == 0  // (step 0: standing, as the game's idle frames, every foot planted; then the walk)
+            let g = vx_fill(vx_unit_prims(u, float(max(0, st - 1)) * 45.0), vx_size_of(u), vx_flies(u))
             for(8) f:
                 let cell = copy(vx_cell(g, f))
                 let sc = vx_ground_shadow(g, f)
@@ -129,6 +131,7 @@ else:  // the sheet
         vx_team_wear = rw.wear
         vx_shadows = rw.shade
         vx_act = if rw.mode == "attack": "attack" else: ""
+        vx_stand = rw.mode != "walk"
         if rw.mode == "stand":
             let t = seconds_elapsed()
             let stand = vx_fill(vx_unit_prims(u, 0.0), vx_size_of(u), vx_flies(u))
