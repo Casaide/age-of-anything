@@ -1520,3 +1520,12 @@ building experiment's second round (pictures 30-32, 39): "buildings yes" (a pedi
 is planned in its own milestone, as the units' was (D-201, D-202). He also turned down a charge for spears against
 horse archers ("charge, no"; backlog, open counter pairs) and approved the Creel mock site (`docs/engine/site-mockup/`,
 "creel site looks good"); Claude picked the name Creel from the engine plan's shortlist.
+
+**D-203, 2026-11-03: Buildings and props go voxel: the models voxelized first, voxel data culture by culture after.**
+Dominic, after the building experiment: "voxel buildings yes"; on the plan's three ways (voxel data per look,
+voxelizing the existing models, or both): "C, go. I will have another agent review all the art afterwards." So every
+building, stage, wall and prop is first its existing 3D model rasterized into voxels (the shapes he likes, every
+look at once), shaded by the voxel light, its materials' textures sampled into the voxels; then the looks that show
+most (the Town Centers and houses first) are replaced, culture by culture, by voxel data with voxel-native detail
+(tile rows, patterns, lights). The baked-building pipeline goes once nothing needs it (milestone 24). Claude, for
+Dominic.
