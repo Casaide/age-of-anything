@@ -288,3 +288,19 @@ section, [id] { scroll-margin-top: 72px; }
   .hero h1 { font-size: 2.3rem; }
   .doc-body h1 { font-size: 2rem; }
 }
+
+/* why */
+.why { display: grid; grid-template-columns: 1.6fr 1fr; gap: 40px; align-items: start; }
+.why > * { min-width: 0; }
+.reasons { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 28px 32px; counter-reset: why; }
+.reasons li { counter-increment: why; border-top: 2px solid var(--ink); padding-top: 14px; }
+.reasons h3::before { content: counter(why) "  "; font-family: "IBM Plex Mono", monospace; font-size: 0.85rem; color: var(--muted); white-space: pre; }
+.reasons p { margin: 0; font-size: 0.97rem; }
+.tradeoffs { border: 1px solid var(--line); border-radius: 8px; padding: 22px 24px; background: var(--bg-2); }
+.tradeoffs h3 { font-size: 1.1rem; }
+.tradeoffs h3 + p, .tradeoffs ul { margin-bottom: 18px; }
+.tradeoffs p:last-child { margin: 0; }
+.tradeoffs ul { padding-left: 1.1em; margin-top: 0; font-size: 0.97rem; }
+.tradeoffs li { margin-bottom: 6px; }
+@media (max-width: 900px) { .why { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .reasons { grid-template-columns: 1fr; gap: 22px; } }
