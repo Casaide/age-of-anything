@@ -173,7 +173,11 @@ def akb_hold_back(body:MNode, stage:int):
     var top = 0.0
     for(boxes) b:
         let at = (if stage < 2: b.hi.y else: (b.lo.y + b.hi.y) * 0.5) - alo.y
-        if at > cut * h: b.node.visible = false
+        // (before its walls: nothing that hangs on them, a lit window or a door's studs low enough to pass, floating)
+        let m = b.node.mat
+        let lit = m and (m.unshaded or m.emission != float3_0)
+        let hangs = stage < 2 and (lit or (b.lo.y - alo.y > 0.15 * h and b.hi.y - b.lo.y < 0.25 * h))
+        if at > cut * h or hangs: b.node.visible = false
         else: top = max(top, b.hi.y)
     let wood = bm("wood")
     let lo = float3 { alo.x - 0.04, 0.0, alo.z - 0.04 }
@@ -274,6 +278,7 @@ def akb_load_cached(name:string) -> bool:
 // sprite, a piece drawn over its neighbour painted its shadow on the neighbour's face (Dominic: "all the shadows
 // bugged for the walls").
 var akb_split_shadows = false
+var akb_check_dump = ""                          // a folder: each failing look's picture saved there (vbcheck dump:<folder>), a look's frames (lookframes:)
 let akb_src = dictionary<string, [string]>(256)  // a look's name -> what it's made from (arch, type, model, suffix)
 
 def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, shadow_only:[MNode] = []):
@@ -291,6 +296,8 @@ def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, sha
     akb_baked++
 
 def akb_keep_frame(name:string, sprite:string, w:int, h:int, at:float2):
+    if akb_check_dump != "" and w > 0 and h > 0:  // (sheet: every frame of a look as a PNG)
+        write_file("{akb_check_dump}/{tokenize(name, ":", "")[tokenize(name, ":", "").length - 1]}.png", bmat_png(map(sprite.length) i: sprite[i], w, h), 0, 1)
     keep_frame(name, sprite, w, h, at)
     if akb_cache_stem != "" and w > 0 and h > 0:
         let file = "{akb_cache_stem}_{akb_cache_frames.length}.png"
@@ -484,7 +491,6 @@ def akb_team_px(sprite:string, w:int, h:int) -> int:
         if sprite[p * 4 + 3] == 255 and r > 50 and b > 50 and abs(r - b) * 4 < r + b and g * 3 < min(r, b): n++  // (the key's hue, shaded)
     return n
 
-var akb_check_dump = ""  // a folder: each failing look's picture saved there (vbcheck dump:<folder>)
 def akb_check(archs:[string]) -> int:
     var failed = 0
     var hidden = 0  // (the model's own: a tree in front of a house's shutters, a gate's band facing away; for the art review)

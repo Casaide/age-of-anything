@@ -1892,6 +1892,19 @@ let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mod
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 startup_frame("Loading the parts...", 0.8)
 id_load("../data")
+// lookframes:<arch>,<type> dump:<folder>: every frame of a look baked as PNGs (its stages, ruins), then quit (art review).
+for(args) a:
+    if starts_with(a, "lookframes:"):
+        let at_ = tokenize(a.substring(11, a.length - 11), ",", " ")
+        for(args) d: if starts_with(d, "dump:"): akb_check_dump = d.substring(5, d.length - 5)
+        bake_live = false
+        let keep_cache = bake_cache_dir
+        bake_cache_dir = ""
+        ak_rebake = true
+        bmat_matte = true
+        akb_bake_look(at_[0], at_[1], "", "")
+        bake_cache_dir = keep_cache
+        bake_quit = true
 // vbcheck: the buildings' checks as voxels (game/art_kit_buildings.lobster, akb_check), then quit.
 if has_s(args, "vbcheck"):
     bake_live = false

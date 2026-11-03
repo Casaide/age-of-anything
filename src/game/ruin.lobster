@@ -87,6 +87,11 @@ def ruin_apply(body:MNode, s:int, seed_value:int):
         let n = mi.node
         if not n.visible: continue
         let m = n.mat
+        let mm = m
+        let lit = mm and (mm.unshaded or mm.emission != float3_0)  // a lit window, a lantern: out once it's collapsing, and no rubble
+        if lit and s >= 3:
+            n.visible = false
+            continue
         let bsize = mi.hi - mi.lo
         let centre = (mi.lo + mi.hi) * 0.5
         let rel = (centre.y - base) / h
@@ -101,10 +106,10 @@ def ruin_apply(body:MNode, s:int, seed_value:int):
                 let k = (top - mi.lo.y) / max(bsize.y, 0.001)
                 let sq = Basis { float3 { 1.0, 0.0, 0.0 }, float3 { 0.0, k, 0.0 }, float3 { 0.0, 0.0, 1.0 } }
                 ruin_move(mi, Xform { sq, float3_0 }, float3 { centre.x, mi.lo.y, centre.z })
-            if m: mats.push(m)
+            if m and not lit: mats.push(m)
         elif (rel > st.above or (st.cut > 0.0 and mi.hi.y - base > st.cut * h)) and ruin_roll(rng) < st.gone:
             n.visible = false
-            if m: mats.push(m)
+            if m and not lit: mats.push(m)
             gone = true
         elif rel > st.above * 0.6 and ruin_roll(rng) < st.tilt:
             // Knocked askew: turned about its lowest edge and sagging a little.
@@ -116,7 +121,8 @@ def ruin_apply(body:MNode, s:int, seed_value:int):
             let turn = if magnitude(axis) > 0.0: axis_angle(axis, deg) else: BASIS_ID
             ruin_move(mi, Xform { turn, float3 { 0.0, sag, 0.0 } }, float3 { centre.x, mi.lo.y, centre.z })
         if not gone and ruin_roll(rng) < st.scorch:
-            ruin_scorch(n, 0.35 + 0.35 * ruin_roll(rng))
+            // (a big piece, a roof's underlay or a hall's wall, chars lightly: scorched like a beam it went black)
+            ruin_scorch(n, (0.35 + 0.35 * ruin_roll(rng)) * (if bsize.x > asize.x * 0.35 or bsize.z > asize.z * 0.35: 0.35 else: 1.0))
     if not mats.length: mats.push(bm("stone"))
     ruin_rubble(body, alo, ahi, st.rubble, st.cut, mats, rng)
     let char_mat = MMat { float3 { 42.0, 36.0, 32.0 } / 255.0 }
