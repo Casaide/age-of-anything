@@ -241,3 +241,11 @@ The open gate had been baked all along but never drawn since the port (a gate al
 through the doors). Now a finished gate shows its open look while one of its team's units is within a tile and a
 half of it. `place:fort` with `army:` marches the army through the gate (pictures 65-66: the cart through it, the
 army behind the walls, the near merlons over the catapult crew).
+
+Then the gate in use (Dominic: "the units were floating all over the gate. On top parts, behind parts, totally
+bugged... the unit is sitting behind the left side of the gate, why?"). Two bugs: the open gate drew as one picture at
+one depth (a unit in its archway wholly in front or wholly behind), and its near towers' frames, which the art kit
+bakes to stand in front of the archway, had the rest of the gate baked into them (the voxel bake ignored the old
+baker's shadow-only meshes): the whole shut gate drawn over the units. Now the open gate sorts behind the archway, its
+near towers and its arch in front, and a tower's frame is only its tower. `place:fort in_gate army:1` stands soldiers
+through the arch (picture 67). A cold bake of two cultures: 2.6 minutes (it was 17).

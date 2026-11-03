@@ -570,6 +570,8 @@ def collect_corpses():
 // Models.LINKS: a wall tile's eight neighbours, in its arms' order.
 let LINKS = [ int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { -1, 0 }, int2 { -1, -1 }, int2 { 0, -1 }, int2 { 1, -1 } ]
 
+let GATE_DEPTH_PX = 40.0  // art px: half an open gate's depth on the screen (a unit within it is in the archway)
+
 // Is one of a gate's team's units on it or about to pass it (within a tile and a half of its middle)?
 def gate_used(b:int) -> bool:
     let cx = b_cx[b] * 1000 + b_sx[b] * 500
@@ -681,10 +683,19 @@ def collect_buildings():
                     // a gate stands open while one of its team's units is at it (the sim lets them through; its open
                     // look was baked but never drawn since the port)
                     let open = bt_gate[b_kind[b]] != 0 and b_done[b] == 1 and frame_index(name + ":open") >= 0 and gate_used(b)
-                    let body = if open: name + ":open" else: name
-                    add(frame_index(body), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
-                    if open: add(frame_index(name + ":open:front"), at.x, at.y - up, at.y + 2.0, col)
-                    elif look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
+                    if open:  // a unit in its archway: in front of the gate and its far tower, behind its near towers and under
+                        // its arch (the gate drawn as one at one depth put a unit wholly on top or wholly behind)
+                        let half = GATE_DEPTH_PX
+                        add(frame_index(name + ":open"), at.x, at.y - up, at.y - half, col)
+                        for(4) sd:
+                            let tf = frame_index("{name}:tower{sd}")
+                            if tf >= 0:
+                                add(tf, at.x, at.y - up, at.y + half, col)
+                                add(frame_index("{name}:tower{sd}:front"), at.x, at.y - up, at.y + half + 1.0, col)
+                        add(frame_index(name + ":open:front"), at.x, at.y - up, at.y + half + 2.0, col)
+                    else:
+                        add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
+                        if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
     bld_seen = seen
     fx_ruins = filter(fx_ruins) r: clock_s - r.t0 < RUIN_STAYS + RUIN_FADE  // (they burn out, lie there, fade)
     for(fx_ruins) r:                                                        // the fallen buildings' ruins, fading at the end
@@ -2114,7 +2125,12 @@ def make_match() -> bool:
                     let foe = (p + 1) % num_players
                     issue_cmd(p, CMD_ATTACK_MOVE, ids, start_x[foe], start_y[foe], 0, 0)
         update_pop()
-        if fort_gate.x >= 0:  // (through the fort's gate and out the far side)
+        if fort_gate.x >= 0 and has_s(args, "in_gate"):  // (captures: soldiers standing through the gate's arch, before, in it, past it)
+            let gk = find(t_slot.length) j: t_player[j] == ME and t_slot[j] == "infantry"
+            let gx = (fort_gate.x + 1) * 1000 + 500
+            if gk >= 0:
+                for([ -900, -300, 300, 900, 1500 ]) dy: add_unit(ME, gk, gx, fort_gate.y * 1000 + 500 + dy)
+        elif fort_gate.x >= 0:  // (through the fort's gate and out the far side)
             let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0
             issue_cmd(ME, CMD_MOVE, map(mine) i: u_id[i], fort_gate.x * 1000 + 500, (fort_gate.y + 4) * 1000, 0, 0, 0)
         if skirmish:
