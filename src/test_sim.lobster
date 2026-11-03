@@ -675,7 +675,7 @@ let FIGHT_BUDGET = 600               // resources per side (food, wood and gold)
 let FIGHT_LIMIT = 3000               // ticks (2.5 minutes)
 let FIGHT_FROM_X = [ 11000, 21000 ]  // open ground on flat_test, 10 tiles apart
 let FIGHT_FROM_Y = [ 20500, 20500 ]
-// The counter chain (D-196): infantry > spear > large and mounted > ranged > infantry, and skirmishers > archers.
+// The counter chain (D-199): infantry > spear > large and mounted > ranged > infantry, and skirmishers > archers.
 // (Not skirmishers > infantry: the roster gives swords +3 against skirmishers, who are for archers.)
 // [counter, countered, the tag the countered unit needs for this to be the counter]. Each pair wins COUNTER_PCT of
 // its equal-cost fights (every race, both sides), on its own: a strong pair can't carry a weak one.

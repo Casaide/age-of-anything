@@ -42,7 +42,7 @@ else
 	add test_2v2 "$L" test_2v2.lobster
 	for i in 0 1 2 3; do add placement2d.$i "$L" placement_check.lobster -- 2d shard:$i/4; done
 	add golden ./golden.sh
-	add prices "$L" calibrate.lobster -- measure expect check:42   # held-out round robins against the counter chain (D-196): 32% off now
+	add prices "$L" calibrate.lobster -- measure expect check:42   # held-out round robins against the counter chain (D-199): 32% off now
 	add saves "$L" save_check.lobster
 	add network ./net_check.sh 2000
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.

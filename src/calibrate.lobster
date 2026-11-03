@@ -2,7 +2,7 @@
 //   ./shards.sh calibrate.lobster lines <age> <races> [jobs=4]
 //       <races> races from the lexicon's words (training prompts, the lobby's dice made deterministic); each of
 //       their lines in <age> is fought against a fixed panel (every line of a few random races) at equal cost, its
-//       price moved until its score is what the counter chain expects (D-196: half of its neutral fights, 80% where
+//       price moved until its score is what the counter chain expects (D-199: half of its neutral fights, 80% where
 //       it has a counter's edge, 20% where the other has): its fair price. The combine writes the samples to
 //       ../build/calibrate/.
 //   lobster calibrate.lobster -- fit [lambda:<n>] [write]
@@ -15,7 +15,7 @@
 //       (exit 1) when more than n percent of all lines are (tests/batch.sh: a new part can't slip in unpriced).
 //       pool: every held-out line in one round robin (some 140 fights a line, not 13: far less noise).
 //       neutral: only the fights where neither side has a counter's edge. expect: each line's wins over what the
-//       counter chain expects of its fights, around 50 (D-196: what the prices are fitted to).
+//       counter chain expects of its fights, around 50 (D-199: what the prices are fitted to).
 //       oracle: each line at its own fair price against the panel instead (./shards.sh calibrate.lobster oracle
 //       first): the best pricing by panel can do, fit or no fit.
 //   lobster calibrate.lobster -- mod <id>
@@ -193,7 +193,7 @@ def edge(a:JV, b:JV) -> bool:
         if as_int(bonus.a[n]) > 0 and has_s(tags, k): return true
     return false
 
-// Neither has a counter's edge over the other (D-196).
+// Neither has a counter's edge over the other (D-199).
 def neutral(races:[JV], age:int, a:RRUnit, b:RRUnit) -> bool:
     let ea = unit_eval(races, a, age)
     let eb = unit_eval(races, b, age)
@@ -208,7 +208,7 @@ def panel_score(races:[JV], age:int, unit:RRUnit, panel:[RRUnit], pct:int) -> in
     rr_price_pct.set(price_key(races, unit), 100)
     return score * 50 / panel.length
 
-// What a fight with b should give a, by the counter chain (D-196): a counter's edge wins, a neutral fight is even.
+// What a fight with b should give a, by the counter chain (D-199): a counter's edge wins, a neutral fight is even.
 let EDGE_SCORE = 80
 def expected(races:[JV], age:int, a:RRUnit, b:RRUnit) -> int:
     let ea = unit_eval(races, a, age)
@@ -218,7 +218,7 @@ def expected(races:[JV], age:int, a:RRUnit, b:RRUnit) -> int:
     return if ab and not ba: EDGE_SCORE elif ba and not ab: 100 - EDGE_SCORE else: 50
 
 // Its fair price, percent of its price: where its score against the panel is what the counter chain expects of it, so
-// a counter keeps its edge instead of paying for it (D-196; with only neutral fights, where it wins half).
+// a counter keeps its edge instead of paying for it (D-199; with only neutral fights, where it wins half).
 def fair_pct(races:[JV], age:int, unit:RRUnit, panel:[RRUnit]) -> int:
     var want = 0
     for(panel) p: want += expected(races, age, unit, p)
@@ -496,7 +496,7 @@ def pool_group() -> [[string]]:
     return [ out ]
 
 // only_neutral: only the fights where neither side has a counter's edge count (what the prices are fitted to).
-// against_expected: a line's rate is 50 + its wins over what the counter chain expects of its fights (D-196: what
+// against_expected: a line's rate is 50 + its wins over what the counter chain expects of its fights (D-199: what
 // the prices are fitted to; 50 is priced right, whoever it met).
 def run_measure(check:int, oracle:bool, one_pool:bool, only_neutral:bool, against_expected:bool):
     let groups = if one_pool: pool_group() else: measure_groups()

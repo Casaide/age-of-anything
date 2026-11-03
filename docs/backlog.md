@@ -154,19 +154,13 @@ Godot Variant reader in Lobster. Only worth it if old saves need to carry over.
 
 ## 3. Balance tooling
 
-- **Counters at calibrated prices (Claude, 2026-11-03, D-195; Dominic's call).** With every line priced fair against
-  the whole field, the same-race counter fights dropped from 90% to 72% (test_sim's bar is 70% now). What loses:
-  infantry against spears on every race (infantry's +3 vs spear isn't enough once it pays for beating most lines),
-  large against archers on three races. The bow fits to 0 price points: archers lose to most lines on attack-move
-  (the kiting note below). Options: bigger counter bonuses in the roster (`rules` roster `bonus`), then calibrate
-  again (`./shards.sh calibrate.lobster lines 2 120`, `lines 3 80`, `fit write`, `write_prices.py`; about 40
-  minutes at jobs=4), or the counter fights as a constraint in the fit.
-- **Bot vs bot draws at calibrated prices (Claude, 2026-11-03, D-195).** test_ai's frogs vs rats on reed_meadow
-  ("bot vs bot ends with a winner", "land: the match ends") has no winner at 30:00, nor at 45:00: both bots trade
-  armies of 2 to 12 soldiers all match; by 30:00 the rats lead 49 workers and age 3 to 21 workers in age 2, and still
-  don't finish. At pass 2's prices it ended at 29:02; at points-only prices it ends at 15:29 but "hard beats normal"
-  and the heroes check fail instead. Whole bot matches swing with any price set; the fix belongs in the bots (a side
-  far ahead should mass and finish), not in the test's limit.
+- **Counters at calibrated prices:** done (D-199): prices fitted against the counter chain, swords +6 vs spears,
+  large +6 vs ranged; test_sim checks each pair. Left: the bow still fits near 0 price points (archers lose to most
+  lines on attack-move, the kiting note below); the prices were fitted with large at +4 vs ranged, measured at +6.
+- **Bot matches at calibrated prices (Claude, 2026-11-03, D-195, D-199).** At D-195's prices test_ai's frogs vs rats
+  drew to 30:00 (and 45:00); with D-198 (a bot ahead presses home) and D-199's prices it ends at 22:07, but "hard
+  beats normal" fails (normal wins at 13:51). Whole bot matches swing with any price set (points-only prices failed
+  that check too); the fix belongs in the bot levels, not the test.
 - **Calibration leftovers (D-195):** identity bonuses' `price_points` (groups, creatures, cultures) aren't fitted
   yet (centaur lines still run strong); age 1 and age 4 lines aren't sampled; wings and quivers price near 0 because
   open-field fights don't value flying or scouting.
