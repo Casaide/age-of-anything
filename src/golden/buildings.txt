@@ -12,7 +12,7 @@ stone:mill 017cc3b070e71d33
 stone:mining_camp 00812131f6e75d5f
 stone:outpost 6eec49687bf9c7bc
 stone:palisade 6eb6babb7472aa97
-stone:palisade_gate d2e6f1fa7edcabec
+stone:palisade_gate cf46262949804a74
 stone:pen d9e3de9cb16d365b
 stone:siege_workshop f2c745a5bfc7c9de
 stone:stable c1c3fd186767c968
@@ -37,7 +37,7 @@ thatch:mill 5c9bd66cf0ddc7c4
 thatch:mining_camp 19110431600c6ec7
 thatch:outpost 871c65c4ec52d9e0
 thatch:palisade 9529133d9bbda26f
-thatch:palisade_gate fb047cd274dff340
+thatch:palisade_gate f238f8b23e401fda
 thatch:pen 1ae3efa84c4b9ce5
 thatch:siege_workshop 32cb7d1d3be19b60
 thatch:stable 1fb66e6d9347f2e6
@@ -62,7 +62,7 @@ junk:mill 9773b9134e29d859
 junk:mining_camp e38496ffae1cc7a6
 junk:outpost d83e37efadd96f13
 junk:palisade 9529133d9bbda26f
-junk:palisade_gate fb047cd274dff340
+junk:palisade_gate f238f8b23e401fda
 junk:pen ae136d98fd309488
 junk:siege_workshop 80ebfc94b04aa460
 junk:stable 8632db0bb71ff7a6
@@ -87,7 +87,7 @@ tent:mill 9773b9134e29d859
 tent:mining_camp 1284387164342e81
 tent:outpost ad658fff42b84f49
 tent:palisade 9529133d9bbda26f
-tent:palisade_gate fb047cd274dff340
+tent:palisade_gate f238f8b23e401fda
 tent:pen 6326ffb29f4da7be
 tent:siege_workshop cc3c55fe14288d0c
 tent:stable 389cf09036134a3c
@@ -112,7 +112,7 @@ reed:mill 9773b9134e29d859
 reed:mining_camp 63c39234989959f7
 reed:outpost 8cc830854da3864e
 reed:palisade 527f4b9b3101f377
-reed:palisade_gate 7956687a4b78ae05
+reed:palisade_gate d7d4045e0400b7af
 reed:pen 1ae3efa84c4b9ce5
 reed:siege_workshop 5665cdc976c3ce2a
 reed:stable 14d6be4f33511c93
@@ -137,7 +137,7 @@ mound:mill 9773b9134e29d859
 mound:mining_camp dfdeaccd0b69a65e
 mound:outpost a6656b8e7fb60fae
 mound:palisade 8fbd53ecbe5dfb7f
-mound:palisade_gate dcab37e9b9bc1a45
+mound:palisade_gate cbbef7e7ffae0db3
 mound:pen b9009654a2a642e9
 mound:siege_workshop abf21997a929fd9f
 mound:stable 33fa3f778c6fe601

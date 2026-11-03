@@ -701,18 +701,24 @@ def bld_stake_gate(arch:string, team:float3, open:bool) -> MNode:
     let wood = bm("wood")
     let post = gate_span / 2.0 - GATE_POST
     let posts = [ bv(-post, 0.0, 0.0), bv(post, 0.0, 0.0) ]
-    for(posts) p:  // the gate posts, propped from behind
-        add_child(body, bcyl(GATE_POST_R, GATE_POST_R + 0.01, GATE_TOP + 0.13, wood, p + bv(0.0, (GATE_TOP + 0.13) / 2.0, 0.0), float3_0, 10))
-        add_child(body, bcyl(0.0, GATE_POST_R, 0.16, wood, p + bv(0.0, GATE_TOP + 0.21, 0.0), float3_0, 10))  // its point
-        add_child(body, beam(p + bv(0.0, 0.0, -0.42), p + bv(0.0, 0.72, -GATE_POST_R + 0.02), 0.045, wood))   // a prop
-    add_child(body, bbox(bv(2.0 * (post + GATE_POST_R), 0.13, 0.17), wood, bv(0.0, GATE_TOP + 0.065, 0.0)))
+    for(posts) p, k:  // the gate posts, propped from behind: parts of their own, each sorted at its own footprint (ArtKit)
+        let part = mnode()
+        part.meta = "gate_part {k * 2 - 1} gate_centre {p.x} 0.0 0.0"
+        add_child(body, part)
+        add_child(part, bcyl(GATE_POST_R, GATE_POST_R + 0.01, GATE_TOP + 0.13, wood, p + bv(0.0, (GATE_TOP + 0.13) / 2.0, 0.0), float3_0, 10))
+        add_child(part, bcyl(0.0, GATE_POST_R, 0.16, wood, p + bv(0.0, GATE_TOP + 0.21, 0.0), float3_0, 10))  // its point
+        add_child(part, beam(p + bv(0.0, 0.0, -0.42), p + bv(0.0, 0.72, -GATE_POST_R + 0.02), 0.045, wood))   // a prop
+    let over = mnode()                                                                                        // the beam and banner over the passage: a part at the gate's middle (a unit in front of it over it, behind under it)
+    over.meta = "gate_part 2 gate_centre 0.0 0.0 0.0"
+    add_child(body, over)
+    add_child(over, bbox(bv(2.0 * (post - GATE_POST_R), 0.13, 0.17), wood, bv(0.0, GATE_TOP + 0.065, 0.0)))  // (ends at each post: a model stops before the next)
     for([ -1.0, 1.0 ]) side:
-        add_child(body, beam(bv(side * (post - GATE_POST_R + 0.02), GATE_TOP - 0.36, 0.0), bv(side * (post - 0.46), GATE_TOP + 0.01, 0.0), 0.035, wood))
+        add_child(over, beam(bv(side * (post - GATE_POST_R + 0.02), GATE_TOP - 0.36, 0.0), bv(side * (post - 0.46), GATE_TOP + 0.01, 0.0), 0.035, wood))
     let batten = GATE_TOP - 0.08
     for([ -0.2, 0.2 ]) x:
-        add_child(body, beam(bv(x, GATE_TOP + 0.01, 0.07), bv(x, batten, 0.07), 0.012, bm("thatch"), 4))
-    add_child(body, bbox(bv(0.52, 0.04, 0.04), wood, bv(0.0, batten, 0.07)))
-    add_child(body, bbox(bv(0.44, 0.32, 0.02), bcloth(team), bv(0.0, batten - 0.18, 0.07)))
+        add_child(over, beam(bv(x, GATE_TOP + 0.01, 0.07), bv(x, batten, 0.07), 0.012, bm("thatch"), 4))
+    add_child(over, bbox(bv(0.52, 0.04, 0.04), wood, bv(0.0, batten, 0.07)))
+    add_child(over, bbox(bv(0.44, 0.32, 0.02), bcloth(team), bv(0.0, batten - 0.18, 0.07)))
     let leaf_w = post - GATE_POST_R
     for([ -1.0, 1.0 ]) side:
         let leaf = mnode()  // hinged on its post; it swings back when open
@@ -726,14 +732,17 @@ def bld_stake_gate(arch:string, team:float3, open:bool) -> MNode:
         for([ 0.22, 0.6 ]) y:
             add_child(leaf, bbox(bv(leaf_w - 0.05, 0.05, 0.03), wood, bv(-side * (leaf_w / 2.0 - 0.015), y, 0.05)))
         add_child(leaf, beam(bv(-side * 0.05, 0.22, 0.06), bv(-side * (leaf_w - 0.11), 0.6, 0.06), 0.022, wood))  // a brace across
-    for(posts) p:                                                                                                 // the culture's touch at each post's foot
+    for(posts) p, k:                                                                                              // the culture's touch at each post's foot (of the post's part: no centre, it has one)
+        let part = mnode()
+        part.meta = "gate_part {k * 2 - 1}"
+        add_child(body, part)
         let foot = mnode()
         foot.pos = p
         bld_palisade_dress(foot, arch, [ float3_0 ], 0.0)
-        add_child(body, foot)
+        add_child(part, foot)
         if arch == "reed":
             for([ 0.3, 0.6, 0.95 ]) y:
-                add_child(body, bcyl(GATE_POST_R + 0.025, GATE_POST_R + 0.025, 0.06, bm("thatch"), p + bv(0.0, y, 0.0), float3_0, 8))
+                add_child(part, bcyl(GATE_POST_R + 0.025, GATE_POST_R + 0.025, 0.06, bm("thatch"), p + bv(0.0, y, 0.0), float3_0, 8))
     return body
 
 // Wall Tower: a square tower filling its tile, a storey over the walk, the hoarding and a hipped roof.
