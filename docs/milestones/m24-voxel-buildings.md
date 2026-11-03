@@ -100,7 +100,8 @@ Claude recommends **C**. Dominic: "C, go. I will have another agent review all t
 - [x] 5. Walls, gates, towers: seen in a match (`place:fort`, `place:palisade_fort`): straight runs, a gate between its
       towers, a corner and a diagonal join; diagonal runs smooth (a post turned along the run)
 - [ ] 6. Props
-- [ ] 7. Baking measured, prebake decided, `perf:` in budget
+- [ ] 7. Baking measured (a look about 0.3-1 s; two cultures cold about 3 min), `perf:` in budget (1.0 ms median); prebake
+      to decide
 - [ ] 8. Data versions of the most-seen looks: Dominic's, later (backlog: "Hand-built voxel buildings")
 - [x] 9. The old baker removed (view/world_bake, view/baker; 2026-11-03); golden's buildings section (the models' digest)
       unchanged. Nothing was lost but the gate towers' shadow-only layer (a gate tower now casts its own shadow)
@@ -154,14 +155,13 @@ A reviewer should look at each of these at game zoom in a real match, and close 
 
 ## Next steps
 
-1. **Re-run the prebake** (`src/prebake.sh`, about 25 minutes) since BAKE_VERSION is 12 (contact shadows): until then
-   a cold start bakes the two cultures in play (about 8 minutes).
-2. **Look at every architecture in a match** (stone and junk seen; thatch, tent, reed and mound in a match still to
-   see), close up and at game zoom, and the construction and destruction stages in play.
-3. **Walls, gates, towers** (step 5, seen): joins, corners and gates hold (pictures 47-48). The stone diagonal is smooth
-   (its posts turned 45 degrees: picture 49). Seen since: the open gate (drawn while its team passes:
-   it never was since the port) and units behind the walls (pictures 65-66). Still to look at: faint seams where its pieces meet, a unit walking
-   behind the merlons' near layer.
-4. **`perf:`** with voxel buildings (step 7), and whether the prebake still pays (a cold building bake is 2-3 s a look).
-5. **Props** (step 6): trees, rocks, bushes, town props and bridges are voxelized; look at them close up.
-6. **The art review** (the section above), then Dominic's hand-built looks (backlog).
+1. **Re-run the prebake** (`src/prebake.sh`, in a game window that looks frozen; about 10 minutes now) once the art
+   settles: BAKE_VERSION is 20, and until then a cold start bakes the two cultures in play (about 3 minutes).
+2. **Construction stages in play:** not yet seen as voxels. Broken-up stages seen on the Roman Town Center (picture 74):
+   its roof goes nearly black where tiles are gone, and that should be looked at.
+3. **Props close up** (step 6): trees, rocks, bushes, town props, bridges.
+4. **The art review** (the section above), then Dominic's hand-built looks (backlog).
+
+Seen so far: every architecture's Town Center in a match (pictures 41-44, 71-73); walls, corners, diagonals, gates in
+use for stone and palisade (62-70), with `place:fort` / `place:palisade_fort` and `in_gate army:1`; `perf:` 1.0 ms
+median, 1.4 ms at the 95th percentile.
