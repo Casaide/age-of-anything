@@ -59,18 +59,31 @@ class vm_shell:
     v:float  // a voxel's size, world units
     lo:int3  // the grid's corner (voxels) and size
     dims:int3
-    at:dictionary<int, int>  // a voxel's key -> its slot
+    nb:int3         // its blocks of 8 x 8 x 8 voxels, each made when a voxel lands in it ([] until then)
+    blocks:[[int]]  // per block, per voxel in it: its slot, or -1
     pos:[int3]
     col:[float3]  // summed, then averaged
     nrm:[float3]
     hits:[int]
     glow:[bool]
 
-def vm_key(sh:vm_shell, q:int3) -> int: return ((q.z - sh.lo.z) * sh.dims.y + q.y - sh.lo.y) * sh.dims.x + q.x - sh.lo.x
-def vm_solid(sh:vm_shell, q:int3) -> bool:
-    if q.x < sh.lo.x or q.y < sh.lo.y or q.z < sh.lo.z: return false
-    if q.x >= sh.lo.x + sh.dims.x or q.y >= sh.lo.y + sh.dims.y or q.z >= sh.lo.z + sh.dims.z: return false
-    return sh.at.get(vm_key(sh, q), -1) >= 0
+// A voxel's slot (-1: empty, or outside the grid). (Blocks, not a dictionary: a lookup per sample, shadow step and
+// occlusion tap was most of a building's bake.)
+def vm_slot(sh:vm_shell, q:int3) -> int:
+    let r = q - sh.lo
+    if r.x < 0 or r.y < 0 or r.z < 0 or r.x >= sh.dims.x or r.y >= sh.dims.y or r.z >= sh.dims.z: return -1
+    let b = sh.blocks[((r.z >> 3) * sh.nb.y + (r.y >> 3)) * sh.nb.x + (r.x >> 3)]
+    return if b.length: b[((r.z & 7) * 8 + (r.y & 7)) * 8 + (r.x & 7)] else: -1
+
+def vm_set_slot(sh:vm_shell, q:int3, slot:int):
+    let r = q - sh.lo
+    let bi = ((r.z >> 3) * sh.nb.y + (r.y >> 3)) * sh.nb.x + (r.x >> 3)
+    if not sh.blocks[bi].length: sh.blocks[bi] = map(512): -1
+    sh.blocks[bi][((r.z & 7) * 8 + (r.y & 7)) * 8 + (r.x & 7)] = slot
+
+def vm_solid(sh:vm_shell, q:int3) -> bool: return vm_slot(sh, q) >= 0
+
+let VM_SIDES = [ int3 { 1, 0, 0 }, int3 { -1, 0, 0 }, int3 { 0, 1, 0 }, int3 { 0, -1, 0 }, int3 { 0, 0, 1 }, int3 { 0, 0, -1 } ]
 
 // A texture's pixels, read once (RGBA bytes, rows as the texture holds them).
 class vm_image:
@@ -124,7 +137,9 @@ def vm_fill(model:MNode, v:float) -> vm_shell:
         hi = max(hi, p)
     let glo = int3 { int(floor(lo.x / v)) - 2, int(floor(lo.y / v)) - 2, int(floor(lo.z / v)) - 2 }
     let ghi = int3 { int(floor(hi.x / v)) + 3, int(floor(hi.y / v)) + 3, int(floor(hi.z / v)) + 3 }
-    let sh = vm_shell { v, glo, ghi - glo, dictionary<int, int>(65536), [], [], [], [], [] }
+    let dims = ghi - glo
+    let nb = (dims + int3_1 * 7) / 8
+    let sh = vm_shell { v, glo, dims, nb, map(nb.x * nb.y * nb.z): []::int, [], [], [], [], [] }
     for(ds) d:
         let m = d.mat
         let img = vm_image_of(m.tex)
@@ -146,40 +161,40 @@ def vm_fill(model:MNode, v:float) -> vm_shell:
                     let bu = float(i) / float(n)
                     let bv = float(j) / float(n)
                     let p = a + e1 * bu + e2 * bv
-                    let tuv0 = d.uv[k] + (d.uv[k + 1] - d.uv[k]) * bu + (d.uv[k + 2] - d.uv[k]) * bv
-                    let vc = d.c[k] + (d.c[k + 1] - d.c[k]) * bu + (d.c[k + 2] - d.c[k]) * bv
-                    let c = vm_colour(m, img, p, fnorm, tuv0, vc)
-                    // (the model's smooth normal there, its vertices' blended: the faces' flat ones shaded every facet of
-                    // a low-poly stake or column as a hard edge)
-                    var sn = d.n[k] + (d.n[k + 1] - d.n[k]) * bu + (d.n[k + 2] - d.n[k]) * bv
-                    if dot(sn, fnorm) < 0.0: sn = -sn
-                    if c.w > 0.0:
-                        let q = int3 { int(floor(p.x / v)), int(floor(p.y / v)), int(floor(p.z / v)) }
-                        let key = vm_key(sh, q)
-                        var slot = if key == last_key: last_slot else: sh.at.get(key, -1)  // (the next sample is mostly in the same voxel)
-                        if slot < 0:
-                            slot = sh.pos.length
-                            sh.at.set(key, slot)
-                            sh.pos.push(q)
-                            sh.col.push(float3_0)
-                            sh.nrm.push(float3_0)
-                            sh.hits.push(0)
-                            sh.glow.push(false)
-                        last_key = key
-                        last_slot = slot
-                        sh.col[slot] += xyz(c)
-                        sh.nrm[slot] += sn
-                        sh.hits[slot]++
-                        if glow: sh.glow[slot] = true
+                    let q = int3 { int(floor(p.x / v)), int(floor(p.y / v)), int(floor(p.z / v)) }
+                    let key = ((q.z - glo.z) * dims.y + q.y - glo.y) * dims.x + q.x - glo.x
+                    var slot = if key == last_key: last_slot else: vm_slot(sh, q)  // (the next sample is mostly in the same voxel)
+                    if slot < 0 or sh.hits[slot] < 2:                              // (a voxel's colour and normal from its first two samples: the rest add nothing)
+                        let tuv0 = d.uv[k] + (d.uv[k + 1] - d.uv[k]) * bu + (d.uv[k + 2] - d.uv[k]) * bv
+                        let vc = d.c[k] + (d.c[k + 1] - d.c[k]) * bu + (d.c[k + 2] - d.c[k]) * bv
+                        let c = vm_colour(m, img, p, fnorm, tuv0, vc)
+                        // (the model's smooth normal there, its vertices' blended: the faces' flat ones shaded every
+                        // facet of a low-poly stake or column as a hard edge)
+                        var sn = d.n[k] + (d.n[k + 1] - d.n[k]) * bu + (d.n[k + 2] - d.n[k]) * bv
+                        if dot(sn, fnorm) < 0.0: sn = -sn
+                        if c.w > 0.0:
+                            if slot < 0:
+                                slot = sh.pos.length
+                                vm_set_slot(sh, q, slot)
+                                sh.pos.push(q)
+                                sh.col.push(float3_0)
+                                sh.nrm.push(float3_0)
+                                sh.hits.push(0)
+                                sh.glow.push(false)
+                            last_key = key
+                            last_slot = slot
+                            sh.col[slot] += xyz(c)
+                            sh.nrm[slot] += sn
+                            sh.hits[slot]++
+                            if glow: sh.glow[slot] = true
             k += 3
-    // each normal blended with its neighbours' (one pass over the 26 round it): the voxel stairs don't speckle the light
+    // each normal blended with its six neighbours' (the voxel stairs don't speckle the light)
     let raw = copy(sh.nrm)
     for(sh.pos) q, i:
         var n = raw[i] * 2.0
-        for(27) o:
-            if o != 13:
-                let j = sh.at.get(vm_key(sh, q + int3 { o % 3 - 1, (o / 3) % 3 - 1, o / 9 - 1 }), -1)
-                if j >= 0 and dot(raw[j], raw[i]) > 0.0: n += raw[j]
+        for(VM_SIDES) o:
+            let j = vm_slot(sh, q + o)
+            if j >= 0 and dot(raw[j], raw[i]) > 0.0: n += raw[j]
         sh.nrm[i] = n
     for(sh.pos.length) i:
         sh.col[i] = sh.col[i] / float(sh.hits[i])
