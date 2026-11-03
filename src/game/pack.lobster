@@ -211,6 +211,27 @@ SHADER sprite_copy
         INPUTS itc:2
         UNIFORMS tex0
         frag_color = texture(tex0, itc);
+SHADER text_premul
+    VERTEX
+        INPUTS apos:4 atc:2
+        UNIFORMS mvp
+        gl_Position = mvp * apos;
+        itc = atc;
+    PIXEL
+        INPUTS itc:2
+        UNIFORMS tex0 col
+        vec4 c = texture(tex0, itc) * col;
+        frag_color = vec4(c.rgb * c.a, c.a);
+SHADER text_page
+    VERTEX
+        INPUTS apos:4 atc:2
+        UNIFORMS mvp
+        gl_Position = mvp * apos;
+        itc = atc;
+    PIXEL
+        INPUTS itc:2
+        UNIFORMS tex0
+        frag_color = texture(tex0, itc);
 """
 
 // Fills and lines gathered into one draw (ui_batch, game/ui.lobster draws them): many small ones (a button's bevels, dashes, rings) are a
@@ -338,6 +359,7 @@ def atlas_place(w:int, h:int, formats:int) -> AtlasPage, int2:
 
 // The sheets drawn on their own since the last frame, copied onto pages. Outside any transform (a frame's start).
 def atlas_pack():
+    text_pack()  // (game/text_cache.lobster)
     if not atlas_queue.length: return
     flush_sprites()
     b_sheet = -1
