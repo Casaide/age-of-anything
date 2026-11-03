@@ -1094,7 +1094,7 @@ def vx_patterned(m:int, v:float3, n:float3, c:float3) -> float3:
             let fa = vx_fract(a2 / sz.x)
             let fb = vx_fract(b / sz.y)
             let round = 0.78 + 0.32 * sin(fa * 180.0)
-            let lap = if fb < 0.18: 0.62 else: 1.0
+            let lap = if fb < 0.18: 1.0 - depth * 2.4 else: 1.0  // (the course's lap: as deep as its tones)
             let tone = 1.0 + depth * (vx_cell_hash(row, col, m) - 0.5) * 2.0
             let cc = c * round * lap * tone
             let moss = clamp((vx_noise(p * 0.25) - 0.66) * 4.0, 0.0, 1.0) * mix

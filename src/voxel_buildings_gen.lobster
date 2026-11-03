@@ -21,8 +21,8 @@ mat("plaster_lit", "#f2ece0", false, pat("wear", float2_1, 0.12, 0.4, "#8f7f63")
 mat("stone", "#b3ab9b", false, pat("blocks", float2 { 6.5, 3.2 }, 0.12, 1.0, "#78705f"))
 mat("paving", "#a9a395", false, pat("blocks", float2 { 7.5, 7.5 }, 0.1, 1.0, "#6f6a5e"))
 mat("stone_dark", "#8c8475", false, pat("mottle", float2_1, 0.3, 0.0, "#000000"))
-mat("tile", "#b4482c", true, pat("tiles", float2 { 3.0, 3.2 }, 0.14, 0.3, "#6d6236"))
-mat("tile_dark", "#8a3320", false, pat("tiles", float2 { 3.0, 3.2 }, 0.1, 0.0, "#000000"))
+mat("tile", "#b84a2c", true, pat("tiles", float2 { 3.6, 4.6 }, 0.09, 0.25, "#6d6236"))  // (each row a tile at a time, a tone each)
+mat("tile_dark", "#5e2216", false, pat("mottle", float2_1, 0.15, 0.0, "#000000"))       // (the channels between the rows, and the ridge)
 mat("timber", "#7a5230", false, pat("planks", float2 { 4.5, 1.0 }, 0.14, 1.0, "#2e1e12"))
 mat("timber_dark", "#4e321e", false, pat("planks", float2 { 3.0, 1.0 }, 0.12, 1.0, "#22160d"))
 mat("crate", "#9a6c3c", false, pat("planks", float2 { 2.2, 1.0 }, 0.14, 1.0, "#3a2614"))
@@ -75,13 +75,16 @@ def roman_tc():
         cap(float3 { x, 50.0, 6.0 }, float3 { x, 50.0, 52.0 }, float2 { 3.2, 2.8 }, "plaster_lit", false)
         wall(float3 { x, 50.0, 7.0 }, float3 { 4.2, 4.2, 1.2 }, "stone")
         wall(float3 { x, 50.0, 52.5 }, float3 { 4.2, 4.2, 1.2 }, "stone")
-    wall(float3 { 0.0, 50.0, 55.0 }, float3 { 47.0, 4.0, 2.0 }, "plaster")
+    wall(float3 { 0.0, 54.0, 55.0 }, float3 { 47.0, 6.0, 2.0 }, "plaster")  // the entablature over the columns
     wall(float3 { 0.0, 54.2, 55.0 }, float3 { 47.0, 0.8, 0.9 }, "team")
-    disc(float3 { 0.0, 58.0, 63.0 }, float3 { 0.0, 1.0, 0.25 }, 5.0, 0.8, "team")
+    disc(float3 { 0.0, 59.6, 64.0 }, FRONT, 6.2, 0.7, "stone")                        // the crest on the pediment: a rim
+    disc(float3 { 0.0, 60.4, 64.0 }, FRONT, 4.8, 0.6, "team")                         // and the team's disc in it
+    for([ -46.0, 46.0 ]) x: ball(float3 { x, 60.5, 56.5 }, 2.0, "plaster_lit", true)  // white finials on the gable
+    ball(float3 { 0.0, 60.5, 76.0 }, 2.0, "plaster_lit", true)
     wall(float3 { 0.0, 34.4, 20.0 }, float3 { 8.0, 0.8, 14.0 }, "timber_dark")
-    for([ -30.0, -6.0, 18.0 ]) y: box(float3 { -40.6, y, 32.0 }, float3 { 0.7, 4.0, 6.0 }, SIDE, "glass", 0.3)  // the long side: lit windows
-    box(float3 { -40.4, -8.0, 52.0 }, float3 { 0.9, 42.0, 1.4 }, SIDE, "team", 0.3)
-    cap(float3 { -46.0, 66.0, 0.0 }, float3 { -46.0, 66.0, 60.0 }, float2 { 0.9, 0.7 }, "timber_dark", true)  // the flag pole
+    for([ -30.0, -6.0, 18.0 ]) y: box(float3 { -40.6, y, 27.0 }, float3 { 0.7, 4.0, 6.0 }, SIDE, "glass", 0.3)  // the long side: lit windows
+    box(float3 { -40.4, -8.0, 41.0 }, float3 { 0.9, 42.0, 3.0 }, SIDE, "team", 0.3)                             // the team's band along the wall, under the eaves
+    cap(float3 { -46.0, 66.0, 0.0 }, float3 { -46.0, 66.0, 60.0 }, float2 { 0.9, 0.7 }, "timber_dark", true)    // the flag pole
     ball(float3 { -46.0, 66.0, 61.0 }, 1.4, "pot", true)
     for([ 0.0, 120.0, 240.0 ]) a:  // a brazier on the steps, its fire alight
         cap(float3 { 22.0 + 2.4 * cos(a), 70.0 + 2.4 * sin(a), 0.0 }, float3 { 22.0, 70.0, 9.0 }, float2 { 0.4, 0.4 }, "timber_dark", true)
