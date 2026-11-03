@@ -1,0 +1,328 @@
+{
+ "_doc": "A bear on two legs (the race: D-126): stout, short legs, a round head with a pale muzzle and round ears, a stub tail; the team a scarf.",
+ "also": [
+  "bear_black",
+  "bear_polar"
+ ],
+ "skin": "#6b4528",
+ "pale": "#3a2416",
+ "mark": "#9c7450",
+ "size": 1.15,
+ "fur": 0.08,
+ "reach": 4.0,
+ "points": {
+  "hip": {
+   "at": [
+    0,
+    0,
+    13.0
+   ],
+   "bob": 0.5
+  },
+  "chest": {
+   "at": [
+    0,
+    0.6,
+    25.0
+   ],
+   "bob": 0.5
+  },
+  "head": {
+   "at": [
+    0,
+    1.8,
+    31.5
+   ],
+   "bob": 0.5
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "hip",
+    2.8,
+    0,
+    0
+   ],
+   "foot": [
+    3.0,
+    0,
+    2.2
+   ],
+   "stride": 4.0,
+   "lift": 2.0,
+   "bones": [
+    5.6,
+    5.6
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    3.6,
+    3.0,
+    2.8,
+    2.3
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": [
+    {
+     "cap": [
+      "ankle",
+      0,
+      0,
+      -0.4
+     ],
+     "to": [
+      "ankle",
+      0,
+      2.8,
+      -1.2
+     ],
+     "r": [
+      2.1,
+      1.8
+     ],
+     "mat": "skin",
+     "_doc": "a broad foot"
+    }
+   ]
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "chest",
+   5.0,
+   0,
+   -0.8
+  ],
+  "bone": 6.0,
+  "thick": 2.3,
+  "sleeve": "skin",
+  "hand": "skin"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.3,
+   1.4
+  ],
+  "r": 3.5
+ },
+ "armour": {
+  "a": [
+   "hip",
+   0,
+   0.4,
+   3.0
+  ],
+  "b": [
+   "chest",
+   0,
+   0.2,
+   -0.8
+  ],
+  "r": [
+   6.1,
+   5.5
+  ]
+ },
+ "seat": {
+  "z": 13.5,
+  "astride": [
+   "skin",
+   "skin",
+   "skin"
+  ]
+ },
+ "looks": [
+  {
+   "skin": 1.0
+  },
+  {
+   "skin": 0.88
+  },
+  {
+   "skin": 1.12
+  }
+ ],
+ "shapes": [
+  {
+   "cap": [
+    "hip",
+    0,
+    0,
+    1.5
+   ],
+   "to": [
+    "chest",
+    0,
+    0,
+    0
+   ],
+   "r": [
+    6.0,
+    5.2
+   ],
+   "mat": "skin",
+   "_doc": "the trunk"
+  },
+  {
+   "cap": [
+    "hip",
+    0,
+    1.8,
+    3.0
+   ],
+   "to": [
+    "chest",
+    0,
+    1.6,
+    -3.0
+   ],
+   "r": [
+    4.4,
+    3.4
+   ],
+   "mat": "mark",
+   "_doc": "the belly"
+  },
+  {
+   "cap": [
+    "chest",
+    -4.2,
+    0,
+    -0.4
+   ],
+   "to": [
+    "chest",
+    4.2,
+    0,
+    -0.4
+   ],
+   "r": [
+    3.0,
+    3.0
+   ],
+   "mat": "skin",
+   "_doc": "the shoulders"
+  },
+  {
+   "cap": [
+    "chest",
+    0,
+    0,
+    0
+   ],
+   "to": [
+    "head",
+    0,
+    -0.6,
+    -2.4
+   ],
+   "r": [
+    3.4,
+    3.1
+   ],
+   "mat": "skin"
+  },
+  {
+   "ball": [
+    "head",
+    0,
+    0,
+    0
+   ],
+   "r": 3.6,
+   "mat": "skin"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    2.0,
+    -1.1
+   ],
+   "to": [
+    "head",
+    0,
+    4.0,
+    -1.5
+   ],
+   "r": [
+    2.1,
+    1.6
+   ],
+   "mat": "mark",
+   "_doc": "the muzzle"
+  },
+  {
+   "bead": [
+    "head",
+    0,
+    5.1,
+    -1.0
+   ],
+   "r": 0.85,
+   "mat": "eye",
+   "_doc": "the nose"
+  },
+  {
+   "bead": [
+    "head",
+    1.35,
+    2.9,
+    0.7
+   ],
+   "r": 0.42,
+   "mat": "eye",
+   "mirror": true
+  },
+  {
+   "ball": [
+    "head",
+    2.7,
+    -0.5,
+    2.5
+   ],
+   "r": 1.35,
+   "mat": "skin",
+   "mirror": true,
+   "unless": [
+    "helm"
+   ],
+   "_doc": "round ears"
+  },
+  {
+   "ball": [
+    "hip",
+    0,
+    -5.0,
+    0.5
+   ],
+   "r": 1.5,
+   "mat": "skin",
+   "_doc": "a stub tail"
+  },
+  {
+   "ring": [
+    "chest",
+    0,
+    1.4,
+    1.4
+   ],
+   "r": [
+    3.6,
+    1.0
+   ],
+   "mat": "team",
+   "_doc": "the scarf"
+  }
+ ]
+}

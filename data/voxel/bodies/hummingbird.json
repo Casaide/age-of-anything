@@ -1,0 +1,162 @@
+{
+ "_doc": "A hummingbird to ride: it flies (its wings flap as it moves), a long thin beak, its throat in the palette's second colour.",
+ "skin": "#22a060",
+ "pale": "#d0103a",
+ "mark": "#f0ebe0",
+ "size": 2.0,
+ "fur": 0.05,
+ "reach": 3.0,
+ "flies": 12.0,
+ "points": {
+  "body": {
+   "at": [
+    0,
+    0,
+    16.0
+   ],
+   "bob": 1.0
+  },
+  "head": {
+   "at": [
+    0,
+    5.0,
+    19.0
+   ],
+   "bob": 1.0
+  },
+  "wing": {
+   "at": [
+    0,
+    -1.0,
+    20.0
+   ],
+   "bob": 1.0,
+   "flap": 3.5
+  }
+ },
+ "seat": {
+  "at": [
+   0,
+   -1.0,
+   20.0
+  ],
+  "wide": 3.4
+ },
+ "shapes": [
+  {
+   "ball": [
+    "body",
+    0,
+    0,
+    0
+   ],
+   "r": 4.0,
+   "mat": "skin"
+  },
+  {
+   "ball": [
+    "body",
+    0,
+    1.2,
+    -1.6
+   ],
+   "r": 3.0,
+   "mat": "mark",
+   "_doc": "a pale belly"
+  },
+  {
+   "ball": [
+    "head",
+    0,
+    0,
+    0
+   ],
+   "r": 2.6,
+   "mat": "skin"
+  },
+  {
+   "ball": [
+    "head",
+    0,
+    1.4,
+    -2.0
+   ],
+   "r": 1.8,
+   "mat": "pale",
+   "_doc": "the throat"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    2.0,
+    0
+   ],
+   "to": [
+    "head",
+    0,
+    8.0,
+    -0.6
+   ],
+   "r": [
+    0.5,
+    0.15
+   ],
+   "mat": "eye",
+   "hard": true,
+   "_doc": "the beak"
+  },
+  {
+   "bead": [
+    "head",
+    1.6,
+    1.2,
+    0.6
+   ],
+   "r": 0.5,
+   "mat": "eye",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "body",
+    0,
+    -3.0,
+    0
+   ],
+   "to": [
+    "body",
+    0,
+    -8.0,
+    -1.2
+   ],
+   "r": [
+    1.6,
+    0.6
+   ],
+   "mat": "skin",
+   "_doc": "the tail"
+  },
+  {
+   "cap": [
+    "body",
+    2.0,
+    0,
+    2.0
+   ],
+   "to": [
+    "wing",
+    9.0,
+    -2.0,
+    0
+   ],
+   "r": [
+    1.6,
+    0.5
+   ],
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "the wings, flapping"
+  }
+ ]
+}

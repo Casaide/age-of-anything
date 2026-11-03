@@ -1,0 +1,358 @@
+{
+ "_doc": "A beetle soldier, reared up (BG1): its shell tipped up behind, four legs on the ground, the front pair raised, a horn. No hands: a harness.",
+ "skin": "#2a6a5a",
+ "pale": "#5ac0a0",
+ "mark": "#1c1a12",
+ "size": 1.2,
+ "fur": 0.0,
+ "reach": 2.6,
+ "points": {
+  "abdomen": {
+   "at": [
+    0,
+    -4.0,
+    7.5
+   ],
+   "bob": 0.4
+  },
+  "thorax": {
+   "at": [
+    0,
+    1.0,
+    11.5
+   ],
+   "bob": 0.4
+  },
+  "head": {
+   "at": [
+    0,
+    3.0,
+    15.5
+   ],
+   "bob": 0.4
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "abdomen",
+    2.6,
+    2.0,
+    -1.5
+   ],
+   "foot": [
+    5.5,
+    3.0,
+    0.6
+   ],
+   "stride": 2.6,
+   "lift": 1.4,
+   "bones": [
+    4.6,
+    5.2
+   ],
+   "pole": [
+    0.5,
+    0,
+    1
+   ],
+   "r": [
+    1.1,
+    0.85,
+    0.8,
+    0.5
+   ],
+   "mats": [
+    "mark",
+    "mark"
+   ],
+   "shapes": [
+    {
+     "ball": [
+      "ankle",
+      0,
+      0.3,
+      -0.2
+     ],
+     "r": 0.75,
+     "mat": "mark",
+     "_doc": "a foot"
+    }
+   ]
+  },
+  {
+   "hip": [
+    "abdomen",
+    2.6,
+    -1.0,
+    -1.5
+   ],
+   "foot": [
+    5.5,
+    -5.0,
+    0.6
+   ],
+   "stride": 2.6,
+   "lift": 1.4,
+   "phase": 180,
+   "bones": [
+    4.6,
+    5.2
+   ],
+   "pole": [
+    0.5,
+    0,
+    1
+   ],
+   "r": [
+    1.1,
+    0.85,
+    0.8,
+    0.5
+   ],
+   "mats": [
+    "mark",
+    "mark"
+   ],
+   "shapes": [
+    {
+     "ball": [
+      "ankle",
+      0,
+      0.3,
+      -0.2
+     ],
+     "r": 0.75,
+     "mat": "mark",
+     "_doc": "a foot"
+    }
+   ]
+  },
+  {
+   "hip": [
+    "thorax",
+    2.4,
+    1.0,
+    -0.5
+   ],
+   "foot": [
+    4.6,
+    7.0,
+    6.5
+   ],
+   "stride": 0,
+   "lift": 0,
+   "bones": [
+    3.4,
+    3.8
+   ],
+   "pole": [
+    0.5,
+    -0.4,
+    1
+   ],
+   "r": [
+    0.95,
+    0.75,
+    0.7,
+    0.45
+   ],
+   "mats": [
+    "mark",
+    "mark"
+   ],
+   "shapes": [],
+   "_doc": "the front pair, raised"
+  }
+ ],
+ "harness": {
+  "right": [
+   "thorax",
+   3.4,
+   1.4,
+   0.5
+  ],
+  "dir": [
+   0,
+   0.2,
+   1
+  ],
+  "left": [
+   "thorax",
+   -3.6,
+   1.2,
+   -0.5
+  ]
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.3,
+   1.1
+  ],
+  "r": 2.5
+ },
+ "armour": {
+  "a": [
+   "abdomen",
+   0,
+   0,
+   0
+  ],
+  "b": [
+   "thorax",
+   0,
+   0,
+   0
+  ],
+  "r": [
+   5.0,
+   3.6
+  ]
+ },
+ "seat": {
+  "z": 7.0,
+  "astride": [
+   "mark",
+   "mark",
+   "mark"
+  ]
+ },
+ "shapes": [
+  {
+   "cap": [
+    "abdomen",
+    0,
+    -1.0,
+    0
+   ],
+   "to": [
+    "thorax",
+    0,
+    -0.5,
+    0
+   ],
+   "r": [
+    4.8,
+    3.6
+   ],
+   "mat": "skin",
+   "_doc": "the shell"
+  },
+  {
+   "cap": [
+    "abdomen",
+    0,
+    -1.4,
+    4.6
+   ],
+   "to": [
+    "thorax",
+    0,
+    -2.2,
+    3.2
+   ],
+   "r": [
+    0.35,
+    0.3
+   ],
+   "mat": "mark",
+   "hard": true,
+   "_doc": "where the wing covers meet"
+  },
+  {
+   "disc": [
+    "abdomen",
+    1.9,
+    -1.6,
+    3.8
+   ],
+   "n": [
+    0.4,
+    -0.6,
+    0.7
+   ],
+   "r": [
+    1.9,
+    0.3
+   ],
+   "mat": "team",
+   "mirror": true,
+   "_doc": "the team on its wing covers"
+  },
+  {
+   "ball": [
+    "thorax",
+    0,
+    0.5,
+    0
+   ],
+   "r": 3.2,
+   "mat": "pale"
+  },
+  {
+   "ball": [
+    "head",
+    0,
+    0,
+    0
+   ],
+   "r": 2.4,
+   "mat": "skin"
+  },
+  {
+   "bead": [
+    "head",
+    1.4,
+    1.6,
+    0.6
+   ],
+   "r": 0.42,
+   "mat": "eye",
+   "mirror": true
+  },
+  {
+   "chain": [
+    [
+     "head",
+     0,
+     1.6,
+     0.9
+    ],
+    [
+     "head",
+     0,
+     3.4,
+     2.6
+    ],
+    [
+     "head",
+     0,
+     4.4,
+     4.8
+    ],
+    [
+     "head",
+     0,
+     4.0,
+     6.6
+    ]
+   ],
+   "r": [
+    1.0,
+    -0.22,
+    0.3,
+    0.15
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "unless": [
+    "helm"
+   ],
+   "_doc": "the horn"
+  }
+ ]
+}

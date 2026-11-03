@@ -7,18 +7,25 @@ let VX_MODES = [ "idle", "walk", "attack", "work" ]
 let vx_frames = dictionary<string, int>(4096)  // "kind.mode.facing.step" -> frame
 let VX_DRAW_K = 1.1 / ART_K                    // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
 
-// A unit type as a voxel body and gear: its creature's body (bodies/<creature>.json; a creature with no voxel body
-// yet is drawn as a human), the race's skin, each part's gear by gear.json's rules, its mount.
+// A palette's colours (palettes.json): its first three, zero where it has none.
+def vx_palette(id:string) -> float3, float3, float3:
+    let skins = at(lib_palettes, "skins")
+    if not has(skins, id): return float3_0, float3_0, float3_0
+    let cs = gstrs(skins, id)
+    def c(i:int) -> float3: return if i < cs.length: xyz(hex_col(hex_of(cs[i]))) else: float3_0
+    return c(0), c(1), c(2)
+
+// The voxel body for a body id (bodies/<id>.json without the "body."), or its creature's, or a human's.
+def vx_body_for(body_id:string, creature:string) -> string:
+    let id = if starts_with(body_id, "body."): body_id.substring(5, body_id.length - 5) else: body_id
+    return if vx_bodies.get(id): id elif vx_bodies.get(creature): creature else: "human"
+
+// A unit type as a voxel body and gear: its body (bodies/<body id>.json), the race's colours, each part's gear by
+// gear.json's rules, its mount (its mount body, in its own colours).
 def vx_def_of(k:int) -> vx_unit_def:
     let r = su_type_recipe[k]
-    let creature = rstr(r, "creature")
-    let body = if vx_bodies.get(creature): creature else: "human"
-    let skins = at(lib_palettes, "skins")
-    var skin = float3_0
-    var pale = float3_0
-    if has(skins, rstr(r, "skin")):   // the race's own colours (palettes.json)
-        let cs = gstrs(skins, rstr(r, "skin"))
-        skin, pale = xyz(hex_col(hex_of(cs[0]))), xyz(hex_col(hex_of(cs[1])))
+    let body = vx_body_for(rstr(r, "body"), rstr(r, "creature"))
+    let skin, pale, mark = vx_palette(rstr(r, "skin"))
     let gear = []::string
     let parts = gobj(r, "parts")
     for(sorted_strs(parts.keys)) slot:
@@ -26,12 +33,16 @@ def vx_def_of(k:int) -> vx_unit_def:
         let g = vx_gear_for(id, ptags_of(id), slot)
         if g != "": gear.push(g)
     var mount = ""
-    var coat = float3_0   // a mount's coat (palettes.json); the cat keeps its own
+    var fused = false
+    var coat, mane, coat_mark = float3_0, float3_0, float3_0
     if has(r, "mount"):
-        let mc = rstr(at(r, "mount"), "creature")
-        mount = if vx_bodies.get(mc): mc else: "pony"
-        if mount != "cat" and has(skins, rstr(at(r, "mount"), "skin")): coat = xyz(hex_col(hex_of(gstrs(skins, rstr(at(r, "mount"), "skin"))[0])))
-    return vx_unit_def { rstr(r, "name"), body, skin, pale, gear, mount, coat }
+        let mo = at(r, "mount")
+        let mc = rstr(mo, "creature")
+        let c = creature(mc)
+        fused = gbool(mo, "fused", false)
+        mount = vx_body_for(gstr(c, "mount_body", gstr(c, "body", "")), mc)
+        coat, mane, coat_mark = vx_palette(rstr(mo, "skin"))
+    return vx_unit_def { rstr(r, "name"), body, skin, pale, mark, gear, mount, fused, coat, mane, coat_mark }
 
 // The walk steps by the ground covered: a cycle of 8 steps is a stride (the body moves its foot's reach twice each
 // half cycle, the planted foot fixed), so its length is four times that reach. A body unit is about 1/62 of a tile
@@ -105,7 +116,7 @@ def vx_bake_type(k:int) -> int:
     vx_cycle.set(k, 4.0 * vx_reach(u) * 1000.0 / 62.0)
     let nlooks = vx_looks_of(u)
     vx_nlooks.set(k, nlooks)
-    let key = "{u.body} {u.skin} {u.gear} {u.mount} {u.coat} {t_worker[k]}"
+    let key = "{u.body} {u.skin} {u.pale} {u.mark} {u.gear} {u.mount} {u.fused} {u.coat} {u.mane} {u.coat_mark} {t_worker[k]}"
     let same = vx_looks.get(key, -1)
     if same >= 0:
         for(nlooks) v: for(VX_MODES) mode: for(8) f: for(8) st:
@@ -124,7 +135,7 @@ def vx_bake_type(k:int) -> int:
 def vx_bake_look(k:int, u:vx_unit_def, v:int, stem:string):
     let tools = [ "axe" ]   // (work: chopping; what it wears kept)
     for(u.gear) g: if vx_worn_gear(g): tools.push(g)
-    let worker = vx_unit_def { u.label, u.body, u.skin, u.pale, tools, u.mount, u.coat }
+    let worker = vx_unit_def { u.label, u.body, u.skin, u.pale, u.mark, tools, u.mount, u.fused, u.coat, u.mane, u.coat_mark }
     vx_set_look(u, v)
     vx_rows = []::[float4]
     vx_at = int2_0
@@ -136,7 +147,7 @@ def vx_bake_look(k:int, u:vx_unit_def, v:int, stem:string):
         if mode != "work" or t_worker[k] != 0:
             vx_act = if mode == "attack" or mode == "work": "attack" else: ""
             for(if mode == "idle": 1 else: 8) st:
-                let g = vx_fill(vx_unit_prims(if mode == "work": worker else: u, float(st) * 45.0), vx_size_of(u))
+                let g = vx_fill(vx_unit_prims(if mode == "work": worker else: u, float(st) * 45.0), vx_size_of(u), vx_flies(u))
                 for(8) f:
                     let fr = vx_pack_cell(vx_cell(g, f), vx_box, vx_CELL.x, vx_ANCHOR)
                     let sf = vx_pack_cell(vx_ground_shadow(g, f), vx_sbox, vx_SCELL.x, vx_SANCHOR)

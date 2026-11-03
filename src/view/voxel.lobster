@@ -189,6 +189,17 @@ class vx_body_spec:
     reach:float
     skin:float3      // its colours when the race gives none
     pale:float3
+    mark:float3      // a third: markings, a muzzle (palettes' third colour)
+    flies:float      // how high it flies (0: it walks; its points are set at that height)
+    pflap:[float]    // per point: how far it flaps up and down (wings) as it moves
+    harness:bool     // no hands: what it holds rides in a harness at these points (right, left)
+    hr_pt:string
+    hr:float3
+    hr_dir:float3
+    hl_pt:string
+    hl:float3
+    fused_pt:string  // a mount a rider grows out of (a centaur's horse): where its rider's hip is
+    fused:float3
     pnames:[string]
     pat:[float3]
     pbob:[float]
@@ -255,7 +266,8 @@ var vx_data_dirs = []::string
 
 def vx_parse_body(id:string, o:JV) -> vx_body_spec:
     let b = vx_body_spec { id, gfloat(o, "size", 1.0), gfloat(o, "fur", 0.0), gfloat(o, "skin_scale", 1.0), gfloat(o, "reach", 4.0),
-                           vx_hex(gstr(o, "skin", "#dba880")), vx_hex(gstr(o, "pale", "#ebbf99")),
+                           vx_hex(gstr(o, "skin", "#dba880")), vx_hex(gstr(o, "pale", "#ebbf99")), vx_hex(gstr(o, "mark", "#f0ebe0")),
+                           gfloat(o, "flies", 0.0), [], false, "", float3_0, float3_0, "", float3_0, "", float3_0,
                            [], [], [], [], [], false, "", float3_0, 0.0, 0.0, 0, 0, "", float3_0, 0.0, "", float3_0, "", float3_0, float2_0,
                            0.0, [], float3_0, 0.0, [ 1.0 ], [ vx_MAT_BASE[vx_mat("hair")] ] }
     let pts = gobj(o, "points")
@@ -263,6 +275,7 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
         b.pnames.push(name)
         b.pat.push(vx_v3(at(pts.a[k], "at")))
         b.pbob.push(gfloat(pts.a[k], "bob", 0.0))
+        b.pflap.push(gfloat(pts.a[k], "flap", 0.0))
     for(glist(o, "legs")) l:
         let pa, a = vx_pt(at(l, "hip"))
         let rs = map(glist(l, "r")) v: as_float(v)
@@ -276,6 +289,13 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
         b.sh_pt, b.sh = vx_pt(at(ar, "shoulder"))
         b.arm, b.thick = as_float(at(ar, "bone")), as_float(at(ar, "thick"))
         b.sleeve, b.hand = vx_mat(gstr(ar, "sleeve", "skin")), vx_mat(gstr(ar, "hand", "skin"))
+    if has(o, "harness"):
+        let ho = at(o, "harness")
+        b.harness = true
+        b.hr_pt, b.hr = vx_pt(at(ho, "right"))
+        b.hr_dir = vx_v3(at(ho, "dir"))
+        b.hl_pt, b.hl = vx_pt(at(ho, "left"))
+    if has(o, "fused"): b.fused_pt, b.fused = vx_pt(at(o, "fused"))
     if has(o, "helm"):
         b.helm_pt, b.helm = vx_pt(at(at(o, "helm"), "at"))
         b.helm_r = as_float(at(at(o, "helm"), "r"))
@@ -346,7 +366,10 @@ def vx_load(dirs:[string]):
             for(sorted_strs(names)) n:
                 if ends_with(n, ".json"):
                     let id = substring(n, 0, n.length - 5)
-                    vx_bodies.set(id, vx_parse_body(id, parse_json(assert read_file(d + "/bodies/" + n))))
+                    let o = parse_json(assert read_file(d + "/bodies/" + n))
+                    let b = vx_parse_body(id, o)
+                    vx_bodies.set(id, b)
+                    for(gstrs(o, "also")) a: vx_bodies.set(a, b)   // (other body ids drawn the same, their palettes apart)
 
 // The data's text (every file read): part of the bake cache's key, so a change to the data bakes again.
 def vx_data_text() -> string:
@@ -376,11 +399,15 @@ def vx_gear_for(part_id:string, tags:[string], slot:string) -> string:
 class vx_unit_def:
     label:string
     body:string      // bodies/<id>.json
-    skin:float3      // the race's colours (palettes.json; zero: the material's)
+    skin:float3      // the race's colours (palettes.json; zero: the body's)
     pale:float3
+    mark:float3
     gear:[string]    // gear.json's
     mount:string     // a mount's body, or ""
-    coat:float3      // the mount's coat (zero: its own)
+    fused:bool       // the rider grows out of its mount (a centaur): at the mount body's `fused` point
+    coat:float3      // the mount's colours (zero: its body's)
+    mane:float3
+    coat_mark:float3
 
 var vx_variant = 0          // the look being built
 var vx_seated = false       // a rider being built: no legs of its own (shapes with `unless: seated` left off)
@@ -396,6 +423,7 @@ def vx_set_look(u:vx_unit_def, v:int):
     let skin = if u.skin != float3_0: u.skin else: b.skin
     vx_mat_cols[vx_mat("skin")] = min(skin * b.skin_scale * b.looks[v], float3_1)
     vx_mat_cols[vx_mat("pale")] = if u.pale != float3_0: u.pale else: b.pale
+    vx_mat_cols[vx_mat("mark")] = if u.mark != float3_0: u.mark else: b.mark
     vx_mat_cols[vx_mat("hair")] = b.hair[v]
     vx_fur = b.fur
 
@@ -482,7 +510,8 @@ def vx_flags_of(u:vx_unit_def) -> [string]:
 // A body's points at walk phase ph (its bob), raised by lift.
 def vx_body_points(b:vx_body_spec, ph:float, lift:float3) -> vx_points:
     let bob = abs(sin(ph * 2.0))
-    return vx_points { copy(b.pnames), map(b.pat) a, k: a + float3 { 0.0, 0.0, b.pbob[k] * bob } + lift }
+    let flap = sin(ph * 4.0)
+    return vx_points { copy(b.pnames), map(b.pat) a, k: a + float3 { 0.0, 0.0, b.pbob[k] * bob + b.pflap[k] * flap } + lift }
 
 // The legs, walking at ph: each foot planted where it rests, moved along by sin(ph + its phase) * stride, lifted as
 // it swings forward; the knee (or a front leg's elbow) bent towards the pole.
@@ -571,6 +600,23 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         let gp = vx_points { [ "hand", "draw" ], [ hl, if drawn: hr else: hl - o * 0.4 ] }
         for(left.shapes) s: vx_emit(out, s, gp, vx_Z, o, sd, flags, nil)
 
+// What a body with no hands holds, in its harness: the right item along the harness's direction (lowered into a thrust
+// in a blow), the left on its side.
+def vx_harness(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, t:float, flags:[string]):
+    let right = vx_held(u, 1)
+    let left = vx_held(u, -1)
+    if right:
+        let k = if vx_act == "attack": vx_blow(t) else: 0.0
+        let d = normalize(vx_mix(b.hr_dir, float3 { 0.0, 1.0, 0.1 }, k))
+        let hr = vx_where(p, b.hr_pt) + b.hr + float3 { 0.0, 3.0 * k, 0.0 }
+        let gp = vx_points { [ "hand", "draw" ], [ hr, hr ] }
+        for(right.shapes) s: vx_emit(out, s, gp, d, cross(vx_X, d), vx_X, flags, nil)
+    if left:
+        let hl = vx_where(p, b.hl_pt) + b.hl
+        let o = normalize(float3 { -1.0, 0.25, 0.0 })   // (out to the side)
+        let gp = vx_points { [ "hand", "draw" ], [ hl, hl - o * 0.4 ] }
+        for(left.shapes) s: vx_emit(out, s, gp, vx_Z, o, normalize(cross(o, vx_Z)), flags, nil)
+
 // Worn gear on a body (its fit for the body, or for any).
 def vx_worn(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, flags:[string]):
     for(u.gear) g:
@@ -587,6 +633,7 @@ def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:
     for(b.shapes) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
     vx_worn(out, u, b, p, flags)
     if b.arms: vx_arms(out, u, b, p, if vx_seated: 0.0 else: sin(ph), t, flags)
+    elif b.harness: vx_harness(out, u, b, p, t, flags)
 
 // A whole unit's parts, walking at phase ph0 (degrees) or, when acting, at ph0 / 360 through the act.
 def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
@@ -597,18 +644,33 @@ def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     if u.mount == "":
         vx_whole_body(out, u, b, vx_body_points(b, ph, float3_0), ph, t, vx_flags_of(u))
         return out
-    // a rider: the mount walks (in its own coat, at its own size), the rider sits astride, legs down its sides
+    // a rider: the mount walks (in its own colours, at its own size), the rider sits astride, legs down its sides;
+    // on a fused mount (a centaur) the rider's body grows out of it
     let mb = vx_body_of(u.mount)
-    vx_mat_cols[vx_mat("coat")] = if u.coat != float3_0: u.coat else: vx_MAT_BASE[vx_mat("coat")]
-    vx_mat_cols[vx_mat("mane")] = if u.coat != float3_0: u.coat * 0.45 else: vx_MAT_BASE[vx_mat("mane")]
+    vx_mat_cols[vx_mat("coat")] = if u.coat != float3_0: u.coat else: mb.skin
+    vx_mat_cols[vx_mat("mane")] = if u.mane != float3_0: u.mane else: mb.pale
+    vx_mat_cols[vx_mat("coat_mark")] = if u.coat_mark != float3_0: u.coat_mark else: mb.mark
     let mount = []::vx_prim
-    let mu = vx_unit_def { u.label, u.mount, float3_0, float3_0, [], "", float3_0 }
-    vx_whole_body(mount, mu, mb, vx_body_points(mb, ph, float3_0), ph, t, [])
+    let mu = vx_unit_def { u.label, u.mount, float3_0, float3_0, float3_0, [], "", false, float3_0, float3_0, float3_0 }
+    let fused = u.fused
+    assert not fused or mb.fused_pt != ""
+    let mp = vx_body_points(mb, ph, float3_0)
+    vx_whole_body(mount, mu, mb, mp, ph, t, if fused: [ "fused" ] else: [])
     let ms = mb.size / b.size
-    for(mount) q: out.push(vx_prim { q.a * ms, q.b * ms, q.ra * ms, q.rb * ms, q.mat, q.hard, q.disc, q.box * ms })
-    let seat = mb.seat * ms
+    let skin = vx_mat("skin")
+    let pale = vx_mat("pale")
+    let mark = vx_mat("mark")
+    for(mount) q:   // (the mount's own colours: its skin is the coat)
+        let m = if q.mat == skin: vx_mat("coat") elif q.mat == pale: vx_mat("mane") elif q.mat == mark: vx_mat("coat_mark") else: q.mat
+        out.push(vx_prim { q.a * ms, q.b * ms, q.ra * ms, q.rb * ms, m, q.hard, q.disc, q.box * ms })
     vx_seated = true
     let flags = vx_flags_of(u)
+    if fused:
+        let hip = (vx_where(mp, mb.fused_pt) + mb.fused) * ms
+        vx_whole_body(out, u, b, vx_body_points(b, 0.0, hip - float3 { 0.0, 0.0, b.seat_z }), 0.0, t, flags)
+        vx_seated = false
+        return out
+    let seat = mb.seat * ms
     vx_whole_body(out, u, b, vx_body_points(b, 0.0, seat - float3 { 0.0, 0.0, b.seat_z }), 0.0, t, flags)
     vx_seated = false
     let wide = mb.wide * ms
@@ -620,6 +682,9 @@ def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
         out.push(vx_cap(knee, ankle, 1.4, 1.1, b.astride[1]))
         out.push(vx_cap(ankle, ankle + float3 { 0.0, 2.0, -0.4 }, 1.1, 1.0, b.astride[2]))
     return out
+
+// Does the unit fly (its body's, or its mount's)? Its ground isn't under its lowest point.
+def vx_flies(u:vx_unit_def) -> bool: return vx_body_of(u.body).flies > 0.0 or (u.mount != "" and vx_body_of(u.mount).flies > 0.0)
 
 // The unit's size: its body's (a mount is scaled to it).
 def vx_size_of(u:vx_unit_def) -> float: return vx_body_of(u.body).size
@@ -683,11 +748,11 @@ def vx_solid_at(grid:[int], lo:int3, dims:int3, v:int3) -> bool:
 // voxels; each part is listed in the blocks its bounds touch, so a voxel only measures the parts near it. A block
 // is tested at its centre first: clearly outside is skipped, clearly inside filled whole (none of it shows);
 // only blocks the surface crosses are measured voxel by voxel.
-def vx_fill(parts:[vx_prim], unit_size:float) -> vx_shape:
+def vx_fill(parts:[vx_prim], unit_size:float, flies:bool = false) -> vx_shape:
     let s = unit_size * vx_RES
-    var low = 1000.0  // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
+    var low = if flies: 0.0 else: 1000.0   // (a flier's ground is the builder's z 0, not under its lowest point)  // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
     for(parts) p:     // by it: a frog's spear set it on the ground and lifted the frog off it)
-        if not p.hard:
+        if not p.hard and not flies:
             let a, b = vx_bounds(p)
             low = min(low, a.z)
     let ps = map(parts) p: vx_scaled(p, s, -low)
