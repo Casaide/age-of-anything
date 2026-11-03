@@ -1,13 +1,11 @@
 // What the game makes, as text for the golden files (golden.sh holds it to golden/<section>.txt, "update" records it):
 //   starts   the match start (World's setup) for a few maps, modes and races, as its scenario's tokens
-//   models   every part's model (parts.json, its walk steps, worn armour on each body that has its own), a digest of
-//            its triangles: corners, normals, colours, uvs, materials
 //   buildings  every building type in every architecture, a digest of its model
 //   effects  every research's effects in words (the tech tree's text)
 // They were held to Godot's (start_check, model_check, building_check, effect_words_check) until Godot went; these
 // digests keep what those checks proved.
 //   lobster golden.lobster -- <section>
-import placement.deps
+import game.deps
 import gen.scenario_out
 import gen.effect_words
 import model.buildings
@@ -16,7 +14,7 @@ import gen.reset
 
 let args = command_line_arguments()
 fatal(gl.window("golden", 64, 64, gl.window_init_no_vsync))  // (models load their textures)
-placement_load()
+data_load()
 
 def r4(x:float) -> string: return string(int(round(x * 10000.0)))
 def v4(v:float3) -> string: return r4(v.x) + "," + r4(v.y) + "," + r4(v.z)
@@ -40,23 +38,6 @@ if section == "starts":
         let races = map(m.slice(2, -1)) p: generate(p, rules, 0)
         setup_world(20261010, m[0], races, rules, [])
         print "{m[0]} {m[1]} {m[2]} | {m[3]}: " + sha256_text(concat_string(scenario_tokens(), " ")).substring(0, 16) + " " + sha256_text(concat_string(ai_tokens, " ")).substring(0, 16)
-elif section == "models":
-    let cols = colours_for("rat_grey", "sewer", float3_1)
-    let ids = []::string
-    for(lib_part_ids) id:
-        ids.push(id)
-        let p = part(id)
-        let legs = get(p, "legs")
-        let steps = gint(p, "body_steps", 0)
-        for(steps) k: ids.push(id + "@w{k}_{steps}")
-        if legs:
-            let poses = gint(legs, "poses", 0)
-            for([ rstr(legs, "part"), gstr(legs, "hind", "") ]) leg:
-                if leg != "":
-                    for(poses) k: ids.push(leg + "@w{k}_{poses}")
-    for(ids) id:
-        let s = build_model(id, cols)
-        print id + " " + (if s: digest(s.node) else: "none")
 elif section == "buildings":
     let bt = gobj(load_json("../data/buildings.json"), "buildings")
     for([ "stone", "thatch", "junk", "tent", "reed", "mound" ]) arch:

@@ -54,23 +54,3 @@ def model_tris(n:MNode) -> [BakeTri]:
     let out = []::BakeTri
     flatten(n, XF_ID, out)
     return out
-
-// Each mesh's box in the tree's space (Godot's transform * mesh AABB: the box round its corners turned).
-def mesh_boxes(n:MNode, parent:Xform, out:[[float3]]) -> void:
-    if not n.visible: return
-    let t = xmul(parent, node_xform(n))
-    let mesh = n.mesh
-    if mesh and mesh.p.length:
-        var lo = mesh.p[0]
-        var hi = mesh.p[0]
-        for(mesh.p) p:
-            lo = min(lo, p)
-            hi = max(hi, p)
-        var blo = float3_1 * 1000000000.0
-        var bhi = float3_1 * -1000000000.0
-        for(8) i:
-            let q = xf(t, float3 { if i & 1: hi.x else: lo.x, if i & 2: hi.y else: lo.y, if i & 4: hi.z else: lo.z })
-            blo = min(blo, q)
-            bhi = max(bhi, q)
-        out.push([ blo, bhi ])
-    for(n.kids) kid: mesh_boxes(kid, t, out)

@@ -148,7 +148,6 @@ class MMesh:
     pp = float4_0   // its numbers: sphere (radius, height, hemisphere 0/1), cylinder (top,
     // bottom, height), box (size), torus (inner, outer)
 
-let PRIM_NONE = 0
 let PRIM_SPHERE = 1
 let PRIM_CYLINDER = 2
 let PRIM_BOX = 3
@@ -303,8 +302,6 @@ def box_mesh(size:float3, sw:int, sh:int, sd:int) -> MMesh:
             thisrow = m.p.length
     return m
 
-// PlaneMesh / QuadMesh: a grid facing +y (plane) or +z (quad), centred, its UVs as Godot flips them.
-let FACE_X = 0
 let FACE_Y = 1
 let FACE_Z = 2
 def plane_mesh(size:float2, sw:int, sd:int, face:int, centre:float3) -> MMesh:
@@ -431,10 +428,6 @@ def node_xform(n:MNode) -> Xform: return Xform { node_basis(n), n.pos }
 def set_basis(n:MNode, b:Basis):
     n.bas = b
     n.scl = float3_1
-
-def set_rot(n:MNode, r:float3):  // rotation_degrees =
-    n.bas = nil
-    n.rot = r
 
 def set_xform(n:MNode, t:Xform):  // transform =
     set_basis(n, t.b)

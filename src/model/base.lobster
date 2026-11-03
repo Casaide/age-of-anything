@@ -14,31 +14,6 @@ def html(h:string) -> float3:  // Color("#rrggbb")
 
 def lerp3(a:float3, b:float3, t:float) -> float3: return a + (b - a) * t  // Vector3.lerp, Color.lerp
 def darkened(c:float3, a:float) -> float3: return c * (1.0 - a)
-def lightened(c:float3, a:float) -> float3: return c + (float3_1 - c) * a
-
-// Color.h, .s, .v (h in 0..1) and Color.from_hsv.
-def hsv(c:float3) -> float, float, float:
-    let mx = max(c.x, max(c.y, c.z))
-    let mn = min(c.x, min(c.y, c.z))
-    let d = mx - mn
-    var h = 0.0
-    if d > 0.0:
-        if c.x == mx: h = (c.y - c.z) / d
-        elif c.y == mx: h = 2.0 + (c.z - c.x) / d
-        else: h = 4.0 + (c.x - c.y) / d
-        h /= 6.0
-        if h < 0.0: h += 1.0
-    return h, (if mx == 0.0: 0.0 else: d / mx), mx
-
-def from_hsv(h:float, s:float, v:float) -> float3:
-    if s == 0.0: return float3 { v, v, v }
-    let hh = (h * 6.0) % 6.0
-    let i = int(floor(hh))
-    let f = hh - float(i)
-    let p = v * (1.0 - s)
-    let q = v * (1.0 - s * f)
-    let t = v * (1.0 - s * (1.0 - f))
-    return [ float3 { v, t, p }, float3 { q, v, p }, float3 { p, v, t }, float3 { p, q, v }, float3 { t, p, v }, float3 { v, p, q } ][i % 6]
 
 // A race colour by channel (skin, skin2, cloth, team...; the team is the team key while baking).
 def col(c:Colours, ch:string) -> float3:
@@ -46,8 +21,6 @@ def col(c:Colours, ch:string) -> float3:
     let h = c.hex.get(ch)
     assert h
     return html(h)
-
-def has_col(c:Colours, ch:string) -> bool: return ch == "team" or c.hex.get(ch) != nil
 
 // ---- a built part
 
@@ -69,7 +42,6 @@ class Spec:
     strs = dictionary<string, string>(5)   // and words (carry: "harness")
     flags = []::string                     // its true flags (legs_under...)
 
-def spec_of(n:MNode) -> Spec: return Spec { n }
 def sock(s:Spec, k:string, v:float3) -> Spec:
     s.sockets.set(k, v)
     return s
@@ -77,12 +49,6 @@ def spec_num(s:Spec, k:string, v:float3) -> Spec:
     s.nums.set(k, v)
     return s
 def spec_num(s:Spec, k:string, v:float) -> Spec: return spec_num(s, k, float3 { v, 0.0, 0.0 })
-def spec_str(s:Spec, k:string, v:string) -> Spec:
-    s.strs.set(k, v)
-    return s
-def spec_flag(s:Spec, k:string) -> Spec:
-    s.flags.push(k)
-    return s
 
 // ---- materials
 
@@ -227,39 +193,6 @@ def blade(points:[float2], thick:float, m:MMat, at:float3, ang:float) -> MNode:
 def crest(n:MNode, tint:float3, pos:float3, length:float, height:float):
     add_child(n, decal("plume", length, height, pos + float3 { 0.0, height * 0.5, 0.0 }, float3 { 0.0, 0.0, 1.0 }, true, float3 { 0.0, 1.0, 0.0 }, tint))
 
-// The angle (degrees about z) that stands a ring or cone along a staff from a to b.
-def tilt_of(a:float3, b:float3) -> float:
-    let d = normalize(b - a)
-    return atan2(float2 { d.x, d.y }) - 90.0
-
-// Every child moved up by dy.
-def lift_kids(n:MNode, dy:float):
-    for(n.kids) k: k.pos += float3 { 0.0, dy, 0.0 }
-
-// Scale a built part about its origin, with its sockets and anchors (front layer too).
-def scaled(s:Spec, k:float) -> Spec:
-    let w = mnode()
-    w.scl = float3_1 * k
-    add_child(w, s.node)
-    s.node = w
-    let f = s.front
-    if f:
-        let wf = mnode()
-        wf.scl = float3_1 * k
-        add_child(wf, f)
-        s.front = wf
-    for(s.sockets.get_keys()) name: s.sockets.set(name, s.sockets.get(name, float3_0) * k)
-    for(s.anchors) a: a.pos *= k
-    return s
-
-// A team-colour kerchief knotted at the neck, with a tail hanging in front.
-def kerchief(into:MNode, c:Colours, neck:float3, r:float, lean:float):
-    let team = surf("cloth", col(c, "team"), 3.0)
-    add_child(into, ring(r * 0.75, r * 1.3, team, neck, float3 { 0.0, 0.0, lean }, float3 { 1.0, 1.6, 1.0 }))
-    let knot = neck + float3 { r * 0.95, -r * 0.2, r * 0.35 }
-    add_child(into, blob(float3 { 1.1, 1.1, 1.0 } * r * 0.32, team, knot))
-    add_child(into, slab([ float2 { 0.0, 0.0 }, float2 { r * 0.45, -r * 0.2 }, float2 { r * 0.25, -r * 1.3 }, float2 { -r * 0.15, -r * 1.1 } ], 0.5, team, knot + float3 { -r * 0.1, -r * 0.1, 0.3 }))
-
 // ---- helpers the model files share (unit_models.gd: harness, _sword, curved, grip, tassel, _bright_iron,
 // _box; creature_kit.gd: _ik)
 
@@ -285,55 +218,11 @@ def sword(blade_pts:[float2], tip:float3, metal:MMat, fittings:MMat) -> MNode:
     add_child(n, blob(float3 { 0.9, 0.9, 0.9 }, fittings, -d * 3.6))
     return n
 
-def sample_ws(ws:[float], t:float) -> float:
-    let f = t * float(ws.length - 1)
-    let i = min(int(f), ws.length - 2)
-    return ws[i] + (ws[i + 1] - ws[i]) * (f - float(i))
-
-// A blade outline bent along a curve: `length` along +x, the centre rising `sag` at the tip, half-widths
-// sampled from `widths`; `edge` 1 keeps the spine on the centre line (single-edged).
-def curved(length:float, sag:float, widths:[float], edge:float = 0.0, steps:int = 14) -> [float2]:
-    let top = []::float2
-    let low = []::float2
-    for(steps + 1) i:
-        let t = float(i) / float(steps)
-        let w = sample_ws(widths, t)
-        let cy = sag * t * t
-        let x = length * t
-        top.push(float2 { x, cy + w * (1.0 - edge) })
-        low.push(float2 { x, cy - w * (1.0 + edge) })
-    let bottom = map(low.length) i: low[low.length - 1 - i]
-    if magnitude(top[top.length - 1] - bottom[0]) < 0.05: bottom.remove(0)
-    return append(top, bottom)
-
-// The grip end the age-3 weapons share: a wrapped grip down the line from the hand and a pommel.
-def grip(n:MNode, d:float3, wrap:MMat, pommel:MMat, length:float = 3.0):
-    add_child(n, rod(float3_0, -d * length, 0.6, 0.6, wrap, false))
-    add_child(n, blob(float3 { 0.95, 0.95, 0.95 }, pommel, -d * (length + 0.6)))
-
-// A tassel hanging from the pommel.
-def tassel(n:MNode, d:float3, m:MMat, length:float = 3.0):
-    let at = -d * 3.8
-    add_child(n, rod(at, at + float3 { -1.2, -length, 0.4 }, 0.45, 0.8, m))
-    add_child(n, blob(float3 { 0.7, 1.2, 0.7 }, m, at + float3 { -1.3, -length - 0.6, 0.4 }))
-
-// Polished steel: the iron texture over a pale tint (beyond one: brighter than the texture).
-def bright_iron(units:float = 3.0) -> MMat: return surf("iron", float3 { 2.2, 2.25, 2.4 }, units)
-
 def box(size:float3, m:MMat, pos:float3, rot:float3 = float3_0) -> MNode:
     let n = mesh_node(box_mesh(size, 0, 0, 0), m)
     n.pos = pos
     n.rot = rot
     return n
-
-// Two-bone IK in a plane: the middle joint for bones l1, l2 from a to b, bending to `side`.
-def ik(a:float2, b:float2, l1:float, l2:float, side:float) -> float2:
-    let d = b - a
-    let l = clamp(magnitude(d), 0.01, l1 + l2 - 0.01)
-    let u = normalize(d)
-    let along = (l1 * l1 - l2 * l2 + l * l) / (2.0 * l)
-    let hh = sqrt(max(0.0, l1 * l1 - along * along))
-    return a + u * along + float2 { -u.y, u.x } * hh * side
 
 // ---- keyed limbs (D-179; unit_models.gd walk_step, stepped, ik2). Godot's radians are degrees here.
 
@@ -344,24 +233,6 @@ def walk_step(pose:string) -> float:
     let a, _a = string_to_int(nums[0])
     let b, _b = string_to_int(nums[1])
     return float(a) / float(b)
-
-def rot2d(v:float2, deg:float) -> float2:  // Vector2.rotated (degrees)
-    let cs = cos(deg)
-    let sn = sin(deg)
-    return float2 { v.x * cs - v.y * sn, v.x * sn + v.y * cs }
-
-def v3of(p:float2) -> float3: return float3 { p.x, p.y, 0.0 }
-
-let RAD_DEG = 180.0 / 3.14159265358979323846
-
-// Two-bone IK in 2D from the origin to `end`: the middle joint, on the forward side (+x) or the back.
-def ik2(end:float2, l1:float, l2:float, forward:bool) -> float2:
-    let d = min(magnitude(end), l1 + l2 - 0.01)
-    let a = acos(clamp((l1 * l1 + d * d - l2 * l2) / (2.0 * l1 * d), -1.0, 1.0))
-    let ang = atan2(end)
-    let one = float2 { cos(ang + a), sin(ang + a) } * l1
-    let two = float2 { cos(ang - a), sin(ang - a) } * l1
-    return if forward: (if one.x > two.x: one else: two) else: (if one.x > two.x: two else: one)
 
 // A leg's knee and foot in a walk step, for legs modelled as hip, knee and foot (the hip at the origin): as modelled
 // standing; walking, the foot slides back while down (`stance` of the step) and swings forward lifted, the knee by
@@ -384,17 +255,3 @@ def stepped(knee0:float3, foot0:float3, pose:string, stride:float, stance:float 
     let pole = knee0 + bend
     let v = normalize(pole - u * dot(pole, u))
     return u * a + v * sqrt(max(l1 * l1 - a * a, 0.0)), foot
-
-// The glTF node named `name` in a .glb's tree (Godot's find_child: here by its mesh's name, which the game's .glb
-// files give their nodes too).
-def glb_named(n:MNode, name:string) -> MNode?:
-    for(n.kids) k:
-        if k.kids.length and k.kids[0].meta == name and k.kids[0].mesh != nil: return k
-        let deeper = glb_named(k, name)
-        if deeper: return deeper
-    return nil
-
-def coat_mat(d:dictionary<string, MMat>, k:string) -> MMat:  // a coat's material by name (it must have it)
-    let m = d.get(k)
-    assert m
-    return m
