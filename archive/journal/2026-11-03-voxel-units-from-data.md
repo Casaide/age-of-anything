@@ -86,3 +86,16 @@ shuffle, the foot falling short of where it should land.
   Picture 20 (bottom), and in a match, picture 21.
 - **The other short legs** (picture 22): rat, frog, bear, cat and pony walk as they should; their short legs are
   their build (the rat's sit under its crouch, the frog's are folded).
+
+## Round 3c: the deer's legs (Dominic: "Dear* not dwarf")
+
+Dominic's "dwarf legs" was the deer. Round 3b's human legs stay (they were short too), but this was the real one. The
+deer, boar and sheep came from the pony's layout, and so did its mistake: the front legs' middle joint pointed back
+and the hind legs' forward, so the knees met under the belly, and the legs were far longer than hip to hoof (the
+deer's 18 against 16), so they folded hard into an X. The deer's shins were near-black sticks too (picture 23, top).
+
+- Legs about as long as hip to hoof (3% more, a little bend; round 3b's dip at full stride does the rest).
+- The front's middle joint bends forward, the hock back, as a deer's, a horse's and a sheep's do. The pony had the
+  same reversal (picture 25).
+- The deer's legs in its coat down to a dark hoof, thick at the haunch, thin below.
+- Pictures 23 (the deer walking), 24 (deer, boar and sheep standing, before and after), 25 (the pony).

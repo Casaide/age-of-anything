@@ -1,5 +1,5 @@
 {
- "_doc": "A deer (animals.json): wild, to hunt. Slender, long-legged, a small head held high; antlers.",
+ "_doc": "A deer (animals.json): wild, to hunt. Slender, long-legged, a small head held high; antlers. Legs about as long as hip to hoof, the front's middle joint bending forward and the hock back, in the coat to a dark hoof (Dominic, 2026-11-03: the deer's legs were 'really weird': folded into an X).",
  "skin": "#9a6a40",
  "pale": "#2a2018",
  "mark": "#e8dcc4",
@@ -45,23 +45,23 @@
    "stride": 3.6,
    "lift": 2.2,
    "bones": [
-    9.0,
-    9.0
+    8.24,
+    8.24
    ],
    "pole": [
     0,
-    -1,
+    1,
     0
    ],
    "r": [
-    1.5,
-    1.1,
-    1.0,
-    0.7
+    1.6,
+    0.95,
+    0.85,
+    0.6
    ],
    "mats": [
     "skin",
-    "pale"
+    "skin"
    ],
    "shapes": [
     {
@@ -101,23 +101,23 @@
    "stride": 3.6,
    "lift": 2.2,
    "bones": [
-    9.6,
-    9.6
+    8.5,
+    8.5
    ],
    "pole": [
     0,
-    1,
+    -1,
     0
    ],
    "r": [
-    1.9,
-    1.2,
-    1.0,
-    0.7
+    2.3,
+    1.05,
+    0.85,
+    0.6
    ],
    "mats": [
     "skin",
-    "pale"
+    "skin"
    ],
    "phase": 180,
    "shapes": [
