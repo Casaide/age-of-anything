@@ -1348,3 +1348,13 @@ round in section and smoothed, so the hump is a swell of the back and the neck w
 armour is fitted to the loft. The lump itself was a bug: the neck ended where the head would be if the bear stood
 straight. The mount bear (four legs) keeps its volumes for now. B (carved planes) and C (tapered limbs) stay in the
 sheet `tests/sheets/bears_b4.json`. Dominic picked, Claude built.
+
+**D-190, 2026-11-03: The long-term shape is an RTS engine with the game as content on it, the way Spring (now Recoil)
+splits engine and games.** Dominic, on how the open-source engine built for the commander game handles games ("sounds
+like a good option"). The engine owns the deterministic lockstep sim, pathing, rendering, sound, networking and
+saves; a game is content plus scripts on it, and a mod is more of the same that may depend on and override another.
+Our steps toward it: content as data (voxel units first, then buildings, props, effects as voxel pieces and recipes),
+buildings, tech, AI and sound mergeable by mods, our own content loaded as a base pack like any mod, then small
+deterministic script hooks for rules (like Spring's synced gadgets) and free client-side UI extras (like its
+widgets), and multiplayer refusing a match whose packs don't match. Not a separate engine product yet: one game, and
+the boundaries still moving. Claude's recommendation; the order is in `docs/backlog.md` (section 00).
