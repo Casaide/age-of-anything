@@ -229,7 +229,7 @@
    "r": [
     1.0,
     -0.11,
-    0.35,
+    0.5,
     0.1
    ],
    "mats": [
@@ -421,5 +421,9 @@
    ],
    "_doc": "a vest (an option)"
   }
- ]
+ ],
+ "check": {
+  "knees": 110,
+  "_doc": "a rat crouches on bent hind legs"
+ }
 }

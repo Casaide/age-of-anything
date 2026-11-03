@@ -324,5 +324,9 @@
    "mat": "team",
    "_doc": "the scarf"
   }
- ]
+ ],
+ "check": {
+  "knees": 35,
+  "_doc": "a bear stands with soft knees"
+ }
 }

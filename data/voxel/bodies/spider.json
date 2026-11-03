@@ -400,5 +400,8 @@
    "hard": true,
    "_doc": "fangs"
   }
- ]
+ ],
+ "check": {
+  "knees": 95
+ }
 }
