@@ -1529,3 +1529,13 @@ look at once), shaded by the voxel light, its materials' textures sampled into t
 most (the Town Centers and houses first) are replaced, culture by culture, by voxel data with voxel-native detail
 (tile rows, patterns, lights). The baked-building pipeline goes once nothing needs it (milestone 24). Claude, for
 Dominic.
+
+**D-204, 2026-11-03: Horse archers are countered by heavy cavalry and scouts, not spears.** Dominic: "aren't heavy
+horses counter to horse archers? whats the norm in the genre?", then "change the horse archer counters and run
+fights" (and earlier: no charge for spears, D-203). In the genre what catches a horse archer beats it: heavy and light
+cavalry; spears can't close. The chain (`gen/counters.lobster`) drops spear > mounted archer and adds large > mounted
+archer and scout > mounted archer, checked by `calibrate.lobster pairs`: 8 of 8 and 8 of 8 in age 2, 8 of 8 and 6 of
+8 in age 3. Skirmishers > mounted archer stays in the chain as an open pair (5 of 8, 2 of 8; +8 against archers didn't
+fix age 3, so it went back to +4). The refit from the stored fights is the same under the old and new chain (the
+lines' bonus edges already set those expectations), so no price moved; held out against the chain, 50 of 145 lines are
+more than 10 points off (51 under the old chain). The line's description reads "weak to heavy cavalry and scouts".
