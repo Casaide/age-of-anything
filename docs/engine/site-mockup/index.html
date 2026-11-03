@@ -82,23 +82,32 @@
 <section id="why">
   <div class="wrap">
     <p class="kicker">Why Creel</p>
-    <h2>Why use it</h2>
-    <p class="intro">A general-purpose engine gives you a renderer and leaves the RTS to you. Writing your own means
-      months on the parts nobody sees until they break. Creel sits in between: an engine made for one kind of game.</p>
+    <h2>What it does that other engines don't</h2>
+    <p class="intro">General-purpose engines leave the strategy game to you. RTS engines like Spring and Recoil give
+      you the simulation, then leave the art and the balance to you. Creel goes further, for one kind of game:
+      classic 2D isometric real-time strategy.</p>
     <div class="why">
       <ol class="reasons">
-        <li><h3>The hard parts are already exact</h3>
-          <p>Lockstep that never drifts, saves that load after updates, pathing for hundreds of units, fog of war.
-            They're built, tested and held to the same result on every machine.</p></li>
-        <li><h3>Your whole game is readable</h3>
-          <p>Units, buildings, maps and rules are text files. Anyone can open your game in an editor, see how it
-            works, and change it. Modding needs no special tools.</p></li>
-        <li><h3>Small, fast, and yours to change</h3>
-          <p>A plain codebase you can actually read, under Apache 2.0, that builds in seconds. If the engine doesn't
-            do what you need, you can see why and change it.</p></li>
-        <li><h3>One language, top to bottom</h3>
-          <p>Creel is written in Lobster, and so are hooks. What you learn writing a hook is how the engine itself is
-            written.</p></li>
+        <li><h3>Art without an art team</h3>
+          <p>A unit is a few lines of JSON: points, legs and shapes. Creel builds it in voxels, draws it in eight
+            directions in your team's colours, and makes it walk. You can have a playable army before anyone opens a
+            modelling program.</p></li>
+        <li><h3>Factions from words</h3>
+          <p>An optional module turns a sentence into a faction. "Sewer rats with cheese hammers" becomes a roster of
+            priced, playable units with names, looks and bonuses. Use it, or leave it out.</p></li>
+        <li><h3>Balance you can run</h3>
+          <p>Unit prices are fitted from simulated fights: about 20,000 battles in a minute on four cores. Change
+            the rule and the fit updates in under a second, without fighting again.</p></li>
+        <li><h3>Mods that can't split a lobby <span class="tag">checks: next</span></h3>
+          <p>Every pack is signed by a hash of its files, so a lobby can name the pack two players disagree on
+            before the match starts. Rule hooks are checked for anything that could desync. Saves keep loading as
+            packs update.</p></li>
+        <li><h3>Small enough to read</h3>
+          <p>About 64,000 lines of Lobster for the engine and its first game together; the simulation is 11,000.
+            Engine, hooks and models are one language, and the JIT compiles the lot in a couple of seconds.</p></li>
+        <li><h3>Made for the couch and the handheld</h3>
+          <p>A gamepad wheel of orders, touch controls, and builds for macOS, the Steam Deck and Android, alongside
+            mouse and keyboard.</p></li>
       </ol>
       <aside class="tradeoffs">
         <h3>What to know first</h3>
@@ -289,6 +298,44 @@
       numbers and a fixed order, and they keep their state where saves can find it. Interface hooks run on one
       machine and are free to draw over the world, add to the panel and the top bar, or play a sound when something
       happens.</p>
+  </div>
+</section>
+
+<section id="build">
+  <div class="wrap">
+    <p class="kicker">Build on it</p>
+    <h2>From an empty folder to a build</h2>
+    <p class="intro">This is how making a game with Creel is meant to feel. A deterministic simulation makes the
+      best parts cheap: a replay is just the command log run again, so a change can restart the match and replay it
+      to where you were.</p>
+    <div class="stack">
+      <div>
+<pre><code>creel new my_game    # a map, a worker,
+                     # a soldier, a town
+cd my_game
+creel run            # a match vs the bot
+# edit a data file: the match updates
+creel replay last.log
+creel check          # a match run twice
+creel build deck     # or mac, android</code></pre>
+        <p class="caption">The planned <code>creel</code> command, one door over today's tools.</p>
+      </div>
+      <div class="scroll">
+        <table class="steps">
+          <thead><tr><th>Step</th><th></th><th>Today</th></tr></thead>
+          <tbody>
+            <tr><td>Start from a template that runs first time</td><td><span class="tag">planned</span></td><td>a scaffold for mods</td></tr>
+            <tr><td>See data changes live in the running match</td><td><span class="tag">planned</span></td><td>restart, a few seconds</td></tr>
+            <tr><td>Hooks recompile on save and replay to now</td><td><span class="tag">planned</span></td><td>restart, about 2 s to compile</td></tr>
+            <tr><td>A debug overlay: tick, state hash, a unit's orders, the flow field</td><td><span class="tag">planned</span></td><td>timings, logs, screenshots</td></tr>
+            <tr><td>Replays from the command log</td><td><span class="tag">planned</span></td><td>the command stream exists</td></tr>
+            <tr><td>Checks: pack, determinism, placement, golden files</td><td><span class="tag on">today</span></td><td>as separate tools</td></tr>
+            <tr><td>Builds for macOS, Steam Deck, Android</td><td><span class="tag on">today</span></td><td>one script each</td></tr>
+            <tr><td>Editor help: JSON Schemas, the Lobster language server</td><td><span class="tag">planned</span></td><td>Lobster's VS Code extension</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </section>
 
