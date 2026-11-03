@@ -323,6 +323,57 @@ names and signatures of the packs it was made with.
 - **Mods:** `mod_check` per pack; the sci-fi mod as the standing test that a mod can reshape the game.
 - The batch stays one command for both.
 
+## 3b. Building on it: the developer experience
+
+Dominic, 2026-11-03: "how do you build on it? What's our dev experience? Not planned at all". Sections 3's packs, hooks
+and tools say what exists, not what it's like to make a game with them. Today the only path is ours: clone this repo,
+read CLAUDE.md, learn `play.sh`'s options. This is the plan for someone who isn't us.
+
+### The journey, and what each step needs
+
+| Step | What the developer does | What exists today | What's missing |
+|---|---|---|---|
+| 1. Get it | One download: Lobster's binary (our fork, pinned) and the engine | Build Lobster from source, clone this repo | A release zip per platform with `lobster` inside; one `creel` script on the path |
+| 2. Start a game | `creel new my_game` | `tools/mods/new_mod.py` for mods only | A game template: a pack of kind `game`, one map, a worker, a soldier, a hub, a barracks, a `main.lobster` of ~50 lines. It runs on the first try |
+| 3. Run it | `creel run` (a match vs the reference bot), `creel run --title` | `./play.sh lobby "races:..." watch` | One entry point with the options named and listed by `--help`, not read from `play.sh`'s comments |
+| 4. Change data | Edit a JSON file or the map's ASCII, see it in the running match | Restart the game (a few seconds) | **Data reload**: the window watches the pack's `data/` and reloads looks, UI, sounds and numbers live; sim data changes restart the match from its command log (deterministic, so the same match, replayed to now). Errors as `file:line: what's wrong` on screen, not a crash |
+| 5. Change code | Edit a hook, the game reloads | Restart (JIT compile ~2 s) | Hooks recompile on save; the match replays to now (same trick) |
+| 6. Look inside | A dev overlay | `perf:`, logs, `shot:` | F1 overlay: tick, state hash, frame cost; click a unit for its columns (hp, order, target, path); toggles for the flow field, fog, spatial cells, bot intents |
+| 7. Replay and share a bug | `creel replay match.log` | The command stream exists (lockstep); `save_check` | Every match writes its command log; a replay plays it back with the overlay, step by tick, scrub. A bug report is the log plus the pack signatures |
+| 8. Test | `creel check` (pack loads, determinism, placement, a short bot match twice, same hash) and `creel test` | `mod_check`, `test_sim`, `golden.sh`, `batch.sh`, `lint.py` | The same checks, named for a game: a template test file, golden files per pack, `creel check` in the template's CI |
+| 9. Ship | `creel build mac|deck|android|windows`, `creel pack` for mods | `src/deck/build.sh`, `src/android/build.sh`, `tools/mods/pack.py` | One build command over those; a Windows build (none today); Steam depot layout |
+
+### Editor support
+
+- **Lobster:** the Lobster VS Code extension and language server (Lobster's `dev/lsp`) for hooks and models;
+  `lobsterfmt` and the warnings check (`lint.py`) in `creel check`.
+- **Data:** a JSON Schema for every data file, from the `"schema": "aow.<name>/<n>"` each already names (renamed
+  `creel.<name>/<n>` with the engine), so an editor completes fields and flags typos before the game sees them.
+- **Maps:** the ASCII drawing is the editor (any text editor); later an in-game paint mode that writes the same file.
+- **Voxels:** JSON bodies with a live preview (`voxel_proto` grown into `creel voxel <body>`: turn, zoom, every facing,
+  reloads on save); `.vox` import and export later (backlog 00).
+
+### Docs
+
+- A **tutorial** that builds a small game from the template in an hour: a new unit, a new building, a map, one rule
+  hook (e.g. a unit that slows what it hits), a mod for it.
+- A **reference** per data file (generated from the schemas) and per hook (signature, when it's called, the
+  determinism rules), plus the tools.
+- **How it works** pages: the tick and lockstep, saves across builds, packs and hashes, the renderer and bakes.
+- The template and the tutorial game are tested in the batch, so the docs never rot.
+
+### Order
+
+1. `creel` as one script over today's tools (`run`, `check`, `test`, `build`, `pack`): no new features, one door.
+2. The game template on the test pack (`engine/packs/test/`, section 3), built while the engine's tests move to it.
+3. Error messages for bad data with `file:line`, and JSON Schemas.
+4. The dev overlay (F1), then command logs and replays.
+5. Data reload, then hook reload (both lean on replay).
+6. The tutorial and the reference docs, then a release zip.
+
+None of this blocks Age of Anything; steps 1-3 also speed up our own work. Steps 4-5 are the ones a developer will
+feel most and are the ones a deterministic sim makes cheap: a replay is just the command log run again.
+
 ## 4. Licensing and business
 
 Nothing needs a licence until something is public; today nothing is (the repo has no licence file, so it's all rights
