@@ -35,6 +35,7 @@ for(NAMES) name, r:
     let parts = []::vx_prim
     vx_whole_body(parts, u, b, vx_body_points(b, 0.0, float3_0), 0.0, 0.0, vx_flags_of(u))
     let t = seconds_elapsed()
+    vx_pat_scale = b.size * res
     let g = vx_fill(parts, b.size * res / vx_RES, true)  // (the ground at z 0: walls are hard, nothing melts down to it)
     let tf = seconds_elapsed() - t
     for(facings) f, c:
@@ -50,7 +51,9 @@ for(NAMES) name, r:
                 img[j] = img[j] * (1.0 - s.w) + xyz(s) * s.w
         for(cell.y) y: for(cell.x) x:
             let p = px[y * cell.x + x]
-            if p.w > 0.0: img[(oy + y) * iw + ox + x + (sanchor.x - anchor.x)] = xyz(p)
+            if p.w > 0.0:
+                let j = (oy + y) * iw + ox + x + (sanchor.x - anchor.x)
+                img[j] = img[j] * (1.0 - p.w) + xyz(p) * p.w
         if c == 0: print "{name}: {parts.length} parts, {g.pos.length} surface voxels, filled in {int(tf * 1000.0)} ms, a facing in {int((seconds_elapsed() - t2) * 1000.0)} ms"
 print "all in {seconds_elapsed() - t0} s"
 let bytes = []::int

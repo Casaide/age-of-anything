@@ -1,21 +1,55 @@
 """Voxel buildings, an experiment (Dominic, 2026-11-03: "test a few buildings, see how close we can make them using
-voxels"). Writes data/voxel/buildings/: materials and bodies (the voxel format's bodies: points and shapes) for a
-Roman house and Town Center, the rats' shack and silo, two trees and a rock. The game doesn't load this folder;
-src/voxel_buildings.lobster draws them. Body units: z up, y to the front, x across; a tile is about 62.
+voxels"; then "textures and lights real issue"). Writes data/voxel/buildings/: materials (colours, and surface
+patterns: stone blocks, planks, corrugated sheet with rust, roof tiles, worn plaster, mottled stone; lights that glow)
+and bodies (the voxel format's points and shapes) for a Roman house and Town Center, the rats' shack and silo, two
+trees and a rock. The game doesn't load this folder; src/voxel_buildings.lobster draws them. Body units: z up, y to
+the front, x across; a tile is about 62. Each is drawn facing as the game's baked one is (its front to the lower left).
 Run from the repo root: python3 tools/voxel/buildings.py"""
 import json, math, os
 
 OUT = "data/voxel/buildings"
+
+
+def pat(kind, size=(1, 1), depth=0.15, mix=0.0, color2="#000000", **kw):
+    return {"kind": kind, "size": list(size), "depth": depth, "mix": mix, "color2": color2, **kw}
+
+
 MATS = {
-    "plaster": "#e6dfd0", "stone": "#b3ab9b", "stone_dark": "#8c8475", "tile": "#b4482c", "tile_dark": "#8a3320",
-    "timber": "#7a5230", "timber_dark": "#4e321e", "glass": "#f4e39a", "shutter": "#a33f2a", "sheet": "#b9bdc3",
-    "sheet_dark": "#7d828a", "pipe": "#2c2a2a", "cheese": "#f0c23c", "leaf": "#3f6b29", "leaf_dark": "#2b4c1d",
-    "cypress": "#24401f", "bark": "#5a4030", "rock": "#8d877a", "pot": "#b0582e", "team": "#cc2921",
+    "plaster": {"rgb": "#e6dfd0", "pattern": pat("wear", depth=0.16, mix=0.55, color2="#8f7f63")},
+    "plaster_lit": {"rgb": "#f2ece0", "pattern": pat("wear", depth=0.12, mix=0.4, color2="#8f7f63")},
+    "stone": {"rgb": "#b3ab9b", "pattern": pat("blocks", (6.5, 3.2), 0.12, 1.0, "#78705f")},
+    "paving": {"rgb": "#a9a395", "pattern": pat("blocks", (7.5, 7.5), 0.1, 1.0, "#6f6a5e")},
+    "stone_dark": {"rgb": "#8c8475", "pattern": pat("mottle", depth=0.3)},
+    "tile": {"rgb": "#b4482c", "fur": True, "pattern": pat("tiles", (3.0, 3.2), 0.14, 0.3, "#6d6236")},
+    "tile_dark": {"rgb": "#8a3320", "pattern": pat("tiles", (3.0, 3.2), 0.1)},
+    "timber": {"rgb": "#7a5230", "pattern": pat("planks", (4.5, 1), 0.14, 1.0, "#2e1e12")},
+    "timber_dark": {"rgb": "#4e321e", "pattern": pat("planks", (3.0, 1), 0.12, 1.0, "#22160d")},
+    "crate": {"rgb": "#9a6c3c", "pattern": pat("planks", (2.2, 1), 0.14, 1.0, "#3a2614")},
+    "glass": {"rgb": "#ffe9a0", "glow": True},
+    "fire": {"rgb": "#ffb040", "glow": True},
+    "shutter": {"rgb": "#a33f2a", "pattern": pat("planks", (1.4, 1), 0.1, 1.0, "#5a2014")},
+    "sheet": {"rgb": "#b9bdc3", "pattern": pat("ripples", (0.55, 26), 0.2, 0.6, "#9a5a30")},
+    "sheet_round": {"rgb": "#b9bdc3", "pattern": pat("ripples", (0.55, 40), 0.2, 0.8, "#9a5a30", round=True)},
+    "sheet_dark": {"rgb": "#80858d", "pattern": pat("ripples", (0.55, 26), 0.2, 0.7, "#7a4424")},
+    "steel": {"rgb": "#a7acb4"},
+    "pipe": {"rgb": "#2c2a2a"},
+    "cheese": {"rgb": "#f0c23c", "pattern": pat("mottle", depth=0.12)},
+    "sack": {"rgb": "#c9b58a", "pattern": pat("mottle", depth=0.2)},
+    "leaf": {"rgb": "#3f6b29", "fur": True, "pattern": pat("mottle", depth=0.35)},
+    "leaf_dark": {"rgb": "#2b4c1d", "fur": True, "pattern": pat("mottle", depth=0.35)},
+    "cypress": {"rgb": "#24401f", "fur": True, "pattern": pat("mottle", depth=0.35)},
+    "bark": {"rgb": "#5a4030", "pattern": pat("planks", (1.2, 1), 0.2, 0.6, "#2e1e12")},
+    "rock": {"rgb": "#c4b69a", "pattern": pat("mottle", depth=0.28)},
+    "rock_dark": {"rgb": "#8d877a", "pattern": pat("mottle", depth=0.28)},
+    "pot": {"rgb": "#b0582e", "pattern": pat("mottle", depth=0.15)},
+    "team": {"rgb": "#cc2921"},
 }
-FUR = {"tile", "leaf", "leaf_dark", "cypress", "rock", "stone", "bark", "sheet"}
 
 
 def box(c, half, n=(0, 1, 0), mat="plaster", rnd=0.3):
+    """A box round c facing along n, half sizes across, thick and up (the format's); facing x (a side wall's), half
+    is given as the world's x, y, z like the rest."""
+    if tuple(n) == (1, 0, 0): half = (half[1], half[0], half[2])
     return {"box": ["o", *c], "n": list(n), "half": list(half), "round": rnd, "mat": mat}
 
 
@@ -31,35 +65,57 @@ def disc(c, n, r, thick, mat):
     return {"disc": ["o", *c], "n": list(n), "r": [r, thick], "mat": mat}
 
 
-def gable_roof(w, d, z0, rise, over, mat, dark, along_y=False, step=4.0):
+def gable_roof(w, d, z0, rise, over, mat, ridge, along_y=False):
     """A gable roof over a w x d (half sizes) box from eave height z0 up `rise`, the ridge along x (or y), overhanging
-    by `over`, in rows of tiles from eave to ridge; and the gable ends filled under it."""
+    by `over`: two sloped planes (the material's pattern lays the tiles or ripples down them), a ridge, and the gable
+    ends filled under it (in `fill`)."""
     out = []
     run = (d if not along_y else w) + over
     ang = math.atan2(rise, run)
     slope = math.hypot(run, rise)
     span = (w if not along_y else d) + over * 0.5
     for s in (1, -1):
-        if not along_y:
-            n = (0, s * math.sin(ang), math.cos(ang))
-            c = (0, s * run / 2, z0 + rise / 2)
-            out.append(box(c, (span, 1.0, slope / 2), n, mat, 0.2))
-            out.append(box((0, s * (run / 2 - 8.2 * math.sin(ang)), z0 + rise / 2 - 8.2 * math.cos(ang)), (span - over * 0.5, 8.0, slope / 2 - 2.5), n, "plaster", 0.0))
-            x = -span + step / 2
-            while x < span:
-                out.append(cap((x, s * run, z0 + 1.0), (x, 0, z0 + rise + 1.0), (1.25, 1.25), dark if int((x + span) / step) % 3 == 0 else mat))
-                x += step
-        else:
-            n = (s * math.sin(ang), 0, math.cos(ang))
-            c = (s * run / 2, 0, z0 + rise / 2)
-            out.append(box(c, (span, 1.0, slope / 2), n, mat, 0.2))
-            out.append(box((s * (run / 2 - 8.2 * math.sin(ang)), 0, z0 + rise / 2 - 8.2 * math.cos(ang)), (span - over * 0.5, 8.0, slope / 2 - 2.5), n, "plaster", 0.0))
-            y = -span + step / 2
-            while y < span:
-                out.append(cap((s * run, y, z0 + 1.0), (0, y, z0 + rise + 1.0), (1.25, 1.25), dark if int((y + span) / step) % 3 == 0 else mat))
-                y += step
-    if not along_y: out.append(cap((-span, 0, z0 + rise + 1.4), (span, 0, z0 + rise + 1.4), (1.8, 1.8), dark))
-    else: out.append(cap((0, -span, z0 + rise + 1.4), (0, span, z0 + rise + 1.4), (1.8, 1.8), dark))
+        n = (0, s * math.sin(ang), math.cos(ang)) if not along_y else (s * math.sin(ang), 0, math.cos(ang))
+        c = (0, s * run / 2, z0 + rise / 2) if not along_y else (s * run / 2, 0, z0 + rise / 2)
+        out.append(box(c, (span, 1.1, slope / 2), n, mat, 0.2))
+        k = 8.2
+        cf = (0, s * (run / 2 - k * math.sin(ang)), z0 + rise / 2 - k * math.cos(ang)) if not along_y else (s * (run / 2 - k * math.sin(ang)), 0, z0 + rise / 2 - k * math.cos(ang))
+        out.append(box(cf, (span - over * 0.5, 8.0, slope / 2 - 2.5), n, "plaster", 0.0))
+    if not along_y: out.append(cap((-span, 0, z0 + rise + 1.0), (span, 0, z0 + rise + 1.0), (1.8, 1.8), ridge))
+    else: out.append(cap((0, -span, z0 + rise + 1.0), (0, span, z0 + rise + 1.0), (1.8, 1.8), ridge))
+    return out
+
+
+def facet_rock(cx, cy, size, seed, mat="rock"):
+    """A rock of flat cut faces: boxes at angles, a few overlapping, the edges barely rounded."""
+    out = []
+    rnd = (seed * 9301 + 49297) % 233280
+    def r():
+        nonlocal rnd
+        rnd = (rnd * 9301 + 49297) % 233280
+        return rnd / 233280.0
+    for k in range(4):
+        n = (r() - 0.5, r() - 0.5, 0.6 + r() * 0.4)
+        h = (size * (0.5 + r() * 0.5), size * (0.45 + r() * 0.4), size * (0.35 + r() * 0.3))
+        out.append(box((cx + (r() - 0.5) * size, cy + (r() - 0.5) * size, h[2] * 0.8), h, n, mat, 0.25))
+    return out
+
+
+def barrel(x, y, z=0, r=2.6, h=6):
+    return [cap((x, y, z + r * 0.4), (x, y, z + h - r * 0.4), (r, r), "timber", False),
+            disc((x, y, z + 1.2), (0, 0, 1), r + 0.25, 0.35, "steel"), disc((x, y, z + h - 1.2), (0, 0, 1), r + 0.25, 0.35, "steel")]
+
+
+def crate(x, y, z, s):
+    return [box((x, y, z + s), (s, s, s), (0.25, 1, 0), "crate", 0.2)]
+
+
+def firewood(x, y, n=3):
+    out = []
+    for row in range(n):
+        for k in range(n - row):
+            yy = y + (k - (n - row - 1) / 2) * 2.3
+            out.append(cap((x - 4, yy, 1.1 + row * 2.0), (x + 4, yy, 1.1 + row * 2.0), (1.1, 1.1), "bark"))
     return out
 
 
@@ -67,94 +123,93 @@ def roman_house():
     s = [box((0, 0, 2.5), (38, 30, 2.5), mat="stone", rnd=0.5)]
     s.append(box((0, 0, 21), (33, 25, 16)))
     s += gable_roof(33, 25, 37, 17, 5, "tile", "tile_dark")
-    s.append(box((-12, 25.6, 12), (5, 0.8, 9.5), mat="timber_dark"))
-    s.append(box((-12, 26.2, 22.5), (6.5, 0.8, 1.2), mat="stone"))
-    for x in (11, 22):
-        s.append(box((x, 25.6, 25), (3, 0.7, 4.5), mat="glass"))
-        s.append(box((x - 4.6, 25.9, 25), (1.5, 0.7, 4.8), mat="shutter"))
-        s.append(box((x + 4.6, 25.9, 25), (1.5, 0.7, 4.8), mat="shutter"))
+    s.append(box((-8, 25.6, 12), (5, 0.8, 9.5), mat="timber_dark"))
+    s.append(box((-8, 26.2, 22.5), (6.5, 0.8, 1.2), mat="stone"))
+    for y in (-8, 8):  # the gable end facing the lower right: two shuttered, lit windows
+        s.append(box((-33.6, y, 24), (0.7, 3, 4.5), (1, 0, 0), "glass"))
+        s.append(box((-33.9, y - 4.6, 24), (0.7, 1.5, 4.8), (1, 0, 0), "shutter"))
+        s.append(box((-33.9, y + 4.6, 24), (0.7, 1.5, 4.8), (1, 0, 0), "shutter"))
     s.append(box((0, 25.4, 35.5), (33, 0.9, 1.2), mat="team"))
-    s.append(box((22, -10, 58), (2.6, 2.6, 9), mat="stone_dark"))
-    s.append(box((22, -10, 67.5), (3.4, 3.4, 0.8), mat="stone"))
-    s.append(ball((-24, 31, 6.5), 3.2, "pot"))
-    s.append(cap((-24, 31, 8.5), (-24, 31, 12.5), (1.3, 1.6), "pot"))
-    return {"_doc": "A Roman house (2 tiles): plaster on a stone plinth, a red tile gable roof, a door, shuttered windows, the team's band under the eaves, a chimney, an amphora.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
+    s.append(box((20, -10, 58), (2.6, 2.6, 9), mat="stone_dark"))
+    s.append(box((20, -10, 67.5), (3.4, 3.4, 0.8), mat="stone"))
+    s.append(ball((-20, 31, 7.5), 3.2, "pot"))
+    s.append(cap((-20, 31, 9.5), (-20, 31, 13.5), (1.3, 1.6), "pot"))
+    s.append(box((14, 31, 4.5), (3.2, 2.4, 0.5), mat="timber"))
+    s += [cap((14 + dx, 31 + dy, 0), (14 + dx, 31 + dy, 4.2), (0.4, 0.4), "timber_dark") for dx in (-2.6, 2.6) for dy in (-1.8, 1.8)]
+    s += facet_rock(30, 33, 2.4, 3, "rock_dark")
+    return {"_doc": "A Roman house (2 tiles): plaster on a stone plinth, a red tile gable roof, a door, shuttered lit windows, the team's band under the eaves, a chimney, an amphora and a stool.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
 
 
 def roman_tc():
-    s = [box((0, 0, 3), (52, 62, 3), mat="stone", rnd=0.6)]
+    s = [box((0, 0, 3), (52, 62, 3), mat="paving", rnd=0.6)]
     for k in range(3):
         s.append(box((0, 62 + 3 + k * 3.5, 1 + k * 2), (30, 3.5 - k * 0.5, 1 + k * 2), mat="stone"))
     s.append(box((0, -8, 30), (40, 42, 24)))
     s += gable_roof(46, 58, 54, 20, 4, "tile", "tile_dark", along_y=True)
     for x in (-36, -12, 12, 36):
-        s.append(cap((x, 50, 6), (x, 50, 52), (3.2, 2.8), "plaster", False))
+        s.append(cap((x, 50, 6), (x, 50, 52), (3.2, 2.8), "plaster_lit", False))
         s.append(box((x, 50, 7), (4.2, 4.2, 1.2), mat="stone"))
         s.append(box((x, 50, 52.5), (4.2, 4.2, 1.2), mat="stone"))
     s.append(box((0, 50, 55), (47, 4, 2), mat="plaster"))
     s.append(box((0, 54.2, 55), (47, 0.8, 0.9), mat="team"))
     s.append(disc((0, 58, 63), (0, 1, 0.25), 5.0, 0.8, "team"))
     s.append(box((0, 34.4, 20), (8, 0.8, 14), mat="timber_dark"))
-    for x in (-26, 26):
-        s.append(box((x, 34.4, 32), (4, 0.7, 6), mat="glass"))
+    for y in (-30, -6, 18):  # the long side to the lower right: lit windows, the team's band
+        s.append(box((-40.6, y, 32), (0.7, 4, 6), (1, 0, 0), "glass"))
+    s.append(box((-40.4, -8, 52), (0.9, 42, 1.4), (1, 0, 0), "team"))
     s.append(cap((-46, 66, 0), (-46, 66, 60), (0.9, 0.7), "timber_dark"))
-    s.append(box((-46, 70, 54), (0.4, 4, 3), mat="team"))
-    return {"_doc": "A Roman Town Center (3 tiles): a temple on a stone podium with steps, four columns, a tiled roof along its length, the team's band and disc on the pediment, a flag.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
-
-
-def corrugated_slope(x0, x1, y_eave, z_eave, z_ridge, mat, dark, step=2.4):
-    out = []
-    x = x0 + step / 2
-    k = 0
-    while x < x1:
-        out.append(cap((x, y_eave, z_eave), (x, 0, z_ridge), (0.9, 0.9), dark if k % 2 else mat))
-        x += step
-        k += 1
-    return out
+    s.append(ball((-46, 66, 61), 1.4, "pot", True))
+    for a in (0, 120, 240):  # a brazier on the steps
+        x, y = 22 + 2.4 * math.cos(math.radians(a)), 70 + 2.4 * math.sin(math.radians(a))
+        s.append(cap((x, y, 0), (22, 70, 9), (0.4, 0.4), "timber_dark"))
+    s.append(disc((22, 70, 9.5), (0, 0, 1), 3.4, 0.7, "steel"))
+    s.append(ball((22, 70, 11), 2.4, "fire", True))
+    s.append(ball((-30, 70, 3.5), 3.0, "pot"))
+    s.append(cap((-30, 70, 5.5), (-30, 70, 9), (1.2, 1.5), "pot"))
+    return {"_doc": "A Roman Town Center (3 tiles): a temple on a paved podium with steps, four columns, a tiled roof along its length, lit windows, the team's band and disc, a flag, a brazier, an amphora.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
 
 
 def rat_shack():
     s = [box((0, 0, 1), (40, 30, 1), mat="stone_dark", rnd=0.4)]
     s.append(box((0, 0, 19), (36, 26, 17), mat="timber"))
-    for x in range(-34, 36, 6):
-        s.append(box((x, 26.3, 19), (0.5, 0.5, 17), mat="timber_dark", rnd=0.0))
+    ang = math.atan2(15, 31)
     for side in (1, -1):
-        n = (0, side * math.sin(math.atan2(14, 31)), math.cos(math.atan2(14, 31)))
-        s.append(box((0, side * 15.5, 43), (40, 1.0, 17), n, "sheet", 0.1))
-        s += [dict(c, **{}) for c in corrugated_slope(-40, 40, side * 31, 36.5, 51, "sheet", "sheet_dark")]
-    s.append(box((0, 0, 40), (36, 20, 4), mat="timber"))
+        n = (0, side * math.sin(ang), math.cos(ang))
+        s.append(box((0, side * 15.5, 44), (41, 1.1, math.hypot(31, 15) / 2), n, "sheet", 0.1))
+    s.append(cap((-41, 0, 52), (41, 0, 52), (1.2, 1.2), "sheet_dark"))
+    s.append(box((0, 0, 40), (36, 12, 4), mat="timber"))
+    s.append(box((-36.3, 0, 44), (0.6, 14, 4), (1, 0, 0), "timber"))
     s.append(box((-10, 26.4, 12), (5, 0.8, 10), mat="timber_dark"))
     for k in range(3):
         s.append(box((-10, 29 + k * 2.2, 0.6 + k * 1.2), (6, 1.1, 0.6 + k * 1.2), mat="timber_dark"))
-    s.append(box((16, 26.4, 26), (4, 0.6, 4), mat="glass"))
-    s.append(box((-36.4, 0, 26), (0.6, 4, 4), mat="glass"))
-    s.append(cap((26, -10, 40), (26, -10, 62), (2.6, 2.6), "pipe"))
-    s.append(cap((26, -10, 62), (31, -10, 66), (2.6, 2.4), "pipe"))
-    s.append(disc((-40, 18, 9), (1, 0.2, 0), 7, 3.5, "cheese"))
-    s.append(box((31, 30, 4), (5, 4, 4), mat="timber_dark", rnd=0.2))
+    s.append(box((14, 26.4, 24), (4.5, 0.6, 4.5), mat="glass"))
+    s.append(box((-36.6, -9, 24), (0.6, 4.5, 4.5), (1, 0, 0), "glass"))
+    s.append(box((-36.6, 9, 24), (0.6, 4.5, 4.5), (1, 0, 0), "glass"))
+    s.append(box((-37, 0, 15), (0.8, 7, 15), (1, 0, 0), "sheet_dark", 0.1))
+    s.append(cap((22, -10, 40), (22, -10, 64), (2.6, 2.6), "pipe"))
+    s.append(cap((22, -10, 64), (27, -10, 68), (2.6, 2.4), "pipe"))
+    s.append(disc((34, 30, 5), (0.3, 1, 0), 5.5, 2.6, "cheese"))
+    s += barrel(-26, 31)
+    s += crate(-32, 22, 0, 3.2)
+    s += firewood(26, 31)
+    s += facet_rock(-18, 34, 3.6, 7) + facet_rock(4, 34, 3.0, 11)
+    s.append(ball((-40, 10, 3), 3.2, "sack"))
     s.append(box((0, 26.2, 36), (36, 0.8, 1.0), mat="team"))
-    return {"_doc": "The rats' Town Center: a timber shack under a corrugated sheet roof, a stove pipe, a cheese wheel, a crate, the team's band under the eaves.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
+    return {"_doc": "The rats' Town Center: a timber shack under a roof of corrugated sheet (two slopes, rust), a stove pipe, lit windows, a sheet patch on the gable, steps, a cheese wheel, a barrel, a crate, firewood, rocks and a sack at the door, the team's band under the eaves.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
 
 
 def rat_silo():
-    s = [disc((0, 0, 1.5), (0, 0, 1), 26, 1.5, "stone_dark")]
-    r = 22
-    n = 40
-    for k in range(n):
-        a = 2 * math.pi * k / n
-        x, y = r * math.cos(a), r * math.sin(a)
-        s.append(cap((x, y, 3), (x, y, 44), (1.5, 1.5), "sheet" if k % 2 else "sheet_dark"))
-    s.append(disc((0, 0, 23.5), (0, 0, 1), 21, 20.5, "sheet_dark"))
-    for z in (12, 26, 40):
-        s.append(disc((0, 0, z), (0, 0, 1), 23.4, 0.9, "sheet"))
-    for k in range(6):
-        s.append(disc((0, 0, 45 + k * 2), (0, 0, 1), 23 - k * 3.6, 1.2, "sheet"))
-    s.append(ball((0, 0, 58), 3.5, "sheet"))
-    s.append(cap((8, 6, 52), (8, 6, 60), (1.3, 1.3), "pipe"))
-    s.append(box((0, 22.5, 12), (6, 1.5, 9), mat="sheet_dark"))
-    s.append(box((-9, 22.5, 12), (1.5, 2.5, 10), mat="sheet"))
-    s.append(box((18, 14, 22), (2.5, 0.6, 2.5), (0.6, 0.8, 0), "team"))
-    return {"_doc": "The rats' silo: a round tank of corrugated sheet in bands, a stepped lid, a vent pipe, a door, the team's plate.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
+    s = [disc((0, 0, 1.0), (0, 0, 1), 25, 1.0, "stone_dark")]
+    s.append(disc((0, 0, 23.0), (0, 0, 1), 22, 21.0, "sheet_round"))
+    for z in (14, 32):
+        s.append(disc((0, 0, z), (0, 0, 1), 22.9, 0.9, "steel"))
+    s.append(disc((0, 0, 44.7), (0, 0, 1), 23.2, 0.8, "sheet"))
+    s += facet_rock(6, -4, 3.2, 5, "rock")
+    s.append(cap((-6, -2, 45), (-6, -2, 54), (1.5, 1.5), "pipe"))
+    s.append(box((-2, 23.0, 14), (7, 1.4, 11), (0.1, 1, 0), "pipe", 0.2))
+    s.append(box((-13, 23.8, 15), (4.5, 1.2, 12), (0.45, 1, 0), "sheet_dark", 0.1))
+    s.append(box((14, 18.5, 24), (2.4, 0.6, 2.0), (0.6, 0.8, 0), "team"))
+    return {"_doc": "The rats' silo: a round tank of corrugated sheet with two steel hoops, a flat corrugated lid with a stone on it, a vent pipe, a dark door with a sheet panel leant beside it, the team's plate.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
 
 
 def cypress():
@@ -174,18 +229,14 @@ def broadleaf():
 
 
 def rock():
-    s = []
-    for (x, y, z, r) in [(0, 0, 4, 7), (6, 3, 3, 5), (-6, 2, 3, 5), (2, -5, 3, 5), (1, 1, 8, 4.5)]:
-        s.append(ball((x, y, z), r, "rock"))
-    s.append(box((3, 2, 7), (3, 3, 2), (0.3, 0.9, 0.2), "rock", 0.8))
-    return {"_doc": "A rock: lumps melted together.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
+    s = facet_rock(0, 0, 7, 1) + facet_rock(9, 4, 4.5, 2) + facet_rock(-7, 5, 3.5, 4)
+    return {"_doc": "Rocks of flat cut faces: boxes at angles, overlapping, mottled.", "points": {"o": {"at": [0, 0, 0]}}, "shapes": s}
 
 
 def main():
     os.makedirs(OUT + "/bodies", exist_ok=True)
-    mats = {"_doc": "The voxel buildings' materials (an experiment: the game doesn't load this folder)."}
-    for k, v in MATS.items():
-        mats[k] = {"rgb": v, "fur": k in FUR} if k in FUR else {"rgb": v}
+    mats = {"_doc": "The voxel buildings' materials (an experiment: the game doesn't load this folder). pattern: a surface texture in the colour (view/voxel.lobster, vx_patterned): blocks, planks, ripples, tiles, wear, mottle; size in body units; glow: a light."}
+    mats.update(MATS)
     json.dump(mats, open(OUT + "/materials.json", "w"), indent=1)
     for name, f in [("roman_house", roman_house), ("roman_tc", roman_tc), ("rat_shack", rat_shack), ("rat_silo", rat_silo), ("cypress", cypress), ("broadleaf", broadleaf), ("rock", rock)]:
         b = f()

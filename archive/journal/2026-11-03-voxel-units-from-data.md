@@ -122,3 +122,25 @@ renderer took a cell size (`vx_cell_in`, `vx_ground_shadow_in`); nothing else ch
   domed the silo's lid; a gap at the top of each gable.
 - Not placed in a match: buildings draw through their own path (looks, stages, ruins), not a quick swap.
 - Pictures 26 (Roman, baked / voxel / voxel twice as fine), 27 (rats), 28 (props), 29 (all in 8 facings).
+
+### Round 2 of the building test: textures and lights (Dominic: "textures and lights real issue... what's lost i dont see a good reason for")
+
+Dominic didn't accept the "what's lost" list as inherent, and he was right: each gap closed.
+
+- **Texture in the colour**, as data: a material can have a `pattern` (materials.json), laid per voxel by its place on
+  the shape, so the same in every facing and every bake (`vx_patterned`): `blocks` (stone courses, mortar, a bevel, a
+  tone each), `planks` (boards, seams, grain), `ripples` (corrugated sheet with panel seams, rust in patches and
+  streaks running down), `tiles` (rounded tiles in courses, each overlapping the one below, a little moss), `wear`
+  (stained plaster, dirt splashed up from the ground), `mottle` (stone, bark, leaves). On a slope the tiles and ripples
+  run downhill, whichever way it faces; on a round wall (the silo) they go round it.
+- **Lights:** a `glow` material is drawn unshaded with a soft halo round it, on the wall and in the air (`vx_halo`).
+- **Roofs** are flat sloped planes, the tiles and ripples in the pattern, not rows of tubes (Dominic: "why can roof be at
+  an angle?": it can).
+- **Clutter** at the doors: steps, a barrel, a crate, firewood, rocks, a sack, a stool, a brazier with its fire, amphorae.
+- **Rocks** of flat cut faces (boxes at angles), not melted balls.
+- **The silo:** a flat corrugated lid with a stone, two steel hoops, the dark door with a sheet panel leant beside it.
+- **The facing:** each drawn as the baked one is (its front to the lower left; windows moved to the gable ends).
+- Bake: all seven 2.2 s at the units' resolution (house 0.29 s fill + 43 ms a facing, Town Center 0.98 s + 115 ms),
+  12.3 s twice as fine. Fewer shapes than round 1 (13-39 a building; 260-760 lines of JSON, 320 for the materials).
+- Still apart: the baked roof tiles are deeper (each tile a shape, shadowed by the one above); the voxel rust is
+  heavier; the baked Town Center's blue band and medallion read bolder. Pictures 30 (Rome), 31 (rats), 32 (props).
