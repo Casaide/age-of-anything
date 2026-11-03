@@ -22,7 +22,7 @@
   {
    "slot": "spear",
    "bonus": {"mounted": 8},
-   "price_points": 0,
+   "price_points": 1,
    "role": "spear",
    "tier": 1,
    "name": "Spear",
@@ -55,7 +55,7 @@
    "slot": "large",
    "stats": {"armour": {"pierce": 2}},
    "bonus": {"ranged": 8},
-   "price_points": 7,
+   "price_points": 6,
    "role": "large",
    "tier": 2,
    "name": "Heavy",
@@ -103,7 +103,7 @@
    "bonus": {
     "infantry": 2
    },
-   "price_points": 3
+   "price_points": 4
   },
   {
    "slot": "scout",
@@ -189,7 +189,7 @@
   },
   {
    "slot": "unique",
-   "price_points": -2,
+   "price_points": -3,
    "role": "unique",
    "tier": 3,
    "name": "Unique Unit",
