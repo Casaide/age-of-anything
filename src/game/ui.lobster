@@ -230,6 +230,21 @@ var ui_texts = []::UiText
 let UI_FONTS = [ "data/fonts/Droid_Sans/DroidSans.ttf", "data/fonts/Droid_Sans/DroidSans-Bold.ttf", "../assets/fonts/display.ttf", "data/fonts/Droid_Sans/DroidSans-Bold.ttf" ]
 def ui_caps_gap(size:int) -> float: return float(size) * 0.14  // a caption's room between letters (Godot's 2 px at 14)
 
+// A caption's letters' x from its start, measured once by size and words (each measure switches the font: per frame
+// it cost more than all the other text, perf:).
+let ui_caps_xs = dictionary<string, [float]>(64)
+def ui_caps_offsets(s:string, size:int) -> [float]:
+    let key = "{size} {s}"
+    let have = ui_caps_xs.get(key, []::float)
+    if have.length == s.length: return have
+    var x = 0.0
+    let xs = map(s.length) i:
+        let at = x
+        x += ui_text_wf(s.substring(i, 1), size, 3) + ui_caps_gap(size)
+        at
+    ui_caps_xs.set(key, xs)
+    return xs
+
 def ui_text(at:float2, s:string, size:int, col:float4): ui_texts.push(UiText { at, s, size, col, 0, 0.0 })
 
 // Text in a face, with a dark edge (titles over pictures).
@@ -237,8 +252,13 @@ def ui_text_f(at:float2, s:string, size:int, col:float4, font:int, edge:float): 
 
 // About the room a line of text takes (gl.text_size doesn't match what's drawn at every scale).
 def ui_text_w(s:string, size:int) -> float: return 0.52 * float(size) * float(s.length)
-// (measured: the face and size set, then put back)
+// (measured once by face, size and words, then kept: each measure switches the font, and per frame that cost more
+// than drawing the text; perf:)
+let ui_text_ws = dictionary<string, float>(256)
 def ui_text_wf(s:string, size:int, font:int) -> float:
+    let key = "{font} {size} {s}"
+    let have = ui_text_ws.get(key, -1.0)
+    if have >= 0.0: return have
     gl.set_font_name(UI_FONTS[font])
     let was = gl.get_font_size()
     gl.set_font_size(size)
@@ -246,6 +266,7 @@ def ui_text_wf(s:string, size:int, font:int) -> float:
     if font == 3: w += ui_caps_gap(size) * float(max(0, s.length - 1))
     gl.set_font_size(was)
     if font != 0: gl.set_font_name(UI_FONTS[0])
+    ui_text_ws.set(key, w)
     return w
 
 // Text centred on x.
@@ -257,11 +278,8 @@ def ui_flush():
     text_batch():
         for(ui_texts) t:
             if t.font == 3:  // a caption: a letter at a time, spaced
-                var x = t.at.x
-                for(t.s.length) i:
-                    let c = t.s.substring(i, 1)
-                    text_label(float2 { x, t.at.y }, c, t.size, t.col, UI_FONTS[3], t.edge, float4 { 0.0, 0.0, 0.0, 0.85 * t.col.w })
-                    x += ui_text_wf(c, t.size, 3) + ui_caps_gap(t.size)
+                for(ui_caps_offsets(t.s, t.size)) x, i:
+                    text_label(float2 { t.at.x + x, t.at.y }, t.s.substring(i, 1), t.size, t.col, UI_FONTS[3], t.edge, float4 { 0.0, 0.0, 0.0, 0.85 * t.col.w })
             else: text_label(t.at, t.s, t.size, t.col, UI_FONTS[t.font], t.edge, float4 { 0.0, 0.0, 0.0, 0.85 * t.col.w })
     ui_texts = []
 
