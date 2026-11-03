@@ -45,6 +45,7 @@ def tb_icon(name:string, at:float2, side:float, alpha:float):
     let w = sz * s
     let o = at + (float2_1 * side - w) / 2.0
     let c = float4 { 1.0, 1.0, 1.0, alpha }
+    ui_batch_flush()
     gl.set_shader("textured_color")
     gl.set_primitive_texture(0, t)
     gl.color(float4_1):
@@ -82,6 +83,7 @@ def tb_text_w(s:string, size:int, font:int) -> float:
     return (if font == 2: 0.72 elif font == 1: 0.58 else: 0.52) * float(size) * float(s.length)
 
 def tb_flush():
+    ui_batch_flush()
     var font = -1
     for(tb_texts) t:
         if t.font != font:

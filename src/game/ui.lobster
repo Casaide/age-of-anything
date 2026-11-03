@@ -248,6 +248,7 @@ def ui_text_c(x:float, y:float, s:string, size:int, col:float4, font:int, edge:f
     ui_text_f(float2 { x - ui_text_wf(s, size, font) / 2.0, y }, s, size, col, font, edge)
 
 def ui_flush():
+    ui_batch_flush()
     var font = 0
     for(ui_texts) t:
         if t.font != font:
@@ -267,37 +268,18 @@ def ui_flush():
 // A quad in the current transform's coordinates, coloured per vertex (a raw mesh render doesn't pass
 // gl.color's colour to the colour shader, so fills use color_attr).
 def ui_quad(at:float2, size:float2, col:float4 = float4_1):
+    ui_batch_flush()
     gl.draw_mesh("PC", [ float3 { at.x, at.y, 0.0 }, float3 { at.x + size.x, at.y, 0.0 }, float3 { at.x + size.x, at.y + size.y, 0.0 }, float3 { at.x, at.y + size.y, 0.0 } ],
                  [ col, col, col, col ], []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ])
 
 def ui_fill(at:float2, size:float2, col:float4):
     if size.x <= 0.0 or size.y <= 0.0: return
+    if ui_batching:
+        ui_batch_quad(at, float2 { at.x + size.x, at.y }, at + size, float2 { at.x, at.y + size.y }, col)
+        return
     gl.set_shader("color_attr")
     ui_quad(at, size, col)
     gl.set_shader("color")  // (what the callers' own shapes expect next)
-
-// Lines gathered into one draw (ui_lines): many short ones (dashes, rings) are a draw call each otherwise.
-var ui_lines_on = false
-var ui_lpos = []::float3
-var ui_lcol = []::float4
-var ui_lidx = []::int
-
-// The lines drawn so far in a ui_lines block, drawn (before anything else is drawn over them).
-def ui_lines_flush():
-    if ui_lpos.length:
-        gl.set_shader("color_attr")
-        gl.draw_mesh("PC", ui_lpos, ui_lcol, []::float3, []::float2, []::float2, ui_lidx)
-        gl.set_shader("color")
-    ui_lpos = []
-    ui_lcol = []
-    ui_lidx = []
-
-// The ui_lines in body drawn together, at the end (or at a ui_lines_flush).
-def ui_lines(body):
-    ui_lines_on = true
-    body()
-    ui_lines_flush()
-    ui_lines_on = false
 
 // A line as a quad (gl.line draws nothing once a custom shader has been used, in this build).
 def ui_line(a:float2, b:float2, w:float, col:float4):
@@ -305,11 +287,8 @@ def ui_line(a:float2, b:float2, w:float, col:float4):
     let l = magnitude(d)
     if l <= 0.0001: return
     let n = float2 { -d.y, d.x } / l * (w * 0.5)
-    if ui_lines_on:
-        let v = ui_lpos.length
-        for([ a + n, b + n, b - n, a - n ]) q: ui_lpos.push(float3 { q.x, q.y, 0.0 })
-        for(4): ui_lcol.push(col)
-        for([ 0, 2, 1, 0, 3, 2 ]) q: ui_lidx.push(v + q)
+    if ui_batching:
+        ui_batch_quad(a + n, b + n, b - n, a - n, col)
         return
     gl.set_shader("color_attr")
     gl.draw_mesh("PC", [ float3 { a.x + n.x, a.y + n.y, 0.0 }, float3 { b.x + n.x, b.y + n.y, 0.0 }, float3 { b.x - n.x, b.y - n.y, 0.0 }, float3 { a.x - n.x, a.y - n.y, 0.0 } ],
@@ -319,6 +298,7 @@ def ui_line(a:float2, b:float2, w:float, col:float4):
 // A painted rect; `role` picks the look's material: 0 a panel's face, 1 a frame, 2 a button.
 def ui_mat(at:float2, size:float2, col:float4, role:int):
     if size.x <= 0.0 or size.y <= 0.0: return
+    ui_batch_flush()
     let kind = if role == 1: ui_look.frame_mat elif role == 2: ui_look.button_mat else: ui_look.panel_mat
     gl.set_shader("uimat")
     let ok = gl.set_uniform("mcol", col) and gl.set_uniform("kind", float(kind)) and gl.set_uniform("win_h", float(gl.window_size().y)) and gl.set_uniform("px", max(1.0, ui()))
@@ -336,6 +316,7 @@ def ui_paint(at:float2, size:float2, col:float4, material:string):
 
 // Any shape painted in a material (UI_MATERIALS index), its colour and alpha per vertex.
 def ui_paint_poly(pts:[float2], cols:[float4], idx:[int], kind:int):
+    ui_batch_flush()
     gl.set_shader("uimatv")
     gl.set_uniform("kind", float(kind))
     gl.set_uniform("win_h", float(gl.window_size().y))
@@ -345,6 +326,7 @@ def ui_paint_poly(pts:[float2], cols:[float4], idx:[int], kind:int):
 
 // A rect shaded by a grid of colours: f(u, v) gives the colour at each point (0..1 across and down).
 def ui_shade(at:float2, size:float2, nx:int, ny:int, f) -> void:
+    ui_batch_flush()
     let pos = []::float3
     let cols = []::float4
     let idx = []::int
@@ -383,6 +365,7 @@ def ui_outline(at:float2, size:float2, w:float, col:float4):
     ui_fill(at + float2 { size.x - w, 0.0 }, float2 { w, size.y }, col)
 
 def ui_stud(c:float2, r:float, col:float4):
+    ui_batch_flush()
     gl.set_shader("color")
     gl.color(float4 { 0.0, 0.0, 0.0, 0.5 }): gl.translate(c + float2 { 0.6, 0.8 } * r * 0.4): gl.circle(r, 12)
     gl.color(col * float4 { 0.7, 0.7, 0.7, 1.0 }): gl.translate(c): gl.circle(r, 12)

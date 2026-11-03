@@ -962,7 +962,7 @@ def draw_world(alpha:float):
                     elif d.f == -4:
                         flush_sprites()
                         draw_rings(alpha)
-                        ui_lines(): draw_orders(alpha)  // (its dashes and rings in one draw)
+                        ui_batch(): draw_orders(alpha)  // (its dashes and rings in one draw)
                         b_sheet = -1
                     elif d.f == -3:  // a damaged building's cracks, sorted with it (game/town.lobster)
                         flush_sprites()
@@ -1498,7 +1498,7 @@ def scroll():
 // meshes (gl.open_circle goes astray after the sprites' shader, as gl.rect and gl.line do in this build).
 def draw_ring(p:float2, r:float, col:float4):
     let n = 48
-    ui_lines():
+    ui_batch():
         for(n) k:
             let a0 = 360.0 * float(k) / float(n)
             let a1 = 360.0 * float(k + 1) / float(n)
@@ -1616,6 +1616,7 @@ def in_minimap(m:float2) -> bool:
     return abs(m.x - c.x) / (MM_SIZE * 0.5 * s) + abs(m.y - c.y) / (MM_SIZE * 0.25 * s) <= 1.0
 
 def mm_poly(pts:[float2], cols:[float4]):
+    ui_batch_flush()
     gl.set_shader("color_attr")
     gl.draw_mesh("PC", map(pts) p: float3 { p.x, p.y, 0.0 }, cols, []::float3, []::float2, []::float2,
                  if pts.length == 4: [ 0, 1, 2, 0, 2, 3 ] else: [ 0, 1, 2 ])
@@ -1632,6 +1633,7 @@ def mm_frame():
     let i = [ float2 { c.x, b.y - 1.0 }, float2 { b.x + size + 1.5, c.y }, float2 { c.x, b.y + size * 0.5 + 1.0 }, float2 { b.x - 1.5, c.y } ]
     mm_poly(map(o) p: p + float2 { 3.0, 6.0 } * s, map(4): float4 { 0.0, 0.0, 0.0, 0.4 })
     // the frame's material, painted by the UI's shader on the diamond
+    ui_batch_flush()
     gl.set_shader("uimat")
     gl.set_uniform("mcol", ui_look.frame)
     gl.set_uniform("kind", 1.0)
@@ -1663,6 +1665,7 @@ def draw_minimap():
     if not gm: return
     let s = hud_s()
     mm_frame()
+    ui_batch_flush()
     gl.translate(mm_top()):
         gl.scale(mm_scale()):
             gl.set_shader("color_attr")
@@ -1702,13 +1705,13 @@ def draw_hud(paused:bool, speed:float):
     gl.set_shader("color")
     let ws = float(gl.window_size())
     let u = ui()
-    draw_topbar(speed, paused)  // (game/topbar.lobster)
+    ui_batch(): draw_topbar(speed, paused)  // (game/topbar.lobster; its fills in as few draws as can be)
     gl.set_shader("color")      // (placing: the panel's info line says how)
     if winner >= 0:
         gl.set_font_size(int(48.0 * u))
         gl.color(float4 { 1.0, 0.85, 0.3, 1.0 }):
             text_at(ws / 2.0 - float2 { 160.0, 40.0 }, if winner == teams[ME]: "Victory!" else: "Defeat")
-    draw_minimap()
+    ui_batch(): draw_minimap()
     if dragging:
         let m = float(gl.mouse_pos(0))
         let lo = float2 { min(m.x, drag_from.x), min(m.y, drag_from.y) }
@@ -2532,7 +2535,7 @@ def play_match():
         gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
         gl.blend(1)
         draw_world(acc / 0.05)
-        draw_panel()
+        ui_batch(): draw_panel()
         perf_lap(6)
         draw_hud(paused, speed)
         perf_lap(7)
