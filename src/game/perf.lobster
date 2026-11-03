@@ -2,14 +2,19 @@
 // A watched match in the window, vsync on and the frame cap as the player has them, measured for that many seconds of
 // play after a warm-up: each frame's work (from gl.frame's return to the next call: everything but the swap's wait and
 // the cap's sleep), the frames a second, and the GPU buffers each frame made. Above a budget it fails (exit code 1).
+// novsync measures with the screen locked (vsync lets no frame through then; the frame cap still paces it). Where the
+// work goes is printed too, phase by phase (perf_lap).
 // The laptop ran hot (2026-10-31): every gl.text made and deleted a buffer, macOS waited on each delete, and the game
 // drew 120 frames a second on a ProMotion display. Headless runs never saw it.
 
 let PERF_WARM = 4.0  // seconds of play first (the armies bake, the first frames build their buffers)
 // Measured 2026-10-31 on the MacBook (ProMotion, 3024x1834): 3.3 ms median, 4.6 ms 95th, 0 buffers, 60 a second.
 // Before the UI's meshes were drawn from the pool: 13.7 ms, 18.4 ms and 1500 buffers a frame (81% of the main thread).
-let PERF_WORK_MEDIAN = 0.006  // seconds of work a frame, the median
-let PERF_WORK_P95 = 0.009     // and the 95th percentile
+// 2026-11-03, the sprites on atlas pages and the HUD's fills batched: 1.2 to 2.6 ms median, 1.6 to 6 ms 95th, the main
+// thread busy 8 to 16% (the same build twice as slow on some runs: which cores macOS gives it). Budgets above the slow end.
+let PERF_WORK_MEDIAN = 0.004  // seconds of work a frame, the median
+let PERF_WORK_P95 = 0.008     // and the 95th percentile
+let PERF_BUSY_MAX = 0.22      // the main thread's share of the wall clock spent working (not in the swap or the cap's sleep)
 let PERF_FPS_MAX = 66.0       // frames a second (the cap is 60: a 120 Hz display uncapped draws twice as often)
 let PERF_BUFFERS_P95 = 0      // GPU buffers made a frame, the 95th percentile (pooled: none once the pool is full)
 
@@ -61,6 +66,7 @@ def perf_end(clock:float) -> bool:
     var bad = []::string
     if med > PERF_WORK_MEDIAN: bad.push("work median over {PERF_WORK_MEDIAN * 1000.0} ms")
     if p95 > PERF_WORK_P95: bad.push("work 95th over {PERF_WORK_P95 * 1000.0} ms")
+    if busy > PERF_BUSY_MAX: bad.push("the main thread busy {int(busy * 100.0)}%, over {int(PERF_BUSY_MAX * 100.0)}%")
     if fps > PERF_FPS_MAX: bad.push("{fps} frames a second, over {PERF_FPS_MAX} (the frame cap?)")
     if b95 > PERF_BUFFERS_P95: bad.push("{b95} GPU buffers a frame (95th), over {PERF_BUFFERS_P95}")
     if bad.length:
