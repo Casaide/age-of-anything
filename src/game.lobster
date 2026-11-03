@@ -2144,7 +2144,6 @@ var told_end = false  // the match's end was shown (the menu opens once)
 // The pause menu (Esc, or Start on the pad): a panel of buttons over the dimmed match. In a network
 // match the world goes on (only you stop looking), and Load isn't offered.
 def pause_menu():
-    let u = ui()
     let ws = float(gl.window_size())
     ui_frame(true)
     if menu_saves:  // Load game: the saves (game/lobby.lobster)
@@ -2159,33 +2158,67 @@ def pause_menu():
         ui_flush()
         return
     if gl.button("controller_b") == 1: menu_open = false
-    ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.45 })
+    // sim_debug.gd's _make_pause_menu: a framed card in your race's look, its crest on top, sized to what's in it: the
+    // title, your race and the map, a rule; Resume (the primary), the everyday buttons, the volumes; then, set apart
+    // under a rule, the ones that end the match (in red)
+    let k = hud_s()
+    ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.5 })
     let from_lobby = args[1] == "lobby"
-    let size = float2 { 420.0 * u, (if from_lobby: 686.0 else: 614.0) * u + 112.0 * u }
+    let title = if winner >= 0: (if winner == teams[ME]: "Victory!" else: "Defeat") elif net_on: "Menu" else: "Paused"
+    let sub = rstr(su_races[ME], "name") + "  ·  " + gstr(su_map, "name", map_name_now) + (if net_on: "  ·  the match goes on" else: "")
+    let everyday = filter([ "Save game", "Load game", "Tech tree" ]) l: l != "Load game" or not net_on
+    let ending = filter([ "Surrender", "Back to the menu", "Quit" ]) l: (l != "Surrender" or (winner < 0 and defeated[ME] == 0)) and (l != "Back to the menu" or from_lobby)
+    let bw = 380.0
+    let size = float2 { bw + 48.0, 356.0 + 62.0 * float(everyday.length) + 54.0 * float(ending.length) } * k  // (the rows below, top to bottom)
     let at = ws / 2.0 - size / 2.0
-    let title = if winner >= 0: (if winner == teams[ME]: "Victory!" else: "Defeat") elif net_on: "Menu (the match goes on)" else: "Paused"
-    ui_panel(at, size, title)
-    var y = at.y + 70.0 * u
-    def item(label:string, primary:bool) -> bool:
-        let hit = ui_button(float2 { at.x + 40.0 * u, y }, float2 { size.x - 80.0 * u, 58.0 * u }, label, primary)
-        y += 72.0 * u
+    ui_box(at, size, 1, ui_look.face, true)
+    tb_icon_wide("crest_" + hud_crest, float2 { at.x + size.x / 2.0, at.y + 2.0 * k }, 34.0 * k)
+    let x = at.x + 24.0 * k
+    var y = at.y + (22.0 + 8.0) * k
+    ui_text_c(ws.x / 2.0, y, title, int(42.0 * k), ui_look.title, 2, 2.0 * k)
+    y += 68.0 * k
+    ui_text_c(ws.x / 2.0, y, sub, int(17.0 * k), ui_look.dim, 0, 0.0)
+    y += 36.0 * k
+    def rule():
+        let t = max(1.0, k)
+        ui_fill(float2 { x + 6.0 * k, y + 6.0 * k + t }, float2 { bw * k - 12.0 * k, t }, float4 { 0.0, 0.0, 0.0, 0.55 })
+        ui_fill(float2 { x + 6.0 * k, y + 6.0 * k }, float2 { bw * k - 12.0 * k, t }, float4 { ui_look.metal.x, ui_look.metal.y, ui_look.metal.z, 0.7 })
+        let c = float2 { x + bw * k / 2.0, y + 6.0 * k }
+        let d = 4.5 * k
+        ui_paint_poly([ c + float2 { 0.0, -d }, c + float2 { d, 0.0 }, c + float2 { 0.0, d }, c + float2 { -d, 0.0 } ], [ ui_look.metal, ui_look.metal, ui_look.metal, ui_look.metal ], [ 0, 1, 2, 0, 2, 3 ], ui_material("bronze"))
+        y += 24.0 * k
+    rule()
+    def item(label:string, h:float, col:float4) -> bool:
+        let hit = ui_button(float2 { x, y }, float2 { bw * k, h * k }, "", false)
+        let fs = int(19.0 * k)
+        ui_text_f(float2 { x + (bw * k - ui_text_wf(label, fs, 1)) / 2.0, y + (h * k - float(fs)) / 2.0 - 2.0 * k }, label, fs, col, 1, 1.0 * k)
+        y += (h + 12.0) * k
         return hit
-    if item("Resume", true): menu_open = false
-    if item("Save game", false):
-        save_game()
-        menu_open = false
-    if not net_on and item("Load game", false): menu_saves = true
-    if item("Tech tree", false):
-        menu_open = false
-        open_tree(ME)
-    if winner < 0 and defeated[ME] == 0 and item("Surrender", false):  // (the match ends as a defeat for your side)
-        issue_cmd(ME, CMD_SURRENDER, []::int, 0, 0, 0, 0)
-        menu_open = false
-    if from_lobby and item("Back to the menu", false):
-        back_to_lobby = true
-        quit_game = true
-    if item("Quit", false): quit_game = true
-    volume_rows(float2 { at.x + 40.0 * u, y }, size.x - 80.0 * u, 48.0 * u, 10.0 * u)
+    let primary = ui_button(float2 { x, y }, float2 { bw * k, 64.0 * k }, "", true)
+    ui_text_c(ws.x / 2.0, y + (64.0 * k - 28.0 * k) / 2.0 - 4.0 * k, "Resume", int(28.0 * k), ui_look.title, 2, 1.5 * k)
+    if primary: menu_open = false
+    y += 76.0 * k
+    for(everyday) label:
+        if item(label, 50.0, ui_look.text):
+            if label == "Save game":
+                save_game()
+                menu_open = false
+            elif label == "Load game": menu_saves = true
+            else:
+                menu_open = false
+                open_tree(ME)
+    y += volume_rows(float2 { x, y }, bw * k, 36.0 * k, 8.0 * k) + 8.0 * k
+    rule()
+    let danger = float4 { 0.91, 0.54, 0.44, 1.0 }  // #e88a70, as a lacked line
+    for(ending) label:
+        if item(label, 42.0, danger):
+            if label == "Surrender":  // (the match ends as a defeat for your side)
+                issue_cmd(ME, CMD_SURRENDER, []::int, 0, 0, 0, 0)
+                menu_open = false
+            elif label == "Back to the menu":
+                back_to_lobby = true
+                quit_game = true
+            else: quit_game = true
     ui_flush()
 
 // A match from its start: the camera on your Town Center, the clock at 0, played until it's quit (or a capture's done).
