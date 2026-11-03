@@ -81,6 +81,7 @@ def disc(c:float3, n:float3, r:float, thick:float, m:string):
 // `over`: two sloped planes (the material's pattern lays the tiles or ripples down them), a ridge, and the gable ends
 // filled under it.
 def gable_roof(w:float, d:float, z0:float, rise:float, over:float, m:string, ridge:string, along_y:bool):
+    let under = ridge  // (the plane under the rows: the channels between them, in shadow)
     let run = (if along_y: w else: d) + over
     let ang = atan2(float2 { run, rise })
     let slope = sqrt(run * run + rise * rise)
@@ -88,9 +89,26 @@ def gable_roof(w:float, d:float, z0:float, rise:float, over:float, m:string, rid
     def across(a:float, z:float) -> float3: return if along_y: float3 { a, 0.0, z } else: float3 { 0.0, a, z }
     for([ 1.0, -1.0 ]) s:
         let n = if along_y: float3 { s * sin(ang), 0.0, cos(ang) } else: float3 { 0.0, s * sin(ang), cos(ang) }
-        box(across(s * run / 2.0, z0 + rise / 2.0), float3 { span, 1.1, slope / 2.0 }, n, m, 0.2)
+        box(across(s * run / 2.0, z0 + rise / 2.0), float3 { span, 1.1, slope / 2.0 }, n, under, 0.2)
+        // the gable's triangle under it: from the ridge to the wall (not past it: a fill out to the eaves hung under them
+        // and hid the wall's top), out to the roof's edge at each end
         let k = 8.2
-        box(across(s * (run / 2.0 - k * sin(ang)), z0 + rise / 2.0 - k * cos(ang)), float3 { span - over * 0.5, 8.0, slope / 2.0 - 2.5 }, n, "plaster", 0.0)
+        let rw = run - over
+        let mid = z0 + rise - (rw / 2.0) * rise / run
+        box(across(s * (rw / 2.0) - s * k * sin(ang), mid - k * cos(ang)), float3 { span - 0.6, 8.0, rw / cos(ang) / 2.0 }, n, "plaster", 0.0)
+        // the rows of round tiles on it, ridge to eave, deep channels between (their ends bump the eave)
+        let side = if along_y: float3 { 0.0, 1.0, 0.0 } else: float3 { 1.0, 0.0, 0.0 }
+        var t = -span + 2.4
+        while t < span - 1.0:
+            let eave = across(s * run, z0) + n * 2.2 + side * t
+            let top = across(0.0, z0 + rise) + n * 2.2 + side * t
+            cap(eave, top, float2 { 1.55, 1.45 }, m, true)
+            t += 4.8
+        // the raking cornice along the gable's edges, at each end
+        for([ 1.0, -1.0 ]) g:
+            let eave = across(s * run, z0 - 0.5) + side * g * (span - 0.4)
+            let top = across(0.0, z0 + rise - 0.5) + side * g * (span - 0.4)
+            cap(eave, top, float2 { 0.9, 0.9 }, "plaster_lit", true)
     let e = if along_y: float3 { 0.0, span, 0.0 } else: float3 { span, 0.0, 0.0 }
     cap(float3 { 0.0, 0.0, z0 + rise + 1.0 } - e, float3 { 0.0, 0.0, z0 + rise + 1.0 } + e, float2 { 1.8, 1.8 }, ridge, true)
 

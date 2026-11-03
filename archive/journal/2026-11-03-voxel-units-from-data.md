@@ -165,3 +165,13 @@ meanwhile (his call).
 - **kit:** worn kit doesn't swell the silhouette, and enough of the creature still shows through it.
 - **apart:** no two bodies' silhouettes alike, side on and three quarters on.
 - **whole:** one piece (it found the rat's tail tip breaking into specks on the ground: thicker at the tip).
+
+### Round 3 of the building test: the Roman roof's relief (Dominic: "gone from Roman style tiles to flat style tiles?")
+
+Round 2's flat plane with painted tiles lost the Roman roof's relief: raised round rows running from ridge to eave
+with deep channels between them, and a bumpy eave where they end. The rows are shapes again, lying on round 2's true
+slope, over a dark plane (the channels catch the shadow); the painted pattern only varies each tile's tone and marks
+its course. The Town Center gained its pediment's triangle (the gable's fill out to the roof's edge, with a raking
+cornice and white finials), a round crest (a stone rim round the team's disc), and the team's band along the wall
+below the eave's shadow line (from the camera's height the overhang hides the wall's top 6 units). A bug: the
+gable's fill ran out to the eaves and hung under them like a soffit, hiding the wall's top. Picture 39.
