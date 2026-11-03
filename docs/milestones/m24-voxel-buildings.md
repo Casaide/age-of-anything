@@ -1,6 +1,6 @@
 # Milestone 24: Voxel buildings and props
 
-**Status:** planned (2026-11-03; Dominic: "voxel buildings yes")
+**Status:** in progress (2026-11-03; Dominic: "voxel buildings yes", then "C, go": D-203)
 **Exit criterion:**
 - **Coverage:** every building, in every architecture and age, and every prop (trees, rocks, bushes, doodads, town
   props, bridges, walls, gates, towers) is voxel, with its construction and destruction stages, ruins and the team
@@ -47,7 +47,7 @@ C. **B for coverage now, A culture by culture after.** Voxelize everything first
    voxel materials with patterns: plaster, stone, tile, timber, sheet, glass as glow). Then replace looks with
    voxel data where it shows (the Town Centers, the houses, the most-seen buildings), one culture at a time.
 
-Claude recommends **C**.
+Claude recommends **C**. Dominic: "C, go. I will have another agent review all the art afterwards" (D-203).
 
 ## Plan
 
@@ -92,9 +92,10 @@ Claude recommends **C**.
 ## Checklist
 
 - [x] 1. Pediment fix
-- [ ] 1. Building checks
-- [ ] 2. The builder in the game (the experiment's four), cold and warm bakes measured
-- [ ] 3. Every building voxelized, materials and patterns, team band; each architecture seen in a match
+- [x] 1. Building checks: `vbcheck` (no specks, the team colour showing) on every look of every architecture
+- [x] 2. The builder in the game: `voxel_bake` (`view/voxel_mesh.lobster`) in `world_bake`'s frame, so every look, stage,
+      ruin, near layer, wall arm, gate tower, vane and prop bakes as voxels through the art kits unchanged
+- [ ] 3. Every building voxelized: done by step 2; each architecture seen in a match (Romans and rats so far)
 - [ ] 4. Construction and destruction stages, ruins
 - [ ] 5. Walls, gates, towers
 - [ ] 6. Props
@@ -102,3 +103,46 @@ Claude recommends **C**.
 - [ ] 8. Data versions of the most-seen looks
 - [ ] 9. The old pipeline removed, golden updated, losses backlogged
 - [ ] 10. Archive
+
+## Results so far
+
+- **The bridge:** `view/voxel_mesh.lobster` rasterizes a model's triangles into a sparse shell of voxels at 1.5 art px
+  a voxel, each voxel the colour its triangles' material gives there. The material's own texture is sampled into it,
+  so stone blocks, tiles, thatch and sheet keep their detail; lit and unshaded materials glow. It is drawn with the
+  voxel units' light (bands by the sun, its own shadow, occlusion, an outline) and its shadow on the ground, in
+  `world_bake`'s camera and frame.
+- **Speed:** the light is worked out only for the voxels that show.
+  - A Town Center: about 720,000 voxels, 1.9 s; a house 0.33 s.
+  - A cold start bakes about 3 s a look (each look is 9 frames: the whole, 4 construction stages, 4 broken-up
+    stages), so a cold start of two cultures is minutes. The shipped prebake (D-185) bakes them once on the build
+    machine.
+- **The prebake:** every architecture's 1,868 frames in 23 min on the build machine, shipped as 104 MB.
+- **A warm start:** 5-6 s in all, the buildings 6 ms (from `baked/`).
+- **First matches:** the Romans and the frogs (pictures 41-42); the stone, junk and thatch buildings (43).
+- **`vbcheck`:** 205 looks, no specks.
+  - 16 keep their model's team colour out of sight from the game's view, by the model's own doing: stone houses #2
+    and #3 (behind the cypress), the stone and thatch mills, every architecture's diagonal palisade and stone gates.
+  - The review should decide whether to move those bands.
+
+## For the art review (Dominic: "I will have another agent review all the art afterwards")
+
+A reviewer should look at each of these at game zoom in a real match, and close up (3x):
+- **Every architecture's buildings** (stone, thatch, junk, tent, reed, mound), in every age's look and variant.
+  - Do the voxelized models keep their character?
+  - Do textures read (stone blocks, tile, thatch, sheet, planks), or turn to noise at 1.5 px a voxel?
+  - Is the light consistent with the units' (one sun, the same bands)?
+- **The team colour:** a clear band on every building, not scattered; `vbcheck` only says some shows, and lists the 16
+  looks where the model hides it (NOTE lines). Farms, markets, walls and palisades carry none by design: should they?
+- **Construction stages** (4) and **destruction stages** (battered, breaking, collapsed, the ruin): do they read as
+  the building going up and coming down?
+- **Walls, gates and towers:** joins between neighbours, the near layers (merlons in front of units), the open gate.
+- **Props:** trees, rocks, bushes, reeds, gold and stone, town props, bridges against the voxel units: same scale and
+  style, no plastic look.
+- **Units against buildings:** do units stand out from the ground and the buildings? Their outlines and shadows
+  agree?
+- **Lights:** windows, lanterns, braziers glowing, halos not blown out.
+- **The data-built looks** (step 8, Town Centers and houses first) against the voxelized ones of the same culture:
+  is the jump in detail jarring next to the rest?
+- **Specks, holes and seams:** voxelized thin parts (fences, poles, ropes, banners), and gaps where meshes met.
+- **The checks are honest:** `vbcheck`, `voxel_check` and `voxel_proto -- - check` pass, and what they don't cover is
+  listed here.

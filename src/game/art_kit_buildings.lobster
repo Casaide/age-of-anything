@@ -258,7 +258,7 @@ def akb_load_cached(name:string) -> bool:
     return true
 
 def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, shadow_only:[MNode] = []):
-    let sprite, w, h, anchor = if shadow_only.length: akb_world_bake(model, shadow, shadow_only) else: world_bake(model, shadow)
+    let sprite, w, h, anchor = voxel_bake(model, shadow)  // (D-203: as voxels; a gate tower's shadow is its own now)
     let at = anchor + akb_project(pivot) * WB_ART
     keep_frame(name, sprite, w, h, at)
     if akb_cache_stem != "" and w > 0 and h > 0:
@@ -598,3 +598,70 @@ def akb_mark(n:MNode, only:[MNode], out:[bool]) -> void:
     if not n.visible: return
     if n.mesh and n.mat: out.push(exists(only) o: o == n)
     for(n.kids) k: akb_mark(k, only, out)
+
+// ---- the buildings' checks as voxels (`vbcheck`, milestone 24): every look of every building in every architecture
+// baked as voxels (its whole look, not its stages): no specks (an island of a few pixels apart from the rest), its
+// team colour showing (the sprite shader's key) where its model has some: a NOTE where it doesn't, the model's own
+// doing (the same camera as the old bake). Prints a line an architecture, FAIL and NOTE lines, and
+// returns how many failed.
+def akb_specks(sprite:string, w:int, h:int) -> int:
+    let seen = map(w * h): false
+    var specks = 0
+    for(w * h) p:
+        if not seen[p] and sprite[p * 4 + 3] == 255:
+            var n = 0
+            let todo = [ p ]
+            seen[p] = true
+            while todo.length:
+                let q = todo.pop()
+                n++
+                let x = q % w
+                let y = q / w
+                for([ int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 } ]) o:
+                    let xx = x + o.x
+                    let yy = y + o.y
+                    if xx >= 0 and yy >= 0 and xx < w and yy < h:
+                        let r = yy * w + xx
+                        if not seen[r] and sprite[r * 4 + 3] == 255:
+                            seen[r] = true
+                            todo.push(r)
+            if n < 4: specks++
+    return specks
+
+def akb_team_px(sprite:string, w:int, h:int) -> int:
+    var n = 0
+    for(w * h) p:
+        let r = sprite[p * 4]
+        let g = sprite[p * 4 + 1]
+        let b = sprite[p * 4 + 2]
+        if sprite[p * 4 + 3] == 255 and r > 50 and b > 50 and abs(r - b) * 4 < r + b and g * 3 < min(r, b): n++  // (the key's hue, shaded)
+    return n
+
+var akb_check_dump = ""  // a folder: each failing look's picture saved there (vbcheck dump:<folder>)
+def akb_check(archs:[string]) -> int:
+    var failed = 0
+    var hidden = 0  // (the model's own: a tree in front of a house's shutters, a gate's band facing away; for the art review)
+    var looks_n = 0
+    for(archs) arch:
+        let t0 = seconds_elapsed()
+        for(akb_types()) type:
+            for(akb_looks_of(arch, type)) ml:
+                let spec = akb_placed(arch, type, ml[0], ml[1])
+                let sprite, w, h, _at = voxel_bake(spec.body, false)
+                let specks = akb_specks(sprite, w, h)
+                let team = akb_team_px(sprite, w, h)
+                looks_n++
+                let name = "{arch}:{type}{ml[1]}"
+                if specks > 0:
+                    print "FAIL {name}: {specks} specks (islands of under 4 pixels)"
+                    failed++
+                if team == 0:  // (its model's team colour, if it has any, showing: walls, farms, palisades have none)
+                    let shell = vm_fill(spec.body, VM_PX / WB_PX)
+                    let tv = (filter(shell.col) c: c.x > 0.5 and c.z > 0.5 and c.y < 0.3).length
+                    if tv > 0:
+                        print "NOTE {name}: its model\'s team colour ({tv} voxels) doesn\'t show from the game\'s view"
+                        hidden++
+                        if akb_check_dump != "": write_file("{akb_check_dump}/{arch}_{type}{ml[1]}.png", bmat_png(map(sprite.length) i: sprite[i], w, h), 0, 1)
+        print "vbcheck {arch}: looks checked in {int(seconds_elapsed() - t0)} s"
+    print "vbcheck: {looks_n} looks, {failed} failed, {hidden} with their team colour out of sight (NOTE lines)"
+    return failed
