@@ -1,0 +1,404 @@
+{
+ "_doc": "A spider (the race, and a mount): a big round abdomen with the team on its back, eight long legs knee-high, a small head with eyes and fangs. No hands: it carries its weapon in a harness at its side.",
+ "skin": "#2a2a2e",
+ "pale": "#4a4a55",
+ "mark": "#c88a4a",
+ "size": 1.0,
+ "fur": 0.08,
+ "reach": 2.4,
+ "points": {
+  "abdomen": {
+   "at": [
+    0,
+    -5.5,
+    8.5
+   ],
+   "bob": 0.4
+  },
+  "thorax": {
+   "at": [
+    0,
+    1.5,
+    7.5
+   ],
+   "bob": 0.4
+  },
+  "head": {
+   "at": [
+    0,
+    5.0,
+    8.0
+   ],
+   "bob": 0.4
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "thorax",
+    2.0,
+    3.0,
+    -0.5
+   ],
+   "foot": [
+    8.0,
+    9.5,
+    0.5
+   ],
+   "stride": 2.4,
+   "lift": 1.6,
+   "phase": 0,
+   "bones": [
+    6.0,
+    7.6
+   ],
+   "pole": [
+    0.3,
+    0,
+    1
+   ],
+   "r": [
+    0.95,
+    0.75,
+    0.7,
+    0.4
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": [
+    {
+     "ball": [
+      "ankle",
+      0,
+      0.3,
+      -0.2
+     ],
+     "r": 0.75,
+     "mat": "skin",
+     "_doc": "a foot"
+    }
+   ]
+  },
+  {
+   "hip": [
+    "thorax",
+    2.5,
+    1.5,
+    -0.5
+   ],
+   "foot": [
+    10.0,
+    4.0,
+    0.5
+   ],
+   "stride": 2.4,
+   "lift": 1.6,
+   "phase": 180,
+   "bones": [
+    6.0,
+    7.6
+   ],
+   "pole": [
+    0.3,
+    0,
+    1
+   ],
+   "r": [
+    0.95,
+    0.75,
+    0.7,
+    0.4
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": [
+    {
+     "ball": [
+      "ankle",
+      0,
+      0.3,
+      -0.2
+     ],
+     "r": 0.75,
+     "mat": "skin",
+     "_doc": "a foot"
+    }
+   ]
+  },
+  {
+   "hip": [
+    "thorax",
+    2.5,
+    -0.1,
+    -0.5
+   ],
+   "foot": [
+    10.0,
+    -1.5,
+    0.5
+   ],
+   "stride": 2.4,
+   "lift": 1.6,
+   "phase": 0,
+   "bones": [
+    6.0,
+    7.6
+   ],
+   "pole": [
+    0.3,
+    0,
+    1
+   ],
+   "r": [
+    0.95,
+    0.75,
+    0.7,
+    0.4
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": [
+    {
+     "ball": [
+      "ankle",
+      0,
+      0.3,
+      -0.2
+     ],
+     "r": 0.75,
+     "mat": "skin",
+     "_doc": "a foot"
+    }
+   ]
+  },
+  {
+   "hip": [
+    "thorax",
+    2.0,
+    -1.6,
+    -0.5
+   ],
+   "foot": [
+    8.0,
+    -7.0,
+    0.5
+   ],
+   "stride": 2.4,
+   "lift": 1.6,
+   "phase": 180,
+   "bones": [
+    6.0,
+    7.6
+   ],
+   "pole": [
+    0.3,
+    0,
+    1
+   ],
+   "r": [
+    0.95,
+    0.75,
+    0.7,
+    0.4
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": [
+    {
+     "ball": [
+      "ankle",
+      0,
+      0.3,
+      -0.2
+     ],
+     "r": 0.75,
+     "mat": "skin",
+     "_doc": "a foot"
+    }
+   ]
+  }
+ ],
+ "harness": {
+  "right": [
+   "thorax",
+   3.4,
+   1.6,
+   1.0
+  ],
+  "dir": [
+   0,
+   0.2,
+   1
+  ],
+  "left": [
+   "thorax",
+   -3.6,
+   1.4,
+   0.6
+  ]
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.2,
+   1.2
+  ],
+  "r": 2.8
+ },
+ "armour": {
+  "a": [
+   "thorax",
+   0,
+   -1.0,
+   0
+  ],
+  "b": [
+   "thorax",
+   0,
+   1.5,
+   0.2
+  ],
+  "r": [
+   3.8,
+   3.2
+  ]
+ },
+ "seat": {
+  "z": 8.0,
+  "astride": [
+   "skin",
+   "skin",
+   "skin"
+  ],
+  "at": [
+   0,
+   -2.0,
+   13.5
+  ],
+  "wide": 4.8
+ },
+ "shapes": [
+  {
+   "ball": [
+    "abdomen",
+    0,
+    0,
+    0
+   ],
+   "r": 5.6,
+   "mat": "skin"
+  },
+  {
+   "ball": [
+    "abdomen",
+    0,
+    -0.6,
+    2.6
+   ],
+   "r": 3.6,
+   "mat": "pale",
+   "_doc": "a pattern on the abdomen"
+  },
+  {
+   "disc": [
+    "abdomen",
+    0,
+    -0.4,
+    5.5
+   ],
+   "n": [
+    0,
+    -0.3,
+    1
+   ],
+   "r": [
+    2.6,
+    0.4
+   ],
+   "mat": "team",
+   "_doc": "the team on its back"
+  },
+  {
+   "cap": [
+    "thorax",
+    0,
+    -1.0,
+    0
+   ],
+   "to": [
+    "thorax",
+    0,
+    1.5,
+    0.2
+   ],
+   "r": [
+    3.6,
+    3.0
+   ],
+   "mat": "skin"
+  },
+  {
+   "ball": [
+    "head",
+    0,
+    0,
+    0
+   ],
+   "r": 2.6,
+   "mat": "skin"
+  },
+  {
+   "bead": [
+    "head",
+    0.8,
+    2.2,
+    1.0
+   ],
+   "r": 0.55,
+   "mat": "eye",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "head",
+    1.6,
+    1.8,
+    0.5
+   ],
+   "r": 0.38,
+   "mat": "eye",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "head",
+    0.8,
+    2.0,
+    -1.2
+   ],
+   "to": [
+    "head",
+    0.6,
+    2.8,
+    -2.6
+   ],
+   "r": [
+    0.55,
+    0.2
+   ],
+   "mat": "mark",
+   "mirror": true,
+   "hard": true,
+   "_doc": "fangs"
+  }
+ ]
+}

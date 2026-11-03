@@ -1,7 +1,7 @@
 {
  "_doc": "A cat to ride (black, white chest, muzzle and paws): its head low and well out in front so the rider never hides its face; big ears, gold eyes, a tail curled up. size: 1.45 its rider's.",
  "skin": "#242126",
- "pale": "#f0ebe0",
+ "pale": "#1a1614",
  "size": 1.45,
  "fur": 0.09,
  "reach": 3.4,
@@ -67,8 +67,8 @@
     0.96
    ],
    "mats": [
-    "cat",
-    "cat"
+    "skin",
+    "skin"
    ],
    "shapes": [
     {
@@ -79,7 +79,7 @@
       0
      ],
      "r": 1.3,
-     "mat": "white",
+     "mat": "mark",
      "_doc": "a white paw"
     }
    ],
@@ -116,8 +116,8 @@
     0.96
    ],
    "mats": [
-    "cat",
-    "cat"
+    "skin",
+    "skin"
    ],
    "shapes": [
     {
@@ -128,7 +128,7 @@
       0
      ],
      "r": 1.3,
-     "mat": "white"
+     "mat": "mark"
     }
    ]
   }
@@ -151,7 +151,7 @@
     4.4,
     4.6
    ],
-   "mat": "cat"
+   "mat": "skin"
   },
   {
    "ball": [
@@ -161,7 +161,7 @@
     -2.0
    ],
    "r": 3.2,
-   "mat": "white",
+   "mat": "mark",
    "_doc": "the chest"
   },
   {
@@ -204,8 +204,8 @@
     0.2
    ],
    "mats": [
-    "cat",
-    "cat"
+    "skin",
+    "skin"
    ],
    "_doc": "the tail, curled up"
   },
@@ -226,7 +226,7 @@
     3.2,
     2.8
    ],
-   "mat": "cat"
+   "mat": "skin"
   },
   {
    "ball": [
@@ -236,7 +236,7 @@
     0
    ],
    "r": 4.0,
-   "mat": "cat"
+   "mat": "skin"
   },
   {
    "ball": [
@@ -246,7 +246,7 @@
     -1.5
    ],
    "r": 2.2,
-   "mat": "white",
+   "mat": "mark",
    "_doc": "the muzzle"
   },
   {
@@ -298,7 +298,7 @@
     1.5,
     0.25
    ],
-   "mat": "cat",
+   "mat": "skin",
    "mirror": true,
    "_doc": "big ears, pink inside"
   },
@@ -323,5 +323,6 @@
    "hard": true,
    "mirror": true
   }
- ]
+ ],
+ "mark": "#f0ebe0"
 }

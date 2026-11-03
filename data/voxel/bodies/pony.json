@@ -67,8 +67,8 @@
     1.2
    ],
    "mats": [
-    "coat",
-    "mane"
+    "skin",
+    "pale"
    ],
    "shapes": [
     {
@@ -88,7 +88,7 @@
       1.2,
       1.1
      ],
-     "mat": "mane",
+     "mat": "pale",
      "_doc": "a hoof"
     }
    ]
@@ -124,8 +124,8 @@
     1.2
    ],
    "mats": [
-    "coat",
-    "mane"
+    "skin",
+    "pale"
    ],
    "shapes": [
     {
@@ -145,7 +145,7 @@
       1.2,
       1.1
      ],
-     "mat": "mane"
+     "mat": "pale"
     }
    ]
   }
@@ -168,7 +168,7 @@
     5.4,
     5.8
    ],
-   "mat": "coat"
+   "mat": "skin"
   },
   {
    "cap": [
@@ -187,7 +187,7 @@
     1.3,
     0.8
    ],
-   "mat": "mane",
+   "mat": "pale",
    "hard": true,
    "_doc": "the tail"
   },
@@ -208,8 +208,11 @@
     3.2,
     2.0
    ],
-   "mat": "coat",
-   "_doc": "the neck"
+   "mat": "skin",
+   "_doc": "the neck",
+   "unless": [
+    "fused"
+   ]
   },
   {
    "cap": [
@@ -228,9 +231,12 @@
     0.9,
     0.9
    ],
-   "mat": "mane",
+   "mat": "pale",
    "hard": true,
-   "_doc": "the mane"
+   "_doc": "the mane",
+   "unless": [
+    "fused"
+   ]
   },
   {
    "cap": [
@@ -249,7 +255,10 @@
     2.0,
     1.4
    ],
-   "mat": "coat"
+   "mat": "skin",
+   "unless": [
+    "fused"
+   ]
   },
   {
    "bead": [
@@ -260,7 +269,10 @@
    ],
    "r": 0.45,
    "mat": "eye",
-   "mirror": true
+   "mirror": true,
+   "unless": [
+    "fused"
+   ]
   },
   {
    "cap": [
@@ -279,8 +291,19 @@
     0.7,
     0.35
    ],
-   "mat": "coat",
-   "mirror": true
+   "mat": "skin",
+   "mirror": true,
+   "unless": [
+    "fused"
+   ]
   }
- ]
+ ],
+ "mark": "#f0ebe0",
+ "fused": [
+  "front",
+  0,
+  1.5,
+  5.0
+ ],
+ "_fused_doc": "a centaur: its rider grows out of the front here (the head, neck and mane left off)"
 }

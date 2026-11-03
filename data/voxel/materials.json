@@ -71,5 +71,13 @@
  },
  "trousers": {
   "rgb": "#452e29"
+ },
+ "mark": {
+  "rgb": "#f0ebe0",
+  "fur": true
+ },
+ "coat_mark": {
+  "rgb": "#f0ebe0",
+  "fur": true
  }
 }
