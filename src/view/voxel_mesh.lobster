@@ -213,8 +213,19 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
                     c = float4 { b.x * 0.3, b.y * 0.3, b.z * 0.3, 1.0 }
         if c.w > 0.0:
             for(4) ch: write_int8_le(out, j * 4 + ch, clamp(int((if ch < 3: c[ch] else: 1.0) * 255.0 + 0.5), 0, 255))
-    // the shadow on the ground, where nothing is drawn
+    // the shadow on the ground, where nothing is drawn: the sun's, and a contact shadow round what stands on the ground
+    // (the old baker's contact band: without it a rock or a barrel at the door floated, Dominic)
     if shadow:
+        let rx = int(ceiling(hx)) + 1
+        for(sh.pos) q:
+            let p = (float(q) + float3_1 * 0.5) * v
+            if p.y < v * 3.0:
+                let g = screen(float3 { p.x, 0.0, p.z }) - lo
+                for(5) oy: for(rx * 2 + 1) ox:
+                    let xx = int(floor(g.x)) + ox - rx
+                    let yy = int(floor(g.y)) + oy - 1
+                    if xx >= 0 and yy >= 0 and xx < w and yy < h and out[(yy * w + xx) * 4 + 3] == 0:
+                        for(4) ch: write_int8_le(out, (yy * w + xx) * 4 + ch, WB_CONTACT[ch])
         for(sh.pos) q:
             let p = (float(q) + float3_1 * 0.5) * v
             if p.y > v * 0.5:

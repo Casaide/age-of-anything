@@ -2,7 +2,7 @@
 // and loaded by a later start), the shipped bakes (baked/, by prebake.sh), and the progress a long bake draws.
 // BAKE_VERSION goes up when the building or prop models or their baker change, so old bakes aren't reused.
 
-let BAKE_VERSION = 11              // (11: buildings and props as voxels, D-203; 2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27; 7: Godot's bicubic shrink in pixelize, in Godot's square frame; 8: the art at 2x (D-173), 2026-10-28; 9: the bears' neck leans with them, 2026-10-31; 10: the bears lofted (D-189))
+let BAKE_VERSION = 12              // (12: their contact shadows; 11: buildings and props as voxels, D-203; 2: Godot's full PI in the models; 3: engines' members in front or behind; 4: whole-pixel frames as Godot's, 2026-10-27; 7: Godot's bicubic shrink in pixelize, in Godot's square frame; 8: the art at 2x (D-173), 2026-10-28; 9: the bears' neck leans with them, 2026-10-31; 10: the bears lofted (D-189))
 var bake_cache_dir = "bake_cache"  // (play.sh makes it; Lobster can't make a folder)
 var bake_shipped_dir = "baked"     // the buildings and props a build ships, baked by prebake.sh (read before bake_cache/)
 
