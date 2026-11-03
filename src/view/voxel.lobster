@@ -67,9 +67,19 @@ def vx_ik(a:float3, t:float3, l1:float, l2:float, pole:float3) -> float3, float3
 let vx_mat_names = []::string
 let vx_MAT_BASE = []::float3
 var vx_mat_cols = []::float3
-let vx_MAT_FUR = []::int  // per material: flecked like fur
-var vx_mat_team = 0       // the team colour's material (the sprite shader's key)
-var vx_fur = 0.07         // how strongly fur is flecked (the body's)
+let vx_MAT_FUR = []::int       // per material: flecked like fur
+let vx_MAT_PAT = []::int       // per material: its surface pattern (vx_PATTERNS), 0 none
+let vx_MAT_PSIZE = []::float2  // the pattern's size (body units: a block, a plank, a ripple, a tile)
+let vx_MAT_PDEPTH = []::float  // how strongly it shades
+let vx_MAT_PMIX = []::float    // how much of the second colour (mortar, rust, dirt) it lays on
+let vx_MAT_C2 = []::float3     // the second colour
+let vx_MAT_PROUND = []::int    // laid round a round wall (centred on vx_pat_centre), not flat across it
+var vx_pat_centre = float2_0   // the shape's centre, grid voxels / vx_pat_scale (a round wall's axis)
+let vx_MAT_GLOW = []::int      // a light (a lit window, a fire): its own colour unshaded, and a halo round it
+var vx_pat_scale = 2.0         // voxels a body unit in the shape being drawn (the patterns are in body units)
+let vx_PATTERNS = [ "", "blocks", "planks", "ripples", "tiles", "wear", "mottle" ]
+var vx_mat_team = 0  // the team colour's material (the sprite shader's key)
+var vx_fur = 0.07    // how strongly fur is flecked (the body's)
 
 def vx_mat(name:string) -> int:
     let m = find(vx_mat_names) n: n == name
@@ -333,9 +343,27 @@ def vx_load(dirs:[string]):
                     vx_mat_names.push(name)
                     vx_MAT_BASE.push(float3_0)
                     vx_MAT_FUR.push(0)
+                    vx_MAT_PAT.push(0)
+                    vx_MAT_PSIZE.push(float2_1)
+                    vx_MAT_PDEPTH.push(0.0)
+                    vx_MAT_PMIX.push(0.0)
+                    vx_MAT_C2.push(float3_0)
+                    vx_MAT_GLOW.push(0)
+                    vx_MAT_PROUND.push(0)
                     m = vx_mat_names.length - 1
                 vx_MAT_BASE[m] = vx_hex(gstr(mo.a[k], "rgb", "#ff00ff"))
                 vx_MAT_FUR[m] = if gbool(mo.a[k], "fur", false): 1 else: 0
+                vx_MAT_GLOW[m] = if gbool(mo.a[k], "glow", false): 1 else: 0
+                if has(mo.a[k], "pattern"):
+                    let po = at(mo.a[k], "pattern")
+                    vx_MAT_PAT[m] = find(vx_PATTERNS) n: n == gstr(po, "kind", "")
+                    assert vx_MAT_PAT[m] > 0
+                    let sz = glist(po, "size")
+                    vx_MAT_PSIZE[m] = if sz.length >= 2: float2 { as_float(sz[0]), as_float(sz[1]) } else: float2_1
+                    vx_MAT_PDEPTH[m] = gfloat(po, "depth", 0.15)
+                    vx_MAT_PMIX[m] = gfloat(po, "mix", 0.0)
+                    vx_MAT_C2[m] = vx_hex(gstr(po, "color2", "#000000"))
+                    vx_MAT_PROUND[m] = if gbool(po, "round", false): 1 else: 0
     vx_mat_cols = copy(vx_MAT_BASE)
     vx_mat_team = vx_mat("team")
     for(dirs) d:
@@ -906,6 +934,94 @@ def vx_fill_end(fl:vx_filling) -> vx_shape:
         clamp((float(hit) / 14.0 - 0.45) / 0.35, 0.0, 1.0)
     return vx_shape { pos, smat, nrm, occl, lo, dims, mats }
 
+// ---- surface patterns (materials.json's "pattern"): texture in the colour, by the voxel's place on its shape, so
+// the same in every facing and every bake
+
+// Value noise at p (smooth, 0..1): a lattice hashed, blended between.
+def vx_noise(p:float3) -> float:
+    let i = int3 { int(floor(p.x)), int(floor(p.y)), int(floor(p.z)) }
+    let f = p - float(i)
+    let u = f * f * (float3_1 * 3.0 - f * 2.0)
+    def h(d:int3) -> float: return float(vx_hash(i + d)) / 1023.0
+    let x00 = h(int3 { 0, 0, 0 }) + (h(int3 { 1, 0, 0 }) - h(int3 { 0, 0, 0 })) * u.x
+    let x10 = h(int3 { 0, 1, 0 }) + (h(int3 { 1, 1, 0 }) - h(int3 { 0, 1, 0 })) * u.x
+    let x01 = h(int3 { 0, 0, 1 }) + (h(int3 { 1, 0, 1 }) - h(int3 { 0, 0, 1 })) * u.x
+    let x11 = h(int3 { 0, 1, 1 }) + (h(int3 { 1, 1, 1 }) - h(int3 { 0, 1, 1 })) * u.x
+    let y0 = x00 + (x10 - x00) * u.y
+    let y1 = x01 + (x11 - x01) * u.y
+    return y0 + (y1 - y0) * u.z
+
+def vx_fract(x:float) -> float: return x - floor(x)
+def vx_cell_hash(a:int, b:int, m:int) -> float: return float(vx_hash(int3 { a, b, m })) / 1023.0
+
+// Colour c of material m at voxel centre v (grid units) whose surface faces n, patterned. The pattern lies on the
+// face's plane: across and up on a wall, x and y on a roof or a top.
+def vx_patterned(m:int, v:float3, n:float3, c:float3) -> float3:
+    let p = v / vx_pat_scale
+    let an = abs(n)
+    let top = an.z > max(an.x, an.y)
+    let flat = an.x + an.y < 0.15
+    var a = if top: p.x elif an.x > an.y: p.y else: p.x  // across
+    var b = if top: p.y else: p.z                        // up (or along, on a top)
+    if top and not flat:                                 // a slope: across it and down it, whichever way it faces (tiles and ripples run downhill)
+        let down = normalize(float2 { n.x, n.y })
+        a = p.x * -down.y + p.y * down.x
+        b = p.x * down.x + p.y * down.y
+    elif not top and vx_MAT_PROUND[m] != 0:  // a round wall (a tank): across is the way round it
+        a = atan2(normalize(float2 { p.x - vx_pat_centre.x, p.y - vx_pat_centre.y })) * magnitude(float2 { p.x - vx_pat_centre.x, p.y - vx_pat_centre.y }) * 0.01745
+    let sz = vx_MAT_PSIZE[m]
+    let depth = vx_MAT_PDEPTH[m]
+    let c2 = vx_MAT_C2[m]
+    let mix = vx_MAT_PMIX[m]
+    switch vx_MAT_PAT[m]:
+        case 1:  // blocks: courses of stone, every other one shifted half a block, mortar between, each its own tone
+            let row = int(floor(b / sz.y))
+            let a2 = a + (if row % 2 != 0: sz.x * 0.5 else: 0.0)
+            let col = int(floor(a2 / sz.x))
+            let fa = vx_fract(a2 / sz.x) * sz.x
+            let fb = vx_fract(b / sz.y) * sz.y
+            if fa < 0.55 or fb < 0.55: return c * (1.0 - mix) + c2 * mix
+            let edge = if fa < 1.2 or fb > sz.y - 0.7: 0.9 else: 1.0  // (a bevel: lit on top, dark below the joint)
+            return c * (1.0 + depth * (vx_cell_hash(row, col, m) - 0.5) * 2.0) * edge * (0.94 + 0.12 * vx_noise(p * 1.3))
+        case 2:  // planks: boards sz.x wide (upright on a wall, along x on a top), a dark seam, a tone each, grain
+            let col = int(floor(a / sz.x))
+            let fa = vx_fract(a / sz.x) * sz.x
+            if fa < 0.45: return c * (1.0 - mix) + c2 * mix
+            let grain = vx_noise(float3 { a * 3.0, b * 0.25, float(col) * 7.0 })
+            return c * (1.0 + depth * (vx_cell_hash(col, 0, m) - 0.5) * 2.0) * (0.9 + 0.2 * grain)
+        case 3:  // ripples: corrugated sheet, ridges every sz.x across (down the slope on a roof: across is x), a seam
+            // every sz.y; rust in patches and in streaks running down
+            let k = 1.0 + depth * sin(a / sz.x * 360.0)
+            let seam = vx_fract(a / sz.y) * sz.y < 0.5
+            let patch = vx_noise(p * 0.18 + float3 { 3.1, 7.7, 1.3 })
+            let streak = vx_noise(float3 { a * 0.9, b * 0.06, 5.0 })
+            let rust = clamp((patch - 0.62) * 5.0, 0.0, 1.0) * 0.8 + clamp((streak - 0.7) * 4.0, 0.0, 1.0) * 0.5
+            let cr = c * k * (if seam: 0.78 else: 1.0)
+            let r = min(1.0, rust * mix * (0.7 + 0.6 * vx_noise(p * 1.7)))
+            return cr * (1.0 - r) + c2 * k * r
+        case 4:  // tiles: rounded tiles sz.x wide in courses sz.y deep, each course overlapping the one below (its
+            // lower edge dark), a tone each
+            let row = int(floor(b / sz.y))
+            let a2 = a + (if row % 2 != 0: sz.x * 0.5 else: 0.0)
+            let col = int(floor(a2 / sz.x))
+            let fa = vx_fract(a2 / sz.x)
+            let fb = vx_fract(b / sz.y)
+            let round = 0.78 + 0.32 * sin(fa * 180.0)
+            let lap = if fb < 0.18: 0.62 else: 1.0
+            let tone = 1.0 + depth * (vx_cell_hash(row, col, m) - 0.5) * 2.0
+            let cc = c * round * lap * tone
+            let moss = clamp((vx_noise(p * 0.25) - 0.66) * 4.0, 0.0, 1.0) * mix
+            return cc * (1.0 - moss) + c2 * moss
+        case 5:  // wear: plaster stained in soft patches, dirt splashed up from the ground
+            let stain = vx_noise(p * 0.2) * 0.6 + vx_noise(p * 0.7) * 0.4
+            let dirt = clamp(1.0 - p.z / 7.0, 0.0, 1.0) * (0.6 + 0.4 * vx_noise(p * 1.1))
+            let k = 1.0 - depth * clamp((stain - 0.45) * 2.5, 0.0, 1.0)
+            let d = min(1.0, dirt * mix)
+            return c * k * (1.0 - d) + c2 * d
+        case 6:  // mottle: a stone's or a bark's tone in soft patches and fine grain
+            return c * (1.0 + depth * ((vx_noise(p * 0.45) - 0.5) * 1.4 + (vx_noise(p * 2.1) - 0.5) * 0.6))
+        default: return c
+
 // ---- drawing: each surface voxel splatted into the cell over the pixels its cube covers, the nearest kept
 
 def vx_hash(v:int3) -> int:
@@ -965,8 +1081,10 @@ def vx_cell_in(sh:vx_shape, facing:int, cw:int, ch:int, anchor:int2) -> [float4]
                 q += light * 1.7
             k -= sh.occl[i] * 0.3
         var c = vx_mat_cols[m] * (if k > 0.8: 1.08 elif k > 0.62: 0.94 elif k > 0.45: 0.76 elif k > 0.28: 0.6 else: 0.47)
+        if vx_MAT_PAT[m] != 0: c = vx_patterned(m, p, sh.normals[i], c)
         if vx_MAT_FUR[m] != 0: c *= 1.0 + vx_fur * (float(vx_hash(v)) / 511.5 - 1.0)
-        c = min(c, float3_1)  // (over 1 wraps round in the game's texture: a bright pink came out cyan)
+        if vx_MAT_GLOW[m] != 0: c = vx_mat_cols[m]  // (a light: unshaded)
+        c = min(c, float3_1)                        // (over 1 wraps round in the game's texture: a bright pink came out cyan)
         let x0 = max(1, int(-floor(-(float(anchor.x) + u - hx - 0.5))))
         let x1 = min(cw - 2, int(floor(float(anchor.x) + u + hx - 0.5)))
         let y0 = max(1, int(-floor(-(float(anchor.y) - w - hy - 0.5))))
@@ -996,7 +1114,48 @@ def vx_cell_in(sh:vx_shape, facing:int, cw:int, ch:int, anchor:int2) -> [float4]
                     let m = vx_mat[q]
                     let c = if m == vx_mat_team: float3 { 0.22, 0.07, 0.06 } else: vx_mat_cols[m] * 0.3
                     vx_out[j] = float4 { c.x, c.y, c.z, 1.0 }
+    vx_halo(cw, ch)
     return vx_out
+
+// A soft halo round every light in the cell (a lit window's glow on the wall round it and the air in front): each pixel
+// near a light takes the nearest one's colour, fading with the distance, the strongest kept (not summed).
+var vx_glow = []::float
+def vx_halo(cw:int, ch:int):
+    let lights = []::int
+    for(vx_box.w - vx_box.y + 1) yy: for(vx_box.z - vx_box.x + 1) xx:
+        let j = (vx_box.y + yy) * cw + vx_box.x + xx
+        if vx_mat[j] >= 0 and vx_MAT_GLOW[vx_mat[j]] != 0: lights.push(j)
+    if not lights.length: return
+    let r = max(3, int(3.5 * vx_pat_scale))
+    if vx_glow.length != cw * ch: vx_glow = map(cw * ch): 0.0
+    let cols = map(cw * ch): float3_0
+    var box = vx_box
+    for(lights) j:
+        let lx = j % cw
+        let ly = j / cw
+        let lc = vx_cols[j]
+        for(r * 2 + 1) dy: for(r * 2 + 1) dx:
+            let x = lx + dx - r
+            let y = ly + dy - r
+            if x >= 1 and y >= 1 and x < cw - 1 and y < ch - 1:
+                let d = sqrt(float((dx - r) * (dx - r) + (dy - r) * (dy - r))) / float(r)
+                if d < 1.0:
+                    let f = (1.0 - d) * (1.0 - d) * 0.55
+                    let q = y * cw + x
+                    if f > vx_glow[q]:
+                        vx_glow[q] = f
+                        cols[q] = lc
+                        box = int4 { min(box.x, x), min(box.y, y), max(box.z, x), max(box.w, y) }
+    for(box.w - box.y + 1) yy: for(box.z - box.x + 1) xx:
+        let q = (box.y + yy) * cw + box.x + xx
+        let f = vx_glow[q]
+        if f > 0.0:
+            vx_glow[q] = 0.0
+            if vx_mat[q] < 0 or vx_MAT_GLOW[vx_mat[q]] == 0:
+                let o = vx_out[q]
+                if o.w > 0.0: vx_out[q] = float4 { min(1.0, o.x + cols[q].x * f), min(1.0, o.y + cols[q].y * f), min(1.0, o.z + cols[q].z * f), 1.0 }
+                else: vx_out[q] = float4 { cols[q].x, cols[q].y, cols[q].z, f * 0.8 }
+    vx_box = box
 
 // One facing's shadow on the ground (the sun's, as the world's props and buildings cast it): a cell of its own, drawn
 // under every unit. vx_SCELL wide and high round vx_SANCHOR; drawn in vx_sbox; reused by the next call.

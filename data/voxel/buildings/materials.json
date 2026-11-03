@@ -1,69 +1,322 @@
 {
- "_doc": "The voxel buildings' materials (an experiment: the game doesn't load this folder).",
+ "_doc": "The voxel buildings' materials (an experiment: the game doesn't load this folder). pattern: a surface texture in the colour (view/voxel.lobster, vx_patterned): blocks, planks, ripples, tiles, wear, mottle; size in body units; glow: a light.",
  "plaster": {
-  "rgb": "#e6dfd0"
+  "rgb": "#e6dfd0",
+  "pattern": {
+   "kind": "wear",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.16,
+   "mix": 0.55,
+   "color2": "#8f7f63"
+  }
+ },
+ "plaster_lit": {
+  "rgb": "#f2ece0",
+  "pattern": {
+   "kind": "wear",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.12,
+   "mix": 0.4,
+   "color2": "#8f7f63"
+  }
  },
  "stone": {
   "rgb": "#b3ab9b",
-  "fur": true
+  "pattern": {
+   "kind": "blocks",
+   "size": [
+    6.5,
+    3.2
+   ],
+   "depth": 0.12,
+   "mix": 1.0,
+   "color2": "#78705f"
+  }
+ },
+ "paving": {
+  "rgb": "#a9a395",
+  "pattern": {
+   "kind": "blocks",
+   "size": [
+    7.5,
+    7.5
+   ],
+   "depth": 0.1,
+   "mix": 1.0,
+   "color2": "#6f6a5e"
+  }
  },
  "stone_dark": {
-  "rgb": "#8c8475"
+  "rgb": "#8c8475",
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.3,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
  },
  "tile": {
   "rgb": "#b4482c",
-  "fur": true
+  "fur": true,
+  "pattern": {
+   "kind": "tiles",
+   "size": [
+    3.0,
+    3.2
+   ],
+   "depth": 0.14,
+   "mix": 0.3,
+   "color2": "#6d6236"
+  }
  },
  "tile_dark": {
-  "rgb": "#8a3320"
+  "rgb": "#8a3320",
+  "pattern": {
+   "kind": "tiles",
+   "size": [
+    3.0,
+    3.2
+   ],
+   "depth": 0.1,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
  },
  "timber": {
-  "rgb": "#7a5230"
+  "rgb": "#7a5230",
+  "pattern": {
+   "kind": "planks",
+   "size": [
+    4.5,
+    1
+   ],
+   "depth": 0.14,
+   "mix": 1.0,
+   "color2": "#2e1e12"
+  }
  },
  "timber_dark": {
-  "rgb": "#4e321e"
+  "rgb": "#4e321e",
+  "pattern": {
+   "kind": "planks",
+   "size": [
+    3.0,
+    1
+   ],
+   "depth": 0.12,
+   "mix": 1.0,
+   "color2": "#22160d"
+  }
+ },
+ "crate": {
+  "rgb": "#9a6c3c",
+  "pattern": {
+   "kind": "planks",
+   "size": [
+    2.2,
+    1
+   ],
+   "depth": 0.14,
+   "mix": 1.0,
+   "color2": "#3a2614"
+  }
  },
  "glass": {
-  "rgb": "#f4e39a"
+  "rgb": "#ffe9a0",
+  "glow": true
+ },
+ "fire": {
+  "rgb": "#ffb040",
+  "glow": true
  },
  "shutter": {
-  "rgb": "#a33f2a"
+  "rgb": "#a33f2a",
+  "pattern": {
+   "kind": "planks",
+   "size": [
+    1.4,
+    1
+   ],
+   "depth": 0.1,
+   "mix": 1.0,
+   "color2": "#5a2014"
+  }
  },
  "sheet": {
   "rgb": "#b9bdc3",
-  "fur": true
+  "pattern": {
+   "kind": "ripples",
+   "size": [
+    0.55,
+    26
+   ],
+   "depth": 0.2,
+   "mix": 0.6,
+   "color2": "#9a5a30"
+  }
+ },
+ "sheet_round": {
+  "rgb": "#b9bdc3",
+  "pattern": {
+   "kind": "ripples",
+   "size": [
+    0.55,
+    40
+   ],
+   "depth": 0.2,
+   "mix": 0.8,
+   "color2": "#9a5a30",
+   "round": true
+  }
  },
  "sheet_dark": {
-  "rgb": "#7d828a"
+  "rgb": "#80858d",
+  "pattern": {
+   "kind": "ripples",
+   "size": [
+    0.55,
+    26
+   ],
+   "depth": 0.2,
+   "mix": 0.7,
+   "color2": "#7a4424"
+  }
+ },
+ "steel": {
+  "rgb": "#a7acb4"
  },
  "pipe": {
   "rgb": "#2c2a2a"
  },
  "cheese": {
-  "rgb": "#f0c23c"
+  "rgb": "#f0c23c",
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.12,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
+ },
+ "sack": {
+  "rgb": "#c9b58a",
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.2,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
  },
  "leaf": {
   "rgb": "#3f6b29",
-  "fur": true
+  "fur": true,
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.35,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
  },
  "leaf_dark": {
   "rgb": "#2b4c1d",
-  "fur": true
+  "fur": true,
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.35,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
  },
  "cypress": {
   "rgb": "#24401f",
-  "fur": true
+  "fur": true,
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.35,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
  },
  "bark": {
   "rgb": "#5a4030",
-  "fur": true
+  "pattern": {
+   "kind": "planks",
+   "size": [
+    1.2,
+    1
+   ],
+   "depth": 0.2,
+   "mix": 0.6,
+   "color2": "#2e1e12"
+  }
  },
  "rock": {
+  "rgb": "#c4b69a",
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.28,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
+ },
+ "rock_dark": {
   "rgb": "#8d877a",
-  "fur": true
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.28,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
  },
  "pot": {
-  "rgb": "#b0582e"
+  "rgb": "#b0582e",
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.15,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
  },
  "team": {
   "rgb": "#cc2921"
