@@ -1,4 +1,7 @@
-"""The theme ("Whatever"), written as stems that the game mixes by age: the lute and a frame
+"""The game's music: three pieces, each in stems the game mixes by age (PIECES at the end). This file
+holds the first piece, the theme; music_hearth.py and music_march.py the others, score.py what they share.
+
+The theme ("Whatever"), written as stems that the game mixes by age: the lute and a frame
 drum from the start, a flute and a drone from age 2, horns from age 3, and a battle layer
 (war drums, a ragged horn) faded in while there's fighting near the camera. All stems are
 one loop long and in time with each other, so any mix of them is the same tune.
@@ -10,6 +13,7 @@ import math
 import random
 from synth import (RATE, seconds, mix_into, concat, reverb, gain, pan, widen, add, fade)
 import instruments as I
+from score import Grid, parse, step, third_up, triad
 
 BPM = 92
 BARS = 32
@@ -27,40 +31,7 @@ ROOTS_B = ["D", "G", "F", "D", "D", "C", "D", "D"]
 ROOTS = ROOTS_A + ROOTS_A + ROOTS_B + ROOTS_A
 
 
-def parse(text, bar=0):
-    """'D4:1 r:.5' from a bar -> [(beat, name, beats)], beat counted from the loop's start."""
-    out = []
-    at = bar * 4.0
-    for tok in text.replace("|", " ").split():
-        name, dur = tok.split(":")
-        dur = float(dur)
-        if name != "r":
-            out.append((at, name, dur))
-        at += dur
-    return out
-
-
-NATURALS = "CDEFGAB"   # the scale is all naturals; octave numbers turn over at C
-
-
-def step(name, degrees):
-    """A note some scale steps up (or down) from another: 'A4', 2 -> 'C5'."""
-    i = NATURALS.index(name[0]) + int(name[1:]) * 7 + degrees
-    return "%s%d" % (NATURALS[i % 7], i // 7)
-
-
-def third_up(name):
-    return step(name, 2)
-
-
-def triad(root, octave):
-    base = root + str(octave)
-    return [base, step(base, 2), step(base, 4)]
-
-
-def _place(buf, sound, beat, rng, human=0.012):
-    at = int(beat * BEAT * RATE + rng.uniform(-human, human) * RATE)
-    mix_into(buf, sound, max(0, at) % LOOP, 1.0, wrap=True)
+_place = Grid(BPM, BARS).place
 
 
 # ----------------------------------------------------------------------------- the stems
@@ -159,11 +130,25 @@ STEMS = {
 }
 
 
-def render_stem(name, seed=7):
+import music_hearth
+import music_march
+
+# piece -> (its stems, its loop in samples). Every piece has the same stems (the game's mixes name
+# them), so ageing up adds the same kinds of layer whichever piece is playing.
+PIECES = {
+    "theme": (STEMS, LOOP),
+    "hearth": (music_hearth.STEMS, music_hearth.G.loop),
+    "march": (music_march.STEMS, music_march.G.loop),
+}
+
+
+def render_stem(piece, name, seed=7):
     """A seamless loop: tails wrap, and the room's tail from the end lands on the start."""
-    fn, p, size, wet = STEMS[name]
-    rng = random.Random(seed + hash(name) % 1000 if False else seed + sum(map(ord, name)))
+    stems, loop_n = PIECES[piece]
+    fn, p, size, wet = stems[name]
+    salt = 0 if piece == "theme" else sum(map(ord, piece)) * 31   # (the theme keeps its old seeds)
+    rng = random.Random(seed + sum(map(ord, name)) + salt)
     dry = fn(rng)
     twice = reverb(concat(dry, dry), size, wet)
-    loop = twice[LOOP:]
+    loop = twice[loop_n:]
     return loop, p
