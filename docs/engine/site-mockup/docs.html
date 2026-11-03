@@ -43,7 +43,7 @@
 <aside class="doc-nav">
   <p>Start</p>
   <ul>
-    <li><a href="#start" aria-current="true">Getting started</a></li>
+    <li><a href="#start" aria-current="true">Get started</a></li>
     <li><a href="#packs">A pack</a></li>
     <li><a href="#maps">A map</a></li>
     <li><a href="#bodies">A body</a></li>
@@ -62,17 +62,17 @@
 </aside>
 
 <article class="doc-body">
-  <p class="kicker">Getting started</p>
-  <h1 id="start">A pack, a map and a body</h1>
-  <p>Creel isn't public yet, so this page walks through the same steps inside Age of Anything's repository, with
-    the commands as they are today. Everything you write is data, in a folder. When data isn't enough, a pack brings
-    a few Lobster functions (<a href="#hooks">hooks</a>, planned).</p>
+  <p class="kicker">Get started</p>
+  <h1 id="start">Your first pack</h1>
+  <p>This guide builds a small pack: a map, a creature and a manifest. Then you check it and play it. Everything
+    you write is data in a folder. When data can't say what you want, the pack adds a few Lobster functions, called
+    <a href="#hooks">hooks</a>.</p>
   <div class="callout">Run commands from <code>src/</code> unless they say otherwise. Lobster itself comes from
     <a href="https://github.com/aardappel/lobster">its repository</a>.</div>
 
   <h2 id="packs">1. A pack</h2>
-  <p>A pack is a folder (a zip to share) with a manifest. The scaffold writes one that passes the checks as it is,
-    so you start green:</p>
+  <p>A pack is a folder with a manifest, zipped when you share it. Start from the scaffold: it writes a pack that
+    already passes every check, so you begin from something that works.</p>
 <pre><code>python3 tools/mods/new_mod.py zorbs --era scifi</code></pre>
 <pre><code>mods/zorbs/
   mod.json                 the manifest
@@ -84,7 +84,7 @@
     maps/crater.json       a map
   models/                  optional: models in Lobster
   sheets/zorbs.json        a sheet spec, to look at your units</code></pre>
-  <p>The manifest names the pack, its version, what it depends on and how to check it:</p>
+  <p>The manifest says what the pack is called, its version, what it needs and how to test it:</p>
 <pre><code>{
   "id": "zorbs",
   "name": "Zorbs",
@@ -95,14 +95,14 @@
   "data": "data",
   "check": { "rules": "anything", "prompts": ["zorbs with lasers"] }
 }</code></pre>
-  <p>Packs load in order of <code>load_order</code>, then id. An entry with the same id as one before it replaces
-    it; <code>"extends": "frog"</code> copies an entry and changes only what you name. The pack's signature is
-    <code>id@version#hash</code>, a sha256 over its sorted file paths and their bytes. Shared races name the packs
-    they were made with, and (soon) lobbies and saves compare the list.</p>
+  <p>Packs load by <code>load_order</code>, then by id. An entry with the same id as an earlier one replaces it, and
+    <code>"extends": "frog"</code> copies an entry and changes only what you name. Each pack gets a signature,
+    <code>id@version#hash</code>, where the hash covers every file in it. That is how a lobby knows all its players
+    have the same rules, and how a save knows what it needs.</p>
 
   <h2 id="maps">2. A map</h2>
-  <p>A map is rows of characters and a legend into <code>terrain.json</code>. This is a whole test map, 40 by 24:
-    rock round the edge, a river with a ford and a bridge, a wood, reeds and a berry bush.</p>
+  <p>A map is a drawing in text, with a key that says what each character is. Here is a whole small map, 40 by
+    24: rock round the edge, a river with a ford and a bridge, a wood, some reeds and a berry bush.</p>
 <pre><code>########################################
 #..................RRR.................#
 #."""".............RRR.................#
@@ -137,14 +137,15 @@
   "bridges": [[19, 16, 21, 16]],
   "rows": [ "########################################", "..." ]
 }</code></pre>
-  <p>Larger maps add <code>heights</code> (a digit per tile), <code>animals</code> and a <code>symmetry</code>.
-    Drop the file in your pack's <code>data/maps/</code> and play it with <code>map:&lt;id&gt;</code>.</p>
+  <p>Bigger maps add <code>heights</code> (a digit per tile), <code>animals</code> and a <code>symmetry</code>. Put
+    the file in your pack's <code>data/maps/</code> and play it with <code>map:&lt;id&gt;</code>.</p>
 
   <h2 id="bodies">3. A body</h2>
-  <p>A creature's body is named points, legs from a hip to a foot, and shapes on the points: capsules
-    (<code>cap</code> … <code>to</code>), balls, and beads for eyes. Legs walk on their own: the engine solves the
-    knee from the bone lengths and steps the foot by <code>stride</code> and <code>lift</code>. Materials are names
-    (<code>skin</code>, <code>pale</code>, <code>eye</code>, the team colour) looked up in <code>materials.json</code>.</p>
+  <p>A creature is a few named points, legs that run from a hip to a foot, and shapes hung on the points:
+    capsules (<code>cap</code> to <code>to</code>), balls, and beads for eyes. You don't animate the legs. Creel
+    works out the knee from the bone lengths and steps each foot by <code>stride</code> and <code>lift</code>.
+    Colours are names like <code>skin</code>, <code>pale</code> and <code>eye</code>, so each team and skin can
+    paint them differently.</p>
 <pre><code>{
   "skin": "#e4dccb", "pale": "#2e2622", "size": 1.0, "fur": 0.12,
   "points": {
@@ -165,12 +166,12 @@
     { "bead": ["head", 1.5, 1.0, 0.0], "r": 0.4, "mat": "eye", "mirror": true }
   ]
 }</code></pre>
-  <p>That is most of the sheep in <code>data/voxel/bodies/sheep.json</code>. A leg is drawn once and mirrored, so
-    two entries give four legs. The body is voxelized and baked in eight facings when a match starts.</p>
+  <p>That's most of a sheep. Each leg entry is mirrored, so two entries make four legs. When the match starts,
+    Creel builds the body in voxels and draws it in eight directions.</p>
 
   <h2 id="roles">4. Buildings by role</h2>
-  <p>The sim and the bots never look a building up by its id, only by what it does, so your buildings can be
-    called anything. A building lists its <code>roles</code>:</p>
+  <p>Creel and its bots find buildings by what they do, never by name, so yours can be called anything. A building
+    lists its <code>roles</code>:</p>
   <div class="scroll">
     <table>
       <thead><tr><th>Role</th><th>What it means</th></tr></thead>
@@ -185,14 +186,14 @@
       </tbody>
     </table>
   </div>
-  <p>A farm, a pen and a drop-off need no role: <code>becomes</code>, <code>pen</code> and <code>drop_off</code>
-    say it. An unknown role stops the game at the start, with its name.</p>
+  <p>Farms, pens and drop-off points don't need a role: <code>becomes</code>, <code>pen</code> and
+    <code>drop_off</code> already say what they are. A misspelt role stops the game at the start and names it.</p>
 
-  <h2 id="hooks">5. Hooks (planned)</h2>
-  <p>When a pack needs behaviour the data can't say, it brings Lobster functions that are compiled in at start and
-    called in load order. Rule hooks run in lockstep on every machine; UI hooks run on one. A sketch of a "last army
-    standing" win, which today's data can't express:</p>
-<pre><code>// hooks/last_army.lobster: a rule hook (a sketch; names not final)
+  <h2 id="hooks">5. Hooks</h2>
+  <p>When your game needs something the data can't describe, write a hook: a Lobster function in your pack,
+    compiled in when the game starts. Rule hooks run inside the simulation on every machine; interface hooks run on
+    one. Here's a win condition, last army standing:</p>
+<pre><code>// hooks/last_army.lobster
 def victory() -> int:
     var alive = -1
     for(player_count()) p:
@@ -201,17 +202,18 @@ def victory() -> int:
                 return -1  // two or more still fighting
             alive = p
     return alive</code></pre>
-  <p>Rule hooks keep to integers, the sim's own random numbers and a stable order; they may not touch files, the
-    network, clocks or the window. The check tool lints them and plays a short match twice to see the state hash
-    agree.</p>
+  <p>Rule hooks stick to whole numbers, the simulation's own random numbers and a fixed order, and they can't touch
+    files, the network, the clock or the window. The checker reads them for anything that could make two machines
+    disagree, then plays a short match twice to prove they don't.</p>
+  <div class="callout">The hook API is the next part of Creel to land. Names may still change.</div>
 
   <h2 id="check">6. Check and share</h2>
 <pre><code>src/mod_check.sh zorbs                      # loads it or says why not; races, placement, prices
 src/sheet.sh mods/zorbs/sheets/zorbs.json /tmp/zorbs   # your units on a sheet, every facing
 ./play.sh lobby mods:zorbs rules:anything   # a match with it
 python3 tools/mods/pack.py zorbs            # build/mods/zorbs-0.1.0.zip</code></pre>
-  <p>A refusal says what to fix, by file and id. To install a pack, unzip it into <code>mods/</code>. Bump the
-    version when you change it: a shared race names the packs it was made with.</p>
+  <p>If something's wrong, the checker tells you what to fix, by file and id. To install a pack, unzip it into
+    <code>mods/</code>. Raise the version whenever you change it, so players can tell your releases apart.</p>
 </article>
 
 </main>
