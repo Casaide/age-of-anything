@@ -433,7 +433,7 @@ def run_measure(check:int, oracle:bool, one_pool:bool):
                     results[g][string_to_int(w[2]) * group_units[g].length + string_to_int(w[3])] = string_to_int(w[4])
     else:
         var k = 0
-        for(groups) g, n:
+        for(groups.length) n:
             let units = group_units[n]
             for(units.length) i:
                 var j = i + 1

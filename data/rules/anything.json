@@ -31,7 +31,7 @@
   },
   {
    "slot": "skirmisher",
-   "price_points": 0,
+   "price_points": -1,
    "role": "skirmisher",
    "tier": 2,
    "name": "Skirmisher",
@@ -43,7 +43,7 @@
   },
   {
    "slot": "archer",
-   "price_points": -2,
+   "price_points": 0,
    "role": "archer",
    "tier": 2,
    "name": "Archer",
@@ -52,7 +52,7 @@
   },
   {
    "slot": "large",
-   "price_points": 4,
+   "price_points": 7,
    "role": "large",
    "tier": 2,
    "name": "Heavy",
@@ -100,7 +100,7 @@
    "bonus": {
     "infantry": 2
    },
-   "price_points": -1
+   "price_points": 2
   },
   {
    "slot": "scout",
@@ -124,7 +124,7 @@
     "worker": 3,
     "heal": 4
    },
-   "price_points": -1,
+   "price_points": -2,
    "noun": "Scout"
   },
   {
@@ -186,6 +186,7 @@
   },
   {
    "slot": "unique",
+   "price_points": -1,
    "role": "unique",
    "tier": 3,
    "name": "Unique Unit",
@@ -249,6 +250,8 @@
  "_roster_doc": "each slot is a unit line: its first age (`tier`), the building that trains it, its name on the tech tree page, and `last_age` when it stops before the last age. Slots with \"status\": \"planned\" are only on the page: the generator skips them (milestone 12). `upgrades`: false keeps the first unit for every later age (no second tier: the healer). `own_seed`: the line draws from its own random stream (prompt + slot), so adding it leaves every other line's recipes as they were. `engine`: a siege line: its body is the engine of that name in the race's take (families.json `siege`, a creature's own `siege` first), crewed by the race's workers. `bonus`: attack bonus by class that the line gets whatever it holds (the swordsman's counters: spears, skirmishers, buildings; pricing.gd), and `price_points`: what that bonus adds to the line's price points. `mount`: the line rides the race's mount (\"always\": a race with nothing to ride lacks the line; \"prefer\": it goes on foot), `unless_mounted`: the race lacks the line when that other line already rides (a centaur's archers are mounted archers), `stats` (hp, attack, speed, range, sight in tiles, armour) added to the line whatever it holds, `stats_on_foot` on top for one with no mount; `budget_add`: points over the age's budget (the unique unit), `noun`: the line's own name over its weapon's (the Scout), `needs_hands`: a creature with a harness for hands (creatures.json) lacks the line, `armed`: false: an engine line with no weapon part (the trade cart), `take`: the creature's (else its culture's) field naming the engine's take, `siege` by default (the war beast: `war_beast`, creatures.json / families.json: elephant, boar, tarantula, heron, mantis), `crew`: the line whose unit (at the engine's first age) crews it, the worker by default (the war beast's riders: the spear line, D-129), `crew_drop`: the crew's part slots left off (riders stow wings, capes and banners)",
  "cost": {
   "base": 100,
+  "giant_price_points": 4,
+  "tiny_price_points": 1,
   "curve": "pow1.4_ref12",
   "train_curve": "pow0.5_ref12",
   "train_base": 20,
