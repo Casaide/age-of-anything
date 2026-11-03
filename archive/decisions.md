@@ -1548,3 +1548,17 @@ and 3, 3 minutes) and refitted: 33 parts and slots moved by a point (horse arche
 swords 3 -> 2, scouts -4 -> -5, giants 2 -> 1). Every counter pair now holds in ages 2 and 3, skirmishers > horse
 archers included (7 of 8, 8 of 8), except the large line > archers in age 2 (8 of 12, open). Held out, 53 of 145 lines
 more than 10 points off (50 before: within the noise). Golden races and starts updated (costs only).
+
+**D-206, 2026-11-03: Balance closed.** Dominic: "I want to stop going in circles with balance now. Whats left? please
+solve and close". In one pass, one fight run at the end:
+- **Padded coats +2 pierce** (was +1), so armour against arrows is felt (Dominic, D-200). Quilted vests and leather
+  jacks stay +1: +2 turned the large line's fights with archers.
+- **Prices refitted once** from fresh fights at the final data (32 parts by a point). Every counter pair holds in ages
+  2 and 3, the large line against archers included (9 and 10 of 12); `RR_COUNTERS_OPEN` is empty. Held out against
+  the chain: 54 of 145 lines more than 10 points off (37%, the batch fails over 42%).
+- **Bot levels:** no setting made a bot stronger than normal's (over 8 mirror matches, hard from each start: the old
+  hard 3-4, faster ones 1-5), so normal's settings became hard, and normal waits longer (200 s) with smaller waves (80%
+  of the army): hard wins 3, loses 2, draws 3. The test plays the mirrors from both starts instead of one rats-frogs
+  match (which swung with any price set: the starts aren't equal, and rats beat frogs at every level).
+- **The backlog's balance section is closed** to what's design rather than tuning (calibration's reach, kiting
+  archers, smarter hard play), each waiting for a reason to reopen; the batch keeps the pairs and the round robin.

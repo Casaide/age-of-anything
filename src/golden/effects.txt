@@ -17,7 +17,7 @@ ore_carts: Stone gathered 15% faster, Gold gathered 15% faster
 bronze_edges: Melee units +1 attack
 barbed_heads: Ranged units +1 attack
 long_shafts: Bow units +1 range
-padded_coats: Foot melee units +1 melee armour, +1 pierce armour
+padded_coats: Foot melee units +1 melee armour, +2 pierce armour
 ring_mail: Foot melee units +1 melee armour, +1 pierce armour
 quilted_vests: Ranged units +1 melee armour, +1 pierce armour
 leather_jacks: Ranged units +1 melee armour, +1 pierce armour

@@ -334,8 +334,8 @@
    }
   },
   "normal": {
-   "delay": 120,
-   "army_pct": 100,
+   "delay": 200,
+   "army_pct": 80,
    "army_ratio": 70,
    "wave_pct": 70,
    "build_up": 1,
@@ -348,19 +348,18 @@
    "raid_from": 1200
   },
   "hard": {
-   "delay": 0,
+   "delay": 120,
    "army_pct": 100,
-   "age3_workers": 30,
-   "towers": 1,
-   "shelter_pop": 8,
-   "all_in": 24,
-   "guard_crossing": 0,
-   "raids": 3,
+   "army_ratio": 70,
+   "wave_pct": 70,
    "build_up": 1,
-   "press": {
-    "workers_pct": 120,
-    "army": 20
-   }
+   "age3_workers": 26,
+   "towers": 2,
+   "shelter_pop": 4,
+   "all_in": 36,
+   "guard_crossing": 1,
+   "raids": 2,
+   "raid_from": 1200
   }
  },
  "scout": {
