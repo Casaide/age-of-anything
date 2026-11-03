@@ -2,7 +2,7 @@
 # The game's tests side by side, a table of them, exit 1 on any failure. Slow suites are split into shards (each its own
 # process, its own seeded worlds, so the results are a serial run's).
 #   ./batch.sh [--quick] [jobs=N] [only=name,name]
-# --quick: the checks to run after a change (unit tests, the sim, the AI's quick checks, 3D placement); the whole batch
+# --quick: the checks to run after a change (unit tests, the sim, the counter chain, the AI's quick checks, 3D placement); the whole batch
 # adds every AI piece, the 2v2 match, 2D placement, the golden files, the prices' round robins, saves and network play.
 # jobs: processes at once (AOA_JOBS; default 4, so a run doesn't take every core: Dominic's fans).
 cd "$(dirname "$0")"
@@ -35,6 +35,7 @@ add test_heroes "$L" test_heroes.lobster
 add race_identity "$L" test_race_identity.lobster
 add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand in their shadows as drawn (the voxels option)
 for i in 0 1 2 3; do add test_sim.$i "$L" test_sim.lobster -- shard:$i/4; done
+for a in 2 3; do add counters.$a "$L" calibrate.lobster -- pairs $a; done   # the counter chain, each pair in ages 2 and 3 (D-200)
 if [ $quick = 1 ]; then
 	add test_ai "$L" test_ai.lobster -- quick
 else

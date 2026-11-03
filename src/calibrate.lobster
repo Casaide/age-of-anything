@@ -1,7 +1,8 @@
 // Prices calibrated offline (D-195): what a part is worth, from fights, once, not per match. Run from src:
-//   ./shards.sh calibrate.lobster lines <age> <races> [jobs=4]
-//       <races> races from the lexicon's words (training prompts, the lobby's dice made deterministic); each of
-//       their lines in <age> is fought against a fixed panel (every line of a few random races) at equal cost, its
+//   ./shards.sh calibrate.lobster lines <age> [jobs=4]
+//       races from the lexicon's words (training prompts, the lobby's dice made deterministic; TRAIN_RACES, then more
+//       for the parts in few lines); each of their lines in <age> is fought against a fixed panel (a line of each role
+//       and of two odd creatures) at equal cost, at 80% and 125% of its price (a third price when they don't bracket), its
 //       price moved until its score is what the counter chain expects (D-199: half of its neutral fights, 80% where
 //       it has a counter's edge, 20% where the other has): its fair price. The combine writes the samples to
 //       ../build/calibrate/.
@@ -21,6 +22,12 @@
 //   lobster calibrate.lobster -- mod <id>
 //       a mod's new parts priced (mod_check.sh): its check prompts' lines that wear them fought against the panel in
 //       ages 2 and 3, then only its parts fitted, the base prices held; prints each part's price_points to set.
+//   lobster calibrate.lobster -- pairs <age> [plain]
+//       each counter pair's equal-cost fights in that age, with the soldiers' research of the age (plain: without);
+//       exit 1 when a pair wins less than 70% of its fights (tests/batch.sh, ages 2 and 3).
+//   ./shards.sh calibrate.lobster upgrades [castle] [jobs=4]
+//       what each soldiers' research does to the lines it reaches (with it, one side only, vs without, against the
+//       panel), and the counters it flips; castle: the cultures' and creatures' own research (measured, not fitted).
 // Under D-193 this belongs with the generator in the race-generation toolkit module (modules/racegen), not the engine.
 import std
 import vec
@@ -72,11 +79,11 @@ import gen.modes
 import gen.start
 import gen.reset
 import gen.balance
+import gen.counters
 
-let PANEL_RACES = 3  // the panel: every line of a few races from the dice (seed "panel"; no creature or culture twice)
-let PRICE_LO = 40    // percent of the generator's price: the search's bracket
-let PRICE_HI = 250
-let STEPS = 4       // halvings of the bracket (in ratio): about 6% at the end
+let PANEL_ODD = 2     // the panel: a line of each role, and this many lines of odd creatures (D-200)
+let TRAIN_RACES = 40  // training races an age, then more only for the parts in fewer than COVER lines
+let COVER = 6
 let TOLERANCE = 10  // win-rate points off the group's mean
 let OUT_DIR = "../build/calibrate"
 
@@ -143,13 +150,36 @@ def random_prompts(seed:string, count:int) -> [string]:
             if chance(r, 35): words.push("and " + rpick(r, ki))
         concat_string(words, " ")
 
-def panel_of() -> [JV]:
-    let out = []::JV
-    for(random_prompts("panel", 60)) p:
-        let r = generate(p, rules, 0)
-        let seen = filter(out) o: rstr(o, "creature") == rstr(r, "creature") or rstr(o, "family") == rstr(r, "family")
-        if out.length < PANEL_RACES and not seen.length: out.push(r)
-    return out
+// The fixed panel (D-200): from the dice's "panel" races in order, a line of each role (RR_SLOTS, the unique too in age
+// 3), each from a creature not yet in it where one can, then PANEL_ODD lines of creatures not in it at all (the
+// races' spear, else their first line). Returns its races and its lines (RRUnit.race into those races).
+def panel_of(age:int) -> [JV], [RRUnit]:
+    let dice = map(random_prompts("panel", 60)) p: generate(p, rules, 0)
+    let races = []::JV
+    let units = []::RRUnit
+    def take(r:JV, slot:string):
+        var n = find_index(map(races) x: rstr(x, "key"), rstr(r, "key"))
+        if n < 0:
+            n = races.length
+            races.push(r)
+        units.push(RRUnit { n, slot, rstr(at(step_of(r, slot, age), "recipe"), "name") + " (" + rstr(r, "name") + ")" })
+    def has_line(r:JV, slot:string) -> bool: return (filter(glist(r, "units")) u: rstr(at(u, "recipe"), "slot") == slot).length > 0
+    def creatures() -> [string]: return map(races) x: rstr(x, "creature")
+    let slots = copy(RR_SLOTS)
+    if age >= 3: for(RR_SLOTS_AGE3) x: slots.push(x)
+    for(slots) slot:
+        var picked = -1
+        for(dice) r, n:
+            if picked < 0 and has_line(r, slot) and not has_s(creatures(), rstr(r, "creature")): picked = n
+        for(dice) r, n:
+            if picked < 0 and has_line(r, slot): picked = n
+        take(dice[picked], slot)
+    var odd = 0
+    for(dice) r:
+        if odd < PANEL_ODD and not has_s(creatures(), rstr(r, "creature")):
+            take(r, if has_line(r, "spear"): "spear" else: rstr(at(glist(r, "units")[0], "recipe"), "slot"))
+            odd++
+    return races, units
 
 // ---- a line's parts (as evaluate adds them up) and the rest of its points
 
@@ -208,41 +238,127 @@ def panel_score(races:[JV], age:int, unit:RRUnit, panel:[RRUnit], pct:int) -> in
     rr_price_pct.set(price_key(races, unit), 100)
     return score * 50 / panel.length
 
-// What a fight with b should give a, by the counter chain (D-199): a counter's edge wins, a neutral fight is even.
+// a counters b by the chain (gen/counters.lobster): its line and b's are a pair, and b has the pair's tag.
+def chain(a:RRUnit, b:RRUnit, eb:JV) -> bool:
+    for(RR_COUNTERS) pair:
+        if a.slot == pair[0] and b.slot == pair[1] and has_s(eval_tags(eb), pair[2]): return true
+    return false
+
+// What a fight with b should give a (D-199, D-200): the chain's counter wins, whatever bonuses the other carries (horse
+// archers' against infantry don't make spears' fight with them even); else a counter's edge wins; else it's even.
+// What decides it, as four bits, stored with the fight's results so a change of rule refits without fighting again:
+// 1 a counters b by the chain, 2 b counters a, 4 a has a counter's edge over b, 8 b has one over a.
 let EDGE_SCORE = 80
-def expected(races:[JV], age:int, a:RRUnit, b:RRUnit) -> int:
+def matchup(races:[JV], age:int, a:RRUnit, b:RRUnit) -> int:
     let ea = unit_eval(races, a, age)
     let eb = unit_eval(races, b, age)
-    let ab = edge(ea, eb)
-    let ba = edge(eb, ea)
+    return (if chain(a, b, eb): 1 else: 0) | (if chain(b, a, ea): 2 else: 0) | (if edge(ea, eb): 4 else: 0) | (if edge(eb, ea): 8 else: 0)
+
+def expected_of(m:int) -> int:
+    if m & 1: return EDGE_SCORE
+    if m & 2: return 100 - EDGE_SCORE
+    let ab = (m & 4) != 0
+    let ba = (m & 8) != 0
     return if ab and not ba: EDGE_SCORE elif ba and not ab: 100 - EDGE_SCORE else: 50
+
+def expected(races:[JV], age:int, a:RRUnit, b:RRUnit) -> int: return expected_of(matchup(races, age, a, b))
+let RULE = "a counter by the chain expects {EDGE_SCORE}%, else a bonus edge {EDGE_SCORE}%, else 50%"
+
+// The prices a line fights the panel at (percent of its price), every fight's result kept (D-200): its fair price is
+// found from them by the rule in use, at fit time. A third step, out from the two, only when they don't bracket it.
+let PRICE_STEPS = [ 80, 125 ]
+let PRICE_FAR = [ 55, 180 ]
+
+// A fight's result as a letter: + won, = drawn, - lost.
+def fight_letter(r:int) -> string: return if r > 0: "+" elif r == 0: "=" else: "-"
+
+def target_of(kinds:[int]) -> float:
+    var want = 0
+    for(kinds) m: want += expected_of(m)
+    return float(want) / float(kinds.length)
+
+def row_score(row:string) -> float:
+    var sc = 0
+    for(row.length) n: sc += if row[n] == '+': 2 elif row[n] == '=': 1 else: 0
+    return float(sc) * 50.0 / float(row.length)
+
+// Where the score crosses what the rule expects, between the prices fought (each "pct:results", results[n] the fight
+// with opponent n), in log price; past the ends, the end.
+def fair_from(steps:[string], kinds:[int]) -> int:
+    let target = target_of(kinds)
+    let pts = map(steps) st: string_to_int(tokenize(st, ":", "")[0])
+    let rows = map(steps) st: tokenize(st, ":", "")[1]
+    let order = map(steps.length) k: k
+    insertion_sort(order) a, b: pts[a] < pts[b]
+    let scores = map(order) k: row_score(rows[k])
+    let ps = map(order) k: pts[k]
+    if scores[0] <= target: return ps[0]
+    for(ps.length - 1) k:
+        if scores[k] > target and scores[k + 1] <= target:
+            let f = (scores[k] - target) / max(0.001, scores[k] - scores[k + 1])
+            let lp = log(float(ps[k])) + f * (log(float(ps[k + 1])) - log(float(ps[k])))
+            return int(pow(2.718281828, lp) + 0.5)
+    return ps[ps.length - 1]
+
+// A line's fights with the panel at PRICE_STEPS (and one of PRICE_FAR when they don't bracket the target): the
+// "pct:results" steps, and each opponent's matchup.
+def fight_steps(races:[JV], age:int, u:RRUnit, panel:[RRUnit]) -> [string], [int]:
+    let kinds = map(panel) p: matchup(races, age, u, p)
+    let target = target_of(kinds)
+    def at_price(pct:int) -> string:
+        rr_price_pct.set(price_key(races, u), pct)
+        let row = concat_string(map(panel) p: fight_letter(rr_fight(races, bare, age, u, p)), "")
+        rr_price_pct.set(price_key(races, u), 100)
+        return "{pct}:{row}"
+    let steps = map(PRICE_STEPS) pct: at_price(pct)
+    let lo = row_score(tokenize(steps[0], ":", "")[1])
+    let hi = row_score(tokenize(steps[1], ":", "")[1])
+    if lo <= target: steps.push(at_price(PRICE_FAR[0]))
+    elif hi > target: steps.push(at_price(PRICE_FAR[1]))
+    return steps, kinds
 
 // Its fair price, percent of its price: where its score against the panel is what the counter chain expects of it, so
 // a counter keeps its edge instead of paying for it (D-199; with only neutral fights, where it wins half).
 def fair_pct(races:[JV], age:int, unit:RRUnit, panel:[RRUnit]) -> int:
-    var want = 0
-    for(panel) p: want += expected(races, age, unit, p)
-    want /= panel.length
-    var lo = PRICE_LO
-    var hi = PRICE_HI
-    for(STEPS):
-        let mid = isqrt(lo * hi)
-        if panel_score(races, age, unit, panel, mid) > want: lo = mid else: hi = mid
-    return isqrt(lo * hi)
+    let steps, kinds = fight_steps(races, age, unit, panel)
+    return fair_from(steps, kinds)
 
-def run_lines(age:int, count:int):
-    let panel_races = panel_of()
-    let panel = rr_units(panel_races, age)
-    if shard == 0: print "panel ({panel.length} lines): " + concat_string(map(panel) u: u.label, ", ")
-    let prompts = random_prompts("train", count)
+// The training races for an age: TRAIN_RACES from the dice, then more only while some part is in fewer than COVER of
+// their lines (each such race kept only if it brings one). Prints the coverage.
+def training(age:int) -> [JV]:
+    let cands = random_prompts("train", 600)
+    let out = []::JV
+    let count = dictionary<string, int>(512)
+    def add(r:JV):
+        out.push(r)
+        for(rr_units([ r ], age)) u:
+            for(line_parts(at(step_of(r, u.slot, age), "recipe"))) id: count.set(id, count.get(id, 0) + 1)
+    def short() -> [string]: return filter(sorted_strs(count.get_keys())) id: count.get(id, 0) < COVER
+    for(cands) prompt, n:
+        let r = generate(prompt, rules, n % 4)
+        if n < TRAIN_RACES: add(r)
+        else:
+            let need = short()
+            var brings = false
+            for(rr_units([ r ], age)) u:
+                for(line_parts(at(step_of(r, u.slot, age), "recipe"))) id:
+                    if has_s(need, id): brings = true
+            if brings: add(r)
+    if shard == 0:
+        print "age {age}: {out.length} races, {count.get_keys().length} parts in their lines; in fewer than {COVER}: " + concat_string(map(short()) id: "{id} {count.get(id, 0)}", ", ")
+    return out
+
+def run_lines(age:int):
+    let panel_races, panel = panel_of(age)
+    if shard == 0: print "panel ({panel.length} lines): " + concat_string(map(panel) u: u.label, ", ") + "; rule: " + RULE
     var k = 0
-    for(prompts) prompt, n:
+    for(training(age)) race:
         let races = copy(panel_races)
-        races.push(generate(prompt, rules, n % 4))
+        races.push(race)
         for(rr_units(races, age)) u:
             if u.race == races.length - 1:
                 if k % shards == shard:
-                    let pct = fair_pct(races, age, u, panel)
+                    let results, kinds = fight_steps(races, age, u, panel)
                     let e = at(step_of(races[u.race], u.slot, age), "eval")
                     let parts = line_parts(at(step_of(races[u.race], u.slot, age), "recipe"))
                     var sum = 0
@@ -250,7 +366,7 @@ def run_lines(age:int, count:int):
                     let points = as_int(at(e, "points"))
                     let tags = eval_tags(e)
                     let size = if has_s(tags, "giant"): "giant" elif has_s(tags, "tiny"): "tiny" else: "-"
-                    print "@@ {age} {u.slot} {pct} {points} {points - sum} {concat_string(parts, ",")} {unspaced(u.label)} {size}"
+                    print "@@ {age} {u.slot} {fair_from(results, kinds)} {points} {points - sum} {concat_string(parts, ",")} {unspaced(u.label)} {size} {concat_string(results, "/")} {concat_string(map(kinds) m: string(m), ",")}"
                 k++
 
 // ---- fit: price points from the samples
@@ -270,7 +386,10 @@ def read_samples(paths:[string]) -> [Sample]:
     for(paths) path:
         for(tokenize(read_file(path) or "", "\n", "")) line:
             let w = tokenize(line, " ", "")
-            if w.length == 9 and w[0] == "@@":
+            if w.length == 11 and w[0] == "@@":  // (the fights kept: the fair price by the rule in use)
+                let pct = fair_from(tokenize(w[9], "/", ""), map(tokenize(w[10], ",", "")) m: string_to_int(m))
+                out.push(Sample { string_to_int(w[1]), w[2], pct, string_to_int(w[4]), string_to_int(w[5]), tokenize(w[6], ",", ""), spaced(w[7]), w[8] })
+            elif w.length == 9 and w[0] == "@@":
                 out.push(Sample { string_to_int(w[1]), w[2], string_to_int(w[3]), string_to_int(w[4]), string_to_int(w[5]), tokenize(w[6], ",", ""), spaced(w[7]), w[8] })
     return out
 
@@ -435,8 +554,7 @@ def run_mod(id:string):
     let own = map(load_json(mods_active[0].dir + "/" + gstr(mods_active[0].manifest, "data", "data") + "/parts.json").a) p: as_str(at(p, "id"))
     let samples = []::Sample
     for([ 2, 3 ]) age:
-        let panel_races = panel_of()
-        let panel = rr_units(panel_races, age)
+        let panel_races, panel = panel_of(age)
         for(gstrs(gobj(mods_active[0].manifest, "check"), "prompts")) prompt:
             let races = copy(panel_races)
             races.push(generate(prompt, rules, 0))
@@ -462,6 +580,128 @@ def run_mod(id:string):
             let p = part(pid)
             print "  {pid}: price_points {as_int(at(fitted, pid))} (points {as_int(at(p, "points"))}" + (if has(p, "price_points"): ", now {price_of(p)})" else: ")")
 
+// ---- the counter chain and the upgrades (D-200)
+
+// Each counter pair's equal-cost fights in an age (both sides, every RR_COUNTER_PROMPTS race), with the soldiers'
+// research of the age or without (plain).
+def run_pairs(age:int, plain:bool):
+    rr_upgrades = not plain
+    let races = map(RR_COUNTER_PROMPTS) p: generate(p, rules, 0)
+    let units = rr_units(races, age)
+    print "counter pairs in age {age}" + (if plain: ", line upgrades only" else: ", with the soldiers\' research")
+    for(RR_COUNTERS) pair:
+        var wins = 0
+        var fights = 0
+        for(races.length) n:
+            let c = filter(units) u: u.race == n and u.slot == pair[0]
+            let d = filter(units) u: u.race == n and u.slot == pair[1]
+            if c.length and d.length and has_s(eval_tags(unit_eval(races, d[0], age)), pair[2]):
+                fights += 2
+                var losses = 0
+                if rr_fight(races, bare, age, c[0], d[0]) > 0: wins++ else: losses++
+                if rr_fight(races, bare, age, d[0], c[0]) < 0: wins++ else: losses++
+                if losses: print "    lost {losses} of 2: {c[0].label} vs {d[0].label}"
+        let open = has_s(RR_COUNTERS_OPEN, pair[0] + ">" + pair[1])
+        let short = fights and wins * 100 < fights * 70
+        print "  {pair[0]} > {pair[1]}: {wins} of {fights}" + (if short: (if open: "  short (open: docs/backlog.md)" else: "  FAILS") else: "")
+        if short and not open: set_exit_code(1)
+
+def research_json() -> [JV]: return glist(load_json(lib_root + "/tech.json"), "research")
+
+def reaches_any(r:JV, tags:[string]) -> bool:
+    for(glist(r, "effects")) fx:
+        if reaches(fx, tags): return true
+    return false
+
+def open_to(race:JV, id:string) -> bool:
+    reset_world()
+    setup_world(1, "flat_test", [ race, race ], bare, [])
+    for(research) r:
+        if r.id == id: return r.open[0] == 1
+    return false
+
+// One race of each culture and each creature, for the castle's research (culture- and creature-only).
+def castle_prompts() -> [string]:
+    let out = []::string
+    for(sorted_strs(lib_families.keys)) f: out.push(f + " humans")
+    for(sorted_strs(lib_creatures.keys)) c:
+        if gbool(at(lib_creatures, c), "playable", false): out.push(c)
+    return out
+
+// What one research does (D-200): each line it reaches, against the panel at equal cost, with it (its side only) and
+// without (both sides without; the age's other soldiers' research on both). And each counter pair where it reaches the
+// countered line but not the counter: the counter's wins without it and with it (a flip: the counter wins half or less).
+// castle: the culture's and creature's own research instead, on the races it's open to (measured, never fitted).
+def run_upgrades(castle:bool):
+    let prompts = if castle: castle_prompts() else: RR_COUNTER_PROMPTS
+    var k = 0
+    for(research_json()) r:
+        let id = rstr(r, "id")
+        let age = max(2, gint(r, "age", 2))
+        if (castle and has(r, "own")) or (not castle and has_s(rr_generic_ids(), id)):
+            let panel_races, panel = panel_of(age)
+            for(prompts) prompt:
+                let race = generate(prompt, rules, 0)
+                if k % shards == shard and (not castle or open_to(race, id)):
+                    let races = copy(panel_races)
+                    races.push(race)
+                    let mine = filter(rr_units(races, age)) u: u.race == races.length - 1
+                    for(mine) u:
+                        let tags = eval_tags(unit_eval(races, u, age))
+                        if reaches_any(r, tags):
+                            rr_skip = id
+                            let without = panel_score(races, age, u, panel, 100)
+                            rr_give = [ id, "" ]
+                            let with = panel_score(races, age, u, panel, 100)
+                            rr_give = [ "", "" ]
+                            let flips = []::string
+                            for(RR_COUNTERS) pair:
+                                let c = filter(mine) m: m.slot == pair[0]
+                                if pair[1] == u.slot and has_s(tags, pair[2]) and c.length and not reaches_any(r, eval_tags(unit_eval(races, c[0], age))):
+                                    var before = 0
+                                    var after = 0
+                                    if rr_fight(races, bare, age, c[0], u) > 0: before++
+                                    if rr_fight(races, bare, age, u, c[0]) < 0: before++
+                                    rr_give = [ "", id ]
+                                    if rr_fight(races, bare, age, c[0], u) > 0: after++
+                                    rr_give = [ id, "" ]
+                                    if rr_fight(races, bare, age, u, c[0]) < 0: after++
+                                    rr_give = [ "", "" ]
+                                    flips.push("{pair[0]}:{before}:{after}")
+                            rr_skip = ""
+                            print "@@ {id} {age} {without} {with} {unspaced(u.label)} {if flips.length: concat_string(flips, ",") else: "-"}"
+                k++
+
+// The shards' upgrade lines as a table: each research's lines, its mean, least and most effect on their score
+// against the panel, and every counter it flips.
+def upgrades_table(rows:[string]):
+    let ids = []::string
+    for(rows) line:
+        let w = tokenize(line, " ", "")
+        if find_index(ids, w[1]) < 0: ids.push(w[1])
+    print "research: lines it reaches, its effect on their score against the panel (with - without, win-rate points: mean, least, most); counters it flips"
+    for(ids) id:
+        var n = 0
+        var total = 0
+        var lo = 1000
+        var hi = -1000
+        var age = 0
+        let flipped = []::string
+        for(rows) line:
+            let w = tokenize(line, " ", "")
+            if w[1] == id:
+                let d = string_to_int(w[4]) - string_to_int(w[3])
+                n++
+                total += d
+                lo = min(lo, d)
+                hi = max(hi, d)
+                age = string_to_int(w[2])
+                if w[6] != "-":
+                    for(tokenize(w[6], ",", "")) f:
+                        let fw = tokenize(f, ":", "")
+                        if string_to_int(fw[2]) <= 1 and string_to_int(fw[1]) == 2: flipped.push("{fw[0]} over {spaced(w[5])} {fw[1]}->{fw[2]} of 2")
+        print "  {id} (age {age}): {n} lines, {total / max(1, n)} ({lo} to {hi})" + (if flipped.length: "; flips: " + concat_string(flipped, "; ") else: "")
+
 // ---- measure: round robins of held-out groups at the prices as they are
 
 def measure_groups() -> [[string]]:
@@ -474,8 +714,7 @@ def measure_groups() -> [[string]]:
 
 // The method's best: every held-out line at its own fair price against the panel (no fit), for measure oracle.
 def run_oracle():
-    let panel_races = panel_of()
-    let panel = rr_units(panel_races, 2)
+    let panel_races, panel = panel_of(2)
     var k = 0
     for(measure_groups()) g:
         for(g) prompt:
@@ -581,12 +820,25 @@ if mode == "lines":
         write_file(OUT_DIR + "/age{age}.txt", concat_string(text, "\n") + "\n")
         print "{text.length} samples in {OUT_DIR}/age{age}.txt"
     else:
-        run_lines(age, string_to_int(args[2]))
+        run_lines(age)
 elif mode == "fit":
+    print "rule: " + RULE
     let prices = run_fit(read_samples([ OUT_DIR + "/age2.txt", OUT_DIR + "/age3.txt" ]), base_ids(), string_to_float(opt(args, "lambda", "1")), true)
     if find_index(args, "write") >= 0:
         write_file(OUT_DIR + "/prices.json", stringify(prices))
         print "wrote " + OUT_DIR + "/prices.json"
+elif mode == "pairs":
+    run_pairs(string_to_int(args[1]), find_index(args, "plain") >= 0)
+elif mode == "upgrades":
+    if combine_at >= 0:
+        let rows = []::string
+        for(logs) path:
+            for(tokenize(read_file(path) or "", "\n", "")) line:
+                if starts_with(line, "@@ "): rows.push(line)
+        write_file(OUT_DIR + "/upgrades" + (if find_index(args, "castle") >= 0: "_castle" else: "") + ".txt", concat_string(rows, "\n") + "\n")
+        upgrades_table(rows)
+    else:
+        run_upgrades(find_index(args, "castle") >= 0)
 elif mode == "mod":
     run_mod(mod_id)
 elif mode == "measure":

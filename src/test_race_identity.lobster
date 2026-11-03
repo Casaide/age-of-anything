@@ -190,7 +190,6 @@ def g_units():
     expect(t_carry_add[cw] == r_carry * 60 / 100, "centaurs: workers carry 60% more (+{t_carry_add[cw]})")
     let bs = type_of_slot(1, "spear")
     expect(t_sight_add[bs] == 2, "spooky: units +2 sight ({t_sight_add[bs]})")
-    let plain = generate("forest humans", base_rules, 0)
     let bp = as_int(at(at(su_type_eval[bs], "armour"), "pierce"))
     expect(bp >= 1, "beetles: +1 pierce armour on the spear\'s eval ({bp})")
     new_world([ "swamp humans", "swamp frogs" ], base_rules)
@@ -210,11 +209,19 @@ def g_units():
     expect(farm_pct(0) == 30 and farm_pct(1) == 10 and farm_pct(3) == 10,
            "team: imperial granaries (farms +10%) for themselves and their allies, on top of the Nile\'s own +20%")
     expect(bm_age_time[0][bk("town_center")] == -20, "nile: ages advance 20% faster")
+    // The rats' "units 10% cheaper": the rat's line against its own recipe priced as a creature with no such bonus
+    // (not against another race's line: calibrated prices, D-195, price a rat body and a human one apart).
     let rat = generate("forest rats", base_rules, 0)
-    def fw(race:JV) -> int:
-        let c = at(at(glist(race, "units")[1], "eval"), "cost")
-        return gint(c, "food", 0) + gint(c, "wood", 0)
-    expect(fw(rat) < fw(plain), "rats: units cheaper")
+    let rat_line = glist(rat, "units")[1]
+    let as_human = deep_copy(at(rat_line, "recipe"))
+    set(as_human, "creature", jstr("human"))
+    def total(e:JV) -> int:
+        var t = 0
+        for(at(e, "cost").a) v: t += as_int(v)
+        return t
+    let discounted = total(at(rat_line, "eval"))
+    let full = total(evaluate(as_human, base_rules, 1))
+    expect(discounted < full and discounted >= full * 85 / 100, "rats: units 10% cheaper ({discounted} against {full} undiscounted)")
 
 // The Norse culture (D-151): "vikings" are Norse; seafarers wade (allies too), plunder pays for kills,
 // shield-bearers take arrows better, no archers' age-3 step, Berserkergang their own research.
