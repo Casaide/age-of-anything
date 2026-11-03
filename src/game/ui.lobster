@@ -220,11 +220,12 @@ class UiText:
     s:string
     size:int
     col:float4
-    font:int    // 0 the text face, 1 bold, 2 the display face (titles, names)
+    font:int    // 0 the text face, 1 bold, 2 the display face (titles, names), 3 captions (bold, spaced: theme.gd's caps_font)
     edge:float  // a dark outline this thick (0: none)
 
 var ui_texts = []::UiText
-let UI_FONTS = [ "data/fonts/Droid_Sans/DroidSans.ttf", "data/fonts/Droid_Sans/DroidSans-Bold.ttf", "../assets/fonts/display.ttf" ]
+let UI_FONTS = [ "data/fonts/Droid_Sans/DroidSans.ttf", "data/fonts/Droid_Sans/DroidSans-Bold.ttf", "../assets/fonts/display.ttf", "data/fonts/Droid_Sans/DroidSans-Bold.ttf" ]
+def ui_caps_gap(size:int) -> float: return float(size) * 0.14  // a caption's room between letters (Godot's 2 px at 14)
 
 def ui_text(at:float2, s:string, size:int, col:float4): ui_texts.push(UiText { at, s, size, col, 0, 0.0 })
 
@@ -238,7 +239,8 @@ def ui_text_wf(s:string, size:int, font:int) -> float:
     gl.set_font_name(UI_FONTS[font])
     let was = gl.get_font_size()
     gl.set_font_size(size)
-    let w = float(gl.text_size(s).x)
+    var w = float(gl.text_size(s).x)
+    if font == 3: w += ui_caps_gap(size) * float(max(0, s.length - 1))
     gl.set_font_size(was)
     if font != 0: gl.set_font_name(UI_FONTS[0])
     return w
@@ -251,7 +253,13 @@ def ui_flush():
     ui_batch_flush()
     text_batch():
         for(ui_texts) t:
-            text_label(t.at, t.s, t.size, t.col, UI_FONTS[t.font], t.edge, float4 { 0.0, 0.0, 0.0, 0.85 * t.col.w })
+            if t.font == 3:  // a caption: a letter at a time, spaced
+                var x = t.at.x
+                for(t.s.length) i:
+                    let c = t.s.substring(i, 1)
+                    text_label(float2 { x, t.at.y }, c, t.size, t.col, UI_FONTS[3], t.edge, float4 { 0.0, 0.0, 0.0, 0.85 * t.col.w })
+                    x += ui_text_wf(c, t.size, 3) + ui_caps_gap(t.size)
+            else: text_label(t.at, t.s, t.size, t.col, UI_FONTS[t.font], t.edge, float4 { 0.0, 0.0, 0.0, 0.85 * t.col.w })
     ui_texts = []
 
 // A flat fill from its top-left corner (meshes in screen coordinates: gl.rect draws -size..size round its
@@ -400,6 +408,7 @@ class UiHit:
     at:float2
     size:float2
 
+var ui_label_px = 0      // a button's label size, when a page sets one (the lobby: its type at its scale); 0: by the window
 var ui_hits = []::UiHit  // the buttons drawn this frame, in order (for the pad's focus)
 var ui_hits_last = []::UiHit
 var ui_focus = -1  // index into last frame's buttons; -1: the mouse has it
@@ -456,9 +465,9 @@ def ui_button(at:float2, size:float2, label:string, primary:bool) -> bool:
     if over or focused or primary:
         let a = if primary and not (over or focused): 0.45 else: 1.0
         ui_outline(at + lift + float2_1 * 4.0 * u, size - float2_1 * 8.0 * u, 2.0 * u, float4 { ui_look.accent.x, ui_look.accent.y, ui_look.accent.z, a })
-    if label != "":
-        let fs = int(min(18.0 * u, size.y * 0.45))
-        ui_text(at + lift + float2 { (size.x - ui_text_w(label, fs)) / 2.0, (size.y - float(fs)) / 2.0 - 2.0 * u }, label, fs, ui_look.text)
+    if label != "":  // (bold, as theme.gd's buttons)
+        let fs = if ui_label_px > 0: ui_label_px else: int(min(18.0 * u, size.y * 0.45))
+        ui_text_f(at + lift + float2 { (size.x - ui_text_wf(label, fs, 1)) / 2.0, (size.y - float(fs)) / 2.0 - 2.0 * u }, label, fs, ui_look.text, 1, 0.0)
     return (over and gl.button("mouse1") == 1) or (focused and ui_pad_a)
 
 // A titled panel: a raised box with a caption in the title colour.
