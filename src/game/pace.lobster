@@ -5,8 +5,17 @@
 
 let PACE_MATCH = 60.0
 let PACE_MENU = 30.0
+let PACE_IDLE = 15.0       // the title screen left alone (its armies only idle)
+let PACE_IDLE_AFTER = 2.0  // seconds without the mouse or the pad first
+var pace_input_at = 0.0
 
 def pace(fps:float): gl.set_target_delta_time(1.0 / fps)
+
+// The lobby's pace this frame: the title at PACE_IDLE once nobody has touched it for a moment (input: they did now).
+def pace_menu(title:bool, input:bool):
+    let now = seconds_elapsed()
+    if input: pace_input_at = now
+    pace(if title and now - pace_input_at > PACE_IDLE_AFTER: PACE_IDLE else: PACE_MENU)
 
 // Whether to draw this frame (a minimised window shows nothing).
 def drawing() -> bool: return gl.visible()
