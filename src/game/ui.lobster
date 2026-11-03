@@ -276,12 +276,41 @@ def ui_fill(at:float2, size:float2, col:float4):
     ui_quad(at, size, col)
     gl.set_shader("color")  // (what the callers' own shapes expect next)
 
+// Lines gathered into one draw (ui_lines): many short ones (dashes, rings) are a draw call each otherwise.
+var ui_lines_on = false
+var ui_lpos = []::float3
+var ui_lcol = []::float4
+var ui_lidx = []::int
+
+// The lines drawn so far in a ui_lines block, drawn (before anything else is drawn over them).
+def ui_lines_flush():
+    if ui_lpos.length:
+        gl.set_shader("color_attr")
+        gl.draw_mesh("PC", ui_lpos, ui_lcol, []::float3, []::float2, []::float2, ui_lidx)
+        gl.set_shader("color")
+    ui_lpos = []
+    ui_lcol = []
+    ui_lidx = []
+
+// The ui_lines in body drawn together, at the end (or at a ui_lines_flush).
+def ui_lines(body):
+    ui_lines_on = true
+    body()
+    ui_lines_flush()
+    ui_lines_on = false
+
 // A line as a quad (gl.line draws nothing once a custom shader has been used, in this build).
 def ui_line(a:float2, b:float2, w:float, col:float4):
     let d = b - a
     let l = magnitude(d)
     if l <= 0.0001: return
     let n = float2 { -d.y, d.x } / l * (w * 0.5)
+    if ui_lines_on:
+        let v = ui_lpos.length
+        for([ a + n, b + n, b - n, a - n ]) q: ui_lpos.push(float3 { q.x, q.y, 0.0 })
+        for(4): ui_lcol.push(col)
+        for([ 0, 2, 1, 0, 3, 2 ]) q: ui_lidx.push(v + q)
+        return
     gl.set_shader("color_attr")
     gl.draw_mesh("PC", [ float3 { a.x + n.x, a.y + n.y, 0.0 }, float3 { b.x + n.x, b.y + n.y, 0.0 }, float3 { b.x - n.x, b.y - n.y, 0.0 }, float3 { a.x - n.x, a.y - n.y, 0.0 } ],
                  [ col, col, col, col ], []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ])

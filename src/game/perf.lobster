@@ -19,6 +19,10 @@ var perf_made = []::int
 var perf_t = -1.0  // the frame's start (after gl.frame)
 var perf_b = 0
 var perf_wall0 = -1.0  // the measure's start
+// Where a frame's work goes: seconds in each phase over the measure (perf_lap(k) at the end of phase k).
+let PERF_PHASES = [ "input and sim", "ground", "collect", "sort", "sprites", "over the world", "panel", "hud", "groups", "rest" ]
+let perf_phase = map(PERF_PHASES): 0.0
+var perf_last = 0.0
 
 def perf_sorted_at(xs, q:float):
     let s = copy(xs)
@@ -28,7 +32,15 @@ def perf_sorted_at(xs, q:float):
 // At the top of a frame: its start.
 def perf_begin():
     perf_t = seconds_elapsed()
+    perf_last = perf_t
     perf_b = gl.buffers_made()
+
+// The end of phase k of a frame's work.
+def perf_lap(k:int):
+    if perf_for <= 0.0 or perf_wall0 < 0.0: return
+    let t = seconds_elapsed()
+    perf_phase[k] += t - perf_last
+    perf_last = t
 
 // At the end of a frame (clock: seconds of play): its work kept; true once the measure is done (then quit).
 def perf_end(clock:float) -> bool:
@@ -55,4 +67,5 @@ def perf_end(clock:float) -> bool:
         print "perf FAIL: {concat_string(bad, "; ")}"
         set_exit_code(1)
     print "perf: {stats}"
+    print "perf phases (ms a frame): {concat_string(map(PERF_PHASES) n, k: "{n} {tenths(perf_phase[k] * 1000.0 / float(perf_work.length) * 10.0) / 10.0}", ", ")}"
     return true
