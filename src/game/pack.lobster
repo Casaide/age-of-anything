@@ -28,12 +28,14 @@ let sheet_file = []::string             // a sheet not loaded yet: its PNG, load
 let sheet_formats = []::int             // and the texture formats to load it with
 let sheet_none = []::resource<texture>  // (the one stand-in texture for sheets not loaded yet)
 
-// A sheet: its texture now, or its PNG (shipped or cached art) to load when it's first drawn.
-def add_sheet(tex:resource<texture>, dims:float2):
+// A sheet: its texture now, or its PNG (shipped or cached art) to load when it's first drawn. formats: the texture's
+// (-1: not known, then it's never copied into an atlas page).
+def add_sheet(tex:resource<texture>, dims:float2, formats:int = -1):
     sheet_tex.push(tex)
     sheet_dims.push(dims)
     sheet_file.push("")
-    sheet_formats.push(0)
+    sheet_formats.push(formats)
+    sheet_drawn_from()
 
 def add_sheet_later(file:string, dims:float2, formats:int):
     if not sheet_none.length: sheet_none.push(gl.create_texture([ [ float4_0 ] ], texture_format_nomipmap))
@@ -41,6 +43,7 @@ def add_sheet_later(file:string, dims:float2, formats:int):
     sheet_dims.push(dims)
     sheet_file.push(file)
     sheet_formats.push(formats)
+    sheet_drawn_from()
 
 def sheet_texture(i:int) -> resource<texture>:
     if sheet_file[i] != "":
@@ -198,6 +201,16 @@ SHADER sprite
         vec3 rgb = t.rgb;
         if (min(t.r, t.b) - t.g > 0.22 && abs(t.r - t.b) < 0.3) rgb = icolor.rgb * max(t.r, t.b) * 1.08;
         frag_color = vec4(rgb * icolor.a, t.a * (1.0 - gone));
+SHADER sprite_copy
+    VERTEX
+        INPUTS apos:4 atc:2
+        UNIFORMS mvp
+        gl_Position = mvp * apos;
+        itc = atc;
+    PIXEL
+        INPUTS itc:2
+        UNIFORMS tex0
+        frag_color = texture(tex0, itc);
 """
 
 var b_pos = []::float3
@@ -216,21 +229,116 @@ def flush_sprites():
     b_tc = []::float2
     b_idx = []::int
 
+// ---- atlas pages
+// Every baked frame is a sheet of its own (a part's facing, a prop, a building's stage), so sprites drawn one after
+// another rarely share a texture: a world of 70 sprites took 50 draws a frame. A small sheet, once drawn, is copied
+// into a shared page (atlas_pack, at the top of the next frame) and its sprites are drawn from there; its own
+// texture stays for whoever reads its pixels (frames keep their sheet).
+
+let ATLAS_SIZE = 2048
+let ATLAS_MAX = 512  // px: a sheet wider or taller stays on its own
+let ATLAS_GAP = 2    // px of nothing round each (linear filtering would bleed a neighbour in)
+
+class AtlasPage:
+    sheet:int    // the page is a sheet too
+    tex:resource<texture>
+    formats:int
+    x:int = 0    // the shelf being filled: its left edge free from here, its top, its height
+    y:int = 0
+    h:int = 0
+
+let atlas_pages = []::AtlasPage
+let sheet_draw = []::int     // per sheet: the sheet its sprites are drawn from (itself, or the page it's on)
+let sheet_off = []::float2   // and where on it (px)
+let sheet_wanted = []::bool  // drawn on its own, waiting for a page
+var atlas_queue = []::int
+
+def sheet_drawn_from():
+    sheet_draw.push(sheet_tex.length - 1)
+    sheet_off.push(float2_0)
+    sheet_wanted.push(false)
+
+def atlas_want(i:int):
+    if sheet_wanted[i] or sheet_draw[i] != i or sheet_formats[i] < 0: return
+    let d = sheet_dims[i]
+    if d.x > float(ATLAS_MAX) or d.y > float(ATLAS_MAX): return
+    sheet_wanted[i] = true
+    atlas_queue.push(i)
+
+// A place w x h on a page in these formats (a new page when they're full).
+def atlas_place(w:int, h:int, formats:int) -> AtlasPage, int2:
+    for(atlas_pages) p:
+        if p.formats == formats:
+            if p.x + w > ATLAS_SIZE:
+                p.y += p.h
+                p.x = 0
+                p.h = 0
+            if p.y + h <= ATLAS_SIZE:
+                let at = int2 { p.x, p.y }
+                p.x += w
+                p.h = max(p.h, h)
+                return p, at
+    let tex = gl.create_blank_texture(int3 { ATLAS_SIZE, ATLAS_SIZE, 0 }, formats)
+    add_sheet(tex, float2_1 * float(ATLAS_SIZE))
+    let p = AtlasPage { sheet_tex.length - 1, tex, formats }
+    atlas_pages.push(p)
+    gl.switch_to_framebuffer(tex)
+    gl.clear(float4_0)
+    gl.switch_to_framebuffer(nil)
+    p.x = w
+    p.h = h
+    return p, int2_0
+
+// The sheets drawn on their own since the last frame, copied onto pages. Outside any transform (a frame's start).
+def atlas_pack():
+    if not atlas_queue.length: return
+    flush_sprites()
+    b_sheet = -1
+    for(atlas_queue) i:
+        let d = int2 { int(sheet_dims[i].x), int(sheet_dims[i].y) }
+        let p, at = atlas_place(d.x + ATLAS_GAP * 2, d.y + ATLAS_GAP * 2, sheet_formats[i])
+        let o = float(at + int2_1 * ATLAS_GAP)
+        let e = o + float(d)
+        gl.switch_to_framebuffer(p.tex)
+        gl.ortho()
+        let was = gl.blend(blend_none)
+        gl.set_shader("sprite_copy")
+        gl.set_primitive_texture(0, sheet_texture(i))
+        // (a framebuffer's rows run bottom up: drawn flipped, the page reads as the sheets do)
+        let n = float(ATLAS_SIZE)
+        gl.draw_mesh("PT", [ float3 { o.x, n - o.y, 0.0 }, float3 { e.x, n - o.y, 0.0 }, float3 { e.x, n - e.y, 0.0 }, float3 { o.x, n - e.y, 0.0 } ],
+                     []::float4, []::float3, [ float2 { 0.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 1.0, 1.0 }, float2 { 0.0, 1.0 } ], []::float2,
+                     [ 0, 2, 1, 0, 3, 2 ])
+        gl.blend(was)
+        gl.switch_to_framebuffer(nil)
+        gl.ortho()
+        sheet_draw[i] = p.sheet
+        sheet_off[i] = o
+        sheet_wanted[i] = false
+    atlas_queue = []
+
+// The sheet frame f is drawn from now (batched with the sprites before it if it's the same), and where on it.
+def sprite_sheet(fr:Frame) -> float2:
+    let ds = sheet_draw[fr.sheet]
+    if ds != b_sheet:
+        flush_sprites()
+        b_sheet = ds
+    if ds == fr.sheet: atlas_want(ds)
+    return sheet_off[fr.sheet] + float2 { float(fr.x), float(fr.y) }
+
 // Frame f with its anchor at (x, y) (art px), team colour and shade in col; flip: mirrored.
 def sprite(f:int, x:float, y:float, col:float4):
     let fr = frames[f]
-    if fr.sheet != b_sheet:
-        flush_sprites()
-        b_sheet = fr.sheet
+    let at = sprite_sheet(fr)
     let x0 = floor(x) - float(fr.ox) * fr.k
     let y0 = floor(y) - float(fr.oy) * fr.k
     let x1 = x0 + float(fr.w) * fr.k
     let y1 = y0 + float(fr.h) * fr.k
-    let s = sheet_dims[fr.sheet]
-    let u0 = fr.x / s.x
-    let v0 = fr.y / s.y
-    let u1 = (fr.x + fr.w) / s.x
-    let v1 = (fr.y + fr.h) / s.y
+    let s = sheet_dims[b_sheet]
+    let u0 = at.x / s.x
+    let v0 = at.y / s.y
+    let u1 = (at.x + fr.w) / s.x
+    let v1 = (at.y + fr.h) / s.y
     let n = b_pos.length
     b_pos.push(float3 { x0, y0, 0.0 })
     b_pos.push(float3 { x1, y0, 0.0 })
@@ -254,7 +362,7 @@ def sprite_faded(f:int, x:float, y:float, col:float4, fade:float):
     flush_sprites()
     gl.set_shader("sprite")
     gl.set_uniform("gone", 1.0 - fade)
-    b_sheet = frames[f].sheet
+    b_sheet = sheet_draw[frames[f].sheet]
     sprite(f, x, y, col)
     flush_sprites()
     gl.set_shader("sprite")
@@ -265,16 +373,14 @@ def sprite_faded(f:int, x:float, y:float, col:float4, fade:float):
 // a composed unit's part, turned and scaled as its rig says).
 def sprite_xf(f:int, xf:[float], col:float4):
     let fr = frames[f]
-    if fr.sheet != b_sheet:
-        flush_sprites()
-        b_sheet = fr.sheet
-    let s = sheet_dims[fr.sheet]
+    let at = sprite_sheet(fr)
+    let s = sheet_dims[b_sheet]
     let n = b_pos.length
     for([ float2 { 0.0, 0.0 }, float2 { float(fr.w), 0.0 }, float2 { float(fr.w), float(fr.h) }, float2 { 0.0, float(fr.h) } ]) c:
         b_pos.push(float3 { xf[0] * c.x + xf[2] * c.y + xf[4], xf[1] * c.x + xf[3] * c.y + xf[5], 0.0 })
-    b_tc.push(float2 { fr.x / s.x, fr.y / s.y })
-    b_tc.push(float2 { (fr.x + fr.w) / s.x, fr.y / s.y })
-    b_tc.push(float2 { (fr.x + fr.w) / s.x, (fr.y + fr.h) / s.y })
-    b_tc.push(float2 { fr.x / s.x, (fr.y + fr.h) / s.y })
+    b_tc.push(at / s)
+    b_tc.push((at + float2 { float(fr.w), 0.0 }) / s)
+    b_tc.push((at + float2 { float(fr.w), float(fr.h) }) / s)
+    b_tc.push((at + float2 { 0.0, float(fr.h) }) / s)
     for(4): b_col.push(col)
     for([ n, n + 2, n + 1, n, n + 3, n + 2 ]) k: b_idx.push(k)

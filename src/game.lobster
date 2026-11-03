@@ -366,12 +366,40 @@ class Drawable:
     xf:[float]  // a composed part's transform (else empty: drawn at its anchor)
 
 var draws = []::Drawable
+// The world on the screen this frame (art px): sprites wholly outside it aren't drawn.
+var view_lo = float2_0
+var view_hi = float2_0
+let VIEW_REACH = 512.0  // art px: about the tallest prop over its anchor (props are culled by their cell first)
+
+def set_view_rect():
+    let ws = float(gl.window_size())
+    view_lo = from_screen(float2_0) - float2_1
+    view_hi = from_screen(ws) + float2_1
+
+def in_view(x0:float, y0:float, x1:float, y1:float) -> bool:
+    return x0 < view_hi.x and y0 < view_hi.y and x1 > view_lo.x and y1 > view_lo.y
+
+// Whether a prop anchored at p (art px) may reach the screen.
+def near_view(p:float2) -> bool: return in_view(p.x - VIEW_REACH, p.y - 64.0, p.x + VIEW_REACH, p.y + VIEW_REACH)
 
 def add(f:int, x:float, y:float, sort_y:float, col:float4):
-    if f >= 0: draws.push(Drawable { sort_y, draws.length, f, x, y, col, [] })
+    if f < 0: return
+    let fr = frames[f]
+    let x0 = floor(x) - float(fr.ox) * fr.k
+    let y0 = floor(y) - float(fr.oy) * fr.k
+    if in_view(x0, y0, x0 + float(fr.w) * fr.k, y0 + float(fr.h) * fr.k):
+        draws.push(Drawable { sort_y, draws.length, f, x, y, col, [] })
 
 def add_xf(f:int, xf:[float], sort_y:float, col:float4):
-    if f >= 0: draws.push(Drawable { sort_y, draws.length, f, 0.0, 0.0, col, xf })
+    if f < 0: return
+    let fr = frames[f]
+    let u = float2 { xf[0], xf[1] } * float(fr.w)  // (the frame's edges, turned)
+    let v = float2 { xf[2], xf[3] } * float(fr.h)
+    let o = float2 { xf[4], xf[5] }
+    let lo = o + min(u, float2_0) + min(v, float2_0)
+    let hi = o + max(u, float2_0) + max(v, float2_0)
+    if in_view(lo.x, lo.y, hi.x, hi.y):
+        draws.push(Drawable { sort_y, draws.length, f, 0.0, 0.0, col, xf })
 
 // ------------------------------------------------------------------ composed units (view/unit_view.lobster)
 // A view per unit, as the Godot game keeps one: walking from its move, its job and tool from its
@@ -850,7 +878,7 @@ def refresh_paths() -> bool:
 def collect_doodads():
     for(doodad_list) d:
         let c = clamp(int(d.t.y), 0, H - 1) * W + clamp(int(d.t.x), 0, W - 1)
-        if fog[ME][c] != 0:
+        if fog[ME][c] != 0 and near_view(iso(d.t.x * 1000.0, d.t.y * 1000.0)):
             let f = frame_index(d.name)
             if f >= 0:
                 let at = iso(d.t.x * 1000.0, d.t.y * 1000.0)
@@ -867,7 +895,7 @@ def collect_props():
         // (under the fog, the ground as you last saw it: a farm sown in the dark stays grass until you look, Fog's memory)
         let now = fog[ME][c] == 2 or fog_ground.length <= ME
         let tt = if now: terrain[c] else: fog_ground[ME][c]
-        if fog[ME][c] != 0 and (tr_res[tt] != 0 or species[c] != "-"):
+        if fog[ME][c] != 0 and (tr_res[tt] != 0 or species[c] != "-") and near_view(iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))):
             let tname = tr_names[tt]
             var kind = prop_of.get(tname, "")
             if kind == "tree": kind = species[c]
@@ -887,6 +915,7 @@ def collect_props():
                 if sh >= 0: add(sh, at.x, at.y - up, -200000.0 + at.y, float4 { 1.0, 1.0, 1.0, shade })
 
 def draw_world(alpha:float):
+    atlas_pack()
     if tick - ground_tick >= 10 or not ground_mesh:
         build_ground()
         build_fog(ME)
@@ -909,6 +938,8 @@ def draw_world(alpha:float):
                 draw_ground(zoom / ART_K)
                 draw_relief(zoom / ART_K)  // (screen px an art px: finer art, D-173)
                 draw_fog()
+                perf_lap(1)
+                set_view_rect()
                 draws = []::Drawable
                 collect_props()
                 collect_buildings()
@@ -919,7 +950,9 @@ def draw_world(alpha:float):
                     collect_corpses()
                 for(occluders) o, k: draws.push(Drawable { o.sort_y, draws.length, -2, float(k), 0.0, float4_1, [] })  // a hill's near-edge tops: what's behind it hides
                 draws.push(Drawable { -50000.0, draws.length, -4, 0.0, 0.0, float4_1, [] })                            // the selection rings: on the ground, over its flat props and shadows, under everything standing
+                perf_lap(2)
                 qsort_in_place(draws) a, b: a.y < b.y or (a.y == b.y and a.seq < b.seq)
+                perf_lap(3)
                 b_sheet = -1
                 for(draws) d:
                     if d.f == -2:
@@ -929,7 +962,7 @@ def draw_world(alpha:float):
                     elif d.f == -4:
                         flush_sprites()
                         draw_rings(alpha)
-                        draw_orders(alpha)
+                        ui_lines(): draw_orders(alpha)  // (its dashes and rings in one draw)
                         b_sheet = -1
                     elif d.f == -3:  // a damaged building's cracks, sorted with it (game/town.lobster)
                         flush_sprites()
@@ -939,6 +972,7 @@ def draw_world(alpha:float):
                     elif d.xf.length: sprite_xf(d.f, d.xf, d.col)
                     else: sprite(d.f, d.x, d.ay, d.col)
                 flush_sprites()
+                perf_lap(4)
                 gl.scale(1.5):
                     draw_town()
                     draw_shots(alpha)
@@ -946,6 +980,7 @@ def draw_world(alpha:float):
                         let v = views.get(id)
                         if v and v.node.visible: v.node.pos - float2 { 0.0, v.lift } else: float2 { -1000000000.0, 0.0 }
                 draw_marks(alpha)
+                perf_lap(5)
 
 // ------------------------------------------------------------------ the lobby (type your races; Lobster makes, balances and sets them up)
 // Two prompts, each race shown as you type (the generator takes a few milliseconds); Enter balances
@@ -1463,10 +1498,11 @@ def scroll():
 // meshes (gl.open_circle goes astray after the sprites' shader, as gl.rect and gl.line do in this build).
 def draw_ring(p:float2, r:float, col:float4):
     let n = 48
-    for(n) k:
-        let a0 = 360.0 * float(k) / float(n)
-        let a1 = 360.0 * float(k + 1) / float(n)
-        ui_line(p + float2 { cos(a0) * r, sin(a0) * r * 0.5 }, p + float2 { cos(a1) * r, sin(a1) * r * 0.5 }, 1.6, col)
+    ui_lines():
+        for(n) k:
+            let a0 = 360.0 * float(k) / float(n)
+            let a1 = 360.0 * float(k + 1) / float(n)
+            ui_line(p + float2 { cos(a0) * r, sin(a0) * r * 0.5 }, p + float2 { cos(a1) * r, sin(a1) * r * 0.5 }, 1.6, col)
 
 // Shots in flight (shots.gd, combat_fx.gd): each weapon's shot on its arc from the shooter's body to
 // where it lands, for the sim's flight, with a speck of shadow under it. Canvas units (under the 1.5 scale).
@@ -1951,8 +1987,10 @@ def note(s:string):
     write_file("/tmp/aoa_lobster_trail.txt", trail, 0, 1)
 
 note("start")
-// (a capture runs without vsync: with the display asleep, vsync never lets a frame through)
-fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if shot != "" or selftest or padtest: gl.window_init_no_vsync else: 0))
+// (a capture runs without vsync: with the display asleep or the screen locked, vsync never lets a frame through;
+// novsync: the same for a measure, the frame cap still pacing it)
+let no_vsync = shot != "" or selftest or padtest or has_s(args, "novsync")
+fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if no_vsync: gl.window_init_no_vsync else: 0))
 gl.set_target_delta_time(1.0 / 60.0)   // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon.png")  // (the Dock's icon on the Mac)
 note("window")
@@ -2490,12 +2528,16 @@ def play_match():
             if not padded and not touch_play and not typing_race: scroll()
             keys()
             if not padded and not panel_click(mouse_px()): mouse()
+        perf_lap(0)
         gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
         gl.blend(1)
         draw_world(acc / 0.05)
         draw_panel()
+        perf_lap(6)
         draw_hud(paused, speed)
+        perf_lap(7)
         draw_groups()
+        perf_lap(8)
         pad_draw()
         if touch_play: build_button()
         if tree_arg and frame_no == 2:
@@ -2504,6 +2546,7 @@ def play_match():
         if menu_open: pause_menu()
         draw_banner()
         if typing_race: typing_tick()
+        perf_lap(9)
         if has_s(args, "savegame") and clock_s >= 3.0:  // (tests: the pause menu's Save game, then quit)
             save_game()
             quit_app = true
