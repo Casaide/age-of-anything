@@ -1,8 +1,8 @@
 // ------------------------------------------------------------------ a new race mid-match (Lobster only: the generator in play)
-// A player's people become another race while the match runs: the new race is balanced against
-// the others by fights (the running world stashed meanwhile, then brought back exactly), and each
-// of the player's unit lines takes the new race's line of the same slot (its looks, stats, prices,
-// the age it's in, research it has), as do its bonuses and its buildings' style. Units alive change
+// A player's people become another race while the match runs, at its own prices (calibrated offline,
+// D-194: no fights), and each of the player's unit lines takes the new race's line of the same slot
+// (its looks, stats, prices, the age it's in, research it has), as do its bonuses and its buildings'
+// style. Units alive change
 // in place (their share of health kept). A line the new race lacks stays as it was.
 // Attack classes the match didn't know (a tag no race at the start had) count as the last class,
 // as in GDScript's _class.
@@ -77,22 +77,3 @@ def swap_race(p:int, race:JV):
     retype(p)
     tech_refresh(p)
     type_gen++
-
-// Balance a newcomer against the others by fights (the running world stashed, then back), and
-// put the prices on it. Returns the rounds' report.
-def balance_newcomer(race:JV, others:[JV], rounds:int, report_fn) -> void:
-    let rules = su_rules
-    stash_world()
-    reset_world()
-    let races = [ race ]
-    for(others) o: races.push(o)
-    auto_balance(races, rules, 2, rounds, 10) round, units, rates, mean, off:
-        report_fn(round, units, rates, mean, off)
-    unstash_world()
-    for(glist(race, "units")) un:
-        let slot = rstr(at(un, "recipe"), "slot")
-        let pct = rr_price_pct.get(rstr(race, "key") + "|" + slot, 100)
-        if pct != 100:
-            for(line_of(un)) l:
-                let c = at(at(l, "eval"), "cost")
-                for(c.a) v, n: c.a[n] = jint(round10(as_int(v) * pct / 100))
