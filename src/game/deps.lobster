@@ -57,7 +57,6 @@ import view.bake_cache
 import game.audio
 import game.pack
 import game.text_cache
-import view.baker
 import model.kit
 import model.grng
 import model.base

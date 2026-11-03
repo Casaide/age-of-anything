@@ -5,6 +5,33 @@
 // textures/<name>.png: tex_png.gd).
 
 let model_tex_dir = "textures"
+
+class BakeTri:
+    p:[float3]
+    n:[float3]
+    c:[float3]
+    uv:[float2]
+    mat:int
+
+// A material: its texture (or none) and how it's mapped (Godot's uv1 scale and offset, triplanar or not);
+// in a library mesh, also the race channel its colour follows (m x the channel + b) or "" (fixed: b).
+class BakeMat:
+    tex:resource<texture>?
+    scale:float2
+    offset:float2
+    triplanar:bool
+    channel = "*"  // "*": the colour is on each triangle (a mesh made for one race)
+    m = float3_0
+    b = float3_0
+    scissor = false  // alpha scissor (decals)
+    unshaded = false
+    emission = float3_0
+    two_sided = false  // (cull disabled: a face seen from behind turns its normal to the camera)
+
+let bake_mats = []::BakeMat
+
+let bake_tex_cache = dictionary<string, resource<texture>>(16)
+
 let model_mat_at = dictionary<string, int>(64)
 
 def mat_index(m:MMat) -> int:
