@@ -1371,3 +1371,18 @@ the boundaries still moving. Claude's recommendation; the order is in `docs/back
 - **Race keys never change with content updates:** "races can't change with content updates surely, that's
   terrible". The base pack's signature stays out of race keys; a race names only the extra packs it was made with.
 - **Name:** Dominic floated "Age Engine"; not settled.
+
+**D-192, 2026-11-03: Buildings play roles; the sim and the bots look them up by role, never by id (Claude, engine
+plan step 1, as D-190 and D-191 asked).**
+- `data/buildings.json` gives a building `roles`: `hub`, `housing`, `trade`, `barracks`, `tower`, `defence`, `wonder`
+  (documented in its `_roles_doc` and `docs/modding.md`). The sim keeps them as a bit per role in `bt_roles`
+  (`lib/state.lobster`: `has_role`, `btype_with`); an unknown role asserts at the start.
+- Every building keeps exactly what it did: the town center is the hub, the house housing, the market trade, the
+  barracks barracks, the watchtower tower and defence, the bastion and castle defence, the wonder the wonder.
+  Matches play tick for tick as before (test_sim, test_ai, save_check, the golden starts unchanged by it).
+- No role where a field already says it: a farm is `becomes`, a pen is `pen`, a camp is a drop-off that isn't the hub
+  (the lumber camp the bots lay by a road is the first camp taking wood).
+- What stays by id is data naming data: the bots' build order, `research.wait_for`, `military.raid_targets` and
+  `expand.camps` in `data/ai.json` name buildings, and `btype_named` finds them.
+- Saves outlive builds (D-141): a save from before roles comes back with each type's roles read from
+  `buildings.json` by its id (`roles_from_data` in `gen/start.lobster`, called by the load); so does a scenario file.

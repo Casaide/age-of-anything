@@ -612,7 +612,7 @@ def road_camp(l:Land, bot:Bot):
             l.camp_laid = true
             l.want = []::int
             return
-    let k = btype_named("lumber_camp")
+    let k = camp_for(resource_index("wood"))
     if not can_afford(bot.player, bm_cost[bot.player][k]):
         l.want = bm_cost[bot.player][k]
         return
@@ -719,8 +719,7 @@ def guard_spot(l:Land, bot:Bot) -> int, int:
     if tc >= 0 and max(abs(b_cx[tc] + 1 - x), abs(b_cy[tc] + 1 - y)) > cfg("land.guard_range"): return -1, -1
     let r = cfg("land.guard_tiles")
     for(b_id.length) b:
-        let id = bt_name[b_kind[b]]
-        if b_owner[b] == bot.player and (id == "watchtower" or id == "bastion" or id == "castle") and abs(b_cx[b] - x) <= r and abs(b_cy[b] - y) <= r:
+        if b_owner[b] == bot.player and has_role(b_kind[b], ROLE_DEFENCE) and abs(b_cx[b] - x) <= r and abs(b_cy[b] - y) <= r:
             return -1, -1
     return x, y
 

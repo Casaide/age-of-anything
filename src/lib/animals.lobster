@@ -31,6 +31,9 @@ def set_terrain(cell:int, k:int):
 
 def is_pen(b:int) -> bool: return bt_pen_animals[b_kind[b]] > 0
 
+// The first pen type (buildings.json "pen"), or -1.
+def pen_type() -> int: return find(bt_pen_animals): _ > 0
+
 def pen_opened(b:int): set_walk_over(footprint(b), true)
 
 def pen_gone(b:int):
@@ -135,7 +138,7 @@ def nearest_town_center(i:int) -> int:
     var best = -1
     var best_d = 1 << 62
     for(b_id.length) b:
-        if b_owner[b] == u_owner[i] and b_done[b] == 1 and bt_name[b_kind[b]] == "town_center":
+        if b_owner[b] == u_owner[i] and b_done[b] == 1 and has_role(b_kind[b], ROLE_HUB):
             let bx, by = b_centre(b)
             let d = abs(bx - u_x[i]) + abs(by - u_y[i])
             if d < best_d:

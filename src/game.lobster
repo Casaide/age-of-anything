@@ -2197,6 +2197,7 @@ def make_match() -> bool:
             su_rules = keep_rules
             if pack_library: race_facts(races)
         else: start_world(args[1])
+        roles_from_data()  // (a scenario file carries no building roles)
     note("world")
     events_on = true
     if args[1] == "lobby" and lobby_levels.length == num_players and not joined_bots.length: ai_levels_set(lobby_levels)  // (each AI at its level)

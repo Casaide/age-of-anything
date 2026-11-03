@@ -268,6 +268,31 @@ var bm_cost = []::[[int]]    // [player][type]: Economy.bcost
 
 var bt_name = []::string
 var bt_cost = []::[int]  // the price as listed (the bots check it for farms)
+var bt_roles = []::int   // per type: a bit per ROLE_NAMES entry it plays (buildings.json "roles", D-192)
+
+// Building roles: what the sim and the bots look a building type up by, never its id. A farm, a pen
+// and a drop-off are known by their own fields (becomes, pen, drop_off) and need no role.
+let ROLE_NAMES = [ "hub", "housing", "trade", "barracks", "tower", "defence", "wonder" ]
+let ROLE_HUB = 1       // the town's heart: a player without one is out; herds and the bots' home
+let ROLE_HOUSING = 2   // what the bots build for room
+let ROLE_TRADE = 4     // a market: buying, selling and trade carts
+let ROLE_BARRACKS = 8  // the bots' first army building, before the first age
+let ROLE_TOWER = 16    // the tower the bots put up where they were raided
+let ROLE_DEFENCE = 32  // a strong point guarding a crossing
+let ROLE_WONDER = 64   // stood long enough, it wins
+
+def role_bits(names:[string]) -> int:
+    var bits = 0
+    for(names) name:
+        let n = find(ROLE_NAMES): _ == name
+        assert n >= 0
+        bits |= 1 << n
+    return bits
+
+def has_role(k:int, role:int) -> bool: return (bt_roles[k] & role) != 0
+
+// The first building type with that role, or -1.
+def btype_with(role:int) -> int: return find(bt_roles): (_ & role) != 0
 var map_version = 0      // bumped on every cell change (SimMap.version; the bots' reach relabels)
 
 // Players' economy.

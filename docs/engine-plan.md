@@ -87,7 +87,7 @@ bots.
 | `bot`, `eco_bot`, `land`, `expand`, `scout`, `walls_ai`, `ai_cfg` | 3,270 | tangled | The bots name buildings (`town_center`, `house`, `farm`, `barracks`, `market`, `pen`, `lumber_camp`, `mill`, `mining_camp`, `watchtower`, `bastion`, `castle`, `wonder`), resources (`[ "food", "wood" ]` in `bot.lobster`, all four in `expand.lobster`) and the `spear` line. Their tuning is data (`data/ai.json`) but their building list is code. This is the backlog's "bots reading what exists instead of a fixed building list" |
 
 About 18 name lookups in all (`grep -n 'btype_named("\|bt_name\[' src/lib`). None is deep: each is a role a building
-plays.
+plays. (Gone since D-192: buildings are looked up by role.)
 
 ### src/gen: generator, setup, saves, balance (7,059 lines)
 
@@ -355,7 +355,10 @@ In order. Each is small, shippable on its own, and the game plays after every on
 help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 waits for voxel units to be the default
 (Dominic, 2026-11-03), and so does this. Efforts are rough, in working days of a session like today's.
 
-1. **Roles, not names (1-2 days).** Give buildings their roles in `data/buildings.json`; `lib/match`, `trade`,
+1. **Roles, not names (1-2 days).** *Buildings done 2026-11-03 (D-192): `roles` in `data/buildings.json`, the
+   sim and the bots ask `has_role` / `btype_with`; what still names a building is `data/ai.json` (the build order, raid
+   targets, camps, research waits), looked up by `btype_named`. Left: the bots' resource lists and `tech`'s
+   "machine" and "mounted".* Give buildings their roles in `data/buildings.json`; `lib/match`, `trade`,
    `animals` and the bots look up by role; the bots' resource lists come from `data/resources.json`; `tech`'s
    "machine" and "mounted" become data. Done: `grep 'btype_named("\|bt_name\[' src/lib` finds nothing; `golden.sh`
    unchanged; `test_ai` and `test_sim` give the same matches tick for tick.

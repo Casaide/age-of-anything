@@ -188,9 +188,8 @@ def btype_named(id:string) -> int:
     return -1
 
 def town_center(p:int) -> int:
-    let tk = btype_named("town_center")
     for(b_id.length) b:
-        if b_owner[b] == p and b_kind[b] == tk and b_done[b] == 1: return b
+        if b_owner[b] == p and has_role(b_kind[b], ROLE_HUB) and b_done[b] == 1: return b
     return -1
 
 def has_building(p:int, k:int) -> bool:
@@ -269,13 +268,22 @@ def short_of(bot:EcoBot, n:[int], x:int, y:int, area:int) -> int:
 
 def is_ordered(bot:EcoBot, uid:int) -> bool: return contains(bot.ordered, uid)
 
+// A drop-off out from town: one that isn't the hub.
+def is_camp(k:int) -> bool: return not has_role(k, ROLE_HUB) and exists(bt_drop[k]): _ == 1
+
+// The first camp type taking in resource r, or -1.
+def camp_for(r:int) -> int:
+    for(bt_drop.length) k:
+        if bt_drop[k][r] == 1 and is_camp(k): return k
+    return -1
+
 // A foundation of ours waiting to be built that our workers can get to (farms and camps apart;
 // houses only with `houses`).
 def building_underway(bot:EcoBot, houses:bool = true) -> bool:
     for(b_id.length) b:
         if b_owner[b] == bot.player and b_done[b] != 1 and reaches_building(bot.reach, bot.wln, bot.home, b):
-            let id = bt_name[b_kind[b]]
-            if id != "wonder" and id != "farm" and id != "lumber_camp" and id != "mining_camp" and id != "mill" and (houses or id != "house"): return true
+            let k = b_kind[b]
+            if not has_role(k, ROLE_WONDER) and bt_farm[k] == 0 and not is_camp(k) and (houses or not has_role(k, ROLE_HOUSING)): return true
     return false
 
 // Our workers sheltering inside buildings (they still count).
@@ -448,7 +456,7 @@ def finish_foundations(bot:EcoBot, workers:[int]):
 def farms(bot:EcoBot, tc:int, workers:[int], n:[int]):
     let p = bot.player
     let food = 1
-    let fk = btype_named("farm")
+    let fk = find(bt_farm): _ == 1
     var count = 0
     for(b_id.length) b:
         if b_owner[b] == p and b_kind[b] == fk:
@@ -524,7 +532,7 @@ def bot_pen(bot:EcoBot, tc:int, workers:[int]):
         var near = 0
         for(u_x.length) i:
             if u_owner[i] == p and t_behave[u_kind[i]] == B_HERD and dist2(hx, hy, u_x[i], u_y[i]) <= HUNT_RADIUS * HUNT_RADIUS * 1000000: near++
-        let k = btype_named("pen")
+        let k = pen_type()
         let ageing = bot.push >= 100 and bot.goal.length > 0
         if ages[p] <= 2 and not ageing and near >= PEN_SHEEP and can_afford(p, bm_cost[p][k]) and not building_underway(bot):
             let builder = pick_builder(bot, workers)
@@ -644,7 +652,7 @@ def bot_think(bot:EcoBot):
     rebalance_workers(bot, workers, n)
     // Age up: with enough workers, a barracks, then save up and click it.
     let saving = ages[p] == 1 and count >= bot.age_workers
-    let bk = btype_named("barracks")
+    let bk = btype_with(ROLE_BARRACKS)
     if saving and not has_building(p, bk) and not building_underway(bot):
         if can_afford(p, bm_cost[p][bk]):
             let sx, sy = house_spot(bot, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[bk])
@@ -662,7 +670,7 @@ def bot_think(bot:EcoBot):
         issue_cmd(p, 6, []::int, b_id[tc], wk, 1, 0)  // (no race lacks workers)
         bot.next_train = tick + TRAIN_COOLDOWN
     // A house before we're stuck.
-    let hk = btype_named("house")
+    let hk = btype_with(ROLE_HOUSING)
     var queued_units = 0
     for(q) e:
         if e >= 0: queued_units++
