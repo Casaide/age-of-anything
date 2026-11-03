@@ -1786,7 +1786,8 @@ import .game.techtree
 import .game.panel
 import .game.topbar
 import .game.order_marks
-import .game.touch  // (here: it plays through the pad, and leaves the panel, top bar and minimap to the mouse)
+import .game.touch          // (here: it plays through the pad, and leaves the panel, top bar and minimap to the mouse)
+import .game.techtree_page  // (here: it draws with the panel's portraits and the top bar's icons)
 import .game.lobby
 import .game.boot
 
@@ -2385,7 +2386,7 @@ def play_match():
             perf_begin()
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
         if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
-        if gl.button("controller_start") == 1 and not typing_race: menu_open = not menu_open
+        if gl.button("controller_start") == 1 and not typing_race and not tree_open: menu_open = not menu_open
         if has_s(args, "menu") and frame_no == 2: menu_open = true  // (captures)
         if has_s(args, "orders") and frame_no == 30:                // (captures: your units sent off, and the Town Center's rally set)
             selected = filter(u_id) id: u_owner[index_of(id)] == ME
@@ -2543,7 +2544,7 @@ def play_match():
             print "match over: {if winner >= 0: "team {winner} won" else: "no winner yet"} at {int(clock_s) / 60}:{int(clock_s) % 60}, tick {tick}"
             quit_app = true
             return
-        if shot != "" and clock_s >= shot_at and not selftest and not padtest and not has_s(args, "tillend") and (not tree_arg or frame_no > 4) and (not has_s(args, "menu") or frame_no > 4):
+        if shot != "" and clock_s >= shot_at and not selftest and not padtest and not has_s(args, "tillend") and (not tree_arg or (frame_no > 4 and tree_waiting == 0)) and (not has_s(args, "menu") or frame_no > 4):
             gl.screenshot(shot)
             print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
             quit_app = true
