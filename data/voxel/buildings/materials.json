@@ -1,0 +1,71 @@
+{
+ "_doc": "The voxel buildings' materials (an experiment: the game doesn't load this folder).",
+ "plaster": {
+  "rgb": "#e6dfd0"
+ },
+ "stone": {
+  "rgb": "#b3ab9b",
+  "fur": true
+ },
+ "stone_dark": {
+  "rgb": "#8c8475"
+ },
+ "tile": {
+  "rgb": "#b4482c",
+  "fur": true
+ },
+ "tile_dark": {
+  "rgb": "#8a3320"
+ },
+ "timber": {
+  "rgb": "#7a5230"
+ },
+ "timber_dark": {
+  "rgb": "#4e321e"
+ },
+ "glass": {
+  "rgb": "#f4e39a"
+ },
+ "shutter": {
+  "rgb": "#a33f2a"
+ },
+ "sheet": {
+  "rgb": "#b9bdc3",
+  "fur": true
+ },
+ "sheet_dark": {
+  "rgb": "#7d828a"
+ },
+ "pipe": {
+  "rgb": "#2c2a2a"
+ },
+ "cheese": {
+  "rgb": "#f0c23c"
+ },
+ "leaf": {
+  "rgb": "#3f6b29",
+  "fur": true
+ },
+ "leaf_dark": {
+  "rgb": "#2b4c1d",
+  "fur": true
+ },
+ "cypress": {
+  "rgb": "#24401f",
+  "fur": true
+ },
+ "bark": {
+  "rgb": "#5a4030",
+  "fur": true
+ },
+ "rock": {
+  "rgb": "#8d877a",
+  "fur": true
+ },
+ "pot": {
+  "rgb": "#b0582e"
+ },
+ "team": {
+  "rgb": "#cc2921"
+ }
+}

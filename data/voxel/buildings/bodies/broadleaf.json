@@ -1,0 +1,163 @@
+{
+ "_doc": "A broadleaf tree: a crown of melted balls on a forked trunk.",
+ "points": {
+  "o": {
+   "at": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "shapes": [
+  {
+   "cap": [
+    "o",
+    0,
+    0,
+    0
+   ],
+   "to": [
+    "o",
+    0,
+    0,
+    22
+   ],
+   "r": [
+    3.0,
+    2.0
+   ],
+   "mat": "bark",
+   "hard": false
+  },
+  {
+   "cap": [
+    "o",
+    0,
+    0,
+    18
+   ],
+   "to": [
+    "o",
+    7,
+    3,
+    28
+   ],
+   "r": [
+    1.4,
+    1.0
+   ],
+   "mat": "bark",
+   "hard": true
+  },
+  {
+   "cap": [
+    "o",
+    0,
+    0,
+    18
+   ],
+   "to": [
+    "o",
+    -6,
+    -4,
+    27
+   ],
+   "r": [
+    1.4,
+    1.0
+   ],
+   "mat": "bark",
+   "hard": true
+  },
+  {
+   "ball": [
+    "o",
+    0,
+    0,
+    34
+   ],
+   "r": 12,
+   "mat": "leaf",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    9,
+    4,
+    30
+   ],
+   "r": 9,
+   "mat": "leaf_dark",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    -9,
+    -3,
+    30
+   ],
+   "r": 9,
+   "mat": "leaf",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    4,
+    -9,
+    32
+   ],
+   "r": 8,
+   "mat": "leaf_dark",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    -4,
+    9,
+    32
+   ],
+   "r": 8,
+   "mat": "leaf",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    2,
+    2,
+    42
+   ],
+   "r": 8,
+   "mat": "leaf_dark",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    -7,
+    6,
+    38
+   ],
+   "r": 7,
+   "mat": "leaf",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    7,
+    -6,
+    38
+   ],
+   "r": 7,
+   "mat": "leaf_dark",
+   "hard": false
+  }
+ ],
+ "size": 1.6
+}

@@ -1,0 +1,134 @@
+{
+ "_doc": "A cypress: a dark green spire of melted balls on a short trunk.",
+ "points": {
+  "o": {
+   "at": [
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "shapes": [
+  {
+   "cap": [
+    "o",
+    0,
+    0,
+    0
+   ],
+   "to": [
+    "o",
+    0,
+    0,
+    10
+   ],
+   "r": [
+    1.6,
+    1.2
+   ],
+   "mat": "bark",
+   "hard": true
+  },
+  {
+   "ball": [
+    "o",
+    0.0,
+    0,
+    8
+   ],
+   "r": 3.826644452187053,
+   "mat": "leaf_dark",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    0.3,
+    0,
+    14
+   ],
+   "r": 6.196174644486022,
+   "mat": "cypress",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    0.0,
+    0,
+    20
+   ],
+   "r": 8.076644452187052,
+   "mat": "cypress",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    0.3,
+    0,
+    26
+   ],
+   "r": 9.283980388508803,
+   "mat": "leaf_dark",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    0.0,
+    0,
+    32
+   ],
+   "r": 9.7,
+   "mat": "cypress",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    0.3,
+    0,
+    38
+   ],
+   "r": 9.283980388508805,
+   "mat": "cypress",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    0.0,
+    0,
+    44
+   ],
+   "r": 8.076644452187052,
+   "mat": "leaf_dark",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    0.3,
+    0,
+    50
+   ],
+   "r": 6.196174644486023,
+   "mat": "cypress",
+   "hard": false
+  },
+  {
+   "ball": [
+    "o",
+    0.0,
+    0,
+    56
+   ],
+   "r": 3.826644452187054,
+   "mat": "cypress",
+   "hard": false
+  }
+ ],
+ "size": 1.7
+}
