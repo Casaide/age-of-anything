@@ -228,3 +228,21 @@ Bug on the way: a local named `looks` shadowed a game global and the game didn't
 doesn't compile game.lobster): every change to the voxel path is now started in the game once before it's committed.
 Rats and frogs would gain from it too: a fur shade (lighter, darker, greyer), a pale patch or a torn ear for rats;
 spots or a stripe and a shade for frogs; the cat's coat (black, ginger, tabby) for the riders.
+
+## Floating (2026-11-03)
+Dominic on picture 51: "they're floating in that pic you shared". Measured, not guessed: in the bake the feet sat
+right on their shadows, so the lift and the anchors were fine. Two things in the game made the gap:
+- The shadow was sorted into the ground layer, under everything; on the ridge a hill's near edge (draw_occluder) is
+  painted after the ground layer, so it covered the shadow just under the feet: only the far half showed, off to the
+  side, and the unit hovered. The shadow is now sorted just under its own unit.
+- The cast shadow falls down and right of the feet; the game draws a baked pixel at 0.55 world px, so the thin piece
+  under the soles could vanish. A contact shadow (a small ellipse, a few px thick) now sits under whatever touches the
+  ground.
+Two body fixes on the way: the ground under a unit is set by its body, not its gear (a frog's spear butt set the
+ground and lifted the frog off it); a rat's tail lies on the ground (its end floated about 2 units up, the lowest
+thing seen from behind).
+The check: `voxel_proto -- - check` (in the batch as voxel_contact) draws every unit in every facing, standing and in
+each walk step, samples the frame and its shadow as the game draws them (0.55 world px a pixel, nearest, three
+sub-pixel offsets), and fails if a standing unit's soles have no shadow straight under at least half of them, or a
+walking one's under none. It fails 11 frames with the contact shadow turned off and passes all 936 with it. Pictures
+52 (the battle crop: picture 51 as it was, and the same moment now), 54 (rats on flat ground).
