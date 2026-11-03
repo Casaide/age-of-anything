@@ -7,16 +7,16 @@
     "wood": 55
    },
    "2": {
-    "food": 35,
+    "food": 40,
     "wood": 30,
     "gold": 25,
-    "stone": 10
+    "stone": 5
    },
    "3": {
-    "food": 35,
+    "food": 45,
     "wood": 20,
     "gold": 25,
-    "stone": 20
+    "stone": 10
    }
   },
   "max_workers": {
@@ -339,7 +339,7 @@
    "army_ratio": 70,
    "wave_pct": 70,
    "build_up": 1,
-   "age3_workers": 26,
+   "age3_workers": 24,
    "towers": 2,
    "shelter_pop": 4,
    "all_in": 36,
@@ -353,7 +353,7 @@
    "army_ratio": 70,
    "wave_pct": 70,
    "build_up": 1,
-   "age3_workers": 26,
+   "age3_workers": 24,
    "towers": 2,
    "shelter_pop": 4,
    "all_in": 36,

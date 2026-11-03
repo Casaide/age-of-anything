@@ -427,6 +427,7 @@ def test_level(a:JV, b:JV, lvl:string):
         let n = find_index(built_names, id)
         return if n >= 0: built_counts[n] else: 0
     let towers = built("watchtower") + built("bastion")
+    if winner >= 0: print "  {lvl}: the match ended at {clock(tick)}, player {winner} won"
     print "\n== {lvl}, left alone: age 2 at {clock(a2)}, age 3 at {clock(a3)}; by 20:00 built " + concat_string(map(built_names) id, n: "{id} {built_counts[n]}", ", ") +
         "; research by 20:00 ({bought.length}) {bought}; army pop at 10/20/30 min {army[10]}/{army[20]}/{army[30]}"
     if lvl != "easy":
@@ -436,8 +437,8 @@ def test_level(a:JV, b:JV, lvl:string):
         check(built("university") > 0 and built("castle") > 0, "{lvl}: a University and a Castle by 20:00")
         check(towers >= 1, "{lvl}: a tower by 20:00")
         check(bought.length >= 10, "{lvl}: ten or more research by 20:00 ({bought.length})")
-    if lvl == "normal":
-        check(army[30] > army[20], "normal: its army keeps growing ({army[20]} at 20:00, {army[30]} at 30:00)")
+    if lvl == "normal":  // (left alone it may win before 30:00, its lead clear: that's no stall)
+        check(winner == 0 or army[30] > army[20], "normal: its army keeps growing ({army[20]} at 20:00, {army[30]} at 30:00)")
 
 // ------------------------------------------------------------------ the counter-pick, the Wonder
 

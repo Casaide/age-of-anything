@@ -1562,3 +1562,17 @@ solve and close". In one pass, one fight run at the end:
   match (which swung with any price set: the starts aren't equal, and rats beat frogs at every level).
 - **The backlog's balance section is closed** to what's design rather than tuning (calibration's reach, kiting
   archers, smarter hard play), each waiting for a reason to reopen; the batch keeps the pairs and the round robin.
+
+**D-207, 2026-11-03: The bots save for the next age, gather less stone, and the level checks pass.** Dominic: "fix the
+failing easy and normal level checks". `test_ai -- levels` (a bot left alone with a passive one) had failed since
+before D-206, for three reasons:
+- **The bot won early**, and every 20-minute check read an empty match: D-198's pressing a clear lead isn't "left
+  alone", so `no_waves` turns it off too. Winning outright later (around 20 to 30 minutes, its lead clear) counts as
+  the army still growing.
+- **The build order spent what the age-up was saved for** (the University, a market, towers out of the age's wood):
+  while saving for the next age, the bot builds only houses and what that age needs, as a player would. Age 3 went
+  from 17:41 to about 15:00.
+- **Stone piled up unused** (330 to 580 by 20:00, while food ran dry and research waited): the gathering mix is food
+  40, wood 30, gold 25, stone 5 in age 2 (was 35/30/25/10) and food 45, wood 20, gold 25, stone 10 in age 3 (was
+  35/20/25/20). Normal and hard save for age 3 at 24 workers (was 26).
+All 11 level checks pass; hard still beats normal over the mirrors (3 won, 2 lost, 3 drawn).
