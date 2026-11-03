@@ -10,7 +10,7 @@
 // window (fixed sizes: nothing moves when a race changes). The pages are immediate mode on the UI layer
 // (game/ui.lobster); a pad walks them by focus (ui_frame), X rolls the focused panel's dice, Start starts, B goes back.
 // run_front returns what was chosen: "play", "host", "join", "load:<path>", or "" (quit). Imported by game.lobster
-// after the lobby's helpers (roster_views, balance_for_match).
+// after the lobby's helpers (roster_views, balance_for_match for the Race Lab's Test).
 
 let FE_DESIGN = float2 { 1600.0, 950.0 }
 let FE_UNIT_INCHES = 0.6                            // the setup page's stage: a unit for each this much of its width on the screen
@@ -1275,9 +1275,9 @@ def run_front(page0:string, typed:[string]) -> string:
         if shot != "" and fe_frames == shot_frame:
             gl.screenshot(shot)
             if fe_page == "setup" and has_s(args, "loadershot"):
-                fe_loader("Balancing the armies by fighting them: round 1 of 4", 0.16)
+                fe_loader("Setting up the battle", 0.16)
                 gl.frame()
-                fe_loader("Balancing the armies by fighting them: round 1 of 4", 0.16)
+                fe_loader("Setting up the battle", 0.16)
                 gl.screenshot(shot + ".loader.png")
                 bake_progress = fn(st, f): fe_loader(st, f)  // (the loader as the bake drives it: bake_breath)
                 gl.frame()
