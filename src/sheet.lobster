@@ -31,6 +31,7 @@ import .game.audio
 import .game.pack
 def ui() -> float: return 1.0  // (the UI's scale, which game/ui.lobster asks the game for)
 import .game.ui
+import .game.text_cache
 import .game.fx
 import .view.baker
 import .model.kit

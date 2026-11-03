@@ -84,17 +84,10 @@ def tb_text_w(s:string, size:int, font:int) -> float:
 
 def tb_flush():
     ui_batch_flush()
-    var font = -1
-    for(tb_texts) t:
-        if t.font != font:
-            font = t.font
-            gl.set_font_name(if font == 2: TB_DISPLAY elif font == 1: TB_BOLD else: TB_TEXT)
-        gl.set_font_size(t.size)
-        if t.outline:
-            for([ float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 } ]) d:
-                gl.color(float4 { 0.0, 0.0, 0.0, 0.9 }): gl.translate(t.at + d * max(1.0, float(t.size) / 12.0)): gl.text(t.s)
-        gl.color(t.col): gl.translate(t.at): gl.text(t.s)
-    if font != 0: gl.set_font_name(TB_TEXT)
+    text_batch():
+        for(tb_texts) t:
+            let face = if t.font == 2: TB_DISPLAY elif t.font == 1: TB_BOLD else: TB_TEXT
+            text_label(t.at, t.s, t.size, t.col, face, if t.outline: max(1.0, float(t.size) / 12.0) else: 0.0, float4 { 0.0, 0.0, 0.0, 0.9 })
     tb_texts = []
 
 // A plaque: a sunk well with a thin frame (theme.gd's well_box: the frame at 0.7, the face at 0.38).

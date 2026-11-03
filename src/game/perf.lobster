@@ -3,7 +3,8 @@
 // play after a warm-up: each frame's work (from gl.frame's return to the next call: everything but the swap's wait and
 // the cap's sleep), the frames a second, and the GPU buffers each frame made. Above a budget it fails (exit code 1).
 // novsync measures with the screen locked (vsync lets no frame through then; the frame cap still paces it). Where the
-// work goes is printed too, phase by phase (perf_lap).
+// work goes is printed too, phase by phase (perf_lap), and the text's share (oldtext: text drawn as before
+// game/text_cache.lobster, to measure it against).
 // The laptop ran hot (2026-10-31): every gl.text made and deleted a buffer, macOS waited on each delete, and the game
 // drew 120 frames a second on a ProMotion display. Headless runs never saw it.
 
@@ -17,6 +18,7 @@ let PERF_WORK_P95 = 0.008     // and the 95th percentile
 let PERF_BUSY_MAX = 0.22      // the main thread's share of the wall clock spent working (not in the swap or the cap's sleep)
 let PERF_FPS_MAX = 66.0       // frames a second (the cap is 60: a 120 Hz display uncapped draws twice as often)
 let PERF_BUFFERS_P95 = 0      // GPU buffers made a frame, the 95th percentile (pooled: none once the pool is full)
+let PERF_TEXT_MAX = 0.0001    // seconds of text a frame (game/text_cache.lobster: labels from atlas pages)
 
 var perf_for = 0.0  // perf:<seconds> (0: off)
 let perf_work = []::float
@@ -24,6 +26,7 @@ let perf_made = []::int
 var perf_t = -1.0  // the frame's start (after gl.frame)
 var perf_b = 0
 var perf_wall0 = -1.0  // the measure's start
+var perf_text0 = 0.0   // text_time then
 // Where a frame's work goes: seconds in each phase over the measure (perf_lap(k) at the end of phase k).
 let PERF_PHASES = [ "input and sim", "ground", "collect", "sort", "sprites", "over the world", "panel", "hud", "groups", "rest" ]
 let perf_phase = map(PERF_PHASES): 0.0
@@ -50,7 +53,9 @@ def perf_lap(k:int):
 // At the end of a frame (clock: seconds of play): its work kept; true once the measure is done (then quit).
 def perf_end(clock:float) -> bool:
     if clock < PERF_WARM or perf_t < 0.0: return false
-    if perf_wall0 < 0.0: perf_wall0 = perf_t
+    if perf_wall0 < 0.0:
+        perf_wall0 = perf_t
+        perf_text0 = text_time
     perf_work.push(seconds_elapsed() - perf_t)
     perf_made.push(gl.buffers_made() - perf_b)
     if clock < PERF_WARM + perf_for: return false
@@ -61,13 +66,15 @@ def perf_end(clock:float) -> bool:
     let bmed = perf_sorted_at(perf_made, 0.5)
     let b95 = perf_sorted_at(perf_made, 0.95)
     let busy = sum(perf_work) / wall
+    let text = (text_time - perf_text0) / float(perf_work.length)
     def tenths(x:float): return float(int(x * 10.0 + 0.5)) / 10.0
-    let stats = "{tenths(fps)} fps, work {tenths(med * 1000.0)} ms median, {tenths(p95 * 1000.0)} ms 95th, buffers {bmed} / {b95}, busy {int(busy * 100.0)}%; {perf_work.length} frames, {sum(perf_made)} buffers in all"
+    let stats = "{tenths(fps)} fps, work {tenths(med * 1000.0)} ms median, {tenths(p95 * 1000.0)} ms 95th, buffers {bmed} / {b95}, busy {int(busy * 100.0)}%, text {tenths(text * 10000.0) / 10.0} ms; {perf_work.length} frames, {sum(perf_made)} buffers in all"
     let bad = []::string
     if med > PERF_WORK_MEDIAN: bad.push("work median over {PERF_WORK_MEDIAN * 1000.0} ms")
     if p95 > PERF_WORK_P95: bad.push("work 95th over {PERF_WORK_P95 * 1000.0} ms")
     if busy > PERF_BUSY_MAX: bad.push("the main thread busy {int(busy * 100.0)}%, over {int(PERF_BUSY_MAX * 100.0)}%")
     if fps > PERF_FPS_MAX: bad.push("{fps} frames a second, over {PERF_FPS_MAX} (the frame cap?)")
+    if text > PERF_TEXT_MAX: bad.push("text {text * 1000.0} ms a frame, over {PERF_TEXT_MAX * 1000.0} ms")
     if b95 > PERF_BUFFERS_P95: bad.push("{b95} GPU buffers a frame (95th), over {PERF_BUFFERS_P95}")
     if bad.length:
         print "perf FAIL: {concat_string(bad, "; ")}"

@@ -255,9 +255,8 @@ var page_texts = []::PageText
 def page_text(at:float2, s:string, size:int, col:float4): page_texts.push(PageText { at, s, size, col })
 
 def page_flush():
-    for(page_texts) t:
-        gl.set_font_size(t.size)
-        lobby_text(t.at, t.s, t.col)
+    text_batch():
+        for(page_texts) t: text_label(t.at, t.s, t.size, t.col, TEXT_FACE, 0.0, float4_0)
     page_texts = []
 
 // (gl.rect draws -size..size round the point in this build, so it's given the centre and half the size)

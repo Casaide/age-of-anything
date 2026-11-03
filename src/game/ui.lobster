@@ -249,18 +249,9 @@ def ui_text_c(x:float, y:float, s:string, size:int, col:float4, font:int, edge:f
 
 def ui_flush():
     ui_batch_flush()
-    var font = 0
-    for(ui_texts) t:
-        if t.font != font:
-            font = t.font
-            gl.set_font_name(UI_FONTS[font])
-        gl.set_font_size(t.size)
-        if t.edge > 0.0:
-            for([ float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 } ]) d:
-                gl.color(float4 { 0.0, 0.0, 0.0, 0.85 * t.col.w }): gl.translate(t.at + d * t.edge): gl.text(t.s)
-        gl.color(t.col):
-            gl.translate(t.at): gl.text(t.s)
-    if font != 0: gl.set_font_name(UI_FONTS[0])
+    text_batch():
+        for(ui_texts) t:
+            text_label(t.at, t.s, t.size, t.col, UI_FONTS[t.font], t.edge, float4 { 0.0, 0.0, 0.0, 0.85 * t.col.w })
     ui_texts = []
 
 // A flat fill from its top-left corner (meshes in screen coordinates: gl.rect draws -size..size round its
