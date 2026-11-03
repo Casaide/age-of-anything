@@ -9,7 +9,7 @@ mkdir -p model/mods   # (mods_gen writes the mod's models there; Lobster can't m
 "$LOBSTER" mods_gen.lobster -- "$1" | grep -v warning
 "$LOBSTER" mod_check.lobster -- "$1" 2>&1 | grep -v warning
 code=$?
-echo "Its parts' prices, by fights against the panel (calibrate.lobster, D-194; a few minutes):"
+echo "Its parts' prices, by fights against the panel (calibrate.lobster, D-195; a few minutes):"
 "$LOBSTER" calibrate.lobster -- mod "$1" 2>&1 | grep -v warning
 "$LOBSTER" mods_gen.lobster | grep -v warning
 exit $code

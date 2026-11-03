@@ -985,7 +985,7 @@ def draw_world(alpha:float):
 
 // ------------------------------------------------------------------ the lobby (type your races; Lobster makes and sets them up)
 // Two prompts, each race shown as you type (the generator takes a few milliseconds); Enter starts the
-// match at the generator's prices, calibrated offline (src/calibrate.lobster, D-194): no fights at load.
+// match at the generator's prices, calibrated offline (src/calibrate.lobster, D-195): no fights at load.
 // The units are drawn from the part library (art_pack.gd library).
 
 def rules_id() -> string: return if rules_arg != "": rules_arg else: pack_rules
@@ -1022,7 +1022,7 @@ def box(at:float2, size:float2, col:float4): ui_fill(at, size, col)
 
 // The Race Lab's Test: rounds of the round robin in age 2 between its races, each line's win rate and the
 // price the fights would give it (gen/balance.lobster), shown as it goes. Returns the report. (A match
-// never runs it: prices are calibrated offline, D-194.)
+// never runs it: prices are calibrated offline, D-195.)
 def balance_for_match(races:[JV], rules:JV, rounds:int) -> [string]:
     let report = []::string
     let t0 = seconds_elapsed()
@@ -1074,7 +1074,7 @@ def race_facts(races:[JV]):
         unit_shot.set(k, if kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
 
 // ------------------------------------------------------------------ becoming another race mid-match (gen/swap.lobster)
-// N: type a race; Enter: your people become it at its own prices (no fights, D-194), line by line,
+// N: type a race; Enter: your people become it at its own prices (no fights, D-195), line by line,
 // units and all, and your buildings take its style.
 
 var typing_race = false

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Put calibrated price points into the data, keeping its formatting (D-194).
+"""Put calibrated price points into the data, keeping its formatting (D-195).
 
 Usage (from the repo root): python3 tools/balance/write_prices.py [build/calibrate/prices.json]
 

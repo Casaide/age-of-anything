@@ -39,7 +39,7 @@ change it. What matters:
 - `stats` and `points`: points set the price through the game's cost curve. Compare with a game part
   doing the same job (a musket: attack 9, range 7, 8 points). Don't make it free; don't special-case.
   `points` is also what the generator spends from a race's budget; the price can differ: `price_points`
-  (the game's are calibrated by fights, D-194). `mod_check.sh` ends by fighting the lines that wear your
+  (the game's are calibrated by fights, D-195). `mod_check.sh` ends by fighting the lines that wear your
   parts against a fixed panel and prints the `price_points` each part should have; set them.
 - `tier`: 1-3, the age it can first appear. Add a tier-3 version to give the line an age-3 step.
 - `face`: on head gear, `"covered"` for a face guard with eye openings, `"sealed"` for a closed helmet.
