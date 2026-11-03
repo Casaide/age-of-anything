@@ -338,6 +338,7 @@ def tt_key(recipe:JV) -> int:
 // The figure for a recipe, made as the panel makes it; true once every part it wears is baked (until then they're
 // asked for, baked between frames).
 def tt_figure_ready(key:int, recipe:JV) -> bool:
+    if voxel_units and not has(recipe, "crew"): return vx_figure(recipe) >= 0
     var v = portraits.get(key)
     if not v:
         let made = uv_new()

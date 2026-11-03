@@ -105,7 +105,13 @@ Units can be drawn as procedural voxels instead of composed parts (the `voxels` 
 all units with voxels"). Everything about how a unit looks is data in `data/voxel/`; `src/view/voxel.lobster` is a small
 builder that reads it, fills a voxel grid at a voxel a baked pixel, and draws 8 facings with banded light,
 self-shadows, an outline and a ground shadow of their own. `src/game/voxel_units.lobster` bakes a match's unit types
-(cached in `bake_cache/` by look, keyed by the builder's source and the data).
+(cached in `bake_cache/` by look, keyed by the builder's source and the data). Voxels are what the game draws (D-201; `composed`
+brings back the units of parts). A look is what a line step looks like; each look bakes in jobs (a mode or two, one
+look, an atlas each): the start bakes its players' start-age looks standing and walking (and working), everything else
+queues for play, 6 ms a frame (`vx_tick`: a fill sliced over frames, `vx_fill_begin` / `vx_fill_more` / `vx_fill_end`,
+and each cache PNG written in a frame of its own). Dying is the standing pose turned onto its side (`vx_fallen`), 6
+steps. Engines with a crew stay composed. Sheets: `lobster voxel_proto.lobster -- out.ppm [romans|looks|creatures|
+deaths|animals|check]`; `check` (in the quick batch) asks every unit's feet to stand on its shadow.
 
 Coordinates are body units: z up, y forward, x right, the ground at z 0. A body unit is about a world pixel.
 
