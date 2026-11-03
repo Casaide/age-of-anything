@@ -19,8 +19,8 @@ let PERF_FPS_MAX = 66.0       // frames a second (the cap is 60: a 120 Hz displa
 let PERF_BUFFERS_P95 = 0      // GPU buffers made a frame, the 95th percentile (pooled: none once the pool is full)
 
 var perf_for = 0.0  // perf:<seconds> (0: off)
-var perf_work = []::float
-var perf_made = []::int
+let perf_work = []::float
+let perf_made = []::int
 var perf_t = -1.0  // the frame's start (after gl.frame)
 var perf_b = 0
 var perf_wall0 = -1.0  // the measure's start
@@ -63,7 +63,7 @@ def perf_end(clock:float) -> bool:
     let busy = sum(perf_work) / wall
     def tenths(x:float): return float(int(x * 10.0 + 0.5)) / 10.0
     let stats = "{tenths(fps)} fps, work {tenths(med * 1000.0)} ms median, {tenths(p95 * 1000.0)} ms 95th, buffers {bmed} / {b95}, busy {int(busy * 100.0)}%; {perf_work.length} frames, {sum(perf_made)} buffers in all"
-    var bad = []::string
+    let bad = []::string
     if med > PERF_WORK_MEDIAN: bad.push("work median over {PERF_WORK_MEDIAN * 1000.0} ms")
     if p95 > PERF_WORK_P95: bad.push("work 95th over {PERF_WORK_P95 * 1000.0} ms")
     if busy > PERF_BUSY_MAX: bad.push("the main thread busy {int(busy * 100.0)}%, over {int(PERF_BUSY_MAX * 100.0)}%")

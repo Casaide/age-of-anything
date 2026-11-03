@@ -209,7 +209,7 @@ def build_order_step(bot:Bot, tc:int, workers:[int], count:int):
     for(build_order) step:
         let id = step.building
         let k = btype_named(id)
-        if k < 0 or bm_lacks[p][k]: continue   // (a building the game or a mod doesn't have: its steps are skipped)
+        if k < 0 or bm_lacks[p][k]: continue  // (a building the game or a mod doesn't have: its steps are skipped)
         var prev = 0
         var at = -1
         for(wanted_ids) wid, n:
@@ -313,7 +313,7 @@ def upgrade_lines(bot:Bot, army:[int]):
         let old = line or (lv_build_up and gather)
         let wait = cfg_list("research.wait_for.{r.id}")
         let wk = if wait.length: btype_named(wait[0]) else: -1
-        if wk >= 0 and not has_building(p, wk): continue   // (waiting on a building that doesn't exist: no wait)
+        if wk >= 0 and not has_building(p, wk): continue  // (waiting on a building that doesn't exist: no wait)
         var listed = false
         for(economy_r) id:
             if id == r.id: listed = true

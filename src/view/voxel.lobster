@@ -64,12 +64,12 @@ def vx_ik(a:float3, t:float3, l1:float, l2:float, pole:float3) -> float3, float3
 
 // ---- the data: materials, shapes, bodies, gear (data/voxel/, read once by vx_load)
 
-var vx_mat_names = []::string
-var vx_MAT_BASE = []::float3
+let vx_mat_names = []::string
+let vx_MAT_BASE = []::float3
 var vx_mat_cols = []::float3
-var vx_MAT_FUR = []::int    // per material: flecked like fur
-var vx_mat_team = 0         // the team colour's material (the sprite shader's key)
-var vx_fur = 0.07           // how strongly fur is flecked (the body's)
+let vx_MAT_FUR = []::int  // per material: flecked like fur
+var vx_mat_team = 0       // the team colour's material (the sprite shader's key)
+var vx_fur = 0.07         // how strongly fur is flecked (the body's)
 
 def vx_mat(name:string) -> int:
     let m = find(vx_mat_names) n: n == name
@@ -96,14 +96,14 @@ class vx_spec:
     ra:float
     rb:float
     mat:int
-    mat2:int          // a chain's later links
-    n:float3          // a disc's or box's facing
-    half:float3       // a box's half sizes
-    pts:[string]      // a chain's points
+    mat2:int      // a chain's later links
+    n:float3      // a disc's or box's facing
+    half:float3   // a box's half sizes
+    pts:[string]  // a chain's points
     offs:[float3]
-    step:float        // a chain's radius: from ra by step a link, down to rb, each link tapering by taper
+    step:float  // a chain's radius: from ra by step a link, down to rb, each link tapering by taper
     taper:float
-    need:[string]     // flags that must be there (if) and mustn't (unless)
+    need:[string]  // flags that must be there (if) and mustn't (unless)
     avoid:[string]
 
 def vx_v3(v:JV) -> float3: return float3 { as_float(v.a[0]), as_float(v.a[1]), as_float(v.a[2]) }
@@ -151,7 +151,7 @@ def vx_parse_shape(o:JV, hard_by_default:bool) -> vx_spec:
     elif has(o, "ring"):
         s.kind = vx_k_ring
         s.pa, s.a = vx_pt(at(o, "ring"))
-        s.ra, s.rb = r0, r1   // the ring's radius and its tilt
+        s.ra, s.rb = r0, r1  // the ring's radius and its tilt
         s.hard = true
     elif has(o, "helm"):
         s.kind = vx_k_helm
@@ -167,19 +167,19 @@ def vx_parse_shape(o:JV, hard_by_default:bool) -> vx_spec:
 def vx_parse_shapes(l:[JV]) -> [vx_spec]: return map(l) o: vx_parse_shape(o, false)
 def vx_parse_gear_shapes(l:[JV]) -> [vx_spec]: return map(l) o: vx_parse_shape(o, true)
 
-class vx_leg_spec:   // a pair of legs, the one given on the right, mirrored on the left
+class vx_leg_spec:  // a pair of legs, the one given on the right, mirrored on the left
     pa:string
     a:float3
-    foot:float3      // where its foot stands at rest (the right one's)
-    stride:float     // how far a foot moves forward and back in a walk
-    lift:float       // how high it lifts swinging forward
-    phase:float      // degrees ahead in the walk (a back pair 180 from a front)
-    l1:float         // the bones
+    foot:float3   // where its foot stands at rest (the right one's)
+    stride:float  // how far a foot moves forward and back in a walk
+    lift:float    // how high it lifts swinging forward
+    phase:float   // degrees ahead in the walk (a back pair 180 from a front)
+    l1:float      // the bones
     l2:float
-    pole:float3      // where its middle joint bends (the right one's)
-    r:[float]        // the thigh's two radii, the shin's
+    pole:float3  // where its middle joint bends (the right one's)
+    r:[float]    // the thigh's two radii, the shin's
     mats:[int]
-    shapes:[vx_spec] // on hip, knee, ankle
+    shapes:[vx_spec]  // on hip, knee, ankle
 
 class vx_body_spec:
     id:string
@@ -187,12 +187,12 @@ class vx_body_spec:
     fur:float
     skin_scale:float
     reach:float
-    skin:float3      // its colours when the race gives none
+    skin:float3  // its colours when the race gives none
     pale:float3
-    mark:float3      // a third: markings, a muzzle (palettes' third colour)
-    flies:float      // how high it flies (0: it walks; its points are set at that height)
-    pflap:[float]    // per point: how far it flaps up and down (wings) as it moves
-    harness:bool     // no hands: what it holds rides in a harness at these points (right, left)
+    mark:float3    // a third: markings, a muzzle (palettes' third colour)
+    flies:float    // how high it flies (0: it walks; its points are set at that height)
+    pflap:[float]  // per point: how far it flaps up and down (wings) as it moves
+    harness:bool   // no hands: what it holds rides in a harness at these points (right, left)
     hr_pt:string
     hr:float3
     hr_dir:float3
@@ -206,26 +206,26 @@ class vx_body_spec:
     legs:[vx_leg_spec]
     shapes:[vx_spec]
     arms:bool
-    sh_pt:string     // the right shoulder (mirrored on the left)
+    sh_pt:string  // the right shoulder (mirrored on the left)
     sh:float3
-    arm:float        // each arm bone
+    arm:float  // each arm bone
     thick:float
     sleeve:int
     hand:int
-    helm_pt:string   // a helmet's centre and radius: the skull's, a little more
+    helm_pt:string  // a helmet's centre and radius: the skull's, a little more
     helm:float3
     helm_r:float
-    fit_pa:string    // armour's spot: a capsule over the trunk
+    fit_pa:string  // armour's spot: a capsule over the trunk
     fit_a:float3
     fit_pb:string
     fit_b:float3
     fit_r:float2
-    seat_z:float     // a rider: its seat's height in its own frame, and its legs astride: thigh, shin, foot
+    seat_z:float  // a rider: its seat's height in its own frame, and its legs astride: thigh, shin, foot
     astride:[int]
-    seat:float3      // a mount: where its rider sits, how far out its rider's knees go
+    seat:float3  // a mount: where its rider sits, how far out its rider's knees go
     wide:float
-    looks:[float]    // per look: the skin shade
-    hair:[float3]    // and hair colour
+    looks:[float]  // per look: the skin shade
+    hair:[float3]  // and hair colour
 
 class vx_hold_spec:
     rest:float3
@@ -235,17 +235,17 @@ class vx_hold_spec:
     wind_dir:float3
     hit:float3
     hit_dir:float3
-    act:bool         // wind and hit given
-    raise:float3     // a bow: raised, and drawn by the other hand
+    act:bool      // wind and hit given
+    raise:float3  // a bow: raised, and drawn by the other hand
     draw:float3
     draws:bool
 
 class vx_gear_spec:
     id:string
-    hand:int         // 1 right, -1 left, 0 worn
+    hand:int  // 1 right, -1 left, 0 worn
     hold:string
-    dir:float3       // a hold's direction for this gear (zero: the hold's)
-    face:float3      // a left-hand item's facing
+    dir:float3   // a hold's direction for this gear (zero: the hold's)
+    face:float3  // a left-hand item's facing
     shapes:[vx_spec]
     fit_ids:[string]
     fits:[[vx_spec]]
@@ -357,7 +357,7 @@ def vx_load(dirs:[string]):
                                                   vx_v3_or(g, "dir"), normalize(if has(g, "face"): vx_v3(at(g, "face")) else: float3 { 0.0, 1.0, 0.0 }),
                                                   vx_parse_gear_shapes(glist(g, "shapes")), copy(fits.keys), map(fits.a) l: vx_parse_gear_shapes(l.a),
                                                   gstrs(g, "flags") })
-        if has(go, "parts"):   // a mod's rules go first: they're more particular
+        if has(go, "parts"):  // a mod's rules go first: they're more particular
             let rs = map(glist(go, "parts")) r: vx_rule { gstr(r, "part", ""), gstr(r, "tag", ""), gstr(r, "slot", ""), gstr(r, "gear", "") }
             for(vx_rules) r: rs.push(r)
             vx_rules = rs
@@ -369,7 +369,7 @@ def vx_load(dirs:[string]):
                     let o = parse_json(assert read_file(d + "/bodies/" + n))
                     let b = vx_parse_body(id, o)
                     vx_bodies.set(id, b)
-                    for(gstrs(o, "also")) a: vx_bodies.set(a, b)   // (other body ids drawn the same, their palettes apart)
+                    for(gstrs(o, "also")) a: vx_bodies.set(a, b)  // (other body ids drawn the same, their palettes apart)
 
 // The data's text (every file read): part of the bake cache's key, so a change to the data bakes again.
 def vx_data_text() -> string:
@@ -398,14 +398,14 @@ def vx_gear_for(part_id:string, tags:[string], slot:string) -> string:
 
 class vx_unit_def:
     label:string
-    body:string      // bodies/<id>.json
-    skin:float3      // the race's colours (palettes.json; zero: the body's)
+    body:string  // bodies/<id>.json
+    skin:float3  // the race's colours (palettes.json; zero: the body's)
     pale:float3
     mark:float3
-    gear:[string]    // gear.json's
-    mount:string     // a mount's body, or ""
-    fused:bool       // the rider grows out of its mount (a centaur): at the mount body's `fused` point
-    coat:float3      // the mount's colours (zero: its body's)
+    gear:[string]  // gear.json's
+    mount:string   // a mount's body, or ""
+    fused:bool     // the rider grows out of its mount (a centaur): at the mount body's `fused` point
+    coat:float3    // the mount's colours (zero: its body's)
     mane:float3
     coat_mark:float3
 
@@ -473,7 +473,7 @@ def vx_emit(out:[vx_prim], s:vx_spec, p:vx_points, fx:float3, fy:float3, fz:floa
                     let b = vx_where(p, s.pts[k + 1]) + tr(s.offs[k + 1])
                     out.push(vx_prim { a, b, r, r - s.taper, if k == 0: s.mat else: s.mat2, s.hard, false, float3_0 })
                     r = max(s.rb, r + s.step)
-            case vx_k_ring:   // a scarf: a ring round a point, tipped down at the front, its knot hanging
+            case vx_k_ring:  // a scarf: a ring round a point, tipped down at the front, its knot hanging
                 let c = vx_where(p, s.pa) + tr(s.a)
                 var last = float3_0
                 for(9) k:
@@ -529,7 +529,7 @@ def vx_legs(out:[vx_prim], b:vx_body_spec, p:vx_points, ph:float, flags:[string]
             out.push(vx_cap(knee, ankle, l.r[2], l.r[3], l.mats[1]))
             let lp = vx_points { [ "hip", "knee", "ankle" ], [ hip, knee, ankle ] }
             for(l.shapes) s:
-                let s2 = s   // (the left one mirrored: its offsets' x turned)
+                let s2 = s  // (the left one mirrored: its offsets' x turned)
                 if side > 0.0: vx_emit(out, s2, lp, vx_X, vx_Y, vx_Z, flags, nil)
                 else: vx_emit(out, vx_mirrored(s2), lp, vx_X, vx_Y, vx_Z, flags, nil)
 
@@ -558,7 +558,7 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
     let sh_l = vx_where(p, b.sh_pt) + b.sh * float3 { -1.0, 1.0, 1.0 }
     let hang = vx_holds.get("hang")
     assert hang
-    var hr = sh_r + (hang.rest + float3 { 0.0, swing * hang.swing, 0.0 }) * L   // hanging, swung
+    var hr = sh_r + (hang.rest + float3 { 0.0, swing * hang.swing, 0.0 }) * L  // hanging, swung
     var dr = hang.dir
     var hl = sh_l + (hang.rest * float3 { -1.0, 1.0, 1.0 } - float3 { 0.0, swing * hang.swing, 0.0 }) * L
     var drawn = false
@@ -589,12 +589,12 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         out.push(vx_ball(hand, b.thick * 0.8, b.hand))
         if side > 0.0: hr = hand
         else: hl = hand
-    if right:   // its frame: along the held direction, out of its front, to the right
+    if right:  // its frame: along the held direction, out of its front, to the right
         let d = normalize(dr)
         let o = cross(vx_X, d)
         let gp = vx_points { [ "hand", "draw" ], [ hr, hr ] }
         for(right.shapes) s: vx_emit(out, s, gp, d, o, vx_X, flags, nil)
-    if left:    // up, out of its face, to the side
+    if left:  // up, out of its face, to the side
         let o = left.face
         let sd = normalize(cross(o, vx_Z))
         let gp = vx_points { [ "hand", "draw" ], [ hl, if drawn: hr else: hl - o * 0.4 ] }
@@ -613,7 +613,7 @@ def vx_harness(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, t:floa
         for(right.shapes) s: vx_emit(out, s, gp, d, cross(vx_X, d), vx_X, flags, nil)
     if left:
         let hl = vx_where(p, b.hl_pt) + b.hl
-        let o = normalize(float3 { -1.0, 0.25, 0.0 })   // (out to the side)
+        let o = normalize(float3 { -1.0, 0.25, 0.0 })  // (out to the side)
         let gp = vx_points { [ "hand", "draw" ], [ hl, hl - o * 0.4 ] }
         for(left.shapes) s: vx_emit(out, s, gp, vx_Z, o, normalize(cross(o, vx_Z)), flags, nil)
 
@@ -660,7 +660,7 @@ def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     let skin = vx_mat("skin")
     let pale = vx_mat("pale")
     let mark = vx_mat("mark")
-    for(mount) q:   // (the mount's own colours: its skin is the coat)
+    for(mount) q:  // (the mount's own colours: its skin is the coat)
         let m = if q.mat == skin: vx_mat("coat") elif q.mat == pale: vx_mat("mane") elif q.mat == mark: vx_mat("coat_mark") else: q.mat
         out.push(vx_prim { q.a * ms, q.b * ms, q.ra * ms, q.rb * ms, m, q.hard, q.disc, q.box * ms })
     vx_seated = true
@@ -750,10 +750,10 @@ def vx_solid_at(grid:[int], lo:int3, dims:int3, v:int3) -> bool:
 // only blocks the surface crosses are measured voxel by voxel.
 def vx_fill(parts:[vx_prim], unit_size:float, flies:bool = false) -> vx_shape:
     let s = unit_size * vx_RES
-    var low = if flies: 0.0 else: 1000.0   // (a flier's ground is the builder's z 0, not under its lowest point)  // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
-    for(parts) p:     // by it: a frog's spear set it on the ground and lifted the frog off it)
+    var low = if flies: 0.0 else: 1000.0  // (a flier's ground is the builder's z 0, not under its lowest point)  // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
+    for(parts) p:                         // by it: a frog's spear set it on the ground and lifted the frog off it)
         if not p.hard and not flies:
-            let a, b = vx_bounds(p)
+            let a = vx_bounds(p)  // (its low corner; the high one isn't needed)
             low = min(low, a.z)
     let ps = map(parts) p: vx_scaled(p, s, -low)
     let k = vx_BLEND * s
