@@ -1358,3 +1358,16 @@ buildings, tech, AI and sound mergeable by mods, our own content loaded as a bas
 deterministic script hooks for rules (like Spring's synced gadgets) and free client-side UI extras (like its
 widgets), and multiplayer refusing a match whose packs don't match. Not a separate engine product yet: one game, and
 the boundaries still moving. Claude's recommendation; the order is in `docs/backlog.md` (section 00).
+
+**D-191, 2026-11-03: Engine split, first answers (Dominic, on `docs/engine-plan.md`).**
+- **Structure as drafted, one repo for now** (`engine/` and `games/age-of-anything/`): "we should move towards
+  splitting this out more cleanly, and see what hooks are needed".
+- **The engine will be open source.** The game stays ours. Licence still to pick (the plan leans MPL 2.0 or Apache 2.0;
+  not GPL, which would reach the game through Lobster compiling it all into one program).
+- **Hooks broad enough not to box modders in:** "I don't want to force people to only develop based on our
+  expectations - but if they need the whole source to do anything it's a lot of extra effort for them too." So the
+  hook list is found from real needs (the sci-fi mod, our own content as a pack), and the open engine source is the
+  escape hatch for anything hooks don't cover.
+- **Race keys never change with content updates:** "races can't change with content updates surely, that's
+  terrible". The base pack's signature stays out of race keys; a race names only the extra packs it was made with.
+- **Name:** Dominic floated "Age Engine"; not settled.
