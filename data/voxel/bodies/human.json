@@ -1,5 +1,5 @@
 {
- "_doc": "A human at 4.5 heads (Dominic's pick, 2026-11-01), the composed heroic human's height (D-173). Body units: z up, y forward, x right, the ground at z 0.",
+ "_doc": "A human at 4.5 heads (Dominic's pick, 2026-11-01), the composed heroic human's height (D-173). Body units: z up, y forward, x right, the ground at z 0. Legs 2 heads to the hip (Dominic, 2026-11-03: \"dwarf legs really weird\"; the hip was at 16, the kilt hid most of the thigh).",
  "skin": "#dba880",
  "pale": "#ebbf99",
  "size": 1.15,
@@ -11,7 +11,7 @@
    "at": [
     0,
     0,
-    16.04
+    19.0
    ],
    "bob": 0.5
   },
@@ -47,8 +47,8 @@
    "stride": 4.6,
    "lift": 2.2,
    "bones": [
-    6.93,
-    6.93
+    8.4,
+    8.4
    ],
    "pole": [
     0,
@@ -56,10 +56,10 @@
     0
    ],
    "r": [
-    1.9,
-    1.52,
-    1.52,
-    1.03
+    1.75,
+    1.4,
+    1.35,
+    0.95
    ],
    "mats": [
     "trousers",
@@ -150,7 +150,7 @@
   ]
  },
  "seat": {
-  "z": 16.5,
+  "z": 19.5,
   "astride": [
    "trousers",
    "trousers",

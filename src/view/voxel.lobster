@@ -513,10 +513,27 @@ def vx_flags_of(u:vx_unit_def) -> [string]:
     return f
 
 // A body's points at walk phase ph (its bob), raised by lift.
+// A body that would have to stretch a leg past its bones to reach its foot (a long stride on short legs) is lowered
+// until every foot is in reach, with a little bend left (the hips dip at full stride, as a walker's do); else the
+// leg stays straight and the foot drags short of where it should be.
 def vx_body_points(b:vx_body_spec, ph:float, lift:float3) -> vx_points:
     let bob = abs(sin(ph * 2.0))
     let flap = sin(ph * 4.0)
-    return vx_points { copy(b.pnames), map(b.pat) a, k: a + float3 { 0.0, 0.0, b.pbob[k] * bob + b.pflap[k] * flap } + lift }
+    let p = vx_points { copy(b.pnames), map(b.pat) a, k: a + float3 { 0.0, 0.0, b.pbob[k] * bob + b.pflap[k] * flap } + lift }
+    if vx_seated: return p  // (a rider's legs are its seat's)
+    var drop = 0.0
+    for(b.legs) l:
+        for([ 1.0, -1.0 ]) side:
+            let m = float3 { side, 1.0, 1.0 }
+            let w = ph + l.phase
+            let hip = vx_where(p, l.pa) + l.a * m
+            let foot = l.foot * m + float3 { 0.0, sin(w) * side * l.stride, max(0.0, cos(w) * side) * l.lift }
+            let d = hip - foot
+            let reach = (l.l1 + l.l2) * 0.97
+            let across = d.x * d.x + d.y * d.y
+            if across < reach * reach and d.z > 0.0: drop = max(drop, d.z - sqrt(reach * reach - across))
+    if drop > 0.0: p.at = map(p.at) a: a - float3 { 0.0, 0.0, drop }
+    return p
 
 // The legs, walking at ph: each foot planted where it rests, moved along by sin(ph + its phase) * stride, lifted as
 // it swings forward; the knee (or a front leg's elbow) bent towards the pole.
