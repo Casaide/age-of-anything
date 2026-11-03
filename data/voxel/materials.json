@@ -79,5 +79,28 @@
  "coat_mark": {
   "rgb": "#f0ebe0",
   "fur": true
+ },
+ "frame": {
+  "rgb": "#8c6133",
+  "pattern": {
+   "kind": "planks",
+   "size": [
+    2.4,
+    1
+   ],
+   "depth": 0.12,
+   "mix": 1.0,
+   "color2": "#3a2614"
+  }
+ },
+ "frame2": {
+  "rgb": "#4a4a50"
+ },
+ "trim": {
+  "rgb": "#9a7a50"
+ },
+ "rope": {
+  "rgb": "#b8a070",
+  "fur": true
  }
 }
