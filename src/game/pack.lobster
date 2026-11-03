@@ -237,6 +237,19 @@ def ui_batch(body):
     ui_batch_flush()
     ui_batching = false
 
+// A disc of n sides as gl.circle makes it (its points from 1 radian on, a fan from the first).
+def ui_batch_disc(c:float2, r:float, n:int, col:float4):
+    let v = ui_bpos.length
+    let step = 360.0 / float(n)
+    let first = 57.29577951308232  // (1 radian, in degrees)
+    for(n) i:
+        ui_bpos.push(float3 { c.x + sin(float(i) * step + first) * r, c.y + cos(float(i) * step + first) * r, 0.0 })
+        ui_bcol.push(col)
+    for(n - 2) i:
+        ui_bidx.push(v)
+        ui_bidx.push(v + i + 1)
+        ui_bidx.push(v + i + 2)
+
 def ui_batch_quad(a:float2, b:float2, c:float2, d:float2, col:float4):
     let v = ui_bpos.length
     ui_bpos.push(float3 { a.x, a.y, 0.0 })
