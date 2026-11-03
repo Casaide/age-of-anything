@@ -256,3 +256,7 @@ footprint, and the gate's middle (its doors, or the passage and its arch) anothe
 segfault: a diagonal gate's middle with its towers hidden had nothing left to draw, and the voxel fill made a grid of
 negative size; an empty model now fills as an empty grid. Picture 68: the ram before the tower, soldiers beside
 both towers and through the arch.
+
+The palisade gate had the same overlap (Dominic: "same overlap"): its posts weren't parts of their own, so the stone
+gate's fix never reached it. Each post with its prop and foot is now a part sorted at its footprint, the beam and banner
+one at the gate's middle, and the beam stops at each post (golden: the six palisade gates, nothing else). Picture 70.
