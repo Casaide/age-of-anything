@@ -173,6 +173,7 @@ Godot Variant reader in Lobster. Only worth it if old saves need to carry over.
   beats archers 8 of 12 in age 2 (crossbows against the Royal Humans' lancers, archers against giant beetle axemen on
   foot). Options: skirmishers as the horse archers' counter in the chain (they win 7 of 8 in age 2, 1 of 8 in age 3),
   a charge or speed for spears, or a lower range for horse archers. `gen/counters.lobster` RR_COUNTERS_OPEN.
+  Dominic, 2026-11-03: no charge for spears. Still open: skirmishers as the counter, or a shorter range.
 - **Upgrades that do little in a fight (D-200, `calibrate.lobster upgrades`; proposals, not applied).** Effect on the
   lines they reach, win-rate points against the panel, one side upgraded: sharp sticks +10, bronze edges +8, ring mail
   +8, saddle blankets +8, barbed heads +7, good hay +7, quick draw +7, hoof wraps +6, padded coats +5, scale barding +5,

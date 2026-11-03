@@ -1514,3 +1514,9 @@ the model kit) went too: about 27,000 lines in all. The checks that replace the 
 the feet-on-shadow check (in the quick batch, which went from about 100 s to 25 s). Lost for now: workers' tools and
 loads by job (the rats' barrow and handcart), the stables' mounts grazing, the engines' packed and throwing poses,
 the culture styles' shapes (they're colours only). Claude, for Dominic.
+
+**D-203, 2026-11-03: Buildings and props go voxel; the Creel name and its mock site stand.** Dominic, after the
+building experiment's second round (pictures 30-32, 39): "buildings yes" (a pediment bug to fix first). The rollout
+is planned in its own milestone, as the units' was (D-201, D-202). He also turned down a charge for spears against
+horse archers ("charge, no"; backlog, open counter pairs) and approved the Creel mock site (`docs/engine/site-mockup/`,
+"creel site looks good"); Claude picked the name Creel from the engine plan's shortlist.
