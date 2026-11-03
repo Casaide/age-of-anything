@@ -732,7 +732,7 @@ def draw_panel():
     if acts:
         for(grps) g:  // each group's caption over its first button
             let first = filter(items) it: it.b.group == g
-            if first.length and g != " ": tb_text(float2 { first[0].at.x, y - 1.0 * s }, g.uppercase(), int(12.0 * s), ui_look.dim * float4 { 0.95, 0.85, 0.7, 1.0 }, 2)
+            if first.length and g != " ": tb_text(float2 { first[0].at.x, y - 1.0 * s }, g.uppercase(), int(13.0 * s), ui_look.metal + (float4_1 - ui_look.metal) * 0.25, 3)  // (theme.gd's Caption)
     for(items) it:
         let b = it.b
         if b.hotkey != "": edged_text(it.at + float2 { 7.0 * s, 3.0 * s }, b.hotkey, int(14.0 * s), PANEL_GOLD, 1)
@@ -742,7 +742,7 @@ def draw_panel():
             edged_text(it.at + float2 { (it.side - tb_text_w(b.note, fsz, 1)) * 0.5, it.side - 19.0 * s }, b.note, fsz, float4_1, 1)
     if has_queue:
         let cap = if queue.length and head_tech(bi) == AGE_UP_ENTRY: "AGEING UP" elif queue.length and head_tech(bi) != -1: "RESEARCHING" else: "TRAINING"
-        tb_text(float2 { qx + 10.0 * s, y + 7.0 * s }, cap, int(12.0 * s), ui_look.dim * float4 { 0.95, 0.85, 0.7, 1.0 }, 2)
+        tb_text(float2 { qx + 10.0 * s, y + 7.0 * s }, cap, int(13.0 * s), ui_look.metal + (float4_1 - ui_look.metal) * 0.25, 3)
     // A hover's card over the panel: its name, its cost, a line.
     var q_hover = -1
     for(q_items) it, n:
