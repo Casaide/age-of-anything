@@ -1892,6 +1892,15 @@ let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mod
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 startup_frame("Loading the parts...", 0.8)
 id_load("../data")
+// propframes dump:<folder>: every prop baked as PNGs, then quit (art review).
+if has_s(args, "propframes"):
+    for(args) d: if starts_with(d, "dump:"): ak_dump = d.substring(5, d.length - 5)
+    bake_live = false
+    bake_cache_dir = ""
+    bake_shipped_dir = ""
+    ak_rebake = true
+    bake_doodads()
+    bake_quit = true
 // lookframes:<arch>,<type> dump:<folder>: every frame of a look baked as PNGs (its stages, ruins), then quit (art review).
 for(args) a:
     if starts_with(a, "lookframes:"):

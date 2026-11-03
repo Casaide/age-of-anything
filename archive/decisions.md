@@ -1577,3 +1577,11 @@ before D-206, for three reasons:
   40, wood 30, gold 25, stone 5 in age 2 (was 35/30/25/10) and food 45, wood 20, gold 25, stone 10 in age 3 (was
   35/20/25/20). Normal and hard save for age 3 at 24 workers (was 26).
 All 11 level checks pass; hard still beats normal over the mirrors (3 won, 2 lost, 3 drawn).
+
+**D-208, 2026-11-03: Buildings and props bake only as voxels; the old baker is gone.** Following D-203: every model
+voxelized through `view/voxel_mesh.lobster`, in the old baker's frame so the art kits place everything as before; the
+GPU baker (`view/world_bake`, `view/baker`) removed (Dominic: "lets get the old baker stripped out"). Hand-built looks
+culture by culture are Dominic's, later ("dont do any hand building for cultures, ill do that later"). A rule that came out of it, from
+Dominic on the wall pieces: "They MUST end before next model": a wall tile bakes whole; a gate's towers, posts and
+middle are frames sorted where each stands. Gates also open now (their open look had been baked but never drawn since
+the port). Claude, for Dominic.

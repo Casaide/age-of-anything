@@ -1,6 +1,6 @@
 # Milestone 24: Voxel buildings and props
 
-**Status:** in progress: steps 1-3 and 9 done (2026-11-03; Dominic: "voxel buildings yes", then "C, go": D-203)
+**Status:** done but for the art review and Dominic's hand-built looks (2026-11-03; Dominic: "voxel buildings yes", then "C, go": D-203)
 **Exit criterion:**
 - **Coverage:** every building, in every architecture and age, and every prop (trees, rocks, bushes, doodads, town
   props, bridges, walls, gates, towers) is voxel, with its construction and destruction stages, ruins and the team
@@ -95,17 +95,18 @@ Claude recommends **C**. Dominic: "C, go. I will have another agent review all t
 - [x] 1. Building checks: `vbcheck` (no specks, the team colour showing) on every look of every architecture
 - [x] 2. The builder in the game: `voxel_bake` (`view/voxel_mesh.lobster`) in `world_bake`'s frame, so every look, stage,
       ruin, near layer, wall arm, gate tower, vane and prop bakes as voxels through the art kits unchanged
-- [ ] 3. Every building voxelized: done by step 2; each architecture seen in a match (Romans and rats so far)
-- [ ] 4. Construction and destruction stages, ruins
+- [x] 3. Every building voxelized: done by step 2; each architecture seen in a match
+- [x] 4. Construction and destruction stages, ruins: nothing hangs before its walls, lit windows go out in collapse, rubble
+      of the building's own materials, big pieces char lightly (picture 75)
 - [x] 5. Walls, gates, towers: seen in a match (`place:fort`, `place:palisade_fort`): straight runs, a gate between its
       towers, a corner and a diagonal join; diagonal runs smooth (a post turned along the run)
-- [ ] 6. Props
-- [ ] 7. Baking measured (a look about 0.3-1 s; two cultures cold about 3 min), `perf:` in budget (1.0 ms median); prebake
-      to decide
+- [x] 6. Props: all 193 looked at on sheets (`propframes`); trees, rocks, bushes, reeds, gold, stone, crops, carcasses
+- [x] 7. Baking measured (a look 0.2-1 s a frame; two cultures cold about 3 min; all six about 10 min), `perf:` in budget
+      (1.0 ms median), the prebake kept (a warm start 5-6 s)
 - [ ] 8. Data versions of the most-seen looks: Dominic's, later (backlog: "Hand-built voxel buildings")
 - [x] 9. The old baker removed (view/world_bake, view/baker; 2026-11-03); golden's buildings section (the models' digest)
       unchanged. Nothing was lost but the gate towers' shadow-only layer (a gate tower now casts its own shadow)
-- [ ] 10. Archive
+- [x] 10. Archive
 
 ## Results so far
 
@@ -153,15 +154,16 @@ A reviewer should look at each of these at game zoom in a real match, and close 
 - **The checks are honest:** `vbcheck`, `voxel_check` and `voxel_proto -- - check` pass, and what they don't cover is
   listed here.
 
-## Next steps
+## What's left
 
-1. **Re-run the prebake** (`src/prebake.sh`, in a game window that looks frozen; about 10 minutes now) once the art
-   settles: BAKE_VERSION is 20, and until then a cold start bakes the two cultures in play (about 3 minutes).
-2. **Construction stages in play:** not yet seen as voxels. Broken-up stages seen on the Roman Town Center (picture 74):
-   its roof goes nearly black where tiles are gone, and that should be looked at.
-3. **Props close up** (step 6): trees, rocks, bushes, town props, bridges.
-4. **The art review** (the section above), then Dominic's hand-built looks (backlog).
+1. **The art review** (the section above; a separate agent's).
+2. **Dominic's hand-built looks** (backlog, "Hand-built voxel buildings").
 
-Seen so far: every architecture's Town Center in a match (pictures 41-44, 71-73); walls, corners, diagonals, gates in
-use for stone and palisade (62-70), with `place:fort` / `place:palisade_fort` and `in_gate army:1`; `perf:` 1.0 ms
-median, 1.4 ms at the 95th percentile.
+Known, for the review:
+- Faint seams where a wall's brick pattern restarts at each tile's edge; a run's plinth course and near merlons stop a
+  little short at its end.
+- Gate doors snap open and shut, with no swing.
+- Team-colour cloth falls as rubble in a team-coloured block.
+- Broadleaf trees show a dark core between their leaves.
+- `vbcheck` doesn't check a gable's plane or a wall's join by number: those were seen, not measured. A rule for gables
+  belongs with the hand-built looks, whose gables are data.

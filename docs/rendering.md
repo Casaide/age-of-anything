@@ -1,8 +1,8 @@
 # How the art is made (rendering pipeline)
 
-Everything you see in a match is baked to pixel sprites, packed into atlases and drawn as 2D sprites. Units are
-**voxel bodies** made from data (`data/voxel/`), baked by the voxel builder; buildings and props are 3D models in
-code baked by the world baker. The game is written in Lobster (`src/`, run from there); the bakes are kept on disk
+Everything you see in a match is voxels baked to pixel sprites and drawn as 2D sprites. Units are **voxel bodies** made
+from data (`data/voxel/`), baked by the voxel builder; buildings and props are 3D models in code, voxelized when
+they bake (`view/voxel_mesh.lobster`, D-203). The game is written in Lobster (`src/`, run from there); the bakes are kept on disk
 after the first one (see "When the bakes run"). Since D-173 the art scale is 3.0 art pixels per canvas unit
 (`ART_SCALE` in `src/view/art.lobster`; a tile is 192 x 96 art pixels, and at play zoom an art pixel is a screen
 pixel). The world keeps the coordinates it had (`ART_BASE` 1.5: a tile is 96 x 48), so a sprite baked at
@@ -80,7 +80,7 @@ keeps its face covered. `src/mod_check.sh <id>` loads the mod (or says why not) 
 ## Buildings, props, terrain
 
 - **Buildings** (models in `src/model/buildings.lobster` and `buildings2.lobster`, materials in
-  `build_mats.lobster`; baked by the world baker, `src/view/world_bake.lobster`, from `akb_bake_look` in
+  `build_mats.lobster`; voxelized by `voxel_bake`, `src/view/voxel_mesh.lobster`, from `akb_bake_look` in
   `src/game/art_kit_buildings.lobster`): one builder per type dressed in each architecture's kit (walls,
   frame, roof, base: `KIT`; the timber towns stand on timber sills over packed earth, no stone plinths). Baked once per culture, plus four construction stages (`AKB_BUILD_STAGES`). Data
   shapes them further (`data/buildings.json`): `scale` per culture and type, `variants` (houses
@@ -96,19 +96,31 @@ keeps its face covered. `src/mod_check.sh <id>` loads the mod (or says why not) 
   and smoke); when it falls, the collapse in `src/game/fx.lobster` leaves the ruin under a cloud of pixel dust (puffs drawn as
   one cloud in three passes, shade, mid, light, on the art grid). The ruin is decoration only: it burns out,
   fades after 45 s, and goes when anything is laid
-  on its cells. About +8 s on a cold match start. `tests/sheets/art_quality_a1.json` is the art study's sheet; a game
-  capture shows a fall.
-  Walls and gates are one tile each. A gate's model returns its closed `body` and an `open`
-  one, both baked; it also bakes a quarter turn (`^z`) for wall lines running along sim y, and
-  the view picks the turn from its neighbours and shows it open while a friendly unit is at it.
+  on its cells. A game capture shows a fall (`hurt:<percent>` for its damage stages; `lookframes:<arch>,<type> dump:<folder>`
+  writes a look's stages and ruins as PNGs).
+  **As voxels** (D-203): `voxel_bake` samples a model's triangles into a sparse shell at 1.5 art px a voxel, each voxel
+  the colour its material gives there (the texture sampled, triplanar where the material is), its normal the model's
+  smooth one; a lit or unshaded material glows. It draws with a smooth light ramp from the old baker's sun, its own
+  shadow, occlusion in the creases, a soft outline, a ground shadow and a contact shadow, in the old baker's camera and
+  frame. A model that draws nothing fills as an empty grid.
+  Walls are one tile each, a tile **baked whole**: its post and the arms it has, one model ending at its edge
+  (`akb_wall_tile`, one a frame the first time those joins are drawn, in the bake cache; the separate pieces draw until
+  then). A tile with a diagonal join turns its post 45 degrees (shrunk inside its arms at a corner). A wall's shadows are
+  frames of their own (`~shadow`) on the ground layer, so none falls on a wall.
+  A gate's model returns its closed `body` and an `open` one; its parts are marked (`gate_part <side> gate_centre <x y z>`).
+  Each tower or post is **a frame sorted at its own footprint**, the middle another (`:shut:mid`, `:open:mid`, with the
+  arch's near parapets over a unit in the passage), so a unit in the archway or beside a tower sorts where it stands. A
+  gate stands open while one of its team's units is within a tile and a half (`gate_used`). It also bakes a quarter turn
+  (`^z`) for wall lines running along sim y, and the view picks the turn from its neighbours.
   **Walls you stand on** (milestone 16): a walkway piece's walkway height is `WALK_H` (`buildings2.lobster`; model units, given to the view as `walk_px`, canvas px), and units up on it are lifted by it, so they stand on the stone.
   Its merlons are made with `merlon`; the ones on the camera's side of the wall's line bake as a
-  separate front layer (`akb_front_split`; walls compose it per link set like the body, `wall_look`), drawn by a node
-  of its own beside the building in the y-sorted layer, a little below the piece; units on
+  separate front layer (`akb_front_split`; a whole wall tile bakes its own), drawn beside the building in the y-sorted
+  layer, a little below the piece; units on
   the piece sort between the two, so defenders stand between the merlons. Wall
-  arms meet a joined piece's faces (a wall tower fills its tile). The Godot-era wall join check (each fixture baked once in 3D
-  and compared with the composed sprites) has no Lobster port yet; look at joins in a game capture.
-- **Props** (`src/model/props.lobster`, town ones in `town_props.lobster`; baked by `src/game/art_kit.lobster`): bushes, reeds, boulders, quarry stone and
+  arms meet a joined piece's faces (a wall tower fills its tile). Look at joins and gates in a capture:
+  `./play.sh lobby "races:romans|sewer rats" mute place:fort in_gate army:1 look:14,17 shot:/tmp/f.png at:1`
+  (`place:palisade_fort` for the palisade; `vbcheck`, in the batch, checks every look for specks and team colour).
+- **Props** (`src/model/props.lobster`, town ones in `town_props.lobster`; voxelized from `src/game/art_kit.lobster`; `propframes dump:<folder>` writes them as PNGs): bushes, reeds, boulders, quarry stone and
   gold, carcasses, crops, the rally flag; resources bake in used-up stages.
 - **Trees** (`src/model/trees.lobster`, milestone 15): broadleaf, pine and swamp trees,
   each in a few concept looks (`style`), built like
@@ -156,9 +168,10 @@ Units, buildings and props are baked by Lobster code and kept on disk.
   `bake_cache/` (`bake_shipped_dir`); the Deck and Android builds run the prebake and ship the folder. Sheets from
   disk load when first drawn (`add_sheet_later`, `sheet_texture` in `game/pack.lobster`). One look of one building
   with its stages is a job (`akb_bake_look`, `art_kit_buildings.lobster`), a prop with its stages another (`ak_bake`,
-  `art_kit.lobster`; `bake_doodads`).
+  `art_kit.lobster`; `bake_doodads`). A cold start without them bakes the two cultures in play in about 3 minutes (a Town
+  Center 0.8 s a frame, a house 0.18 s); all six architectures, about 10 minutes.
 - **On disk.** `src/bake_cache/` holds every bake with a record of its frames. Buildings' and props' names hash
-  `BAKE_VERSION` (`view/bake_cache.lobster`); raise it after a change to their models or baker, and
+  `BAKE_VERSION` (`view/bake_cache.lobster`); raise it once for a batch of changes to their models or `voxel_mesh`, and
   `src/bake_cache.sh` (sourced by `play.sh`) empties the folder when the number differs from the one it stored. The
   voxel units' names hash the builder's source and the data, so they rebake by themselves.
 

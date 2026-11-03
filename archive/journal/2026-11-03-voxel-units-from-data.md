@@ -260,3 +260,8 @@ both towers and through the arch.
 The palisade gate had the same overlap (Dominic: "same overlap"): its posts weren't parts of their own, so the stone
 gate's fix never reached it. Each post with its prop and foot is now a part sorted at its footprint, the beam and banner
 one at the gate's middle, and the beam stops at each post (golden: the six palisade gates, nothing else). Picture 70.
+
+To finish milestone 24 (Dominic: "finish it all"): a battered roof went black (scorch on one big mesh; big pieces now
+char lightly); window panes and door studs floated in construction before their walls; lit windows kept glowing on
+collapsed ruins, and rubble was made of glowing "glass" (funny: a heap of lit yellow bricks). Tools: `lookframes` and
+`propframes` dump a look's stages or every prop as PNGs. All 193 props on sheets. Picture 75.
