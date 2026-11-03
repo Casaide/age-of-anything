@@ -162,8 +162,10 @@ screenshot after visual changes. After a change to `tools/audio/`, re-render and
 for a content case, the data contract is probably missing a field; add the field.
 
 **Balance through cost.** Every part has `points`; unit cost grows superlinearly
-(`rules.cost.curve`, a fixed-point table in `data/cost_curves.json`). Counter tags (spear > large/mounted > ranged > infantry) make even absurd
-units beatable. Don't special-case silly units.
+(`rules.cost.curve`, a fixed-point table in `data/cost_curves.json`). Counter tags (infantry > spear > large/mounted > ranged > infantry,
+and skirmishers > archers) make even absurd units beatable; each pair wins at equal cost (test_sim's counter checks). Prices are
+calibrated offline (`src/calibrate.lobster`, D-195, D-196): a line pays for its neutral fights, not its counters' edge. Don't
+special-case silly units.
 
 **Generator behaviour to keep:**
 - Unknown words are ignored with a note; missing creature -> a random one "volunteers".

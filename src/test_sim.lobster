@@ -675,9 +675,15 @@ let FIGHT_BUDGET = 600               // resources per side (food, wood and gold)
 let FIGHT_LIMIT = 3000               // ticks (2.5 minutes)
 let FIGHT_FROM_X = [ 11000, 21000 ]  // open ground on flat_test, 10 tiles apart
 let FIGHT_FROM_Y = [ 20500, 20500 ]
-// Counter fights: [counter, countered, the tag the countered unit needs for this to be the counter].
-let COUNTERS = [ [ "spear", "large", "large" ], [ "large", "archer", "ranged" ], [ "archer", "spear", "infantry" ], [ "skirmisher", "archer", "archer" ],
-                 [ "infantry", "spear", "spear" ], [ "archer", "infantry", "infantry" ] ]
+// The counter chain (D-196): infantry > spear > large and mounted > ranged > infantry, and skirmishers > archers.
+// (Not skirmishers > infantry: the roster gives swords +3 against skirmishers, who are for archers.)
+// [counter, countered, the tag the countered unit needs for this to be the counter]. Each pair wins COUNTER_PCT of
+// its equal-cost fights (every race, both sides), on its own: a strong pair can't carry a weak one.
+let COUNTERS = [ [ "infantry", "spear", "spear" ], [ "spear", "large", "large" ], [ "spear", "scout", "mounted" ],
+                 [ "spear", "mounted_archer", "mounted" ], [ "large", "archer", "ranged" ], [ "large", "skirmisher", "ranged" ],
+                 [ "scout", "skirmisher", "skirmish" ], [ "archer", "infantry", "infantry" ], [ "archer", "spear", "infantry" ],
+                 [ "skirmisher", "archer", "archer" ] ]
+let COUNTER_PCT = 70
 let COUNTER_PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
                         "greek hoplites", "royal knights", "viking beetle riders" ]
 
@@ -1231,25 +1237,22 @@ def test_combat():
     test_shield_wall()
     test_stances()
     test_ranged_holds()
-    var wins = 0
-    var fights = 0
     let t0 = seconds_elapsed()
-    for(COUNTER_PROMPTS) prompt:
-        let race = gen_race(prompt)
-        for(COUNTERS) pair:
-            if not eval_has_tag(at(unit_of(race, pair[1]), "eval"), pair[2]):
-                print "  n/a: {rstr(race, "name")} {pair[0]} vs {pair[1]} (the {pair[1]} isn\'t {pair[2]})"
-                continue
-            for(2) flip:
-                let won, note = counter_fight(race, pair[0], pair[1], flip)
-                fights++
-                if won: wins++
-                else: print "  counter lost: {rstr(race, "name")} {pair[0]} vs {pair[1]} (side {flip}): {note}"
-    print "counters: {wins} of {fights} equal-cost fights won by the counter ({wins * 100 / fights}%), {ms_since(t0)} ms"
-    // 70%, not 75% (D-195): at calibrated prices, fair against the whole field, infantry pays for beating most lines
-    // and loses its counter fight with the cheaper spears; large loses to a few races' archers. The counters' bonuses
-    // are Dominic's call (docs/backlog.md).
-    check(wins * 100 >= fights * 70, "counters win at least 70% of equal-cost fights ({wins}/{fights})")
+    let races = map(COUNTER_PROMPTS) prompt: gen_race(prompt)
+    def has_slot(race:JV, slot:string) -> bool: return (filter(glist(race, "units")) u: rstr(at(u, "recipe"), "slot") == slot).length > 0
+    for(COUNTERS) pair:
+        var wins = 0
+        var fights = 0
+        for(races) race:
+            if has_slot(race, pair[0]) and has_slot(race, pair[1]) and eval_has_tag(at(unit_of(race, pair[1]), "eval"), pair[2]):
+                for(2) flip:
+                    let won, note = counter_fight(race, pair[0], pair[1], flip)
+                    fights++
+                    if won: wins++
+                    else: print "  counter lost: {rstr(race, "name")} {pair[0]} vs {pair[1]} (side {flip}): {note}"
+        print "counters: {pair[0]} > {pair[1]}: {wins} of {fights}"
+        if fights: check(wins * 100 >= fights * COUNTER_PCT, "{pair[0]} beats {pair[1]} in at least {COUNTER_PCT}% of equal-cost fights ({wins}/{fights})")
+    print "counters: {ms_since(t0)} ms"
 
 // ------------------------------------------------------------------ shots, engines, trade, sappers
 
