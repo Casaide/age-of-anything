@@ -99,3 +99,26 @@ deer's 18 against 16), so they folded hard into an X. The deer's shins were near
   same reversal (picture 25).
 - The deer's legs in its coat down to a dark hoof, thick at the haunch, thin below.
 - Pictures 23 (the deer walking), 24 (deer, boar and sheep standing, before and after), 25 (the pony).
+
+## Experiment: voxel buildings (Dominic: "test a few buildings, see how close we can make them using voxels")
+
+A test of how close voxels get, not a switch: the game's buildings stay baked. The Roman house and Town Center, the
+rats' shack (their Town Center) and silo, a cypress, a broadleaf and a rock, as voxel bodies in
+`data/voxel/buildings/` (written by `tools/voxel/buildings.py`: roof tiles and corrugated sheet are long rows of
+shapes; the game doesn't load the folder), drawn by `src/voxel_buildings.lobster` with the units' builder. The
+renderer took a cell size (`vx_cell_in`, `vx_ground_shadow_in`); nothing else changed.
+
+- **Bake time** at the units' resolution (a voxel a baked pixel): house 0.29 s to fill and 24 ms a facing, Town Center
+  0.94 s and 58 ms, shack 0.36 s, silo 0.22 s, the props 15-50 ms; all seven 2.0 s. Twice as fine: 11 s (Town Center 6 s).
+- **Data:** 6-94 shapes each (1,100-1,900 lines of indented JSON for a building, 90-160 for a prop); the generator is
+  200 lines of Python.
+- **What reads:** the shapes, the roofs' tile and sheet rows, doors, windows, shutters, the chimney and stove pipe, the
+  columns and steps, the team's band, the cypress; the light, shadows and outline match the voxel units.
+- **What's lost:** the baked ones' surfaces: stone blocks on the plinth, worn and stained plaster, the roof tiles'
+  rounded overlap, rust streaks on the sheet, lit windows' glow, the rocks' faceted faces (melted balls read as lumps),
+  the clutter at the door (crates, barrels, firewood). Destruction stages and ruins weren't tried. Finer voxels
+  (res 4) smooth the edges but add no texture: the detail would have to be modelled shape by shape.
+- **Bugs on the way:** the Town Center's roof slabs with their sizes swapped stood up as two panels; a capsule core
+  domed the silo's lid; a gap at the top of each gable.
+- Not placed in a match: buildings draw through their own path (looks, stages, ruins), not a quick swap.
+- Pictures 26 (Roman, baked / voxel / voxel twice as fine), 27 (rats), 28 (props), 29 (all in 8 facings).
