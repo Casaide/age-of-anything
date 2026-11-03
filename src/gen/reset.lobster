@@ -293,6 +293,7 @@ var stashed_sp_end = []::int
 var stashed_sp_items = []::int
 var stashed_sp_cell = []::int
 var stashed_sp_cursor = []::int
+var stashed_sp_used = []::int
 var stashed_slot_x = []::int
 var stashed_slot_y = []::int
 var stashed_f_ahead = []::int
@@ -761,6 +762,7 @@ def reset_world():
     sp_items = []::int
     sp_cell = []::int
     sp_cursor = []::int
+    sp_used = []::int
     slot_x = []::int
     slot_y = []::int
     f_ahead = []::int
@@ -1218,6 +1220,7 @@ def stash_world():
     stashed_sp_items = sp_items
     stashed_sp_cell = sp_cell
     stashed_sp_cursor = sp_cursor
+    stashed_sp_used = sp_used
     stashed_slot_x = slot_x
     stashed_slot_y = slot_y
     stashed_f_ahead = f_ahead
@@ -1669,6 +1672,7 @@ def unstash_world():
     sp_items = stashed_sp_items
     sp_cell = stashed_sp_cell
     sp_cursor = stashed_sp_cursor
+    sp_used = stashed_sp_used
     slot_x = stashed_slot_x
     slot_y = stashed_slot_y
     f_ahead = stashed_f_ahead

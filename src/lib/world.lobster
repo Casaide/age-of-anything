@@ -606,9 +606,7 @@ def start_world(path:string):
     load(path)
     let cells = W * H
     for(RING): ring.push([]::int)
-    sp_start = zeros(cells)
-    sp_end = zeros(cells)
-    sp_cursor = zeros(cells)
+    spatial_clear()
     fresh_at = zeros(cells)
     grow_scratch()
     make_room()

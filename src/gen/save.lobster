@@ -294,6 +294,7 @@ class WorldSave:
     sp_items:[int]
     sp_cell:[int]
     sp_cursor:[int]
+    sp_used:[int]
     slot_x:[int]
     slot_y:[int]
     f_ahead:[int]
@@ -753,6 +754,7 @@ def world_bytes(bots:[Bot]) -> string:
         sp_items,
         sp_cell,
         sp_cursor,
+        sp_used,
         slot_x,
         slot_y,
         f_ahead,
@@ -1222,6 +1224,7 @@ def load_world_bytes(data:string) -> [Bot]:
     sp_items = s.sp_items
     sp_cell = s.sp_cell
     sp_cursor = s.sp_cursor
+    sp_used = s.sp_used
     slot_x = s.slot_x
     slot_y = s.slot_y
     f_ahead = s.f_ahead
@@ -1390,4 +1393,5 @@ def load_world_bytes(data:string) -> [Bot]:
     s.ray_par.forkv() k, v: ray_par.set(k, v)
     pad_saved_columns()  // (a save from an older build: its missing per-unit and per-building columns, D-141)
     roles_from_data()    // (... and its building types' roles, D-192)
+    spatial_clear()      // (... and its spatial buckets, which an older build filled over the whole map)
     return s.bots
