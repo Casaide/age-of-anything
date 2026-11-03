@@ -1,4 +1,4 @@
-// Prices calibrated offline (D-194): what a part is worth, from fights, once, not per match. Run from src:
+// Prices calibrated offline (D-195): what a part is worth, from fights, once, not per match. Run from src:
 //   ./shards.sh calibrate.lobster lines <age> <races> [jobs=4]
 //       <races> races from the lexicon's words (training prompts, the lobby's dice made deterministic); each of
 //       their lines in <age> is fought against a fixed panel (every line of a few random races) at equal cost, its

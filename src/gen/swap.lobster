@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------ a new race mid-match (Lobster only: the generator in play)
 // A player's people become another race while the match runs, at its own prices (calibrated offline,
-// D-194: no fights), and each of the player's unit lines takes the new race's line of the same slot
+// D-195: no fights), and each of the player's unit lines takes the new race's line of the same slot
 // (its looks, stats, prices, the age it's in, research it has), as do its bonuses and its buildings'
 // style. Units alive change
 // in place (their share of health kept). A line the new race lacks stays as it was.

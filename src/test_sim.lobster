@@ -1246,7 +1246,7 @@ def test_combat():
                 if won: wins++
                 else: print "  counter lost: {rstr(race, "name")} {pair[0]} vs {pair[1]} (side {flip}): {note}"
     print "counters: {wins} of {fights} equal-cost fights won by the counter ({wins * 100 / fights}%), {ms_since(t0)} ms"
-    // 70%, not 75% (D-194): at calibrated prices, fair against the whole field, infantry pays for beating most lines
+    // 70%, not 75% (D-195): at calibrated prices, fair against the whole field, infantry pays for beating most lines
     // and loses its counter fight with the cheaper spears; large loses to a few races' archers. The counters' bonuses
     // are Dominic's call (docs/backlog.md).
     check(wins * 100 >= fights * 70, "counters win at least 70% of equal-cost fights ({wins}/{fights})")
