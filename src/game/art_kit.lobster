@@ -65,6 +65,7 @@ def ak_cache_frame(stem:string, n:int, name:string, sprite:string, w:int, h:int,
     write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
     return AkFrame { name, file, w, h, int(anchor.x + 0.5), int(anchor.y + 0.5) }
 
+var ak_dump = ""  // propframes dump:<folder>: every prop as a PNG (art review)
 def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
     if bake_quit or (not ak_rebake and frame_index(name) >= 0): return
     let stem = if bake_cache_dir != "": ak_stem(name) else: ""
@@ -77,6 +78,7 @@ def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
             if not err and fs and ak_load_frames(fs): return
     bake_breath()
     let sprite, w, h, anchor = voxel_bake(model, shadow)  // (D-203: as voxels)
+    if ak_dump != "" and w > 0 and h > 0: write_file("{ak_dump}/{ak_baked}_{name}.png", bmat_png(map(sprite.length) i: sprite[i], w, h), 0, 1)
     let kept = []::AkFrame
     if reach > 1.0:
         let art, shade = split_shadow(sprite, w, h)

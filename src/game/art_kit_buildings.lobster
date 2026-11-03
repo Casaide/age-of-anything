@@ -198,14 +198,6 @@ def akb_hold_back(body:MNode, stage:int):
 
 // ---- gate parts (ArtKit._bake_gate_parts)
 
-// The gate parts on `node` (its transform t from the bake's root): [side, x + z of its middle].
-def akb_gate_parts(node:MNode, t:Xform, out:[int2]) -> void:
-    let tk = tokenize(node.meta, " ", "")
-    if tk.length >= 6 and tk[0] == "gate_part":
-        let c = xf(t, float3 { string_to_float(tk[3]), string_to_float(tk[4]), string_to_float(tk[5]) })
-        if c.x + c.z > 0.3: out.push(int2 { string_to_int(tk[1]), 0 })
-    for(node.kids) k: akb_gate_parts(k, xmul(t, node_xform(k)), out)
-
 // A gate's middle without its towers (its doors, or the open passage and the arch over it).
 def akb_hide_towers(n:MNode):
     let towers = []::MNode
