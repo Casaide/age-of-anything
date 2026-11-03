@@ -154,6 +154,21 @@ Godot Variant reader in Lobster. Only worth it if old saves need to carry over.
 
 ## 3. Balance tooling
 
+- **Open counter pairs (Claude, 2026-11-03, D-200; Dominic's call).** With the soldiers' research on, spears beat horse
+  archers 5 of 8 in age 2 and 3 of 8 in age 3 (they stand off at range 6: no bonus reaches them), and the large line
+  beats archers 8 of 12 in age 2 (crossbows against the Royal Humans' lancers, archers against giant beetle axemen on
+  foot). Options: skirmishers as the horse archers' counter in the chain (they win 7 of 8 in age 2, 1 of 8 in age 3),
+  a charge or speed for spears, or a lower range for horse archers. `gen/counters.lobster` RR_COUNTERS_OPEN.
+- **Upgrades that do little in a fight (D-200, `calibrate.lobster upgrades`; proposals, not applied).** Effect on the
+  lines they reach, win-rate points against the panel, one side upgraded: sharp sticks +10, bronze edges +8, ring mail
+  +8, saddle blankets +8, barbed heads +7, good hay +7, quick draw +7, hoof wraps +6, padded coats +5, scale barding +5,
+  hardened tips +4, quilted vests +3, leather jacks +3, fletching +3, marching drums +2, long shafts -1. The ranged
+  armour (quilted vests, leather jacks: +1/+1) and padded coats are under the +10 a player would notice: +2 pierce
+  armour each would be the first try. Range and speed (fletching, long shafts, marching drums, hoof wraps) matter
+  for kiting and raids, not a brawl. Flips: hardened tips, quilted vests and saddle blankets each turn the Royal
+  Humans' spears against their crossbow riders (an open pair already). Castle research: long spears +22, berserkergang
+  +15, winter coat +9, shell polish +9, repeating bows +9, shield wall +8, chivalry +8; gnawing teeth, rust spikes
+  (buildings), sticky silk, saddle bows, frog leap, gallop, jaguar pelts about 0 in a fight.
 - **Counters at calibrated prices:** done (D-199): prices fitted against the counter chain, swords +6 vs spears,
   large +6 vs ranged; test_sim checks each pair. Left: the bow still fits near 0 price points (archers lose to most
   lines on attack-move, the kiting note below); the prices were fitted with large at +4 vs ranged, measured at +6.
