@@ -34,9 +34,10 @@ move it to `docs/backlog.md` rather than deleting it.
   fading ruins (D-171, D-172); rat B and frog B (D-177, D-178, D-181); every legged body walks on keyed legs baked per
   step, blows wind up and hold (D-179); units baked at their drawn size, capes only when asked (D-180); howdah riders
   hold their weapons upright (Dominic, 2026-10-28). Open: the items in `docs/milestones/m23-fidelity.md`.
-- **Planned (milestone 24): voxel buildings and props** (Dominic: "voxel buildings yes"): every building, stage and
-  prop voxel through the units' cache, then the old baked-building pipeline removed. See
-  `docs/milestones/m24-voxel-buildings.md` (the first choice: voxelize the models, write voxel data, or both).
+- **Done but for Dominic's looks (milestone 24): voxel buildings and props** (D-203, D-208): every building, stage, wall,
+  gate and prop is its 3D model voxelized through `view/voxel_mesh.lobster`; the old baker is gone. Left: a separate
+  agent's art review, and the hand-built looks culture by culture (Dominic's, backlog). See
+  `docs/milestones/m24-voxel-buildings.md`.
 - **In progress (milestone 20): Steam Deck and controllers.** Pad play (last input wins, the reticle, the wheel of
   orders: D-132, D-133); Deck builds by `src/deck/build.sh`. Next: steps 7-9 (fit, speed, Steam Input). See
   `docs/milestones/m20-steam-deck.md`.
@@ -83,7 +84,7 @@ src/             the game, in Lobster; run everything from here (paths are ../da
   gen/             races from prompts (generator, pricing, identity, heroes, datalib, rng), the match start (setup,
                    start, modes), saves (save, reset: written by gen_reset.py), balance by fights, mods
   view/            the voxel units' builder (voxel: bodies, gear and engines from data/voxel/, baked in 8 facings),
-                   the buildings' and props' bakers (baker, world_bake), the bake settings (bake_cache), art.lobster
+                   the buildings' and props' voxelizer (voxel_mesh), the bake settings (bake_cache), art.lobster
   model/           the buildings', props', trees' and bridges' 3D models in code (units are voxel bodies)
   net/             lockstep over TCP, the LAN beacon
   deck/build.sh    the Steam Deck build (Lobster built for Linux in a container)
@@ -190,7 +191,7 @@ Target the look of a **classic 2D isometric RTS**: small units, 3/4 view, painte
 silhouettes, team colour on a consistent region. It should feel like the game you know, gone mad.
 Units are **voxel bodies** (D-201) made from data (`data/voxel/`: bodies, gear, holds, materials, the
 part-to-gear rules; a mod adds its own), baked in **8 facings** standing, walking, working, attacking and
-falling, recoloured by a team-mask shader; props and buildings are realistic bakes. The pipeline is in
+falling, recoloured by a team-mask shader; props and buildings are their 3D models voxelized (D-203). The pipeline is in
 `docs/rendering.md`, "Voxel units"; the craft is in the **voxel-art skill** (`.claude/skills/voxel-art/`: know the
 subject, show it cleanly at game size, check, review). New art goes concept-first (options, Dominic picks, then
 build; D-080), one creature at a time, and every change gets looked at close up and at game size before it's shown.
@@ -213,7 +214,7 @@ That includes:
 - the final state of a milestone
 
 Capture tools: `./play.sh ... shot:<png> at:<seconds>` (a match, `look:<x>,<y>` for the camera; `page:<name>` for the
-lobby's pages) and `src/voxel_proto.lobster` (voxel units on a sheet).
+lobby's pages; `place:fort in_gate army:1`, `hurt:<percent>`; `lookframes:<arch>,<type> dump:<dir>`, `propframes dump:<dir>`) and `src/voxel_proto.lobster` (voxel units on a sheet).
 Look at every capture before keeping it. As a rough guide, aim for at least 2-3 pictures per
 milestone.
 
