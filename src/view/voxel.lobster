@@ -925,7 +925,10 @@ var vx_box = int4_0  // the last cell's box, outline included: x0, y0, x1, y1
 // One facing of a shape as a sprite cell (alpha 0 around it; drawn in vx_box): the cell is reused by the next call,
 // so copy what's wanted first. The team colour's key (magenta) survives the shading, so the game's sprite shader can
 // recolour it.
-def vx_cell(sh:vx_shape, facing:int) -> [float4]:
+def vx_cell(sh:vx_shape, facing:int) -> [float4]: return vx_cell_in(sh, facing, vx_CELL.x, vx_CELL.y, vx_ANCHOR)
+
+// The same, in a cell cw x ch with the ground point at anchor (buildings and props are bigger than units).
+def vx_cell_in(sh:vx_shape, facing:int, cw:int, ch:int, anchor:int2) -> [float4]:
     let yaw = float(facing) * 45.0
     let rot = fn(v:float3) -> float3: float3 { v.x * cos(yaw) - v.y * sin(yaw), v.x * sin(yaw) + v.y * cos(yaw), v.z }
     let ru = rot(float3 { 1.0, 0.0, 0.0 })
@@ -934,9 +937,7 @@ def vx_cell(sh:vx_shape, facing:int) -> [float4]:
     let light = rot(vx_LIGHT)
     let hx = 0.5 * (abs(ru.x) + abs(ru.y) + abs(ru.z))  // the cube's half extent on screen
     let hy = 0.5 * (abs(rv.x) + abs(rv.y) + abs(rv.z))
-    let cw = vx_CELL.x
-    let ch = vx_CELL.y
-    if not vx_depth.length:
+    if vx_depth.length != cw * ch:
         vx_depth = map(cw * ch): 1000000.0
         vx_cols = map(cw * ch): float3_0
         vx_mat = map(cw * ch): -1
@@ -966,10 +967,10 @@ def vx_cell(sh:vx_shape, facing:int) -> [float4]:
         var c = vx_mat_cols[m] * (if k > 0.8: 1.08 elif k > 0.62: 0.94 elif k > 0.45: 0.76 elif k > 0.28: 0.6 else: 0.47)
         if vx_MAT_FUR[m] != 0: c *= 1.0 + vx_fur * (float(vx_hash(v)) / 511.5 - 1.0)
         c = min(c, float3_1)  // (over 1 wraps round in the game's texture: a bright pink came out cyan)
-        let x0 = max(1, int(-floor(-(float(vx_ANCHOR.x) + u - hx - 0.5))))
-        let x1 = min(cw - 2, int(floor(float(vx_ANCHOR.x) + u + hx - 0.5)))
-        let y0 = max(1, int(-floor(-(float(vx_ANCHOR.y) - w - hy - 0.5))))
-        let y1 = min(ch - 2, int(floor(float(vx_ANCHOR.y) - w + hy - 0.5)))
+        let x0 = max(1, int(-floor(-(float(anchor.x) + u - hx - 0.5))))
+        let x1 = min(cw - 2, int(floor(float(anchor.x) + u + hx - 0.5)))
+        let y0 = max(1, int(-floor(-(float(anchor.y) - w - hy - 0.5))))
+        let y1 = min(ch - 2, int(floor(float(anchor.y) - w + hy - 0.5)))
         box = int4 { min(box.x, x0), min(box.y, y0), max(box.z, x1), max(box.w, y1) }
         for(y1 - y0 + 1) yy: for(x1 - x0 + 1) xx:
             let j = (y0 + yy) * cw + x0 + xx
@@ -1005,15 +1006,15 @@ let vx_SHADOW = float4 { 0.05, 0.04, 0.02, 0.5 }
 var vx_sout = []::float4
 var vx_sbox = int4_0
 
-def vx_ground_shadow(sh:vx_shape, facing:int) -> [float4]:
+def vx_ground_shadow(sh:vx_shape, facing:int) -> [float4]: return vx_ground_shadow_in(sh, facing, vx_SCELL.x, vx_SCELL.y, vx_SANCHOR)
+
+def vx_ground_shadow_in(sh:vx_shape, facing:int, cw:int, ch:int, anchor:int2) -> [float4]:
     let yaw = float(facing) * 45.0
     let rot = fn(v:float3) -> float3: float3 { v.x * cos(yaw) - v.y * sin(yaw), v.x * sin(yaw) + v.y * cos(yaw), v.z }
     let ru = rot(float3 { 1.0, 0.0, 0.0 })
     let rv = rot(float3 { 0.0, sin(vx_ELEV), cos(vx_ELEV) })
     let sun = rot(vx_SUN)
-    let cw = vx_SCELL.x
-    let ch = vx_SCELL.y
-    if not vx_sout.length: vx_sout = map(cw * ch): float4_0
+    if vx_sout.length != cw * ch: vx_sout = map(cw * ch): float4_0
     else:
         for(vx_sbox.w - vx_sbox.y + 1) yy: for(vx_sbox.z - vx_sbox.x + 1) xx: vx_sout[(vx_sbox.y + yy) * cw + vx_sbox.x + xx] = float4_0
     var box = int4 { cw, ch, -1, -1 }
@@ -1027,16 +1028,16 @@ def vx_ground_shadow(sh:vx_shape, facing:int) -> [float4]:
                 let dx = float(xx - 6)
                 let dy = float(yy - 2)
                 if dx * dx / 36.0 + (dy - 1.0) * (dy - 1.0) / 9.0 <= 1.0:
-                    let x = int(floor(float(vx_SANCHOR.x) + u0 + dx))
-                    let y = int(floor(float(vx_SANCHOR.y) - w0 + dy))
+                    let x = int(floor(float(anchor.x) + u0 + dx))
+                    let y = int(floor(float(anchor.y) - w0 + dy))
                     if x >= 0 and y >= 0 and x < cw and y < ch:
                         vx_sout[y * cw + x] = vx_SHADOW
                         box = int4 { min(box.x, x), min(box.y, y), max(box.z, x), max(box.w, y) }
         let g = p - sun * (p.z / sun.z)
         let u = dot(g, ru)
         let w = dot(g, rv)
-        let x0 = max(0, int(floor(float(vx_SANCHOR.x) + u - 0.7)))
-        let y0 = max(0, int(floor(float(vx_SANCHOR.y) - w - 0.7)))
+        let x0 = max(0, int(floor(float(anchor.x) + u - 0.7)))
+        let y0 = max(0, int(floor(float(anchor.y) - w - 0.7)))
         let x1 = min(cw - 1, x0 + 1)
         let y1 = min(ch - 1, y0 + 1)
         box = int4 { min(box.x, x0), min(box.y, y0), max(box.z, x1), max(box.w, y1) }
