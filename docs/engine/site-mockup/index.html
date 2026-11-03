@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creel engine</title>
+<meta name="description" content="Creel is a deterministic RTS engine written in Lobster. A mock-up.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Zilla+Slab:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 58'%3E%3Cpath d='M32 6L58 19V39L32 52L6 39V19ZM6 19L32 32L58 19M32 32V52M12.5 22.25v20M19 25.5v20M25.5 28.75v20M38.5 28.75v20M45 25.5v20M51.5 22.25v20' fill='none' stroke='%2316324a' stroke-width='3.4' stroke-linejoin='round'/%3E%3Cpath d='M32 13.5L43 19L32 24.5L21 19Z' fill='%2316324a'/%3E%3C/svg%3E">
+<script>
+  try { const t = localStorage.getItem("creel-theme"); if (t) document.documentElement.dataset.theme = t } catch (e) {}
+</script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Creel home">
+      <svg class="mark" viewBox="0 0 64 58" aria-hidden="true">
+        <path class="solid" d="M32 6L58 19V39L32 52L6 39V19Z"/>
+        <path d="M32 6L58 19V39L32 52L6 39V19ZM6 19L32 32L58 19M32 32V52"/>
+        <path d="M12.5 22.25v20M19 25.5v20M25.5 28.75v20M38.5 28.75v20M45 25.5v20M51.5 22.25v20M6 30L32 43L58 30"/>
+        <path d="M32 6V13.5M58 19H43M32 32V24.5M6 19H21" style="stroke-width:1.8"/>
+        <path class="fill" d="M32 13.5L43 19L32 24.5L21 19Z"/>
+      </svg>
+      <span class="wordmark">Creel</span>
+    </a>
+    <nav>
+      <a href="docs.html">Docs</a>
+      <a href="#data" class="wide-only">Packs</a>
+      <a href="#showcase" class="wide-only">Showcase</a>
+      <a href="#source">Source</a>
+      <button class="theme" type="button" aria-label="Switch light and dark">Theme</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <h1>A deterministic RTS engine, written in Lobster.</h1>
+      <p class="lede">Creel runs a real-time strategy game as an integer simulation at a fixed 20 ticks a second, the
+        same on every machine. Units, buildings, maps, rules and looks are data in packs. Mods add more data, and
+        small hooks where data isn't enough.</p>
+      <div class="buttons">
+        <a class="btn primary" href="docs.html">Getting started</a>
+        <a class="btn" href="#status">Where it stands</a>
+      </div>
+      <ul class="facts">
+        <li>integers only</li>
+        <li>20 Hz fixed tick</li>
+        <li>lockstep multiplayer</li>
+        <li>packs signed by sha256</li>
+        <li>Apache 2.0</li>
+      </ul>
+    </div>
+    <svg class="drawing" viewBox="30 44 500 256" role="img" aria-label="A woven creel standing on an isometric tile grid, three packs on the tiles around it">
+<path class="grid" d="M40,170L280,50M40,170L280,290M80,190L320,70M80,150L320,270M120,210L360,90M120,130L360,250M160,230L400,110M160,110L400,230M200,250L440,130M200,90L440,210M240,270L480,150M240,70L480,190M280,290L520,170M280,50L520,170"/>
+<path class="solid" d="M120,104L160,124L160,150L120,170L80,150L80,124Z"/>
+<path class="ink" d="M120,104L160,124L160,150L120,170L80,150L80,124ZM80,124L120,144L160,124M120,144L120,170"/>
+<text x="140" y="180" text-anchor="middle">maps/reed_meadow</text>
+<path class="solid" d="M440,104L480,124L480,150L440,170L400,150L400,124Z"/>
+<path class="ink" d="M440,104L480,124L480,150L440,170L400,150L400,124ZM400,124L440,144L480,124M440,144L440,170"/>
+<text x="460" y="180" text-anchor="middle">scifi_test</text>
+<path class="solid" d="M280,56L360,96L360,170L280,210L200,170L200,96Z"/>
+<path class="ink" d="M280,56L360,96L360,170L280,210L200,170L200,96ZM200,96L280,136L360,96M280,136L280,210M220,106l0,74M300,126l0,74M240,116l0,74M320,116l0,74M260,126l0,74M340,106l0,74M200,136.7L280,176.7L360,136.7"/>
+<path class="ink thin" d="M280,56L280,79.2M360,96L313.6,96M280,136L280,112.8M200,96L246.4,96"/>
+<path class="fill" d="M280,79.2L313.6,96L280,112.8L246.4,96Z"/>
+<path class="solid" d="M240,204L280,224L280,250L240,270L200,250L200,224Z"/>
+<path class="ink" d="M240,204L280,224L280,250L240,270L200,250L200,224ZM200,224L240,244L280,224M240,244L240,270"/>
+<text x="260" y="280" text-anchor="middle">age_of_anything</text>
+    </svg>
+  </div>
+</div>
+
+<section id="what">
+  <div class="wrap">
+    <p class="kicker">What it is</p>
+    <h2>The parts of an RTS that have to be exact</h2>
+    <p class="intro">Creel is the engine underneath Age of Anything, being split out so other games and mods can
+      stand on it. It owns the simulation, pathing, fog, combat and economy systems, rendering, sound, networking and
+      saves. A game is content on top; the game's own content loads as a pack like any mod.</p>
+    <div class="cards">
+      <div class="card">
+        <h3><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 .01 0M12 7v5l3 2"/></svg>A fixed tick</h3>
+        <p>The sim is integer maths at 20 Hz, driven only by the command stream. No floats, no clocks, no
+          randomness but its own seeded generator. A lint in the test suite holds it to that.</p>
+      </div>
+      <div class="card">
+        <h3><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h5v4h5v4h5v4M6 4h5v4h5v4h5"/></svg>Lockstep</h3>
+        <p>Players send commands, not state. Every machine runs the same ticks and compares a state hash every 30.
+          Today it plays over TCP on a home network, found by a LAN beacon.</p>
+      </div>
+      <div class="card">
+        <h3><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v10l-8 4-8-4V7zM4 7l8 4 8-4M12 11v10"/></svg>Saves that outlive builds</h3>
+        <p>A save written by an older build still loads: a field it lacks loads empty, per-unit columns are padded,
+          and the save code is generated from the sim's own globals.</p>
+      </div>
+      <div class="card">
+        <h3><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4c-2 0-3 1-3 3v3l-2 2 2 2v3c0 2 1 3 3 3M16 4c2 0 3 1 3 3v3l2 2-2 2v3c0 2-1 3-3 3"/></svg>Everything is data</h3>
+        <p>Buildings, tech, terrain, resources, bots, sound and the UI's look are JSON. Maps are an ASCII drawing
+          with a legend. Units can be procedural voxel bodies described in JSON.</p>
+      </div>
+      <div class="card">
+        <h3><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3L7 21M17 3l-2 18M4 8h17M3 16h17"/></svg>Packs carry their hash</h3>
+        <p>A pack's signature is <code>id@version#sha256</code> over its files. Race keys carry it today; lobbies and saves will compare the
+          list, so two players never fight with different rules by accident.</p>
+      </div>
+      <div class="card">
+        <h3><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v11a5 5 0 0 1-10 0v-3l3 3"/></svg>Rule and UI hooks</h3>
+        <p>Where data isn't enough, a pack brings Lobster functions. Rule hooks run in lockstep and are checked for
+          determinism; UI hooks run on one machine and may draw what they like.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="data">
+  <div class="wrap">
+    <p class="kicker">Packs and data</p>
+    <h2>Small files you can read</h2>
+    <p class="intro">These are real files from Age of Anything, unedited apart from being cut short. A map is a
+      drawing you can change in a text editor. A creature is a few capsules and balls on named points, with legs that
+      walk on their own.</p>
+
+    <div class="pair">
+      <div>
+        <h3>A map is an ASCII drawing</h3>
+        <p class="file">data/maps/reed_meadow.json · "rows", the first 12 of 64</p>
+<pre><code>#############################################################DDD
+#TTTTTTTTTTTTTTTTTTTTTT....................................,RDDD
+#TTTTTTTTTTTTTTTTTTTTTT..................................,,RRDDD
+#TTTTTTTTTTTTTTTTTTTTTT......T......TTTTTT..............,,RRDDRD
+#.TT..TT.TT..TT.TT..TT.....TTTTT....TTTTTT............,,,,RDDRR#
+#"""...T......T..TTTTT.....TTTTT.....................,,,,RDDDR,#
+#""""............TTTTT.......T.................."""""",,RDDDR,.#
+#"""""...........TTTTT.........................."""""",RDDDR,,.#
+#"""..sss..........gg.......###...................,,,,RDDDR,,..#
+#"""".ss...........gg.......###..................,,,,RDDDR,,...#
+#""""...........................................,,,,RRDDRR,....#
+#""".............bb....."""....................,,,,RRDDRR,.....#</code></pre>
+      </div>
+      <div>
+        <h3>and a legend into the terrain</h3>
+        <p>Each character names a terrain type in <code>terrain.json</code>: whether it can be walked, its colours,
+          the resource it holds and what it turns into when that runs out. Next to the rows sit the heights, the
+          start tiles, the animals, the bridges and a symmetry, so a two-player map is fair by construction.</p>
+<pre><code>"schema": "aow.map/2",
+"width": 64, "height": 64,
+"symmetry": "rotate",
+"starts": [[12, 12], [51, 51]],
+"legend": {
+  ".": "grass",   ",": "swamp",  "\"": "reeds",
+  "#": "rock",    "T": "tree",   "s": "stone",
+  "g": "gold",    "b": "bugbush",
+  "R": "river",   "D": "deep_river", "f": "ford"
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="pair">
+      <div>
+        <h3>A body in JSON</h3>
+        <p class="file">data/voxel/bodies/sheep.json · trimmed</p>
+<pre><code>{
+  "skin": "#e4dccb", "pale": "#2e2622",
+  "size": 1.0, "fur": 0.12,
+  "points": {
+    "front": { "at": [0, 4.5, 11.5] },
+    "back":  { "at": [0, -4.5, 11.5] },
+    "head":  { "at": [0, 9.0, 14.0] }
+  },
+  "legs": [
+    { "hip": ["front", 2.4, 0.5, -3.0], "foot": [2.4, 5.0, 1.0],
+      "stride": 2.4, "lift": 1.4, "bones": [3.86, 3.86],
+      "mats": ["skin", "pale"] },
+    { "hip": ["back", 2.4, -0.5, -3.0], "foot": [2.4, -5.0, 1.0],
+      "stride": 2.4, "lift": 1.4, "bones": [3.86, 3.86],
+      "mats": ["skin", "pale"], "phase": 180 }
+  ],
+  "shapes": [
+    { "cap": ["back", 0, 0, 0], "to": ["front", 0, 0, 0],
+      "r": [5.6, 5.6], "mat": "skin" },
+    { "ball": ["front", 0, 0.5, 2.5], "r": 4.4, "mat": "skin" },
+    { "cap": ["head", 0, -0.5, 0.5], "to": ["head", 0, 3.0, -1.6],
+      "r": [2.0, 1.2], "mat": "pale" },
+    { "bead": ["head", 1.5, 1.0, 0.0], "r": 0.4,
+      "mat": "eye", "mirror": true }
+  ]
+}</code></pre>
+      </div>
+      <div>
+        <h3>baked in eight facings</h3>
+        <img class="sheet" src="img/bodies.png" width="440" height="830" loading="lazy"
+          alt="Voxel units in four of their eight facings: a human, a rat, a frog, a bear, a spider, a newt, a centaur and a rat riding a cat, each with a spear and shield">
+        <p class="caption">Four of the eight facings of eight bodies from <code>data/voxel/bodies/</code>, each carrying the same spear and shield,
+          voxelized and baked to sprites at the start of a match. The legs are solved per step from the hip, the
+          foot and the bone lengths.</p>
+      </div>
+    </div>
+
+    <div class="pair">
+      <div>
+        <h3>A pack says what it is</h3>
+        <p class="file">mods/scifi_test/mod.json · trimmed</p>
+<pre><code>{
+  "id": "scifi_test",
+  "name": "Future soldiers (test)",
+  "version": "0.1.0",
+  "load_order": 100,
+  "depends": [],
+  "eras": ["scifi"],
+  "data": "data",
+  "models": ["models/scifi_parts.lobster"],
+  "check": {
+    "rules": "anything",
+    "prompts": ["future soldiers", "space marines"]
+  }
+}</code></pre>
+      </div>
+      <div>
+        <h3>and the loader merges it</h3>
+        <p>Packs load in order. An entry with the same id replaces the one before it, <code>"extends"</code> copies
+          one and changes what it names, and <code>"remove": true</code> takes one out. A missing dependency
+          refuses the pack and says which. The check tool loads a pack, lints its hooks and plays a short match twice
+          to see the state hash agree.</p>
+<pre><code>./mod_check.sh scifi_test
+./play.sh lobby mods:scifi_test rules:anything</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="hooks">
+  <div class="wrap">
+    <p class="kicker">Hooks</p>
+    <h2>Code where data runs out</h2>
+    <p class="intro">Hooks are plain Lobster functions in a pack, compiled in at start and called in load order. Where
+      no pack has a hook, it costs nothing. This is the first set, each one taken from something the game already
+      does in its own code.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Rule hook (in lockstep)</th><th>Called</th><th>First user</th></tr></thead>
+        <tbody>
+          <tr><td><code>ability(kind)</code></td><td>an ability order; every tick</td><td>the spiders' web</td></tr>
+          <tr><td><code>on_hit(attacker, target, damage)</code></td><td>a blow or shot lands</td><td>sticky shots</td></tr>
+          <tr><td><code>on_death(unit, killer)</code></td><td>a unit dies</td><td>carcasses to hunt</td></tr>
+          <tr><td><code>on_built(building)</code></td><td>a building finishes</td><td>pens, markets</td></tr>
+          <tr><td><code>victory()</code></td><td>each second</td><td>no hub left; the Wonder clock</td></tr>
+          <tr><td><code>start(mode)</code></td><td>the match start</td><td>the Fortress and Siege modes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Rule hooks keep to integers, the sim's random numbers and a stable order, and keep their state
+      in columns they declare, so saves and the state hash cover them. UI hooks draw over the world, add to the panel
+      and top bar, and play a sound or an effect on an event. Planned; the web and the Wonder move out of the sim
+      into hooks first.</p>
+  </div>
+</section>
+
+<section id="showcase" class="showcase">
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <p class="kicker">Made with Creel</p>
+        <h2>Age of Anything</h2>
+        <p>A classic-style RTS where your civilisation is whatever you can describe. Type "centaur romans" or "sewer
+          rats with cheese hammers" and it builds the race from a kit of parts, prices every unit by what it's made of,
+          and you play a normal match with it.</p>
+      </div>
+      <p class="caption">So far the only game on the engine, and the one it was pulled out of. Every unit here is a
+        procedural voxel body from data; the buildings and props are baked from models.</p>
+    </div>
+    <div class="shots">
+      <figure class="wide">
+        <img src="img/siege-army.jpg" width="1549" height="1100" loading="lazy" alt="A rat army with siege towers, catapults, war beasts and cat riders around a tin-roofed hut">
+        <figcaption>A rat army in the Mud Age: siege towers, throwers and war beasts.</figcaption>
+      </figure>
+      <figure class="side">
+        <img src="img/cat-rider.jpg" width="1300" height="900" loading="lazy" alt="A rat riding a black cat wades a lake towards a column of red-clad spearmen">
+        <figcaption>A rat on a cat wades in; romans wait on the bank.</figcaption>
+      </figure>
+      <figure class="side">
+        <img src="img/title.jpg" width="1512" height="917" loading="lazy" alt="The game's title screen in timber and gold, with two small armies on the grass below">
+        <figcaption>The title screen: the game keeps its own timber and gold.</figcaption>
+      </figure>
+      <figure class="half">
+        <img src="img/town.jpg" width="1549" height="1100" loading="lazy" alt="A small rat town: a tin water tank, a hut with a stove pipe, a stone path and berry bushes">
+        <figcaption>A rat town a minute and a half in.</figcaption>
+      </figure>
+      <figure class="half">
+        <img src="img/buildings.jpg" width="1934" height="880" loading="lazy" alt="Roman houses and a town hall, baked and voxel versions side by side">
+        <figcaption>Roman buildings, baked from models and as voxels.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="status">
+  <div class="wrap">
+    <p class="kicker">Status</p>
+    <h2>Early, and not public yet</h2>
+    <p class="intro">Creel is still a folder inside one game. The engine and the game share a repository while the
+      seams between them are cut. There is one game on it so far, and no release.</p>
+    <div class="status">
+      <div>
+        <h3>Works today</h3>
+        <ul>
+          <li>The integer sim, flow-field pathing, fog, combat, economy, sieges and walls</li>
+          <li>Lockstep over TCP on a home network</li>
+          <li>Saves from older builds</li>
+          <li>Mods of data and models, checked by <code>mod_check</code></li>
+          <li>Voxel units from JSON</li>
+          <li>macOS, Linux on a Steam Deck, Android</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Being cut</h3>
+        <ul>
+          <li>Buildings looked up by role, not by name</li>
+          <li>One pack format for the game and its mods</li>
+          <li>Pack signatures in lobbies and saves</li>
+          <li>A plain unit-type table, so a game needn't generate races</li>
+          <li>The first rule hooks</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Later</h3>
+        <ul>
+          <li>Matches over the internet, peer to peer</li>
+          <li>Era capabilities: turrets, turn rates, air and ground layers</li>
+          <li>A runtime script for hooks</li>
+          <li>A second game, or a modder who isn't us</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="source">
+  <div class="wrap">
+    <p class="kicker">Docs and source</p>
+    <h2>Read on</h2>
+    <p class="intro">Creel will be open source under the Apache License 2.0, in the spirit of the Spring engine and its
+      successor Recoil: an engine that many games share, with each game's content its own. The game made with it
+      keeps its own licence.</p>
+    <div class="docs">
+      <a href="docs.html"><strong>Getting started</strong><span>A pack, a map and a body, step by step</span></a>
+      <a href="docs.html#packs"><strong>Packs</strong><span>Manifests, merging, signatures</span></a>
+      <a href="docs.html#hooks"><strong>Hooks</strong><span>Rule hooks, UI hooks, the checks</span></a>
+      <a href="#" aria-disabled="true"><strong>Source</strong><span>Not public yet</span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <a class="brand" href="index.html" aria-label="Creel home">
+        <svg class="mark" viewBox="0 0 64 58" aria-hidden="true">
+          <path class="solid" d="M32 6L58 19V39L32 52L6 39V19Z"/>
+          <path d="M32 6L58 19V39L32 52L6 39V19ZM6 19L32 32L58 19M32 32V52"/>
+          <path d="M12.5 22.25v20M19 25.5v20M25.5 28.75v20M38.5 28.75v20M45 25.5v20M51.5 22.25v20M6 30L32 43L58 30"/>
+          <path d="M32 6V13.5M58 19H43M32 32V24.5M6 19H21" style="stroke-width:1.8"/>
+          <path class="fill" d="M32 13.5L43 19L32 24.5L21 19Z"/>
+        </svg>
+        <span class="wordmark">Creel</span>
+      </a>
+      <p>A creel is the woven trap a lobster is caught in. This one holds the packs.</p>
+    </div>
+    <div>
+      <p>Apache License 2.0</p>
+      <p>Built with <a href="https://github.com/aardappel/lobster">Lobster</a>, by Wouter van Oortmerssen</p>
+      <p>A mock-up, 3 November 2026</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll(".theme").forEach(b => b.addEventListener("click", () => {
+    const root = document.documentElement
+    const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches
+    root.dataset.theme = dark ? "light" : "dark"
+    try { localStorage.setItem("creel-theme", root.dataset.theme) } catch (e) {}
+  }))
+</script>
+</body>
+</html>
