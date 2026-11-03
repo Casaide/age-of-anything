@@ -261,6 +261,7 @@ class WorldSave:
     bm_cost:[[[int]]]
     bt_name:[string]
     bt_cost:[[int]]
+    bt_roles:[int]
     map_version:int
     num_resources:int
     gather_spots:[int]
@@ -719,6 +720,7 @@ def world_bytes(bots:[Bot]) -> string:
         bm_cost,
         bt_name,
         bt_cost,
+        bt_roles,
         map_version,
         num_resources,
         gather_spots,
@@ -1187,6 +1189,7 @@ def load_world_bytes(data:string) -> [Bot]:
     bm_cost = s.bm_cost
     bt_name = s.bt_name
     bt_cost = s.bt_cost
+    bt_roles = s.bt_roles
     map_version = s.map_version
     num_resources = s.num_resources
     gather_spots = s.gather_spots
@@ -1386,4 +1389,5 @@ def load_world_bytes(data:string) -> [Bot]:
     s.ray_offs.forkv() k, v: ray_offs.set(k, v)
     s.ray_par.forkv() k, v: ray_par.set(k, v)
     pad_saved_columns()  // (a save from an older build: its missing per-unit and per-building columns, D-141)
+    roles_from_data()  // (... and its building types' roles, D-192)
     return s.bots

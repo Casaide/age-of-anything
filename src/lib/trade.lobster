@@ -21,19 +21,19 @@ var r_trade_min = 0
 var r_trade_sq_div = 1
 var r_trade_lin_pct = 0
 
-def is_market(b:int) -> bool: return b_done[b] == 1 and bt_name[b_kind[b]] == "market"
+def is_market(b:int) -> bool: return b_done[b] == 1 and has_role(b_kind[b], ROLE_TRADE)
 
 // ---- the market
 
 def quote(p:int, r:int, buy:bool) -> int:
     if buy: return market_price[r]
     var fee = 100 - SELL_PCT
-    for(bt_name) name, k:
-        if name == "market": fee = max(0, fee + bm_trade_fee[p][k])
+    for(bt_roles.length) k:
+        if has_role(k, ROLE_TRADE): fee = max(0, fee + bm_trade_fee[p][k])
     return market_price[r] * (100 - fee) / 100
 
 def trade_barred(p:int, b:int, r:int, buy:bool) -> bool:
-    if b < 0 or b_owner[b] != p or b_done[b] == 0 or bt_name[b_kind[b]] != "market": return true
+    if b < 0 or b_owner[b] != p or b_done[b] == 0 or not has_role(b_kind[b], ROLE_TRADE): return true
     if trade_lacked[p]: return true
     let g = resource_index("gold")
     if r < 0 or r == g: return true

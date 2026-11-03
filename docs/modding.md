@@ -81,6 +81,25 @@ materials `team`, `skin`, `cloth`, `cloth2`, a game texture (`iron`...), or `glo
   game one and changes only what you name.
 - `mod.json` `check.prompts`: the prompts that show your parts (they drive the checks).
 
+- Buildings (`data/buildings.json`; mods can't change them yet, `docs/engine-plan.md` step 2): the sim and the
+  bots never look a building up by its id, only by what it does, so a building can be called anything. A building
+  says what it does by `roles`, a list of:
+
+  | Role | What it means |
+  |---|---|
+  | `hub` | The town's heart: a player who started with one is out when none is left; herded animals come home to it; the bots' home and first target |
+  | `housing` | What the bots build for room before they run out |
+  | `trade` | A market: buying, selling, trade carts between two |
+  | `barracks` | The bots' first army building, put up before the first age |
+  | `tower` | The tower the bots put up where they were raided (and count, with what research turns it into) |
+  | `defence` | A strong point guarding a crossing (the bots won't lay a second tower by one) |
+  | `wonder` | Stood long enough, it wins; the bots build one when rich and go for the enemy's |
+
+  A building can play several (`"roles": ["tower", "defence"]`) or none. Where several share a role, the bots
+  build the first by id. A farm, a pen and a drop-off need no role: `becomes`, `pen` and `drop_off` say it (a drop-off
+  that isn't the hub is a camp). An unknown role stops the game at the start. What the bots build in order, raid and
+  research is named by id in `data/ai.json`.
+
 Then:
 
 ```sh

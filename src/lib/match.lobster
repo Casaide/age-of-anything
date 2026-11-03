@@ -13,10 +13,9 @@ var wonder_owners = []::int
 var mode_hold = -1  // the Siege mode: hold ticks (0: no time limit); -1: no such mode
 
 def towns(p:int) -> int:
-    let tk = btype_named("town_center")
     var n = 0
     for(b_id.length) b:
-        if b_owner[b] == p and b_kind[b] == tk: n++
+        if b_owner[b] == p and has_role(b_kind[b], ROLE_HUB): n++
     return n
 
 def has_anything(p:int) -> bool:
@@ -35,12 +34,11 @@ def mode_tick():
 
 // Match._wonders: true when a Wonder won the match here.
 def wonders() -> bool:
-    let wk = btype_named("wonder")
-    if wonder_hold == 0 or wk < 0: return false
+    if wonder_hold == 0: return false
     let ids = []::int
     let since = []::int
     for(b_id.length) b:
-        if b_kind[b] == wk and b_done[b] != 0 and defeated[b_owner[b]] == 0:
+        if has_role(b_kind[b], ROLE_WONDER) and b_done[b] != 0 and defeated[b_owner[b]] == 0:
             var at = -1
             for(wonder_ids) id, k:
                 if id == b_id[b]: at = k

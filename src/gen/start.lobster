@@ -134,6 +134,13 @@ def setup_classes():
     su_classes = copy(BASE_CLASSES)
     for(sorted_strs(filter(names) n: not has_s(BASE_CLASSES, n))) n: su_classes.push(n)
 
+// Every type's roles from buildings.json by its id: for a save from before roles (D-141, D-192) and
+// a scenario file, which carry none.
+def roles_from_data():
+    if bt_roles.length == bt_name.length: return
+    let d = at(load_json(lib_root + "/buildings.json"), "buildings")
+    bt_roles = map(bt_name) id: role_bits(gstrs(at(d, id), "roles"))
+
 def setup_btypes():
     let terrain_ids = tr_names
     for(su_btypes) b, k:
@@ -161,6 +168,7 @@ def setup_btypes():
         bt_workers.push(gint(b, "workers", 0))
         bt_special.push(if gate_ or ladder or walkway > 0 or bflyers: 1 else: 0)
         bt_name.push(su_btype_ids[k])
+        bt_roles.push(role_bits(gstrs(b, "roles")))
         bt_attacks.push(if at_.keys.length: 1 else: 0)
         bt_atk_class.push(class_index(gstr(at_, "damage", "pierce")))
         bt_atk.push(gint(at_, "attack", 0))

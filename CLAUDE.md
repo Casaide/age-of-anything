@@ -66,7 +66,7 @@ data/            the data contract; mods are just more of this
   terrain.json     terrain types: walkable, colours, resource + amount + what it turns into when used up
   audio.json       buses, every sound's takes / bus / gap / voices, the music mixes by age
   ui.json          the UI's directions (materials, colours, crest, banner cut)
-  buildings.json   building types: footprint, hp, cost, build time, pop, drop-off, what it trains
+  buildings.json   building types: footprint, hp, cost, build time, pop, drop-off, what it trains, roles (D-192)
   tech.json, ai.json   ages, research, line upgrades; the bots (levels easy, normal, hard)
   maps/*.json      maps: ASCII rows + legend into terrain.json, start tiles
 src/             the game, in Lobster; run everything from here (paths are ../data, ../assets)
