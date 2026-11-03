@@ -47,6 +47,9 @@ class Bot:
     resting:[int] = []
     on_back_foot = false
     next_trade = 0
+    pressing = false  // clearly ahead: massing to finish the match (military.press)
+    pushing = false   // pressing, and the massed army is out
+    mass_from = -1    // the tick it began massing (-1: not massing)
 
 def new_bot(p:int) -> Bot:
     let eco = EcoBot { p }
@@ -421,11 +424,12 @@ def bot_siege(bot:Bot, army:[int], hx:int, hy:int):
             var best_d = if thrower: tw * tw else: 1 << 60
             var best_rank = 2
             for(b_id.length) b:
-                if is_enemy(bot.player, b_owner[b]) and fog_sees_area(bot.player, b):
+                if is_enemy(bot.player, b_owner[b]) and (fog_sees_area(bot.player, b) or (ram and bot.pressing and known(bot.player, b) and has_role(b_kind[b], ROLE_HUB))):
                     let bk = b_kind[b]
                     let defence = bt_attacks[bk] != 0 or bt_gate[bk] != 0 or bt_wall[bk] != 0
                     if not (thrower and bt_attacks[bk] == 0):
-                        let rank = if defence: 0 else: 1
+                        let hub = ram and bot.pressing and has_role(bk, ROLE_HUB) and reaches_building(bot.eco.reach, bot.aln, bot.harea, b)
+                        let rank = if hub: -1 elif defence: 0 else: 1
                         let d = dist2(u_x[i], u_y[i], b_cx[b] * 1000 + b_sx[b] * 500, b_cy[b] * 1000 + b_sy[b] * 500)
                         if rank < best_rank or (rank == best_rank and d < best_d):
                             best = b_id[b]
@@ -458,8 +462,9 @@ def train_soldiers(bot:Bot, workers:[int], count:int):
         let k = u_kind[i]
         if u_owner[i] == p and not t_worker[k] and not t_healer[k] and t_animal[k] == 0 and not t_trader[k]: guard_pop += t_pop[k]
     if lv_army_ratio > 0 and guard_pop * 100 >= count * lv_army_ratio * ages[p]: return
+    let massing = bot.pressing and guard_pop < press_army(bot, count)
     if (bot.saving_age or (((lv_build_up and bot.blocked_save >= 1) or bot.blocked_save >= 2) and equal(bot.eco.goal, bot.blocked))) and
-            (guard_pop >= cfg("military.guard") or ages[p] == 1) and not bot.threat_ids.length:
+            (guard_pop >= cfg("military.guard") or ages[p] == 1) and not bot.threat_ids.length and not massing:
         for(bot.eco.goal) g, r: reserve[r] = g
     for(bot.expand.want) v, r: reserve[r] += v
     for(bot.land.want) v, r: reserve[r] += v
@@ -707,6 +712,8 @@ def respond(bot:Bot, tc:int, army:[int], workers:[int], hx:int, hy:int):
                 if held(bot.eco, uid) <= tick or u_moving[i] == 0: flee.push(uid)
                 hold_until(bot.eco, uid, tick + THREAT_TICKS)
     if flee.length: issue_cmd(p, 0, flee, tx, ty, 0, 0)
+    // Massing: no soldiers into a tower's arrows, nor after raiders running home.
+    if bot.pressing and not bot.pushing and (index_of(focus) < 0 or not ours_side(p, hx / 1000, hy / 1000, cell_of(fx, fy))): return
     let home_r = 2 * cfg("military.defend_tiles") * 1000
     let keys = []::int
     let pops = dictionary<int, int>(127)
@@ -1019,26 +1026,29 @@ def bot_wonder(bot:Bot, tc:int, workers:[int]):
     issue_cmd(p, CMD_BUILD, builders, k, sx, sy, 0)
     bot.next_build = tick + BUILD_COOLDOWN
 
-def waves(bot:Bot, army:[int], hx:int, hy:int):
+def waves(bot:Bot, army:[int], count:int, hx:int, hy:int):
     let wonder = known_enemy_wonder(bot, hx, hy)
     let tx = bot.target_x
     let ty = bot.target_y
     if tx < 0: return
-    let need = if bot.wave < wave_at.length: wave_min[bot.wave] else: repeat_min(bot)
+    let need = if bot.pressing: press_army(bot, count) elif bot.wave < wave_at.length: wave_min[bot.wave] else: repeat_min(bot)
     var strength = 0
     for(army) i: strength += t_pop[u_kind[i]]
     // A finished enemy Wonder can't wait for the next wave: everyone goes now (again every regroup).
     let urgent = wonder > 0 and contains(wonder_ids, wonder) and tick - bot.rushed >= cfg("military.regroup_every") * 20 and strength > 0
     if urgent: bot.rushed = tick
-    if (tick >= bot.next_wave_tick and strength >= need) or urgent:
+    let waited = bot.mass_from >= 0 and tick - bot.mass_from >= cfg("military.press.wait") * 20 and strength >= repeat_min(bot)
+    let massed = bot.pressing and not bot.pushing and (strength >= need or waited)
+    if (tick >= bot.next_wave_tick and strength >= need and not bot.pressing) or massed or urgent:
         let near = cfg("military.defend_tiles") * 2000
         let away = filter(army) i: dist2(hx, hy, u_x[i], u_y[i]) > near * near
         let at_home = filter(army) i: dist2(hx, hy, u_x[i], u_y[i]) <= near * near
         var keep = army.length - max(1, army.length * lv_wave_pct / 100)
-        if lv_all_in > 0 and strength >= lv_all_in: keep = 0
+        if (lv_all_in > 0 and strength >= lv_all_in) or bot.pressing: keep = 0
         let sent = append(away, slice(at_home, 0, max(0, at_home.length - keep)))
-        if sent.length: send_wave(bot, map(sent) i: u_id[i], tx, ty, wonder <= 0, hx, hy)
+        if sent.length: send_wave(bot, map(sent) i: u_id[i], tx, ty, wonder <= 0 and not bot.pressing, hx, hy)
         bot.assault = true
+        bot.pushing = bot.pressing
         bot.wave++
         bot.next_wave_tick = if bot.wave < wave_at.length: wave_at[bot.wave] * 20 else: tick + cfg("military.repeat_every") * 20
         return
@@ -1046,7 +1056,7 @@ def waves(bot:Bot, army:[int], hx:int, hy:int):
     let home_r = cfg("military.defend_tiles") * 1000
     let ids = []::int
     let home = filter(army) i: u_foe[i] == 0 and u_moving[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) <= 4 * home_r * home_r
-    if home.length >= max(REINFORCE, need / 2) and lv_wave_pct >= 100:
+    if (home.length >= max(REINFORCE, need / 2) and lv_wave_pct >= 100) or (bot.pushing and home.length >= REINFORCE):
         for(home) i: ids.push(u_id[i])
     for(army) i:
         let on_building = u_foe[i] != 0 and b_index_of(u_foe[i]) >= 0
@@ -1056,16 +1066,20 @@ def waves(bot:Bot, army:[int], hx:int, hy:int):
     var out_pop = 0
     for(army) i:
         if dist2(hx, hy, u_x[i], u_y[i]) > 4 * home_r * home_r: out_pop += t_pop[u_kind[i]]
-    if out_pop * 2 < need and wonder <= 0:
+    // Pushing: home once the army is down to back_pct of what it massed; massing: all home.
+    let left = if bot.pushing: strength else: out_pop
+    let back_pct = if bot.pushing: cfg("military.press.back_pct") elif bot.pressing: 101 else: 50
+    if left * 100 < need * back_pct and wonder <= 0:
+        bot.pushing = false
         let back = filter(ids) id:
             let i = index_of(id)
             dist2(hx, hy, u_x[i], u_y[i]) > 4 * home_r * home_r
         if back.length: issue_cmd(bot.player, 1, back, hx, hy, 0, 0)
         return
-    let strong = dominant(bot, army)
+    let strong = dominant(bot, army) or bot.pressing
     if lv_raids > 0 and tick >= lv_raid_from and wonder <= 0 and not strong and raid(bot, ids, hx, hy): return
     let cx, cy = contain_point(bot, tx, ty)
-    if wonder <= 0 and cx >= 0 and pop_of(army) < cfg("military.contain_pop") and not has_siege(army):
+    if wonder <= 0 and cx >= 0 and pop_of(army) < cfg("military.contain_pop") and not has_siege(army) and not bot.pressing:
         issue_cmd(bot.player, 1, ids, cx, cy, 0, 0)
         return
     var tc_id = if wonder > 0: wonder else: known_enemy_town(bot, hx, hy)  // (a Wonder first)
@@ -1178,6 +1192,66 @@ def trade_carts(bot:Bot, carts:[int], workers:[int]):
     let reserve = map(num_resources) r: saving_of(bot, r)
     if affords(p, t_cost[k], reserve): issue_cmd(p, CMD_TRAIN, []::int, b_id[home], k, 1, 0)
 
+// ---- pressing a lead (military.press)
+
+// The enemy as we know it: its best age (ages are announced); its workers: those we've seen lately,
+// or as many as the buildings we remember but walls, if more (a bot's town keeps about one a worker);
+// the soldiers we remember (population).
+def known_enemy(bot:Bot) -> int, int, int:
+    let p = bot.player
+    var age = 0
+    for(num_players) q:
+        if is_enemy(p, q) and defeated[q] == 0: age = max(age, ages[q])
+    var blds = 0
+    for(fog_seen[p]) s:
+        if is_enemy(p, s[2]) and not bt_wall[s[1]] and not bt_gate[s[1]]: blds++
+    var theirs = 0
+    for(bot.scout.seen_kind) k: theirs += t_pop[k]
+    return age, max(bot.scout.worker_ids.length, blds), theirs
+
+// Clearly ahead: an age up on the enemy or workers_pct of its workers, and army_pct of its army.
+// Pressing goes on while the economy stays ahead, at least stay_pct of its workers in no lower age.
+def press_think(bot:Bot, count:int, army:[int]):
+    let p = bot.player
+    if not has_cfg("military.press.from") or tick < cfg("military.press.from") * 20 or count < cfg("military.press.workers"):
+        bot.pressing = false
+        bot.pushing = false
+        bot.mass_from = -1
+        bot.eco.headroom = HOUSE_HEADROOM
+        return
+    let age, workers, theirs = known_enemy(bot)
+    let up = ages[p] > age
+    if bot.pressing:
+        bot.pressing = ages[p] >= age and (up or count * 100 >= workers * cfg("military.press.stay_pct"))
+    else:
+        bot.pressing = ages[p] >= age and (up or count * 100 >= workers * cfg("military.press.workers_pct")) and
+            pop_of(army) * 100 >= theirs * cfg("military.press.army_pct")
+    if not bot.pressing: bot.pushing = false
+    bot.mass_from = if not bot.pressing or bot.pushing: -1 elif bot.mass_from < 0: tick else: bot.mass_from
+    bot.eco.headroom = if bot.pressing: cfg("military.press.headroom") else: HOUSE_HEADROOM
+
+// While massing it saves for the soldiers it lacks, at the prices of those it fields (spears with none),
+// and the hero it waits to train.
+def mass_goal(bot:Bot, army:[int], short:int) -> [int]:
+    let goal = map(num_resources): 0
+    var per = pop_of(army)
+    for(army) i:
+        for(t_cost[u_kind[i]]) c, r: goal[r] += c
+    let spear = type_named(bot.player, "spear")
+    if not army.length and spear >= 0:
+        for(t_cost[spear]) c, r: goal[r] = c
+        per = t_pop[spear]
+    return map(goal) g, r: g * short / max(1, per) + (if r < bot.hero_want.length: bot.hero_want[r] else: 0)
+
+// The army it masses before it goes: `army`, or over_pct of the enemy army it remembers, within what
+// the level keeps (army_ratio, less a tenth).
+def press_army(bot:Bot, count:int) -> int:
+    let p = bot.player
+    let _age, _workers, theirs = known_enemy(bot)
+    var n = max(cfg("military.press.army"), theirs * cfg("military.press.over_pct") / 100)
+    if lv_army_ratio > 0: n = min(n, count * lv_army_ratio * ages[p] * 9 / 1000)
+    return max(n, repeat_min(bot))
+
 // ---- think
 
 def full_bot_think(bot:Bot):
@@ -1212,6 +1286,11 @@ def full_bot_think(bot:Bot):
     build_order_step(bot, tc, workers, count)
     bot.eco.goal = goal_of(bot, count)
     bot.eco.push = if bot.saving_age: 100 elif bot.blocked.length: bot.blocked_push else: cfg_or("economy.build_push", 30)
+    let short = if bot.pressing and not bot.pushing: press_army(bot, count) - pop_of(army) else: 0  // (massing)
+    if short > 0:
+        bot.saving_age = false
+        bot.eco.goal = mass_goal(bot, army, short)
+        bot.eco.push = cfg("military.press.push")
     age_three(bot, tc, count)
     bot_wonder(bot, tc, workers)
     upgrade_lines(bot, army)
@@ -1228,6 +1307,7 @@ def full_bot_think(bot:Bot):
     let at_work = filter(workers) i: u_id[i] != bot.scout.id
     remember_soldiers(bot.scout, p)
     bot.on_back_foot = bot.on_back_foot or defending(bot, field)
+    press_think(bot, count, field)
     scout_think(bot.scout, bot, at_work, field, hx, hy)
     bot.target_x, bot.target_y = wave_target(bot, hx, hy)
     bot.land.target_x = bot.target_x
@@ -1241,7 +1321,7 @@ def full_bot_think(bot:Bot):
     tower_after_raid(bot, at_work)
     bot_trade(bot)
     trade_carts(bot, carts, at_work)
-    waves(bot, field, hx, hy)
+    waves(bot, field, count, hx, hy)
     off_walls_army(bot, field, hx, hy)
     bot_siege(bot, field, hx, hy)
     storm_walls(bot, field, bot.target_x, bot.target_y)

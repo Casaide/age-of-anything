@@ -506,6 +506,13 @@ def ai_ints(v:JV) -> JV:
         return o
     return v
 
+// A level's `press` over military.press, key by key.
+def level_press(cfg:JV, l:JV):
+    if not has(l, "press") or not has(at(cfg, "military"), "press"): return
+    let to = at(at(cfg, "military"), "press")
+    let by = at(l, "press")
+    for(by.keys) k, n: set(to, k, by.a[n])
+
 def load_ai_config(lvl:string = "normal"):  // (the lobby's AI levels: easy, normal, hard)
     let cfg = ai_ints(load_json(lib_root + "/ai.json"))
     var lv_ratio = 0
@@ -530,6 +537,7 @@ def load_ai_config(lvl:string = "normal"):  // (the lobby's AI levels: easy, nor
             for(rm.keys.length) n: rm.a[n] = jint(max(1, as_int(rm.a[n]) * gint(l, "army_pct", 100) / 100))
         else: set(mil, "repeat_min_army", jint(max(1, as_int(rm) * gint(l, "army_pct", 100) / 100)))
         if has(l, "max_workers"): set(at(cfg, "economy"), "max_workers", at(l, "max_workers"))
+        level_press(cfg, l)
         lv_ratio = gint(l, "army_ratio", 0)
         lv_wave = gint(l, "wave_pct", 100)
         lv_up = if gint(l, "build_up", 0) == 1: 1 else: 0

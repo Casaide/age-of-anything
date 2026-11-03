@@ -18,6 +18,8 @@ class Scout:
     seen_tick:[int] = []
     seen_x:[int] = []
     seen_y:[int] = []
+    worker_ids:[int] = []  // enemy workers seen, by id: the tick last seen (the economy we know of)
+    worker_tick:[int] = []
 
 def forget_seen(s:Scout, n:int):
     s.seen_ids.remove(n)
@@ -32,11 +34,21 @@ def forget_dead(s:Scout):
         if e.kind == EV_DIE:
             let found, at = binary_search(s.seen_ids, e.a)
             if found: forget_seen(s, at)
+            let wfound, wat = binary_search(s.worker_ids, e.a)
+            if wfound:
+                s.worker_ids.remove(wat)
+                s.worker_tick.remove(wat)
 
-// Remember the enemy soldiers in sight now (kept `memory` seconds after last seen).
+// Remember the enemy soldiers and workers in sight now (kept `memory` seconds after last seen).
 def remember_soldiers(s:Scout, p:int):
     for(u_x.length) i:
         let k = u_kind[i]
+        if t_worker[k] and is_foe(p, u_owner[i]) and fog_visible(p, u_x[i], u_y[i]):
+            let found, at = binary_search(s.worker_ids, u_id[i])
+            if found: s.worker_tick[at] = tick
+            else:
+                s.worker_ids.insert(at, u_id[i])
+                s.worker_tick.insert(at, tick)
         if is_foe(p, u_owner[i]) and fog_visible(p, u_x[i], u_y[i]) and not t_worker[k] and t_animal[k] == 0 and not t_healer[k] and not t_trader[k]:
             let found, at = binary_search(s.seen_ids, u_id[i])
             if found:
@@ -54,6 +66,12 @@ def remember_soldiers(s:Scout, p:int):
     var n = s.seen_ids.length - 1
     while n >= 0:
         if tick - s.seen_tick[n] > keep: forget_seen(s, n)
+        n--
+    n = s.worker_ids.length - 1
+    while n >= 0:
+        if tick - s.worker_tick[n] > keep:
+            s.worker_ids.remove(n)
+            s.worker_tick.remove(n)
         n--
 
 // A worker for the tour: the nearest to home, not one building or kept for something.
