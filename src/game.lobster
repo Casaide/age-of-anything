@@ -100,7 +100,7 @@ var rebake_art = false        // rebake: every prop baked in Lobster, even those
 var mesh_dir = ""             // meshes:<dir>: the mesh library (mesh_export.gd library): parts the pack lacks are baked here
 var mode_arg = ""             // mode:<id>: the lobby's game mode (data/modes.json)
 var map_arg = ""              // map:<id>: the lobby's map (tests and captures)
-var races_arg = ""            // races:<A>|<B>: the lobby's prompts, as if typed (then balanced, then played)
+var races_arg = ""            // races:<A>|<B>: the lobby's prompts, as if typed (then played)
 var look_y = -1
 var place_arg = ""         // place:<building>: one finished by your Town Center at the start (captures)
 var skirmish = false       // the lobby's Skirmish: both armies on the map at once, marching on each other
@@ -697,7 +697,7 @@ def collect_units(alpha:float):
             let n = if voxel_units and (state == "walk" or find_string(state, "carry") == 0): vx_walk_step(u_id[i], u_kind[i], x, y) else: n0
             var f = if voxel_units: vx_frame_for(u_id[i], u_kind[i], state, d, n) else: frame_index("u{u_kind[i]}.{state}.{d}.{n}")
             if f < 0 and not voxel_units: f = frame_index("u{u_kind[i]}.idle.{d}.0")
-            var p = iso(x, y)
+            let p = iso(x, y)
             let tc = team_col(u_owner[i])
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
             let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
@@ -983,10 +983,10 @@ def draw_world(alpha:float):
                 draw_marks(alpha)
                 perf_lap(5)
 
-// ------------------------------------------------------------------ the lobby (type your races; Lobster makes, balances and sets them up)
-// Two prompts, each race shown as you type (the generator takes a few milliseconds); Enter balances
-// them by fighting every line against every other (gen/balance.lobster) and starts the match with
-// the prices the fights set. The units are drawn from the part library (art_pack.gd library).
+// ------------------------------------------------------------------ the lobby (type your races; Lobster makes and sets them up)
+// Two prompts, each race shown as you type (the generator takes a few milliseconds); Enter starts the
+// match at the generator's prices, calibrated offline (src/calibrate.lobster, D-194): no fights at load.
+// The units are drawn from the part library (art_pack.gd library).
 
 def rules_id() -> string: return if rules_arg != "": rules_arg else: pack_rules
 var lobby_map = "reed_meadow"
@@ -1020,8 +1020,9 @@ def lobby_text(p:float2, s:string, col:float4):
 // A filled box from its top-left corner (gl.rect draws -size..size round its point in this build).
 def box(at:float2, size:float2, col:float4): ui_fill(at, size, col)
 
-// The races balanced by fights before the match: a few rounds of the round robin in age 2, each line
-// priced by its win rate (gen/balance.lobster), shown as it goes. Returns the prices' report.
+// The Race Lab's Test: rounds of the round robin in age 2 between its races, each line's win rate and the
+// price the fights would give it (gen/balance.lobster), shown as it goes. Returns the report. (A match
+// never runs it: prices are calibrated offline, D-194.)
 def balance_for_match(races:[JV], rules:JV, rounds:int) -> [string]:
     let report = []::string
     let t0 = seconds_elapsed()
@@ -1044,21 +1045,6 @@ def balance_for_match(races:[JV], rules:JV, rounds:int) -> [string]:
                 lobby_text(float2 { 40.0 * u + float(k / 18) * 560.0 * u, 260.0 * u + float(k % 18) * 22.0 * u },
                            "{rates[k]}%  {un.label}" + (if pct != 100: "  price {pct}%" else: ""), float4 { 0.75, 0.72, 0.66, 1.0 })
     return report
-
-// The fights' prices on the races: every step of a priced line costs its percent.
-def apply_prices(races:[JV]):
-    for(races) r:
-        for(glist(r, "units")) un:
-            let slot = rstr(at(un, "recipe"), "slot")
-            let pct = rr_price_pct.get(rstr(r, "key") + "|" + slot, 100)
-            if pct != 100:
-                let steps = glist(un, "line")
-                for(steps) l:
-                    let c = at(at(l, "eval"), "cost")
-                    for(c.a) v, n: c.a[n] = jint(round10(as_int(v) * pct / 100))
-                let c0 = at(at(un, "eval"), "cost")
-                if steps.length and at(steps[0], "eval") != at(un, "eval"):
-                    for(c0.a) v, n: c0.a[n] = jint(round10(as_int(v) * pct / 100))
 
 // CombatFx.shot_kind: what a unit's shots are, by its weapon's tags.
 def shot_kind_of(tags:[string]) -> string:
@@ -1088,8 +1074,8 @@ def race_facts(races:[JV]):
         unit_shot.set(k, if kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
 
 // ------------------------------------------------------------------ becoming another race mid-match (gen/swap.lobster)
-// N: type a race; Enter: it's balanced against the others by fights (the match waits), then your
-// people become it, line by line, units and all, and your buildings take its style.
+// N: type a race; Enter: your people become it at its own prices (no fights, D-194), line by line,
+// units and all, and your buildings take its style.
 
 var typing_race = false
 var banner = ""
@@ -1097,27 +1083,13 @@ var banner_t = -100.0
 
 def become(prompt:string):
     let race = generate(prompt, su_rules, 0)
-    let others = []::JV
-    for(su_races) r, q:
-        if q != ME: others.push(r)
     let t0 = seconds_elapsed()
-    let lines_ = []::string
-    balance_newcomer(race, others, 3) round, units, rates, mean, off:
-        lines_.push("round {round + 1}: {off} of {units.length} lines more than 10 points off ({rr_fights} fights)")
-        gl.frame()
-        gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
-        gl.set_shader("color")
-        let u = ui()
-        gl.set_font_size(int(26.0 * u))
-        lobby_text(float2 { 40.0 * u, 40.0 * u }, "Your people become " + rstr(race, "name") + ": balancing them by fighting...", float4 { 0.95, 0.85, 0.6, 1.0 })
-        gl.set_font_size(int(16.0 * u))
-        for(lines_) line, n: lobby_text(float2 { 40.0 * u, 100.0 * u + float(n) * 24.0 * u }, line, float4 { 0.8, 0.78, 0.72, 1.0 })
     let old = rstr(su_races[ME], "name")
     swap_race(ME, race)
     race_facts(su_races)
     bake_missing_parts()         // (the newcomer's parts the pack lacks, before any of its views are built: with no pack, all of them)
     bake_buildings_for(arch_of)  // (and its culture's buildings)
-    banner = old + " become " + rstr(race, "name") + " (" + rstr(race, "creature") + ", " + rstr(race, "family") + "): balanced in {rr_fights} fights, {int((seconds_elapsed() - t0) * 1000.0)} ms"
+    banner = old + " become " + rstr(race, "name") + " (" + rstr(race, "creature") + ", " + rstr(race, "family") + "), in {int((seconds_elapsed() - t0) * 1000.0)} ms"
     banner_t = seconds_elapsed()
     print banner
 
@@ -1707,7 +1679,7 @@ def draw_hud(paused:bool, speed:float):
     let ws = float(gl.window_size())
     let u = ui()
     ui_batch(): draw_topbar(speed, paused)  // (game/topbar.lobster; its fills in as few draws as can be)
-    gl.set_shader("color")      // (placing: the panel's info line says how)
+    gl.set_shader("color")                  // (placing: the panel's info line says how)
     if winner >= 0:
         gl.set_font_size(int(48.0 * u))
         gl.color(float4 { 1.0, 0.85, 0.3, 1.0 }):
@@ -1995,7 +1967,7 @@ note("start")
 // novsync: the same for a measure, the frame cap still pacing it)
 let no_vsync = shot != "" or selftest or padtest or has_s(args, "novsync")
 fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if no_vsync: gl.window_init_no_vsync else: 0))
-pace(PACE_MATCH)  // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
+pace(PACE_MATCH)                       // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon.png")  // (the Dock's icon on the Mac)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
@@ -2057,7 +2029,6 @@ if has_s(args, "prebake"):
     let t1 = seconds_elapsed()
     print "prebake: {bake_buildings_for(archs)} building frames ({concat_string(archs, ", ")}) in {int(seconds_elapsed() - t1)} s"
     bake_quit = true
-var lobby_report = []::string
 
 // A line in the middle of an empty screen while the link is made (true: the window was closed).
 def net_wait_frame(msg:string) -> bool:
@@ -2161,13 +2132,9 @@ def make_match() -> bool:
         log_races = map(races) r: rstr(r, "name")
         log_prompts = map(races.length) k: prompts[k % prompts.length]
         let t_setup = seconds_elapsed()
-        if args[1] == "lobby":
-            lobby_report = balance_for_match(races, rules, 4)
-            for(lobby_report) l: print l
-            apply_prices(races)
-            reset_world()
+        if args[1] == "lobby": reset_world()  // (the lobby's pages may have run a world: the Race Lab's)
         let map_id = if args[1] == "lobby": lobby_map elif pack_map != "": pack_map else: "reed_meadow"
-        if args[1] == "lobby": set(rules, "mode", jstr(lobby_mode))                                  // (after the balance fights: they're plain fights)
+        if args[1] == "lobby": set(rules, "mode", jstr(lobby_mode))                                  // (the match's mode)
         let picked = args[1] == "lobby" and lobby_teams.length == races.length and races.length > 2  // (a team game picked in the lobby: its map and teams)
         let four = races.length > 2 and not picked                                                   // (host:<n> with more people: the 2v2 map)
         let real_map = if four: "reed_meadow_2v2" else: map_id

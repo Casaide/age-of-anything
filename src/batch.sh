@@ -3,7 +3,7 @@
 # process, its own seeded worlds, so the results are a serial run's).
 #   ./batch.sh [--quick] [jobs=N] [only=name,name]
 # --quick: the checks to run after a change (unit tests, the sim, the AI's quick checks, 3D placement); the whole batch
-# adds every AI piece, the 2v2 match, 2D placement, the golden files, saves and network play.
+# adds every AI piece, the 2v2 match, 2D placement, the golden files, the prices' round robins, saves and network play.
 # jobs: processes at once (AOA_JOBS; default 4, so a run doesn't take every core: Dominic's fans).
 cd "$(dirname "$0")"
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
@@ -42,6 +42,7 @@ else
 	add test_2v2 "$L" test_2v2.lobster
 	for i in 0 1 2 3; do add placement2d.$i "$L" placement_check.lobster -- 2d shard:$i/4; done
 	add golden ./golden.sh
+	add prices "$L" calibrate.lobster -- measure check:45   # held-out round robins at the calibrated prices (D-194): 37% off now
 	add saves "$L" save_check.lobster
 	add network ./net_check.sh 2000
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
