@@ -17,6 +17,16 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
   destruction pixel dust (D-171) with one system. A whole-animation voxel flipbook only for one-off set pieces.
 - **Toward an engine with the game as content (D-190):** our own content as a base pack loaded like any mod; then
   small deterministic script hooks for rules and free client-side UI extras; multiplayer refusing mismatched packs.
+- **Mod scripts, first form (D-190's hooks):** Lobster files compiled in at start, as models are today, but only
+  through a small hook API (on-hit, on-death, ability kinds, building behaviours). Rule hooks run in the sim and must
+  be deterministic (integers, the sim's rng, no clocks); UI hooks are client-side and free. `mod_check` is the
+  sandbox: it refuses file, network and clock builtins and applies test_sim's determinism lint to rule hooks. Code
+  mods need a build with the compiler (Mac, Deck, a desktop release); Android takes data-only mods.
+- **Later, a Lua-like runtime script (Dominic, 2026-11-03: "something we can consider in the future"; all three
+  interesting):** (1) our own interpreter for a Lobster subset, a true sandbox, everywhere, slower; (2) a restricted
+  Lobster VM, compiled once and called repeatedly with an allowed list of builtins (an upstream feature; spike first:
+  repeated calls into a kept VM, and the compiler in a `--cpp` build); (3) real Lua embedded, integers only for rule
+  scripts. Claude leans to (2).
 - **`.vox` import and export.** Read MagicaVoxel files as parts or whole creatures on the voxel skeleton and
   sockets, and write any generated unit out as `.vox` to tweak and drop back in. After the voxel data format settles.
 
