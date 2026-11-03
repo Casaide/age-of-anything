@@ -1,0 +1,86 @@
+{
+ "_doc": "A war tarantula: the spider, big and hairy, its hide its own, a saddle on its back, its crew sat on it.",
+ "base": "spider",
+ "size": 2.2,
+ "remap": {
+  "skin": "tarantula",
+  "pale": "tarantula2",
+  "mark": "tarantula3"
+ },
+ "styles": {
+  "howdah": {
+   "skin": "#8c6133",
+   "pale": "#4a3a2a",
+   "mark": "#8a3a2a"
+  }
+ },
+ "add_shapes": [
+  {
+   "box": [
+    "thorax",
+    0,
+    -1.0,
+    3.2
+   ],
+   "n": [
+    0,
+    1,
+    0
+   ],
+   "half": [
+    2.6,
+    3.0,
+    0.6
+   ],
+   "round": 0.3,
+   "mat": "frame"
+  },
+  {
+   "box": [
+    "thorax",
+    3.0,
+    -1.0,
+    1.5
+   ],
+   "n": [
+    1,
+    0,
+    0
+   ],
+   "half": [
+    3.0,
+    0.3,
+    1.8
+   ],
+   "round": 0.2,
+   "mat": "trim"
+  },
+  {
+   "box": [
+    "thorax",
+    -3.0,
+    -1.0,
+    1.5
+   ],
+   "n": [
+    1,
+    0,
+    0
+   ],
+   "half": [
+    3.0,
+    0.3,
+    1.8
+   ],
+   "round": 0.2,
+   "mat": "trim"
+  }
+ ],
+ "seats": [
+  [
+   0,
+   0.5,
+   11.5
+  ]
+ ]
+}

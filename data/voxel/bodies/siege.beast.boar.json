@@ -1,0 +1,125 @@
+{
+ "_doc": "A war boar: the boar, big, its hide its own (not its crew's), a howdah on its back, its crew sat in it.",
+ "base": "boar",
+ "size": 2.4,
+ "remap": {
+  "skin": "boar_hide",
+  "pale": "boar_dark"
+ },
+ "styles": {
+  "howdah": {
+   "skin": "#8c6133",
+   "pale": "#4a3a2a",
+   "mark": "#8a3a2a"
+  }
+ },
+ "add_shapes": [
+  {
+   "box": [
+    "back",
+    0,
+    4.5,
+    6.0
+   ],
+   "n": [
+    0,
+    1,
+    0
+   ],
+   "half": [
+    3.6,
+    4.8,
+    1.0
+   ],
+   "round": 0.3,
+   "mat": "frame"
+  },
+  {
+   "box": [
+    "back",
+    4.2,
+    4.5,
+    3.5
+   ],
+   "n": [
+    1,
+    0,
+    0
+   ],
+   "half": [
+    4.8,
+    0.4,
+    2.6
+   ],
+   "round": 0.2,
+   "mat": "trim"
+  },
+  {
+   "box": [
+    "back",
+    -4.2,
+    4.5,
+    3.5
+   ],
+   "n": [
+    1,
+    0,
+    0
+   ],
+   "half": [
+    4.8,
+    0.4,
+    2.6
+   ],
+   "round": 0.2,
+   "mat": "trim"
+  },
+  {
+   "box": [
+    "back",
+    4.5,
+    4.5,
+    1.2
+   ],
+   "n": [
+    1,
+    0,
+    0
+   ],
+   "half": [
+    4.8,
+    0.3,
+    0.5
+   ],
+   "round": 0.2,
+   "mat": "team"
+  },
+  {
+   "box": [
+    "back",
+    -4.5,
+    4.5,
+    1.2
+   ],
+   "n": [
+    1,
+    0,
+    0
+   ],
+   "half": [
+    4.8,
+    0.3,
+    0.5
+   ],
+   "round": 0.2,
+   "mat": "team"
+  }
+ ],
+ "seats": [
+  [
+   0,
+   -1.0,
+   18.0
+  ]
+ ]
+}
