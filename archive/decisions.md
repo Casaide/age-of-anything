@@ -1487,3 +1487,17 @@ skirmishers +4 against archers. The pairs are checked in ages 2 and 3 (`calibrat
 spears against horse archers (they stand off at range 6) and the large line against archers in age 2 stay short,
 listed open for Dominic. Held out, with upgrades on, against what the chain expects: 57 of 124 lines more than 10
 points off at points-only prices, 47 calibrated (sd 14.2 to 11.9); plain win rate 65 to 43.
+
+**D-201, 2026-11-03: Units are voxel bodies by default; the composed units stay behind `composed`.** Dominic: "replace
+all units with voxels", with "a clean simple pipeline, ideally configurable so other people can make tweaks". Every
+unit type is one procedural voxel body read from `data/voxel/` (bodies, gear, holds, materials, the part-to-gear rules;
+a mod adds its own), baked into whole-unit frames in 8 facings: standing, walking, working, attacking, and falling dead
+then lying (the body turned onto its side, then a puff of dust and a fade, as the composed ones did). A look is what a
+line step looks like, so most of a line's steps share one. The start bakes only what each player fields in the age it
+starts in, standing and walking (and working, for workers), in their first look: sewer rats against Romans, cold, 2.1 s
+(it was 42 s for everything); a warm start loads them from the bake cache in 13-18 ms. The rest (attacks and falls,
+the other looks, the later ages' steps) bake in play at 6 ms a frame, a fill sliced over frames and each cache PNG
+written in a frame of its own (the engine's `gl.save_texture`); a step drawn before it's baked is asked for first and
+drawn in the step before meanwhile. Voxel units draw cheaper than composed ones (perf: 1.9 ms median against 2.4).
+Engines with a crew (siege, war beasts, the trade cart), the stables' tethered mounts and the lobby's pages are still
+composed, their parts baked as before; the panel's and the tech tree's portraits are voxel frames. Claude, for Dominic.

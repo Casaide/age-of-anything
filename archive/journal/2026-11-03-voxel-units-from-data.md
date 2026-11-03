@@ -41,3 +41,32 @@ as coat, mane and coat_mark), the palette's third colour as `mark` (a bear's muz
 The feet check covers every creature (1512 frames; fliers skipped): bug leg tips needed small feet.
 Pictures 03 (every creature, and every mount ridden), 04 (a spider worker in its town).
 The first bake of a new race pair is too slow now (69 looks, 63 s for bears against centaurs): next round.
+
+## Round 3: voxels by default (D-201)
+
+Dominic asked (relayed) to carry on without stopping to voxels as the game's default: deaths, wild animals and
+heroes, portraits, baking by age, the switch.
+
+- **Baking by look and age.** A look is a line step's look (most steps share one). The start bakes its players'
+  start-age looks standing and walking (and working) in their first look; the rest queue for play. Sewer rats against
+  Romans, cold: 2.1 s (it was 42 s for all 52 looks); warm: 13-18 ms. The fill was split so it can run a slice a
+  frame (6 ms). The first try hitched 80-180 ms whenever a job finished: Lobster's own PNG writer took 0.25 ms a row.
+  The engine's `gl.save_texture` (stb) is a quarter of that, and jobs are now a mode each with the save in a frame of
+  its own.
+- **A bug:** the manifest counted its pose lines as cells, so frames pointed past the end ("index 5238 out of range").
+- **Deaths:** the standing pose turned onto its right side about its middle, toppling slow then fast, lying in step 6;
+  then the puff of dust and the fade the composed ones had. Picture 18.
+- **Animals:** deer (antlers, white rump), boar (low, a ridge, tusks), sheep (fleece, dark face), from the pony's
+  layout; in the feet check (1728 frames, none floating). Picture 19.
+- **Heroes** are ordinary recipes, so they're voxel bodies already; hero gear without its own voxel gear falls to the
+  tag rules (a pelt hood draws as a cap).
+- **Portraits:** the panel's and the tech tree's are voxel frames (a texel 2 px), asked for first when not baked yet.
+- **Still composed:** engines with a crew (siege, war beasts, the trade cart; picture 16 has both side by side), the
+  stables' mounts, the lobby's pages.
+- **Perf:** voxel units draw cheaper than composed (1.9 ms median against 2.4); a `perf:` run bakes everything first.
+- The `follow` camera found no fight at 11:40 or 13:00, composed or voxel, so the pictures are the armies at the start
+  (`army:6`, picture 16) and the town at 1:30 (picture 17).
+
+Next: voxel siege engines and war beasts; workers' tools by job and their loads; the remaining gear (lance, sling,
+hoplon, horned and other helms, bark, satchels, capes, banners); the lobby's pages in voxels; the voxel-space checks
+(pieces connected, legs counted, nothing past the helmet).

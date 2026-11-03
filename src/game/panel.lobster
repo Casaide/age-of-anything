@@ -317,6 +317,14 @@ def draw_portrait(k:int, at:float2, z:float): draw_figure(k, su_type_recipe[k], 
 
 // A figure from a recipe (key: its place in the cache), drawn as draw_portrait.
 def draw_figure(key:int, recipe:JV, owner:int, at:float2, z:float):
+    if voxel_units and not has(recipe, "crew"):  // (a voxel unit: its standing frame, a texel 2 px at the portrait's size)
+        let f = vx_figure(recipe)
+        if f < 0: return
+        let fr = frames[f]
+        let s = min(floor(z * 0.6 + 0.5), floor(at.y / float(fr.oy) * 2.0) / 2.0)
+        let tc = team_col(owner)
+        sprite_xf(f, [ s, 0.0, 0.0, s, at.x - float(fr.ox) * s, at.y - float(fr.oy) * s ], float4 { tc.x, tc.y, tc.z, 1.0 })
+        return
     var v = portraits.get(key)
     if not v:
         let made = uv_new()
@@ -366,6 +374,7 @@ def role_glyph(recipe:JV) -> string:
 def bust(key:int, recipe:JV, owner:int) -> Portrait?:
     let have = busts.get(key)
     if have: return have
+    if voxel_units and not has(recipe, "crew") and vx_figure(recipe) < 0: return nil  // (asked for: baked in play)
     flush_sprites()
     let tex = gl.create_blank_texture(int3 { PT_CELL, PT_CELL, 0 }, texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min | texture_format_clamp)
     gl.switch_to_framebuffer(tex)

@@ -1,0 +1,242 @@
+{
+ "_doc": "A sheep (animals.json): tame, to herd. A round woolly body on thin dark legs, a dark face.",
+ "skin": "#e4dccb",
+ "pale": "#2e2622",
+ "mark": "#e8dcc4",
+ "size": 1.0,
+ "fur": 0.12,
+ "reach": 2.4,
+ "points": {
+  "front": {
+   "at": [
+    0,
+    4.5,
+    11.5
+   ]
+  },
+  "back": {
+   "at": [
+    0,
+    -4.5,
+    11.5
+   ]
+  },
+  "head": {
+   "at": [
+    0,
+    9.0,
+    14.0
+   ]
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "front",
+    2.4,
+    0.5,
+    -3.0
+   ],
+   "foot": [
+    2.4,
+    5.0,
+    1.0
+   ],
+   "stride": 2.4,
+   "lift": 1.4,
+   "bones": [
+    4.6,
+    4.6
+   ],
+   "pole": [
+    0,
+    -1,
+    0
+   ],
+   "r": [
+    0.8,
+    0.7,
+    0.7,
+    0.6
+   ],
+   "mats": [
+    "skin",
+    "pale"
+   ],
+   "shapes": [
+    {
+     "cap": [
+      "ankle",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "ankle",
+      0,
+      0.8,
+      -0.3
+     ],
+     "r": [
+      0.6,
+      0.54
+     ],
+     "mat": "pale",
+     "_doc": "a hoof"
+    }
+   ]
+  },
+  {
+   "hip": [
+    "back",
+    2.4,
+    -0.5,
+    -3.0
+   ],
+   "foot": [
+    2.4,
+    -5.0,
+    1.0
+   ],
+   "stride": 2.4,
+   "lift": 1.4,
+   "bones": [
+    4.6,
+    4.6
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    0.8,
+    0.7,
+    0.7,
+    0.6
+   ],
+   "mats": [
+    "skin",
+    "pale"
+   ],
+   "phase": 180,
+   "shapes": [
+    {
+     "cap": [
+      "ankle",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "ankle",
+      0,
+      0.8,
+      -0.3
+     ],
+     "r": [
+      0.6,
+      0.54
+     ],
+     "mat": "pale",
+     "_doc": "a hoof"
+    }
+   ]
+  }
+ ],
+ "shapes": [
+  {
+   "cap": [
+    "back",
+    0,
+    0,
+    0
+   ],
+   "to": [
+    "front",
+    0,
+    0,
+    0
+   ],
+   "r": [
+    5.6,
+    5.6
+   ],
+   "mat": "skin"
+  },
+  {
+   "ball": [
+    "front",
+    0,
+    0.5,
+    2.5
+   ],
+   "r": 4.4,
+   "mat": "skin",
+   "_doc": "the fleece's shoulders"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    -0.5,
+    0.5
+   ],
+   "to": [
+    "head",
+    0,
+    3.0,
+    -1.6
+   ],
+   "r": [
+    2.0,
+    1.2
+   ],
+   "mat": "pale",
+   "_doc": "the face"
+  },
+  {
+   "ball": [
+    "head",
+    0,
+    -0.6,
+    1.4
+   ],
+   "r": 1.8,
+   "mat": "skin",
+   "_doc": "wool on the head"
+  },
+  {
+   "bead": [
+    "head",
+    1.5,
+    1.0,
+    0.0
+   ],
+   "r": 0.4,
+   "mat": "eye",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "head",
+    1.6,
+    -0.4,
+    0.4
+   ],
+   "to": [
+    "head",
+    3.2,
+    -0.2,
+    -0.4
+   ],
+   "r": [
+    0.6,
+    0.4
+   ],
+   "mat": "pale",
+   "mirror": true,
+   "_doc": "an ear"
+  }
+ ]
+}

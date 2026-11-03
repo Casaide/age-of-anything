@@ -50,7 +50,7 @@ def bake_missing_parts() -> int:
     let later = []::[Wanted]  // by age
     let holds = []::Wanted    // the workers' work poses (raise, thrust, reach): baked first in play
     let seen = dictionary<string, bool>(1024)
-    for(t_slot.length) k:
+    for(filter(t_slot.length) k: not vx_always(k)) k:  // (voxel units have no parts: only engines with a crew)
         let line = su_type_line[k]
         for(max(1, line.length)) step:
             let age = if line.length: as_int(at(line[step], "age")) else: t_age[k]

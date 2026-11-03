@@ -416,7 +416,7 @@ var vx_act = ""             // the pose being drawn: "" (standing or walking) or
 
 def vx_looks_of(u:vx_unit_def) -> int: return vx_body_of(u.body).looks.length
 
-// The materials for unit u in look v.
+// The materials for unit u in look v (its mount's coat too).
 def vx_set_look(u:vx_unit_def, v:int):
     let b = vx_body_of(u.body)
     vx_variant = v
@@ -426,6 +426,11 @@ def vx_set_look(u:vx_unit_def, v:int):
     vx_mat_cols[vx_mat("mark")] = if u.mark != float3_0: u.mark else: b.mark
     vx_mat_cols[vx_mat("hair")] = b.hair[v]
     vx_fur = b.fur
+    if u.mount != "":
+        let mb = vx_body_of(u.mount)
+        vx_mat_cols[vx_mat("coat")] = if u.coat != float3_0: u.coat else: mb.skin
+        vx_mat_cols[vx_mat("mane")] = if u.mane != float3_0: u.mane else: mb.pale
+        vx_mat_cols[vx_mat("coat_mark")] = if u.coat_mark != float3_0: u.coat_mark else: mb.mark
 
 // How far into its blow an attack is at t: a wind-up, a fast strike, a hold, back.
 def vx_blow(t:float) -> float:
@@ -647,9 +652,6 @@ def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     // a rider: the mount walks (in its own colours, at its own size), the rider sits astride, legs down its sides;
     // on a fused mount (a centaur) the rider's body grows out of it
     let mb = vx_body_of(u.mount)
-    vx_mat_cols[vx_mat("coat")] = if u.coat != float3_0: u.coat else: mb.skin
-    vx_mat_cols[vx_mat("mane")] = if u.mane != float3_0: u.mane else: mb.pale
-    vx_mat_cols[vx_mat("coat_mark")] = if u.coat_mark != float3_0: u.coat_mark else: mb.mark
     let mount = []::vx_prim
     let mu = vx_unit_def { u.label, u.mount, float3_0, float3_0, float3_0, [], "", false, float3_0, float3_0, float3_0 }
     let fused = u.fused
@@ -682,6 +684,25 @@ def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
         out.push(vx_cap(knee, ankle, 1.4, 1.1, b.astride[1]))
         out.push(vx_cap(ankle, ankle + float3 { 0.0, 2.0, -0.4 }, 1.1, 1.0, b.astride[2]))
     return out
+
+// A unit falling dead, at t (0 standing .. 1 lying): every part turned onto its right side about the body's long
+// axis through its middle (vx_fill sets its lowest point back on the ground), toppling slowly then fast. It stops
+// short of flat (84 degrees): a box facing sideways would turn straight up, where it has no across.
+let vx_FALL = 84.0
+def vx_fallen(parts:[vx_prim], t:float) -> [vx_prim]:
+    var lo = 1000.0
+    var hi = -1000.0
+    for(parts) p:
+        if not p.hard:
+            let a, b = vx_bounds(p)
+            lo = min(lo, a.z)
+            hi = max(hi, b.z)
+    let mid = (lo + hi) * 0.5
+    let a = vx_FALL * t * t
+    let c = cos(a)
+    let s = sin(a)
+    def turn(q:float3) -> float3: return float3 { q.x * c + (q.z - mid) * s, q.y, -q.x * s + (q.z - mid) * c + mid }
+    return map(parts) p: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, p.mat, p.hard, p.disc, p.box }
 
 // Does the unit fly (its body's, or its mount's)? Its ground isn't under its lowest point.
 def vx_flies(u:vx_unit_def) -> bool: return vx_body_of(u.body).flies > 0.0 or (u.mount != "" and vx_body_of(u.mount).flies > 0.0)
@@ -747,8 +768,20 @@ def vx_solid_at(grid:[int], lo:int3, dims:int3, v:int3) -> bool:
 // The parts filled into a grid at a voxel a baked pixel (the unit's size scaled in). The grid is cut in blocks of 4
 // voxels; each part is listed in the blocks its bounds touch, so a voxel only measures the parts near it. A block
 // is tested at its centre first: clearly outside is skipped, clearly inside filled whole (none of it shows);
-// only blocks the surface crosses are measured voxel by voxel.
-def vx_fill(parts:[vx_prim], unit_size:float, flies:bool = false) -> vx_shape:
+// only blocks the surface crosses are measured voxel by voxel. The blocks are filled a slice at a time
+// (vx_fill_more), so a bake in play can spread one over frames.
+class vx_filling:
+    ps:[vx_prim]
+    k:float
+    lo:int3
+    nb:int3
+    dims:int3
+    blocks:[[int]]
+    mats:[int]
+    field:[float]  // the distance where it was measured (air elsewhere, -1 deep inside), for normals
+    next:int       // the next block to fill
+
+def vx_fill_begin(parts:[vx_prim], unit_size:float, flies:bool) -> vx_filling:
     let s = unit_size * vx_RES
     var low = if flies: 0.0 else: 1000.0  // (a flier's ground is the builder's z 0, not under its lowest point)  // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
     for(parts) p:                         // by it: a frog's spear set it on the ground and lifted the frog off it)
@@ -775,14 +808,24 @@ def vx_fill(parts:[vx_prim], unit_size:float, flies:bool = false) -> vx_shape:
         for(qb.z - qa.z + 1) z: for(qb.y - qa.y + 1) y: for(qb.x - qa.x + 1) x:
             blocks[((qa.z + z) * nb.y + qa.y + y) * nb.x + qa.x + x].push(i)
     let n = dims.x * dims.y * dims.z
-    let mats = map(n): -1
-    let field = map(n): 1.0  // the distance where it was measured (air elsewhere, -1 deep inside), for normals
-    let base = float(lo) + float3_1 * 0.5
+    return vx_filling { ps, k, lo, nb, dims, blocks, map(n): -1, map(n): 1.0, 0 }
+
+// Fills blocks until the clock passes `until` (seconds_elapsed): true when they're all filled.
+def vx_fill_more(fl:vx_filling, until:float) -> bool:
+    let ps = fl.ps
+    let k = fl.k
+    let nb = fl.nb
+    let dims = fl.dims
+    let mats = fl.mats
+    let field = fl.field
+    let base = float(fl.lo) + float3_1 * 0.5
     let reach = 3.5  // a block's half diagonal, voxels
-    for(nb.z) bz: for(nb.y) by: for(nb.x) bx:
-        let near = blocks[(bz * nb.y + by) * nb.x + bx]
+    while fl.next < fl.blocks.length:
+        let bi = fl.next
+        fl.next++
+        let near = fl.blocks[bi]
         if near.length:
-            let b0 = int3 { bx, by, bz } * 4
+            let b0 = int3 { bi % nb.x, (bi / nb.x) % nb.y, bi / (nb.x * nb.y) } * 4
             let pc = base + float(b0) + float3_1 * 1.5
             // the block's centre, and the parts close enough to matter anywhere in it (the bins are loose boxes)
             let close = []::int
@@ -811,6 +854,20 @@ def vx_fill(parts:[vx_prim], unit_size:float, flies:bool = false) -> vx_shape:
                         let d, m = vx_field(ps, close, base + float(v), k)
                         field[i] = d
                         if d <= 0.0: mats[i] = m
+            if (bi & 15) == 0 and seconds_elapsed() >= until: return fl.next >= fl.blocks.length
+    return true
+
+def vx_fill(parts:[vx_prim], unit_size:float, flies:bool = false) -> vx_shape:
+    let fl = vx_fill_begin(parts, unit_size, flies)
+    vx_fill_more(fl, 1000000000.0)
+    return vx_fill_end(fl)
+
+// The filled grid's surface: each surface voxel, its normal and how hemmed in it is.
+def vx_fill_end(fl:vx_filling) -> vx_shape:
+    let lo = fl.lo
+    let dims = fl.dims
+    let mats = fl.mats
+    let field = fl.field
     // the surface, each voxel's normal from the distances around it
     let pos = []::int3
     let smat = []::int

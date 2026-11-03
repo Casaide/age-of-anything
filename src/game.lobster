@@ -84,10 +84,10 @@ let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
 var watch = false
-var composed = false     // the pack has part bakes: units are composed (view/), not flipbooks
-var voxel_units = false  // `voxels`: every unit a procedural voxel body (game/voxel_units.lobster), a trial
-var follow = false       // the camera follows the fighting (captures)
-var selftest = false     // play a few orders through the controls, check the sim took them, quit
+var composed = false    // the pack has part bakes: units are composed (view/), not flipbooks
+var voxel_units = true  // every unit a procedural voxel body (game/voxel_units.lobster); `composed`: of parts, as before (D-200)
+var follow = false      // the camera follows the fighting (captures)
+var selftest = false    // play a few orders through the controls, check the sim took them, quit
 var shot = ""
 var shot_at = 0.0
 var start_speed = 1.0
@@ -252,12 +252,14 @@ def build_ground():
 // ------------------------------------------------------------------ what the view remembers
 
 class Corpse:
+    id:int
     kind:int
     owner:int
     x:float
     y:float
     dir:int
     t0:float
+    puffed:bool
 
 var clock_s = 0.0   // seconds of play shown
 var p_id = []::int  // the last tick's positions, for drawing between ticks
@@ -357,7 +359,7 @@ def after_step():
             if found:
                 let x = float(p_x[at])
                 let y = float(p_y[at])
-                corpses.push(Corpse { last_kind.get(e.a, -1), last_owner.get(e.a, 0), x, y, unit_dir.get(e.a, 0), clock_s })
+                corpses.push(Corpse { e.a, last_kind.get(e.a, -1), last_owner.get(e.a, 0), x, y, unit_dir.get(e.a, 0), clock_s, false })
 
 // ------------------------------------------------------------------ drawing the world
 
@@ -546,7 +548,7 @@ def collect_views(alpha:float):
         let x = px + (u_x[i] - px) * alpha
         let y = py + (u_y[i] - py) * alpha
         let mine = teams[u_owner[i]] == teams[ME]
-        if mine or visible_to_me(cell_of(u_x[i], u_y[i])):
+        if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and not vx_drawn(u_kind[i]):
             let k = u_kind[i]
             let v = view_of(i)
             let dx = u_x[i] - px
@@ -659,7 +661,7 @@ def collect_units(alpha:float):
         let x = px + (u_x[i] - px) * alpha
         let y = py + (u_y[i] - py) * alpha
         let mine = teams[u_owner[i]] == teams[ME]
-        if mine or visible_to_me(cell_of(u_x[i], u_y[i])):
+        if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and (not voxel_units or vx_drawn(u_kind[i])):
             let moving = px != u_x[i] or py != u_y[i]
             var d = unit_dir.get(u_id[i], 2)
             if moving:
@@ -714,7 +716,20 @@ def collect_units(alpha:float):
 def collect_corpses():
     corpses = filter(corpses) c: clock_s - c.t0 < 4.0
     for(corpses) c:
-        if c.kind >= 0:
+        if c.kind >= 0 and voxel_units:  // (a voxel unit falls, lies, goes in a puff of dust and fades)
+            if vx_drawn(c.kind):
+                let t = clock_s - c.t0
+                let f = vx_dead_frame(c.id, c.kind, c.dir, t)
+                let p = iso(c.x, c.y)
+                let up = lift_at(c.x, c.y) * 1.5
+                if t >= 1.9 and not c.puffed:
+                    c.puffed = true
+                    fx_puff(canvas(c.x, c.y) - float2 { 0.0, lift_at(c.x, c.y) }, 0.0)
+                let fade = clamp(1.0 - (t - 2.2) / 1.8, 0.0, 1.0)
+                let tc = team_col(c.owner)
+                add(f, p.x, p.y - up, p.y - 2.0, float4 { tc.x, tc.y, tc.z, 0.35 + 0.65 * fade })
+                if f >= 0: add(vx_shadow_for(f), p.x, p.y - up, p.y - 2.5, float4 { 1.0, 1.0, 1.0, fade })
+        elif c.kind >= 0:
             let n = min(int((clock_s - c.t0) * 8.0), 17)
             let f = frame_index("u{c.kind}.die.{c.dir}.{n}")
             let p = iso(c.x, c.y)
@@ -949,8 +964,8 @@ def draw_world(alpha:float):
                 collect_props()
                 collect_buildings()
                 collect_town()
-                if composed and not voxel_units: collect_views(alpha)
-                else:
+                if composed: collect_views(alpha)  // (with voxel units: the engines with a crew)
+                if voxel_units or not composed:
                     collect_units(alpha)
                     collect_corpses()
                 for(occluders) o, k: draws.push(Drawable { o.sort_y, draws.length, -2, float(k), 0.0, float4_1, [] })  // a hill's near-edge tops: what's behind it hides
@@ -2409,6 +2424,7 @@ def play_match():
         frame_dt = dt
         fx_tick(dt)
         bake_wanted_tick(0.008)  // (a part drawn before it was baked: a pose, a step the start didn't see)
+        vx_tick(0.006)           // (the voxel units' later bakes)
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
@@ -2421,8 +2437,8 @@ def play_match():
             bake_progress_from = 0.5
             bake_progress_to = 0.95
             bake_what = "the armies"
-            voxel_units = has_s(args, "voxels")
-            if voxel_units: vx_bake_types()
+            voxel_units = not has_s(args, "composed")
+            if voxel_units: vx_start()
             let n = bake_missing_parts()
             print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
             let t1 = seconds_elapsed()

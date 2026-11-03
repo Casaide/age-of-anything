@@ -13,7 +13,7 @@ import view.voxel
 
 class row:
     u:vx_unit_def
-    mode:string  // stand (8 facings), walk or attack (8 steps in profile, facing right)
+    mode:string  // stand (8 facings), walk or attack (8 steps in profile, facing right), die (its fall, two facings)
     wear:string  // the team on a creature: scarf or vest
     shade:bool   // shadows (on the body and the ground)
     look:int     // a human's look (vx_set_look)
@@ -64,6 +64,16 @@ if args.length > 1 and args[1] == "creatures":
     for([ [ "rat", "cat" ], [ "human", "pony" ], [ "frog", "newt" ], [ "rat", "capybara" ], [ "human", "bear_mount" ], [ "rat", "beetle" ], [ "frog", "spider" ], [ "rat", "hummingbird" ] ]) pr:
         rows.push(row { unit("{pr[0]} on a {pr[1]}", pr[0], float3_0, float3_0, kit, pr[1], float3_0), "stand", "scarf", true, 0 })
     rows.push(row { unit("spider", "spider", float3_0, float3_0, kit, "", float3_0), "walk", "scarf", true, 0 })
+// `deaths`: falling dead and lying, in two facings
+if args.length > 1 and args[1] == "deaths":
+    while rows.length: rows.pop()
+    for([ units[1], units[4], units[9], units[0], unit("spider", "spider", float3_0, float3_0, [ "spear", "shield", "cap" ], "", float3_0),
+          unit("sheep", "sheep", float3_0, float3_0, [], "", float3_0) ]) u: rows.push(row { u, "die", "scarf", true, 0 })
+// `animals`: the wild and herded ones, standing, and the deer walking
+if args.length > 1 and args[1] == "animals":
+    while rows.length: rows.pop()
+    for([ "deer", "boar", "sheep" ]) b: rows.push(row { unit(b, b, float3_0, float3_0, [], "", float3_0), "stand", "scarf", true, 0 })
+    rows.push(row { unit("deer", "deer", float3_0, float3_0, [], "", float3_0), "walk", "scarf", true, 0 })
 // `looks`: the early Romans and the legionary in each of the three looks
 if args.length > 1 and args[1] == "looks":
     while rows.length: rows.pop()
@@ -76,6 +86,7 @@ if args.length > 1 and args[1] == "check":
     let all = copy(units)
     let kit = [ "spear", "shield", "cap" ]
     for([ "bear", "spider", "beetle_rear" ]) b: all.push(unit(b, b, float3_0, float3_0, kit, "", float3_0))
+    for([ "deer", "boar", "sheep" ]) b: all.push(unit(b, b, float3_0, float3_0, [], "", float3_0))
     for([ [ "frog", "newt" ], [ "rat", "capybara" ], [ "human", "bear_mount" ], [ "rat", "beetle" ], [ "frog", "spider" ] ]) pr: all.push(unit("{pr[0]} on a {pr[1]}", pr[0], float3_0, float3_0, kit, pr[1], float3_0))
     for(filter(all) u: not vx_flies(u)) u:  // (a flier's shadow is on the ground under it)
         vx_set_look(u, 0)
@@ -110,6 +121,11 @@ else:  // the sheet
             let stand = vx_fill(vx_unit_prims(u, 0.0), vx_size_of(u), vx_flies(u))
             fills += seconds_elapsed() - t
             for(8) c: vx_draw(stand, (c + 3) % 8, img, iw, c * step, r * vx_CELL.y)  // (columns as the composed sheet's)
+        elif rw.mode == "die":                                                       // (as the game bakes it: 6 steps; the first four facing right, then lying in two more)
+            for(8) k:
+                let st = min(k, 5)
+                let g = vx_fill(vx_fallen(vx_unit_prims(u, 0.0), float(st + 1) / 6.0), vx_size_of(u), false)
+                vx_draw(g, if k < 6: 2 else: (if k == 6: 0 else: 5), img, iw, k * step, r * vx_CELL.y)
         else:
             for(8) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 45.0), vx_size_of(u), vx_flies(u)), 2, img, iw, k * step, r * vx_CELL.y)
         print "{u.label} ({rw.mode}): drawn"
