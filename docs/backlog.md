@@ -3,6 +3,21 @@
 Everything discussed and deliberately postponed, roughly in priority order. When something moves
 into active work, move it into `mvp-plan.md` (or a new plan) with an exit criterion.
 
+## 00. Next after voxel units are the default (Dominic, 2026-11-03: "wait for voxel completion")
+
+- **Moddable buildings, tech, AI and sound.** A mod can't touch `buildings.json`, `tech.json`, `ai.json` or `audio.json`
+  today (`MOD_DATA_FILES` in `src/gen/mods.lobster`), so a mod can't trim the game to infantry only or bring its own
+  sounds. Make them mergeable like parts (remove or disable entries, a mod's own `audio/` WAVs), with the bots
+  reading what exists instead of a fixed building list. Test case: the sci-fi mod as Dominic described it: "disable
+  most units and buildings and focus on reduced tree, like just infantry fighting... easily make some aliens, and
+  add custom SFX and lasers". Toward the game's own content being a base data pack loaded like any mod.
+- **Effects as voxels.** Small voxel pieces (a rock chunk, a dirt clod, a spark, a dust puff; data or `.vox`), baked
+  once, and effects as data recipes that scatter them with random sizes, angles and speeds (view-side randomness
+  only): catapult impacts, arrow hits, a laser as a stretched glowing beam piece plus a spark burst. Replaces the
+  destruction pixel dust (D-171) with one system. A whole-animation voxel flipbook only for one-off set pieces.
+- **`.vox` import and export.** Read MagicaVoxel files as parts or whole creatures on the voxel skeleton and
+  sockets, and write any generated unit out as `.vox` to tweak and drop back in. After the voxel data format settles.
+
 ## 0. Left open when milestones 8 and 10 closed (2026-10-11, Dominic: "close 8 and 10 for now")
 
 - **AI playtest:** Dominic plays a match against the AI and wins as a decent player (milestone 8's
