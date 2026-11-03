@@ -23,7 +23,7 @@ for(ids) id:
         let name = "{id}_" + leaf[leaf.length - 1].substring(0, leaf[leaf.length - 1].length - 8)
         assert write_file("model/mods/{name}.lobster", text)
         imports += "import .mods.{name}\n"
-    if models.length: chain.push("build_mod_{id}(base, c)")   // (a data-only mod has no builder)
+    if models.length: chain.push("build_mod_{id}(base, c)")  // (a data-only mod has no builder)
 let body = if chain.length: concat_string(chain, " or ") else: "nil"
 let out = "// The active mods\' Lobster models (written by mods_gen.lobster from each mod.json\'s \"models\"; play.sh\n" +
     "// runs it with the mods asked for). " + (if ids.length: "Mods: " + concat_string(ids, ", ") + "." else: "This is the file with none.") + "\n\n" +

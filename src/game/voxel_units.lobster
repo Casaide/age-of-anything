@@ -51,7 +51,7 @@ let vx_cycle = dictionary<int, float>(256)    // type -> milli-tiles a walk cycl
 let vx_walked = dictionary<int, float>(1024)  // unit id -> milli-tiles walked
 let vx_last = dictionary<int, float2>(1024)   // unit id -> where it was last drawn
 
-def vx_reach(u:vx_unit_def) -> float:   // how far a foot swings out from under the hip, body units (the body's, or its mount's)
+def vx_reach(u:vx_unit_def) -> float:  // how far a foot swings out from under the hip, body units (the body's, or its mount's)
     if u.mount != "": return vx_body_of(u.mount).reach * vx_body_of(u.mount).size / vx_size_of(u)
     return vx_body_of(u.body).reach
 
@@ -133,7 +133,7 @@ def vx_bake_type(k:int) -> int:
     return baked
 
 def vx_bake_look(k:int, u:vx_unit_def, v:int, stem:string):
-    let tools = [ "axe" ]   // (work: chopping; what it wears kept)
+    let tools = [ "axe" ]  // (work: chopping; what it wears kept)
     for(u.gear) g: if vx_worn_gear(g): tools.push(g)
     let worker = vx_unit_def { u.label, u.body, u.skin, u.pale, u.mark, tools, u.mount, u.fused, u.coat, u.mane, u.coat_mark }
     vx_set_look(u, v)
@@ -171,7 +171,7 @@ def vx_bake_types():
     var n = 0
     var baked = 0
     let dirs = [ "../data/voxel" ]
-    for(mods_active) m: dirs.push(m.dir + "/data/voxel")   // (a mod's own, in its data/)
+    for(mods_active) m: dirs.push(m.dir + "/data/voxel")  // (a mod's own, in its data/)
     vx_load(dirs)
     vx_source = sha256_text((read_file("view/voxel.lobster") or "") + vx_data_text())
     vx_mat_cols[vx_mat_team] = float3 { 0.85, 0.12, 0.85 }  // (the sprite shader's team key)

@@ -19,9 +19,9 @@ class row:
     look:int     // a human's look (vx_set_look)
 
 vx_load([ "../data/voxel" ])
-let ROMAN = float3 { 0.48, 0.29, 0.16 }   // (human_dark, as the romans)
+let ROMAN = float3 { 0.48, 0.29, 0.16 }  // (human_dark, as the romans)
 let ROMAN2 = float3 { 0.35, 0.20, 0.13 }
-let RAT = float3 { 0.48, 0.35, 0.25 }     // (rat_brown)
+let RAT = float3 { 0.48, 0.35, 0.25 }  // (rat_brown)
 let RAT2 = float3 { 0.78, 0.66, 0.58 }
 def unit(label:string, body:string, skin:float3, pale:float3, gear:[string], mount:string, coat:float3) -> vx_unit_def:
     return vx_unit_def { label, body, skin, pale, float3_0, gear, mount, false, coat, coat * 0.45, float3_0 }
@@ -77,7 +77,7 @@ if args.length > 1 and args[1] == "check":
     let kit = [ "spear", "shield", "cap" ]
     for([ "bear", "spider", "beetle_rear" ]) b: all.push(unit(b, b, float3_0, float3_0, kit, "", float3_0))
     for([ [ "frog", "newt" ], [ "rat", "capybara" ], [ "human", "bear_mount" ], [ "rat", "beetle" ], [ "frog", "spider" ] ]) pr: all.push(unit("{pr[0]} on a {pr[1]}", pr[0], float3_0, float3_0, kit, pr[1], float3_0))
-    for(filter(all) u: not vx_flies(u)) u:   // (a flier's shadow is on the ground under it)
+    for(filter(all) u: not vx_flies(u)) u:  // (a flier's shadow is on the ground under it)
         vx_set_look(u, 0)
         vx_act = ""
         for(9) st:
