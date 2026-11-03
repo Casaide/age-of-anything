@@ -687,8 +687,12 @@ def collect_buildings():
                         // a gate: its middle (its doors, or the open passage) behind a unit in its archway, each tower at
                         // its own footprint, the arch over the passage in front
                         let half = GATE_DEPTH_PX
-                        add(frame_index(name + (if open: ":open:mid" else: ":shut:mid")), at.x, at.y - up, at.y - (if open: half else: 0.0), col)
-                        for(look.towers) tw, n: add(frame_index(tw), at.x, at.y - up, at.y + look.tower_dy[n], col)
+                        let mid = name + (if open: ":open:mid" else: ":shut:mid")
+                        add(frame_index(mid), at.x, at.y - up, at.y - (if open: half else: 0.0), col)
+                        add(frame_index(mid + "~shadow"), at.x, at.y - up, -100000.0 + at.y, col)
+                        for(look.towers) tw, n:
+                            add(frame_index(tw), at.x, at.y - up, at.y + look.tower_dy[n], col)
+                            add(frame_index(tw + "~shadow"), at.x, at.y - up, -100000.0 + at.y, col)
                         if open: add(frame_index(name + ":open:mid:front"), at.x, at.y - up, at.y + half + 2.0, col)
                     else:
                         add(frame_index(if open: name + ":open" else: name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)

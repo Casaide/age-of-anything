@@ -331,6 +331,7 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
                 akb_keep(name + ":open:front", aop, false)
         // each tower a frame of its own, sorted at its own footprint, and the gate without them, shut and open (drawn as
         // one, a unit beside a tower or in the archway was wholly in front of the gate or wholly behind it: Dominic)
+        akb_split_shadows = true  // (their shadows on the ground, apart: as a wall's)
         let tower_at = []::float3
         akb_gate_centres(spec.body, node_xform(spec.body), tower_at)
         for(tower_at) c:
@@ -353,6 +354,7 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
             if akb_front_split(of, true) > 0:  // (its near parapets alone, the towers' left out: over a unit in the passage)
                 akb_hide_towers(of)
                 akb_keep(name + ":open:mid:front", of, false)
+        akb_split_shadows = false
     if spec.arms.length:
         let with_front = []::int
         for(spec.arms) a, k:
