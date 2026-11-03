@@ -87,29 +87,39 @@ def gable_roof(w:float, d:float, z0:float, rise:float, over:float, m:string, rid
     let slope = sqrt(run * run + rise * rise)
     let span = (if along_y: d else: w) + over * 0.5
     def across(a:float, z:float) -> float3: return if along_y: float3 { a, 0.0, z } else: float3 { 0.0, a, z }
+    let side = if along_y: float3 { 0.0, 1.0, 0.0 } else: float3 { 1.0, 0.0, 0.0 }  // (along the ridge)
     for([ 1.0, -1.0 ]) s:
         let n = if along_y: float3 { s * sin(ang), 0.0, cos(ang) } else: float3 { 0.0, s * sin(ang), cos(ang) }
         box(across(s * run / 2.0, z0 + rise / 2.0), float3 { span, 1.1, slope / 2.0 }, n, under, 0.2)
-        // the gable's triangle under it: from the ridge to the wall (not past it: a fill out to the eaves hung under them
-        // and hid the wall's top), out to the roof's edge at each end
-        let k = 8.2
-        let rw = run - over
-        let mid = z0 + rise - (rw / 2.0) * rise / run
-        box(across(s * (rw / 2.0) - s * k * sin(ang), mid - k * cos(ang)), float3 { span - 0.6, 8.0, rw / cos(ang) / 2.0 }, n, "plaster", 0.0)
         // the rows of round tiles on it, ridge to eave, deep channels between (their ends bump the eave)
-        let side = if along_y: float3 { 0.0, 1.0, 0.0 } else: float3 { 1.0, 0.0, 0.0 }
         var t = -span + 2.4
         while t < span - 1.0:
             let eave = across(s * run, z0) + n * 2.2 + side * t
             let top = across(0.0, z0 + rise) + n * 2.2 + side * t
             cap(eave, top, float2 { 1.55, 1.45 }, m, true)
             t += 4.8
-        // the raking cornice along the gable's edges, at each end
-        for([ 1.0, -1.0 ]) g:
-            let eave = across(s * run, z0 - 0.5) + side * g * (span - 0.4)
-            let top = across(0.0, z0 + rise - 0.5) + side * g * (span - 0.4)
-            cap(eave, top, float2 { 0.9, 0.9 }, "plaster_lit", true)
-    let e = if along_y: float3 { 0.0, span, 0.0 } else: float3 { span, 0.0, 0.0 }
+    // the gables: at each end a vertical triangle of level courses, its sides at the roof's slope (from the wall line,
+    // where the roof is at the triangle's base, up to the ridge), a level cornice along its base and raking cornices
+    // just under the roof's edges (round 3's gables were slabs tilted to the roof: "some weird angles", Dominic)
+    let rw = run - over
+    let zb = z0 + over * rise / run
+    let apex = z0 + rise
+    def gbox(c:float3, width:float, thick:float, h:float, mat:string):  // (a box facing along the ridge)
+        if along_y: box(c, float3 { width, thick, h }, FRONT, mat, 0.0)
+        else: box(c, float3 { thick, width, h }, SIDE, mat, 0.0)
+    for([ 1.0, -1.0 ]) g:
+        let face = side * g * (span - over * 0.5)
+        let inner = face - side * g * 1.5
+        gbox(across(0.0, (z0 + zb) / 2.0) + inner, rw, 1.5, (zb - z0) / 2.0 + 0.2, "plaster")  // (the wall up to its base)
+        var z = zb
+        while z < apex - 0.3:
+            let hw = rw * (1.0 - (z + 0.5 - zb) / (apex - zb))
+            gbox(across(0.0, z + 0.5) + inner, hw, 1.5, 0.5, "plaster")
+            z += 1.0
+        let lip = face + side * g * 0.3
+        gbox(across(0.0, zb) + lip, rw + 0.8, 0.7, 0.6, "plaster_lit")
+        for([ 1.0, -1.0 ]) s: cap(across(s * (rw + 0.4), zb + 0.2) + lip, across(0.0, apex - 0.6) + lip, float2 { 0.8, 0.8 }, "plaster_lit", true)
+    let e = side * span
     cap(float3 { 0.0, 0.0, z0 + rise + 1.0 } - e, float3 { 0.0, 0.0, z0 + rise + 1.0 } + e, float2 { 1.8, 1.8 }, ridge, true)
 
 // A rock of flat cut faces: boxes at angles, a few overlapping, the edges barely rounded.
