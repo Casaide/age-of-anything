@@ -55,6 +55,14 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
   - **`scifi_test`'s own voxel gear:** its visor helmet, plated armour, power pack, pulse rifle, arc blade and buckler
     take the game's gear by their tags; give them a `data/voxel/` of their own (the mod's old Lobster models and
     `buckler.glb` are in `0b6481c`, `mods/scifi_test/models/`).
+- **Hand-built voxel buildings, culture by culture (Dominic's, later: "dont do any hand building for cultures, ill do
+  that later"; D-203's second half).** Today every building and prop is its 3D model voxelized
+  (`view/voxel_mesh.lobster`). Replacing a look with voxel data (`data/voxel/buildings/`, written by
+  `src/voxel_buildings_gen.lobster` with `gen/vx_write.lobster`'s helpers: tile rows, patterns, lights, true pediments)
+  needs the data looks to bake into the art kit's frames: a building look's body, its 4 construction stages and its
+  broken-up stages and ruin (today `akb_bake_look` makes those from the model by holding parts back and
+  `ruin_apply`). Start: the Town Centers and houses; the Roman house and Town Center and the rats' shack and silo
+  exist as data already (the experiment, pictures 26-40).
 - **`.vox` import and export.** Read MagicaVoxel files as parts or whole creatures on the voxel skeleton and
   sockets, and write any generated unit out as `.vox` to tweak and drop back in. After the voxel data format settles.
 
