@@ -33,7 +33,7 @@ The engine needs its own name only when it's shown on its own (a "Made with" lin
 | **Bosun** | nautical | The deck officer who keeps the ship and the crew in order | An Amsterdam software-maintenance startup and an older open-source monitoring system. Medium to high clash |
 | **Brine** | nautical | Salt water | Brine2D, a C# 2D game engine on NuGet. High clash: avoid |
 
-**Picked: Creel** (2026-11-03, D-203; mock site in `docs/engine/site-mockup/`). Claude's three were **Creel**, **Pincer**, **Ballast**. These were web searches only, not trademark searches. Before a
+**Picked: Creel** (2026-11-03, D-208; mock site in `docs/engine/site-mockup/`). Claude's three were **Creel**, **Pincer**, **Ballast**. These were web searches only, not trademark searches. Before a
 pick goes public, check the trademark registers (USPTO, EUIPO, UK IPO), Steam, GitHub, npm and the domain, as the
 game's own name check in `docs/business.md` §4 asks.
 
