@@ -1454,3 +1454,19 @@ smaller one (120%) with 20. The losing side is unchanged. `test_ai`: a side clea
 up, or 150% of the other's workers with 20 or more, two minutes running) must win within 12 minutes of it; a match
 with no clear lead may run to the limit. Heroes are checked over the three bot matches (a match won early can end
 before either side affords one).
+
+**D-199, 2026-11-03: Counters keep their edge: prices are fitted against what the counter chain expects, not
+against the whole field's average (refines D-195).** Dominic: "swords should beat spears. Basic rule across most
+games of the genre, no?" D-195 fitted each line to win half its fights against a panel, so a counter's wins were
+charged as strength: infantry got dearer until equal-cost spears beat it (counters 90% to 72%). Now each panel fight
+has an expected result by the counter chain, infantry > spear > large/mounted > ranged > infantry and skirmishers >
+archers: 80% where the line has a counter's edge (one of its attack bonuses is for a class the other has), 20%
+where the other has, 50% where neither has. A line is fairly priced where its score meets that. (Pricing on neutral
+fights alone, as first asked, left archers unpriced: the bow's +2 against infantry is an edge over nearly every foot
+unit.) test_sim checks each pair on its own, at least 70% of its equal-cost fights on every race and both sides.
+Skirmishers beating infantry is not one: the roster gives swords +3 against them, they're for archers. To pass,
+the roster gives infantry +6 against spears (was +3) and the large line +6 against ranged (it had none; lances
+only), both in data (`data/rules/*.json`). Measured on held-out lines, each line's wins against what the chain
+expects of its fights: 78 of 124 lines more than 10 points off at points-only prices, 42 at D-195's, 38 now
+(sd 18.6, 10.6, 10.3); the round-robin groups the same way, 32% off, which the batch checks (45% fails). The
+commit says D-196 (taken the same day by the engine's licence).

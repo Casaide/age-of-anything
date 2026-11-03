@@ -53,3 +53,28 @@ The match start: the races in 6 ms, the start in 10 ms.
 - Counters are weaker at fair prices (90% -> 72%): infantry vs spear, large vs archer. Counter bonuses are Dominic's
   call.
 - Identity bonuses' price points, ages 1 and 4, flying and scouting value.
+
+## Later the same day: counters keep their edge (D-199)
+Dominic, on the report: "swords should beat spears. Basic rule across most games of the genre, no?" The calibration
+had priced the edge away: fitting to the win rate over all fights charged infantry for beating spears. The first
+try, pricing on neutral fights only, left archers with no fights at all (the bow's +2 against infantry is an edge
+over every foot unit), so each fight got an expected result instead: 80% with a counter's edge, 20% against one,
+50% neutral. Two more passes (4 and 5). test_sim now checks each counter pair on its own:
+
+| pair (wins of equal-cost fights) | points only | D-195 | D-199 |
+|---|---|---|---|
+| infantry > spear | 12/12 | 2/12 | 10/12 |
+| spear > large | 10/10 | 10/10 | 10/10 |
+| spear > scout | 8/10 | 10/10 | 10/10 |
+| spear > mounted archer | 8/8 | 8/8 | 7/8 |
+| large > archer | 10/12 | 6/12 | 10/12 |
+| large > skirmisher | 12/12 | 12/12 | 12/12 |
+| scout > skirmisher | 12/12 | 12/12 | 12/12 |
+| archer > infantry | 6/10 | 10/10 | 10/10 |
+| archer > spear | 10/10 | 10/10 | 10/10 |
+| skirmisher > archer | 12/12 | 10/12 | 10/12 |
+
+Even priced this way, infantry won only 5 of 12 against spears with +3, and large lost to archers where it has no
+lance, so swords got +6 against spears and the heavy line +6 against ranged (the roster's own words: "Beats ranged").
+Held out, each line's wins against what the chain expects: 78 of 124 lines more than 10 off at points-only prices,
+42 at D-195's, 38 now. On the plain win rate the pool went 30 -> 40 of 124 off: counters winning is now meant.
