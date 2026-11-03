@@ -113,7 +113,7 @@ def om_diamond(s:OmSpot, col:float4, px:float, fill:bool):
     let y1 = float((s.cy + s.sy) * TILE)
     let pts = [ iso(x0, y0), iso(x1, y0), iso(x1, y1), iso(x0, y1) ]
     if fill:
-        ui_lines_flush()
+        ui_batch_flush()
         gl.color(col * float4 { 1.0, 1.0, 1.0, 0.14 }): gl.polygon(pts)
     for(4) k:
         ui_line(pts[k], pts[(k + 1) % 4], 3.5 * px, OM_EDGE * float4 { 1.0, 1.0, 1.0, col.w * 1.2 })
@@ -123,7 +123,7 @@ def om_diamond(s:OmSpot, col:float4, px:float, fill:bool):
 def om_flag(at:float2, team:float4, a:float, px:float):
     let top = at - float2 { 0.0, 16.0 }
     ui_line(at, top, 2.5 * px, float4 { 0.2, 0.15, 0.1, a })
-    ui_lines_flush()
+    ui_batch_flush()
     gl.color(float4 { 0.0, 0.0, 0.0, 0.5 * a }): gl.polygon([ top + float2 { 0.5, -0.5 }, top + float2 { 10.5, 3.0 }, top + float2 { 0.5, 6.5 } ])
     gl.color(float4 { team.x, team.y, team.z, a }): gl.polygon([ top, top + float2 { 10.0, 3.0 }, top + float2 { 0.0, 6.0 } ])
 

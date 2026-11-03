@@ -417,6 +417,7 @@ def draw_bust(key:int, recipe:JV, owner:int, at:float2, side:float):
     let p = bust(key, recipe, owner)
     if not p: return
     let w = float4_1
+    ui_batch_flush()
     gl.set_shader("textured_color")
     gl.set_primitive_texture(0, p.tex)
     gl.color(float4_1):
@@ -460,6 +461,7 @@ def groove(x:float, top:float, bottom:float, major:bool):
     if major:
         let m = float2 { gx + 0.5 * s, floor((y0 + y1) * 0.5) }
         let d = 4.0 * s
+        ui_batch_flush()
         gl.set_shader("color_attr")
         let c = float4 { 0.63, 0.53, 0.35, 1.0 }
         gl.draw_mesh("PC", [ float3 { m.x, m.y - d, 0.0 }, float3 { m.x + d, m.y, 0.0 }, float3 { m.x, m.y + d, 0.0 }, float3 { m.x - d, m.y, 0.0 } ],
