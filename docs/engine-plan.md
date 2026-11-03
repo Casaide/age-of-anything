@@ -424,6 +424,11 @@ Not yet:
 
 ## 7. Open questions for Dominic
 
+**Answered (D-191, 2026-11-03):** the structure as drafted, in one repo for now; the engine open source; hooks found
+from real needs, with the open source as the escape hatch; the base pack's signature stays out of race keys (race
+keys never change with content updates). Dominic floated "Age Engine" as a name; not settled.
+
+
 1. **The name.** One of Creel, Pincer, Ballast (or the others), or none until it's needed?
 2. **One repo now, separate repos later** (when a second game or the engine going public calls for it): agreed?
 3. **The licence.** Closed until the Modding page, then the engine open (MPL 2.0 or Apache 2.0) and the game closed?
