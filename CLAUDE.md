@@ -36,6 +36,9 @@ move it to `docs/backlog.md` rather than deleting it.
   fading ruins (D-171, D-172); rat B and frog B (D-177, D-178, D-181); every legged body walks on keyed legs baked per
   step, blows wind up and hold (D-179); units baked at their drawn size, capes only when asked (D-180); howdah riders
   hold their weapons upright (Dominic, 2026-10-28). Open: the items in `docs/milestones/m23-fidelity.md`.
+- **Planned (milestone 24): voxel buildings and props** (Dominic: "voxel buildings yes"): every building, stage and
+  prop voxel through the units' cache, then the old baked-building pipeline removed. See
+  `docs/milestones/m24-voxel-buildings.md` (the first choice: voxelize the models, write voxel data, or both).
 - **In progress (milestone 20): Steam Deck and controllers.** Pad play (last input wins, the reticle, the wheel of
   orders: D-132, D-133); Deck builds by `src/deck/build.sh`. Next: steps 7-9 (fit, speed, Steam Input). See
   `docs/milestones/m20-steam-deck.md`.
