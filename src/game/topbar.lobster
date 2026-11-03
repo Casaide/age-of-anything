@@ -90,11 +90,8 @@ def tb_flush():
             let face = if t.font == 2: TB_DISPLAY elif t.font >= 1: TB_BOLD else: TB_TEXT
             let edge = if t.outline: max(1.0, float(t.size) / 12.0) else: 0.0
             if t.font == 3:  // a caption (theme.gd's caps_font): a letter at a time, spaced
-                var x = t.at.x
-                for(t.s.length) i:
-                    let c = t.s.substring(i, 1)
-                    text_label(float2 { x, t.at.y }, c, t.size, t.col, face, edge, float4 { 0.0, 0.0, 0.0, 0.9 })
-                    x += ui_text_wf(c, t.size, 3) + ui_caps_gap(t.size)
+                for(ui_caps_offsets(t.s, t.size)) x, i:
+                    text_label(float2 { t.at.x + x, t.at.y }, t.s.substring(i, 1), t.size, t.col, face, edge, float4 { 0.0, 0.0, 0.0, 0.9 })
             else: text_label(t.at, t.s, t.size, t.col, face, edge, float4 { 0.0, 0.0, 0.0, 0.9 })
     tb_texts = []
 
