@@ -300,3 +300,14 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
                     if xx >= 0 and yy >= 0 and xx < w and yy < h and out[(yy * w + xx) * 4 + 3] == 0:
                         for(4) ch: write_int8_le(out, (yy * w + xx) * 4 + ch, WB_SHADOW[ch])
     return out, w, h, -lo
+
+// A sprite's ground shadows (its see-through pixels in the shadows' colour) apart from the rest: the art, the shadows.
+def vm_split_shadow(sprite:string, w:int, h:int) -> string, string:
+    let art = ensure_size("", w * h * 4, 0)
+    let shade = ensure_size("", w * h * 4, 0)
+    for(w * h) p:
+        let o = p * 4
+        let is_shadow = sprite[o + 3] > 0 and sprite[o + 3] < 255 and sprite[o] == WB_SHADOW[0] and sprite[o + 1] == WB_SHADOW[1] and sprite[o + 2] == WB_SHADOW[2]
+        let into = if is_shadow: shade else: art
+        for(4) k: write_int8_le(into, o + k, sprite[o + k])
+    return art, shade

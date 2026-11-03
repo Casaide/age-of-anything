@@ -251,15 +251,27 @@ def akb_load_cached(name:string) -> bool:
     bfx.set(c.look.body, c.fx)
     return true
 
+// A wall's pieces keep their ground shadow apart ("<frame>~shadow", drawn on the ground under every piece): in one
+// sprite, a piece drawn over its neighbour painted its shadow on the neighbour's face (Dominic: "all the shadows
+// bugged for the walls").
+var akb_split_shadows = false
+
 def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, shadow_only:[MNode] = []):
     let sprite, w, h, anchor = voxel_bake(model, shadow)  // (D-203: as voxels; a gate tower's shadow is its own now)
     let at = anchor + akb_project(pivot) * WB_ART
+    if akb_split_shadows and shadow:
+        let art, shade = vm_split_shadow(sprite, w, h)
+        akb_keep_frame(name, art, w, h, at)
+        akb_keep_frame(name + "~shadow", shade, w, h, at)
+    else: akb_keep_frame(name, sprite, w, h, at)
+    akb_baked++
+
+def akb_keep_frame(name:string, sprite:string, w:int, h:int, at:float2):
     keep_frame(name, sprite, w, h, at)
     if akb_cache_stem != "" and w > 0 and h > 0:
         let file = "{akb_cache_stem}_{akb_cache_frames.length}.png"
         write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
         akb_cache_frames.push(AkbFrame { name, file, w, h, int(at.x + 0.5), int(at.y + 0.5) })
-    akb_baked++
 
 // One look of a building, with its stages and extra parts, into the pack; its Look and BFx.
 def akb_bake_look(arch:string, type:string, model:string, suffix:string):
@@ -275,6 +287,7 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
     bfx.set(name, BFx { if akb_has(spec, "smoke"): akb_project(akb_pt(spec, "smoke")) else: float2_0, akb_has(spec, "smoke"), lights })
     let lk = Look { name, map(4) st: "{name}:stage{st}", "-" }
     let fronts = akb_front_split(spec.body, false)
+    akb_split_shadows = spec.arms.length > 0  // (a wall's finished pieces; its stages draw whole)
     akb_keep(name, spec.body, true)
     if fronts > 0:
         let again = akb_placed(arch, type, model, suffix)
@@ -315,9 +328,12 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
         if ic: akb_keep(name + ":icon", ic, true)
         // its post turned 45 degrees, for a tile on a diagonal run (joined only corner to corner): the square post's
         // corners stuck out of the run's face and its sides crossed it, a sawtooth of piers (Dominic)
+        // (shrunk to sit inside its arms: a corner tile, one arm straight and one diagonal, has neither face's corner
+        // sticking out)
         let turned = akb_placed(arch, type, model, suffix)
         let pivot = mnode()
         pivot.rot = float3 { 0.0, 45.0, 0.0 }
+        pivot.scl = float3 { 0.71, 1.0, 0.71 }
         add_child(pivot, turned.body)
         akb_keep(name + ":diag", pivot, true)
         lk.arms = map(spec.arms.length) k: "{name}:arm{k}"
@@ -330,6 +346,7 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
                 lk.arms_front[k] = "{name}:arm{k}:front"
     let vane = spec.vane
     if vane: akb_keep(name + ":vane", vane, false, akb_pt(spec, "vane_pivot"))
+    akb_split_shadows = false
     for(4) st:
         let p = akb_placed(arch, type, model, suffix)
         akb_hold_back(p.body, st)
