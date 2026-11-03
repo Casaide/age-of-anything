@@ -95,7 +95,7 @@
    "name": "Mounted Archer",
    "short": "Bow Rider",
    "building": "archery_range",
-   "desc": "A bow on horseback: beats infantry and slow units; weak to skirmishers, spears and cavalry",
+   "desc": "A bow on horseback: beats infantry and slow units; weak to heavy cavalry and scouts",
    "own_seed": true,
    "mount": "always",
    "unless_mounted": "archer",
