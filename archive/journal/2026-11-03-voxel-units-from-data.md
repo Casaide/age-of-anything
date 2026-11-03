@@ -228,3 +228,11 @@ A diagonal wall run read as a row of square piers with deep notches between them
 the same bug, some directions don't give you the smooth wall"): diagonal tiles only touch at their corners, and each
 square post stood square to the grid, its corners out of the run's face. A tile joined only corner to corner now
 draws its post turned 45 degrees (`:diag`, baked with the wall's look): the face is one plane (picture 49).
+
+Then Dominic, close up: "all the wall models are clearly overlapping and sticking into each other. They MUST end
+before next model". A wall tile was a post and an arm a neighbour, each its own sprite; on a diagonal run every tile
+is at one depth on the screen, so the pieces overlapped in no fixed order, each with its own ends, plinth lip and
+texture phase. Now a tile is baked whole: its post and the arms it has, one model, one picture ending at the tile's
+edge (`akb_wall_tile`, made the first time those joins are drawn, one a frame, kept in the bake cache; the pieces draw
+until then). A corner (a straight join and a diagonal one) has its post turned and shrunk inside its arms; a diagonal
+run's end its post turned, full size. Pictures 62-64.
