@@ -154,10 +154,11 @@ class EcoBot:
     age_workers = 16
     rebalance = 0  // ticks between moving a gatherer (0: never)
     plenty = 1000
-    hold = false         // the army is under its floor: no new workers
-    goal:[int] = []      // what we save for (the next age, a building); empty: nothing
-    push = 100           // how hard the shares lean to it
-    held_ids:[int] = []  // workers kept out of the way until a tick (alongside held_until)
+    hold = false               // the army is under its floor: no new workers
+    goal:[int] = []            // what we save for (the next age, a building); empty: nothing
+    push = 100                 // how hard the shares lean to it
+    headroom = HOUSE_HEADROOM  // a house goes up once the population comes this near its cap
+    held_ids:[int] = []        // workers kept out of the way until a tick (alongside held_until)
     held_until:[int] = []
     next_rebalance = 0
     next_claim = 0
@@ -675,7 +676,7 @@ def bot_think(bot:EcoBot):
     for(q) e:
         if e >= 0: queued_units++
     let queued_pop = queued_units * t_pop[wk]
-    if tick >= bot.next_house and pop_cap[p] < r_pop_max and pop[p] + queued_pop + HOUSE_HEADROOM >= pop_cap[p] and
+    if tick >= bot.next_house and pop_cap[p] < r_pop_max and pop[p] + queued_pop + bot.headroom >= pop_cap[p] and
             can_afford(p, bm_cost[p][hk]) and not building_underway(bot):
         let builder = pick_builder(bot, workers)
         let sx, sy = house_spot(bot, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[hk])

@@ -176,3 +176,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-11-03:** The laptop still ran hot: sprites drawn from atlas pages, the HUD's fills batched, the lobby at 30 frames a second (D-194); a match's frame 1.9 -> 1.1 ms of work, the idle title 9% -> 3.5% of a core.
 - **2026-11-03:** Prices are fixed per unit, calibrated offline by fights (D-195): a match loads without balance fights (7 to 38 s before), and held-out lines more than 10 points off the mean went from 57% to 24%.
 - **2026-11-03 (later):** Text drawn from atlas pages (0.24 -> 0.03 ms a frame), the idle title at 15 frames a second, a window in the background at 10 (`gl.window_focused`, 13-19% -> 4.7% CPU), Lobster's frame cap in one sleep (D-197).
+- **2026-11-03:** Bots press home a clear lead (D-198): they mass, push at the Town Centers with rams and reinforce; bot against bot ends at 20:56 instead of no winner at 30:00, and test_ai asks a clear leader to win within 12 minutes.

@@ -1438,3 +1438,19 @@ they're full. `perf:` fails a match whose text costs over 0.1 ms a frame. Lobste
 `game/pace.lobster` paces a window without the focus at 10 frames a second (the sim and lockstep keep their pace;
 tests and captures are exempt) and the title at 15 after two seconds without input. Lobster's frame cap sleeps in one
 long sleep instead of 1 ms steps.
+
+**D-198, 2026-11-03: A bot clearly ahead presses home its lead; the bot-against-bot check asks a leader to win, not
+equals to (Dominic: two equal bots stalemating isn't surprising; a bot with a big lead not pressing home is the bug).**
+Claude. Before, frogs against rats ran to 30:00 (and 45:00) with no winner although the rats had 49 workers in age 3
+against 21 in age 2: both sides traded armies of 2 to 12 all match. Now a bot that is clearly ahead of the enemy it
+knows of (`military.press` in `ai.json`: from 10:00 with 20 workers, an age up or 130% of the enemy's workers as it
+knows them, those seen lately or one a remembered building, and 75% of the army it remembers) masses an army first
+(24 population, or 150% of the enemy army it remembers), saving for those soldiers instead of the next age; while
+massing its soldiers stay home (no answering a tower's arrows or chasing raiders home, which is where the rats' armies
+had been bleeding away); then the whole army goes for the Town Centers, past raids and contain waits, rams for the
+Town Center first, reinforced by every 4 soldiers that gather at home, and comes home to mass again only when it's
+down to 30%. It never masses longer than 4 minutes. Easy wants a bigger lead (160%) and masses 20, Hard presses a
+smaller one (120%) with 20. The losing side is unchanged. `test_ai`: a side clearly ahead by the real state (an age
+up, or 150% of the other's workers with 20 or more, two minutes running) must win within 12 minutes of it; a match
+with no clear lead may run to the limit. Heroes are checked over the three bot matches (a match won early can end
+before either side affords one).

@@ -205,6 +205,7 @@ def ai_config(lvl:string, tweak):
             for(rm.keys.length) n: rm.a[n] = jint(max(1, as_int(rm.a[n]) * gint(l, "army_pct", 100) / 100))
         else: set(mil, "repeat_min_army", jint(max(1, as_int(rm) * gint(l, "army_pct", 100) / 100)))
         if has(l, "max_workers"): set(at(cfg0, "economy"), "max_workers", at(l, "max_workers"))
+        level_press(cfg0, l)
         lv_ratio = gint(l, "army_ratio", 0)
         lv_wave = gint(l, "wave_pct", 100)
         lv_up = if gint(l, "build_up", 0) == 1: 1 else: 0
@@ -254,7 +255,7 @@ def level_now() -> LevelCfg:
     let keys = []::string
     let vals = []::int
     for(cfg_nums.get_keys()) key:
-        if starts_with(key, "military.repeat_min_army") or starts_with(key, "economy.max_workers"):
+        if starts_with(key, "military.repeat_min_army") or starts_with(key, "economy.max_workers") or starts_with(key, "military.press"):
             keys.push(key)
             vals.push(cfg(key))
     return LevelCfg { copy(wave_at), copy(wave_min),

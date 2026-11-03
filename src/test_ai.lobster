@@ -74,6 +74,12 @@ import testkit.kit
 
 let SEED = 7
 let LIMIT = 20 * 60 * 30  // 30 minutes: a match must end, however slowly
+// A side clearly ahead (an age up, or LEAD_PCT of the other's workers, with LEAD_WORKERS or more, two
+// minutes running) must win within PRESS_WITHIN of the first of those minutes (D-198: two equal bots may
+// stand off to the limit; a bot with a big lead may not).
+let LEAD_PCT = 150
+let LEAD_WORKERS = 20
+let PRESS_WITHIN = 20 * 60 * 12
 
 // The pieces in test_ai.gd's order: name, tier.
 let PIECES = [ "pick", "wonder", "respond", "shelter", "walled_fords", "rams", "hills", "guard", "age3", "surrender",
@@ -128,6 +134,8 @@ class MatchResult:
     revived:[int]
     fell:[int]
     kinds:[[int]]  // per side: hero slots it fielded
+    leader = -1    // the side first clearly ahead, and the minute its lead began (-1: never)
+    lead_tick = -1
 
 // Healers: the most each side had, and whether they keep behind their army: when soldiers are out (3 or
 // more over 10 tiles from home), the healers' middle is nearer home than theirs. Soldiers posted with far
@@ -151,6 +159,16 @@ def watch_healers(r:MatchResult, sides:[Side]):
             r.samples++
             if d[1] / n[1] < d[0] / n[0]: r.behind++
 
+// The side clearly ahead now, by the real state (not what the bots know), or -1.
+def ahead_now() -> int:
+    let workers = [ 0, 0 ]
+    for(u_id.length) i:
+        if u_owner[i] < 2 and t_worker[u_kind[i]]: workers[u_owner[i]]++
+    for(2) p:
+        let q = 1 - p
+        if workers[p] >= LEAD_WORKERS and ages[p] >= ages[q] and (ages[p] > ages[q] or workers[p] * 100 >= workers[q] * LEAD_PCT): return p
+    return -1
+
 def play(races:[JV], sides:[Side], title:string, quiet:bool) -> MatchResult:
     if not quiet: print "\n== " + title
     let res = MatchResult { -1, 0, 0, 0, [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ [], [] ] }
@@ -158,7 +176,8 @@ def play(races:[JV], sides:[Side], title:string, quiet:bool) -> MatchResult:
     let bought = [ []::string, []::string ]
     let wt = new_watch()
     var h = 0
-    while tick < LIMIT and winner < 0:
+    var was_ahead = -1
+    while(tick < LIMIT or (res.lead_tick >= 0 and tick < res.lead_tick + PRESS_WITHIN)) and winner < 0:
         think_all(sides)
         watch_before(wt)
         wstep()
@@ -183,6 +202,12 @@ def play(races:[JV], sides:[Side], title:string, quiet:bool) -> MatchResult:
         if tick % 100 == 0: watch_healers(res, sides)
         for(2) p:
             if aged[p] < 0 and ages[p] >= 2: aged[p] = tick
+        if tick % 1200 == 0 and res.lead_tick < 0:
+            let a = ahead_now()
+            if a >= 0 and a == was_ahead:
+                res.leader = a
+                res.lead_tick = tick - 1200
+            was_ahead = a
         if tick % 1200 == 0 and not quiet:
             var line = clock(tick)
             for(races.length) p:
@@ -199,18 +224,22 @@ def play(races:[JV], sides:[Side], title:string, quiet:bool) -> MatchResult:
                 for(b_owner) o:
                     if o == p: blds++
                 line += "   P{p} age {ages[p]}, {workers} workers, {army} soldiers, {healers} healers, {blds} buildings, {lost[p]} lost"
+                let f = if p < sides.length: sides[p].full else: nil
+                if f and f.pressing: line += if f.pushing: " (pushing)" else: " (massing)"
             print line
     res.winner = winner
     res.end_tick = tick
     res.hash = h
     if not quiet:
-        print "winner: team {winner} at {clock(tick)}; age 2 at [{clock(aged[0])}, {clock(aged[1])}]"
+        print "winner: team {winner} at {clock(tick)}; age 2 at [{clock(aged[0])}, {clock(aged[1])}]" +
+            (if res.lead_tick >= 0: "; P{res.leader} clearly ahead from {clock(res.lead_tick)}" else: "; nobody clearly ahead")
         for(2) p: print "research P{p}: " + concat_string(bought[p], ", ")
         print "healers: most {res.most}, heals {res.heals}, behind their army in {res.behind} of {res.samples} looks"
         print "heroes: trained {res.heroes_up}, fell {res.fell}, revived {res.revived}"
     return res
 
 def match_stats(r:MatchResult):
+    stat("heroes", max(r.kinds[0].length, r.kinds[1].length))
     stat("winner", r.winner)
     stat("tick", r.end_tick)
     stat("hashes", r.hashes)
@@ -226,20 +255,31 @@ def test_passive(a:JV, b:JV):
     let r = play([ a, b ], [ full_side(0), eco_side(1) ], "bot {rname(a)} vs passive {rname(b)}", false)
     check(r.winner == 0, "the bot beats a passive {rname(b)} (winner {r.winner} at {clock(r.end_tick)})")
 
+// A side clearly ahead presses it home: it wins, within PRESS_WITHIN. Without a clear lead (two equal
+// bots) the match may run to the limit.
+def check_lead(r:MatchResult, title:string):
+    if r.lead_tick < 0:
+        print "{title}: nobody clearly ahead (winner {r.winner} at {clock(r.end_tick)})"
+        return
+    check(r.winner == r.leader and r.end_tick <= r.lead_tick + PRESS_WITHIN,
+          "{title}: P{r.leader}, clearly ahead from {clock(r.lead_tick)}, wins by {clock(r.lead_tick + PRESS_WITHIN)} (winner {r.winner} at {clock(r.end_tick)})")
+
 def test_bvb():
     let a = play_pair([ frogs, rats ], "bot vs bot", false)
-    check(a.winner >= 0, "bot vs bot ends with a winner ({a.winner} at {clock(a.end_tick)})")
+    check_lead(a, "bot vs bot")
     // Healers (Dominic, 2026-10-12): a couple from age 2, kept behind the army, and they heal.
     let most = max(a.most[0], a.most[1])
     check(most >= 1 and most <= 3, "the bots train a couple of healers (most {a.most})")
     check(a.samples == 0 or a.behind * 100 >= a.samples * 70, "healers keep behind the army ({a.behind} of {a.samples} looks)")
-    // Heroes (D-159): a bot with an economy fields its one hero, and only that one.
-    check(max(a.kinds[0].length, a.kinds[1].length) == 1, "the bots field their hero, one kind each ({a.kinds[0].length}, {a.kinds[1].length} kinds; fell {a.fell}, revived {a.revived})")
+    // Heroes (D-159): one kind each at most (fielding one is checked over the bot matches: combine).
+    check(max(a.kinds[0].length, a.kinds[1].length) <= 1, "the bots field one hero kind each at most ({a.kinds[0].length}, {a.kinds[1].length} kinds; fell {a.fell}, revived {a.revived})")
     match_stats(a)
 
 def test_races(pa:JV, pb:JV):
     let r = play_pair([ pa, pb ], "bot {rname(pa)} vs bot {rname(pb)}", false)
     check(r.winner >= 0, "{rname(pa)} vs {rname(pb)} ends with a winner")
+    check_lead(r, "{rname(pa)} vs {rname(pb)}")
+    check(max(r.kinds[0].length, r.kinds[1].length) <= 1, "{rname(pa)} vs {rname(pb)}: one hero kind each at most")
     match_stats(r)
 
 def test_hard():
@@ -269,6 +309,10 @@ def combine():
             heals += g(m + " heals")
             lengths.push(g(m + " tick"))
         check(heals > 0, "the bots\' healers heal someone in their matches ({heals} heals)")
+        // Heroes (D-159): a bot with an economy fields its hero in one of its matches (a match won
+        // early can end before either side affords one).
+        let heroes = map(ms) m: g(m + " heroes")
+        check(exists(heroes) n: n >= 1, "a bot fields its hero in the bot matches ({heroes} kinds)")
         insertion_sort(lengths) x, y: x < y
         print "\nbot match lengths [" + concat_string(map(lengths) t: clock(t), ", ") + "], median {clock(lengths[1])} (target for players: 9-12 minutes)"
 
@@ -1002,6 +1046,7 @@ def test_siege_bot(a:JV, b:JV):
         for(glist(at(c, "military"), "waves")) wv: set(wv, "at", jint(as_int(at(wv, "at")) + 600))  // ten minutes to build up first
         set(c, "wonder", jobj())                                                                    // no Wonder
         erase(at(c, "military"), "hero")                                                            // no heroes (D-138)
+        erase(at(c, "military"), "press")                                                           // no pressing its lead home: it would win before its engines come (D-198)
     let sides = [ full_side(0), eco_side(1) ]
     ages[0] = 3
     let slots = cfg_list("military.siege.max_order")
