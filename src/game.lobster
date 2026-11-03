@@ -101,7 +101,7 @@ var mode_arg = ""             // mode:<id>: the lobby's game mode (data/modes.js
 var map_arg = ""              // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""            // races:<A>|<B>: the lobby's prompts, as if typed (then played)
 var look_y = -1
-var place_arg = ""         // place:<building>: one finished by your Town Center at the start (captures)
+var place_arg = ""         // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false       // the lobby's Skirmish: both armies on the map at once, marching on each other
 var army_n = 0             // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
 var hurt_pct = -1          // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
@@ -2022,7 +2022,37 @@ def make_match() -> bool:
         let bytes = world_bytes(bots)
         for(joined) l: net_send(l, 'S', bytes)
     net_on = hosting or join_ip != ""
-    if place_arg != "":
+    if place_arg == "fort" or place_arg == "palisade_fort":  // (captures: every join of a wall line at once)
+        // a run of wall along x with a gate in it, a turn down y, a diagonal run, wall towers at the corners
+        let stone = place_arg == "fort"
+        let fwall = btype_index(if stone: "wall" else: "palisade")
+        let fgate = btype_index(if stone: "stone_gate" else: "palisade_gate")
+        let ftower = btype_index(if stone: "wall_tower" else: "watchtower")
+        let tc = town_center(ME)
+        if tc >= 0:
+            var done = false
+            for([ int2 { 5, -4 }, int2 { -12, 5 }, int2 { 5, 6 }, int2 { -10, -10 }, int2 { 6, 0 }, int2 { 0, 6 }, int2 { -8, 0 }, int2 { 0, -8 } ]) o:
+                if not done:
+                    let x0 = b_cx[tc] + o.x
+                    let y0 = b_cy[tc] + o.y
+                    let cells = []::int3  // x, y, kind (-1 wall, -2 gate along x, -3 tower)
+                    for(3) i: cells.push(int3 { x0 + i, y0, -1 })
+                    cells.push(int3 { x0 + 3, y0, -2 })
+                    for(2) i: cells.push(int3 { x0 + 6 + i, y0, -1 })
+                    cells.push(int3 { x0 + 8, y0, -3 })
+                    for(3) i: cells.push(int3 { x0 + 8, y0 + 1 + i, -1 })
+                    for(3) i: cells.push(int3 { x0 + 7 - i, y0 + 4 + i, -1 })
+                    cells.push(int3 { x0 - 1, y0, -3 })
+                    let fits = (filter(cells) c: can_place(ME, if c.z == -1: fwall elif c.z == -2: fgate else: ftower, c.x, c.y)).length
+                    if fits * 10 >= cells.length * 8:  // (most of it: a tree or a rock in the way leaves a gap)
+                        for(cells) c:
+                            let k = if c.z == -1: fwall elif c.z == -2: fgate else: ftower
+                            if can_place(ME, k, c.x, c.y): fort_put(ME, k, c.x, c.y, 0)
+                        update_pop()
+                        cam = iso(float(x0 * 1000 + 5500), float(y0 * 1000 + 4500))
+                        print "fort: {fits} of {cells.length} tiles at {x0},{y0}"
+                        done = true
+    elif place_arg != "":
         let k = btype_index(place_arg)
         let tc = town_center(ME)
         if k >= 0 and tc >= 0:

@@ -149,6 +149,10 @@ def vm_fill(model:MNode, v:float) -> vm_shell:
                     let tuv0 = d.uv[k] + (d.uv[k + 1] - d.uv[k]) * bu + (d.uv[k + 2] - d.uv[k]) * bv
                     let vc = d.c[k] + (d.c[k + 1] - d.c[k]) * bu + (d.c[k + 2] - d.c[k]) * bv
                     let c = vm_colour(m, img, p, fnorm, tuv0, vc)
+                    // (the model's smooth normal there, its vertices' blended: the faces' flat ones shaded every facet of
+                    // a low-poly stake or column as a hard edge)
+                    var sn = d.n[k] + (d.n[k + 1] - d.n[k]) * bu + (d.n[k + 2] - d.n[k]) * bv
+                    if dot(sn, fnorm) < 0.0: sn = -sn
                     if c.w > 0.0:
                         let q = int3 { int(floor(p.x / v)), int(floor(p.y / v)), int(floor(p.z / v)) }
                         let key = vm_key(sh, q)
@@ -164,10 +168,19 @@ def vm_fill(model:MNode, v:float) -> vm_shell:
                         last_key = key
                         last_slot = slot
                         sh.col[slot] += xyz(c)
-                        sh.nrm[slot] += fnorm
+                        sh.nrm[slot] += sn
                         sh.hits[slot]++
                         if glow: sh.glow[slot] = true
             k += 3
+    // each normal blended with its neighbours' (one pass over the 26 round it): the voxel stairs don't speckle the light
+    let raw = copy(sh.nrm)
+    for(sh.pos) q, i:
+        var n = raw[i] * 2.0
+        for(27) o:
+            if o != 13:
+                let j = sh.at.get(vm_key(sh, q + int3 { o % 3 - 1, (o / 3) % 3 - 1, o / 9 - 1 }), -1)
+                if j >= 0 and dot(raw[j], raw[i]) > 0.0: n += raw[j]
+        sh.nrm[i] = n
     for(sh.pos.length) i:
         sh.col[i] = sh.col[i] / float(sh.hits[i])
         let nm = magnitude(sh.nrm[i])
@@ -243,12 +256,13 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
                     var hit = 0
                     for(VM_AO_TAPS) t: if vm_solid(sh, q + t): hit++
                     k -= clamp((float(hit) / 14.0 - 0.45) / 0.35, 0.0, 1.0) * 0.3
-                    k = if k > 0.8: 1.06 elif k > 0.62: 0.94 elif k > 0.45: 0.78 elif k > 0.28: 0.62 else: 0.5
+                    k = 0.52 + 0.54 * smoothstep(0.15, 0.95, k)  // (a smooth ramp: hard bands read as inked comic art, Dominic)
                 shade[i] = k
             let c = min(sh.col[i] * shade[i], float3_1)
             cols[j] = float4 { c.x, c.y, c.z, 1.0 }
     let out = ensure_size("", w * h * 4, 0)
-    // the outline: the empty pixels beside the drawn ones, in the dark of the colour beside them
+    // the outline: only round the whole silhouette's outside (not every gap between stakes or posts), soft: the colour
+    // beside it darkened a little, half seen (Dominic: "a lot of hard edges... we should soften")
     for(h) y: for(w) x:
         let j = y * w + x
         var c = cols[j]
@@ -258,9 +272,9 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
                 let yy = y + o.y
                 if c.w == 0.0 and xx >= 0 and yy >= 0 and xx < w and yy < h and cols[yy * w + xx].w > 0.0:
                     let b = cols[yy * w + xx]
-                    c = float4 { b.x * 0.3, b.y * 0.3, b.z * 0.3, 1.0 }
+                    c = float4 { b.x * 0.55, b.y * 0.55, b.z * 0.55, 0.55 }
         if c.w > 0.0:
-            for(4) ch: write_int8_le(out, j * 4 + ch, clamp(int((if ch < 3: c[ch] else: 1.0) * 255.0 + 0.5), 0, 255))
+            for(4) ch: write_int8_le(out, j * 4 + ch, clamp(int(c[ch] * 255.0 + 0.5), 0, 255))
     // the shadow on the ground, where nothing is drawn: the sun's, and a contact shadow round what stands on the ground
     // (the old baker's contact band: without it a rock or a barrel at the door floated, Dominic)
     if shadow:

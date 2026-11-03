@@ -213,3 +213,13 @@ triangle of level courses at the roof's slope, a level base cornice and raking c
   review. (On the way: the first threshold took shaded magenta for no team at all; then walls, farms and palisades,
   which carry none by design.)
 - Pictures 41-42 (Romans, frogs in a match), 43 (stone, junk and thatch buildings voxelized).
+
+### Walls, gates, towers, and softer edges
+
+A `place:fort` capture (and `place:palisade_fort`) lays a small fort by the Town Center: a straight run with a gate in
+it, a turn, a diagonal run, towers at the corners. Joins, corners and gates hold (pictures 47-48); the stone diagonal
+reads as a row of piers (left for the review). Dominic on the palisade: "a lot of hard vertexes/edges, a bit like
+borderlands. I think we should soften". Three causes, three fixes: each voxel took its triangle's flat normal (every
+facet of a low-poly stake a hard edge: now the model's smooth normals, blended with their neighbours'), the light was
+five hard bands (now a smooth ramp), and an outline at 30% went round every gap between stakes (now 55%, half seen).
+Pictures 45-46, before and after.
