@@ -229,6 +229,7 @@ def vx_job_step(j:vx_job, until:float) -> bool:
             let pose = j.poses[j.at]
             let m = pose.x
             vx_act = if m == VX_ATTACK or m == VX_WORK: "attack" else: ""
+            vx_stand = m != VX_WALK
             var wu = u
             if m == VX_WORK:  // (work: chopping; what it wears kept)
                 let tools = [ "axe" ]
@@ -237,6 +238,7 @@ def vx_job_step(j:vx_job, until:float) -> bool:
             var parts = vx_unit_prims(wu, if m == VX_DIE: 0.0 else: float(pose.y) * 45.0)
             if m == VX_DIE: parts = vx_fallen(parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
             vx_act = ""
+            vx_stand = false
             j.filling = vx_fill_begin(parts, vx_size_of(u), vx_flies(u) and m != VX_DIE)
     return false
 

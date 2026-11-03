@@ -350,5 +350,9 @@
    "mat": "team",
    "_doc": "the scarf"
   }
- ]
+ ],
+ "check": {
+  "knees": 150,
+  "_doc": "folded legs: a frog crouches"
+ }
 }

@@ -246,5 +246,8 @@
    "mirror": true,
    "_doc": "small ears"
   }
- ]
+ ],
+ "check": {
+  "knees": 65
+ }
 }

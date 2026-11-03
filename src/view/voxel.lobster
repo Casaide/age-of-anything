@@ -478,6 +478,7 @@ var vx_variant = 0          // the look being built
 var vx_seated = false       // a rider being built: no legs of its own (shapes with `unless: seated` left off)
 var vx_team_wear = "scarf"  // where a creature without a tunic wears the team: scarf or vest (a concept option)
 var vx_act = ""             // the pose being drawn: "" (standing or walking) or "attack", at a step through it
+var vx_stand = false        // standing (not walking): every foot planted where it rests (idle, a blow, at work)
 
 def vx_looks_of(u:vx_unit_def) -> int: return vx_body_of(u.body).looks.length
 
@@ -493,7 +494,7 @@ def vx_set_look(u:vx_unit_def, v:int) -> void:
     let b = vx_body_of(u.body)
     vx_variant = v
     let skin = if u.skin != float3_0: u.skin else: b.skin
-    vx_mat_cols[vx_mat("skin")] = min(skin * b.skin_scale * b.looks[v], float3_1)
+    vx_mat_cols[vx_mat("skin")] = vx_lifted(skin, b.skin_scale, b.looks[v])
     vx_mat_cols[vx_mat("pale")] = if u.pale != float3_0: u.pale else: b.pale
     vx_mat_cols[vx_mat("mark")] = if u.mark != float3_0: u.mark else: b.mark
     vx_mat_cols[vx_mat("hair")] = b.hair[v]
@@ -503,6 +504,17 @@ def vx_set_look(u:vx_unit_def, v:int) -> void:
         vx_mat_cols[vx_mat("coat")] = if u.coat != float3_0: u.coat else: mb.skin
         vx_mat_cols[vx_mat("mane")] = if u.mane != float3_0: u.mane else: mb.pale
         vx_mat_cols[vx_mat("coat_mark")] = if u.coat_mark != float3_0: u.coat_mark else: mb.mark
+
+// A skin in a look: a dark palette lifted by up to `lift` for the voxels' darker shading (a light one not at all: a
+// light palette times 1.3 came out white, "looks unwell", Dominic, 2026-11-03), shaded by the look, and scaled whole
+// (its hue and saturation kept) to stay under VX_SKIN_TOP. voxel_check checks every palette in every look.
+let VX_SKIN_TOP = 0.92  // (the lit band, 1.08 of it, stays under white)
+def vx_lifted(c:float3, lift:float, look:float) -> float3:
+    let lum = c.x * 0.3 + c.y * 0.59 + c.z * 0.11
+    let k = clamp(0.45 / max(lum, 0.01), 1.0, lift)
+    let s = c * k * look
+    let top = max(s.x, max(s.y, s.z))
+    return if top > VX_SKIN_TOP: s * (VX_SKIN_TOP / top) else: s
 
 // How far into its blow an attack is at t: a wind-up, a fast strike, a hold, back.
 def vx_blow(t:float) -> float:
@@ -599,9 +611,9 @@ def vx_body_points(b:vx_body_spec, ph:float, lift:float3) -> vx_points:
             let m = float3 { side, 1.0, 1.0 }
             let w = ph + l.phase
             let hip = vx_where(p, l.pa) + l.a * m
-            let foot = l.foot * m + float3 { 0.0, sin(w) * side * l.stride, max(0.0, cos(w) * side) * l.lift }
+            let foot = if vx_stand: l.foot * m else: l.foot * m + float3 { 0.0, sin(w) * side * l.stride, max(0.0, cos(w) * side) * l.lift }
             let d = hip - foot
-            let reach = (l.l1 + l.l2) * 0.97
+            let reach = (l.l1 + l.l2) * (if vx_stand: 0.995 else: 0.97)  // (standing, a leg may be straight)
             let across = d.x * d.x + d.y * d.y
             if across < reach * reach and d.z > 0.0: drop = max(drop, d.z - sqrt(reach * reach - across))
     if drop > 0.0: p.at = map(p.at) a: a - float3 { 0.0, 0.0, drop }
@@ -614,8 +626,8 @@ def vx_legs(out:[vx_prim], b:vx_body_spec, p:vx_points, ph:float, flags:[string]
         for([ 1.0, -1.0 ]) side:
             let m = float3 { side, 1.0, 1.0 }
             let w = ph + l.phase
-            let st = sin(w) * side * l.stride
-            let up = max(0.0, cos(w) * side) * l.lift
+            let st = if vx_stand: 0.0 else: sin(w) * side * l.stride
+            let up = if vx_stand: 0.0 else: max(0.0, cos(w) * side) * l.lift
             let hip = vx_where(p, l.pa) + l.a * m
             let foot = l.foot * m + float3 { 0.0, st, up }
             let knee, ankle = vx_ik(hip, foot, l.l1, l.l2, l.pole * m)

@@ -354,5 +354,9 @@
    ],
    "_doc": "the horn"
   }
- ]
+ ],
+ "check": {
+  "knees": 110,
+  "_doc": "reared on bent hind legs"
+ }
 }

@@ -305,5 +305,8 @@
   1.5,
   5.0
  ],
- "_fused_doc": "a centaur: its rider grows out of the front here (the head, neck and mane left off)"
+ "_fused_doc": "a centaur: its rider grows out of the front here (the head, neck and mane left off)",
+ "check": {
+  "knees": 45
+ }
 }

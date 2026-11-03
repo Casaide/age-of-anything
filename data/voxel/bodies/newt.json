@@ -341,5 +341,9 @@
    "r": 0.95,
    "mat": "mark"
   }
- ]
+ ],
+ "check": {
+  "knees": 80,
+  "_doc": "sprawled legs"
+ }
 }
