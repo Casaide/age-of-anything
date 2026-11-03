@@ -259,6 +259,20 @@
   "contain_gap": 3,
   "_doc_contain": "contain_pop, contain_gap: an army smaller than contain_pop (population) doesn't storm a Town Center under the enemy's towers, Castle or Town Center arrows (fog memory): it waits on its way in, contain_gap tiles out of their reach, and goes in once it's that big, or once it brings a siege engine (bot.gd _contain_point). dominant_pct: an army this many percent of the enemy army it remembers (or more) skips raids and goes for the Town Centers (waiting first if it's under contain_pop).",
   "dominant_pct": 250,
+  "press": {
+   "from": 600,
+   "workers": 20,
+   "workers_pct": 130,
+   "stay_pct": 110,
+   "army_pct": 75,
+   "army": 24,
+   "over_pct": 150,
+   "back_pct": 30,
+   "headroom": 6,
+   "push": 100,
+   "wait": 240
+  },
+  "_doc_press": "pressing a lead (bot.lobster press_think, D-198): from `from` seconds, with `workers` workers or more, a bot clearly ahead of the enemy it knows of (an age up, or the same age and workers_pct percent of the enemy's workers as it knows them: those it has seen within scout.memory, or one a building it remembers but walls, if more; ages are announced; and its army at least army_pct percent of the enemy army it remembers) presses home: it masses `army` population (or over_pct percent of the enemy army it remembers, if more; within its level's army_ratio, less a tenth), saving for the soldiers it lacks instead of the next age or a building while it's short of that (at the prices of the soldiers it fields, and its hero if it waits on one; `push`: how hard the economy leans to it, as economy.build_push), its soldiers paying no heed to other savings, and its soldiers at home answering only raids on its own side of the map, not a tower's arrows nor raiders running home, then (or after `wait` seconds of massing, with at least a repeat wave's army) sends all of it, home guard and all, past raids and contain waits at the Town Centers (rams for the Town Center first), reinforces it with every REINFORCE soldiers that gather at home, and calls what's out home to mass again only once its army, reinforcements and all, falls under back_pct percent of the army it massed. It keeps pressing while it holds stay_pct percent of the enemy's workers in no lower age. While pressing, a house goes up once its population is within `headroom` of its cap (2 otherwise), for the soldiers queued everywhere. A level's `press` replaces any of these.",
   "scouts": {
    "keep": 1
   },
@@ -302,7 +316,7 @@
   "_doc": "a Wonder (bot.gd _wonder): from `age`, with none of its own standing or going up, once its stock of every resource is at least spare_pct percent of the Wonder's cost, it lays one by its Town Center and sends `builders` workers. Every bot also attacks a Wonder it knows of (seen, or finished: everyone hears of that) before anything else, and a finished one at once"
  },
  "levels": {
-  "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers; age3_workers: workers before it saves for age 3 (economy.age3_workers otherwise); towers: Watchtowers it raises where it was raided; shelter_pop: the raid (enemy population) that makes it call its workers to arms (absent: never); all_in: an army this big (population) goes out whole on its wave, home guard and all (absent: never). (Dominic: not caps; less focus on fighting, more building up.) guard_crossing: 1 puts a Watchtower on the key crossing (land). raids: waves and pushes go for the enemy's economy outside tower range first, in up to this many groups (military.raid_targets), from raid_from seconds (Normal: a long match's way out of a stand-off; Hard: from the start).",
+  "_doc": "difficulty, as in the genre: easier bots build up more and fight less, but grow all game (no caps, up to the population limit). delay: seconds added to every wave's time; army_pct: the share of each wave's minimum army; army_ratio: soldiers kept (population) as a percent of its workers per age (50: half its workers in age 1, as many in age 2, one and a half in age 3; absent: no limit); wave_pct: the share of its army each wave sends (the rest defend); build_up: research gathering and line upgrades before soldiers; age3_workers: workers before it saves for age 3 (economy.age3_workers otherwise); towers: Watchtowers it raises where it was raided; shelter_pop: the raid (enemy population) that makes it call its workers to arms (absent: never); all_in: an army this big (population) goes out whole on its wave, home guard and all (absent: never). (Dominic: not caps; less focus on fighting, more building up.) guard_crossing: 1 puts a Watchtower on the key crossing (land). raids: waves and pushes go for the enemy's economy outside tower range first, in up to this many groups (military.raid_targets), from raid_from seconds (Normal: a long match's way out of a stand-off; Hard: from the start). press: changes to military.press (Easy wants a bigger lead and masses less; Hard presses a smaller lead).",
   "easy": {
    "delay": 300,
    "army_pct": 50,
@@ -313,7 +327,11 @@
    "towers": 3,
    "shelter_pop": 2,
    "all_in": 60,
-   "guard_crossing": 1
+   "guard_crossing": 1,
+   "press": {
+    "workers_pct": 160,
+    "army": 20
+   }
   },
   "normal": {
    "delay": 120,
@@ -338,7 +356,11 @@
    "all_in": 24,
    "guard_crossing": 0,
    "raids": 3,
-   "build_up": 1
+   "build_up": 1,
+   "press": {
+    "workers_pct": 120,
+    "army": 20
+   }
   }
  },
  "scout": {
