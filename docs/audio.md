@@ -37,7 +37,7 @@ Rules the sounds follow:
 
 ## The music
 
-One theme ("Whatever"), D Dorian, 92 to the minute, 32 bars (A A B A'), about 84 seconds,
+The theme ("Whatever"; two more pieces below), D Dorian, 92 to the minute, 32 bars (A A B A'), about 84 seconds,
 written in `tools/audio/music.py` as text notes. It is rendered as **stems**, one seamless
 loop each (note tails and the room's tail wrap round), all the same length and in time, so
 any mix of them is the same tune:
@@ -58,6 +58,31 @@ brings the drums in and lets them go eight seconds after the last blow. Victory 
 fade the theme out under their sting. The pause menu has `Music: on/off`. Mixes and stem
 levels are data: `data/audio.json`.
 
+## Two more pieces (2026-11-03)
+
+The theme has two siblings, written the same way (text notes, the same six stems, seamless loops)
+and in the same seven white-key notes, each round a different home note, so they belong to the game
+and the stings in D sit in all three:
+
+| Piece | Mood | Key, time | Length | What's in it |
+|---|---|---|---|---|
+| `theme` ("Whatever") | the game's tune, striding | D Dorian, 92, 4/4 | 83.5 s | as above |
+| `hearth` | the town at work: calm, warm, a lilt | G Mixolydian, 72, 3/4 | 80 s | a wooden tongue drum on the tune over a lute rolling the chord, a hand drum barely there, a flute an octave down in B and a third under in A', a slow G/C drone, soft held horns |
+| `march` | the war: tense, driven | E Phrygian, 112, 4/4 | 68.6 s | a lute ostinato that never leaves its root (the first 8 bars are only that and the drums), the tune on a bright lute, a frame-drum march with rolls, high held flute notes, horn stabs in B and the tune as a horn call in A'; its battle layer is sixteenths on the war drum |
+
+Every piece has the same stems in the same roles (`pluck` carries the tune, `drums`, `flute`, `drone`,
+`horns`, `battle`), so the mixes by age work on each unchanged. Files: `music/<piece>_<stem>.ogg`;
+code: `tools/audio/music.py` (the theme and `PIECES`), `music_hearth.py`, `music_march.py`, `score.py`
+(the clock and note text they share). `render.py music` renders all three, `render.py hearth` one.
+
+How the game picks (`music_tick`, numbers in `data/audio.json` music): the lobby plays the rotation's
+first piece (the theme). In a match the calm rotation (`theme`, `hearth`) turns over every `plays` (2)
+loops, about every 2.7 minutes. Fighting on screen warms a heat counter (a second a second, cooling as
+fast, capped at twice the threshold); at `tense_after_s` (25) the `march` comes in at once, and it
+stays until the heat is gone and its loop has finished, then the rotation picks up where it was. A
+change of piece starts the new stems silent and fades them up while the old ones fade down (`fade_s`)
+and are halted, so at most two pieces play at once, briefly.
+
 ## Where things are
 
 ```
@@ -68,13 +93,14 @@ tools/audio/
                   low drum, shaker, bell (wood / bronze), note_hz()
   sfx.py          every effect as a recipe; TABLE says takes and peak level
   voices.py       the creature voices (a glottal pulse through formants, plus animal noisemakers)
-  music.py        the theme: notes as text, the stems, the seamless-loop render
+  music.py        the theme: notes as text, the stems, PIECES, the seamless-loop render
+  music_hearth.py, music_march.py   the other two pieces; score.py what the three share
   render.py       writes assets/audio/{sfx,voice,music}; music goes through ffmpeg to Ogg Vorbis
   check.py        numbers for a file: length, peak, RMS, a pitch guess (ears-free sanity check)
 assets/audio/
   sfx/<name>_<take>.wav        44.1 kHz mono 16-bit
   voice/<voice>_<kind>_<take>.wav
-  music/theme_<stem>.ogg       stereo loops, 160 kb/s
+  music/<piece>_<stem>.ogg     stereo loops, 160 kb/s (theme, hearth, march)
 data/audio.json                buses, every sound's takes / bus / gap / voices, the music mixes
 data/creatures.json            each creature's `voice` (the voice file set it uses)
 src/game/audio.lobster         the game's sound: play_sound(), say(), music_start()/music_tick(), ambience_start()/ambience_tick()
@@ -93,7 +119,7 @@ Spectrograms to look at a sound (ffmpeg's `showspectrumpic`): see the pictures i
 `archive/images/2026-10-11/100-*` for how the sheets were made.
 
 The test suite checks that every sound in `data/audio.json` has its takes on disk and loads,
-every creature's voice has its files, and every stem is there (`src/run_tests.lobster`, the audio group: lengths read
+every creature's voice has its files, and every piece has every stem, a loop long (`src/run_tests.lobster`, the audio group: lengths read
 from the WAV and OGG headers).
 
 ## In the game
@@ -115,7 +141,7 @@ sim's events) plays:
 - chop / mine / build / forage timed to the blow in the worker's animation, positional;
 - the creature's `select` and `ack` for your own units; a token click for buildings and rally;
 - trained, built, research, age-up, farm used up, under attack, victory, defeat;
-- the theme by your age, the battle layer when your units fight on screen (or the alarm sounds),
+- the music by your age (the piece by the rotation, the march in a long fight), the battle layer when your units fight on screen (or the alarm sounds),
   the meadow ambience under the match;
 - the town's own sound on top (milestone 17): two 24-second loops, `town_quiet` and `town_busy`
   (far-off talk that never makes words, a mallet on a frame, a log split, a broom, a bucket set
@@ -129,8 +155,7 @@ sim's events) plays:
 - **Nobody has listened yet.** Every sound was checked by numbers and spectrograms, not ears.
   The creature voices are the experimental part: synthetic throats may read as cheap. Dominic
   listens first; recipes are small, so a bad one is a quick change.
-- A second theme (or a second mode of this one) for variety over a long match; a night /
-  swamp / sewer ambience chosen by the map or the race's architecture.
+- A night / swamp / sewer ambience chosen by the map or the race's architecture.
 - Unit voices by **size and culture** (a giant frog croaks lower; a Roman says a word), and a
   "can't" bark when an order is impossible.
 - Volume sliders in a settings screen; the buses are already there.
