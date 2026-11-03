@@ -1,5 +1,5 @@
-// What the placement checks stand on, in the order the game imports it (game.lobster): the sim's tables, the
-// generator, the composer and the pack's tables, the bakers and every model, the voxelizer and the 3D rig.
+// What the tools that build the game's buildings, props and data stand on (golden.lobster, mod_check.lobster), in
+// the order the game imports it (game.lobster): the sim's tables, the generator, the bake settings, the models.
 import std
 import vec
 import color
@@ -53,7 +53,7 @@ import gen.modes
 import gen.start
 import view.node
 import view.art
-import view.unit_view
+import view.bake_cache
 import game.audio
 import game.pack
 import game.text_cache
@@ -62,27 +62,10 @@ import model.kit
 import model.grng
 import model.base
 import model.flat
-import model.glb
 import model.props
 import model.build_mats
-import model.old_bugs
-import model.units
-import model.units2
-import model.units3
-import model.units4
-import model.units5
-import model.kit_bodies
-import model.siege
-import model.heroes
-import model.bears
-import model.mods_active
-import model.models
-import view.part_bake
-import view.geom
-import view.rig3d
 
-// (the data and models a check needs, loaded once)
-def placement_load():
+// (the data a tool needs, loaded once)
+def data_load():
     lib_load("../data")
     id_load("../data")
-    complete_kit_parts()

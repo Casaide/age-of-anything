@@ -61,7 +61,7 @@ import .gen.modes
 import .gen.start
 import .view.node
 import .view.art
-import .view.unit_view
+import .view.bake_cache
 import .gen.reset
 import .gen.balance
 import .gen.swap
@@ -425,23 +425,6 @@ import .model.kit
 import .model.grng
 import .model.base
 import .model.flat
-import .model.glb
-import .model.old_bugs
-import .model.units
-import .model.units2
-import .model.units3
-import .model.units4
-import .model.units5
-import .model.kit_bodies
-import .model.siege
-import .model.heroes
-import .model.bears
-import .model.mods_active
-import .model.models
-import .view.part_bake
-import .view.geom  // (the dead laid down in 3D and baked: view/corpse.lobster)
-import .view.rig3d
-import .view.corpse
 import .model.props
 import .model.trees
 import .model.town_props
@@ -1870,7 +1853,6 @@ let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mod
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 startup_frame("Loading the parts...", 0.8)
 id_load("../data")
-complete_kit_parts()  // (the creature kit's bodies: with no pack, made here; a pack's kit_parts.json fills them in first)
 // prebake: every prop and every architecture's buildings baked into the shipped folder (src/prebake.sh), then quit.
 if has_s(args, "prebake"):
     bake_cache_dir = bake_shipped_dir
@@ -2255,8 +2237,7 @@ def play_match():
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
         frame_no++
-        if frame_no == 1:  // (inside a frame: a bake outside one leaves the window drawing nothing)
-            let t0 = seconds_elapsed()
+        if frame_no == 1:                                                            // (inside a frame: a bake outside one leaves the window drawing nothing)
             if bake_live and fe_sides.length == num_players and front_choice != "":  // (the match loader shows the bake's progress)
                 bake_progress = fn(st, f): fe_loader(st, f)
                 bake_progress_on = true

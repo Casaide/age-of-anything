@@ -42,7 +42,6 @@ echo "== The game"
 mkdir -p "$out/assets" "$out/src"
 rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/data/" "$out/data/"
 rsync -a --delete --exclude '*.import' "$root/assets/audio/" "$out/assets/audio/"
-rsync -a --delete --exclude '*.import' "$root/assets/models/" "$out/assets/models/"   # (the Blender parts: model/glb.lobster)
 rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/mods/" "$out/mods/"
 rsync -a --delete --delete-excluded --exclude 'pack' --exclude 'pack6b' --exclude 'pack_scifi' --exclude 'library' --exclude 'bake_cache' \
 	--exclude 'model/mods' --exclude 'textures/bmat*' --exclude '*.sav' --exclude 'memory_leaks.txt' \
@@ -54,9 +53,6 @@ cat > "$out/run.sh" <<'EOF'
 # kept in bake_cache/ after the first start). Extra words go to the game (watch, host, join:<ip>, mods:<id>...).
 cd "$(dirname "$0")/src"
 . ./bake_cache.sh
-mods=""
-for a in "$@"; do case "$a" in mods:*) mods=${a#mods:} ;; esac; done
-../lobster/bin/lobster mods_gen.lobster -- $(echo "$mods" | tr ',' ' ')
 ../lobster/bin/lobster game.lobster -- none lobby "$@" &
 game=$!
 trap 'kill -9 $game 2>/dev/null' INT TERM   # (Lobster's window never takes Ctrl-C: the script stops the game)
