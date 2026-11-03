@@ -1402,3 +1402,25 @@ shared atlas pages (`game/pack.lobster`): a small sheet is copied onto a page th
 nothing about baking or the bake cache changes. Flat UI fills, lines and studs inside `ui_batch` gather into one
 mesh until anything else is drawn, which keeps the layering exact (the panel, top bar and minimap captures are byte
 for byte the same). The `perf:` check now also guards the main thread's busy share (22%).
+
+**D-195, 2026-11-03: Prices are fixed per unit, calibrated offline by fights; a match loads without fights
+(supersedes D-170).** Dominic, 2026-10-31: "why are we balancing? we control all the inputs, but we act like the
+outputs are an unknown?", and 2026-11-03: "We were trying to simplify, so remove the need for all the testing before
+matches." The fights only existed because adding up part points doesn't add up strength, and D-170 priced each line
+as a percent of its price against whoever it met (a unit's price depended on its opponent). Now
+`src/calibrate.lobster` fights a few hundred generated races' lines against a fixed panel (the lines of three random
+races) at equal cost, finds each line's fair price, and fits every part's `price_points`, each line's roster
+`price_points` and the giant and tiny price points (`rules.cost.giant_price_points`, `tiny_price_points`: the
+generator still spends `GIANT_POINTS`, so recipes and race keys don't move) by weighted, regularized least squares;
+`tools/balance/write_prices.py` writes them into the data. Measured on held-out prompts at the same data, with no
+fights at load: one pool of 124 lines (about 140 fights each) went from 71 lines more than 10 win-rate points off the
+mean to 30 (sd 16.7 to 10.7); round robins of 2 to 5 races (as matches are) from 87 of 145 to 55; the setup's default
+pair from 7 of 14 to 5. Even each line at its own exact panel price (no fit) left 39% of the pool off at pass 1: a
+group's round robin gives a line 13 fights, so coin flips alone put half the lines 10 points off; the pool is the
+fair measure. The cost: counters are weaker at fair prices (the counter fights 90% to 72%, the check now 70%):
+infantry pays for beating most of the field and loses its fight with cheaper spears; the counter bonuses are
+Dominic's call (`docs/backlog.md`). The match start, a race made mid-match and the loader's "Balancing the armies"
+step are gone; the Race Lab's Test still shows one round of fights. The batch checks the held-out round robins
+(`calibrate.lobster measure check:45`), and `mod_check.sh` prices a mod's new parts. The commits say D-194 (that
+number was taken the same day). Under D-193 the calibration, like balance by fights, belongs to the race-generation
+toolkit module (`modules/racegen`), not the engine core.

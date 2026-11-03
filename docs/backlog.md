@@ -154,7 +154,24 @@ Godot Variant reader in Lobster. Only worth it if old saves need to carry over.
 
 ## 3. Balance tooling
 
-- **Price by simulation:** headless fights of each unit vs reference units (Frogs, Rats) at equal
+- **Counters at calibrated prices (Claude, 2026-11-03, D-195; Dominic's call).** With every line priced fair against
+  the whole field, the same-race counter fights dropped from 90% to 72% (test_sim's bar is 70% now). What loses:
+  infantry against spears on every race (infantry's +3 vs spear isn't enough once it pays for beating most lines),
+  large against archers on three races. The bow fits to 0 price points: archers lose to most lines on attack-move
+  (the kiting note below). Options: bigger counter bonuses in the roster (`rules` roster `bonus`), then calibrate
+  again (`./shards.sh calibrate.lobster lines 2 120`, `lines 3 80`, `fit write`, `write_prices.py`; about 40
+  minutes at jobs=4), or the counter fights as a constraint in the fit.
+- **Bot vs bot draws at calibrated prices (Claude, 2026-11-03, D-195).** test_ai's frogs vs rats on reed_meadow
+  ("bot vs bot ends with a winner", "land: the match ends") has no winner at 30:00, nor at 45:00: both bots trade
+  armies of 2 to 12 soldiers all match; by 30:00 the rats lead 49 workers and age 3 to 21 workers in age 2, and still
+  don't finish. At pass 2's prices it ended at 29:02; at points-only prices it ends at 15:29 but "hard beats normal"
+  and the heroes check fail instead. Whole bot matches swing with any price set; the fix belongs in the bots (a side
+  far ahead should mass and finish), not in the test's limit.
+- **Calibration leftovers (D-195):** identity bonuses' `price_points` (groups, creatures, cultures) aren't fitted
+  yet (centaur lines still run strong); age 1 and age 4 lines aren't sampled; wings and quivers price near 0 because
+  open-field fights don't value flying or scouting.
+
+- **Price by simulation** (done offline, D-195: `src/calibrate.lobster`): headless fights of each unit vs reference units (Frogs, Rats) at equal
   cost; win rate sets cost. Run it on generation and when parts change.
   `tests/balance.gd` (milestone 10) is the measuring half: an equal-cost round robin. The next step
   is a tuner that nudges part points until no unit is more than 20% off the mean (11 of 20 were

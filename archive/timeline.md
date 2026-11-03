@@ -174,3 +174,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-10-31 (night):** A performance check in the real window (D-188): it found the HUD making 1,500 GPU buffers a frame; `gl.draw_mesh` draws from pooled buffers, and a frame takes 3.3 ms of work instead of 13.7.
 - **2026-10-31:** The bears are one shaped body, not balls (D-189, B4 option A), and the lump behind their necks is gone.
 - **2026-11-03:** The laptop still ran hot: sprites drawn from atlas pages, the HUD's fills batched, the lobby at 30 frames a second (D-194); a match's frame 1.9 -> 1.1 ms of work, the idle title 9% -> 3.5% of a core.
+- **2026-11-03:** Prices are fixed per unit, calibrated offline by fights (D-195): a match loads without balance fights (7 to 38 s before), and held-out lines more than 10 points off the mean went from 57% to 24%.
