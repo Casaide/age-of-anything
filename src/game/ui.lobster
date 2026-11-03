@@ -41,12 +41,12 @@ PIXELFUNCTIONS
         if (k <= 1.0) return c * k;
         return mix(c, vec3(1.0, 0.97, 0.9), clamp((k - 1.0) * 0.9, 0.0, 1.0));
     }
-    // hammered metal (bronze, gold, iron): soft dimples lit from the top left, scratches, blotches
+    // hammered metal (bronze, gold, iron): soft dimples lit from the top left, scratches running across, blotches
     float uimetal(vec2 p, float rough, float seed) {
         vec2 q = p * 0.045 + seed;
         float d = uicell(q).x;
         float dl = uicell(q - vec2(0.09, 0.09)).x;
-        return 0.78 + (d - dl) * 1.5 + 0.12 * (uifbm(p * 0.012 + seed) - 0.5) + rough * 0.25 * (uinoise(vec2(p.x * 0.4, p.y * 0.025) + seed) - 0.5);
+        return 0.78 + (d - dl) * 0.75 + 0.12 * (uifbm(p * 0.012 + seed) - 0.5) + rough * 0.25 * (uinoise(vec2(p.x * 0.025, p.y * 0.4) + seed) - 0.5);
     }
     // dressed stone: blocks in staggered courses, each a touch different, speckled, dark joints with a lit lip
     float uistone(vec2 p) {
@@ -294,13 +294,17 @@ def ui_line(a:float2, b:float2, w:float, col:float4):
                  [ col, col, col, col ], []::float3, []::float2, []::float2, [ 0, 2, 1, 0, 3, 2 ])
     gl.set_shader("color")
 
+// Faces, frames and buttons have their material at its own fine scale: Godot's tiles (ui_materials.gd) were painted at
+// twice the UI's pixel size and drawn at half, so a material's grain and dimples came out small and quiet.
+let UI_MAT_PX = 0.4
+
 // A painted rect; `role` picks the look's material: 0 a panel's face, 1 a frame, 2 a button.
 def ui_mat(at:float2, size:float2, col:float4, role:int):
     if size.x <= 0.0 or size.y <= 0.0: return
     ui_batch_flush()
     let kind = if role == 1: ui_look.frame_mat elif role == 2: ui_look.button_mat else: ui_look.panel_mat
     gl.set_shader("uimat")
-    let ok = gl.set_uniform("mcol", col) and gl.set_uniform("kind", float(kind)) and gl.set_uniform("win_h", float(gl.window_size().y)) and gl.set_uniform("px", max(1.0, ui()))
+    let ok = gl.set_uniform("mcol", col) and gl.set_uniform("kind", float(kind)) and gl.set_uniform("win_h", float(gl.window_size().y)) and gl.set_uniform("px", UI_MAT_PX * ui())
     if not ok and not ui_warned:
         print "ui: a uniform did not set"
         ui_warned = true
