@@ -1,5 +1,5 @@
-// The scifi_test mod's parts for the Lobster game (scifi_parts.gd's, line for line): built from the game's model
-// kit (tests/lobster_spike/model/: blob, rod, slab, dome, ring, cone, box, surf, plain, glow...). A mod's Lobster
+// The scifi_test mod's parts for the Lobster game: built from the game's model
+// kit (src/model/: blob, rod, slab, dome, ring, cone, box, surf, plain, glow...). A mod's Lobster
 // model file defines build_mod_<mod id>(base, colours) -> Spec? for its parts (nil for the rest); mod.json's
 // "lobster_models" names it, and play.sh includes it when the mod is on. Same frames as the game's own parts.
 

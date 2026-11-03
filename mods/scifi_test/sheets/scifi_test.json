@@ -1,7 +1,7 @@
 {
  "name": "scifi_test",
  "title": "Mod scifi_test: future soldiers beside a human spearman and a Roman legionary",
- "_doc": "The scifi_test mod's sheet (milestone 21). Run: godot --path . --audio-driver Dummy --always-on-top --script res://tests/sheet.gd -- mods/scifi_test/sheets/scifi_test.json out_dir",
+ "_doc": "The scifi_test mod's sheet (milestone 21). Run from src: ./sheet.sh ../mods/scifi_test/sheets/scifi_test.json out_dir",
  "mods": ["scifi_test"],
  "rules": "anything",
  "zooms": [3, 1],
