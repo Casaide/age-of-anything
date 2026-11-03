@@ -328,12 +328,55 @@ def draw_topbar(speed:float, paused:bool):
         let cat = float2 { clamp(m.x - 20.0 * s, 4.0, float(gl.window_size().x) - cw - 4.0), at.y + h + 6.0 * s }
         hud_box(cat, float2 { cw, 34.0 * s }, 3.0, ui_look.face * float4 { 1.08, 1.08, 1.08, 1.0 }, false, 4.0)
         tb_text(cat + float2 { 12.0 * s, (34.0 * s - float(fs)) / 2.0 - 2.0 * s }, tb_tip, fs, float4 { 0.94, 0.89, 0.78, 1.0 }, 0)
+    let hint_h = tb_hints(at.y + h + 18.0 * s)
     // The icons over the shapes, then the text.
     for(icons) name, k:
         let ia2 = icon_at[k]
         tb_icon(name, float2 { ia2.x, ia2.y }, ia2.z, ia2.w)
-    draw_wonder_clock(at.y + h + (if tb_tip != "": 48.0 * s else: 40.0 * s))
+    draw_wonder_clock(at.y + h + hint_h + (if tb_tip != "": 48.0 * s else: 40.0 * s))
     tb_flush()
+
+// The opening tips against the AI (sim_debug.gd's hints): three, one at a time, centred under the bar, each gone once
+// it's done (a worker trained, one gathering, a house begun or four minutes gone). Not in a network match, a watched one
+// or one loaded from a save. Returns the room it took.
+let TB_HINTS = [ "Click your Town Center, then press Q (or its button) to train a worker.",
+                 "Select a worker and right-click a bush, reeds or stone to gather.",
+                 "Build a House (select a worker, press H) before your population fills up: every unit needs room." ]
+let TB_PAD_HINTS = [ "D-pad up: your Town Center. Tap A on it for its commands, point at the worker, A to train.",
+                     "D-pad down: an idle worker. Aim at a bush, reeds or stone and press X to gather.",
+                     "Build a House (tap A on a selected worker, Build: Civilian, House, A to place) before your population fills up." ]
+var tb_hint_step = -1  // the tip showing; -1 not begun, 3 done or none
+var tb_hint_units = 0  // your units when they began
+var tb_hint_tick = 0   // (a tick lower than the last seen: a new match, the tips again)
+
+def tb_hints(y:float) -> float:
+    if tick < tb_hint_tick: tb_hint_step = -1
+    tb_hint_tick = tick
+    if tb_hint_step < 0:
+        tb_hint_step = if in_net_match or watch or tick > 20: 3 else: 0
+        tb_hint_units = (filter(u_owner) o: o == ME).length
+    if tb_hint_step >= 3 or winner >= 0: return 0.0
+    var done = false
+    if tb_hint_step == 0: done = (filter(u_owner) o: o == ME).length > tb_hint_units
+    elif tb_hint_step == 1:
+        for(u_owner) o, i: done = done or (o == ME and u_task[i] == GATHER)
+    else:
+        done = tick > 20 * 240
+        for(b_owner) o, b: done = done or (o == ME and has_role(b_kind[b], ROLE_HOUSING) and not has_role(b_kind[b], ROLE_HUB))
+    if done:
+        tb_hint_step++
+        play_sound("ui_tip", -6.0)
+    if tb_hint_step >= 3: return 0.0
+    let s = hud_s()
+    let line = "Tip {tb_hint_step + 1} of 3:  " + (if pad_on: TB_PAD_HINTS else: TB_HINTS)[tb_hint_step]
+    let fs = int(18.0 * s)
+    let cw = tb_text_w(line, fs, 0) + 28.0 * s
+    let ch = 40.0 * s
+    let at = float2 { (float(gl.window_size().x) - cw) / 2.0, y }
+    hud_box(at, float2 { cw, ch }, 3.0, ui_look.face * float4 { 1.08, 1.08, 1.08, 1.0 }, false, 4.0)
+    ui_outline(at + float2_1 * 3.0 * s, float2 { cw, ch } - float2_1 * 6.0 * s, max(1.0, s), float4 { ui_look.accent.x, ui_look.accent.y, ui_look.accent.z, 0.6 })
+    tb_text(at + float2 { 14.0 * s, (ch - float(fs)) / 2.0 - 2.0 * s }, line, fs, float4 { 0.96, 0.92, 0.82, 1.0 }, 0)
+    return ch + 8.0 * s
 
 // The Wonder countdowns, centred under the bar, the same for every player: one line per standing finished
 // Wonder ("Sewer Rats' Wonder: 7:32") in its owner's team colour, lightened (wonder_clock.gd).
