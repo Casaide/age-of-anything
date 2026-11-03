@@ -168,7 +168,9 @@ for(args) a, k:
             look_y = string_to_int(ly)
 
 // Tests and captures are silent (Dominic: no sound from testing); `mute` silences a game too.
-if has_s(args, "mute") or shot != "" or selftest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0: sound_on = false
+if has_s(args, "mute") or shot != "" or selftest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
+    sound_on = false
+    pace_background = false  // (tests and captures keep their pace with the window in the background, game/pace.lobster)
 
 var ME = 0  // the side you command (1 for the one who joins a network match)
 var in_net_match = false
