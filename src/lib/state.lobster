@@ -342,6 +342,7 @@ var sp_end = []::int
 var sp_items = []::int
 var sp_cell = []::int
 var sp_cursor = []::int
+var sp_used = []::int  // the cells that hold units since the last build (spatial_build empties only these)
 
 // Formation scratch: each unit's slot, how far ahead / aside it stands.
 var slot_x = []::int

@@ -71,7 +71,8 @@ save += ['    %s = s.%s' % (v, v) for v, t in fields]
 save += ['    %s.clear()' % v for v, t in lets]
 save += ['    s.%s.forkv() k, v: %s.set(k, v)' % (v, v) for v, t in lets]
 save += ['    pad_saved_columns()  // (a save from an older build: its missing per-unit and per-building columns, D-141)',
-         '    roles_from_data()  // (... and its building types\' roles, D-192)', '    return s.bots']
+         '    roles_from_data()  // (... and its building types\' roles, D-192)',
+         '    spatial_clear()  // (... and its spatial buckets, which an older build filled over the whole map)', '    return s.bots']
 open(os.path.join(here, 'gen', 'save.lobster'), 'w').write('\n'.join(save) + '\n')
 # Both files in the formatter's layout, so `python3 lint.py` stays clean after a run.
 import subprocess
