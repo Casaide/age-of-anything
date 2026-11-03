@@ -1501,3 +1501,16 @@ written in a frame of its own (the engine's `gl.save_texture`); a step drawn bef
 drawn in the step before meanwhile. Voxel units draw cheaper than composed ones (perf: 1.9 ms median against 2.4).
 Engines with a crew (siege, war beasts, the trade cart), the stables' tethered mounts and the lobby's pages are still
 composed, their parts baked as before; the panel's and the tech tree's portraits are voxel frames. Claude, for Dominic.
+
+**D-202, 2026-11-03: The composed units are gone; units are voxel bodies only.** With voxels the default (D-201), the
+lobby voxel and the engines and war beasts voxel bodies with their crews, nothing needed the composed pipeline, so it
+was removed rather than kept beside the voxels ("don't leave two pipelines"; Dominic, relayed). Out: the composer
+(`view/unit_view`), the part baker and its queue (`view/part_bake`, `game/bake_missing`), the 3D corpses and rigs, the
+unit models in code and Blender (`model/units*` and the rest, `assets/models`' 72 `.glb`, `tools/blender`), the
+placement check (`placement/`, `placement_check`), the sheet tool and its 53 specs, mods' Lobster models
+(`mods_gen`; a mod's parts need no model now: their looks are voxel gear by `data/voxel/`'s rules), the Godot art
+packs and flipbooks and the `composed` option. The unused definitions left in the shared files (the baker, art, node,
+the model kit) went too: about 27,000 lines in all. The checks that replace the placement check are `voxel_check` and
+the feet-on-shadow check (in the quick batch, which went from about 100 s to 25 s). Lost for now: workers' tools and
+loads by job (the rats' barrow and handcart), the stables' mounts grazing, the engines' packed and throwing poses,
+the culture styles' shapes (they're colours only). Claude, for Dominic.

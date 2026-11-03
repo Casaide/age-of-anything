@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Scaffold a mod (milestone 21, docs/modding.md): a folder with its manifest, data overlays, a model
-script with one example part, a sheet spec and a README, ready to fill in and check.
+"""Scaffold a mod (milestone 21, docs/modding.md): a folder with its manifest, data overlays, one example part with its
+voxel look (data/voxel/gear.json: the gear and the rule that gives the part it), and a README, ready to fill in and
+check.
 
     python3 tools/mods/new_mod.py <id> ["Name"] [--private] [--era <tag>]
 
@@ -30,7 +31,7 @@ def main(argv):
     root = os.path.join("mods_private" if private else "mods", mod_id)
     if os.path.exists(root):
         sys.exit("%s already exists" % root)
-    for d in ["data/rules", "models", "textures", "sheets", "tools"]:
+    for d in ["data/rules", "data/voxel"]:
         os.makedirs(os.path.join(root, d))
     tag = era or mod_id
     part_id = "helm.%s_example" % mod_id
@@ -38,7 +39,7 @@ def main(argv):
         "id": mod_id, "name": name, "version": "0.1.0", "game_version": GAME_VERSION,
         "authors": [], "description": "", "license": "",
         "load_order": 100, "depends": [], "eras": [era] if era else [],
-        "data": "data", "models": ["models/%s_parts.lobster" % mod_id],
+        "data": "data",
         "check": {"rules": "anything", "prompts": ["%s soldiers" % tag]},
     }
     if private:
@@ -58,19 +59,16 @@ def main(argv):
         word = {"era": era, "tags": {tag: 5}, "substitute": {"helmet": 1}, "note": "Not in this era. (Write a playful note.)"}
         write(root, "data/rules/anything.json", {"_doc": "Anything goes allows this mod's era.", "+era": [era]})
     write(root, "data/lexicon.json", {"words": {tag: word}})
-    with open(os.path.join(root, "models", "%s_parts.lobster" % mod_id), "w") as f:
-        f.write(MODEL.format(mod_id=mod_id, part_id=part_id, fn=part_id.replace(".", "_")))
-    write(root, "sheets/%s.json" % mod_id, {
-        "name": mod_id, "title": "Mod %s" % mod_id, "mods": [mod_id], "rules": "anything", "zooms": [3, 1],
-        "cell": [70, 60], "size": [{"prompt": "romans", "slot": "spear"}],
-        "rows": [{"each": {"prompt": ["%s soldiers" % tag], "slot": ["spear", "skirmisher", "infantry"]}, "age": 2}],
-        "sheets": [{"name": "facings", "title": "8 facings", "columns": "facings"},
-                   {"name": "walk", "title": "walking", "columns": "walk:1,3"}],
+    gear_id = "%s_helm" % mod_id
+    write(root, "data/voxel/gear.json", {
+        "_doc": "The mod's voxel gear (docs/rendering.md, \"Voxel units\"): a helmet on any body's helmet spot, and the rule that gives the example part it.",
+        "gear": {gear_id: {"flags": ["helm"], "fits": {"*": [{"helm": 0.4, "mat": "metal"}]}}},
+        "parts": [{"part": part_id, "gear": gear_id}],
     })
     with open(os.path.join(root, "README.md"), "w") as f:
         f.write(README.format(name=name, mod_id=mod_id, root=root,
                               private=PRIVATE if private else ""))
-    print("made %s: fill in data/parts.json and models/%s_parts.lobster, then see docs/modding.md" % (root, mod_id))
+    print("made %s: fill in data/parts.json and data/voxel/, then see docs/modding.md" % root)
 
 
 def write(root, rel, data):
@@ -79,35 +77,12 @@ def write(root, rel, data):
         f.write("\n")
 
 
-MODEL = '''// The {mod_id} mod's parts (data/parts.json), built from the game's model kit (src/model/base.lobster: blob, rod,
-// slab, dome, ring, cone, box; surf(texture, tint, units), plain(colour), glow(colour)). build_mod_{mod_id} returns a
-// part's model by its id (nil for the rest): mod.json's "models" names this file, and the game joins it in when the
-// mod is on (src/mods_gen.lobster). Frames: x the way the unit faces, y up, z towards the viewer's side; head gear
-// round the head's top socket (the crown at y 0, about 5 across), held items round the grip, worn armour frog-sized.
-// c holds the unit's colours: col(c, "team"), col(c, "skin"), col(c, "cloth")...
-
-def {fn}(c:Colours) -> Spec:
-    let n = mnode()
-    let iron = surf("iron", float3_1, 3.0)
-    add_child(n, dome(float3 {{ 5.2, 5.0, 5.0 }}, iron, float3 {{ 0.0, -3.8, 0.0 }}))
-    add_child(n, ring(4.9, 5.5, plain(col(c, "team")), float3 {{ 0.0, -3.6, 0.0 }}))
-    lift_kids(n, 1.05)   // its rim clear of the brow (the placement check, A2)
-    return spec_of(n)
-
-def build_mod_{mod_id}(base:string, c:Colours) -> Spec?:
-    switch base:
-        case "{part_id}": return {fn}(c)
-        default: return nil
-'''
-
 README = '''# {name} (`{mod_id}`)
 {private}
-A mod for the game: more data (`data/`), models for its parts (`models/`), textures (`textures/`),
-a sheet spec (`sheets/`). How to make it: `docs/modding.md`.
+A mod for the game: more data (`data/`), its parts' voxel looks (`data/voxel/`). How to make it: `docs/modding.md`.
 
 ```sh
 src/mod_check.sh {mod_id}
-src/sheet.sh {root}/sheets/{mod_id}.json /tmp/{mod_id}
 python3 tools/mods/pack.py {mod_id}
 ```
 '''

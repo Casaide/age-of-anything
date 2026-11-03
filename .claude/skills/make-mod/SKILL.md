@@ -5,14 +5,14 @@ description: Make an Age of Anything mod (new parts, creatures, cultures, words,
 
 # Make a mod
 
-A mod is a folder of more data plus the models its parts are built from. The full walkthrough is
+A mod is a folder of more data: parts, words, creatures, cultures, rules, and their voxel looks. The full walkthrough is
 `docs/modding.md` (read it first); the format and rules are in `docs/milestones/m21-modability.md`;
 the example is `mods/scifi_test/`. The game is Lobster (`src/`; Lobster is `~/Dev/lobster/bin/lobster`, run from
 `src/`); runs that open a window take `mute`; always put a timeout on runs.
 
 ## Before building: pin down what's wanted
 
-Ask (or confirm from the request) and write it into the mod's README before any model:
+Ask (or confirm from the request) and write it into the mod's README before any look:
 - **A new race or new kit for existing races?** "Something new" means a creature and culture of its own
   (body, head, look, words), not the game's humans in new clothes.
 - **The roster's rules.** If the theme says "lasers only" or "no melee", every line the generator can make
@@ -27,19 +27,19 @@ Ask (or confirm from the request) and write it into the mod's README before any 
 
 1. Scaffold: `python3 tools/mods/new_mod.py <id> ["Name"] [--era <tag>] [--private]`, then check it
    green straight away (step 4).
-2. Concept first (the game's rule for new art): sketch 2-3 directions as a sheet spec
-   (`mods/<id>/sheets/*.json`, `src/sheet.sh`) beside game units for scale; the person picks before you
-   build the rest. New creatures go through the creature kit (`data/creature_kit.json`) where possible.
-3. Write the parts (data) and their models (Lobster builders in `models/<id>_parts.lobster`, or Blender `.glb`),
-   words, rules and any creature/culture (`"extends"` a game one where it fits). Price every part against
-   a game part doing the same job; never free, never special-cased.
+2. Concept first (the game's rule for new art): sketch 2-3 directions as voxel looks (`data/voxel/` in the mod,
+   drawn by `src/voxel_proto.lobster`) beside game units for scale; the person picks before you build the rest.
+   Follow the voxel-art skill (know the subject, show it cleanly at game size).
+3. Write the parts (data) and their voxel looks (`data/voxel/gear.json`: gear and the `parts` rules giving the parts
+   it; `bodies/` for a new creature), words, rules and any creature/culture (`"extends"` a game one where it fits).
+   Price every part against a game part doing the same job; never free, never special-cased.
 4. Check:
    - `src/mod_check.sh <id>` (loads, refuses with a reason, lists the check prompts' rosters and who wears the mod's
-     parts, runs 3D placement): must be 0 failed. Read every unit line against the mod's rules.
+     parts, prices them). Read every unit line against the mod's rules.
+   - With the mod's own bodies: `lobster voxel_check.lobster` and `lobster voxel_proto.lobster -- - check` pass.
    - A plain prompt without the mod's words gets none of its parts.
-5. Look: `src/sheet.sh mods/<id>/sheets/<id>.json <out_dir>`;
-   every row must PASS (both placement halves, composites included); look at every picture at 3x and at
-   game size before showing anyone. A squad in a match: `./play.sh lobby mods:<id> rules:anything "races:<prompt>|romans" watch mute shot:<png> at:<s>`.
+5. Look: `lobster voxel_proto.lobster -- <out.ppm> legs <body> <gear>,...` (from `src/`); look at every picture at 3x and
+   at game size before showing anyone. A squad in a match: `./play.sh lobby mods:<id> rules:anything "races:<prompt>|romans" watch mute shot:<png> at:<s>`.
 6. Pack (public only): `python3 tools/mods/pack.py <id>`.
 
 ## Report

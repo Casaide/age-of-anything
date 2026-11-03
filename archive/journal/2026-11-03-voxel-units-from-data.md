@@ -175,3 +175,21 @@ its course. The Town Center gained its pediment's triangle (the gable's fill out
 cornice and white finials), a round crest (a stone rim round the team's disc), and the team's band along the wall
 below the eave's shadow line (from the camera's height the overhang hides the wall's top 6 units). A bug: the
 gable's fill ran out to the eaves and hung under them like a soffit, hiding the wall's top. Picture 39.
+
+## The composed units removed (D-202)
+
+The engines and war beasts first: the ram, catapult, bolt thrower, siege tower, great sling and trade cart, each in
+the five culture styles (as colours: frame, iron, cloth), with the race's own creature as crew on its spots; the
+elephant, a war boar and a tarantula (the boar and the spider bigger, built on them with `base`, their hides renamed
+with `remap` so they're not their crew's skin), the heron and the mantis, with howdahs and seats (pictures 36-38).
+Bugs on the way: the engines' shapes first used the crew's colours (`pale`, `mark`); the cart's puller walked out of
+the cell's bottom (more room below the ground point); the elephant's trunk tip floated a voxel over the ground (the
+check read it as a foot); engines baked only after hundreds of other jobs (a frame drawn before its look is baked
+now asks for it first); a style lookup read past the end of a beast's id.
+
+Then the removal, in steps, a match and the lobby checked after each: the game's views, ghosts, packs and flipbooks;
+combat's effects kept on their own (sparks, misses, heals, splashes, fallen buildings) and placed by the sim's
+positions; town life without views; then the files, with a read-only survey first of what the buildings and props
+still share (the depth and occlusion shaders, `pixelize`, the model kit, the bake settings, now
+`view/bake_cache.lobster`). A small pass then took out every definition left that nothing used. Golden stayed the
+same in every section (the buildings' digest too), less its models section.

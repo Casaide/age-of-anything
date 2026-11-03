@@ -71,6 +71,8 @@ data/            the data contract; mods are just more of this
   buildings.json   building types: footprint, hp, cost, build time, pop, drop-off, what it trains, roles (D-192)
   tech.json, ai.json   ages, research, line upgrades; the bots (levels easy, normal, hard)
   maps/*.json      maps: ASCII rows + legend into terrain.json, start tiles
+  voxel/           the voxel units: bodies, gear, holds, materials, the part-to-gear rules (a mod adds its own);
+                   bodies/siege.*.json written by src/voxel_engines_gen.lobster; buildings/ an experiment (not loaded)
 src/             the game, in Lobster; run everything from here (paths are ../data, ../assets)
   game.lobster     the game: the window, the match, the view, input; game/ its pieces (lobby: title, battle setup,
                    Race Lab, saves, network, the loader; panel, topbar, tech tree, pad, town life, fx, ground, art kit)
@@ -79,17 +81,16 @@ src/             the game, in Lobster; run everything from here (paths are ../da
                    the bots (bot, eco_bot, land, expand, scout)
   gen/             races from prompts (generator, pricing, identity, heroes, datalib, rng), the match start (setup,
                    start, modes), saves (save, reset: written by gen_reset.py), balance by fights, mods
-  view/            the composer (unit_view: recipe -> parts on sockets, animated), the bakers (baker, part_bake,
-                   world_bake), the 3D rig and voxels (rig3d, geom), corpses laid down, art.lobster (ART_SCALE)
-  model/           every 3D model in code: unit parts, bodies, gear, siege, buildings, props, glb loading
-  placement/       the placement check's rules (3D: geometry; 2D: projection, case2d, composite; the bug fixtures)
+  view/            the voxel units' builder (voxel: bodies, gear and engines from data/voxel/, baked in 8 facings),
+                   the buildings' and props' bakers (baker, world_bake), the bake settings (bake_cache), art.lobster
+  model/           the buildings', props', trees' and bridges' 3D models in code (units are voxel bodies)
   net/             lockstep over TCP, the LAN beacon
   deck/build.sh    the Steam Deck build (Lobster built for Linux in a container)
   android/         the Android build: build.sh, the activity, SDL's Java side, Lobster's engine patched for GLES and touch
   baked/           the buildings and props, baked once by prebake.sh and shipped (not committed; read before bake_cache/)
-  golden/          the golden files: races, starts, every model and building, research text
-  bake_cache/      baked parts, buildings and props (not committed; emptied when BAKE_VERSION changes)
-assets/          models (.glb from Blender), SVG icons and textures, audio (rendered), fonts
+  golden/          the golden files: races, starts, every building, research text
+  bake_cache/      baked voxel units, buildings and props (not committed; emptied when BAKE_VERSION changes)
+assets/          SVG icons and textures, audio (rendered), fonts
 tests/           batch.sh (the tests side by side), sheets/*.json (concept sheet specs), mods/ (bad-mod fixtures)
 mods/            mods (docs/modding.md): data + Lobster models; scifi_test is the example. mods_private/ is gitignored
 tools/           audio/ (the synth), blender/ (bpy model scripts -> assets/models), maps/, mods/ (new_mod.py,
@@ -104,21 +105,21 @@ Lobster on this Mac: `~/Dev/lobster/bin/lobster` (alias it as `lobster`). Run pr
 ./play.sh                                                          # the game: the title screen (Battle the AI, network, saves, Race Lab)
 ./play.sh lobby "races:sewer rats|romans" watch mute               # straight into a match, the bot playing you too, silent
 ./play.sh lobby page:setup mute shot:/tmp/s.png at:2               # a capture (page:title|setup|lab|saves|net|boot; shot: after at: seconds)
-./tests/batch.sh --quick                                           # unit tests, the sim, the AI's quick checks, 3D placement (~2 min)
-./tests/batch.sh                                                   # the whole batch side by side (adds every AI piece, 2v2, 2D placement, golden, saves, network)
+./tests/batch.sh --quick                                           # unit tests, the sim, the AI's quick checks, the voxel units' checks (~30 s)
+./tests/batch.sh                                                   # the whole batch side by side (adds every AI piece, 2v2, golden, prices, saves, network, perf)
 ./play.sh lobby "races:sewer rats|romans" watch mute perf:20        # the drawing's cost in the real window (vsync on), fails over budget (game/perf.lobster; in the batch, alone)
 lobster run_tests.lobster                                          # the unit tests (~3 s; part:i/n)
 lobster test_sim.lobster -- [part:a,b] [shard:i/n]                 # the sim: determinism, tick time, every system (~30 s serial)
 lobster test_ai.lobster -- [map] [quick|piece:<name>|levels] [shard:i/n]   # the AI: scenario checks and whole bot matches
 lobster test_2v2.lobster                                           # four bots, a 2v2 match
 lobster test_heroes.lobster; lobster test_race_identity.lobster
-lobster placement_check.lobster -- [filter] [3d|2d] [shard:i/n] [nofixtures]   # placement + layering on every unit; must pass before a unit change is shown
+lobster voxel_check.lobster -- [report]                            # the voxel units' art: knees, skins, kit, look-alikes, specks; must pass before a unit change is shown
+lobster voxel_proto.lobster -- <out.ppm> [creatures|legs <body> [gear,..]|skins|deaths|animals|engines|check]   # sheets of voxel units; check: feet on their shadow
 ./golden.sh [update] [section]                                     # races, starts, models, buildings, effects held to golden/ ("update" after a meant change, then read the diff)
 lobster save_check.lobster -- [map]; ./net_check.sh [ticks]        # saving and loading; two processes in lockstep
 lobster races.lobster -- default "centaur romans" "flying greeks with wings"   # races as JSON
 lobster balance.lobster -- rr 2                                    # equal-cost round robin in age 2 (auto: prices from fights)
 lobster race_matches.lobster -- reed_meadow; lobster mass_battle.lobster -- 2; lobster resource_audit.lobster -- reed_meadow; lobster path_audit.lobster
-./sheet.sh ../tests/sheets/bears_b1.json /tmp/out [sheet,...] [zoom,...]   # any concept or lineup sheet from a spec, placement PASS/FAIL per row
 ./shards.sh <tool.lobster> [args] [jobs=N]                         # any sharded tool side by side
 python3 gen_reset.py                                               # after adding a sim global: reset and save code
 ./textures.sh; ./icons.sh                                          # SVG textures and icons as PNGs (rsvg-convert), after one changes
@@ -138,10 +139,10 @@ compiles with no warnings. `python3 lint.py` checks both (`--fix` formats; in th
 
 **Testing rhythm** (Dominic: iteration must stay fast, and the machine quiet). While working: `run_tests` after every
 change to `data/` or `src/`, the piece you're touching (`test_sim -- part:<name>`, `test_ai -- piece:<name>`,
-`placement_check -- <filter>`), or `./tests/batch.sh --quick`. After a set of changes, the whole batch once, in the
+`voxel_check`), or `./tests/batch.sh --quick`. After a set of changes, the whole batch once, in the
 background. The batch runs 4 processes at once by default (`jobs=N` or `AOA_JOBS`), not every core: one heavy run at a
 time. Each shard is its own seeded world, so results match a serial run. The tick-time check measures wall time:
-on a busy machine it can fail. Raise `BAKE_VERSION` (`view/part_bake.lobster`) once for a batch of bake changes, not
+on a busy machine it can fail. Raise `BAKE_VERSION` (`view/bake_cache.lobster`: buildings and props) once for a batch of bake changes, not
 per tweak: every raise rebakes everything. Tests are silent (`mute`, and every capture option mutes). Look at a
 screenshot after visual changes. After a change to `tools/audio/`, re-render and commit `assets/audio/` with it.
 
@@ -150,7 +151,7 @@ screenshot after visual changes. After a change to `tools/audio/`, re-render and
 **Determinism is the backbone** (lockstep multiplayer and shareable races depend on it):
 - Same prompt + rules + reroll must give the same race key on every machine. Tests enforce this.
 - Never use `randi()`/`randf()`/`RandomNumberGenerator` in generation or the sim. Use `gen/rng.lobster` (and the
-  sim's own rng). The only exception is cosmetic animation in `view/unit_view.lobster`.
+  sim's own rng). The only exception is cosmetic view effects (town life, fx).
 - Iterate anything that affects output in a stable order (sorted ids or arrays), never raw
   Dictionary order from untrusted sources.
 - Recipes hold only strings and ints. The race key hashes names + recipes, not derived stats.
@@ -186,19 +187,16 @@ special-case silly units.
 
 Target the look of a **classic 2D isometric RTS**: small units, 3/4 view, painterly sprites, readable
 silhouettes, team colour on a consistent region. It should feel like the game you know, gone mad.
-Units are 3D parts (built in code, or scripted in Blender: `tools/blender/`, `.glb` in
-`assets/models/`) baked to pixel sprites in **8 facings** (at 2x, D-173), recoloured by a team-mask
-shader; worn armour bakes on its wearer; props and buildings are realistic bakes. The full pipeline
-is in `docs/rendering.md`. New art goes concept-first (options, Dominic picks, then build; D-080),
-and every change gets looked at close up before it's shown.
-New rounds write a sheet spec (`tests/sheets/*.json`, drawn by `src/sheet.sh`), not a new script;
-new creatures start in the creature kit (`src/model/kit_bodies.lobster`, kits in `data/creature_kit.json`,
-unplayed ones staged in `data/later/`). Both are in `docs/rendering.md`. **No unit, mount, gear or pose change is
-shown until `src/placement_check.lobster` passes** (Dominic, 2026-10-13): numeric checks of ground
-contact, attachment, interpenetration, stance, feet, visibility and layering in 3D and in every facing,
-plus a fixture for every placement bug he caught (`docs/rendering.md`, "Placement rules"). A new body,
-mount or gear goes into a race in `src/placement/cases.lobster`; a body's anchors in parts.json are its
-model's hips; legs that aren't the same on both sides bake at each hip (`"cut": ["legs"]`).
+Units are **voxel bodies** (D-201) made from data (`data/voxel/`: bodies, gear, holds, materials, the
+part-to-gear rules; a mod adds its own), baked in **8 facings** standing, walking, working, attacking and
+falling, recoloured by a team-mask shader; props and buildings are realistic bakes. The pipeline is in
+`docs/rendering.md`, "Voxel units"; the craft is in the **voxel-art skill** (`.claude/skills/voxel-art/`: know the
+subject, show it cleanly at game size, check, review). New art goes concept-first (options, Dominic picks, then
+build; D-080), one creature at a time, and every change gets looked at close up and at game size before it's shown.
+**No unit, mount, gear or pose change is shown until `voxel_check.lobster` and `voxel_proto.lobster -- - check`
+pass** (Dominic, 2026-10-13 and 2026-11-03): standing knees, skins as drawn in every palette and look, kit that keeps
+the creature's shape, no look-alikes, no specks, feet on their shadow. When he names a fault, first add a check that
+catches it, then fix it.
 
 ## The archive (keep it up to date)
 
@@ -214,7 +212,7 @@ That includes:
 - the final state of a milestone
 
 Capture tools: `./play.sh ... shot:<png> at:<seconds>` (a match, `look:<x>,<y>` for the camera; `page:<name>` for the
-lobby's pages) and `src/sheet.sh` (units on a sheet).
+lobby's pages) and `src/voxel_proto.lobster` (voxel units on a sheet).
 Look at every capture before keeping it. As a rough guide, aim for at least 2-3 pictures per
 milestone.
 
@@ -256,7 +254,7 @@ game; everything expressive is ours. In code, data, docs, the archive and commit
 - Lobster: globals declared before use; no identifier shadowing; a recursive function needs an explicit return type;
   no multi-line `def` signatures; braces in strings as `\{ \}`; `write_file` to an absolute path needs `(path, data, 0, 1)`;
   `dictionary.get` on a class value can't return nil (use a sentinel); `qsort_in_place` recurses (not on big near-sorted
-  arrays). Imports live in the main programs (`game.lobster`, `placement/deps.lobster`), in an order where each file's
+  arrays). Imports live in the main programs (`game.lobster`, `game/deps.lobster`), in an order where each file's
   globals come before their users.
 - Keep tests headless where they can be, silent, and fast.
 - Shapes drawn every frame go through `gl.draw_mesh` (pooled buffers), never `gl.new_mesh` + `gl.render_mesh`: each

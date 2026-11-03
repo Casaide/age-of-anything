@@ -203,12 +203,6 @@ def fx_circle(at:float2, r:float, col:float4):
     gl.color(col):
         gl.translate(at): gl.circle(r, 12)
 
-// The glow a healed unit has now (1 for none): UnitView reads modulate alpha as shade.
-def heal_glow(id:int) -> float:
-    for(fx_heals) h:
-        if h.id == id and h.t < HEAL_TIME * 0.5: return 1.0 + 0.35 * sin(360.0 * h.t / HEAL_TIME)
-    return 1.0
-
 // ground_of(id): a live unit's feet on the canvas, or float2 { -1000000000.0, 0 } when it's gone or unseen.
 def fx_draw(ground_of):
     gl.set_shader("color")
