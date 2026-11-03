@@ -15,6 +15,8 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
   once, and effects as data recipes that scatter them with random sizes, angles and speeds (view-side randomness
   only): catapult impacts, arrow hits, a laser as a stretched glowing beam piece plus a spark burst. Replaces the
   destruction pixel dust (D-171) with one system. A whole-animation voxel flipbook only for one-off set pieces.
+- **Toward an engine with the game as content (D-190):** our own content as a base pack loaded like any mod; then
+  small deterministic script hooks for rules and free client-side UI extras; multiplayer refusing mismatched packs.
 - **`.vox` import and export.** Read MagicaVoxel files as parts or whole creatures on the voxel skeleton and
   sockets, and write any generated unit out as `.vox` to tweak and drop back in. After the voxel data format settles.
 
