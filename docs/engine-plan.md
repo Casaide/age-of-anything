@@ -362,6 +362,34 @@ read CLAUDE.md, learn `play.sh`'s options. This is the plan for someone who isn'
 - **How it works** pages: the tick and lockstep, saves across builds, packs and hashes, the renderer and bakes.
 - The template and the tutorial game are tested in the batch, so the docs never rot.
 
+### The `creel` command
+
+One script on the path (`engine/creel`, a shell script calling `lobster` with the engine's `--import` folder), each
+subcommand a thin door onto a tool that exists today. Options are `name:value` words, as `play.sh` takes them, so the
+game's own options pass straight through. `creel help [command]` lists them; every command exits non-zero on failure.
+
+| Command | What it does | Today's tool behind it |
+|---|---|---|
+| `creel new <game> [--from template]` | A new game pack from the template: `pack.json` (kind `game`), `data/` (one map, a worker, a soldier, a hub, a barracks, terrain, tech), `main.lobster`, `tests/`, a README. Runs on the first try | none (`tools/mods/new_mod.py` for mods) |
+| `creel new-mod <id> --for <game> [--era <tag>] [--private]` | A mod pack scaffold | `tools/mods/new_mod.py` |
+| `creel run [lobby] [races:A\|B] [map:<id>] [mods:a,b] [watch] [mute] [speed:<x>]` | The game: the title, or straight into a match | `./play.sh` |
+| `creel run ... shot:<png> at:<s> [look:x,y] [page:<name>]` | A capture | `play.sh`'s capture options |
+| `creel replay <log> [from:<tick>] [speed:<x>]` | Plays a match's command log back with the dev overlay | none: every match writes `logs/<date>-<n>.cmdlog` (planned) |
+| `creel check [<pack>]` | The pack loads (or why not), its data against the schemas with `file:line` errors, the hook sandbox and determinism lint, `lint.py` (format, warnings), `voxel_check` on its bodies, a short bot match twice with the same state hash | `mod_check`, `lint.py`, `voxel_check`, `test_sim`'s lint |
+| `creel test [quick\|all] [jobs:N]` | The pack's tests and the engine's, side by side | `tests/batch.sh` |
+| `creel golden [update] [section]` | The golden files: starts, buildings, effects, research text | `src/golden.sh` |
+| `creel voxel <body> [gear,...] [mode:legs\|skins\|deaths]` | A live voxel preview window, reloads on save; with `out:<png>` a sheet | `voxel_proto.lobster` |
+| `creel map <id>` | Checks a map (legend, starts, reachability) and draws it as a picture | `path_audit`, `tools/maps/` |
+| `creel balance [age] [refit]` | The equal-cost round robin; `refit` fits prices from stored fights | `balance.lobster`, `calibrate.lobster` |
+| `creel perf [secs]` | The frame budget in the real window | `play.sh ... perf:<s>` |
+| `creel prebake` | Bakes fixed art once into the pack's `baked/` | `src/prebake.sh` |
+| `creel pack <id>` | Zips a pack with its signature (`id@version#sha256`) | `tools/mods/pack.py` |
+| `creel build mac\|deck\|android\|windows` | A release build of the game with its packs | `src/deck/build.sh`, `src/android/build.sh`; Mac and Windows none yet |
+| `creel fmt` | Formats every `.lobster` file | `lint.py --fix` |
+
+Step 1 below is only the table's right column wired to the left: no new behaviour. `new`, `replay`, schemas,
+`map`'s picture, the Mac and Windows builds and the live `voxel` window are the new work, in the order below.
+
 ### Order
 
 1. `creel` as one script over today's tools (`run`, `check`, `test`, `build`, `pack`): no new features, one door.

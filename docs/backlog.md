@@ -15,6 +15,20 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
   once, and effects as data recipes that scatter them with random sizes, angles and speeds (view-side randomness
   only): catapult impacts, arrow hits, a laser as a stretched glowing beam piece plus a spark burst. Replaces the
   destruction pixel dust (D-171) with one system. A whole-animation voxel flipbook only for one-off set pieces.
+- **Creel, the engine (start here; D-190, D-193, D-196, D-203).** The RTS engine split out of the game,
+  Spring/Recoil style, one repo for now, Apache 2.0, named Creel (D-203). Everything an agent needs:
+  - `docs/engine-plan.md`: §1 the name and look (logo: the woven creel as an isometric cage; one colour, sea blue,
+    never the game's timber and gold), §2 what's engine and what's game today, file by file, §3 the target folders,
+    the pack format and manifest, the hook API, the tools, builds and tests, **§3b the developer experience and the
+    `creel` command (every subcommand, its options and the tool behind it today)**, §4 licensing, **§5 the
+    migration steps in order with a "done when" each**, §6 risks, §7 open questions.
+  - `docs/engine-hooks.md`: the hook survey, maps as an ASCII drawing plus a JSON legend (§6), era capabilities such
+    as tanks and planes (§7), and what's fixed since.
+  - `docs/engine/site-mockup/`: the mock website (Dominic: "looks good"); "Why Creel" is his own line: "It lets
+    you build the RTS genre you grew up playing, easily, and with AI too".
+  - Done so far: roles not names for buildings (D-192), the hook bugs (2026-11-03), voxel units from data (D-201,
+    D-202). Next: §5 step 1's remainder, then steps 2-8, then §3b's order (the `creel` script first). The racegen
+    module stays out of the engine (D-193); race keys never change with content updates.
 - **Toward an engine with the game as content (D-190):** our own content as a base pack loaded like any mod; then
   small deterministic script hooks for rules and free client-side UI extras; multiplayer refusing mismatched packs.
 - **Mod scripts, first form (D-190's hooks):** Lobster files compiled in at start, as models are today, but only
