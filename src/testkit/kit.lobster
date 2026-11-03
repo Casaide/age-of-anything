@@ -246,9 +246,10 @@ def ai_config(lvl:string, tweak):
 
 def level_config(lvl:string): ai_config(lvl) c: pass()
 
-// The bots' waves never come (a test of building up alone).
+// The bots' waves never come, nor pressing a lead (D-198): a test of building up alone.
 def no_waves(c:JV):
     for(glist(at(c, "military"), "waves")) wv: set(wv, "at", jint(1 << 20))
+    set(at(at(c, "military"), "press"), "from", jint(1 << 20))
 
 // What a level changes, as it stands now (to swap between two bots of different levels).
 def level_now() -> LevelCfg:

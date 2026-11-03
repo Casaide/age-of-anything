@@ -231,6 +231,7 @@ def build_order_step(bot:Bot, tc:int, workers:[int], count:int):
         var need = step.workers
         if step.expand_workers >= 0 and wants_town(b_cx[tc] * 1000 + 1500, b_cy[tc] * 1000 + 1500): need = step.expand_workers
         if count < need or not workers.length: return
+        if bot.saving_age and not has_role(k, ROLE_HOUSING) and not ages_list[next_age(p)].needs[p].contains(k): return  // (saving for the next age: only houses and what it needs)
         if not can_afford(p, bm_cost[p][k]):
             bot.blocked = bm_cost[p][k]
             bot.blocked_save = step.save
