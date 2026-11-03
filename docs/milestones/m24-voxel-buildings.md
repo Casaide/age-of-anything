@@ -97,7 +97,8 @@ Claude recommends **C**. Dominic: "C, go. I will have another agent review all t
       ruin, near layer, wall arm, gate tower, vane and prop bakes as voxels through the art kits unchanged
 - [ ] 3. Every building voxelized: done by step 2; each architecture seen in a match (Romans and rats so far)
 - [ ] 4. Construction and destruction stages, ruins
-- [ ] 5. Walls, gates, towers
+- [x] 5. Walls, gates, towers: seen in a match (`place:fort`, `place:palisade_fort`): straight runs, a gate between its
+      towers, a corner and a diagonal join; the stone diagonal reads as a row of piers (for the review)
 - [ ] 6. Props
 - [ ] 7. Baking measured, prebake decided, `perf:` in budget
 - [ ] 8. Data versions of the most-seen looks: Dominic's, later (backlog: "Hand-built voxel buildings")
@@ -142,6 +143,9 @@ A reviewer should look at each of these at game zoom in a real match, and close 
 - **Units against buildings:** do units stand out from the ground and the buildings? Their outlines and shadows
   agree?
 - **Lights:** windows, lanterns, braziers glowing, halos not blown out.
+- **Softness** (Dominic: "a lot of hard vertexes/edges, a bit like borderlands... soften"): the models' smooth normals,
+  a smooth light ramp, a soft outline round the silhouette only (pictures 45-46). The units still have their hard
+  bands and dark outline: should they follow?
 - **The data-built looks** (step 8, Town Centers and houses first) against the voxelized ones of the same culture:
   is the jump in detail jarring next to the rest?
 - **Specks, holes and seams:** voxelized thin parts (fences, poles, ropes, banners), and gaps where meshes met.
@@ -154,8 +158,9 @@ A reviewer should look at each of these at game zoom in a real match, and close 
    a cold start bakes the two cultures in play (about 8 minutes).
 2. **Look at every architecture in a match** (stone and junk seen; thatch, tent, reed and mound in a match still to
    see), close up and at game zoom, and the construction and destruction stages in play.
-3. **Walls, gates, towers** (step 5): a lone wall tile stands as a tall plain brick block (picture: a rats' match with
-   `place:wall`); check joins, the near layers and the open gate against how they looked.
+3. **Walls, gates, towers** (step 5, seen): joins, corners and gates hold (pictures 47-48). Still to look at: the stone
+   diagonal (a row of piers with deep notches, the palisade's reads as one fence), the open gate, a unit walking
+   behind the merlons' near layer.
 4. **`perf:`** with voxel buildings (step 7), and whether the prebake still pays (a cold building bake is 2-3 s a look).
 5. **Props** (step 6): trees, rocks, bushes, town props and bridges are voxelized; look at them close up.
 6. **The art review** (the section above), then Dominic's hand-built looks (backlog).
