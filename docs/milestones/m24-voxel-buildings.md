@@ -1,6 +1,6 @@
 # Milestone 24: Voxel buildings and props
 
-**Status:** in progress (2026-11-03; Dominic: "voxel buildings yes", then "C, go": D-203)
+**Status:** in progress: steps 1-3 and 9 done (2026-11-03; Dominic: "voxel buildings yes", then "C, go": D-203)
 **Exit criterion:**
 - **Coverage:** every building, in every architecture and age, and every prop (trees, rocks, bushes, doodads, town
   props, bridges, walls, gates, towers) is voxel, with its construction and destruction stages, ruins and the team
@@ -100,8 +100,9 @@ Claude recommends **C**. Dominic: "C, go. I will have another agent review all t
 - [ ] 5. Walls, gates, towers
 - [ ] 6. Props
 - [ ] 7. Baking measured, prebake decided, `perf:` in budget
-- [ ] 8. Data versions of the most-seen looks
-- [ ] 9. The old pipeline removed, golden updated, losses backlogged
+- [ ] 8. Data versions of the most-seen looks: Dominic's, later (backlog: "Hand-built voxel buildings")
+- [x] 9. The old baker removed (view/world_bake, view/baker; 2026-11-03); golden's buildings section (the models' digest)
+      unchanged. Nothing was lost but the gate towers' shadow-only layer (a gate tower now casts its own shadow)
 - [ ] 10. Archive
 
 ## Results so far
@@ -146,3 +147,15 @@ A reviewer should look at each of these at game zoom in a real match, and close 
 - **Specks, holes and seams:** voxelized thin parts (fences, poles, ropes, banners), and gaps where meshes met.
 - **The checks are honest:** `vbcheck`, `voxel_check` and `voxel_proto -- - check` pass, and what they don't cover is
   listed here.
+
+## Next steps
+
+1. **Re-run the prebake** (`src/prebake.sh`, about 25 minutes) since BAKE_VERSION is 12 (contact shadows): until then
+   a cold start bakes the two cultures in play (about 8 minutes).
+2. **Look at every architecture in a match** (stone and junk seen; thatch, tent, reed and mound in a match still to
+   see), close up and at game zoom, and the construction and destruction stages in play.
+3. **Walls, gates, towers** (step 5): a lone wall tile stands as a tall plain brick block (picture: a rats' match with
+   `place:wall`); check joins, the near layers and the open gate against how they looked.
+4. **`perf:`** with voxel buildings (step 7), and whether the prebake still pays (a cold building bake is 2-3 s a look).
+5. **Props** (step 6): trees, rocks, bushes, town props and bridges are voxelized; look at them close up.
+6. **The art review** (the section above), then Dominic's hand-built looks (backlog).
