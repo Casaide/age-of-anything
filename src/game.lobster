@@ -431,6 +431,7 @@ import .model.town_props
 import .model.bridges
 import .model.build_mats
 import .view.world_bake
+import .view.voxel_mesh
 import .model.buildings
 import .model.buildings2
 import .game.art_kit
@@ -1853,6 +1854,12 @@ let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mod
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 startup_frame("Loading the parts...", 0.8)
 id_load("../data")
+// vbcheck: the buildings' checks as voxels (game/art_kit_buildings.lobster, akb_check), then quit.
+if has_s(args, "vbcheck"):
+    bake_live = false
+    for(args) a: if starts_with(a, "dump:"): akb_check_dump = a.substring(5, a.length - 5)
+    if akb_check(all_architectures()) > 0: set_exit_code(1)
+    bake_quit = true
 // prebake: every prop and every architecture's buildings baked into the shipped folder (src/prebake.sh), then quit.
 if has_s(args, "prebake"):
     bake_cache_dir = bake_shipped_dir

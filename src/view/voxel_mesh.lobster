@@ -1,0 +1,229 @@
+// ------------------------------------------------------------------ buildings and props as voxels (D-203)
+// A model (model/kit.lobster's meshes: the buildings, props, trees) rasterized into a shell of voxels, each voxel the
+// colour its triangles' material gives there (the material's texture sampled, tinted, triplanar where the material
+// is; a lit or unshaded one glows), then drawn as the voxel units are: light in bands, its own shadow, occlusion in the
+// creases, an outline, its shadow on the ground. The sprite is in world_bake's frame exactly (its camera, art px a
+// world unit, the world origin as its anchor), so whatever bakes a model through world_bake bakes it as voxels.
+
+let VM_PX = 1.5  // art px a voxel (the voxel units are about 1.1: buildings a little chunkier; a TC about 270 across)
+
+class vm_shell:
+    v:float  // a voxel's size, world units
+    lo:int3  // the grid's corner (voxels) and size
+    dims:int3
+    at:dictionary<int, int>  // a voxel's key -> its slot
+    pos:[int3]
+    col:[float3]  // summed, then averaged
+    nrm:[float3]
+    hits:[int]
+    glow:[bool]
+
+def vm_key(sh:vm_shell, q:int3) -> int: return ((q.z - sh.lo.z) * sh.dims.y + q.y - sh.lo.y) * sh.dims.x + q.x - sh.lo.x
+def vm_solid(sh:vm_shell, q:int3) -> bool:
+    if q.x < sh.lo.x or q.y < sh.lo.y or q.z < sh.lo.z: return false
+    if q.x >= sh.lo.x + sh.dims.x or q.y >= sh.lo.y + sh.dims.y or q.z >= sh.lo.z + sh.dims.z: return false
+    return sh.at.get(vm_key(sh, q), -1) >= 0
+
+// A texture's pixels, read once (RGBA bytes, rows as the texture holds them).
+class vm_image:
+    px:string
+    size:int2
+let vm_images = dictionary<string, vm_image>(64)
+def vm_image_of(name:string) -> vm_image?:
+    if name == "": return nil
+    let have = vm_images.get(name)
+    if have: return have
+    let t = wb_texture(name)
+    if not t: return nil
+    let img = vm_image { gl.read_texture(t) or "", gl.texture_size(t) }
+    vm_images.set(name, img)
+    return img
+
+def vm_sample(img:vm_image, uv:float2) -> float4:
+    let w = img.size.x
+    let h = img.size.y
+    if w <= 0 or h <= 0 or img.px.length < w * h * 4: return float4_1
+    let x = ((int(floor(uv.x * float(w))) % w) + w) % w
+    let y = ((int(floor(uv.y * float(h))) % h) + h) % h
+    let o = (y * w + x) * 4
+    return float4 { float(img.px[o]) / 255.0, float(img.px[o + 1]) / 255.0, float(img.px[o + 2]) / 255.0, float(img.px[o + 3]) / 255.0 }
+
+// The material's colour at a point of a triangle (its uv, or triplanar from where it is), or alpha 0 where a decal's
+// scissor cuts it away.
+def vm_colour(m:MMat, img:vm_image?, p:float3, n:float3, uv:float2, vc:float3) -> float4:
+    var c = float4 { m.albedo.x * vc.x, m.albedo.y * vc.y, m.albedo.z * vc.z, 1.0 }
+    let im = img
+    if im:
+        var tuv = uv * xy(m.uv_scale) + xy(m.uv_offset)
+        if m.triplanar:  // (the axis the face is most along picks the plane it's mapped on)
+            let s = p * m.uv_scale + m.uv_offset
+            let an = abs(n)
+            tuv = if an.y >= an.x and an.y >= an.z: float2 { s.x, s.z } elif an.x >= an.z: float2 { s.z, -s.y } else: float2 { s.x, -s.y }
+        let t = vm_sample(im, tuv)
+        c = float4 { c.x * t.x, c.y * t.y, c.z * t.z, t.w }
+    if m.scissor and c.w < 0.5: return float4_0
+    return float4 { c.x, c.y, c.z, 1.0 }
+
+// The model's triangles into a shell of voxels v world units across: each triangle sampled at 0.7 of a voxel (no
+// voxel it crosses missed), each sample adding its colour and the face's normal to its voxel.
+def vm_fill(model:MNode, v:float) -> vm_shell:
+    let ds = []::WDraw
+    world_draws(model, XF_ID, ds)
+    var lo = float3_1 * 1000000000.0
+    var hi = float3_1 * -1000000000.0
+    for(ds) d: for(d.p) p:
+        lo = min(lo, p)
+        hi = max(hi, p)
+    let glo = int3 { int(floor(lo.x / v)) - 2, int(floor(lo.y / v)) - 2, int(floor(lo.z / v)) - 2 }
+    let ghi = int3 { int(floor(hi.x / v)) + 3, int(floor(hi.y / v)) + 3, int(floor(hi.z / v)) + 3 }
+    let sh = vm_shell { v, glo, ghi - glo, dictionary<int, int>(65536), [], [], [], [], [] }
+    for(ds) d:
+        let m = d.mat
+        let img = vm_image_of(m.tex)
+        let glow = m.unshaded or m.emission != float3_0
+        var k = 0
+        while k + 2 < d.p.length:
+            let a = d.p[k]
+            let e1 = d.p[k + 1] - a
+            let e2 = d.p[k + 2] - a
+            var fnorm = cross(e1, e2)
+            let area = magnitude(fnorm)
+            if area > 0.0:
+                fnorm = fnorm / area
+                if dot(fnorm, d.n[k] + d.n[k + 1] + d.n[k + 2]) < 0.0: fnorm = -fnorm  // (facing as its vertices say)
+                let n = int(ceiling(max(magnitude(e1), max(magnitude(e2), magnitude(e2 - e1))) / (v * 0.7))) + 1
+                var last_key = -1
+                var last_slot = -1
+                for(n + 1) i: for(n + 1 - i) j:
+                    let bu = float(i) / float(n)
+                    let bv = float(j) / float(n)
+                    let p = a + e1 * bu + e2 * bv
+                    let tuv0 = d.uv[k] + (d.uv[k + 1] - d.uv[k]) * bu + (d.uv[k + 2] - d.uv[k]) * bv
+                    let vc = d.c[k] + (d.c[k + 1] - d.c[k]) * bu + (d.c[k + 2] - d.c[k]) * bv
+                    let c = vm_colour(m, img, p, fnorm, tuv0, vc)
+                    if c.w > 0.0:
+                        let q = int3 { int(floor(p.x / v)), int(floor(p.y / v)), int(floor(p.z / v)) }
+                        let key = vm_key(sh, q)
+                        var slot = if key == last_key: last_slot else: sh.at.get(key, -1)  // (the next sample is mostly in the same voxel)
+                        if slot < 0:
+                            slot = sh.pos.length
+                            sh.at.set(key, slot)
+                            sh.pos.push(q)
+                            sh.col.push(float3_0)
+                            sh.nrm.push(float3_0)
+                            sh.hits.push(0)
+                            sh.glow.push(false)
+                        last_key = key
+                        last_slot = slot
+                        sh.col[slot] += xyz(c)
+                        sh.nrm[slot] += fnorm
+                        sh.hits[slot]++
+                        if glow: sh.glow[slot] = true
+            k += 3
+    for(sh.pos.length) i:
+        sh.col[i] = sh.col[i] / float(sh.hits[i])
+        let nm = magnitude(sh.nrm[i])
+        sh.nrm[i] = if nm > 0.0: sh.nrm[i] / nm else: float3 { 0.0, 1.0, 0.0 }
+    return sh
+
+let VM_AO_TAPS = [ int3 { 2, 0, 0 }, int3 { -2, 0, 0 }, int3 { 0, 2, 0 }, int3 { 0, -2, 0 }, int3 { 0, 0, 2 }, int3 { 0, 0, -2 },
+                   int3 { 2, 2, 2 }, int3 { -2, 2, 2 }, int3 { 2, -2, 2 }, int3 { -2, -2, 2 },
+                   int3 { 2, 2, -2 }, int3 { -2, 2, -2 }, int3 { 2, -2, -2 }, int3 { -2, -2, -2 } ]
+
+// A model as a voxel sprite in world_bake's frame: RGBA bytes, rows top down, its size, the world origin on it.
+def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
+    let px = WB_PX
+    let v = VM_PX / px
+    let sh = vm_fill(model, v)
+    let view = euler(float3 { -30.0, 45.0, 0.0 })
+    let cx = view.x
+    let cy = view.y
+    let cz = view.z
+    let sun = light_along(float3 { -48.0, -58.0, 0.0 })  // (where the light goes)
+    let to_light = -sun
+    def screen(p:float3) -> float2: return float2 { dot(p, cx), -dot(p, cy) } * px
+    // the frame: the voxels and their shadows on the ground
+    var lo = float2_1 * 1000000000.0
+    var hi = float2_1 * -1000000000.0
+    for(sh.pos) q:
+        let p = (float(q) + float3_1 * 0.5) * v
+        let s = screen(p)
+        lo = min(lo, s)
+        hi = max(hi, s)
+        if shadow and p.y > 0.0:
+            let g = screen(p + sun * (p.y / -sun.y))
+            lo = min(lo, g)
+            hi = max(hi, g)
+    if not sh.pos.length: return "", 0, 0, float2_0
+    lo -= float2_1 * 4.0
+    hi += float2_1 * 4.0
+    let w = int(ceiling(hi.x - lo.x))
+    let h = int(ceiling(hi.y - lo.y))
+    let depth = map(w * h): -1000000000.0
+    let win = map(w * h): -1  // the voxel each pixel shows
+    let hx = 0.5 * v * px * (abs(cx.x) + abs(cx.y) + abs(cx.z))
+    let hy = 0.5 * v * px * (abs(cy.x) + abs(cy.y) + abs(cy.z))
+    for(sh.pos) q, i:
+        let p = (float(q) + float3_1 * 0.5) * v
+        let s = screen(p) - lo
+        let d = dot(p, cz)  // (nearer: more)
+        let x0 = max(0, int(ceiling(s.x - hx - 0.5)))
+        let x1 = min(w - 1, int(floor(s.x + hx - 0.5)))
+        let y0 = max(0, int(ceiling(s.y - hy - 0.5)))
+        let y1 = min(h - 1, int(floor(s.y + hy - 0.5)))
+        for(y1 - y0 + 1) yy: for(x1 - x0 + 1) xx:
+            let j = (y0 + yy) * w + x0 + xx
+            if d > depth[j]:
+                depth[j] = d
+                win[j] = i
+    // the light, only on the voxels that show: in bands by the sun, its own shadow (a few steps towards the light
+    // through the shell), occlusion in the creases
+    let shade = map(sh.pos.length): -1.0
+    let cols = map(w * h): float4_0
+    for(win) i, j:
+        if i >= 0:
+            if shade[i] < 0.0:
+                let q = sh.pos[i]
+                var k = 1.0
+                if not sh.glow[i]:
+                    let n = sh.nrm[i]
+                    k = dot(n, to_light) * 0.5 + 0.5
+                    var r = float(q) + float3_1 * 0.5 + n * 1.2 + to_light * 1.0
+                    for(10):
+                        if k > 0.42 and vm_solid(sh, int3 { int(floor(r.x)), int(floor(r.y)), int(floor(r.z)) }): k = 0.3
+                        r += to_light * 1.7
+                    var hit = 0
+                    for(VM_AO_TAPS) t: if vm_solid(sh, q + t): hit++
+                    k -= clamp((float(hit) / 14.0 - 0.45) / 0.35, 0.0, 1.0) * 0.3
+                    k = if k > 0.8: 1.06 elif k > 0.62: 0.94 elif k > 0.45: 0.78 elif k > 0.28: 0.62 else: 0.5
+                shade[i] = k
+            let c = min(sh.col[i] * shade[i], float3_1)
+            cols[j] = float4 { c.x, c.y, c.z, 1.0 }
+    let out = ensure_size("", w * h * 4, 0)
+    // the outline: the empty pixels beside the drawn ones, in the dark of the colour beside them
+    for(h) y: for(w) x:
+        let j = y * w + x
+        var c = cols[j]
+        if c.w == 0.0:
+            for([ int2 { 1, 0 }, int2 { -1, 0 }, int2 { 0, 1 }, int2 { 0, -1 } ]) o:
+                let xx = x + o.x
+                let yy = y + o.y
+                if c.w == 0.0 and xx >= 0 and yy >= 0 and xx < w and yy < h and cols[yy * w + xx].w > 0.0:
+                    let b = cols[yy * w + xx]
+                    c = float4 { b.x * 0.3, b.y * 0.3, b.z * 0.3, 1.0 }
+        if c.w > 0.0:
+            for(4) ch: write_int8_le(out, j * 4 + ch, clamp(int((if ch < 3: c[ch] else: 1.0) * 255.0 + 0.5), 0, 255))
+    // the shadow on the ground, where nothing is drawn
+    if shadow:
+        for(sh.pos) q:
+            let p = (float(q) + float3_1 * 0.5) * v
+            if p.y > v * 0.5:
+                let g = screen(p + sun * (p.y / -sun.y)) - lo
+                let x = int(floor(g.x))
+                let y = int(floor(g.y))
+                for([ int2 { 0, 0 }, int2 { 1, 0 }, int2 { 0, 1 }, int2 { 1, 1 } ]) o:
+                    let xx = x + o.x
+                    let yy = y + o.y
+                    if xx >= 0 and yy >= 0 and xx < w and yy < h and out[(yy * w + xx) * 4 + 3] == 0:
+                        for(4) ch: write_int8_le(out, (yy * w + xx) * 4 + ch, WB_SHADOW[ch])
+    return out, w, h, -lo
