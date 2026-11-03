@@ -78,3 +78,17 @@ Even priced this way, infantry won only 5 of 12 against spears with +3, and larg
 lance, so swords got +6 against spears and the heavy line +6 against ranged (the roster's own words: "Beats ranged").
 Held out, each line's wins against what the chain expects: 78 of 124 lines more than 10 off at points-only prices,
 42 at D-195's, 38 now. On the plain win rate the pool went 30 -> 40 of 124 off: counters winning is now meant.
+
+## Evening: the armoury on, and a calibration that takes a minute (D-200)
+Dominic asked whether the fights counted the armoury's upgrades. They didn't: each age now gives both sides its
+soldiers' research. Then the passes got out of hand. Each full calibration took 40 minutes, passes 6 to 9 mostly
+changed the scoring rule rather than anything fought, and one pass ran with a patch that never applied (its anchor
+comment had been renumbered). Dominic stopped it: "I don't think we need 165000 tests to check balance". The fix,
+with the other session's spatial grid speed-up (a fight 33 ms to 12 ms): a fixed 8-line panel, two prices a line,
+training races picked for part coverage, and every fight kept so the rule can change without fighting again.
+19,800 fights in 67 s; a refit in 0.2 s.
+
+Counter pairs with the research on, ages 2 and 3: every pair holds but spears against horse archers (they stand off)
+and the large line against archers in age 2; both are listed open. The upgrade tables are in the backlog: the ranged
+armour research barely shows (+3), sharp sticks shows most (+10); long spears (+22) and berserkergang (+15) lead the
+castle's.

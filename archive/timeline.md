@@ -179,3 +179,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-11-03:** Bots press home a clear lead (D-198): they mass, push at the Town Centers with rams and reinforce; bot against bot ends at 20:56 instead of no winner at 30:00, and test_ai asks a clear leader to win within 12 minutes.
 - **2026-11-03:** The tech tree page ported from the Godot one: the race panel with its army, the age rail, building columns with portraits and icons joined by lines, the hover card, the match's progress; its pictures painted once into one page and drawn in one mesh.
 - **2026-11-03:** Counters keep their edge (D-199): prices fitted against the counter chain, swords +6 against spears, the heavy line +6 against ranged; every counter pair wins at least 70% of its equal-cost fights.
+- **2026-11-03:** Prices fitted with the armoury on and a lean calibration (D-200): 19,800 fights in 67 s, every fight kept so a change of rule refits in 0.2 s; each upgrade's effect measured.

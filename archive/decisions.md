@@ -1470,3 +1470,20 @@ only), both in data (`data/rules/*.json`). Measured on held-out lines, each line
 expects of its fights: 78 of 124 lines more than 10 points off at points-only prices, 42 at D-195's, 38 now
 (sd 18.6, 10.6, 10.3); the round-robin groups the same way, 32% off, which the batch checks (45% fails). The
 commit says D-196 (taken the same day by the engine's licence).
+
+**D-200, 2026-11-03: Prices are fitted in the state fights happen in, by a lean calibration.** Dominic: "are you
+taking into account the armory upgrades?", "Upgrading for example someone's armour against arrows should have clear
+but balanced effect", and "I don't think we need 165000 tests to check balance". The fights of an age give both sides
+the soldiers' research of that age and before: the armoury's, barracks', archery range's and stable's (16), not a
+culture's or creature's own (castle research is race identity: measured, never fitted). The calibration is lean: a
+fixed panel of 8 lines (a line of each role and an odd creature), each training line fought at 80% and 125% of its
+price (a third price only when the two don't bracket), training races chosen so every part is in at least 6 lines;
+19,800 fights in 67 s on 4 cores. Every fight's result is kept, and the fit reads them by the rule in use, so changing
+the rule refits in a fraction of a second, without fighting again (passes 6 to 9 had rerun 40-minute fights for
+changes of rule only). The rule: a counter by the chain (`gen/counters.lobster`) is expected to win 80% whatever
+bonuses the other carries, else a bonus edge 80%, else 50%. For the chain to hold with upgrades on, the roster gives
+swords +8 against spears, spears +8 against mounted, the large line +8 against ranged and 2 pierce armour,
+skirmishers +4 against archers. The pairs are checked in ages 2 and 3 (`calibrate.lobster pairs`, in the batch);
+spears against horse archers (they stand off at range 6) and the large line against archers in age 2 stay short,
+listed open for Dominic. Held out, with upgrades on, against what the chain expects: 57 of 124 lines more than 10
+points off at points-only prices, 47 calibrated (sd 14.2 to 11.9); plain win rate 65 to 43.
