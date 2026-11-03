@@ -249,3 +249,10 @@ bakes to stand in front of the archway, had the rest of the gate baked into them
 baker's shadow-only meshes): the whole shut gate drawn over the units. Now the open gate sorts behind the archway, its
 near towers and its arch in front, and a tower's frame is only its tower. `place:fort in_gate army:1` stands soldiers
 through the arch (picture 67). A cold bake of two cultures: 2.6 minutes (it was 17).
+
+Not yet (Dominic: "still this": a ram beside the gate's tower drawn behind it). One sort point for a whole tower was
+right for a unit in the archway and wrong for one beside it. Now each tower is a frame of its own sorted at its own
+footprint, and the gate's middle (its doors, or the passage and its arch) another, shut or open. On the way a
+segfault: a diagonal gate's middle with its towers hidden had nothing left to draw, and the voxel fill made a grid of
+negative size; an empty model now fills as an empty grid. Picture 68: the ram before the tower, soldiers beside
+both towers and through the arch.

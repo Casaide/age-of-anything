@@ -20,6 +20,8 @@ class Look:
     arms:[string] = []        // a wall's arm towards each neighbour (Models.LINKS order), "-": none
     arms_front:[string] = []  // their near merlons
     ruins:[string] = []       // broken up (game/ruin.lobster): battered, breaking, collapsed, the ruin it leaves
+    towers:[string] = []      // a gate's towers, each its own frame sorted at its own footprint, and the gate without them
+    tower_dy:[float] = []     // each tower's place down the screen from the gate's middle (canvas art px)
 
 let sheet_tex = []::resource<texture>
 let sheet_dims = []::float2             // each sheet's size in px (the pack's are all sheet_size; a part baked in the game is its own)

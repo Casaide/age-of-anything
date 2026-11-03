@@ -683,18 +683,15 @@ def collect_buildings():
                     // a gate stands open while one of its team's units is at it (the sim lets them through; its open
                     // look was baked but never drawn since the port)
                     let open = bt_gate[b_kind[b]] != 0 and b_done[b] == 1 and frame_index(name + ":open") >= 0 and gate_used(b)
-                    if open:  // a unit in its archway: in front of the gate and its far tower, behind its near towers and under
-                        // its arch (the gate drawn as one at one depth put a unit wholly on top or wholly behind)
+                    if look.towers.length and frame_index(name + ":shut:mid") >= 0 and b_done[b] == 1:
+                        // a gate: its middle (its doors, or the open passage) behind a unit in its archway, each tower at
+                        // its own footprint, the arch over the passage in front
                         let half = GATE_DEPTH_PX
-                        add(frame_index(name + ":open"), at.x, at.y - up, at.y - half, col)
-                        for(4) sd:
-                            let tf = frame_index("{name}:tower{sd}")
-                            if tf >= 0:
-                                add(tf, at.x, at.y - up, at.y + half, col)
-                                add(frame_index("{name}:tower{sd}:front"), at.x, at.y - up, at.y + half + 1.0, col)
-                        add(frame_index(name + ":open:front"), at.x, at.y - up, at.y + half + 2.0, col)
+                        add(frame_index(name + (if open: ":open:mid" else: ":shut:mid")), at.x, at.y - up, at.y - (if open: half else: 0.0), col)
+                        for(look.towers) tw, n: add(frame_index(tw), at.x, at.y - up, at.y + look.tower_dy[n], col)
+                        if open: add(frame_index(name + ":open:mid:front"), at.x, at.y - up, at.y + half + 2.0, col)
                     else:
-                        add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
+                        add(frame_index(if open: name + ":open" else: name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
                         if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
     bld_seen = seen
     fx_ruins = filter(fx_ruins) r: clock_s - r.t0 < RUIN_STAYS + RUIN_FADE  // (they burn out, lie there, fade)
@@ -2130,7 +2127,8 @@ def make_match() -> bool:
             let gx = (fort_gate.x + 1) * 1000 + 500
             if gk >= 0:
                 for([ -900, -300, 300, 900, 1500 ]) dy: add_unit(ME, gk, gx, fort_gate.y * 1000 + 500 + dy)
-        elif fort_gate.x >= 0:  // (through the fort's gate and out the far side)
+                for([ -1, 1 ]) side: for([ -700, 1400 ]) dy: add_unit(ME, gk, gx + side * 1300, fort_gate.y * 1000 + 500 + dy)  // (beside its towers)
+        elif fort_gate.x >= 0:                                                                                                  // (through the fort's gate and out the far side)
             let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0
             issue_cmd(ME, CMD_MOVE, map(mine) i: u_id[i], fort_gate.x * 1000 + 500, (fort_gate.y + 4) * 1000, 0, 0, 0)
         if skirmish:

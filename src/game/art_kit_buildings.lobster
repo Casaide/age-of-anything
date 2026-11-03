@@ -202,6 +202,25 @@ def akb_gate_parts(node:MNode, t:Xform, out:[int2]) -> void:
         if c.x + c.z > 0.3: out.push(int2 { string_to_int(tk[1]), 0 })
     for(node.kids) k: akb_gate_parts(k, xmul(t, node_xform(k)), out)
 
+// A gate's middle without its towers (its doors, or the open passage and the arch over it).
+def akb_hide_towers(n:MNode):
+    let towers = []::MNode
+    akb_not_part(n, 0, 0, towers)
+    for(towers) m: m.visible = false
+
+def akb_keep_mid(name:string, n:MNode):
+    akb_hide_towers(n)
+    akb_keep(name, n, true)
+
+// Each gate tower's middle on the screen from the gate's (art px) and its side: [x, y, side].
+def akb_gate_centres(node:MNode, t:Xform, out:[float3]) -> void:
+    let tk = tokenize(node.meta, " ", "")
+    if tk.length >= 6 and tk[0] == "gate_part":
+        let c = xf(t, float3 { string_to_float(tk[3]), string_to_float(tk[4]), string_to_float(tk[5]) })
+        let sp = akb_project(c) * WB_ART
+        out.push(float3 { sp.x, sp.y, float(string_to_int(tk[1])) })
+    for(node.kids) k: akb_gate_centres(k, xmul(t, node_xform(k)), out)
+
 // The meshes not of gate part `side`: hidden (shadow false) or gathered to cast shadows only (into `out`).
 def akb_not_part(node:MNode, part:int, side:int, out:[MNode]) -> void:
     var p = part
@@ -310,21 +329,30 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
             if aop:
                 akb_front_split(aop, true)
                 akb_keep(name + ":open:front", aop, false)
-        let sides = []::int2
-        akb_gate_parts(spec.body, node_xform(spec.body), sides)
-        for(sides) sd:
-            let key = "{name}:tower{sd.x}"
-            let whole = akb_placed(arch, type, model, suffix)
-            akb_front_split(whole.body, false)
-            let others = []::MNode
-            akb_not_part(whole.body, 0, sd.x, others)
-            akb_keep(key, whole.body, false, float3_0, others)
-            let fr = akb_placed(arch, type, model, suffix)
-            akb_front_split(fr.body, true)
+        // each tower a frame of its own, sorted at its own footprint, and the gate without them, shut and open (drawn as
+        // one, a unit beside a tower or in the archway was wholly in front of the gate or wholly behind it: Dominic)
+        let tower_at = []::float3
+        akb_gate_centres(spec.body, node_xform(spec.body), tower_at)
+        for(tower_at) c:
+            let side = int(c.z)  // (akb_gate_centres: x, y on the screen, the side)
+            let tw = akb_placed(arch, type, model, suffix)
             let hide = []::MNode
-            akb_not_part(fr.body, 0, sd.x, hide)
+            akb_not_part(tw.body, 0, side, hide)
             for(hide) m: m.visible = false
-            akb_keep(key + ":front", fr.body, false)
+            akb_keep("{name}:tower{side}", tw.body, true)
+            lk.towers.push("{name}:tower{side}")
+            lk.tower_dy.push(c.y / ART_K)
+        let shut_mid = akb_placed(arch, type, model, suffix)
+        akb_keep_mid(name + ":shut:mid", shut_mid.body)
+        let open_mid = akb_placed(arch, type, model, suffix)
+        let om = open_mid.open
+        if om: akb_keep_mid(name + ":open:mid", om)
+        let open_front = akb_placed(arch, type, model, suffix)
+        let of = open_front.open
+        if of:
+            if akb_front_split(of, true) > 0:  // (its near parapets alone, the towers' left out: over a unit in the passage)
+                akb_hide_towers(of)
+                akb_keep(name + ":open:mid:front", of, false)
     if spec.arms.length:
         let with_front = []::int
         for(spec.arms) a, k:

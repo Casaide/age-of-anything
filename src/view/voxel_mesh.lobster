@@ -130,6 +130,7 @@ def vm_colour(m:MMat, img:vm_image?, p:float3, n:float3, uv:float2, vc:float3) -
 def vm_fill(model:MNode, v:float) -> vm_shell:
     let ds = []::WDraw
     world_draws(model, XF_ID, ds)
+    if not ds.length: return vm_shell { v, int3_0, int3_0, int3_0, [], [], [], [], [], [] }  // (nothing shows: an empty grid)
     var lo = float3_1 * 1000000000.0
     var hi = float3_1 * -1000000000.0
     for(ds) d: for(d.p) p:
