@@ -1429,3 +1429,12 @@ toolkit module (`modules/racegen`), not the engine core.
 licence, lets anyone use it in closed games (ours stays closed) and grants patent rights; engine changes aren't forced
 back, which MPL would have done. Not GPL: Lobster compiles the game and its mods into one program with the engine
 (D-191). The reference bot ships with the engine as its default AI, tuned through `ai.json` or replaced through hooks.
+
+**D-197, 2026-11-03: Text is drawn from atlas pages; a window in the background draws at 10 frames a second, the idle
+title at 15 (Claude, on Dominic's "We definitely can't have text slowing down the game").** `game/text_cache.lobster`
+draws each distinct label once into a page (premultiplied, so its edge and text composite as on the screen) and then as
+a quad, a batch's labels in a draw a page; at most 24 new labels a frame, the least recently used page emptied when
+they're full. `perf:` fails a match whose text costs over 0.1 ms a frame. Lobster gains `gl.window_focused()`;
+`game/pace.lobster` paces a window without the focus at 10 frames a second (the sim and lockstep keep their pace;
+tests and captures are exempt) and the title at 15 after two seconds without input. Lobster's frame cap sleeps in one
+long sleep instead of 1 ms steps.
