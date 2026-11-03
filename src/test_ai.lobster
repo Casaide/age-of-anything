@@ -282,16 +282,25 @@ def test_races(pa:JV, pb:JV):
     check(max(r.kinds[0].length, r.kinds[1].length) <= 1, "{rname(pa)} vs {rname(pb)}: one hero kind each at most")
     match_stats(r)
 
+// Hard against normal (D-206): a whole bot match swings with any price set, so one match proves little. Mirror
+// matches of several races, each side's level the only difference, hard from each start in turn (the starts aren't
+// equal); hard has to win more of them than it loses.
 def test_hard():
-    world([ rats, frogs ], rules)
-    level_config("hard")
-    let hard = full_side(0)
-    hard.lv = level_now()
-    level_config("normal")
-    let normal = full_side(1)
-    normal.lv = level_now()
-    let r = play([ rats, frogs ], [ hard, normal ], "hard bot {rname(rats)} vs normal bot {rname(frogs)}", false)
-    check(r.winner == 0, "hard beats normal (winner {r.winner} at {clock(r.end_tick)})")
+    var hwon = 0
+    var hlost = 0
+    for([ rats, frogs, generate("centaur romans", rules, 0), generate("greek hoplites", rules, 0) ]) race:
+        for(2) h:
+            world([ race, race ], rules)
+            let sides = map(2) p:
+                level_config(if p == h: "hard" else: "normal")
+                let s = full_side(p)
+                s.lv = level_now()
+                s
+            let r = play([ race, race ], sides, "hard bot (player {h}) vs normal bot, {rname(race)} each", false)
+            print "hard as player {h}, {rname(race)} each: winner {r.winner} at {clock(r.end_tick)}"
+            if r.winner == h: hwon++
+            if r.winner == 1 - h: hlost++
+    check(hwon > hlost, "hard beats normal over the mirrors ({hwon} won, {hlost} lost of 8)")
 
 // The checks across pieces: the same match twice is the same; the bots' healers heal someone over their
 // matches; the match lengths (reported).

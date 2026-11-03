@@ -182,43 +182,24 @@ Godot Variant reader in Lobster. Only worth it if old saves need to carry over.
 
 ## 3. Balance tooling
 
-- **Open counter pair (Claude, 2026-11-03, D-200, D-204, D-205; Dominic's call).** Horse archers' counters are the
-  large line, scouts and skirmishers (D-204, D-205: all hold in ages 2 and 3 at the refitted prices). Still short: the
-  large line against archers in age 2 (8 of 12: crossbows against the Royal Humans' lancers, archers against giant
-  beetle axemen on foot). `gen/counters.lobster` RR_COUNTERS_OPEN.
-- **Upgrades that do little in a fight (D-200, `calibrate.lobster upgrades`; proposals, not applied).** Effect on the
-  lines they reach, win-rate points against the panel, one side upgraded: sharp sticks +10, bronze edges +8, ring mail
-  +8, saddle blankets +8, barbed heads +7, good hay +7, quick draw +7, hoof wraps +6, padded coats +5, scale barding +5,
-  hardened tips +4, quilted vests +3, leather jacks +3, fletching +3, marching drums +2, long shafts -1. The ranged
-  armour (quilted vests, leather jacks: +1/+1) and padded coats are under the +10 a player would notice: +2 pierce
-  armour each would be the first try. Range and speed (fletching, long shafts, marching drums, hoof wraps) matter
-  for kiting and raids, not a brawl. Flips: hardened tips, quilted vests and saddle blankets each turn the Royal
-  Humans' spears against their crossbow riders (an open pair already). Castle research: long spears +22, berserkergang
-  +15, winter coat +9, shell polish +9, repeating bows +9, shield wall +8, chivalry +8; gnawing teeth, rust spikes
-  (buildings), sticky silk, saddle bows, frog leap, gallop, jaguar pelts about 0 in a fight.
-- **Counters at calibrated prices:** done (D-199): prices fitted against the counter chain, swords +6 vs spears,
-  large +6 vs ranged; test_sim checks each pair. Left: the bow still fits near 0 price points (archers lose to most
-  lines on attack-move, the kiting note below); the prices were fitted with large at +4 vs ranged, measured at +6.
-- **Bot matches at calibrated prices (Claude, 2026-11-03, D-195, D-199).** At D-195's prices test_ai's frogs vs rats
-  drew to 30:00 (and 45:00); with D-198 (a bot ahead presses home) and D-199's prices it ends at 22:07, but "hard
-  beats normal" fails (normal wins at 13:51). Whole bot matches swing with any price set (points-only prices failed
-  that check too); the fix belongs in the bot levels, not the test.
-- **Calibration leftovers (D-195):** identity bonuses' `price_points` (groups, creatures, cultures) aren't fitted
-  yet (centaur lines still run strong); age 1 and age 4 lines aren't sampled; wings and quivers price near 0 because
-  open-field fights don't value flying or scouting.
+Closed (Dominic, 2026-11-03: "stop going in circles with balance... solve and close", D-206). What holds it now:
+`tests/batch.sh` runs the counter pairs in ages 2 and 3 (`calibrate.lobster pairs`, every pair must win 70%) and the
+held-out round robins (`calibrate.lobster measure expect check:42`), and `test_ai`'s `hard` piece checks the levels
+over mirror matches. When parts change: `./shards.sh calibrate.lobster lines 2` and `lines 3` (3 minutes), `fit
+write`, `tools/balance/write_prices.py`, then the two checks. Never fit from fights older than the prices in the data
+(D-205). What's left is design, not tuning, and waits for a reason to reopen:
 
-- **Price by simulation** (done offline, D-195: `src/calibrate.lobster`): headless fights of each unit vs reference units (Frogs, Rats) at equal
-  cost; win rate sets cost. Run it on generation and when parts change.
-  `tests/balance.gd` (milestone 10) is the measuring half: an equal-cost round robin. The next step
-  is a tuner that nudges part points until no unit is more than 20% off the mean (11 of 20 were
-  after hand-tuning). `tests/tune_points.gd` is that tuner, one step at a time; it needs the
-  counter matrix as a constraint (unconstrained, it made bows nearly free and counters fell to 67%).
-- Price-by-simulation is needed for the last cost-sanity outliers: part prices add up regardless
-  of combination, but a big body is worth more under a spear than behind a bow (milestone 10).
-- Archers without micro lose to spearmen that close the gap: consider simple kiting for ranged
-  units on attack-move, or a range/accuracy rule, before pricing them down further.
-- Replace `pow()` in pricing with a fixed-point table (done in milestone 1).
-- Counter-tag matrix as data (`data/counters.json`).
+- **Calibration's reach (D-195):** identity bonuses' `price_points` (groups, creatures, cultures) aren't fitted
+  (centaur lines run strong); ages 1 and 4 aren't sampled; wings and quivers price near 0 because open-field fights
+  don't value flying or scouting.
+- **Upgrades a player barely feels (D-200, `calibrate.lobster upgrades`):** padded coats went to +2 pierce (D-206);
+  the ranged armour (quilted vests, leather jacks) stays +1/+1: +2 turned the large line's fights with archers. Range
+  and speed upgrades matter for kiting and raids, not a brawl. Castle research is race identity: measured, not fitted.
+- **Archers on attack-move:** they don't kite; a simple kiting rule would let bows price above near-0 points.
+- **The bot levels' margin:** hard beats normal 3 to 2 over 8 mirrors (3 drawn): an order, not a gap. A stronger hard
+  needs smarter play (scouting what the enemy fields, kiting, focus fire), not settings.
+- **The level checks' build milestones** (`test_ai -- levels`: age 3 by 16:00, a University and a Castle, ten
+  research by 20:00) fail for easy and normal since before D-206 (with the voxel and UI work in flight); not balance.
 
 ## 4. Generator and content
 
