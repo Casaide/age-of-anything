@@ -101,21 +101,22 @@ var mode_arg = ""             // mode:<id>: the lobby's game mode (data/modes.js
 var map_arg = ""              // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""            // races:<A>|<B>: the lobby's prompts, as if typed (then played)
 var look_y = -1
-var place_arg = ""         // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
-var skirmish = false       // the lobby's Skirmish: both armies on the map at once, marching on each other
-var army_n = 0             // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
-var hurt_pct = -1          // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
-var raze_at = -1.0         // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
-var page_arg = ""          // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
-var lab_arg = false        // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
-var tree_arg = false       // tree: the tech tree page open from the start (captures)
-var tree_hover_arg = ""    // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
-var padtest = false        // padtest: a fake pad plays a few seconds, then quit
-var net_people = 2         // people in a network match (host:<n>)
-var net_others = []::Link  // a host's joiners after the first
-var hosting = false        // host: a network match, waiting for a player to join (net/lockstep.lobster)
-var join_ip = ""           // join:<ip>: play the second side of the match a host there sets up
-var reload_at = -1.0       // reload:<seconds>: save then, load 5 s later (tests and captures)
+var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks through it)
+var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
+var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
+var army_n = 0                   // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
+var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
+var page_arg = ""                // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
+var lab_arg = false              // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
+var tree_arg = false             // tree: the tech tree page open from the start (captures)
+var tree_hover_arg = ""          // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
+var padtest = false              // padtest: a fake pad plays a few seconds, then quit
+var net_people = 2               // people in a network match (host:<n>)
+var net_others = []::Link        // a host's joiners after the first
+var hosting = false              // host: a network match, waiting for a player to join (net/lockstep.lobster)
+var join_ip = ""                 // join:<ip>: play the second side of the match a host there sets up
+var reload_at = -1.0             // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
 var touch_play = false  // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
 for(args) a, k:
@@ -569,6 +570,15 @@ def collect_corpses():
 // Models.LINKS: a wall tile's eight neighbours, in its arms' order.
 let LINKS = [ int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { -1, 0 }, int2 { -1, -1 }, int2 { 0, -1 }, int2 { 1, -1 } ]
 
+// Is one of a gate's team's units on it or about to pass it (within a tile and a half of its middle)?
+def gate_used(b:int) -> bool:
+    let cx = b_cx[b] * 1000 + b_sx[b] * 500
+    let cy = b_cy[b] * 1000 + b_sy[b] * 500
+    let reach = 1500 + max(b_sx[b], b_sy[b]) * 500
+    for(u_x.length) i:
+        if teams[u_owner[i]] == teams[b_owner[b]] and abs(u_x[i] - cx) < reach and abs(u_y[i] - cy) < reach: return true
+    return false
+
 def wall_like(b:int) -> bool:
     let k = b_kind[b]
     return bt_line[k] != 0 or bt_gate[k] != 0 or (k < su_btypes.length and gbool(su_btypes[k], "joins", false))
@@ -668,8 +678,13 @@ def collect_buildings():
                             if (links >> n) & 1 and n < look.arms_front.length and look.arms_front[n] != "-":
                                 add(frame_index(look.arms_front[n]), at.x, at.y - up, at.y + 2.0, col)
                 else:
-                    add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
-                    if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
+                    // a gate stands open while one of its team's units is at it (the sim lets them through; its open
+                    // look was baked but never drawn since the port)
+                    let open = bt_gate[b_kind[b]] != 0 and b_done[b] == 1 and frame_index(name + ":open") >= 0 and gate_used(b)
+                    let body = if open: name + ":open" else: name
+                    add(frame_index(body), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
+                    if open: add(frame_index(name + ":open:front"), at.x, at.y - up, at.y + 2.0, col)
+                    elif look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
     bld_seen = seen
     fx_ruins = filter(fx_ruins) r: clock_s - r.t0 < RUIN_STAYS + RUIN_FADE  // (they burn out, lie there, fade)
     for(fx_ruins) r:                                                        // the fallen buildings' ruins, fading at the end
@@ -2066,6 +2081,7 @@ def make_match() -> bool:
                         update_pop()
                         cam = iso(float(x0 * 1000 + 5500), float(y0 * 1000 + 4500))
                         print "fort: {fits} of {cells.length} tiles at {x0},{y0}"
+                        fort_gate = int2 { x0 + 3, y0 }
                         done = true
     elif place_arg != "":
         let k = btype_index(place_arg)
@@ -2098,6 +2114,9 @@ def make_match() -> bool:
                     let foe = (p + 1) % num_players
                     issue_cmd(p, CMD_ATTACK_MOVE, ids, start_x[foe], start_y[foe], 0, 0)
         update_pop()
+        if fort_gate.x >= 0:  // (through the fort's gate and out the far side)
+            let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0
+            issue_cmd(ME, CMD_MOVE, map(mine) i: u_id[i], fort_gate.x * 1000 + 500, (fort_gate.y + 4) * 1000, 0, 0, 0)
         if skirmish:
             let mid_x = (start_x[0] + start_x[1]) / 2
             let mid_y = (start_y[0] + start_y[1]) / 2

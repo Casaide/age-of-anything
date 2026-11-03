@@ -159,7 +159,8 @@ A reviewer should look at each of these at game zoom in a real match, and close 
 2. **Look at every architecture in a match** (stone and junk seen; thatch, tent, reed and mound in a match still to
    see), close up and at game zoom, and the construction and destruction stages in play.
 3. **Walls, gates, towers** (step 5, seen): joins, corners and gates hold (pictures 47-48). The stone diagonal is smooth
-   (its posts turned 45 degrees: picture 49). Still to look at: faint seams where its pieces meet, the open gate, a unit walking
+   (its posts turned 45 degrees: picture 49). Seen since: the open gate (drawn while its team passes:
+   it never was since the port) and units behind the walls (pictures 65-66). Still to look at: faint seams where its pieces meet, a unit walking
    behind the merlons' near layer.
 4. **`perf:`** with voxel buildings (step 7), and whether the prebake still pays (a cold building bake is 2-3 s a look).
 5. **Props** (step 6): trees, rocks, bushes, town props and bridges are voxelized; look at them close up.

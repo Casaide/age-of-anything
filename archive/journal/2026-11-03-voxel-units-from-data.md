@@ -236,3 +236,8 @@ texture phase. Now a tile is baked whole: its post and the arms it has, one mode
 edge (`akb_wall_tile`, made the first time those joins are drawn, one a frame, kept in the bake cache; the pieces draw
 until then). A corner (a straight join and a diagonal one) has its post turned and shrunk inside its arms; a diagonal
 run's end its post turned, full size. Pictures 62-64.
+
+The open gate had been baked all along but never drawn since the port (a gate always stood shut, its team walking
+through the doors). Now a finished gate shows its open look while one of its team's units is within a tile and a
+half of it. `place:fort` with `army:` marches the army through the gate (pictures 65-66: the cart through it, the
+army behind the walls, the near merlons over the catapult crew).
