@@ -131,6 +131,9 @@ python3 tools/mods/new_mod.py <id> [--era <tag>] [--private]       # scaffold a 
 Never pass `--mir`: it miscompiles model and rig code (D-182). Lobster's window never takes Ctrl-C; `play.sh` stops the
 game for it. A Lobster leak report at exit (`memory_leaks.txt`) is noise.
 
+**Format and warnings** (Dominic, 2026-11-03): every Lobster file is in `lobsterfmt`'s layout and every program
+compiles with no warnings. `python3 lint.py` checks both (`--fix` formats; in the quick batch); run it before a commit.
+
 **Testing rhythm** (Dominic: iteration must stay fast, and the machine quiet). While working: `run_tests` after every
 change to `data/` or `src/`, the piece you're touching (`test_sim -- part:<name>`, `test_ai -- piece:<name>`,
 `placement_check -- <filter>`), or `./tests/batch.sh --quick`. After a set of changes, the whole batch once, in the
