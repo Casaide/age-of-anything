@@ -61,7 +61,7 @@ def tb_icon_wide(name:string, c:float2, h:float):
     let w = sz.x * h / sz.y
     tb_icon(name, c - float2_1 * max(w, h) * 0.5, max(w, h), 1.0)
 
-// Text with its font (0 text, 1 bold, 2 display), queued: drawn by tb_flush after every shape.
+// Text with its font (0 text, 1 bold, 2 display, 3 a caption: bold and spaced), queued: drawn by tb_flush after every shape.
 class TbText:
     at:float2
     s:string
@@ -80,14 +80,22 @@ def tb_text_edged(at:float2, s:string, size:int, col:float4, font:int):
 
 // About the room text takes (gl.text_size doesn't match what's drawn at every scale).
 def tb_text_w(s:string, size:int, font:int) -> float:
-    return (if font == 2: 0.72 elif font == 1: 0.58 else: 0.52) * float(size) * float(s.length)
+    let gaps = if font == 3: ui_caps_gap(size) * float(max(0, s.length - 1)) else: 0.0
+    return (if font == 2: 0.72 elif font >= 1: 0.58 else: 0.52) * float(size) * float(s.length) + gaps
 
 def tb_flush():
     ui_batch_flush()
     text_batch():
         for(tb_texts) t:
-            let face = if t.font == 2: TB_DISPLAY elif t.font == 1: TB_BOLD else: TB_TEXT
-            text_label(t.at, t.s, t.size, t.col, face, if t.outline: max(1.0, float(t.size) / 12.0) else: 0.0, float4 { 0.0, 0.0, 0.0, 0.9 })
+            let face = if t.font == 2: TB_DISPLAY elif t.font >= 1: TB_BOLD else: TB_TEXT
+            let edge = if t.outline: max(1.0, float(t.size) / 12.0) else: 0.0
+            if t.font == 3:  // a caption (theme.gd's caps_font): a letter at a time, spaced
+                var x = t.at.x
+                for(t.s.length) i:
+                    let c = t.s.substring(i, 1)
+                    text_label(float2 { x, t.at.y }, c, t.size, t.col, face, edge, float4 { 0.0, 0.0, 0.0, 0.9 })
+                    x += ui_text_wf(c, t.size, 3) + ui_caps_gap(t.size)
+            else: text_label(t.at, t.s, t.size, t.col, face, edge, float4 { 0.0, 0.0, 0.0, 0.9 })
     tb_texts = []
 
 // A plaque: a sunk well with a thin frame (theme.gd's well_box: the frame at 0.7, the face at 0.38).
@@ -211,7 +219,7 @@ def draw_topbar(speed:float, paused:bool):
     let res_w = map(num_resources) r: 8.0 * s + 28.0 * s + 6.0 * s + max(50.0 * s, tb_text_w(string(stock[r][ME]), int(20.0 * s), 1)) + 8.0 * s
     let pop_txt = "{pop[ME]}/{pop_cap[ME]}"
     let pop_w = 8.0 * s + 28.0 * s + 6.0 * s + max(66.0 * s, tb_text_w(pop_txt, int(20.0 * s), 1)) + 8.0 * s
-    let title = rstr(su_races[ME], "name").uppercase()
+    let title = rstr(su_races[ME], "name")  // (as typed: the display face sets the rest as small capitals, as Godot's)
     let title_w = tb_text_w(title, int(22.0 * s), 2)
     // The age: under way wherever it's queued (0 while it waits its turn).
     var next = ""
@@ -224,7 +232,7 @@ def draw_topbar(speed:float, paused:bool):
     let age_w = 8.0 * s + 26.0 * s + 6.0 * s + tb_text_w(string(ages[ME]), int(24.0 * s), 2) + 6.0 * s + tb_text_w(age_txt, int(17.0 * s), 1) + 8.0 * s
     let idle = tb_idle()
     let idle_w = 74.0 * s
-    let tree_w = 12.0 * s + 22.0 * s + 6.0 * s + tb_text_w("Tech tree", int(17.0 * s), 0) + 12.0 * s
+    let tree_w = 12.0 * s + 22.0 * s + 6.0 * s + tb_text_w("Tech tree", int(17.0 * s), 1) + 12.0 * s
     let secs = tick / 20
     let clock_txt = "{secs / 60}:{if secs % 60 < 10: "0" else: ""}{secs % 60}"
     let clock_w = 8.0 * s + max(52.0 * s, tb_text_w(clock_txt, int(18.0 * s), 1)) + 8.0 * s
@@ -301,7 +309,7 @@ def draw_topbar(speed:float, paused:bool):
     if hud_button(float2 { x, by }, float2 { tree_w, bh }, false, true):
         open_tree(ME)
     icon("research", float2 { x + 12.0 * s, by + (bh - 22.0 * s) / 2.0 }, 22.0 * s, 1.0)
-    tb_text(float2 { x + 40.0 * s, by + (bh - 17.0 * s) / 2.0 - 2.0 * s }, "Tech tree", int(17.0 * s), light, 0)
+    tb_text(float2 { x + 40.0 * s, by + (bh - 17.0 * s) / 2.0 - 2.0 * s }, "Tech tree", int(17.0 * s), light, 1)
     if tb_over(float2 { x, by }, float2 { tree_w, bh }): tb_tip = "Your race\'s tech tree and bonuses (F1)"
     x += tree_w + sep
     // The clock, and the game's pace when it isn't the usual.
