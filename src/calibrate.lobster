@@ -2,16 +2,20 @@
 //   ./shards.sh calibrate.lobster lines <age> <races> [jobs=4]
 //       <races> races from the lexicon's words (training prompts, the lobby's dice made deterministic); each of
 //       their lines in <age> is fought against a fixed panel (every line of a few random races) at equal cost, its
-//       price moved until it wins half: its fair price. The combine writes the samples to ../build/calibrate/.
+//       price moved until its score is what the counter chain expects (D-196: half of its neutral fights, 80% where
+//       it has a counter's edge, 20% where the other has): its fair price. The combine writes the samples to
+//       ../build/calibrate/.
 //   lobster calibrate.lobster -- fit [lambda:<n>] [write]
 //       each sample's fair price -> its target points (the cost curve's inverse), then every part's
 //       price_points by regularized least squares (a unit's points are the sum of its parts'); prints what
 //       moved, and with write puts them in ../build/calibrate/prices.json for tools/balance/write_prices.py.
-//   ./shards.sh calibrate.lobster measure [pool] [check:<n>] [oracle] [jobs=4]
+//   ./shards.sh calibrate.lobster measure [pool] [neutral|expect] [check:<n>] [oracle] [jobs=4]
 //       held-out races and the setup's defaults in groups, each group's round robin at the prices as they are
 //       (no fights at load): how many lines are more than 10 points off the mean of their group. check:<n> fails
 //       (exit 1) when more than n percent of all lines are (tests/batch.sh: a new part can't slip in unpriced).
 //       pool: every held-out line in one round robin (some 140 fights a line, not 13: far less noise).
+//       neutral: only the fights where neither side has a counter's edge. expect: each line's wins over what the
+//       counter chain expects of its fights, around 50 (D-196: what the prices are fitted to).
 //       oracle: each line at its own fair price against the panel instead (./shards.sh calibrate.lobster oracle
 //       first): the best pricing by panel can do, fit or no fit.
 //   lobster calibrate.lobster -- mod <id>
@@ -179,6 +183,22 @@ def unspaced(s:string) -> string: return concat_string(tokenize(s, " ", ""), "_"
 // ---- lines: fair prices against the panel
 
 // Percent of the panel's fights it wins (a draw half), its line at pct of its price.
+def unit_eval(races:[JV], u:RRUnit, age:int) -> JV: return at(step_of(races[u.race], u.slot, age), "eval")
+
+// a has a counter's edge over b: one of its attack bonuses is for a class b has (its tags: type_vectors).
+def edge(a:JV, b:JV) -> bool:
+    let tags = eval_tags(b)
+    let bonus = at(a, "bonus")
+    for(bonus.keys) k, n:
+        if as_int(bonus.a[n]) > 0 and has_s(tags, k): return true
+    return false
+
+// Neither has a counter's edge over the other (D-196).
+def neutral(races:[JV], age:int, a:RRUnit, b:RRUnit) -> bool:
+    let ea = unit_eval(races, a, age)
+    let eb = unit_eval(races, b, age)
+    return not edge(ea, eb) and not edge(eb, ea)
+
 def panel_score(races:[JV], age:int, unit:RRUnit, panel:[RRUnit], pct:int) -> int:
     rr_price_pct.set(price_key(races, unit), pct)
     var score = 0
@@ -188,12 +208,26 @@ def panel_score(races:[JV], age:int, unit:RRUnit, panel:[RRUnit], pct:int) -> in
     rr_price_pct.set(price_key(races, unit), 100)
     return score * 50 / panel.length
 
+// What a fight with b should give a, by the counter chain (D-196): a counter's edge wins, a neutral fight is even.
+let EDGE_SCORE = 80
+def expected(races:[JV], age:int, a:RRUnit, b:RRUnit) -> int:
+    let ea = unit_eval(races, a, age)
+    let eb = unit_eval(races, b, age)
+    let ab = edge(ea, eb)
+    let ba = edge(eb, ea)
+    return if ab and not ba: EDGE_SCORE elif ba and not ab: 100 - EDGE_SCORE else: 50
+
+// Its fair price, percent of its price: where its score against the panel is what the counter chain expects of it, so
+// a counter keeps its edge instead of paying for it (D-196; with only neutral fights, where it wins half).
 def fair_pct(races:[JV], age:int, unit:RRUnit, panel:[RRUnit]) -> int:
+    var want = 0
+    for(panel) p: want += expected(races, age, unit, p)
+    want /= panel.length
     var lo = PRICE_LO
     var hi = PRICE_HI
     for(STEPS):
         let mid = isqrt(lo * hi)
-        if panel_score(races, age, unit, panel, mid) > 50: lo = mid else: hi = mid
+        if panel_score(races, age, unit, panel, mid) > want: lo = mid else: hi = mid
     return isqrt(lo * hi)
 
 def run_lines(age:int, count:int):
@@ -210,8 +244,7 @@ def run_lines(age:int, count:int):
                 if k % shards == shard:
                     let pct = fair_pct(races, age, u, panel)
                     let e = at(step_of(races[u.race], u.slot, age), "eval")
-                    let recipe = at(step_of(races[u.race], u.slot, age), "recipe")
-                    let parts = line_parts(recipe)
+                    let parts = line_parts(at(step_of(races[u.race], u.slot, age), "recipe"))
                     var sum = 0
                     for(parts) id: sum += price_of(part(id))
                     let points = as_int(at(e, "points"))
@@ -419,7 +452,7 @@ def run_mod(id:string):
                         let size = if has_s(tags, "giant"): "giant" elif has_s(tags, "tiny"): "tiny" else: "-"
                         let pct = fair_pct(races, age, u, panel)
                         print "  age {age}: {u.label}: fair at {pct}% of its price"
-                        samples.push(Sample { age, u.slot, pct, as_int(at(e, "points")), as_int(at(e, "points")) - sum, parts, u.label, size })
+                        if pct > 0: samples.push(Sample { age, u.slot, pct, as_int(at(e, "points")), as_int(at(e, "points")) - sum, parts, u.label, size })
     if not samples.length:
         print "mod {id}: no line of its check prompts wears its parts (nothing to price)"
         return
@@ -462,14 +495,17 @@ def pool_group() -> [[string]]:
             if find_index(out, p) < 0: out.push(p)
     return [ out ]
 
-def run_measure(check:int, oracle:bool, one_pool:bool):
+// only_neutral: only the fights where neither side has a counter's edge count (what the prices are fitted to).
+// against_expected: a line's rate is 50 + its wins over what the counter chain expects of its fights (D-196: what
+// the prices are fitted to; 50 is priced right, whoever it met).
+def run_measure(check:int, oracle:bool, one_pool:bool, only_neutral:bool, against_expected:bool):
     let groups = if one_pool: pool_group() else: measure_groups()
     let group_races = map(groups) g: map(g) p: generate(p, rules, 0)
     let group_units = map(group_races) rs: rr_units(rs, 2)
     if oracle:
         for(tokenize(read_file(OUT_DIR + "/oracle.txt") or "", "\n", "")) line:
             let w = tokenize(line, " ", "")
-            if w.length == 3: rr_price_pct.set(w[1], string_to_int(w[2]))
+            if w.length == 3 and string_to_int(w[2]) > 0: rr_price_pct.set(w[1], string_to_int(w[2]))
     let results = map(groups) g, n: map(group_units[n].length * group_units[n].length): 0
     if combine_at >= 0:
         for(logs) path:
@@ -485,7 +521,7 @@ def run_measure(check:int, oracle:bool, one_pool:bool):
             for(units.length) i:
                 var j = i + 1
                 while j < units.length:
-                    if k % shards == shard:
+                    if k % shards == shard and (not only_neutral or neutral(group_races[n], 2, units[i], units[j])):
                         let r = rr_fight(group_races[n], bare, 2, units[i], units[j])
                         results[n][i * units.length + j] = r
                         print "@@ {n} {i} {j} {r}"
@@ -498,16 +534,21 @@ def run_measure(check:int, oracle:bool, one_pool:bool):
         let units = group_units[n]
         let wins = map(units.length): 0
         let played = map(units.length): 0
+        let expect = map(units.length): 0
         for(units.length) i:
             var j = i + 1
             while j < units.length:
                 let r = results[n][i * units.length + j]
-                if r != 0:
+                if r != 0 and (not only_neutral or neutral(group_races[n], 2, units[i], units[j])):
                     played[i]++
                     played[j]++
                     if r > 0: wins[i]++ else: wins[j]++
+                    if against_expected:
+                        let x = expected(group_races[n], 2, units[i], units[j])
+                        expect[i] += x
+                        expect[j] += 100 - x
                 j++
-        let rates = map(units.length) i: wins[i] * 100 / max(1, played[i])
+        let rates = map(units.length) i: (wins[i] * 100 - (if against_expected: expect[i] - 50 * played[i] else: 0)) / max(1, played[i])
         var total = 0
         for(rates) r: total += r
         let mean = total / max(1, units.length)
@@ -549,7 +590,7 @@ elif mode == "fit":
 elif mode == "mod":
     run_mod(mod_id)
 elif mode == "measure":
-    run_measure(string_to_int(opt(args, "check", "-1")), find_index(args, "oracle") >= 0, find_index(args, "pool") >= 0)
+    run_measure(string_to_int(opt(args, "check", "-1")), find_index(args, "oracle") >= 0, find_index(args, "pool") >= 0, find_index(args, "neutral") >= 0, find_index(args, "expect") >= 0)
 elif mode == "oracle":
     if combine_at >= 0:
         let text = []::string
