@@ -84,10 +84,8 @@ let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
 var watch = false
-var composed = false    // the pack has part bakes: units are composed (view/), not flipbooks
-var voxel_units = true  // every unit a procedural voxel body (game/voxel_units.lobster); `composed`: of parts, as before (D-200)
-var follow = false      // the camera follows the fighting (captures)
-var selftest = false    // play a few orders through the controls, check the sim took them, quit
+var follow = false    // the camera follows the fighting (captures)
+var selftest = false  // play a few orders through the controls, check the sim took them, quit
 var shot = ""
 var shot_at = 0.0
 var start_speed = 1.0
@@ -347,7 +345,7 @@ def after_step():
         raze_at = -1.0
         raze_mine()
     sounds_after_step()
-    if composed: view_events()
+    fx_events()
     for(events) e:
         if e.kind == EV_SHOT: attack_t0.set(e.a, clock_s)
         elif e.kind == EV_HIT:
@@ -370,7 +368,7 @@ class Drawable:
     x:float
     ay:float  // anchor y
     col:float4
-    xf:[float]  // a composed part's transform (else empty: drawn at its anchor)
+    xf:[float]  // a transform (else empty: drawn at its anchor)
 
 var draws = []::Drawable
 // The world on the screen this frame (art px): sprites wholly outside it aren't drawn.
@@ -408,24 +406,7 @@ def add_xf(f:int, xf:[float], sort_y:float, col:float4):
     if in_view(lo.x, lo.y, hi.x, hi.y):
         draws.push(Drawable { sort_y, draws.length, f, 0.0, 0.0, col, xf })
 
-// ------------------------------------------------------------------ composed units (view/unit_view.lobster)
-// A view per unit, as the Godot game keeps one: walking from its move, its job and tool from its
-// task, facing its work or the way it walks, a lunge or a release on its blows and shots, its fall
-// when it dies (a ghost for a few seconds). Parts drawn from the pack's part bakes.
-
-let views = dictionary<int, UV>(1024)
-let view_ver = dictionary<int, int>(1024)
-class Ghost:
-    view:UV
-    sort_y:float
-    owner:int
-    t0:float
-    puffed:bool = false
-var ghosts = []::Ghost
 var frame_dt = 1.0 / 60.0
-let view_stage = VNode {}  // canvas units to art px
-view_stage.scl = float2_1 * 1.5
-let ID_XF = [ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 ]
 
 // The line step a type is drawn in (as retype picks it): the recipe its units look like now.
 def type_step(k:int) -> int:
@@ -436,18 +417,6 @@ def type_step(k:int) -> int:
     for(line) l, n:
         if l.age <= ages[p] and (l.age == line[0].age or t_worker[k] or t_hero[k] or upgraded_line(p, l)): step = n
     return step
-
-def make_view(k:int, p:int, step:int) -> UV:
-    let v = uv_new()
-    add_child(view_stage, v.node)
-    let tc = team_col(p)
-    let line = su_type_line[k]
-    let r = if step < line.length: at(line[step], "recipe") else: su_type_recipe[k]
-    uv_build(v, r, float3 { tc.x, tc.y, tc.z }, t_speed[k] / 5)
-    v.node.scl = float2_1 * 0.85
-    v.pose_steps = 8
-    v.art_px = ART_SCALE
-    return v
 
 def canvas(x:float, y:float) -> float2: return iso(x, y) / 1.5
 
@@ -485,163 +454,41 @@ import .game.art_kit
 import .game.ruin
 import .game.art_kit_buildings
 import .game.pack_data
-import .game.bake_missing  // (here: it makes views to see what parts they wear)
 import .view.voxel
 import .game.voxel_units
 
-def job_of(i:int) -> string:
-    if u_moving[i] != 0: return ""
-    if u_task[i] == GATHER:
-        let r = (u_carry_kind[i] - 1 + num_resources) % num_resources  // (GDScript: a -1 index is the last)
-        let name = resource_names[r]
-        return if name == "wood": "chop" elif name == "stone" or name == "gold": "mine" else: "forage"
-    if u_task[i] == BUILD: return "build"
-    return ""
-
-def tool_of(i:int, k:int) -> string:
-    let res = if u_carry_kind[i] > 0: resource_names[u_carry_kind[i] - 1] else: ""
-    if u_task[i] == T_RETURN and u_carry[i] > 0:
-        return if res == "wood": "load.reeds" elif res == "stone": "load.stone" elif res == "gold": "load.gold" else: "tool.basket"
-    if u_task[i] == GATHER:
-        return if res == "wood": "tool.axe" elif res == "stone" or res == "gold": "tool.pick" else: "tool.basket"
-    if u_task[i] == BUILD: return "tool.hammer"
-    return gstr(at(su_type_recipe[k], "parts"), "hand_r", "tool.basket")
-
-def work_point(i:int) -> float2:
-    if u_task[i] == GATHER:
-        let c = u_target[i]
-        return canvas(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))
-    let b = b_index_of(u_target[i])
-    if b < 0: return float2 { -1.0, -1.0 }
-    return canvas(float((b_cx[b] * 2 + b_sx[b]) * 500), float((b_cy[b] * 2 + b_sy[b]) * 500))
-
-def view_of(i:int) -> UV:
-    let k = u_kind[i]
-    let step = type_step(k)
-    let ver = (((bake_gen * 64 + type_gen) * 1024 + k) * 16 + step) * 16 + u_owner[i]
-    let have = views.get(u_id[i])
-    if have and view_ver.get(u_id[i], -1) == ver: return have
-    if have:
-        remove_child(view_stage, have.node)
-        free_tree(have.node)
-    let v = make_view(k, u_owner[i], step)
-    views.set(u_id[i], v)
-    view_ver.set(u_id[i], ver)
-    return v
-
-def crew_tick(c:UV) -> void:
-    uv_process(c, frame_dt)
-    for(c.crew) cc: crew_tick(cc)
-
-def add_view(v:UV, sort_y:float, tc:float4, shade:float):
-    let sx = xf_local(view_stage)
-    for(draw_list(v, ID_XF)) d:
-        add_xf(frame_index("p:" + d.key), xf_mul(sx, d.xf), sort_y, float4 { tc.x, tc.y, tc.z, d.alpha * shade })
-
 import .game.town  // (here: it uses the views)
-
-def collect_views(alpha:float):
-    let alive = dictionary<int, int>(1024)
-    for(u_x.length) i:
-        alive.set(u_id[i], 1)
-        let px, py = prev_pos(i)
-        let x = px + (u_x[i] - px) * alpha
-        let y = py + (u_y[i] - py) * alpha
-        let mine = teams[u_owner[i]] == teams[ME]
-        if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and not vx_drawn(u_kind[i]):
-            let k = u_kind[i]
-            let v = view_of(i)
-            let dx = u_x[i] - px
-            let dy = u_y[i] - py
-            v.node.pos = canvas(x, y)
-            v.lift = lift_at(x, y)
-            set_perched(v, u_perch[i] != 0)
-            v.walking = dx != 0 or dy != 0
-            if t_unpack[k] > 0: set_packed(v, u_ready[i] < t_unpack[k])
-            if on_screen(u_x[i], u_y[i]):
-                let job = town_job(i, job_of(i))
-                v.job = job
-                if t_worker[k]: set_tool(v, town_tool(i, tool_of(i, k)))
-                if job != "":
-                    let w = work_point(i)
-                    if w.x >= 0.0 and vlen(w - v.node.pos) > 2.0: face_vec(v, w - v.node.pos)
-                elif abs(dx) + abs(dy) > 4: face_vec(v, iso(float(dx), float(dy)) / 1.5)
-                uv_process(v, frame_dt)
-                for(v.crew) c: crew_tick(c)
-                let since = clock_s - hit_t0.get(u_id[i], -10.0)
-                let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: heal_glow(u_id[i])
-                add_view(v, iso(x, y).y, team_col(u_owner[i]), flash)
-            last_kind.set(u_id[i], k)
-            last_owner.set(u_id[i], u_owner[i])
-    for(views.get_keys()) id:
-        if not alive.get(id, 0):
-            let v = views.get(id)
-            if v:
-                remove_child(view_stage, v.node)
-                free_tree(v.node)
-            views.del(id)
-    for(ghosts) g:
-        if clock_s - g.t0 >= 4.0:
-            remove_child(view_stage, g.view.node)
-            free_tree(g.view.node)
-    ghosts = filter(ghosts) g: clock_s - g.t0 < 4.0
-    for(ghosts) g:
-        uv_process(g.view, frame_dt)
-        for(g.view.crew) c: crew_tick(c)
-        if clock_s - g.t0 >= 1.9 and not g.puffed:  // (combat_fx: the body goes in a puff of dust)
-            g.puffed = true
-            fx_puff(g.view.node.pos - float2 { 0.0, g.view.lift }, g.view.die_tip)
-        let fade = clamp(1.0 - (clock_s - g.t0 - 2.2) / 1.8, 0.0, 1.0)
-        add_view(g.view, g.sort_y - 2.0, team_col(g.owner), 0.35 + 0.65 * fade)
 
 // Where something stands on the canvas (Iso.to_ground: raised ground lifts it).
 def ground_at(x:int, y:int) -> float2: return canvas(float(x), float(y)) - float2 { 0.0, lift_at(float(x), float(y)) }
 
 def seen_at(x:int, y:int) -> bool: return fog[ME][cell_of(x, y)] == 2
 
-// Combat events on the views: the attacker faces its target and lunges (a blow, a spark where it lands)
-// or looses (a shot; a miss stands in the ground); the dead play their fall; healed units glow; stones,
-// charges and fallen buildings raise dust (game/fx.lobster).
-def view_events():
+// Combat's effects: a spark where a blow lands, a miss standing in the ground, a healed unit's glow, a stone's
+// splash, a fallen building's dust (game/fx.lobster).
+def fx_events():
     for(events) e:
-        if e.kind == EV_SHOT or e.kind == EV_HIT:
+        if e.kind == EV_HIT and seen_at(e.x, e.y):
             let i = index_of(e.a)
-            let v = views.get(e.a)
-            if i >= 0 and v:
-                let ranged = t_ranged[u_kind[i]] != 0
-                if e.kind == EV_SHOT or not ranged:
-                    face_vec(v, canvas(float(e.x), float(e.y)) - v.node.pos)
-                    if e.kind == EV_SHOT: loose(v) else: flourish(v)
-                if e.kind == EV_HIT and not ranged and seen_at(e.x, e.y):
-                    let j = index_of(e.b)
-                    let to = if j >= 0: ground_at(u_x[j], u_y[j]) - float2 { 0.0, 10.0 } else: ground_at(e.x, e.y) - float2 { 0.0, 20.0 }
-                    fx_spark(to, e.c >= 8)
+            if i >= 0 and not t_ranged[u_kind[i]]:
+                let j = index_of(e.b)
+                let to = if j >= 0: ground_at(u_x[j], u_y[j]) - float2 { 0.0, 10.0 } else: ground_at(e.x, e.y) - float2 { 0.0, 20.0 }
+                fx_spark(to, e.c >= 8)
         elif e.kind == EV_MISS:
             if seen_at(e.x, e.y):
                 let i = index_of(e.a)
                 fx_stick(ground_at(e.x, e.y), if i >= 0: unit_shotk.get(u_kind[i], "arrow") else: "arrow")
         elif e.kind == EV_HEAL:
-            let h = views.get(e.a)
-            let p = views.get(e.b)
-            if h and p: face_vec(h, p.node.pos - h.node.pos)
-            if p: fx_heal(e.b)
+            if index_of(e.b) >= 0: fx_heal(e.b)
         elif e.kind == EV_SPLASH:
             if seen_at(e.x, e.y): fx_splash(ground_at(e.x, e.y), float(e.c) * RADIUS_PX)
         elif e.kind == EV_DIE and e.b == 1:
             if fog[ME][cell_of(e.x, e.y)] != 0: building_fell(e)
-        elif e.kind == EV_DIE and e.b == 0:
-            let v = views.get(e.a)
-            if v:
-                die(v, if (e.a * 7) % 2 == 0: 1.0 else: -1.0)
-                ghosts.push(Ghost { v, iso(float(e.x), float(e.y)).y, last_owner.get(e.a, 0), clock_s })
-                views.del(e.a)
 
 def unit_state(i:int, moving:bool) -> string, int:
     let k = u_kind[i]
     let t0 = attack_t0.get(u_id[i], -10.0)
-    if voxel_units and clock_s - t0 < 0.5: return "attack", int((clock_s - t0) * 16.0)
-    let na = anims.get("{k}.attack", 0)
-    if clock_s - t0 < na / 8.0 and clock_s - t0 < 0.5: return "attack", int((clock_s - t0) * 8.0)
+    if clock_s - t0 < 0.5: return "attack", int((clock_s - t0) * 16.0)
     let res = if u_carry_kind[i] > 0: resource_names[u_carry_kind[i] - 1] else: ""
     let phase = int(clock_s * 8.0) + u_id[i]
     if moving:
@@ -655,13 +502,22 @@ def unit_state(i:int, moving:bool) -> string, int:
 
 def visible_to_me(c:int) -> bool: return fog[ME][c] == 2
 
+// Where an effect on unit id rises from (a heal's motes, which have their own heights): its feet on the ground
+// (canvas units); far off when it's gone or unseen.
+def unit_anchor(id:int) -> float2:
+    let i = index_of(id)
+    if i < 0 or not on_screen(u_x[i], u_y[i]): return float2 { -1000000000.0, 0.0 }
+    let x = float(u_x[i])
+    let y = float(u_y[i])
+    return canvas(x, y) - float2 { 0.0, lift_at(x, y) }
+
 def collect_units(alpha:float):
     for(u_x.length) i:
         let px, py = prev_pos(i)
         let x = px + (u_x[i] - px) * alpha
         let y = py + (u_y[i] - py) * alpha
         let mine = teams[u_owner[i]] == teams[ME]
-        if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and (not voxel_units or vx_drawn(u_kind[i])):
+        if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and vx_drawn(u_kind[i]):
             let moving = px != u_x[i] or py != u_y[i]
             var d = unit_dir.get(u_id[i], 2)
             if moving:
@@ -700,42 +556,33 @@ def collect_units(alpha:float):
             last_owner.set(u_id[i], u_owner[i])
             let state, n0 = unit_state(i, moving)
             // (voxel units step by the ground they cover, so the planted foot doesn't slide)
-            let n = if voxel_units and (state == "walk" or find_string(state, "carry") == 0): vx_walk_step(u_id[i], u_kind[i], x, y) else: n0
-            var f = if voxel_units: vx_frame_for(u_id[i], u_kind[i], state, d, n) else: frame_index("u{u_kind[i]}.{state}.{d}.{n}")
-            if f < 0 and not voxel_units: f = frame_index("u{u_kind[i]}.idle.{d}.0")
+            let n = if state == "walk" or find_string(state, "carry") == 0: vx_walk_step(u_id[i], u_kind[i], x, y) else: n0
+            let f = vx_frame_for(u_id[i], u_kind[i], state, d, n)
             let p = iso(x, y)
             let tc = team_col(u_owner[i])
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
             let flash = if since < 0.12: 1.0 + 1.8 * (1.0 - since / 0.12) else: 1.0
-            let up = if voxel_units: lift_at(x, y) * 1.5 else: 0.0  // standing on the hill (canvas px; iso is 1.5x), as the views do
+            let up = lift_at(x, y) * 1.5  // standing on the hill (canvas px; iso is 1.5x), as the views do
             add(f, p.x, p.y - up, p.y, float4 { tc.x, tc.y, tc.z, flash })
-            if voxel_units and f >= 0:     // its shadow on the ground, sorted just under it: in the ground layer a hill's
+            if f >= 0:                     // its shadow on the ground, sorted just under it: in the ground layer a hill's
                 let sf = vx_shadow_for(f)  // near edge (draw_occluder) was painted over it under the feet, and it floated
                 if sf >= 0: add(sf, p.x, p.y - up, p.y - 0.5, float4 { 1.0, 1.0, 1.0, 1.0 })
 
 def collect_corpses():
     corpses = filter(corpses) c: clock_s - c.t0 < 4.0
     for(corpses) c:
-        if c.kind >= 0 and voxel_units:  // (a voxel unit falls, lies, goes in a puff of dust and fades)
-            if vx_drawn(c.kind):
-                let t = clock_s - c.t0
-                let f = vx_dead_frame(c.id, c.kind, c.dir, t)
-                let p = iso(c.x, c.y)
-                let up = lift_at(c.x, c.y) * 1.5
-                if t >= 1.9 and not c.puffed:
-                    c.puffed = true
-                    fx_puff(canvas(c.x, c.y) - float2 { 0.0, lift_at(c.x, c.y) }, 0.0)
-                let fade = clamp(1.0 - (t - 2.2) / 1.8, 0.0, 1.0)
-                let tc = team_col(c.owner)
-                add(f, p.x, p.y - up, p.y - 2.0, float4 { tc.x, tc.y, tc.z, 0.35 + 0.65 * fade })
-                if f >= 0: add(vx_shadow_for(f), p.x, p.y - up, p.y - 2.5, float4 { 1.0, 1.0, 1.0, fade })
-        elif c.kind >= 0:
-            let n = min(int((clock_s - c.t0) * 8.0), 17)
-            let f = frame_index("u{c.kind}.die.{c.dir}.{n}")
+        if c.kind >= 0 and vx_drawn(c.kind):  // (a unit falls, lies, goes in a puff of dust and fades)
+            let t = clock_s - c.t0
+            let f = vx_dead_frame(c.id, c.kind, c.dir, t)
             let p = iso(c.x, c.y)
-            let fade = clamp(1.0 - (clock_s - c.t0 - 2.2) / 1.8, 0.0, 1.0)
+            let up = lift_at(c.x, c.y) * 1.5
+            if t >= 1.9 and not c.puffed:
+                c.puffed = true
+                fx_puff(canvas(c.x, c.y) - float2 { 0.0, lift_at(c.x, c.y) }, 0.0)
+            let fade = clamp(1.0 - (t - 2.2) / 1.8, 0.0, 1.0)
             let tc = team_col(c.owner)
-            add(f, p.x, p.y, p.y - 2.0, float4 { tc.x, tc.y, tc.z, 0.35 + 0.65 * fade })
+            add(f, p.x, p.y - up, p.y - 2.0, float4 { tc.x, tc.y, tc.z, 0.35 + 0.65 * fade })
+            if f >= 0: add(vx_shadow_for(f), p.x, p.y - up, p.y - 2.5, float4 { 1.0, 1.0, 1.0, fade })
 
 // Models.LINKS: a wall tile's eight neighbours, in its arms' order.
 let LINKS = [ int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 }, int2 { -1, 1 }, int2 { -1, 0 }, int2 { -1, -1 }, int2 { 0, -1 }, int2 { 1, -1 } ]
@@ -964,10 +811,8 @@ def draw_world(alpha:float):
                 collect_props()
                 collect_buildings()
                 collect_town()
-                if composed: collect_views(alpha)  // (with voxel units: the engines with a crew)
-                if voxel_units or not composed:
-                    collect_units(alpha)
-                    collect_corpses()
+                collect_units(alpha)
+                collect_corpses()
                 for(occluders) o, k: draws.push(Drawable { o.sort_y, draws.length, -2, float(k), 0.0, float4_1, [] })  // a hill's near-edge tops: what's behind it hides
                 draws.push(Drawable { -50000.0, draws.length, -4, 0.0, 0.0, float4_1, [] })                            // the selection rings: on the ground, over its flat props and shadows, under everything standing
                 perf_lap(2)
@@ -996,9 +841,7 @@ def draw_world(alpha:float):
                 gl.scale(1.5):
                     draw_town()
                     draw_shots(alpha)
-                    fx_draw() id:
-                        let v = views.get(id)
-                        if v and v.node.visible: v.node.pos - float2 { 0.0, v.lift } else: float2 { -1000000000.0, 0.0 }
+                    fx_draw() id: unit_anchor(id)
                 draw_marks(alpha)
                 perf_lap(5)
 
@@ -1104,7 +947,6 @@ def become(prompt:string):
     let old = rstr(su_races[ME], "name")
     swap_race(ME, race)
     race_facts(su_races)
-    bake_missing_parts()         // (the newcomer's parts the pack lacks, before any of its views are built: with no pack, all of them)
     bake_buildings_for(arch_of)  // (and its culture's buildings)
     banner = old + " become " + rstr(race, "name") + " (" + rstr(race, "creature") + ", " + rstr(race, "family") + "), in {int((seconds_elapsed() - t0) * 1000.0)} ms"
     banner_t = seconds_elapsed()
@@ -1374,7 +1216,7 @@ def recall_group(n:int):
 
 def keys():
     if gl.button("m") == 1: sound_on = not sound_on
-    if gl.button("n") == 1 and composed and pack_library and not in_net_match:  // a new race, mid-match
+    if gl.button("n") == 1 and not in_net_match:  // a new race, mid-match
         typing_race = true
         gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
         gl.set_text_input("")
@@ -2013,12 +1855,9 @@ startup_frame("Loading...", 0.05)
 for(args) a:  // cache:<folder>: the parts kept there instead of bake_cache/ ("cache:" alone: baked afresh, kept nowhere)
     if starts_with(a, "cache:"): bake_cache_dir = a.substring(6, a.length - 6)
 zoom = 2.0 * floor(ui() + 0.5)  // two screen points an art pixel, as the game's camera
-// A pack is optional (args[0] "none", or a folder without one): its tables come from data then
-// (game/pack_data.lobster), the units are composed from their parts, and every picture is baked at the start.
-let have_pack = read_file(args[0] + "/index.txt") != nil
-if have_pack: load_pack(args[0])
-else: pack_library = true
-note("pack")
+// The tables come from data (game/pack_data.lobster); units are voxel bodies (game/voxel_units.lobster); buildings and
+// props are baked once (src/baked/) or at the start. (A Godot art pack, args[0], is gone with Godot: D-184.)
+pack_library = true
 startup_frame("Loading the sounds...", 0.2)
 volume_load()
 music_start()
@@ -2032,8 +1871,6 @@ if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
 startup_frame("Loading the parts...", 0.8)
 id_load("../data")
 complete_kit_parts()  // (the creature kit's bodies: with no pack, made here; a pack's kit_parts.json fills them in first)
-composed = not have_pack or read_file(args[0] + "/rigs.json") != nil
-if composed and have_pack: load_part_data(args[0])
 // prebake: every prop and every architecture's buildings baked into the shipped folder (src/prebake.sh), then quit.
 if has_s(args, "prebake"):
     bake_cache_dir = bake_shipped_dir
@@ -2160,26 +1997,25 @@ def make_match() -> bool:
         if pack_library: race_facts(races)
         print "races in {(t_setup - t_gen) * 1000.0} ms, the start in {(seconds_elapsed() - t_setup) * 1000.0} ms"
     else:
-        if composed:  // a scenario has no recipes: set its races up (as export.gd did) for the composer, then load it over a clean world
-            let rules = load_rules(rules_id())
-            let races = map(if pack_prompts.length >= 2: pack_prompts else: [ "sewer rats with cheese hammers", "angry swamp frogs with reed spears" ]) pr: generate(pr, rules, 0)
-            setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
-            let keep_recipe = su_type_recipe
-            let keep_line = su_type_line
-            let keep_eval = su_type_eval
-            let keep_btypes = su_btypes
-            let keep_races = su_races
-            let keep_rules = su_rules
-            reset_world()
-            start_world(args[1])
-            su_type_recipe = keep_recipe
-            su_type_line = keep_line
-            su_type_eval = keep_eval
-            su_btypes = keep_btypes
-            su_races = keep_races
-            su_rules = keep_rules
-            if pack_library: race_facts(races)
-        else: start_world(args[1])
+        // a scenario has no recipes: set its races up (as export.gd did) for the units' looks, then load it over a clean world
+        let rules = load_rules(rules_id())
+        let races = map(if pack_prompts.length >= 2: pack_prompts else: [ "sewer rats with cheese hammers", "angry swamp frogs with reed spears" ]) pr: generate(pr, rules, 0)
+        setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
+        let keep_recipe = su_type_recipe
+        let keep_line = su_type_line
+        let keep_eval = su_type_eval
+        let keep_btypes = su_btypes
+        let keep_races = su_races
+        let keep_rules = su_rules
+        reset_world()
+        start_world(args[1])
+        su_type_recipe = keep_recipe
+        su_type_line = keep_line
+        su_type_eval = keep_eval
+        su_btypes = keep_btypes
+        su_races = keep_races
+        su_rules = keep_rules
+        if pack_library: race_facts(races)
         roles_from_data()  // (a scenario file carries no building roles)
     note("world")
     events_on = true
@@ -2268,15 +2104,6 @@ def save_to(path:string):
 
 // What the view keeps about a match, let go (a save loaded over it, or a new match).
 def view_reset():
-    for(views.get_values()) v:
-        remove_child(view_stage, v.node)
-        free_tree(v.node)
-    views.clear()
-    view_ver.clear()
-    for(ghosts) g:
-        remove_child(view_stage, g.view.node)
-        free_tree(g.view.node)
-    ghosts = []
     corpses = []
     fx_clear()
     hit_t0.clear()
@@ -2423,8 +2250,7 @@ def play_match():
         let dt = gl.delta_time()
         frame_dt = dt
         fx_tick(dt)
-        bake_wanted_tick(0.008)  // (a part drawn before it was baked: a pose, a step the start didn't see)
-        vx_tick(0.006)           // (the voxel units' later bakes)
+        vx_tick(0.006)  // (the voxel units' later bakes)
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
@@ -2437,10 +2263,7 @@ def play_match():
             bake_progress_from = 0.5
             bake_progress_to = 0.95
             bake_what = "the armies"
-            voxel_units = not has_s(args, "composed")
-            if voxel_units: vx_start()
-            let n = bake_missing_parts()
-            print "baked {n} part facings the pack lacked, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
+            vx_start()
             let t1 = seconds_elapsed()
             ak_rebake = rebake_art
             bake_progress_from = 0.95
@@ -2584,7 +2407,6 @@ def new_match_reset():
     mask_version = -1
     doodad_list = []
     bld_seen.clear()
-    uv_free_dict(portraits)
     busts.clear()
     hud_culture = "?"
     unit_dir.clear()
@@ -2596,7 +2418,6 @@ def new_match_reset():
     town_parts = []
     town_emit.clear()
     town_builders = []
-    uv_free_dict(tethered)
     path_bytes = []
     typing_race = false
     tree_open = false
@@ -2642,8 +2463,5 @@ while not quit_app and not bake_quit:
     if quit_app or bake_quit or not back_to_lobby: break
     new_match_reset()
     front_first = true
-view_reset()  // (every view let go: their trees are cycles)
-uv_free_dict(portraits)
-uv_free_dict(tethered)
+view_reset()
 fe_free_views()
-free_tree(view_stage)

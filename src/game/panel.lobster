@@ -310,40 +310,17 @@ def panel_click(m:float2) -> bool: return in_panel(m) or in_topbar(m)
 
 // ---- figures and portraits
 
-let portraits = dictionary<int, UV>(64)
-
-// A unit's figure from its own parts, drawn at a screen point (feet there), z screen px a canvas unit.
+// A unit's figure (its voxel look, standing, facing down and right) at a screen point (feet there), z screen px a
+// canvas unit; a texel 2 px at a portrait's size. Nothing until its look is baked (asked for first).
 def draw_portrait(k:int, at:float2, z:float): draw_figure(k, su_type_recipe[k], t_player[k], at, z)
 
-// A figure from a recipe (key: its place in the cache), drawn as draw_portrait.
 def draw_figure(key:int, recipe:JV, owner:int, at:float2, z:float):
-    if voxel_units and not has(recipe, "crew"):  // (a voxel unit: its standing frame, a texel 2 px at the portrait's size)
-        let f = vx_figure(recipe)
-        if f < 0: return
-        let fr = frames[f]
-        let s = min(floor(z * 0.6 + 0.5), floor(at.y / float(fr.oy) * 2.0) / 2.0)
-        let tc = team_col(owner)
-        sprite_xf(f, [ s, 0.0, 0.0, s, at.x - float(fr.ox) * s, at.y - float(fr.oy) * s ], float4 { tc.x, tc.y, tc.z, 1.0 })
-        return
-    var v = portraits.get(key)
-    if not v:
-        let made = uv_new()
-        let tc = team_col(owner)
-        uv_build(made, recipe, float3 { tc.x, tc.y, tc.z }, 20)
-        made.node.scl = float2_1 * 0.85
-        made.pose_steps = 8
-        made.art_px = ART_SCALE
-        face_vec(made, float2 { 1.0, 1.0 })
-        portraits.set(key, made)
-        v = made
-    let pv = v
-    if not pv: return
-    pv.node.pos = float2_0
-    uv_process(pv, gl.delta_time())
+    let f = vx_figure(recipe)
+    if f < 0: return
+    let fr = frames[f]
+    let s = min(floor(z * 0.6 + 0.5), floor(at.y / float(fr.oy) * 2.0) / 2.0)
     let tc = team_col(owner)
-    for(draw_list(pv, ID_XF)) d:
-        let f = frame_index("p:" + d.key)
-        if f >= 0: sprite_xf(f, xf_mul([ 1.5 * z, 0.0, 0.0, 1.5 * z, at.x, at.y ], d.xf), float4 { tc.x, tc.y, tc.z, d.alpha })
+    sprite_xf(f, [ s, 0.0, 0.0, s, at.x - float(fr.ox) * s, at.y - float(fr.oy) * s ], float4 { tc.x, tc.y, tc.z, 1.0 })
 
 // A portrait (art_kit.gd's bust_icon): the figure drawn once into a texture, then a square cut on its body
 // (thin rows, a pole or a tail, trimmed off; the top ICON_BUST of it, centred on its weight), and the role
@@ -374,7 +351,7 @@ def role_glyph(recipe:JV) -> string:
 def bust(key:int, recipe:JV, owner:int) -> Portrait?:
     let have = busts.get(key)
     if have: return have
-    if voxel_units and not has(recipe, "crew") and vx_figure(recipe) < 0: return nil  // (asked for: baked in play)
+    if vx_figure(recipe) < 0: return nil  // (asked for: baked in play)
     flush_sprites()
     let tex = gl.create_blank_texture(int3 { PT_CELL, PT_CELL, 0 }, texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min | texture_format_clamp)
     gl.switch_to_framebuffer(tex)
