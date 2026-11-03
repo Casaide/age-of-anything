@@ -27,6 +27,20 @@ into active work, move it into `mvp-plan.md` (or a new plan) with an exit criter
   Lobster VM, compiled once and called repeatedly with an allowed list of builtins (an upstream feature; spike first:
   repeated calls into a kept VM, and the compiler in a `--cpp` build); (3) real Lua embedded, integers only for rule
   scripts. Claude leans to (2).
+- **Voxel units: what the composed units had that the voxel ones don't yet** (cut with them, D-202; the old code is in
+  the last commit that had it, `0b6481c`, and `git log` on each file):
+  - **Workers' tools and loads by job:** an axe at wood, a pick at stone and gold, a basket at berries, a hammer at
+    building; the load carried home (reeds, a stone, gold); the rats push a scrap barrow (stone) or a handcart (gold)
+    home (`creatures.json` `push_home`, D-127). Was `tool_of`, `town_tool` and `set_tool` (`src/view/unit_view.lobster`,
+    `src/game/town.lobster`); the voxel workers chop with an axe at every job.
+  - **The stables' mounts grazing:** the tethered mount dipped its head now and then (`job = "graze"`); now it stands.
+  - **Engines' packed and throwing poses:** the great sling packed to move (`siege.sling_packed.*`, `set_packed`) and
+    its throw (`siege.sling_throw.frog`); the catapult's arm released on a shot. Voxel engines are still.
+  - **Engines' shapes per culture:** the junk, frog, forest and spooky styles only recolour the timber engines
+    (`styles` in `data/voxel/bodies/siege.*.json`); the composed ones had their own shapes (scrap, reeds, bone).
+  - **`scifi_test`'s own voxel gear:** its visor helmet, plated armour, power pack, pulse rifle, arc blade and buckler
+    take the game's gear by their tags; give them a `data/voxel/` of their own (the mod's old Lobster models and
+    `buckler.glb` are in `0b6481c`, `mods/scifi_test/models/`).
 - **`.vox` import and export.** Read MagicaVoxel files as parts or whole creatures on the voxel skeleton and
   sockets, and write any generated unit out as `.vox` to tweak and drop back in. After the voxel data format settles.
 
