@@ -641,25 +641,32 @@ def collect_buildings():
                 let flat = walk_over[cell] == 1
                 if b_done[b] == 1: seen.set(b_id[b], BldSeen { look, float2 { at.x, at.y - up }, at.y, flat, p, int4 { b_cx[b], b_cy[b], b_sx[b], b_sy[b] }, damage_of(b) })
                 let col = float4 { tc.x, tc.y, tc.z, shade }
-                if look.arms.length and b_done[b] == 1:  // a wall joined to its neighbours: arms going up the screen under its post, coming down over it
+                if look.arms.length and b_done[b] == 1:  // a wall: the tile whole with the joins it has, its shadow on the ground
                     let links = wall_links(b)
-                    // (joined corner to corner: its post turned along the run, and shrunk inside its arms)
-                    let post = if (links & 0xAA) != 0 and frame_index(name + ":diag") >= 0: name + ":diag" else: name
-                    // its pieces' shadows on the ground, under every wall piece (kept apart from them: drawn with a
-                    // piece, a shadow fell on the neighbour's face)
-                    let ground = -100000.0 + at.y
-                    add(frame_index(post + "~shadow"), at.x, at.y - up, ground, col)
-                    for(LINKS.length) n:
-                        if (links >> n) & 1 and look.arms[n] != "-": add(frame_index(look.arms[n] + "~shadow"), at.x, at.y - up, ground, col)
-                    for(2) pass:
-                        if pass == 1: add(frame_index(post), at.x, at.y - up, at.y, col)
-                        for(LINKS) d, n:
-                            if (links >> n) & 1 and (d.x + d.y <= 0) == (pass == 0) and look.arms[n] != "-":
-                                add(frame_index(look.arms[n]), at.x, at.y - up, at.y, col)
-                    if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
-                    for(LINKS.length) n:
-                        if (links >> n) & 1 and n < look.arms_front.length and look.arms_front[n] != "-":
-                            add(frame_index(look.arms_front[n]), at.x, at.y - up, at.y + 2.0, col)
+                    let tile = akb_wall_tile(name, links)
+                    if tile >= 0:
+                        let tkey = akb_tile_name(name, links)
+                        add(frame_index(tkey + "~shadow"), at.x, at.y - up, -100000.0 + at.y, col)
+                        add(tile, at.x, at.y - up, at.y, col)
+                        add(frame_index(tkey + ":front"), at.x, at.y - up, at.y + 2.0, col)
+                    else:
+                        // (joined corner to corner: its post turned along the run, and shrunk inside its arms)
+                        let post = if (links & 0xAA) != 0 and frame_index(name + ":diag") >= 0: name + ":diag" else: name
+                        // its pieces' shadows on the ground, under every wall piece (kept apart from them: drawn with a
+                        // piece, a shadow fell on the neighbour's face)
+                        let ground = -100000.0 + at.y
+                        add(frame_index(post + "~shadow"), at.x, at.y - up, ground, col)
+                        for(LINKS.length) n:
+                            if (links >> n) & 1 and look.arms[n] != "-": add(frame_index(look.arms[n] + "~shadow"), at.x, at.y - up, ground, col)
+                        for(2) pass:
+                            if pass == 1: add(frame_index(post), at.x, at.y - up, at.y, col)
+                            for(LINKS) d, n:
+                                if (links >> n) & 1 and (d.x + d.y <= 0) == (pass == 0) and look.arms[n] != "-":
+                                    add(frame_index(look.arms[n]), at.x, at.y - up, at.y, col)
+                        if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
+                        for(LINKS.length) n:
+                            if (links >> n) & 1 and n < look.arms_front.length and look.arms_front[n] != "-":
+                                add(frame_index(look.arms_front[n]), at.x, at.y - up, at.y + 2.0, col)
                 else:
                     add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, col)
                     if look.front != "-": add(frame_index(look.front), at.x, at.y - up, at.y + 2.0, col)
@@ -2306,7 +2313,8 @@ def play_match():
         let dt = gl.delta_time()
         frame_dt = dt
         fx_tick(dt)
-        vx_tick(0.006)  // (the voxel units' later bakes)
+        vx_tick(0.006)   // (the voxel units' later bakes)
+        akb_wall_tick()  // (a wall tile with joins not seen before: one a frame)
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)

@@ -255,6 +255,7 @@ def akb_load_cached(name:string) -> bool:
 // sprite, a piece drawn over its neighbour painted its shadow on the neighbour's face (Dominic: "all the shadows
 // bugged for the walls").
 var akb_split_shadows = false
+let akb_src = dictionary<string, [string]>(256)  // a look's name -> what it's made from (arch, type, model, suffix)
 
 def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, shadow_only:[MNode] = []):
     let sprite, w, h, anchor = voxel_bake(model, shadow)  // (D-203: as voxels; a gate tower's shadow is its own now)
@@ -276,6 +277,7 @@ def akb_keep_frame(name:string, sprite:string, w:int, h:int, at:float2):
 // One look of a building, with its stages and extra parts, into the pack; its Look and BFx.
 def akb_bake_look(arch:string, type:string, model:string, suffix:string):
     let name = "{arch}:{type}{suffix}"
+    akb_src.set(name, [ arch, type, model, suffix ])  // (a wall's whole tiles are made from it later: akb_wall_tile)
     if not ak_rebake and akb_load_cached(name): return
     akb_cache_stem = if bake_cache_dir != "": akb_stem(name) else: ""
     akb_cache_frames = []
@@ -476,3 +478,63 @@ def akb_check(archs:[string]) -> int:
         print "vbcheck {arch}: looks checked in {int(seconds_elapsed() - t0)} s"
     print "vbcheck: {looks_n} looks, {failed} failed, {hidden} with their team colour out of sight (NOTE lines)"
     return failed
+
+// ---- a wall tile whole (Dominic: "the wall models are clearly overlapping and sticking into each other... they MUST
+// end before the next model"): its post and the arms it has, one model baked as one picture, so a tile ends at its
+// edge. Drawn piece by piece (a post and an arm a neighbour), the pieces of a diagonal run's tiles, all at one depth
+// on the screen, overlapped in no fixed order, each with its own ends, lip and texture. Made the first time a tile's
+// joins are drawn (one a frame, akb_wall_tick; a wall bakes in about 50 ms), kept in the bake cache.
+let akb_tile_wanted = []::string  // "<look>@L<links>" to make
+let akb_tile_asked = dictionary<string, bool>(256)
+
+def akb_tile_name(look:string, links:int) -> string: return "{look}@L{links}"
+
+// The frame of a wall tile with these joins, or -1 (then asked for).
+def akb_wall_tile(look:string, links:int) -> int:
+    let key = akb_tile_name(look, links)
+    let f = frame_index(key)
+    if f < 0 and not akb_tile_asked.get(key, false):
+        akb_tile_asked.set(key, true)
+        akb_tile_wanted.push(key)
+    return f
+
+def akb_wall_tick():
+    if not akb_tile_wanted.length: return
+    let key = akb_tile_wanted.pop()
+    let at = find_string(key, "@L")
+    let look = key.substring(0, at)
+    let links = string_to_int(key.substring(at + 2, key.length - at - 2))
+    let src = akb_src.get(look) or []::string
+    if src.length < 4: return
+    let stem = ak_stem(key)
+    let data = if bake_cache_dir != "": read_file(stem + ".bin", true) else: nil
+    if data:
+        let rec, err = flexbuffers_binary_to_value(typeof [ AkFrame ], data)
+        let fs = rec
+        if not err and fs and ak_load_frames(fs): return
+    let kept = []::AkFrame
+    for([ false, true ]) front:  // (the tile, and its near merlons: drawn over what walks behind them)
+        let spec = akb_placed(src[0], src[1], src[2], src[3])
+        let tile = mnode()
+        if (links & 0xAA) != 0:  // (a diagonal join: its post turned along the run; shrunk inside its arms where a straight
+            let pivot = mnode()  // run meets it too, a corner: full size at a run's end, where it is the wall's end)
+            pivot.rot = float3 { 0.0, 45.0, 0.0 }
+            if (links & 0x55) != 0: pivot.scl = float3 { 0.71, 1.0, 0.71 }
+            add_child(pivot, spec.body)
+            add_child(tile, pivot)
+        else: add_child(tile, spec.body)
+        for(spec.arms) a, n: if (links >> n) & 1: add_child(tile, a)
+        let fronts = akb_front_split(tile, front)
+        if front and fronts == 0: break
+        let sprite, w, h, anchor = voxel_bake(tile, not front)
+        let name = key + (if front: ":front" else: "")
+        if front: akb_keep_tile(stem, kept, name, sprite, w, h, anchor)
+        else:
+            let art, shade = vm_split_shadow(sprite, w, h)
+            akb_keep_tile(stem, kept, name, art, w, h, anchor)
+            akb_keep_tile(stem, kept, name + "~shadow", shade, w, h, anchor)
+    if stem != "" and kept.length: write_file(stem + ".bin", flexbuffers_value_to_binary(kept, 1000))
+
+def akb_keep_tile(stem:string, kept:[AkFrame], name:string, sprite:string, w:int, h:int, at:float2):
+    keep_frame(name, sprite, w, h, at)
+    if bake_cache_dir != "" and w > 0 and h > 0: kept.push(ak_cache_frame(stem, kept.length, name, sprite, w, h, at))
