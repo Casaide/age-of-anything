@@ -1539,3 +1539,12 @@ archer and scout > mounted archer, checked by `calibrate.lobster pairs`: 8 of 8 
 fix age 3, so it went back to +4). The refit from the stored fights is the same under the old and new chain (the
 lines' bonus edges already set those expectations), so no price moved; held out against the chain, 50 of 145 lines are
 more than 10 points off (51 under the old chain). The line's description reads "weak to heavy cavalry and scouts".
+
+**D-205, 2026-11-03: Prices refitted from fresh fights; every counter pair holds but one.** Dominic: "apply the 21
+price moves too". Those 21 came from fights taken before the current prices were written (13:34, prices at 13:43), so
+applying them counted the same correction twice: held out, 65 of 145 lines went more than 10 points off (from 50), and
+skirmishers > archers and scouts > horse archers broke. Reverted; the lean calibration rerun at today's prices (ages 2
+and 3, 3 minutes) and refitted: 33 parts and slots moved by a point (horse archers 1 -> 3, skirmishers 0 -> -1,
+swords 3 -> 2, scouts -4 -> -5, giants 2 -> 1). Every counter pair now holds in ages 2 and 3, skirmishers > horse
+archers included (7 of 8, 8 of 8), except the large line > archers in age 2 (8 of 12, open). Held out, 53 of 145 lines
+more than 10 points off (50 before: within the noise). Golden races and starts updated (costs only).
