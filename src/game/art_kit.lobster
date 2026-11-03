@@ -24,7 +24,7 @@ def keep_frame(name:string, sprite:string, w:int, h:int, anchor:float2):
     if w == 0 or h == 0: return
     let rows = map(h) y: map(w) x: float4 { float(sprite[(y * w + x) * 4]) / 255.0, float(sprite[(y * w + x) * 4 + 1]) / 255.0,
                                             float(sprite[(y * w + x) * 4 + 2]) / 255.0, float(sprite[(y * w + x) * 4 + 3]) / 255.0 }
-    add_sheet(gl.create_texture(rows, pack_formats), float2 { float(w), float(h) })
+    add_sheet(gl.create_texture(rows, pack_formats), float2 { float(w), float(h) }, pack_formats)
     frame_at.set(name, frames.length)
     frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(anchor.x + 0.5), int(anchor.y + 0.5), 1.0 / ART_K })
 

@@ -107,7 +107,7 @@ def sprite_texture(name:string, sprite:string, w:int, h:int) -> resource<texture
     return gl.create_texture(rows, bake_opts.sprite_formats)
 
 def add_frame(full:string, tex:resource<texture>, w:int, h:int, origin:float2):
-    add_sheet(tex, float2 { float(w), float(h) })
+    add_sheet(tex, float2 { float(w), float(h) }, bake_opts.sprite_formats)
     add_part_frame(full, w, h, origin)
 
 def add_part_frame(full:string, w:int, h:int, origin:float2):
