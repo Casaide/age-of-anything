@@ -99,6 +99,47 @@ shows at the size it always did. The sim never sees any of it. This page is the 
    drawing side looks the frame up by that key (`src/view/art.lobster`).
 
 
+## Voxel units (data/voxel/)
+
+Units can be drawn as procedural voxels instead of composed parts (the `voxels` option; Dominic, 2026-11-03: "replace
+all units with voxels"). Everything about how a unit looks is data in `data/voxel/`; `src/view/voxel.lobster` is a small
+builder that reads it, fills a voxel grid at a voxel a baked pixel, and draws 8 facings with banded light,
+self-shadows, an outline and a ground shadow of their own. `src/game/voxel_units.lobster` bakes a match's unit types
+(cached in `bake_cache/` by look, keyed by the builder's source and the data).
+
+Coordinates are body units: z up, y forward, x right, the ground at z 0. A body unit is about a world pixel.
+
+- `materials.json`: `name -> {rgb, fur}`. `skin` and `pale` are the race's (palettes.json), `coat` a mount's, `team`
+  the sprite shader's key.
+- `bodies/<creature>.json` (the id is the generator's creature): `size`, `fur` (flecks), `skin`/`pale` (when the race
+  gives none), `skin_scale`, `reach` (a foot's swing: the walk steps by ground covered with it), and:
+  - `points`: named points, `{at, bob}` (bob: how far it rises in the walk).
+  - `legs`: a pair each (the right one given, mirrored): `hip` (a point and offset), `foot` (where it stands),
+    `stride`, `lift`, `phase` (degrees: a back pair 180), `bones` (two lengths), `pole` (where the middle joint
+    bends: a knee forward, a beast's front elbow back), `r` (thigh and shin radii), `mats`, and `shapes` on `hip`,
+    `knee`, `ankle`.
+  - `arms`: `shoulder` (the right one), `bone`, `thick`, `sleeve`, `hand` materials.
+  - `helm` (`at`, `r`: where a helmet sits, the skull's size), `armour` (`a`, `b`, `r`: a capsule over the trunk),
+    `seat` (a rider: `z`, its seat's height, and `astride` materials; a mount: `at` where its rider sits, `wide`).
+  - `looks`: per look a skin shade and a hair colour (a unit picks one from its id, the view only).
+  - `shapes`: the body.
+- A shape: one of `cap` (to `to`, `r: [a, b]`), `ball`/`bead` (`r`; a bead is hard), `disc` (`n`, `r: [radius,
+  thick]`), `box` (`n`, `half`, `round`), `chain` (points, `r: [first, step, least, taper]`, `mats: [first, rest]`),
+  `ring` (a scarf: `r: [radius, tilt]`), `helm` and `fit` (gear only: the body's helmet and armour spots, `r` added).
+  Each on a point and offset: `["head", x, y, z]`. Also `mat`, `hard` (no melting into the body; gear's default),
+  `mirror` (a left one too), `if` and `unless` (flags: `look:1`, `helm`, `helm:galea`, `armour`, `seated`,
+  `wear:vest`, `has:<gear>`, and any gear's `flags`).
+- `gear.json`:
+  - `holds`: how a hand holds (`rest`, `dir`, and for a blow `wind`, `wind_dir`, `hit`, `hit_dir`; a bow's `raise` and `draw`).
+  - `gear`: held items (`hand`, `hold`, `dir`, a left item's `face`, `shapes` in the hold's frame: `[hand, along,
+    out, side]`; `draw` is the drawing hand) and worn ones (`fits` per body, `*` for any other, `flags`).
+  - `parts`: rules mapping a recipe's parts to gear: `part` (an id or prefix), `tag` (parts.json's), `slot`; the first
+    that matches wins.
+
+A mod adds its own `data/voxel/` (the same files; a body or gear of the same id replaces the game's, its `parts` rules
+go first). Draw a sheet with `lobster voxel_proto.lobster -- out.ppm [romans|looks|check]`; `check` (in the batch as
+voxel_contact) fails a unit whose feet have no shadow under them as the game draws it.
+
 ## Placement rules
 
 **No unit, mount, gear or pose change is shown until the placement check (`src/placement_check.lobster`) passes** (Dominic,

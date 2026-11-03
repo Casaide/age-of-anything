@@ -1,0 +1,425 @@
+{
+ "_doc": "A rat: a small hunched body, pear-shaped, thin shins on pink feet, a long pointed snout with a pink nose, big round ears pink inside, a beady eye, a long bare tail on the ground. No tunic: the team is a scarf.",
+ "skin": "#7a5940",
+ "pale": "#c7a894",
+ "size": 1.0,
+ "fur": 0.09,
+ "reach": 5.5,
+ "points": {
+  "pelvis": {
+   "at": [
+    0,
+    -1.5,
+    8.6
+   ],
+   "bob": 0.5
+  },
+  "chest": {
+   "at": [
+    0,
+    4.6,
+    14.6
+   ],
+   "bob": 0.5
+  },
+  "head": {
+   "at": [
+    0,
+    7.4,
+    16.8
+   ],
+   "bob": 0.5
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "pelvis",
+    2.3,
+    0,
+    -0.5
+   ],
+   "foot": [
+    2.6,
+    -1.6,
+    1.6
+   ],
+   "stride": 5.5,
+   "lift": 2.4,
+   "bones": [
+    5.28,
+    5.15
+   ],
+   "pole": [
+    0.1,
+    1,
+    0
+   ],
+   "r": [
+    3.0,
+    1.5,
+    1.0,
+    0.7
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": [
+    {
+     "cap": [
+      "ankle",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "ankle",
+      0.2,
+      3.4,
+      -1.0
+     ],
+     "r": [
+      0.7,
+      0.6
+     ],
+     "mat": "pink"
+    }
+   ]
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "chest",
+   2.2,
+   0.2,
+   -0.6
+  ],
+  "bone": 3.8,
+  "thick": 0.9,
+  "sleeve": "skin",
+  "hand": "pink"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   0.2,
+   1.0
+  ],
+  "r": 2.0
+ },
+ "armour": {
+  "a": [
+   "pelvis",
+   0,
+   1.0,
+   2.2
+  ],
+  "b": [
+   "chest",
+   0,
+   0.2,
+   -1.4
+  ],
+  "r": [
+   3.5,
+   2.6
+  ]
+ },
+ "seat": {
+  "z": 9.0,
+  "astride": [
+   "skin",
+   "skin",
+   "pink"
+  ]
+ },
+ "shapes": [
+  {
+   "cap": [
+    "pelvis",
+    0,
+    0,
+    0
+   ],
+   "to": [
+    "chest",
+    0,
+    0,
+    0
+   ],
+   "r": [
+    4.0,
+    2.4
+   ],
+   "mat": "skin"
+  },
+  {
+   "cap": [
+    "pelvis",
+    0,
+    1.8,
+    0.6
+   ],
+   "to": [
+    "chest",
+    0,
+    0.6,
+    -2.2
+   ],
+   "r": [
+    3.0,
+    1.8
+   ],
+   "mat": "pale",
+   "_doc": "the belly"
+  },
+  {
+   "chain": [
+    [
+     "pelvis",
+     0,
+     -3.2,
+     -0.6
+    ],
+    [
+     "pelvis",
+     0,
+     -3.5,
+     -2.6
+    ],
+    [
+     "pelvis",
+     0.5,
+     -6.5,
+     -5.2
+    ],
+    [
+     "pelvis",
+     2.0,
+     -9.5,
+     -7.4
+    ],
+    [
+     "pelvis",
+     3.8,
+     -12.5,
+     -8.1
+    ],
+    [
+     "pelvis",
+     4.4,
+     -16.0,
+     -8.25
+    ],
+    [
+     "pelvis",
+     3.4,
+     -19.5,
+     -8.3
+    ],
+    [
+     "pelvis",
+     1.6,
+     -22.5,
+     -8.3
+    ]
+   ],
+   "r": [
+    1.0,
+    -0.11,
+    0.35,
+    0.1
+   ],
+   "mats": [
+    "skin",
+    "tail"
+   ],
+   "unless": [
+    "seated"
+   ],
+   "_doc": "the tail: down to the ground and trailing back in a long S"
+  },
+  {
+   "cap": [
+    "chest",
+    0,
+    0.2,
+    0.4
+   ],
+   "to": [
+    "head",
+    0,
+    0,
+    0
+   ],
+   "r": [
+    2.0,
+    1.9
+   ],
+   "mat": "skin"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    -0.4,
+    0.2
+   ],
+   "to": [
+    "head",
+    0,
+    0.9,
+    0
+   ],
+   "r": [
+    2.3,
+    2.1
+   ],
+   "mat": "skin"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    1.2,
+    -0.3
+   ],
+   "to": [
+    "head",
+    0,
+    6.4,
+    -1.6
+   ],
+   "r": [
+    1.75,
+    0.55
+   ],
+   "mat": "skin",
+   "_doc": "the snout"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    1.4,
+    -1.4
+   ],
+   "to": [
+    "head",
+    0,
+    5.0,
+    -2.2
+   ],
+   "r": [
+    1.1,
+    0.45
+   ],
+   "mat": "pale",
+   "_doc": "the chin"
+  },
+  {
+   "bead": [
+    "head",
+    0,
+    6.7,
+    -1.65
+   ],
+   "r": 0.85,
+   "mat": "pink",
+   "_doc": "the nose"
+  },
+  {
+   "bead": [
+    "head",
+    1.4,
+    2.4,
+    0.65
+   ],
+   "r": 0.42,
+   "mat": "eye",
+   "mirror": true
+  },
+  {
+   "disc": [
+    "head",
+    2.4,
+    -0.8,
+    2.6
+   ],
+   "n": [
+    0.5,
+    0.84,
+    0.21
+   ],
+   "r": [
+    2.3,
+    0.35
+   ],
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "a big round ear, turned out and forward"
+  },
+  {
+   "disc": [
+    "head",
+    2.55,
+    -0.55,
+    2.66
+   ],
+   "n": [
+    0.5,
+    0.84,
+    0.21
+   ],
+   "r": [
+    1.6,
+    0.15
+   ],
+   "mat": "pink",
+   "mirror": true
+  },
+  {
+   "ring": [
+    "chest",
+    0,
+    0.6,
+    0.6
+   ],
+   "r": [
+    2.1,
+    0.5
+   ],
+   "mat": "team",
+   "unless": [
+    "wear:vest"
+   ],
+   "_doc": "the scarf"
+  },
+  {
+   "cap": [
+    "pelvis",
+    0,
+    2.34,
+    2.5
+   ],
+   "to": [
+    "chest",
+    0,
+    -0.2,
+    -0.2
+   ],
+   "r": [
+    3.75,
+    2.75
+   ],
+   "mat": "team",
+   "hard": true,
+   "if": [
+    "wear:vest"
+   ],
+   "_doc": "a vest (an option)"
+  }
+ ]
+}

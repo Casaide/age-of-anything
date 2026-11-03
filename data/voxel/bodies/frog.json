@@ -1,0 +1,354 @@
+{
+ "_doc": "A frog: squat and wide on folded hind legs (knees out, long webbed toes), a wide flat head with a mouth seam, two big gold eyes bulging on top. Smooth skin, a pale throat; the team a scarf.",
+ "skin": "#618f38",
+ "pale": "#dbd68f",
+ "size": 1.15,
+ "fur": 0.03,
+ "reach": 2.0,
+ "points": {
+  "rump": {
+   "at": [
+    0,
+    -3.0,
+    5.4
+   ],
+   "bob": 0.8
+  },
+  "front": {
+   "at": [
+    0,
+    1.8,
+    7.6
+   ],
+   "bob": 0.8
+  },
+  "head": {
+   "at": [
+    0,
+    5.0,
+    9.0
+   ],
+   "bob": 0.8
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "rump",
+    3.2,
+    0,
+    -1.0
+   ],
+   "foot": [
+    5.6,
+    -3.4,
+    1.2
+   ],
+   "stride": 2.0,
+   "lift": 0.0,
+   "bones": [
+    6.25,
+    6.44
+   ],
+   "pole": [
+    0.7,
+    0.7,
+    0.3
+   ],
+   "r": [
+    2.5,
+    1.8,
+    1.6,
+    1.0
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": [
+    {
+     "cap": [
+      "ankle",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "ankle",
+      -0.16,
+      4.4,
+      -0.5
+     ],
+     "r": [
+      0.6,
+      0.5
+     ],
+     "mat": "skin"
+    },
+    {
+     "cap": [
+      "ankle",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "ankle",
+      0.8,
+      4.4,
+      -0.5
+     ],
+     "r": [
+      0.6,
+      0.5
+     ],
+     "mat": "skin"
+    },
+    {
+     "cap": [
+      "ankle",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "ankle",
+      1.76,
+      4.4,
+      -0.5
+     ],
+     "r": [
+      0.6,
+      0.5
+     ],
+     "mat": "skin"
+    }
+   ]
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "front",
+   3.3,
+   1.2,
+   -0.4
+  ],
+  "bone": 4.2,
+  "thick": 1.0,
+  "sleeve": "skin",
+  "hand": "skin"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -1.0,
+   1.9
+  ],
+  "r": 1.7
+ },
+ "armour": {
+  "a": [
+   "rump",
+   0,
+   0,
+   1.0
+  ],
+  "b": [
+   "front",
+   0,
+   -0.6,
+   0.8
+  ],
+  "r": [
+   4.0,
+   3.5
+  ]
+ },
+ "seat": {
+  "z": 5.8,
+  "astride": [
+   "skin",
+   "skin",
+   "skin"
+  ]
+ },
+ "shapes": [
+  {
+   "cap": [
+    "rump",
+    0,
+    0,
+    0
+   ],
+   "to": [
+    "front",
+    0,
+    0,
+    0
+   ],
+   "r": [
+    4.4,
+    3.9
+   ],
+   "mat": "skin"
+  },
+  {
+   "cap": [
+    "rump",
+    -1.8,
+    2.0,
+    0.6
+   ],
+   "to": [
+    "rump",
+    1.8,
+    2.0,
+    0.6
+   ],
+   "r": [
+    4.4,
+    4.4
+   ],
+   "mat": "skin",
+   "_doc": "wide"
+  },
+  {
+   "cap": [
+    "rump",
+    0,
+    2.0,
+    -1.2
+   ],
+   "to": [
+    "front",
+    0,
+    0.9,
+    -1.6
+   ],
+   "r": [
+    3.4,
+    2.9
+   ],
+   "mat": "pale",
+   "_doc": "the belly"
+  },
+  {
+   "cap": [
+    "head",
+    -2.0,
+    0,
+    0
+   ],
+   "to": [
+    "head",
+    2.0,
+    0,
+    0
+   ],
+   "r": [
+    3.0,
+    3.0
+   ],
+   "mat": "skin"
+  },
+  {
+   "cap": [
+    "head",
+    -1.6,
+    0.4,
+    -1.4
+   ],
+   "to": [
+    "head",
+    1.6,
+    0.4,
+    -1.4
+   ],
+   "r": [
+    2.3,
+    2.3
+   ],
+   "mat": "pale",
+   "_doc": "the throat"
+  },
+  {
+   "cap": [
+    "head",
+    -3.4,
+    1.9,
+    -0.9
+   ],
+   "to": [
+    "head",
+    3.4,
+    1.9,
+    -0.9
+   ],
+   "r": [
+    0.3,
+    0.3
+   ],
+   "mat": "mouth",
+   "hard": true
+  },
+  {
+   "ball": [
+    "head",
+    2.5,
+    0.6,
+    3.2
+   ],
+   "r": 2.1,
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "big eyes, bulging up off the top of the head"
+  },
+  {
+   "bead": [
+    "head",
+    2.7,
+    1.5,
+    3.7
+   ],
+   "r": 1.65,
+   "mat": "gold",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "head",
+    2.5,
+    2.9,
+    3.8
+   ],
+   "to": [
+    "head",
+    3.2,
+    2.9,
+    3.8
+   ],
+   "r": [
+    0.6,
+    0.6
+   ],
+   "mat": "eye",
+   "hard": true,
+   "mirror": true
+  },
+  {
+   "ring": [
+    "front",
+    0,
+    1.6,
+    0.2
+   ],
+   "r": [
+    3.2,
+    0.8
+   ],
+   "mat": "team",
+   "_doc": "the scarf"
+  }
+ ]
+}
