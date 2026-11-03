@@ -320,3 +320,8 @@ section, [id] { scroll-margin-top: 72px; }
 .stack { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 28px; align-items: start; }
 @media (max-width: 1000px) { .stack { grid-template-columns: minmax(0, 1fr); } }
 .stack pre { font-size: 12.5px; }
+.why .group { font-family: "IBM Plex Mono", monospace; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.reasons.four { grid-template-columns: repeat(4, 1fr); }
+#why h2 { max-width: 22em; }
+@media (max-width: 1000px) { .reasons.four { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .reasons.four { grid-template-columns: 1fr; } }

@@ -82,33 +82,47 @@
 <section id="why">
   <div class="wrap">
     <p class="kicker">Why Creel</p>
-    <h2>What it does that other engines don't</h2>
+    <h2>Creel lets you build the RTS genre you grew up playing, easily, and with AI too.</h2>
     <p class="intro">General-purpose engines leave the strategy game to you. RTS engines like Spring and Recoil give
-      you the simulation, then leave the art and the balance to you. Creel goes further, for one kind of game:
-      classic 2D isometric real-time strategy.</p>
+      you a simulation, then leave the art and the balance to you. Creel is made for one kind of game, the classic 2D
+      isometric RTS, at a desk, on the couch or on a Steam Deck, and it takes care of more of it.</p>
     <div class="why">
-      <ol class="reasons">
-        <li><h3>Art without an art team</h3>
-          <p>A unit is a few lines of JSON: points, legs and shapes. Creel builds it in voxels, draws it in eight
-            directions in your team's colours, and makes it walk. You can have a playable army before anyone opens a
-            modelling program.</p></li>
-        <li><h3>Factions from words</h3>
-          <p>An optional module turns a sentence into a faction. "Sewer rats with cheese hammers" becomes a roster of
-            priced, playable units with names, looks and bonuses. Use it, or leave it out.</p></li>
-        <li><h3>Balance you can run</h3>
-          <p>Unit prices are fitted from simulated fights: about 20,000 battles in a minute on four cores. Change
-            the rule and the fit updates in under a second, without fighting again.</p></li>
-        <li><h3>Mods that can't split a lobby <span class="tag">checks: next</span></h3>
-          <p>Every pack is signed by a hash of its files, so a lobby can name the pack two players disagree on
-            before the match starts. Rule hooks are checked for anything that could desync. Saves keep loading as
-            packs update.</p></li>
-        <li><h3>Small enough to read</h3>
-          <p>About 64,000 lines of Lobster for the engine and its first game together; the simulation is 11,000.
-            Engine, hooks and models are one language, and the JIT compiles the lot in a couple of seconds.</p></li>
-        <li><h3>Made for the couch and the handheld</h3>
-          <p>A gamepad wheel of orders, touch controls, and builds for macOS, the Steam Deck and Android, alongside
-            mouse and keyboard.</p></li>
-      </ol>
+      <div>
+        <h3 class="group">Easily</h3>
+        <ol class="reasons four">
+          <li><h3>Art without an art team</h3>
+            <p>A unit is a few lines of JSON: points, legs and shapes. Creel builds it in voxels, draws it in eight
+              directions in your team's colours, and makes it walk. You have an army before anyone opens a
+              modelling program.</p></li>
+          <li><h3>Maps you can draw</h3>
+            <p>A map is a picture made of letters in a text file, with a key. Trees are <code>T</code>, gold is
+              <code>g</code>, a river is <code>R</code>. Draw it, save it, play it.</p></li>
+          <li><h3>A game that runs first time <span class="tag">planned</span></h3>
+            <p><code>creel new</code> gives you a map, a worker, a soldier and a town that play straight away.
+              Change a file and the running match changes with it.</p></li>
+          <li><h3>Mods that can't split a lobby <span class="tag">checks: next</span></h3>
+            <p>Every pack is signed by a hash of its files, so a lobby can name the pack two players disagree on
+              before the match starts. Saves keep loading as packs update.</p></li>
+        </ol>
+      </div>
+      <div>
+        <h3 class="group">With AI</h3>
+        <ol class="reasons four">
+          <li><h3>A game an AI can read</h3>
+            <p>Units, maps, rules, sounds and the interface are plain text. An AI assistant can read your whole game,
+              change it, and run the checks to see whether it worked, the same way you would.</p></li>
+          <li><h3>Small enough to hold in your head</h3>
+            <p>About 64,000 lines of Lobster for the engine and its first game together; the simulation is 11,000.
+              Engine, hooks and models are one language, and it all compiles in a couple of seconds.</p></li>
+          <li><h3>Generators built in</h3>
+            <p>An optional module turns a sentence into a priced, playable faction. Unit prices are fitted from
+              about 20,000 simulated fights in a minute, not tuned by hand.</p></li>
+          <li><h3>Built with Claude</h3>
+            <p>Age of Anything, the first Creel game, is made by one developer working with Claude, an AI assistant:
+              the engine, the art, the music and these pages. The <a href="https://age-of-anything.com/devlog">devlog</a>
+              follows it day by day.</p></li>
+        </ol>
+      </div>
       <aside class="tradeoffs">
         <h3>What to know first</h3>
         <ul>
