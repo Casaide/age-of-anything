@@ -77,6 +77,7 @@ import .game.fx
 import .game.ui
 import .game.levels
 import .game.perf
+import .game.pace
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -1994,7 +1995,7 @@ note("start")
 // novsync: the same for a measure, the frame cap still pacing it)
 let no_vsync = shot != "" or selftest or padtest or has_s(args, "novsync")
 fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if no_vsync: gl.window_init_no_vsync else: 0))
-gl.set_target_delta_time(1.0 / 60.0)   // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
+pace(PACE_MATCH)  // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon.png")  // (the Dock's icon on the Mac)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
@@ -2410,6 +2411,7 @@ def play_match():
     quit_game = false
     told_end = false
     note("loop")
+    pace(PACE_MATCH)
     while gl.frame() and not quit_game and not bake_quit:
         if perf_for > 0.0:  // (the Town Center selected: its panel and queue drawn, the HUD full)
             perf_begin()
@@ -2532,23 +2534,24 @@ def play_match():
             keys()
             if not padded and not panel_click(mouse_px()): mouse()
         perf_lap(0)
-        gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
-        gl.blend(1)
-        draw_world(acc / 0.05)
-        ui_batch(): draw_panel()
-        perf_lap(6)
-        draw_hud(paused, speed)
-        perf_lap(7)
-        draw_groups()
-        perf_lap(8)
-        pad_draw()
-        if touch_play: build_button()
-        if tree_arg and frame_no == 2:
-            open_tree(ME)
-        tree_tick()
-        if menu_open: pause_menu()
-        draw_banner()
-        if typing_race: typing_tick()
+        if drawing():  // (minimised: the sim plays on, nothing is drawn)
+            gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
+            gl.blend(1)
+            draw_world(acc / 0.05)
+            ui_batch(): draw_panel()
+            perf_lap(6)
+            draw_hud(paused, speed)
+            perf_lap(7)
+            draw_groups()
+            perf_lap(8)
+            pad_draw()
+            if touch_play: build_button()
+            if tree_arg and frame_no == 2:
+                open_tree(ME)
+            tree_tick()
+            if menu_open: pause_menu()
+            draw_banner()
+            if typing_race: typing_tick()
         perf_lap(9)
         if has_s(args, "savegame") and clock_s >= 3.0:  // (tests: the pause menu's Save game, then quit)
             save_game()

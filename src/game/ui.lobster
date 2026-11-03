@@ -365,7 +365,12 @@ def ui_outline(at:float2, size:float2, w:float, col:float4):
     ui_fill(at + float2 { size.x - w, 0.0 }, float2 { w, size.y }, col)
 
 def ui_stud(c:float2, r:float, col:float4):
-    ui_batch_flush()
+    if ui_batching:
+        ui_batch_disc(c + float2 { 0.6, 0.8 } * r * 0.4, r, 12, float4 { 0.0, 0.0, 0.0, 0.5 })
+        ui_batch_disc(c, r, 12, col * float4 { 0.7, 0.7, 0.7, 1.0 })
+        ui_batch_disc(c - float2_1 * r * 0.15, r * 0.75, 12, col)
+        ui_batch_disc(c - float2_1 * r * 0.35, r * 0.25, 8, float4 { 1.0, 1.0, 1.0, 0.55 })
+        return
     gl.set_shader("color")
     gl.color(float4 { 0.0, 0.0, 0.0, 0.5 }): gl.translate(c + float2 { 0.6, 0.8 } * r * 0.4): gl.circle(r, 12)
     gl.color(col * float4 { 0.7, 0.7, 0.7, 1.0 }): gl.translate(c): gl.circle(r, 12)

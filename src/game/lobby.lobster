@@ -130,6 +130,7 @@ def fe_gem(c:float2, r:float, col:float4):
 // The cast "vs": a lacquered medallion in a bronze rim.
 def fe_medallion(c:float2, r:float):
     let lk = ui_look_of("")
+    ui_batch_flush()
     gl.set_shader("color")
     gl.color(float4 { 0.0, 0.0, 0.0, 0.45 }): gl.translate(c + float2 { 2.0, 4.0 } * fe_k): gl.circle(r * 1.04, 40)
     gl.color(lk.metal): gl.translate(c): gl.circle(r, 40)
@@ -369,6 +370,7 @@ def fe_draw_map(at:float2, size:float2, id:string, m:JV):
     let h = gint(m, "height", 1)
     let s = min(size.x / float(w + h), size.y * 2.0 / float(w + h + 1))
     let off = at + (size - float2 { float(w + h), float(w + h) * 0.5 } * s) / 2.0
+    ui_batch_flush()
     gl.set_shader("color_attr")
     gl.translate(off):
         gl.scale(s):
@@ -1191,6 +1193,7 @@ def run_front(page0:string, typed:[string]) -> string:
     fe_field = -1
     var typing = false  // text input on: only while a box has the keyboard (on a phone it brings up the keyboard)
     var shot_frame = -1
+    pace(PACE_MENU)
     while gl.frame():
         if bake_quit: return ""
         let dt = gl.delta_time()
@@ -1236,16 +1239,18 @@ def run_front(page0:string, typed:[string]) -> string:
                 return ""
             continue
         ui_frame(true)
+        atlas_pack()
         fe_backdrop()
         var go = ""
-        if fe_page == "title": go = fe_title_page(dt)
-        elif fe_page == "setup": go = fe_setup_page(dt)
-        elif fe_page == "lab": go = fe_lab_page(dt)
-        elif fe_page == "saves":
-            let picked = fe_saves_card(fe_note)
-            if picked == "back": go = "back"
-            elif picked != "": go = "load:" + picked
-        elif fe_page == "net": go = fe_net_page()
+        ui_batch():  // (the page's fills, lines and studs in as few draws as can be)
+            if fe_page == "title": go = fe_title_page(dt)
+            elif fe_page == "setup": go = fe_setup_page(dt)
+            elif fe_page == "lab": go = fe_lab_page(dt)
+            elif fe_page == "saves":
+                let picked = fe_saves_card(fe_note)
+                if picked == "back": go = "back"
+                elif picked != "": go = "load:" + picked
+            elif fe_page == "net": go = fe_net_page()
         if fe_page == "setup" or fe_page == "lab" or fe_page == "title":
             ui_flush()
         fe_draw_tip()
