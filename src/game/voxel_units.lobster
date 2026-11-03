@@ -241,6 +241,7 @@ def vx_save(j:vx_job):
 
 // The modes a look's first bake has (what its units do from the start), and the rest.
 def vx_first_modes(lk:int) -> [int]: return if vx_lks[lk].worker: [ VX_IDLE, VX_WALK, VX_WORK ] else: [ VX_IDLE, VX_WALK ]
+def vx_moving_modes(lk:int) -> [int]: return if vx_lks[lk].worker: [ VX_WALK, VX_WORK ] else: [ VX_WALK ]
 def vx_later_modes(lk:int) -> [[int]]: return [ [ VX_ATTACK ], [ VX_DIE ] ]  // (a job a mode: small atlases, short saves)
 def vx_all_modes(lk:int) -> [[int]]:
     let ms = [ [ VX_IDLE, VX_WALK ], [ VX_ATTACK ], [ VX_DIE ] ]
@@ -253,11 +254,13 @@ def vx_queue_job(j:vx_job, front:bool):
     if front: vx_queue.insert(0, j)
     else: vx_queue.push(j)
 
-// A look's bakes: its first (at the front when it's wanted now), then the rest at the back.
+// A look wanted now (a figure on a page, a step aged into): standing first, at the front (one pose: it shows in a
+// moment), then walking (and working) and the rest at the back.
 def vx_plan(lk:int, front:bool):
     if vx_lks[lk].planned: return
     vx_lks[lk].planned = true
-    vx_queue_job(vx_new_job(lk, 0, vx_first_modes(lk)), front)
+    vx_queue_job(vx_new_job(lk, 0, vx_moving_modes(lk)), front)
+    vx_queue_job(vx_new_job(lk, 0, [ VX_IDLE ]), front)  // (in front of its walk)
     for(vx_later_modes(lk)) ms: vx_queue_job(vx_new_job(lk, 0, ms), false)
     for(vx_looks_of(vx_lks[lk].u) - 1) v: for(vx_all_modes(lk)) ms: vx_queue_job(vx_new_job(lk, v + 1, ms), false)
 
@@ -270,7 +273,7 @@ def vx_want(lk:int):
         return
     let d = vx_doing
     if d and d.lk == lk and d.v == 0: return
-    let i = find(vx_queue) j: j.lk == lk and j.v == 0 and j.modes[0] == VX_IDLE
+    let i = find(vx_queue) j: j.lk == lk and vx_first_job(j)
     if i > 0:
         let j = vx_queue[i]
         vx_queue.remove(i)
@@ -279,14 +282,30 @@ def vx_want(lk:int):
 // Every type's looks, at the start (and again when a race changes mid-match): what each player fields in the age
 // it's in, baked now in their first look (counted on the match loader); then queued: their attacks and falls,
 // their other looks, and the later ages' steps, the next age first.
-def vx_start():
-    let t0 = seconds_elapsed()
+// The data (the game's and each active mod's data/voxel/) and the cache key's code part, once.
+def vx_init():
+    if vx_source != "": return
     let dirs = [ "../data/voxel" ]
     for(mods_active) m: dirs.push(m.dir + "/data/voxel")  // (a mod's own, in its data/)
     vx_load(dirs)
     vx_source = sha256_text((read_file("view/voxel.lobster") or "") + vx_data_text())
     vx_mat_cols[vx_mat_team] = float3 { 0.85, 0.12, 0.85 }  // (the sprite shader's team key)
-    let by_age = []::[int]                                  // looks by how many ages ahead they are first fielded
+
+// A look's first bakes (standing, walking, working) taken out of the queue (and the one being baked), to be finished
+// now.
+def vx_first_job(j:vx_job) -> bool: return j.v == 0 and (j.modes[0] == VX_IDLE or j.modes[0] == VX_WALK)
+def vx_take_first(lk:int, out:[vx_job]):
+    let d = vx_doing
+    if d and d.lk == lk and vx_first_job(d):
+        vx_doing = nil
+        out.push(d)
+    for(filter(vx_queue) j: j.lk == lk and vx_first_job(j)) j: out.push(j)
+    vx_queue = filter(vx_queue) j: not (j.lk == lk and vx_first_job(j))
+
+def vx_start():
+    let t0 = seconds_elapsed()
+    vx_init()
+    let by_age = []::[int]  // looks by how many ages ahead they are first fielded
     vx_type_lks = []::[int]
     vx_cur = []::int
     for(t_slot.length) k:
@@ -307,6 +326,7 @@ def vx_start():
     let now = []::vx_job
     for(by_age) lks, a:
         for(lks) lk:
+            if a == 0 and vx_lks[lk].planned: vx_take_first(lk, now)  // (asked for on a lobby page, not all baked yet)
             if not vx_lks[lk].planned:
                 vx_lks[lk].planned = true
                 let first = vx_new_job(lk, 0, vx_first_modes(lk))
@@ -347,10 +367,14 @@ def vx_refresh():
             if vx_ready(lk) or cur < 0: vx_cur[k] = lk
             else: vx_want(lk)
 
-// In play: the queue baked on for up to `budget` seconds of this frame.
+// In play: each type's look, then the queue baked on for up to `budget` seconds of this frame.
 def vx_tick(budget:float):
     if not voxel_units: return
     vx_refresh()
+    vx_bake_tick(budget)
+
+// The queue baked on for up to `budget` seconds of this frame (in play, and on the lobby's pages).
+def vx_bake_tick(budget:float):
     let us = vx_unsaved
     if us:
         vx_save(us)
@@ -411,10 +435,14 @@ def vx_shadow_for(f:int) -> int: return vx_shadow_of.get(f, -1)
 
 // A recipe's figure (the panel's portraits, the tech tree's), standing facing down and to the right: its frame
 // once baked (asked for first until then), or -1.
-def vx_figure(recipe:JV) -> int:
+def vx_figure(recipe:JV) -> int: return vx_figure_facing(recipe, float2_1)
+
+// The same, facing screen direction `to` (a canvas vector: the lobby's armies face each other).
+def vx_figure_facing(recipe:JV, to:float2) -> int:
     if has(recipe, "crew"): return -1
+    vx_init()
     let lk = vx_look_for(recipe)
     if not vx_ready(lk):
         vx_want(lk)
         return -1
-    return vx_frame(lk, 0, VX_IDLE, 3, 0)
+    return vx_frame(lk, 0, VX_IDLE, (dir_of(to) + 2) % 8, 0)

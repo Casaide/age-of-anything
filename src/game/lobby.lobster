@@ -32,10 +32,8 @@ class FeSide:
     race:JV
     gen = 0  // bumped by each new race; its army is made once typing stops
     views_gen = -1
-    views_bake = -1  // bake_gen when its views were made (made again when wanted parts are baked)
     dirty_at = -1.0
-    views:[UV] = []  // the few the stage shows (fe_stage_pick)
-    picks:[JV] = []
+    picks:[JV] = []         // the few the stage shows (fe_stage_pick)
     traits:[[string]] = []  // per group (bonuses, own research, lacks, heroes, notes): its lines
 
 class FeTrait:
@@ -66,17 +64,13 @@ var fe_scanned = false
 var fe_address = "127.0.0.1"
 var fe_lab_rules = 0
 let fe_lab_scroll = [ 0.0, 0.0 ]
-var fe_lab_views = [ []::UV, []::UV ]
+var fe_lab_units = [ []::JV, []::JV ]  // the Race Lab's lineups: every unit of each side's race
 let fe_lab_gen = [ -1, -1 ]
-let fe_lab_bake = [ -1, -1 ]  // bake_gen when the lab's views were made
 
-// The lobby's views let go (a view's tree is a cycle: parent and kids, freed only by free_tree).
+// The lobby's armies let go (their voxel looks stay baked, in the bake cache too).
 def fe_free_views():
-    for(fe_sides) s:
-        uv_free_all(s.views)
-        s.views = []
-    for(fe_lab_views) vs: uv_free_all(vs)
-    fe_lab_views = [ []::UV, []::UV ]
+    for(fe_sides) s: s.picks = []
+    fe_lab_units = [ []::JV, []::JV ]
 var fe_test_lines = []::string
 var fe_tip_k = 0
 var fe_tip_t = 0.0
@@ -394,8 +388,6 @@ def fe_set_map(k:int):
 // A panel per player; what was typed, rolled and picked carries over when the map changes; new players are rolled.
 def fe_build_sides(n:int):
     let keep = fe_sides
-    for(keep) s, i:
-        if i >= n: uv_free_all(s.views)
     fe_sides = map(n) i:
         if i < keep.length: keep[i] else: FeSide { race: jobj() }
     for(fe_sides) s, i:
@@ -461,48 +453,26 @@ def fe_stage_pick(units:[JV], room:int) -> [JV]:
                     found = true
     return out
 
-def fe_view(u:JV, p:int, right:bool) -> UV:
-    let tc = team_rgb[p % team_rgb.length]
-    let v = uv_new()  // (parts not baked yet are wanted as it's drawn: baked between frames, then the view made again)
-    uv_build(v, at(u, "recipe"), float3 { tc.x, tc.y, tc.z }, 20)
-    v.node.scl = float2_1 * 0.85
-    v.pose_steps = 8
-    v.art_px = ART_SCALE
-    face_vec(v, float2 { if right: -1.0 else: 1.0, 0.45 })
-    return v
-
-// Bake and stand up a side's stage army once its race has settled (no typing for a moment).
+// A side's stage army once its race has settled (no typing for a moment): its voxel looks asked for as they're drawn.
 def fe_muster(now:float):
-    for(fe_sides) s, i:
+    for(fe_sides) s:
         if s.views_gen != s.gen and now - s.dirty_at > FE_BAKE_AFTER:
             s.picks = fe_stage_pick(glist(s.race, "units"), 6)
-            bake_what = "the army of " + rstr(s.race, "name")
-            uv_free_all(s.views)
-            s.views = map(s.picks) u: fe_view(u, i, s.team != fe_sides[0].team or (fe_sides.length == 2 and i == 1))
             s.views_gen = s.gen
-            s.views_bake = bake_gen
-            return                                             // (one a frame)
-        if s.views_gen == s.gen and s.views_bake != bake_gen:  // (its parts baked since: on their rigs now)
-            uv_free_all(s.views)
-            s.views = map(s.picks) u: fe_view(u, i, s.team != fe_sides[0].team or (fe_sides.length == 2 and i == 1))
-            s.views_bake = bake_gen
 
-// Units at screen spots (their feet), z screen px per canvas px, drawn back to front.
-def fe_draw_units(vs:[UV], spots:[float2], z:float, p:int, alpha:float, dt:float):
+// Units (their recipes' voxel looks, standing) at screen spots (their feet), z screen px per canvas px, drawn back to
+// front, facing the other side; a unit not baked yet is asked for (between frames) and shows when it is.
+def fe_draw_units(units:[JV], spots:[float2], z:float, p:int, alpha:float, right:bool):
     let tc = team_rgb[p % team_rgb.length]
-    let order = map(vs.length) k: k
+    let order = map(units.length) k: k
     insertion_sort(order) a, b: spots[a].y < spots[b].y
     b_sheet = -1
     for(order) k:
-        let v = vs[k]
-        v.node.pos = float2_0
-        uv_process(v, dt)
-        let screen = [ 1.5 * z, 0.0, 0.0, 1.5 * z, spots[k].x, spots[k].y ]
-        let ds = draw_list(v, ID_XF)
-        let fs = map(ds) d: frame_index("p:" + d.key)
-        if (find(ds) d: not bakes.get(d.key)) < 0:  // (a unit shows once all its parts are baked: not a weapon on its own)
-            for(ds) d, n:
-                if fs[n] >= 0: sprite_xf(fs[n], xf_mul(screen, d.xf), float4 { tc.x, tc.y, tc.z, d.alpha * alpha })  // (none: hidden from here)
+        let f = vx_figure_facing(at(units[k], "recipe"), float2 { if right: -1.0 else: 1.0, 0.45 })
+        if f >= 0:
+            let fr = frames[f]
+            let sc = z * 1.5 * fr.k
+            sprite_xf(f, [ sc, 0.0, 0.0, sc, spots[k].x - float(fr.ox) * sc, spots[k].y - float(fr.oy) * sc ], float4 { tc.x, tc.y, tc.z, alpha })
     flush_sprites()
 
 // The roster in words: each line's name, the creature's noun left off when most share it; a line the race lacks
@@ -670,19 +640,19 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
     ui_paint(in_at, in_size, FE_GRASS, "felt")
     ui_radial(in_at, in_size, float2 { 0.5, 0.75 }, float2 { 0.75, 1.05 }, float4 { 1.0, 0.92, 0.7, 0.12 }, float4 { 0.02, 0.03, 0.0, 0.75 })
     let forging = s.views_gen != s.gen
-    if s.views.length:
+    if s.picks.length:
         // as many as the stage has room for: one each FE_UNIT_INCHES at 96 dpi, at most six (gl.dpi(0) isn't a
         // display under SDL3: it logged an error every frame and gave 96 anyway)
         let inches = in_size.x / 96.0
-        let n = min(s.views.length, clamp(int(inches / FE_UNIT_INCHES), 2, 6))
+        let n = min(s.picks.length, clamp(int(inches / FE_UNIT_INCHES), 2, 6))
         let zm = max((if st_size.y >= 144.0 * 1.45 * fe_k: 3.0 else: 2.0) * fe_k, min(in_size.x / (float(n) * 40.0), in_size.y / 62.0))
         let right = s.team != fe_sides[0].team or (fe_sides.length == 2 and i == 1)
-        let vs = s.views.slice(0, n)
+        let vs = s.picks.slice(0, n)
         let spots = map(n) k:
             let feet = if in_size.y / zm >= 40.0: (if k % 2 == 0: 0.62 else: 0.8) else: 0.92
             let along = (float(k) + 0.75) / (float(n) + 0.5)
             in_at + float2 { in_size.x * (if right: 1.0 - along else: along), in_size.y * feet }
-        fe_draw_units(vs, spots, zm / 1.5, i, if forging: 0.32 else: 1.0, dt)
+        fe_draw_units(vs, spots, zm / 1.5, i, if forging: 0.32 else: 1.0, right)
     if forging:  // the forge veil: the old army dims while the new one is made
         ui_fill(in_at, in_size, float4 { 0.05, 0.03, 0.01, 0.35 })
         ui_text_c(in_at.x + in_size.x / 2.0, in_at.y + in_size.y / 2.0 - 12.0 * fe_k, "Forging the army...", fz(20.0), lk.accent, 2, 1.5 * fe_k)
@@ -734,11 +704,11 @@ def fe_title_page(dt:float) -> string:
     let cw = ws.x / zm
     for(min(2, fe_sides.length)) i:
         let s = fe_sides[i]
-        if s.views.length and s.views_gen == s.gen:
-            let n = s.views.length
-            let vs = map(n) k: s.views[n - 1 - k]  // the big ones at the front
+        if s.picks.length and s.views_gen == s.gen:
+            let n = s.picks.length
+            let vs = map(n) k: s.picks[n - 1 - k]  // the big ones at the front
             let spots = map(n) k: float2 { (if i == 0: cw * (0.42 - 0.055 * float(k)) else: cw * (0.58 + 0.055 * float(k))) * zm, hill_at.y + hill_h * (if k % 2 == 0: 0.7 else: 0.86) }
-            fe_draw_units(vs, spots, zm / 1.5, i, 1.0, dt)
+            fe_draw_units(vs, spots, zm / 1.5, i, 1.0, i == 1)
     // the column: crest, title, tag line, the plaque of buttons, the foot
     let cx = ws.x / 2.0
     let top = (950.0 - 270.0 * 0.55 - 760.0) / 2.0 + 20.0
@@ -1047,19 +1017,17 @@ def fe_lab_page(dt:float) -> string:
     ui_fill(float2 { in_at.x + in_size.x / 2.0 - 1.0, in_at.y }, float2 { 2.0, in_size.y }, float4 { 0.1, 0.08, 0.05, 0.35 })
     for(2) k:
         let s = fe_sides[k]
-        if (fe_lab_gen[k] != s.gen and seconds_elapsed() - s.dirty_at > FE_BAKE_AFTER) or (fe_lab_gen[k] == s.gen and fe_lab_bake[k] != bake_gen):
-            uv_free_all(fe_lab_views[k])
-            fe_lab_views[k] = map(glist(s.race, "units")) u: fe_view(u, k, k == 1)
+        if fe_lab_gen[k] != s.gen and seconds_elapsed() - s.dirty_at > FE_BAKE_AFTER:
+            fe_lab_units[k] = glist(s.race, "units")
             fe_lab_gen[k] = s.gen
-            fe_lab_bake[k] = bake_gen
         // the lineup: every unit with its name, rows across its half
-        let vs = fe_lab_views[k]
+        let vs = fe_lab_units[k]
         let hw = in_size.x / 2.0
         let per_row = max(1, int(hw / (100.0 * fe_k)))
         let rows_n = (vs.length + per_row - 1) / per_row
         let row_h = min(110.0 * fe_k, in_size.y / float(max(1, rows_n)))
         let spots = map(vs.length) n: in_at + float2 { float(k) * hw + hw * (float(n % per_row) + 0.5) / float(per_row), row_h * (float(n / per_row) + 0.72) }
-        fe_draw_units(vs, spots, fe_k * 1.1, k, if fe_lab_gen[k] != s.gen: 0.32 else: 1.0, dt)
+        fe_draw_units(vs, spots, fe_k * 1.1, k, if fe_lab_gen[k] != s.gen: 0.32 else: 1.0, k == 1)
         let units = glist(s.race, "units")
         for(vs.length) n:
             if n < units.length:
@@ -1132,13 +1100,13 @@ def fe_loader(status:string, frac:float):
         let left = s.team == you
         let rank = (filter(i) j: (fe_sides[j].team == you) == left).length
         let ranks = (filter(n) j: (fe_sides[j].team == you) == left).length
-        let vs = s.views
+        let vs = s.picks
         let spots = map(vs.length) k:
             let along = (float(k) + 0.5) / float(max(1, vs.length))
             let sx = w * (0.07 + 0.36 * along)
             let sy = if ranks == 1: 0.6 + 0.12 * float(k % 2) else: 0.46 + 0.3 * float(rank) / float(ranks - 1) + 0.05 * float(k % 2)
             st_at + float2 { if left: sx else: w - sx, st_h * sy }
-        fe_draw_units(vs, spots, zm / 1.5, i, 1.0, gl.delta_time())
+        fe_draw_units(vs, spots, zm / 1.5, i, 1.0, not left)
     y += st_h + 28.0 * fe_k
     // the map card, then the bar with what's being made, and a tip
     let card = float2 { 300.0, 190.0 } * fe_k
@@ -1172,7 +1140,6 @@ def run_front(page0:string, typed:[string]) -> string:
     if not fe_maps.length: fe_load_maps()
     rnd_seed(int(seconds_elapsed() * 1000.0) + int(date_time()[0]) * 7919 + date_time()[1] * 31 + date_time()[2])
     let start_map = str_index(fe_maps, lobby_map)
-    for(fe_sides) s: uv_free_all(s.views)
     fe_sides = []
     fe_set_map(if start_map >= 0: start_map else: 0)
     fe_mode_k = max(0, str_index(map(fe_modes) m: m[0], lobby_mode))
@@ -1250,7 +1217,7 @@ def run_front(page0:string, typed:[string]) -> string:
             ui_flush()
         fe_draw_tip()
         ui_flush()
-        bake_wanted_tick(0.012)
+        vx_bake_tick(0.025)  // (the armies' voxel looks, as they're asked for)
         fe_frames++
         // (captures: lobbytree opens the AI's tech tree; loadfirst plays on from the newest save)
         if has_s(args, "lobbytree") and fe_page == "setup" and shot_frame > 0 and fe_frames == shot_frame - 1:

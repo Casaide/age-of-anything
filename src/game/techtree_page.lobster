@@ -627,6 +627,7 @@ def tree_tick() -> bool:
         bake_live = live
         gl.ortho()
     bake_wanted_tick(0.012)
+    vx_bake_tick(0.012)  // (the portraits' voxel looks)
     let waiting = tt_paint(t, k)
     tree_waiting = waiting
     // where things are
