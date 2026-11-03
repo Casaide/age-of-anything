@@ -671,21 +671,8 @@ def test_opening():
 
 // ------------------------------------------------------------------ combat
 
-let FIGHT_BUDGET = 600               // resources per side (food, wood and gold)
-let FIGHT_LIMIT = 3000               // ticks (2.5 minutes)
 let FIGHT_FROM_X = [ 11000, 21000 ]  // open ground on flat_test, 10 tiles apart
 let FIGHT_FROM_Y = [ 20500, 20500 ]
-// The counter chain (D-199): infantry > spear > large and mounted > ranged > infantry, and skirmishers > archers.
-// (Not skirmishers > infantry: the roster gives swords +3 against skirmishers, who are for archers.)
-// [counter, countered, the tag the countered unit needs for this to be the counter]. Each pair wins COUNTER_PCT of
-// its equal-cost fights (every race, both sides), on its own: a strong pair can't carry a weak one.
-let COUNTERS = [ [ "infantry", "spear", "spear" ], [ "spear", "large", "large" ], [ "spear", "scout", "mounted" ],
-                 [ "spear", "mounted_archer", "mounted" ], [ "large", "archer", "ranged" ], [ "large", "skirmisher", "ranged" ],
-                 [ "scout", "skirmisher", "skirmish" ], [ "archer", "infantry", "infantry" ], [ "archer", "spear", "infantry" ],
-                 [ "skirmisher", "archer", "archer" ] ]
-let COUNTER_PCT = 70
-let COUNTER_PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
-                        "greek hoplites", "royal knights", "viking beetle riders" ]
 
 def gen_race(prompt:string) -> JV: return generate(prompt, rules0, 0)
 
@@ -724,12 +711,6 @@ def watch_from(n:int, uid:int, x:int, y:int) -> Watch:
 def watch(n:int, uid:int) -> Watch:
     let x, y = pos_of(uid)
     return watch_from(n, uid, x, y)
-
-def unit_of(race:JV, slot:string) -> JV:
-    for(glist(race, "units")) u:
-        if rstr(at(u, "recipe"), "slot") == slot: return u
-    assert false
-    return jobj()
 
 def eval_has_tag(e:JV, tag:string) -> bool: return has_str(glist(e, "tags"), tag)
 
@@ -1193,36 +1174,6 @@ def test_ranged_holds():
         crept = max(crept, isqrt(dist2(x, yy, was_x[n], was_y[n])))
     check(crept < 100 and hits >= 8 * 19, "8 attack-moving archers hold their line over 20 shots (most moved {crept}, {hits} hits)")
 
-// Its whole price: food, wood and gold (archers, infantry and the large lines pay part in gold, D-149; counting only
-// food and wood fielded twice the archers their price buys).
-def eval_cost(e:JV) -> int:
-    var total = 0
-    for(at(e, "cost").a) v: total += as_int(v)
-    return total
-
-// An equal-cost fight between two of a race's roster slots; `flip` swaps the sides. Both attack-move
-// at each other; the side with more value left wins.
-def counter_fight(race:JV, a_slot:string, b_slot:string, flip:int) -> bool, string:
-    bare_world([ race, race ])
-    let slots = [ a_slot, b_slot ]
-    let value = [ 0, 0 ]
-    for(2) side:
-        let p = side ^ flip
-        let cost = eval_cost(at(unit_of(race, slots[side]), "eval"))
-        value[side] = cost
-        spawn_cmd(p, slots[side], max(1, (FIGHT_BUDGET + cost / 2) / cost), FIGHT_FROM_X[p], FIGHT_FROM_Y[p])
-    while u_id.length == 0: tick_on()
-    for(2) p: issue_cmd(p, CMD_ATTACK_MOVE, ids_of(p), FIGHT_FROM_X[1 - p], FIGHT_FROM_Y[1 - p], 0, 0)
-    var left = [ 0, 0 ]
-    while tick < FIGHT_LIMIT:
-        tick_on()
-        left = [ 0, 0 ]
-        for(u_owner) o: left[o]++
-        if left[0] == 0 or left[1] == 0: break
-    let a_left = left[flip] * value[0]
-    let b_left = left[1 - flip] * value[1]
-    return a_left > b_left, "{left[flip]} {a_slot} worth {a_left} left vs {left[1 - flip]} {b_slot} worth {b_left}, tick {tick}"
-
 def test_combat():
     test_heal()
     test_damage()
@@ -1237,22 +1188,8 @@ def test_combat():
     test_shield_wall()
     test_stances()
     test_ranged_holds()
-    let t0 = seconds_elapsed()
-    let races = map(COUNTER_PROMPTS) prompt: gen_race(prompt)
-    def has_slot(race:JV, slot:string) -> bool: return (filter(glist(race, "units")) u: rstr(at(u, "recipe"), "slot") == slot).length > 0
-    for(COUNTERS) pair:
-        var wins = 0
-        var fights = 0
-        for(races) race:
-            if has_slot(race, pair[0]) and has_slot(race, pair[1]) and eval_has_tag(at(unit_of(race, pair[1]), "eval"), pair[2]):
-                for(2) flip:
-                    let won, note = counter_fight(race, pair[0], pair[1], flip)
-                    fights++
-                    if won: wins++
-                    else: print "  counter lost: {rstr(race, "name")} {pair[0]} vs {pair[1]} (side {flip}): {note}"
-        print "counters: {pair[0]} > {pair[1]}: {wins} of {fights}"
-        if fights: check(wins * 100 >= fights * COUNTER_PCT, "{pair[0]} beats {pair[1]} in at least {COUNTER_PCT}% of equal-cost fights ({wins}/{fights})")
-    print "counters: {ms_since(t0)} ms"
+    // The counter chain is checked in ages 2 and 3, with the soldiers' research, where the prices are fitted and the
+    // archers and the large lines can be trained (D-200: calibrate.lobster pairs, in tests/batch.sh).
 
 // ------------------------------------------------------------------ shots, engines, trade, sappers
 

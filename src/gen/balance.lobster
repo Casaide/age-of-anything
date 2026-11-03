@@ -38,11 +38,28 @@ def rr_units(races:[JV], age:int) -> [RRUnit]:
 
 def price_key(races:[JV], u:RRUnit) -> string: return rstr(races[u.race], "key") + "|" + u.slot
 
-// Put a player in an age with every unit line upgraded up to it.
+// The soldiers' research every army has by an age (D-200): the armoury's, barracks', archery range's and stable's, not
+// a culture's own (castle research is race identity: measured by calibrate.lobster, never fitted to).
+let RR_RESEARCH_BUILDINGS = [ "armoury", "barracks", "archery_range", "stable" ]
+var rr_generic = []::string  // their ids (data/tech.json), read on first use
+var rr_skip = ""             // a research both sides go without (calibrate.lobster upgrades)
+var rr_give = [ "", "" ]     // per side, a research it has besides (calibrate.lobster upgrades: one side's)
+var rr_upgrades = true       // false: line upgrades only (calibrate.lobster pairs plain: the fights before D-200)
+
+def rr_generic_ids() -> [string]:
+    if not rr_generic.length:
+        for(glist(load_json(lib_root + "/tech.json"), "research")) r:
+            if has_s(RR_RESEARCH_BUILDINGS, gstr(r, "building", "")) and not has(r, "own"): rr_generic.push(rstr(r, "id"))
+    return rr_generic
+
+// Put a player in an age with every unit line upgraded up to it and the soldiers' research of that age and before.
 def rr_in_age(p:int, age:int):
     ages[p] = age
+    let generic = rr_generic_ids()
     for(research) r, k:
         if r.line_age > 0 and r.line_age <= age: researched[p][k] = 1
+        elif rr_upgrades and r.line_age == 0 and r.age <= age and r.id != rr_skip and has_s(generic, r.id): researched[p][k] = 1
+        elif r.id == rr_give[p]: researched[p][k] = 1
     retype(p)
 
 def rr_left() -> int, int:
