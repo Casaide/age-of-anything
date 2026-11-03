@@ -1,0 +1,27 @@
+{
+ "_doc": "A war heron: a white body on long stilt legs (the joint you see bends back), an S of a neck, a dagger bill, grey wings folded; a saddle on its back, its crew sat on it.",
+ "size": 1.0,
+ "styles": {"howdah": {"skin": "#8c6133", "pale": "#4a3a2a", "mark": "#8a3a2a"}},
+ "legs": [{"bones":[11.8,11.8],"foot":[2.5,0.0,1.0],"hip":["o",2.5,0.0,24.0],"lift":2.5,"mats":["heron","beak"],"phase":0.0,"pole":[0.0,-1.0,0.0],"r":[1.5,0.9,0.8,0.7],"stride":4.5}],
+ "reach": 4.5,
+ "seats": [[0.0,-1.0,35.5]],
+ "points": {"o": {"at": [0, 0, 0]}},
+ "shapes": [
+  {"cap":["o",0.0,-8.0,27.0],"hard":false,"mat":"heron","r":[6.5,5.5],"to":["o",0.0,7.0,30.0]},
+  {"cap":["o",0.0,-8.0,27.0],"hard":false,"mat":"heron","r":[3.0,1.2],"to":["o",0.0,-15.0,25.0]},
+  {"cap":["o",-5.5,-7.0,30.0],"hard":true,"mat":"heron_dark","r":[2.2,1.6],"to":["o",-5.0,8.0,31.0]},
+  {"cap":["o",5.5,-7.0,30.0],"hard":true,"mat":"heron_dark","r":[2.2,1.6],"to":["o",5.0,8.0,31.0]},
+  {"cap":["o",0.0,8.0,31.0],"hard":false,"mat":"heron","r":[2.2,1.8],"to":["o",0.0,11.0,42.0]},
+  {"cap":["o",0.0,11.0,42.0],"hard":false,"mat":"heron","r":[1.8,1.6],"to":["o",0.0,13.0,52.0]},
+  {"ball":["o",0.0,14.0,53.0],"hard":false,"mat":"heron","r":2.5},
+  {"cap":["o",0.0,15.5,53.0],"hard":true,"mat":"beak","r":[0.9,0.3],"to":["o",0.0,25.0,51.0]},
+  {"cap":["o",0.0,13.0,54.5],"hard":true,"mat":"hair","r":[0.5,0.3],"to":["o",0.0,8.0,56.0]},
+  {"ball":["o",-1.9,15.5,53.8],"hard":true,"mat":"eye","r":0.5},
+  {"ball":["o",1.9,15.5,53.8],"hard":true,"mat":"eye","r":0.5},
+  {"box":["o",0.0,-1.0,34.5],"half":[3.5,4.0,1.0],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"box":["o",-4.2,-1.0,31.0],"half":[4.0,0.5,3.5],"mat":"trim","n":[1.0,0.0,0.0],"round":0.2},
+  {"box":["o",4.2,-1.0,31.0],"half":[4.0,0.5,3.5],"mat":"trim","n":[1.0,0.0,0.0],"round":0.2},
+  {"box":["o",-4.6,-1.0,28.0],"half":[4.0,0.4,0.8],"mat":"team","n":[1.0,0.0,0.0],"round":0.2},
+  {"box":["o",4.6,-1.0,28.0],"half":[4.0,0.4,0.8],"mat":"team","n":[1.0,0.0,0.0],"round":0.2}
+ ]
+}
