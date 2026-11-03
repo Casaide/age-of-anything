@@ -335,26 +335,8 @@ def tt_key(recipe:JV) -> int:
     tt_keys.set(s, tt_next_key)
     return tt_next_key
 
-// The figure for a recipe, made as the panel makes it; true once every part it wears is baked (until then they're
-// asked for, baked between frames).
-def tt_figure_ready(key:int, recipe:JV) -> bool:
-    if voxel_units and not has(recipe, "crew"): return vx_figure(recipe) >= 0
-    var v = portraits.get(key)
-    if not v:
-        let made = uv_new()
-        let tc = team_col(tt_owner)
-        uv_build(made, recipe, float3 { tc.x, tc.y, tc.z }, 20)
-        made.node.scl = float2_1 * 0.85
-        made.pose_steps = 8
-        made.art_px = ART_SCALE
-        face_vec(made, float2 { 1.0, 1.0 })
-        portraits.set(key, made)
-        v = made
-    let pv = v
-    if not pv: return false
-    pv.node.pos = float2_0
-    uv_process(pv, 0.0)
-    return (find(draw_list(pv, ID_XF)) d: not bakes.get(d.key)) < 0
+// The figure for a recipe: true once its look is baked (asked for first until then, baked between frames).
+def tt_figure_ready(key:int, recipe:JV) -> bool: return vx_figure(recipe) >= 0
 
 // A building's bake for the race's architecture (its age's look in a match).
 def tt_building_frame(id:string) -> int:
@@ -618,7 +600,7 @@ def tree_tick() -> bool:
     if tt_state_t < 0.0 or gl.time() - tt_state_t > 0.25:  // (the match goes on: what's built, researched, under way)
         tt_state_t = gl.time()
         tt_refresh(t)
-    // the pictures: the lobby's buildings read from their bakes once, the portraits as their parts are baked
+    // the pictures: the lobby's buildings read from their bakes once, the portraits as their looks are baked
     if tt_want_buildings:
         tt_want_buildings = false
         let live = bake_live
@@ -626,7 +608,6 @@ def tree_tick() -> bool:
         bake_buildings_for([ tt_arch ])
         bake_live = live
         gl.ortho()
-    bake_wanted_tick(0.012)
     vx_bake_tick(0.012)  // (the portraits' voxel looks)
     let waiting = tt_paint(t, k)
     tree_waiting = waiting

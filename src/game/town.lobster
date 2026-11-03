@@ -3,7 +3,7 @@
 // that grow with each load home and empty slowly; dust where a builder's blow lands; idle workers
 // near home sweep, sit or chat, herd animals graze, farmers till; a house grows a yard, then a
 // garden; a few critters of the culture round each Town Center (dragonflies by reed towns, pigeons
-// by junk towns, small birds elsewhere). Imported by game.lobster after its views (it uses them).
+// by junk towns, small birds elsewhere).
 // Buildings (BuildingArt): chimneys smoke while they work (houses always), windows and lanterns
 // glow and flicker, and a building badly hurt burns in a few places with black smoke.
 // The town's sound follows your town: its size and how near the camera is (town_level).
@@ -126,7 +126,7 @@ def town_workers():
     town_builders = []
     for(u_id.length) i:
         let id = u_id[i]
-        if t_worker[u_kind[i]] and views.get(id):
+        if t_worker[u_kind[i]]:
             if u_task[i] == BUILD: town_builders.push(i)
             if u_task[i] == T_NONE and u_moving[i] == 0 and not u_orders[i].length:
                 if town_idle_since.get(id, -1.0) < 0.0: town_idle_since.set(id, now)
@@ -151,23 +151,23 @@ def town_workers():
         let other = talking.get(i, -1)
         if other >= 0 and spell % 3 != 0:
             chore = "chat"
-            let v = views.get(id)
-            let o = views.get(u_id[other])
-            if v and o: face_vec(v, o.node.pos - v.node.pos)
         chores.set(id, chore)
 
 def town_houses():
     for(b_id.length) b:
         if is_house(b_kind[b]) and b_done[b] == 1 and house_born.get(b_id[b], -1.0) < 0.0: house_born.set(b_id[b], town_now())
 
+// Dust where a builder's blows land: a puff now and then from each builder at work on screen (cosmetic: the view's
+// own randomness).
 def town_dust():
     for(town_builders) i:
-        if i < u_id.length:
-            let v = views.get(u_id[i])
-            if v and v.job == "build" and v.struck and v.node.visible:
-                let at = work_point(i)
-                let d = at - v.node.pos
-                let hit = v.node.pos - float2 { 0.0, v.lift } + (if magnitude(d) > 0.0: normalize(d) * min(10.0, magnitude(d)) else: float2_0)
+        if i < u_id.length and u_moving[i] == 0 and on_screen(u_x[i], u_y[i]) and rnd_float() < 0.05:
+            let me = ground_at(u_x[i], u_y[i])
+            let b = b_index_of(u_target[i])
+            if b >= 0:
+                let at = canvas(float((b_cx[b] * 2 + b_sx[b]) * 500), float((b_cy[b] * 2 + b_sy[b]) * 500))
+                let d = at - me
+                let hit = me + (if magnitude(d) > 0.0: normalize(d) * min(10.0, magnitude(d)) else: float2_0)
                 for(3): town_puffs.push(Puff { hit + float2 { rnd_range(-2.0, 2.0), rnd_range(-1.0, 1.0) }, 0.0, float2 { rnd_range(-7.0, 7.0), rnd_range(-6.0, -2.0) } })
 
 let DAMAGE_FIRE = 0.6
@@ -362,8 +362,8 @@ def critter_tick(c:Critter, dt:float):
         c.p += step
         if abs(step.x) > 0.5: c.face = sign(step.x)
     var scare = false
-    for(views.get_values()) v:
-        if v.walking and magnitude(v.node.pos - c.p) < 18.0:
+    for(u_x.length) i:
+        if u_moving[i] != 0 and magnitude(canvas(float(u_x[i]), float(u_y[i])) - c.p) < 18.0:
             scare = true
             break
     if scare or magnitude(c.p - c.home) > 170.0:
@@ -517,8 +517,6 @@ def town_level() -> float:
 
 // ---- the stable's tethered mount (TownLife._sync_tethers)
 
-let tethered = dictionary<int, UV>(8)
-
 // The mount a race's large unit rides, as a recipe of its own (no rider), or nil (giants, Heavy elites,
 // centaurs: no separate mount).
 def mount_recipe(p:int) -> JV?:
@@ -543,37 +541,21 @@ def mount_recipe(p:int) -> JV?:
 def tether_spot(b:int) -> float2: return float2 { float((b_cx[b] + b_sx[b]) * 1000 + 350), (float(b_cy[b]) + float(b_sy[b]) * 0.5) * 1000.0 }
 
 def collect_tethers():
-    let keep = dictionary<int, int>(8)
     for(b_id.length) b:
         let cell = b_cy[b] * W + b_cx[b]
         if bt_name[b_kind[b]] == "stable" and b_done[b] == 1 and (teams[b_owner[b]] == teams[ME] or fog[ME][cell] != 0):
             let r = mount_recipe(b_owner[b])
             if r:
-                keep.set(b_id[b], 1)
                 let t = tether_spot(b)
-                var v = tethered.get(b_id[b])
-                if not v:
-                    let made = uv_new()
-                    let tc = team_col(b_owner[b])
-                    uv_build(made, r, float3 { tc.x, tc.y, tc.z }, 20)
-                    made.node.scl = float2_1 * 0.85
-                    made.pose_steps = 4
-                    made.art_px = ART_SCALE
-                    made.node.pos = canvas(t.x + 300.0, t.y + 250.0)
-                    made.lift = lift_at(t.x + 300.0, t.y + 250.0)
-                    face_vec(made, canvas(t.x, t.y) - made.node.pos)
-                    tethered.set(b_id[b], made)
-                    v = made
-                let mv = v
-                mv.job = if int(gl.time() / 7.0 + float(b_id[b])) % 3 == 0: "graze" else: ""
-                uv_process(mv, gl.delta_time())
+                let to = canvas(t.x, t.y) - canvas(t.x + 300.0, t.y + 250.0)  // (facing its post)
+                let f = vx_figure_facing(r, to)
                 let at = iso(t.x + 300.0, t.y + 250.0)
-                add_view(mv, at.y, team_col(b_owner[b]), if fog[ME][cell] == 2 or teams[b_owner[b]] == teams[ME]: 1.0 else: 0.6)
+                let up = lift_at(t.x + 300.0, t.y + 250.0) * 1.5
+                let tc = team_col(b_owner[b])
+                let shade = if fog[ME][cell] == 2 or teams[b_owner[b]] == teams[ME]: 1.0 else: 0.6
+                if f >= 0:
+                    add(f, at.x, at.y - up, at.y, float4 { tc.x, tc.y, tc.z, shade })
+                    add(vx_shadow_for(f), at.x, at.y - up, at.y - 0.5, float4_1)
                 let post = frame_index("tether_post")
                 let pa = iso(t.x, t.y)
                 if post >= 0: add(post, pa.x, pa.y - lift_at(t.x, t.y) * 1.5, pa.y, float4 { 1.0, 1.0, 1.0, 1.0 })
-    for(tethered.get_keys()) id:
-        if not keep.get(id, 0):
-            let v = tethered.get(id)
-            if v: uv_free(v)
-            tethered.del(id)

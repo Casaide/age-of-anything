@@ -1233,7 +1233,7 @@ def run_front(page0:string, typed:[string]) -> string:
             if loop_round > 0: fe_set_map(fe_map_k + 1)
             go = "start"
         // captures: the page once its armies stand
-        if shot != "" and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and not bake_wanted.length and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
+        if shot != "" and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
         if shot != "" and fe_frames == shot_frame:
             gl.screenshot(shot)
             if fe_page == "setup" and has_s(args, "loadershot"):
