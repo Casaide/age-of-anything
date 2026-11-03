@@ -293,7 +293,7 @@ def has_role(k:int, role:int) -> bool: return (bt_roles[k] & role) != 0
 
 // The first building type with that role, or -1.
 def btype_with(role:int) -> int: return find(bt_roles): (_ & role) != 0
-var map_version = 0      // bumped on every cell change (SimMap.version; the bots' reach relabels)
+var map_version = 0  // bumped on every cell change (SimMap.version; the bots' reach relabels)
 
 // Players' economy.
 var num_resources = 0

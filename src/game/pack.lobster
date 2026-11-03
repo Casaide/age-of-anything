@@ -287,10 +287,10 @@ let ATLAS_MAX = 512  // px: a sheet wider or taller stays on its own
 let ATLAS_GAP = 2    // px of nothing round each (linear filtering would bleed a neighbour in)
 
 class AtlasPage:
-    sheet:int    // the page is a sheet too
+    sheet:int  // the page is a sheet too
     tex:resource<texture>
     formats:int
-    x:int = 0    // the shelf being filled: its left edge free from here, its top, its height
+    x:int = 0  // the shelf being filled: its left edge free from here, its top, its height
     y:int = 0
     h:int = 0
 

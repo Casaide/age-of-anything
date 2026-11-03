@@ -23,8 +23,8 @@ else:
     let check = gobj(manifest, "check")
     let rules_id = gstr(check, "rules", "default")
     let rules = load_rules(rules_id)
-    let own = []::string  // the mod's own part ids
-    let parts_text = read_file("../mods/{id}/data/parts.json")   // (a mod may bring no parts: voxel bodies, sounds, rules)
+    let own = []::string                                        // the mod's own part ids
+    let parts_text = read_file("../mods/{id}/data/parts.json")  // (a mod may bring no parts: voxel bodies, sounds, rules)
     if parts_text:
         let mod_parts = parse_json(parts_text)
         if mod_parts.kind == J_ARR:
