@@ -69,29 +69,6 @@ def is_house(k:int) -> bool: return k < su_btypes.length and gbool(su_btypes[k],
 
 def town_now() -> float: return float(tick) / 20.0
 
-def ground_of_cell(i:int) -> string:
-    let c = u_home[i]
-    return if c < 0: "" else: tr_names[terrain[c]]
-
-// What a unit is seen doing on top of its job from the sim (TownLife.job_for).
-def town_job(i:int, job:string) -> string:
-    if job == "forage" and (ground_of_cell(i) == "field" or ground_of_cell(i) == "paddy"): return "till"
-    if job == "" and u_moving[i] == 0 and t_behave[u_kind[i]] == 3: return "graze"
-    if job == "": return chores.get(u_id[i], "")
-    return job
-
-// What a worker holds on top of the usual pick (TownLife.tool_for).
-def town_tool(i:int, tool:string) -> string:
-    if u_task[i] == T_RETURN and u_carry[i] > 0 and ground_of_cell(i) == "carcass": return "load.meat"
-    if u_task[i] == T_RETURN and u_carry[i] > 0 and u_carry_kind[i] > 0:
-        let p = u_owner[i]
-        if p < su_races.length:
-            let push = gstr(gobj(creature(rstr(su_races[p], "creature")), "push_home"), resource_names[u_carry_kind[i] - 1], "")
-            if push != "": return "push:" + push
-    if u_task[i] == GATHER and (ground_of_cell(i) == "field" or ground_of_cell(i) == "paddy"): return "tool.hoe"
-    if chores.get(u_id[i], "") == "sweep": return "tool.broom"
-    return tool
-
 def near_home(i:int) -> bool:
     for(b_id.length) b:
         if b_owner[b] == u_owner[i] and b_done[b] != 0 and (is_house(b_kind[b]) or bt_name[b_kind[b]] == "town_center"):

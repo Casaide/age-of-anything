@@ -37,9 +37,6 @@ var hud_crest = "sun"
 
 def in_panel(m:float2) -> bool: return m.x >= panel_rect.x and m.y >= panel_rect.y and m.x <= panel_rect.x + panel_rect.z and m.y <= panel_rect.y + panel_rect.w
 
-// The panel's top edge (the placing hint and others sit above it).
-def panel_top() -> float: return panel_rect.y
-
 def cost_words(c:[int]) -> string:
     let parts = []::string
     for(c) v, n:
@@ -309,10 +306,6 @@ def press(b:Btn):
 def panel_click(m:float2) -> bool: return in_panel(m) or in_topbar(m)
 
 // ---- figures and portraits
-
-// A unit's figure (its voxel look, standing, facing down and right) at a screen point (feet there), z screen px a
-// canvas unit; a texel 2 px at a portrait's size. Nothing until its look is baked (asked for first).
-def draw_portrait(k:int, at:float2, z:float): draw_figure(k, su_type_recipe[k], t_player[k], at, z)
 
 def draw_figure(key:int, recipe:JV, owner:int, at:float2, z:float):
     let f = vx_figure(recipe)

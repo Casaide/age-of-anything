@@ -15,7 +15,6 @@ let VX_WALK = 1
 let VX_WORK = 2
 let VX_ATTACK = 3
 let VX_DIE = 4
-let VX_MODES = [ "idle", "walk", "work", "attack", "die" ]
 let VX_STEPS = [ 1, 8, 8, 8, 6 ]  // steps in each mode (a fall's last step is lying)
 let VX_DRAW_K = 1.1 / ART_K       // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
 

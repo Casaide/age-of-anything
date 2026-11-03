@@ -1,6 +1,6 @@
 # Making a mod (with an agent)
 
-A mod is a folder of more data plus the models its parts are built from. This page is the
+A mod is a folder of more data: parts, words, creatures, cultures, rules, and their voxel looks. This page is the
 walkthrough; the format, the rules and the plan are in `docs/milestones/m21-modability.md`. The example
 to copy from is `mods/scifi_test/` (an armoured future soldier). Paths are from the project root;
 `lobster` is `~/Dev/lobster/bin/lobster`.
@@ -18,8 +18,8 @@ python3 tools/mods/new_mod.py <id> ["Name"] [--era <tag>] [--private]
   for anything based on someone else's franchise: those stay private and unofficial.
 
 You get `mod.json`, `data/parts.json` (one example helmet), `data/lexicon.json` (one word),
-`data/rules/anything.json` (with an era), `models/<id>_parts.lobster` (the helmet's model),
-`sheets/<id>.json`, `README.md`. It passes the checks as it is: check it now (step 4) so you start green.
+`data/rules/anything.json` (with an era), `data/voxel/gear.json` (the helmet's voxel look and the rule that gives it
+the part), `README.md`. It passes the checks as it is: check it now (step 4) so you start green.
 
 ## 2. Write the parts (data)
 
@@ -44,35 +44,24 @@ change it. What matters:
 - `tier`: 1-3, the age it can first appear. Add a tier-3 version to give the line an age-3 step.
 - `face`: on head gear, `"covered"` for a face guard with eye openings, `"sealed"` for a closed helmet.
 - `shapes`: a rough 2D outline (the data contract's reference): copy one from a similar game part.
+- A part needs no model: its look is voxel gear (step 3).
 
-## 3. Build the models
+## 3. Give the parts their looks (voxel data)
 
-Each part needs a model: a builder in your model script, or a `.glb`.
+A unit is a voxel body (`docs/rendering.md`, "Voxel units"); a part shows as the gear `data/voxel/gear.json`'s
+`parts` rules give it (by its id, a prefix, a tag or its slot; the first match wins). A part with no rule of its own
+takes the game's rule for its tags (a `helmet` a cap, a `bow` a bow...). For a look of its own, the mod brings its
+own `data/voxel/` (the same files as the game's; same ids replace the game's, its rules go first):
 
-**Code (most parts):** in `models/<id>_parts.lobster` (listed in `mod.json` as `"models"`), a function per part
-returning `spec_of(n)`, and `build_mod_<id>(base, c) -> Spec?` choosing by part id (nil for the rest). The game joins
-the file in when the mod is on (`src/mods_gen.lobster`, run by `play.sh`, `sheet.sh` and `mod_check.sh`). Use the game's
-model kit (`src/model/base.lobster`): `blob` (ellipsoid), `rod` (capsule between two points), `slab` (extruded
-outline), `dome`, `ring`, `cone`, `box`; materials `surf(texture, tint, units)` (game textures: iron, bronze,
-leather, wood_grain, cloth...; your own: `surf("textures/<id>/plate", ...)` from `textures/plate.svg`, made a PNG by
-`src/textures.sh`), `plain(colour)`, `glow(colour)` (lit, for lights and energy). `col(c, "team")` is the team colour
-(put some on every unit: a stripe, a band), `col(c, "cloth")`/`col(c, "cloth2")` the culture's cloth.
+- `gear.json` `gear`: held gear (`hand`, `hold`, `dir`, `shapes` in the hold's frame) or worn gear (`fits` per body id,
+  `*` for any other: `helm` on the body's helmet spot, `fit` over its armour spot, or shapes on its points), and
+  `parts`: `{"part": "<your part id>", "gear": "<your gear>"}`.
+- `bodies/<id>.json`: a body for a new creature (points, legs, arms, shapes; copy a game body of the same build).
+- `materials.json`: new colours (and `team`: put some team colour on every unit: a stripe, a crest, a band).
 
-Frames (part units, about one art pixel): x the way the unit faces, y up, z towards the viewer.
-- Head gear: round the head's top socket, the crown at y 0, the head about 5 across, the face at +x,
-  the eyes about 4-6 below the crown. Copy `helm_bronze` (`src/model/`) or the example's `helm_visor_sealed`.
-- Held weapons: built round the grip at the origin. Melee along the sword's line (3, 14, 0); guns along
-  the musket's line (14, 3.6, 0). Copy `weapon_pulse_rifle` or `weapon_arc_blade`.
-- Worn armour: frog-sized, round (1.5, 0.5, 0) about 9 x 8 x 10; the body scales it. Copy
-  `armour_plate_composite`.
-- Back gear: from the back's surface outwards (-x). Copy `pack_power`.
-
-Play it: `./play.sh lobby mods:<id> rules:anything`.
-
-**Blender (`.glb`):** a script in `tools/` (copy `mods/scifi_test/tools/buckler.py`), run
-`blender -b --python mods/<id>/tools/<part>.py -- mods/<id>/models/<part>.glb`, then give the part
-`"glb": "models/<part>.glb"` instead of a builder. Model in part units facing +X, up +Z; name the
-materials `team`, `skin`, `cloth`, `cloth2`, a game texture (`iron`...), or `glow_<hex>`.
+Draw it: `cd src && lobster voxel_proto.lobster -- /tmp/s.ppm legs <body> <gear>,<gear>` (standing, walking and
+attacking in 8 facings), and play it: `./play.sh lobby mods:<id> rules:anything`. How to make a look read well at
+game size: the voxel-art skill (`.claude/skills/voxel-art/`).
 
 ## 4. Words, rules, check
 
@@ -106,32 +95,19 @@ materials `team`, `skin`, `cloth`, `cloth2`, a game texture (`iron`...), or `glo
 Then:
 
 ```sh
-src/mod_check.sh <id>        # loads it (or says why not), the check prompts' races and who wears the mod's parts, the 3D placement check
+src/mod_check.sh <id>        # loads it (or says why not), the check prompts' races and who wears the mod's parts, its prices
 cd src && lobster races.lobster -- mods:<id> anything "<prompt>"   # the whole race as JSON: who gets what, costs
 ```
 
-A refusal says exactly what to fix ("parts.json helm.x: no model: add a case for it to a model file...").
-A placement FAIL names the rule and the measurement (`docs/rendering.md`, "Placement rules"): a helmet
-too low over the eyes, armour cutting through, a weapon away from the hand. Fix the model, run again.
+A refusal says exactly what to fix ("parts.json helm.x: needs 'tags' (a list)").
 
 ## 5. Look at it
 
-```sh
-src/sheet.sh mods/<id>/sheets/<id>.json /tmp/<id>
-```
-
-Edit the sheet spec to show your units (rows by prompt, slot and age; `size` for a game unit beside
-them; columns `facings`, `walk:1,3`, `shots` for firing). It runs both placement halves on every row.
-Look at every picture close up (3x) and at game size (1x) before showing anyone. In a match:
-`./play.sh lobby mods:<id> rules:anything "races:<prompt>|romans" watch mute shot:/tmp/m.png at:600`.
-A private mod's pictures stay in its own folder (`mods_private/<id>/renders/`), never in `archive/`.
-
-## 5b. Voxel units (optional)
-
-With the `voxels` option a unit is drawn from `data/voxel/` (docs/rendering.md, "Voxel units"). A mod can bring its
-own `data/voxel/`: `bodies/<creature>.json` for its creatures, `gear.json` with its gear and `parts` rules mapping its
-parts to it (a rule by part id or tag), `materials.json` for new colours. Same ids replace the game's. Check it with
-`src/voxel_proto.lobster` and a match with `voxels`.
+Look at every picture close up (3x) and at game size (1x) before showing anyone: the sheets
+(`voxel_proto.lobster`, step 3), and in a match:
+`./play.sh lobby mods:<id> rules:anything "races:<prompt>|romans" mute army:1 look:17,17 shot:/tmp/m.png at:20`.
+A mod with its own voxel bodies should pass `lobster voxel_check.lobster` and `lobster voxel_proto.lobster -- - check`
+with the mod on. A private mod's pictures stay in its own folder (`mods_private/<id>/renders/`), never in `archive/`.
 
 ## 6. Pack
 
@@ -147,10 +123,10 @@ the mods (and their data) it was made with.
 - [ ] Original work, or `--private` (never committed, packed or shared)
 - [ ] Every part: id, slot, tags, `only_if`, points priced against a game part, tier, shapes; era and
       `upgrade_within` if the mod has an era
-- [ ] Every part has a model; some team colour on every unit
+- [ ] Every part has a look (a voxel gear rule, its own or the game's); some team colour on every unit
 - [ ] Words for the prompts (era words with a note and a substitute); rules open the era
-- [ ] `mod.json`: version, game_version, depends, eras, models, check prompts
-- [ ] `src/mod_check.sh <id>`: loaded, 0 failed
-- [ ] The sheet: every row PASS; looked at close up and at game size; firing if it shoots
+- [ ] `mod.json`: version, game_version, depends, eras, check prompts
+- [ ] `src/mod_check.sh <id>`: loaded
+- [ ] Looked at close up and at game size; firing if it shoots
 - [ ] A race without the mod's words gets none of it (`races.lobster -- mods:<id> anything` on a plain prompt)
 - [ ] `tools/mods/pack.py <id>` (public mods only)
