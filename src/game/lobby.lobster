@@ -671,9 +671,9 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
     ui_radial(in_at, in_size, float2 { 0.5, 0.75 }, float2 { 0.75, 1.05 }, float4 { 1.0, 0.92, 0.7, 0.12 }, float4 { 0.02, 0.03, 0.0, 0.75 })
     let forging = s.views_gen != s.gen
     if s.views.length:
-        // as many as the stage has room for on this screen: one each FE_UNIT_INCHES (a phone shows two or
-        // three, drawn bigger), at most six
-        let inches = in_size.x / float(max(96, gl.dpi(0)))
+        // as many as the stage has room for: one each FE_UNIT_INCHES at 96 dpi, at most six (gl.dpi(0) isn't a
+        // display under SDL3: it logged an error every frame and gave 96 anyway)
+        let inches = in_size.x / 96.0
         let n = min(s.views.length, clamp(int(inches / FE_UNIT_INCHES), 2, 6))
         let zm = max((if st_size.y >= 144.0 * 1.45 * fe_k: 3.0 else: 2.0) * fe_k, min(in_size.x / (float(n) * 40.0), in_size.y / 62.0))
         let right = s.team != fe_sides[0].team or (fe_sides.length == 2 and i == 1)
