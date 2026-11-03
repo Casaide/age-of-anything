@@ -1,0 +1,327 @@
+{
+ "_doc": "A cat to ride (black, white chest, muzzle and paws): its head low and well out in front so the rider never hides its face; big ears, gold eyes, a tail curled up. size: 1.45 its rider's.",
+ "skin": "#242126",
+ "pale": "#f0ebe0",
+ "size": 1.45,
+ "fur": 0.09,
+ "reach": 3.4,
+ "points": {
+  "front": {
+   "at": [
+    0,
+    5.0,
+    13.5
+   ]
+  },
+  "back": {
+   "at": [
+    0,
+    -7.0,
+    14.0
+   ]
+  },
+  "head": {
+   "at": [
+    0,
+    12.6,
+    15.1
+   ]
+  }
+ },
+ "seat": {
+  "at": [
+   0,
+   -3.5,
+   17.8
+  ],
+  "wide": 4.6
+ },
+ "legs": [
+  {
+   "hip": [
+    "front",
+    2.6,
+    1.0,
+    -2.5
+   ],
+   "foot": [
+    2.6,
+    6.0,
+    0.9
+   ],
+   "stride": 3.4,
+   "lift": 1.8,
+   "bones": [
+    5.1,
+    5.3
+   ],
+   "pole": [
+    0,
+    -1,
+    0
+   ],
+   "r": [
+    1.6,
+    1.28,
+    1.28,
+    0.96
+   ],
+   "mats": [
+    "cat",
+    "cat"
+   ],
+   "shapes": [
+    {
+     "ball": [
+      "ankle",
+      0,
+      0.5,
+      0
+     ],
+     "r": 1.3,
+     "mat": "white",
+     "_doc": "a white paw"
+    }
+   ],
+   "_doc": "front legs near straight, the elbow back"
+  },
+  {
+   "hip": [
+    "back",
+    2.8,
+    -1.0,
+    -2.5
+   ],
+   "foot": [
+    2.8,
+    -9.0,
+    0.9
+   ],
+   "stride": 3.4,
+   "lift": 1.8,
+   "phase": 180,
+   "bones": [
+    6.0,
+    6.5
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    1.6,
+    1.28,
+    1.28,
+    0.96
+   ],
+   "mats": [
+    "cat",
+    "cat"
+   ],
+   "shapes": [
+    {
+     "ball": [
+      "ankle",
+      0,
+      0.5,
+      0
+     ],
+     "r": 1.3,
+     "mat": "white"
+    }
+   ]
+  }
+ ],
+ "shapes": [
+  {
+   "cap": [
+    "back",
+    0,
+    0,
+    0
+   ],
+   "to": [
+    "front",
+    0,
+    0,
+    0
+   ],
+   "r": [
+    4.4,
+    4.6
+   ],
+   "mat": "cat"
+  },
+  {
+   "ball": [
+    "front",
+    0,
+    2.2,
+    -2.0
+   ],
+   "r": 3.2,
+   "mat": "white",
+   "_doc": "the chest"
+  },
+  {
+   "chain": [
+    [
+     "back",
+     0,
+     -3.5,
+     1.0
+    ],
+    [
+     "back",
+     0,
+     -7.0,
+     4.0
+    ],
+    [
+     "back",
+     0,
+     -8.0,
+     8.5
+    ],
+    [
+     "back",
+     0,
+     -7.0,
+     12.0
+    ],
+    [
+     "back",
+     0,
+     -5.0,
+     13.5
+    ]
+   ],
+   "r": [
+    1.3,
+    0,
+    1.3,
+    0.2
+   ],
+   "mats": [
+    "cat",
+    "cat"
+   ],
+   "_doc": "the tail, curled up"
+  },
+  {
+   "cap": [
+    "front",
+    0,
+    1.5,
+    1.2
+   ],
+   "to": [
+    "head",
+    0,
+    -1.2,
+    -0.4
+   ],
+   "r": [
+    3.2,
+    2.8
+   ],
+   "mat": "cat"
+  },
+  {
+   "ball": [
+    "head",
+    0,
+    0,
+    0
+   ],
+   "r": 4.0,
+   "mat": "cat"
+  },
+  {
+   "ball": [
+    "head",
+    0,
+    3.0,
+    -1.5
+   ],
+   "r": 2.2,
+   "mat": "white",
+   "_doc": "the muzzle"
+  },
+  {
+   "bead": [
+    "head",
+    0,
+    5.0,
+    -0.8
+   ],
+   "r": 0.8,
+   "mat": "pink"
+  },
+  {
+   "bead": [
+    "head",
+    1.7,
+    3.2,
+    0.8
+   ],
+   "r": 1.05,
+   "mat": "gold",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "head",
+    1.8,
+    4.0,
+    0.9
+   ],
+   "r": 0.5,
+   "mat": "eye",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "head",
+    2.2,
+    0,
+    2.6
+   ],
+   "to": [
+    "head",
+    2.9,
+    0.2,
+    6.0
+   ],
+   "r": [
+    1.5,
+    0.25
+   ],
+   "mat": "cat",
+   "mirror": true,
+   "_doc": "big ears, pink inside"
+  },
+  {
+   "cap": [
+    "head",
+    2.2,
+    0.7,
+    2.9
+   ],
+   "to": [
+    "head",
+    2.8,
+    0.8,
+    5.2
+   ],
+   "r": [
+    0.8,
+    0.15
+   ],
+   "mat": "pink",
+   "hard": true,
+   "mirror": true
+  }
+ ]
+}

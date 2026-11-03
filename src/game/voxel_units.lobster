@@ -1,52 +1,37 @@
-// ------------------------------------------------------------------ voxel units (the `voxels` option: a trial)
-// Every unit type drawn as one procedural voxel body (view/voxel.lobster) instead of composed parts: its race and
-// kit read from its recipe, baked at the match start into an atlas of 8 facings standing, walking, attacking and
+// ------------------------------------------------------------------ voxel units
+// Every unit type drawn as one procedural voxel body (view/voxel.lobster, from data/voxel/): its body, gear and mount
+// read from its recipe, baked at the match start into an atlas of 8 facings standing, walking, attacking and
 // working, drawn as whole-unit frames (collect_units). Wild animals and the dead aren't made yet.
 
 let VX_MODES = [ "idle", "walk", "attack", "work" ]
 let vx_frames = dictionary<string, int>(4096)  // "kind.mode.facing.step" -> frame
 let VX_DRAW_K = 1.1 / ART_K                    // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
 
-def vx_has(id:string, words:[string]) -> bool:
-    for(words) w: if find_string(id, w) >= 0: return true
-    return false
-
-def vx_part(r:JV, slot:string) -> string:
-    let parts = gobj(r, "parts")
-    return if has(parts, slot): as_str(at(parts, slot)) else: ""
-
-// A unit type as a voxel race and kit.
+// A unit type as a voxel body and gear: its creature's body (bodies/<creature>.json; a creature with no voxel body
+// yet is drawn as a human), the race's skin, each part's gear by gear.json's rules, its mount.
 def vx_def_of(k:int) -> vx_unit_def:
     let r = su_type_recipe[k]
-    let body = rstr(r, "body")
-    let kind = if find_string(body, "rat") >= 0: vx_RAT elif find_string(body, "frog") >= 0: vx_FROG else: vx_HUMAN  // (no voxel bears yet)
+    let creature = rstr(r, "creature")
+    let body = if vx_bodies.get(creature): creature else: "human"
     let skins = at(lib_palettes, "skins")
-    let skin = rstr(r, "skin")
-    var rc = kind
-    if has(skins, skin):  // the race's own colours (palettes.json)
-        let cs = gstrs(skins, skin)
-        rc = vx_race { kind.kind, xyz(hex_col(hex_of(cs[0]))), xyz(hex_col(hex_of(cs[1]))), kind.size, kind.fur }
-    let hr = vx_part(r, "hand_r")
-    var right = ""
-    var left = ""
-    if vx_has(hr, [ "bow", "sling" ]): left = "bow"
-    elif vx_has(hr, [ "pike" ]): right = "pike"
-    elif vx_has(hr, [ "pilum" ]): right = "pilum"
-    elif vx_has(hr, [ "spear", "lance", "javelin", "trident" ]): right = "spear"
-    elif vx_has(hr, [ "club" ]): right = if vx_has(hr, [ "bone" ]): "bone_club" else: "club"
-    elif vx_has(hr, [ "staff" ]): right = "staff"
-    elif vx_has(hr, [ "gladius" ]): right = "gladius"
-    elif vx_has(hr, [ "sword", "blade", "sabre", "dagger" ]): right = "sword"
-    elif hr != "": right = "axe"
-    if left == "" and vx_has(vx_part(r, "hand_l"), [ "shield" ]): left = if vx_has(vx_part(r, "hand_l"), [ "scutum" ]): "scutum" else: "shield"
-    let torso = vx_part(r, "torso")
-    let armour = if vx_has(torso, [ "lorica" ]): "lorica" elif vx_has(torso, [ "bronze" ]): "bronze" elif vx_has(torso, [ "leather" ]): "leather" else: ""
-    let mount = if find_string(body, "centaur") >= 0: "horse" elif not has(r, "mount"): "" elif rstr(at(r, "mount"), "creature") == "cat": "cat" else: "horse"
-    var coat = float3_0  // a horse's or pony's coat (palettes.json); the cat keeps its own
-    if mount == "horse" and has(r, "mount") and has(skins, rstr(at(r, "mount"), "skin")): coat = xyz(hex_col(hex_of(gstrs(skins, rstr(at(r, "mount"), "skin"))[0])))
-    return vx_unit_def { rstr(r, "name"), rc, right, left, vx_part(r, "head_gear") != "", torso != "", mount,
-                         if vx_has(vx_part(r, "head_gear"), [ "galea" ]): "galea" else: "", armour,
-                         if vx_has(vx_part(r, "back"), [ "quiver" ]): "quiver" else: "", coat }
+    var skin = float3_0
+    var pale = float3_0
+    if has(skins, rstr(r, "skin")):   // the race's own colours (palettes.json)
+        let cs = gstrs(skins, rstr(r, "skin"))
+        skin, pale = xyz(hex_col(hex_of(cs[0]))), xyz(hex_col(hex_of(cs[1])))
+    let gear = []::string
+    let parts = gobj(r, "parts")
+    for(sorted_strs(parts.keys)) slot:
+        let id = as_str(at(parts, slot))
+        let g = vx_gear_for(id, ptags_of(id), slot)
+        if g != "": gear.push(g)
+    var mount = ""
+    var coat = float3_0   // a mount's coat (palettes.json); the cat keeps its own
+    if has(r, "mount"):
+        let mc = rstr(at(r, "mount"), "creature")
+        mount = if vx_bodies.get(mc): mc else: "pony"
+        if mount != "cat" and has(skins, rstr(at(r, "mount"), "skin")): coat = xyz(hex_col(hex_of(gstrs(skins, rstr(at(r, "mount"), "skin"))[0])))
+    return vx_unit_def { rstr(r, "name"), body, skin, pale, gear, mount, coat }
 
 // The walk steps by the ground covered: a cycle of 8 steps is a stride (the body moves its foot's reach twice each
 // half cycle, the planted foot fixed), so its length is four times that reach. A body unit is about 1/62 of a tile
@@ -55,10 +40,9 @@ let vx_cycle = dictionary<int, float>(256)    // type -> milli-tiles a walk cycl
 let vx_walked = dictionary<int, float>(1024)  // unit id -> milli-tiles walked
 let vx_last = dictionary<int, float2>(1024)   // unit id -> where it was last drawn
 
-def vx_reach(u:vx_unit_def) -> float:  // how far a foot swings out from under the hip, body units (as the builders step)
-    if u.mount == "cat": return 3.4 * vx_CAT_SIZE
-    if u.mount == "horse": return 4.0
-    return (if u.rc.kind == "rat": 5.5 elif u.rc.kind == "frog": 2.0 else: 4.6) * u.rc.size
+def vx_reach(u:vx_unit_def) -> float:   // how far a foot swings out from under the hip, body units (the body's, or its mount's)
+    if u.mount != "": return vx_body_of(u.mount).reach * vx_body_of(u.mount).size / vx_size_of(u)
+    return vx_body_of(u.body).reach
 
 // A look (the same race, kit and mount: most age upgrades share one) is baked into an atlas of its own, its cells
 // cropped to what's drawn and packed in rows VX_ATLAS wide, and kept in the bake cache (a PNG and a manifest, as the
@@ -119,9 +103,9 @@ let vx_nlooks = dictionary<int, int>(256)  // type -> how many looks it has (hum
 def vx_bake_type(k:int) -> int:
     let u = vx_def_of(k)
     vx_cycle.set(k, 4.0 * vx_reach(u) * 1000.0 / 62.0)
-    let nlooks = if u.rc.kind == "human": vx_LOOKS else: 1
+    let nlooks = vx_looks_of(u)
     vx_nlooks.set(k, nlooks)
-    let key = "{u.rc.kind} {u.rc.skin} {u.right} {u.left} {u.helm} {u.armour} {u.mount} {u.helm_kind} {u.armour_kind} {u.back} {u.coat} {t_worker[k]}"
+    let key = "{u.body} {u.skin} {u.gear} {u.mount} {u.coat} {t_worker[k]}"
     let same = vx_looks.get(key, -1)
     if same >= 0:
         for(nlooks) v: for(VX_MODES) mode: for(8) f: for(8) st:
@@ -138,8 +122,10 @@ def vx_bake_type(k:int) -> int:
     return baked
 
 def vx_bake_look(k:int, u:vx_unit_def, v:int, stem:string):
-    let worker = vx_unit_def { u.label, u.rc, "axe", "", u.helm, u.armour, u.mount, u.helm_kind, u.armour_kind, u.back, u.coat }  // (work: chopping)
-    vx_set_look(u.rc, v)
+    let tools = [ "axe" ]   // (work: chopping; what it wears kept)
+    for(u.gear) g: if vx_worn_gear(g): tools.push(g)
+    let worker = vx_unit_def { u.label, u.body, u.skin, u.pale, tools, u.mount, u.coat }
+    vx_set_look(u, v)
     vx_rows = []::[float4]
     vx_at = int2_0
     vx_row_h = 0
@@ -150,7 +136,7 @@ def vx_bake_look(k:int, u:vx_unit_def, v:int, stem:string):
         if mode != "work" or t_worker[k] != 0:
             vx_act = if mode == "attack" or mode == "work": "attack" else: ""
             for(if mode == "idle": 1 else: 8) st:
-                let g = vx_fill(vx_unit_prims(if mode == "work": worker else: u, float(st) * 45.0), u.rc.size)
+                let g = vx_fill(vx_unit_prims(if mode == "work": worker else: u, float(st) * 45.0), vx_size_of(u))
                 for(8) f:
                     let fr = vx_pack_cell(vx_cell(g, f), vx_box, vx_CELL.x, vx_ANCHOR)
                     let sf = vx_pack_cell(vx_ground_shadow(g, f), vx_sbox, vx_SCELL.x, vx_SANCHOR)
@@ -173,7 +159,10 @@ def vx_bake_types():
     let t0 = seconds_elapsed()
     var n = 0
     var baked = 0
-    vx_source = sha256_text(read_file("view/voxel.lobster") or "")
+    let dirs = [ "../data/voxel" ]
+    for(mods_active) m: dirs.push(m.dir + "/data/voxel")   // (a mod's own, in its data/)
+    vx_load(dirs)
+    vx_source = sha256_text((read_file("view/voxel.lobster") or "") + vx_data_text())
     vx_mat_cols[vx_mat_team] = float3 { 0.85, 0.12, 0.85 }  // (the sprite shader's team key)
     for(t_slot.length) k:
         if t_animal[k] == 0:

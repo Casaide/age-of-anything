@@ -1,0 +1,75 @@
+{
+ "_doc": "Voxel materials: a colour each (#rrggbb) and whether it's flecked like fur. skin and pale are the race's own (palettes.json), coat a mount's, team the sprite shader's key; the rest are fixed. A mod adds its own here and names them in its bodies and gear.",
+ "skin": {
+  "rgb": "#dba880",
+  "fur": true
+ },
+ "pale": {
+  "rgb": "#ebd1ad",
+  "fur": true
+ },
+ "cloth": {
+  "rgb": "#857357"
+ },
+ "leather": {
+  "rgb": "#6b4729"
+ },
+ "hair": {
+  "rgb": "#1f1714",
+  "fur": true
+ },
+ "wood": {
+  "rgb": "#8c6133"
+ },
+ "metal": {
+  "rgb": "#b3b8c2"
+ },
+ "coat": {
+  "rgb": "#805230",
+  "fur": true
+ },
+ "mane": {
+  "rgb": "#33241a",
+  "fur": true
+ },
+ "team": {
+  "rgb": "#cc2921"
+ },
+ "eye": {
+  "rgb": "#120d0a"
+ },
+ "white": {
+  "rgb": "#f0ebe0"
+ },
+ "pink": {
+  "rgb": "#e69499"
+ },
+ "cat": {
+  "rgb": "#242126",
+  "fur": true
+ },
+ "gold": {
+  "rgb": "#ebbd33"
+ },
+ "mouth": {
+  "rgb": "#4d1a1a"
+ },
+ "tail": {
+  "rgb": "#dbb3a8"
+ },
+ "bronze": {
+  "rgb": "#bd8f4d"
+ },
+ "kilt": {
+  "rgb": "#36211f"
+ },
+ "laurel": {
+  "rgb": "#54853a"
+ },
+ "hide": {
+  "rgb": "#cc9e5c"
+ },
+ "trousers": {
+  "rgb": "#452e29"
+ }
+}

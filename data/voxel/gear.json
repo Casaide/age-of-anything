@@ -1,0 +1,2305 @@
+{
+ "_doc": "Voxel gear. `parts` maps a recipe's parts to gear, first rule that matches (part: an id or an id's prefix; tag: a tag the part has in parts.json; slot: its slot). A held item has a hand (right, left) and a hold (in holds); its shapes are in the hold's frame: [point, along, out, side] from the hand, along the held direction, out of the front, to the right. Worn gear has fits: shapes per body (bodies/<id>.json), * for any other, in the body's own frame; `helm` and `fit` are the body's helmet and armour spots. flags: what the gear tells body shapes (if / unless).",
+ "holds": {
+  "hang": {
+   "rest": [
+    0.15,
+    0.1,
+    -0.92
+   ],
+   "dir": [
+    0,
+    0.12,
+    1
+   ],
+   "swing": 0.18
+  },
+  "thrust": {
+   "rest": [
+    0.25,
+    0.45,
+    -0.55
+   ],
+   "dir": [
+    0,
+    0.12,
+    1
+   ],
+   "wind": [
+    0.3,
+    -0.25,
+    -0.35
+   ],
+   "wind_dir": [
+    0,
+    0.5,
+    1
+   ],
+   "hit": [
+    0.15,
+    0.95,
+    -0.1
+   ],
+   "hit_dir": [
+    0,
+    1,
+    0.06
+   ],
+   "_doc": "drawn back, then thrust level"
+  },
+  "swing": {
+   "rest": [
+    0.25,
+    0.5,
+    -0.6
+   ],
+   "dir": [
+    0,
+    0.85,
+    0.6
+   ],
+   "wind": [
+    0.15,
+    -0.1,
+    0.85
+   ],
+   "wind_dir": [
+    0,
+    -0.7,
+    0.7
+   ],
+   "hit": [
+    0.15,
+    0.85,
+    -0.35
+   ],
+   "hit_dir": [
+    0,
+    0.6,
+    -0.8
+   ],
+   "_doc": "up over the head, then down through the arm held out"
+  },
+  "shield": {
+   "rest": [
+    -0.3,
+    0.55,
+    -0.5
+   ]
+  },
+  "shield_tall": {
+   "rest": [
+    -0.05,
+    0.5,
+    -0.62
+   ]
+  },
+  "bow": {
+   "rest": [
+    -0.3,
+    0.5,
+    -0.55
+   ],
+   "raise": [
+    0.25,
+    0.95,
+    0.05
+   ],
+   "draw": [
+    -0.15,
+    0.1,
+    0.0
+   ],
+   "_doc": "raised and drawn, loosed"
+  }
+ },
+ "gear": {
+  "spear": {
+   "hand": "right",
+   "hold": "thrust",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -8,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      18,
+      0,
+      0
+     ],
+     "r": [
+      0.5,
+      0.5
+     ],
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      18,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      22.5,
+      0,
+      0
+     ],
+     "r": [
+      0.95,
+      0.1
+     ],
+     "mat": "metal"
+    }
+   ]
+  },
+  "pike": {
+   "hand": "right",
+   "hold": "thrust",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -11,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      25,
+      0,
+      0
+     ],
+     "r": [
+      0.5,
+      0.5
+     ],
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      25,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      29,
+      0,
+      0
+     ],
+     "r": [
+      0.9,
+      0.1
+     ],
+     "mat": "metal"
+    }
+   ]
+  },
+  "pilum": {
+   "hand": "right",
+   "hold": "thrust",
+   "_doc": "a heavy javelin: a wooden shaft, a long thin iron shank, a small point",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -6,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      11,
+      0,
+      0
+     ],
+     "r": [
+      0.55,
+      0.5
+     ],
+     "mat": "wood"
+    },
+    {
+     "bead": [
+      "hand",
+      11,
+      0,
+      0
+     ],
+     "r": 0.8,
+     "mat": "metal"
+    },
+    {
+     "cap": [
+      "hand",
+      11,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      18.5,
+      0,
+      0
+     ],
+     "r": [
+      0.25,
+      0.25
+     ],
+     "mat": "metal"
+    },
+    {
+     "cap": [
+      "hand",
+      18.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      20,
+      0,
+      0
+     ],
+     "r": [
+      0.6,
+      0.1
+     ],
+     "mat": "metal"
+    }
+   ]
+  },
+  "club": {
+   "hand": "right",
+   "hold": "swing",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      8,
+      0,
+      0
+     ],
+     "r": [
+      0.5,
+      1.3
+     ],
+     "mat": "wood",
+     "_doc": "thickening to the end"
+    }
+   ]
+  },
+  "bone_club": {
+   "hand": "right",
+   "hold": "swing",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      8,
+      0,
+      0
+     ],
+     "r": [
+      0.5,
+      1.3
+     ],
+     "mat": "white"
+    }
+   ]
+  },
+  "staff": {
+   "hand": "right",
+   "hold": "thrust",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -9,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      13,
+      0,
+      0
+     ],
+     "r": [
+      0.5,
+      0.45
+     ],
+     "mat": "wood"
+    },
+    {
+     "ball": [
+      "hand",
+      13.3,
+      0,
+      0.9
+     ],
+     "r": 1.0,
+     "mat": "laurel"
+    },
+    {
+     "ball": [
+      "hand",
+      13.3,
+      0,
+      -0.9
+     ],
+     "r": 1.0,
+     "mat": "laurel"
+    }
+   ]
+  },
+  "gladius": {
+   "hand": "right",
+   "hold": "swing",
+   "dir": [
+    0,
+    0.8,
+    0.35
+   ],
+   "_doc": "a short broad blade, bigger than life to read: a bronze guard, a round pommel",
+   "shapes": [
+    {
+     "bead": [
+      "hand",
+      -1.5,
+      0,
+      0
+     ],
+     "r": 0.75,
+     "mat": "bronze"
+    },
+    {
+     "cap": [
+      "hand",
+      -1.2,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      0.9,
+      0,
+      0
+     ],
+     "r": [
+      0.45,
+      0.45
+     ],
+     "mat": "leather"
+    },
+    {
+     "box": [
+      "hand",
+      1.1,
+      0,
+      0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      1.3,
+      0.35,
+      0.3
+     ],
+     "round": 0.1,
+     "mat": "bronze"
+    },
+    {
+     "cap": [
+      "hand",
+      1.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      8.5,
+      0,
+      0
+     ],
+     "r": [
+      0.75,
+      0.6
+     ],
+     "mat": "metal"
+    },
+    {
+     "cap": [
+      "hand",
+      8.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      9.6,
+      0,
+      0
+     ],
+     "r": [
+      0.6,
+      0.1
+     ],
+     "mat": "metal"
+    }
+   ]
+  },
+  "sword": {
+   "hand": "right",
+   "hold": "swing",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0.8,
+      0,
+      -1.4
+     ],
+     "to": [
+      "hand",
+      0.8,
+      0,
+      1.4
+     ],
+     "r": [
+      0.45,
+      0.45
+     ],
+     "mat": "metal"
+    },
+    {
+     "cap": [
+      "hand",
+      0.8,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      9,
+      0,
+      0
+     ],
+     "r": [
+      0.6,
+      0.25
+     ],
+     "mat": "metal"
+    }
+   ]
+  },
+  "axe": {
+   "hand": "right",
+   "hold": "swing",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -2,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      9,
+      0,
+      0
+     ],
+     "r": [
+      0.5,
+      0.5
+     ],
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      8.2,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      8.2,
+      1.2,
+      0
+     ],
+     "r": [
+      0.6,
+      0.6
+     ],
+     "mat": "metal"
+    },
+    {
+     "disc": [
+      "hand",
+      8.1,
+      2.0,
+      0
+     ],
+     "n": [
+      0,
+      0,
+      1
+     ],
+     "r": [
+      2.2,
+      0.3
+     ],
+     "mat": "metal",
+     "_doc": "the blade: flat, out the front of the shaft"
+    }
+   ]
+  },
+  "shield": {
+   "hand": "left",
+   "hold": "shield",
+   "face": [
+    -0.35,
+    1,
+    0
+   ],
+   "_doc": "a round shield, its face in team colour, a wooden rim, a boss",
+   "shapes": [
+    {
+     "disc": [
+      "hand",
+      0,
+      0.8,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "r": [
+      4.6,
+      0.4
+     ],
+     "mat": "wood"
+    },
+    {
+     "disc": [
+      "hand",
+      0,
+      1.15,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "r": [
+      3.7,
+      0.2
+     ],
+     "mat": "team"
+    },
+    {
+     "bead": [
+      "hand",
+      0,
+      1.5,
+      0
+     ],
+     "r": 1.0,
+     "mat": "metal"
+    }
+   ]
+  },
+  "scutum": {
+   "hand": "left",
+   "hold": "shield_tall",
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "a tall curved shield: three panels in team colour on a wooden back, a boss, a gold bar",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      1.8,
+      0.75,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      3.0,
+      0.3,
+      9.1
+     ],
+     "round": 0.15,
+     "mat": "wood"
+    },
+    {
+     "box": [
+      "hand",
+      1.8,
+      1.0,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      2.8,
+      0.3,
+      8.8
+     ],
+     "round": 0.1,
+     "mat": "team"
+    },
+    {
+     "box": [
+      "hand",
+      1.8,
+      0.03,
+      -4.22
+     ],
+     "n": [
+      0,
+      0.87,
+      0.5
+     ],
+     "half": [
+      1.5,
+      0.3,
+      9.1
+     ],
+     "round": 0.15,
+     "mat": "wood"
+    },
+    {
+     "box": [
+      "hand",
+      1.8,
+      0.25,
+      -4.1
+     ],
+     "n": [
+      0,
+      0.87,
+      0.5
+     ],
+     "half": [
+      1.4,
+      0.3,
+      8.8
+     ],
+     "round": 0.1,
+     "mat": "team"
+    },
+    {
+     "box": [
+      "hand",
+      1.8,
+      0.03,
+      4.22
+     ],
+     "n": [
+      0,
+      0.87,
+      -0.5
+     ],
+     "half": [
+      1.5,
+      0.3,
+      9.1
+     ],
+     "round": 0.15,
+     "mat": "wood"
+    },
+    {
+     "box": [
+      "hand",
+      1.8,
+      0.25,
+      4.1
+     ],
+     "n": [
+      0,
+      0.87,
+      -0.5
+     ],
+     "half": [
+      1.4,
+      0.3,
+      8.8
+     ],
+     "round": 0.1,
+     "mat": "team"
+    },
+    {
+     "bead": [
+      "hand",
+      1.8,
+      1.5,
+      0
+     ],
+     "r": 1.4,
+     "mat": "metal"
+    },
+    {
+     "cap": [
+      "hand",
+      4.4,
+      1.45,
+      0
+     ],
+     "to": [
+      "hand",
+      9.4,
+      1.45,
+      0
+     ],
+     "r": [
+      0.35,
+      0.35
+     ],
+     "mat": "gold"
+    },
+    {
+     "cap": [
+      "hand",
+      -0.8,
+      1.45,
+      0
+     ],
+     "to": [
+      "hand",
+      -5.8,
+      1.45,
+      0
+     ],
+     "r": [
+      0.35,
+      0.35
+     ],
+     "mat": "gold"
+    }
+   ]
+  },
+  "bow": {
+   "hand": "left",
+   "hold": "bow",
+   "face": [
+    0,
+    1,
+    0
+   ],
+   "shapes": [
+    {
+     "chain": [
+      [
+       "hand",
+       -7.5,
+       0.0,
+       0
+      ],
+      [
+       "hand",
+       -5.0,
+       0.89,
+       0
+      ],
+      [
+       "hand",
+       -2.5,
+       1.42,
+       0
+      ],
+      [
+       "hand",
+       0.0,
+       1.6,
+       0
+      ],
+      [
+       "hand",
+       2.5,
+       1.42,
+       0
+      ],
+      [
+       "hand",
+       5.0,
+       0.89,
+       0
+      ],
+      [
+       "hand",
+       7.5,
+       0.0,
+       0
+      ]
+     ],
+     "r": [
+      0.5,
+      0,
+      0.5,
+      0
+     ],
+     "mats": [
+      "wood",
+      "wood"
+     ]
+    },
+    {
+     "cap": [
+      "hand",
+      7.5,
+      0,
+      0
+     ],
+     "to": [
+      "draw",
+      0,
+      0,
+      0
+     ],
+     "r": [
+      0.15,
+      0.15
+     ],
+     "mat": "white"
+    },
+    {
+     "cap": [
+      "hand",
+      -7.5,
+      0,
+      0
+     ],
+     "to": [
+      "draw",
+      0,
+      0,
+      0
+     ],
+     "r": [
+      0.15,
+      0.15
+     ],
+     "mat": "white"
+    }
+   ]
+  },
+  "cap": {
+   "flags": [
+    "helm"
+   ],
+   "fits": {
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ]
+   }
+  },
+  "galea": {
+   "flags": [
+    "helm",
+    "helm:galea"
+   ],
+   "_doc": "the bowl hugs the skull, a small neck guard, a small crest; no brow band or cheek guards (they framed the eyes like goggles)",
+   "fits": {
+    "human": [
+     {
+      "cap": [
+       "head",
+       0.0,
+       -0.48,
+       1.27
+      ],
+      "to": [
+       "head",
+       0.0,
+       -0.55,
+       1.5
+      ],
+      "r": [
+       3.4,
+       3.4
+      ],
+      "mat": "metal"
+     },
+     {
+      "cap": [
+       "head",
+       0.0,
+       -2.69,
+       -0.32
+      ],
+      "to": [
+       "head",
+       0.0,
+       -2.93,
+       -1.43
+      ],
+      "r": [
+       1.43,
+       1.27
+      ],
+      "mat": "metal"
+     },
+     {
+      "bead": [
+       "head",
+       0.0,
+       -2.89,
+       4.87
+      ],
+      "r": 0.79,
+      "mat": "team"
+     },
+     {
+      "bead": [
+       "head",
+       0.0,
+       -1.9,
+       5.19
+      ],
+      "r": 0.79,
+      "mat": "team"
+     },
+     {
+      "bead": [
+       "head",
+       0.0,
+       -0.55,
+       5.31
+      ],
+      "r": 0.79,
+      "mat": "team"
+     },
+     {
+      "bead": [
+       "head",
+       0.0,
+       0.79,
+       5.19
+      ],
+      "r": 0.79,
+      "mat": "team"
+     },
+     {
+      "bead": [
+       "head",
+       0.0,
+       1.78,
+       4.87
+      ],
+      "r": 0.79,
+      "mat": "team"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "metal"
+     }
+    ]
+   }
+  },
+  "plate": {
+   "flags": [
+    "armour"
+   ],
+   "fits": {
+    "human": [
+     {
+      "cap": [
+       "hip",
+       -0.71,
+       -2.4,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -0.83,
+       -2.82,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -1.89,
+       -1.63,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.22,
+       -1.92,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -2.48,
+       -0.35,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.91,
+       -0.41,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -2.27,
+       1.04,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.67,
+       1.22,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -1.35,
+       2.1,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -1.59,
+       2.47,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0.0,
+       2.5,
+       1.4
+      ],
+      "to": [
+       "hip",
+       0.0,
+       2.94,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       1.35,
+       2.1,
+       1.4
+      ],
+      "to": [
+       "hip",
+       1.59,
+       2.47,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       2.27,
+       1.04,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.67,
+       1.22,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       2.48,
+       -0.35,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.91,
+       -0.41,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       1.89,
+       -1.63,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.22,
+       -1.92,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0.71,
+       -2.4,
+       1.4
+      ],
+      "to": [
+       "hip",
+       0.83,
+       -2.82,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0,
+       0.2,
+       2.8
+      ],
+      "to": [
+       "chest",
+       0,
+       0,
+       -0.3
+      ],
+      "r": [
+       2.66,
+       3.21
+      ],
+      "mat": "metal"
+     }
+    ],
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "metal"
+     }
+    ]
+   }
+  },
+  "leather": {
+   "flags": [
+    "armour"
+   ],
+   "fits": {
+    "human": [
+     {
+      "cap": [
+       "hip",
+       -0.71,
+       -2.4,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -0.83,
+       -2.82,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -1.89,
+       -1.63,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.22,
+       -1.92,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -2.48,
+       -0.35,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.91,
+       -0.41,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -2.27,
+       1.04,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.67,
+       1.22,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -1.35,
+       2.1,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -1.59,
+       2.47,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0.0,
+       2.5,
+       1.4
+      ],
+      "to": [
+       "hip",
+       0.0,
+       2.94,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       1.35,
+       2.1,
+       1.4
+      ],
+      "to": [
+       "hip",
+       1.59,
+       2.47,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       2.27,
+       1.04,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.67,
+       1.22,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       2.48,
+       -0.35,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.91,
+       -0.41,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       1.89,
+       -1.63,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.22,
+       -1.92,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0.71,
+       -2.4,
+       1.4
+      ],
+      "to": [
+       "hip",
+       0.83,
+       -2.82,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0,
+       0.2,
+       2.8
+      ],
+      "to": [
+       "chest",
+       0,
+       0,
+       -0.3
+      ],
+      "r": [
+       2.66,
+       3.21
+      ],
+      "mat": "hide"
+     }
+    ],
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "hide"
+     }
+    ]
+   }
+  },
+  "bronze": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a bronze cuirass, leather shoulder guards",
+   "fits": {
+    "human": [
+     {
+      "cap": [
+       "hip",
+       -0.71,
+       -2.4,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -0.83,
+       -2.82,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -1.89,
+       -1.63,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.22,
+       -1.92,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -2.48,
+       -0.35,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.91,
+       -0.41,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -2.27,
+       1.04,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.67,
+       1.22,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -1.35,
+       2.1,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -1.59,
+       2.47,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0.0,
+       2.5,
+       1.4
+      ],
+      "to": [
+       "hip",
+       0.0,
+       2.94,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       1.35,
+       2.1,
+       1.4
+      ],
+      "to": [
+       "hip",
+       1.59,
+       2.47,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       2.27,
+       1.04,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.67,
+       1.22,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       2.48,
+       -0.35,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.91,
+       -0.41,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       1.89,
+       -1.63,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.22,
+       -1.92,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0.71,
+       -2.4,
+       1.4
+      ],
+      "to": [
+       "hip",
+       0.83,
+       -2.82,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0,
+       0.2,
+       2.8
+      ],
+      "to": [
+       "chest",
+       0,
+       0,
+       -0.3
+      ],
+      "r": [
+       2.66,
+       3.21
+      ],
+      "mat": "bronze"
+     },
+     {
+      "cap": [
+       "chest",
+       3.26,
+       0,
+       0
+      ],
+      "to": [
+       "chest",
+       3.81,
+       0,
+       -1.3
+      ],
+      "r": [
+       1.52,
+       1.36
+      ],
+      "mat": "leather",
+      "mirror": true
+     }
+    ],
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "bronze"
+     }
+    ]
+   }
+  },
+  "lorica": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "bands of iron round the body over dark leather, curved plates over the shoulders",
+   "fits": {
+    "human": [
+     {
+      "cap": [
+       "hip",
+       -0.71,
+       -2.4,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -0.83,
+       -2.82,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -1.89,
+       -1.63,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.22,
+       -1.92,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -2.48,
+       -0.35,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.91,
+       -0.41,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -2.27,
+       1.04,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -2.67,
+       1.22,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       -1.35,
+       2.1,
+       1.4
+      ],
+      "to": [
+       "hip",
+       -1.59,
+       2.47,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0.0,
+       2.5,
+       1.4
+      ],
+      "to": [
+       "hip",
+       0.0,
+       2.94,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       1.35,
+       2.1,
+       1.4
+      ],
+      "to": [
+       "hip",
+       1.59,
+       2.47,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       2.27,
+       1.04,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.67,
+       1.22,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       2.48,
+       -0.35,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.91,
+       -0.41,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       1.89,
+       -1.63,
+       1.4
+      ],
+      "to": [
+       "hip",
+       2.22,
+       -1.92,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0.71,
+       -2.4,
+       1.4
+      ],
+      "to": [
+       "hip",
+       0.83,
+       -2.82,
+       -1.9
+      ],
+      "r": [
+       0.5,
+       0.5
+      ],
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "hip",
+       0,
+       0.2,
+       2.8
+      ],
+      "to": [
+       "chest",
+       0,
+       0,
+       -0.3
+      ],
+      "r": [
+       2.56,
+       3.1
+      ],
+      "mat": "mouth"
+     },
+     {
+      "disc": [
+       "hip",
+       0,
+       0.23,
+       3.38
+      ],
+      "n": [
+       0,
+       0.06,
+       1
+      ],
+      "r": [
+       2.72,
+       0.42
+      ],
+      "mat": "metal"
+     },
+     {
+      "disc": [
+       "hip",
+       0,
+       0.28,
+       4.53
+      ],
+      "n": [
+       0,
+       0.06,
+       1
+      ],
+      "r": [
+       2.81,
+       0.42
+      ],
+      "mat": "metal"
+     },
+     {
+      "disc": [
+       "hip",
+       0,
+       0.33,
+       5.68
+      ],
+      "n": [
+       0,
+       0.06,
+       1
+      ],
+      "r": [
+       2.9,
+       0.42
+      ],
+      "mat": "metal"
+     },
+     {
+      "disc": [
+       "hip",
+       0,
+       0.38,
+       6.84
+      ],
+      "n": [
+       0,
+       0.06,
+       1
+      ],
+      "r": [
+       2.99,
+       0.42
+      ],
+      "mat": "metal"
+     },
+     {
+      "disc": [
+       "hip",
+       0,
+       0.42,
+       7.99
+      ],
+      "n": [
+       0,
+       0.06,
+       1
+      ],
+      "r": [
+       3.08,
+       0.42
+      ],
+      "mat": "metal"
+     },
+     {
+      "disc": [
+       "hip",
+       0,
+       0.47,
+       9.15
+      ],
+      "n": [
+       0,
+       0.06,
+       1
+      ],
+      "r": [
+       3.17,
+       0.42
+      ],
+      "mat": "metal"
+     },
+     {
+      "cap": [
+       "chest",
+       3.15,
+       1.1,
+       0.3
+      ],
+      "to": [
+       "chest",
+       3.15,
+       -1.1,
+       0.3
+      ],
+      "r": [
+       1.25,
+       1.25
+      ],
+      "mat": "metal",
+      "mirror": true
+     }
+    ],
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "metal"
+     }
+    ]
+   }
+  },
+  "quiver": {
+   "flags": [
+    "back:quiver"
+   ],
+   "fits": {
+    "human": [
+     {
+      "cap": [
+       "chest",
+       1.6,
+       -2.7,
+       1.8
+      ],
+      "to": [
+       "chest",
+       -1.2,
+       -2.5,
+       -6.0
+      ],
+      "r": [
+       1.1,
+       0.95
+      ],
+      "mat": "leather"
+     },
+     {
+      "bead": [
+       "chest",
+       1.1,
+       -2.7,
+       2.8
+      ],
+      "r": 0.55,
+      "mat": "white"
+     },
+     {
+      "bead": [
+       "chest",
+       2.1,
+       -2.7,
+       2.8
+      ],
+      "r": 0.55,
+      "mat": "white"
+     }
+    ],
+    "*": []
+   }
+  }
+ },
+ "parts": [
+  {
+   "part": "weapon.gladius",
+   "gear": "gladius"
+  },
+  {
+   "part": "weapon.pilum",
+   "gear": "pilum"
+  },
+  {
+   "part": "weapon.pike",
+   "gear": "pike"
+  },
+  {
+   "part": "weapon.club.bone",
+   "gear": "bone_club"
+  },
+  {
+   "part": "tool.staff",
+   "gear": "staff"
+  },
+  {
+   "part": "shield.scutum",
+   "gear": "scutum"
+  },
+  {
+   "part": "helm.galea",
+   "gear": "galea"
+  },
+  {
+   "part": "armour.lorica",
+   "gear": "lorica"
+  },
+  {
+   "part": "armour.bronze",
+   "gear": "bronze"
+  },
+  {
+   "part": "armour.leather",
+   "gear": "leather"
+  },
+  {
+   "tag": "spear",
+   "gear": "spear"
+  },
+  {
+   "tag": "lance",
+   "gear": "spear"
+  },
+  {
+   "tag": "bow",
+   "gear": "bow"
+  },
+  {
+   "tag": "sling",
+   "gear": "bow"
+  },
+  {
+   "tag": "blunt",
+   "gear": "club"
+  },
+  {
+   "tag": "blade",
+   "gear": "sword"
+  },
+  {
+   "tag": "shield",
+   "gear": "shield"
+  },
+  {
+   "tag": "helmet",
+   "gear": "cap"
+  },
+  {
+   "tag": "hat",
+   "gear": "cap"
+  },
+  {
+   "tag": "armour",
+   "gear": "plate"
+  },
+  {
+   "tag": "quiver",
+   "gear": "quiver"
+  },
+  {
+   "slot": "hand_r",
+   "gear": "axe"
+  }
+ ]
+}
