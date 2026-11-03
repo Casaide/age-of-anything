@@ -258,7 +258,11 @@ var akb_split_shadows = false
 let akb_src = dictionary<string, [string]>(256)  // a look's name -> what it's made from (arch, type, model, suffix)
 
 def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, shadow_only:[MNode] = []):
-    let sprite, w, h, anchor = voxel_bake(model, shadow)  // (D-203: as voxels; a gate tower's shadow is its own now)
+    // (shadow_only: the rest of a gate, left out of a tower's frame: baked in, the whole shut gate was drawn in front of
+    // the units in its archway, Dominic: "the unit is sitting behind the left side of the gate")
+    for(shadow_only) m: m.visible = false
+    let sprite, w, h, anchor = voxel_bake(model, shadow)  // (D-203: as voxels)
+    for(shadow_only) m: m.visible = true
     let at = anchor + akb_project(pivot) * WB_ART
     if akb_split_shadows and shadow:
         let art, shade = vm_split_shadow(sprite, w, h)
