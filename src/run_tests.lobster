@@ -7,20 +7,16 @@
 //
 // Left out (Godot only, or the Lobster port has no such piece yet):
 // - _test_scripts_parse: loads every .gd scene and view script; GDScript files, nothing to do with Lobster.
-// - _test_placement (only with "-- placement" in Godot): placement_check.lobster is the Lobster one.
-// - _test_composer and the view half of _test_cat_poses (UnitView.build, pose_parts, its _process
-//   steps): view/unit_view.lobster is the composer, but it needs the baker and gl; the generator half of
-//   the cat checks (who rides cats) is here.
-// - "<part> has a model" (healers' staffs and bags, siege engines) and "mods: a .glb part builds":
-//   model/ is the bake side (model_check.lobster checks the models); this file keeps to gen/ and lib/.
+// - _test_placement, _test_composer and the view half of _test_cat_poses, "<part> has a model" and "mods: a .glb
+//   part builds": the composed units are gone (voxel units: voxel_check.lobster and voxel_proto.lobster check them);
+//   the generator half of the cat checks (who rides cats) is here.
 // - _test_paths: game/paths.lobster plans on the running match's map (ground_blocked reads the sim's
 //   cells) and is part of the game's drawing; there's no planner taking a blocked function to drive.
 // - The tech tree page's node checks (TreeModel.build): game/techtree.lobster's build_tree is drawn by
 //   the game (lobby_text, ui_*, the running match's su_* state); the data half of _test_tech_tree is
 //   here (planned items in the plan, the sim's loaders skip them, rosters and buildings agree).
 // - "mods: a race made with mods we don't have is spotted" (Mods.missing): no Lobster counterpart.
-// - "mods: no_model refused": the models' check is the bake's (gen/mods.lobster says so); the other
-//   broken fixtures are checked.
+// - "mods: no_model refused": parts have no models (their looks are the voxel kit's); the broken fixtures are checked.
 // - "mods: the pulse rifle fires the mod's shot" (CombatFx.shot_kind): shot_kind_of is in game.lobster;
 //   checked here as the data it reads: the mod's shot "pulse" is called by a tag the rifle's eval has.
 // - "sound take loads" / "music stem loads": the WAVs and OGGs are read from their headers (length in
@@ -839,7 +835,7 @@ def g_mods():
     let tags = gstrs(at(sk, "eval"), "tags")
     let shot = gobj(mod_shots, "pulse")
     expect(has_s(tags, gstr(shot, "tag", "-")), "mods: the pulse rifle\'s tags call the mod\'s shot (pulse: {gstr(shot, "tag", "none")})")
-    let bad = [ "no_model", "bad_era", "needs_other", "future_game", "bad_file", "clash" ]
+    let bad = [ "bad_era", "needs_other", "future_game", "bad_file", "clash" ]
     fresh_lib()
     expect(strs_eq(mods_use(append(bad, [ "scifi_test" ]), append(mod_roots, [ "../tests/mods" ])), [ "scifi_test" ]), "mods: broken mods refused, a good one beside them still loads")
     for(bad) id:

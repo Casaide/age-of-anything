@@ -2,8 +2,8 @@
 # The game's tests side by side, a table of them, exit 1 on any failure. Slow suites are split into shards (each its own
 # process, its own seeded worlds, so the results are a serial run's).
 #   ./batch.sh [--quick] [jobs=N] [only=name,name]
-# --quick: the checks to run after a change (unit tests, the sim, the counter chain, the AI's quick checks, 3D placement); the whole batch
-# adds every AI piece, the 2v2 match, 2D placement, the golden files, the prices' round robins, saves and network play.
+# --quick: the checks to run after a change (unit tests, the sim, the counter chain, the AI's quick checks, the voxel
+# units' checks); the whole batch adds every AI piece, the 2v2 match, the golden files, the prices' round robins, saves and network play.
 # jobs: processes at once (AOA_JOBS; default 4, so a run doesn't take every core: Dominic's fans).
 cd "$(dirname "$0")"
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
@@ -42,7 +42,6 @@ if [ $quick = 1 ]; then
 else
 	for i in 0 1 2 3; do add test_ai.$i "$L" test_ai.lobster -- shard:$i/4; done
 	add test_2v2 "$L" test_2v2.lobster
-	for i in 0 1 2 3; do add placement2d.$i "$L" placement_check.lobster -- 2d shard:$i/4; done
 	add golden ./golden.sh
 	add prices "$L" calibrate.lobster -- measure expect check:42   # held-out round robins against the counter chain (D-199): 32% off now
 	add saves "$L" save_check.lobster
@@ -50,12 +49,11 @@ else
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
 	add perf timeout 240 ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20
 fi
-for i in 0 1 2 3; do add placement3d.$i "$L" placement_check.lobster -- 3d shard:$i/4; done
 
 # Run them, at most $jobs at once (xargs keeps the pool full); each line of jobs.txt: name|command. The slow suites go
 # first so the quick ones fill in round them.
 t0=$(date +%s)
-{ grep '^placement\|^test_ai\.\|^test_2v2\|^golden' "$list"; grep -v '^placement\|^test_ai\.\|^test_2v2\|^golden\|^perf' "$list"; } | tr '\n' '\0' |
+{ grep '^test_ai\.\|^test_2v2\|^golden' "$list"; grep -v '^test_ai\.\|^test_2v2\|^golden\|^perf' "$list"; } | tr '\n' '\0' |
 	xargs -0 -P "$jobs" -n 1 sh -c 'line="$0"; name="${line%%|*}"; cmd="${line#*|}"; start=$(date +%s); sh -c "$cmd" > "'"$logs"'/$name.log" 2>&1; echo "$name $? $(( $(date +%s) - start ))" > "'"$logs"'/$name.result"'
 
 # The ones that measure wall time, alone once the pool is done.

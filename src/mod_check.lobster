@@ -1,17 +1,12 @@
-// A mod loaded, or why not; the races its manifest's check prompts make (under its check rules), which of their units
-// wear its parts; and the 3D placement check on every unit of those races. Exit 1 on a refusal or a failure.
-// Run through mod_check.sh, which brings the mod's Lobster models in first:  ./mod_check.sh <mod id>
-import placement.deps
-import view.stage
-import view.corpse
-import placement.geometry
-import placement.composite
-import placement.cases
+// A mod loaded, or why not; the races its manifest's check prompts make (under its check rules), and which of their
+// units wear its parts. Exit 1 on a refusal. (Its parts' looks are the voxel kit's, by data/voxel/'s rules; its
+// prices: calibrate.lobster mod <id>.)
+//   ./mod_check.sh <mod id>
+import game.deps
 
 let args = command_line_arguments()
 let id = args[0]
-fatal(gl.window("mod check", 64, 64, gl.window_init_no_vsync))  // (models load their textures)
-placement_load()
+data_load()
 let used = mods_use([ id ])
 let refused = mods_refused.get(id, "")
 if refused != "" or not has_s(map(used) u: tokenize(u, "@", "")[0], id):
@@ -29,7 +24,6 @@ else:
         let mod_parts = parse_json(parts_text)
         if mod_parts.kind == J_ARR:
             for(mod_parts.a) p: own.push(rstr(p, "id"))
-    var units = 0
     for(gstrs(check, "prompts")) prompt:
         let race = generate(prompt, rules, 0)
         let race_name = rstr(race, "name")
@@ -41,13 +35,3 @@ else:
             let slot = rstr(r, "slot")
             let unit_name = rstr(r, "name")
             print "  {slot}: {unit_name}" + (if mine.length: "  <- " + concat_string(mine, ", ") else: "")
-            check_unit(prompt + " " + slot, r)
-            units++
-    var failed = 0
-    for(check_order) key:
-        let fails = check_results.get(key) or []::string
-        if fails.length:
-            failed++
-            print "FAIL {key}: {fails.length} views: " + concat_string(fails.slice(0, min(3, fails.length)), "; ")
-    print "placement 3D: {check_order.length} checks, {failed} failed ({units} units)"
-    if failed: set_exit_code(1)

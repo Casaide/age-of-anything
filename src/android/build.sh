@@ -23,8 +23,6 @@ mkdir -p "$stage"
 rsync -a --exclude 'bake_cache' --exclude 'baked' --exclude 'deck' --exclude 'android' --exclude 'golden' --exclude 'model/mods/*' \
 	--exclude '*.sav' --exclude 'memory_leaks.txt' --exclude 'saves' --exclude 'races' "$here/" "$stage/"
 find "$stage" -name '*.lobster' -exec sed -E -i '' 's#"\.\./(data|assets|mods|mods_private|docs)#"\1#g' {} +
-sed -i '' 's#"\.\./" + p\.substring#p.substring#' "$stage/view/stage.lobster"   # (res:// paths)
-(cd "$stage" && "$LOBSTER_SRC/bin/lobster" mods_gen.lobster | grep -v warning || true)
 
 generated="$LOBSTER_SRC/dev/compiled_lobster/src/compiled_lobster.cpp"
 proj="$out/dev/android-project"
@@ -98,7 +96,7 @@ python3 "$here/android/apk_files.py" "$assets" "$stage/apk_files.lobster"
 sed -i '' 's#^import std$#import std\
 import .apk_files#' "$stage/game.lobster"
 sed -i '' 's#let names = scan_folder("data/maps", false)#let names = apk_scan("data/maps")#' "$stage/game.lobster"
-sed -E -i '' 's#scan_folder\((here|root|MOD_TEX_DIR), true\)#apk_scan(\1)#' "$stage/gen/mods.lobster" "$stage/model/units5.lobster"
+sed -E -i '' 's#scan_folder\((here|root|MOD_TEX_DIR), true\)#apk_scan(\1)#' "$stage/gen/mods.lobster"
 grep -q 'apk_scan("data/maps")' "$stage/game.lobster"
 # A phone's keyboard covers half the screen: the setup page's race box takes it only when tapped, not on opening.
 sed -i '' 's#fe_field = if go == "setup": 0 elif go == "lab": 10 else: -1#fe_field = -1#' "$stage/game/lobby.lobster"
@@ -113,7 +111,7 @@ sed 's/^int main(int argc, char \*argv\[\]) {/extern "C" __attribute__((visibili
 	"$generated" > "$out/dev/compiled_lobster/src/compiled_lobster.cpp"
 grep -q 'int SDL_main(' "$out/dev/compiled_lobster/src/compiled_lobster.cpp"
 rm "$generated"   # (Lobster's tree left as it was)
-sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' "$here/view/part_bake.lobster" > "$assets/bake_version"
+sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' "$here/view/bake_cache.lobster" > "$assets/bake_version"
 
 echo "== The buildings and props, baked once on this machine (src/prebake.sh) and shipped: nothing of them bakes on a phone"
 "$here/prebake.sh"

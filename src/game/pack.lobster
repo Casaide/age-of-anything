@@ -21,7 +21,6 @@ class Look:
     arms_front:[string] = []  // their near merlons
     ruins:[string] = []       // broken up (game/ruin.lobster): battered, breaking, collapsed, the ruin it leaves
 
-var sheet_size = 4096
 let sheet_tex = []::resource<texture>
 let sheet_dims = []::float2             // each sheet's size in px (the pack's are all sheet_size; a part baked in the game is its own)
 let sheet_file = []::string             // a sheet not loaded yet: its PNG, loaded when it's first drawn ("": loaded)
@@ -52,7 +51,6 @@ def sheet_texture(i:int) -> resource<texture>:
     return sheet_tex[i]
 let frames = []::Frame
 let frame_at = dictionary<string, int>(32768)
-let anims = dictionary<string, int>(1024)  // "<type>.<state>" -> frames
 let looks = dictionary<string, Look>(512)
 var arch_of = []::string  // per player
 let doodads = dictionary<string, int>(64)
@@ -82,75 +80,6 @@ class BFx:
     lights:[float2]  // the lantern first, if it has one
 
 let bfx = dictionary<string, BFx>(256)
-
-def load_bfx(dir:string):
-    let text = read_file(dir + "/fx.txt")
-    if not text: return
-    for(tokenize(text, "\n", "")) line:
-        let t = filter(tokenize(line, " ", "")): _.length > 0
-        if t.length >= 6 and t[0] == "bfx":
-            def f(k:int) -> float: return string_to_float(t[k])
-            let lights = []::float2
-            if t[4] != "-": lights.push(float2 { f(4), f(5) })
-            var k = 6
-            while k + 1 < t.length:
-                lights.push(float2 { f(k), f(k + 1) })
-                k += 2
-            bfx.set(t[1], BFx { if t[2] != "-": float2 { f(2), f(3) } else: float2_0, t[2] != "-", lights })
-
-def load_pack(dir:string):
-    load_bfx(dir)
-    let text = assert read_file(dir + "/index.txt")
-    for(tokenize(text, "\n", "")) line:
-        let t = filter(tokenize(line, " ", "")): _.length > 0
-        if t.length:
-            def num(k:int) -> int:
-                let v, ok = string_to_int(t[k])
-                assert ok
-                return v
-            switch t[0]:
-                case "sheets":
-                    sheet_size = num(2)
-                    for(num(1)) s:
-                        add_sheet(assert gl.load_texture(dir + "/sheet{s}.png", pack_formats), float2_1 * float(sheet_size))
-                case "frame":
-                    frame_at.set(t[1], frames.length)
-                    frames.push(Frame { num(2), num(3), num(4), num(5), num(6), num(7), num(8), 1.0 })
-                case "anim": anims.set(t[1] + "." + t[2], num(3))
-                case "arch": arch_of.push(t[2])
-                case "look": looks.set(t[1], Look { t[2], [ t[3], t[4], t[5], t[6] ], t[7] })
-                case "arms":
-                    let lk = looks.get(t[1])
-                    if lk: lk.arms = t.slice(2, -1)
-                case "armsf":
-                    let lk = looks.get(t[1])
-                    if lk: lk.arms_front = t.slice(2, -1)
-                case "ruins":
-                    let lk = looks.get(t[1])
-                    if lk: lk.ruins = t.slice(2, -1)
-                case "rules": pack_rules = t[1]
-                case "mods": pack_mods = tokenize(t[1], ",", " ")
-                case "doodad": doodads.set(t[1], num(2))
-                case "prop": prop_of.set(t[1], t[2])
-                case "ground":
-                    ground_a.push(float4 { num(2) / 255.0, num(3) / 255.0, num(4) / 255.0, 1.0 })
-                    ground_b.push(float4 { num(5) / 255.0, num(6) / 255.0, num(7) / 255.0, 1.0 })
-                case "species": species = t.slice(1, -1)
-                case "team": team_rgb.push(float4 { num(2) / 255.0, num(3) / 255.0, num(4) / 255.0, 1.0 })
-                case "voice": voice_of.push(t[2])
-                case "uname": unit_names.set(num(1), spaced(t[2]))
-                case "usound":
-                    unit_blow.set(num(1), t[2])
-                    unit_shot.set(num(1), t[3])
-                case "bname": building_names.set(num(1), spaced(t[2]))
-                case "rname": research_names.set(num(1), spaced(t[2]))
-                case "sound": sounds.set(t[1], Sound { num(2), num(3) / 1000.0, t[4] })
-                case "bus": buses.set(t[1], float(num(2)))
-                case "voicekind": voice_takes.set(t[1], num(2))
-                case "match": pack_map = t[1]
-                case "library": pack_library = true
-                case "prompt": pack_prompts.push(if t.length > 2: spaced(t[2]) else: "")
-                default: pass()
 
 def frame_index(name:string) -> int: return frame_at.get(name, -1)
 
