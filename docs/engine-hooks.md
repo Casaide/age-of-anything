@@ -461,3 +461,13 @@ merge conflict with every engine update. After the easy set plus the unit type s
 split (row 18) and the first rule hooks (rows 12-13), it's a game pack with its own data, factions, lobby and a hook
 or two, with no edited engine files: real work, mostly content, and the building art the largest part until buildings
 are voxels too.
+
+
+## Fixed since (2026-11-03)
+
+- A mod's `data/voxel/` is accepted (`MOD_DATA_DIRS` in `src/gen/mods.lobster`).
+- A data-only mod (no `models` in `mod.json`) compiles: `src/mods_gen.lobster` only chains a builder for a mod that has
+  models (before, the game failed to compile with `build_mod_<id>` unknown).
+- `src/mod_check.lobster` runs on a mod with no `data/parts.json`.
+- The bots skip a build-order step whose building doesn't exist, don't wait for research on a building that doesn't
+  exist, and pick a lane with no spear line (`src/lib/bot.lobster`); before, they read index -1.

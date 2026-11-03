@@ -209,7 +209,7 @@ def build_order_step(bot:Bot, tc:int, workers:[int], count:int):
     for(build_order) step:
         let id = step.building
         let k = btype_named(id)
-        if k >= 0 and bm_lacks[p][k]: continue
+        if k < 0 or bm_lacks[p][k]: continue   // (a building the game or a mod doesn't have: its steps are skipped)
         var prev = 0
         var at = -1
         for(wanted_ids) wid, n:
@@ -312,7 +312,8 @@ def upgrade_lines(bot:Bot, army:[int]):
         let line = r.line_age > 0
         let old = line or (lv_build_up and gather)
         let wait = cfg_list("research.wait_for.{r.id}")
-        if wait.length and not has_building(p, btype_named(wait[0])): continue
+        let wk = if wait.length: btype_named(wait[0]) else: -1
+        if wk >= 0 and not has_building(p, wk): continue   // (waiting on a building that doesn't exist: no wait)
         var listed = false
         for(economy_r) id:
             if id == r.id: listed = true
@@ -1219,7 +1220,8 @@ def full_bot_think(bot:Bot):
     train_healers(bot, tc, army, healers)
     let hx = b_cx[tc] * 1000 + 1500
     let hy = b_cy[tc] * 1000 + 1500
-    bot.aln = if army.length: lane(army[0]) else: lane_base[p] + t_mclass[type_named(p, "spear")]
+    let spear = type_named(p, "spear")
+    bot.aln = if army.length: lane(army[0]) elif spear >= 0: lane_base[p] + t_mclass[spear] else: lane_base[p]
     bot.harea = area_at(bot.eco.reach, bot.aln, hx, hy)
     heroes_think(bot, tc, army, hx, hy)
     let field = filter(army) i: u_id[i] != bot.scout.id and not is_escort(bot.expand, u_id[i]) and not land_breaking(bot.land, i) and not contains(bot.resting, u_id[i])
