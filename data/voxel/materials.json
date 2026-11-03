@@ -102,5 +102,54 @@
  "rope": {
   "rgb": "#b8a070",
   "fur": true
+ },
+ "elephant": {
+  "rgb": "#8a8580",
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.18,
+   "mix": 0.0,
+   "color2": "#000000"
+  }
+ },
+ "heron": {
+  "rgb": "#e2e6e6",
+  "fur": true
+ },
+ "heron_dark": {
+  "rgb": "#7a8490",
+  "fur": true
+ },
+ "beak": {
+  "rgb": "#d8a030"
+ },
+ "mantis": {
+  "rgb": "#7aa040"
+ },
+ "mantis_dark": {
+  "rgb": "#4a6a28"
+ },
+ "boar_hide": {
+  "rgb": "#6e5442",
+  "fur": true
+ },
+ "boar_dark": {
+  "rgb": "#2c2018",
+  "fur": true
+ },
+ "tarantula": {
+  "rgb": "#4a3428",
+  "fur": true
+ },
+ "tarantula2": {
+  "rgb": "#b07a48",
+  "fur": true
+ },
+ "tarantula3": {
+  "rgb": "#c04a20"
  }
 }

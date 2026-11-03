@@ -88,6 +88,19 @@ if args.length > 1 and args[1] == "skins":
     for([ float3 { 0.94, 0.78, 0.63 }, float3 { 0.78, 0.57, 0.35 }, ROMAN ]) c:
         let u = unit("worker", "human", c, c * 0.8, [ "axe", "cap" ], "", float3_0)
         for(vx_looks_of(u)) v: rows.push(row { u, "stand", "scarf", true, v })
+// `engines`: every engine and war beast with its crew (Romans, a rat, a frog), in its first style
+def engine(id:string, crew:vx_unit_def) -> vx_unit_def:
+    let b = vx_body_of(id)
+    return vx_unit_def { id, id, b.style_cols[0], b.style_cols[1], b.style_cols[2], [], "", false, float3_0, float3_0, float3_0, crew }
+if args.length > 1 and args[1] == "engines":
+    while rows.length: rows.pop()
+    let worker = unit("crew", "human", ROMAN, ROMAN2, [ "axe", "cap" ], "", float3_0)
+    let pike = unit("pike", "human", ROMAN, ROMAN2, [ "pike", "scutum", "galea", "lorica" ], "", float3_0)
+    let rat = unit("rat crew", "rat", RAT, RAT2, [ "axe", "cap" ], "", float3_0)
+    for([ "siege.ram", "siege.catapult", "siege.bolt", "siege.tower", "siege.sling", "siege.cart" ]) id, k: rows.push(row { engine(id, if k % 2 == 0: worker else: rat), "stand", "scarf", true, 0 })
+    for([ "siege.beast.elephant", "siege.beast.boar", "siege.beast.heron", "siege.beast.mantis", "siege.beast.tarantula" ]) id: rows.push(row { engine(id, pike), "stand", "scarf", true, 0 })
+    rows.push(row { engine("siege.ram", worker), "walk", "scarf", true, 0 })
+    rows.push(row { engine("siege.beast.elephant", pike), "walk", "scarf", true, 0 })
 // `looks`: the early Romans and the legionary in each of the three looks
 if args.length > 1 and args[1] == "looks":
     while rows.length: rows.pop()
@@ -101,13 +114,16 @@ if args.length > 1 and args[1] == "check":
     let kit = [ "spear", "shield", "cap" ]
     for([ "bear", "spider", "beetle_rear" ]) b: all.push(unit(b, b, float3_0, float3_0, kit, "", float3_0))
     for([ "deer", "boar", "sheep" ]) b: all.push(unit(b, b, float3_0, float3_0, [], "", float3_0))
+    let crew = unit("crew", "human", ROMAN, ROMAN2, [ "axe", "cap" ], "", float3_0)
+    for([ "siege.ram", "siege.catapult", "siege.bolt", "siege.tower", "siege.sling", "siege.cart", "siege.beast.elephant", "siege.beast.boar", "siege.beast.heron", "siege.beast.mantis",
+          "siege.beast.tarantula" ]) id: all.push(engine(id, crew))
     for([ [ "frog", "newt" ], [ "rat", "capybara" ], [ "human", "bear_mount" ], [ "rat", "beetle" ], [ "frog", "spider" ] ]) pr: all.push(unit("{pr[0]} on a {pr[1]}", pr[0], float3_0, float3_0, kit, pr[1], float3_0))
     for(filter(all) u: not vx_flies(u)) u:  // (a flier's shadow is on the ground under it)
         vx_set_look(u, 0)
         vx_act = ""
         for(9) st:
             vx_stand = st == 0  // (step 0: standing, as the game's idle frames, every foot planted; then the walk)
-            let g = vx_fill(vx_unit_prims(u, float(max(0, st - 1)) * 45.0), vx_size_of(u), vx_flies(u))
+            let g = vx_fill(vx_unit_prims(u, float(max(0, st - 1)) * 45.0), vx_size_of(u), vx_on_zero(u, false))
             for(8) f:
                 let cell = copy(vx_cell(g, f))
                 let sc = vx_ground_shadow(g, f)
@@ -134,7 +150,7 @@ else:  // the sheet
         vx_stand = rw.mode != "walk"
         if rw.mode == "stand":
             let t = seconds_elapsed()
-            let stand = vx_fill(vx_unit_prims(u, 0.0), vx_size_of(u), vx_flies(u))
+            let stand = vx_fill(vx_unit_prims(u, 0.0), vx_size_of(u), vx_on_zero(u, false))
             fills += seconds_elapsed() - t
             for(8) c: vx_draw(stand, (c + 3) % 8, img, iw, c * step, r * vx_CELL.y)  // (columns as the composed sheet's)
         elif rw.mode == "die":                                                       // (as the game bakes it: 6 steps; the first four facing right, then lying in two more)
@@ -143,7 +159,7 @@ else:  // the sheet
                 let g = vx_fill(vx_fallen(vx_unit_prims(u, 0.0), float(st + 1) / 6.0), vx_size_of(u), false)
                 vx_draw(g, if k < 6: 2 else: (if k == 6: 0 else: 5), img, iw, k * step, r * vx_CELL.y)
         else:
-            for(8) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 45.0), vx_size_of(u), vx_flies(u)), 2, img, iw, k * step, r * vx_CELL.y)
+            for(8) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 45.0), vx_size_of(u), vx_on_zero(u, false)), 2, img, iw, k * step, r * vx_CELL.y)
         print "{u.label} ({rw.mode}): drawn"
     print "{rows.length} rows in {seconds_elapsed() - t0} s ({fills} s filling the standing ones)"
     let ppm = "P6\n{iw} {ih}\n255\n"

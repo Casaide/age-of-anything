@@ -1,0 +1,26 @@
+{
+ "_doc": "A trade cart: a plank bed on two big wheels, piled with sacks, a crate and a barrel, a pennant; its trader walking between the shafts. Its style: frame (skin), iron (pale), sacks (mark).",
+ "size": 1.2,
+ "styles": {"timber": {"skin": "#8c6133", "pale": "#4a4a50", "mark": "#9a7a50"}, "junk": {"skin": "#7a6a58", "pale": "#8a5a3a", "mark": "#8a9098"}, "frog": {"skin": "#8a8a40", "pale": "#4f5e2a", "mark": "#5e8a3a"}, "forest": {"skin": "#6b4a2a", "pale": "#3e4a2c", "mark": "#4a6a30"}, "spooky": {"skin": "#d8d0bc", "pale": "#3a3238", "mark": "#5a3a5a"}},
+ "crew": [[0.0,31.0,0.0]],
+ "points": {"o": {"at": [0, 0, 0]}},
+ "shapes": [
+  {"box":["o",0.0,0.0,10.0],"half":[8.0,12.0,1.0],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"box":["o",-8.4,0.0,13.0],"half":[12.0,0.6,3.0],"mat":"frame","n":[1.0,0.0,0.0],"round":0.2},
+  {"box":["o",8.4,0.0,13.0],"half":[12.0,0.6,3.0],"mat":"frame","n":[1.0,0.0,0.0],"round":0.2},
+  {"box":["o",0.0,-12.4,13.0],"half":[8.0,0.6,3.0],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"box":["o",0.0,12.4,13.0],"half":[8.0,0.6,3.0],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"disc":["o",-10.0,-2.0,7.0],"mat":"frame2","n":[1.0,0.0,0.0],"r":[7.0,1.1]},
+  {"disc":["o",-10.6,-2.0,7.0],"mat":"frame","n":[1.0,0.0,0.0],"r":[2.1,1.0]},
+  {"disc":["o",10.0,-2.0,7.0],"mat":"frame2","n":[1.0,0.0,0.0],"r":[7.0,1.1]},
+  {"disc":["o",10.6,-2.0,7.0],"mat":"frame","n":[1.0,0.0,0.0],"r":[2.1,1.0]},
+  {"cap":["o",4.0,12.0,10.0],"hard":true,"mat":"frame","r":[0.7,0.6],"to":["o",4.0,28.0,8.5]},
+  {"cap":["o",-4.0,12.0,10.0],"hard":true,"mat":"frame","r":[0.7,0.6],"to":["o",-4.0,28.0,8.5]},
+  {"ball":["o",-3.0,-5.0,15.0],"hard":false,"mat":"trim","r":3.6},
+  {"ball":["o",2.0,-7.0,14.5],"hard":false,"mat":"trim","r":3.0},
+  {"box":["o",3.0,4.0,14.0],"half":[3.0,3.0,3.0],"mat":"frame","n":[0.2,1.0,0.0],"round":0.2},
+  {"cap":["o",-3.5,6.0,11.5],"hard":false,"mat":"frame2","r":[2.6,2.6],"to":["o",-3.5,6.0,18.0]},
+  {"cap":["o",-7.0,-11.0,11.0],"hard":true,"mat":"frame","r":[0.4,0.4],"to":["o",-7.0,-11.0,26.0]},
+  {"box":["o",-7.0,-9.0,24.0],"half":[2.0,0.3,1.6],"mat":"team","n":[1.0,0.0,0.0],"round":0.2}
+ ]
+}

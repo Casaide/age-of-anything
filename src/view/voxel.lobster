@@ -8,7 +8,7 @@
 let vx_ELEV = 30.0                                                      // the camera's elevation, degrees
 let vx_RES = 2.0                                                        // voxels a body unit (a body unit is about a world pixel; a voxel a baked pixel)
 let vx_CELL = int2 { int(100.0 * vx_RES), int(130.0 * vx_RES) }         // a sprite cell (room for a siege tower; each is cropped to what's drawn)
-let vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(14.0 * vx_RES) }  // the ground under the unit, in its cell
+let vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(40.0 * vx_RES) }  // the ground under the unit, in its cell (room in front: a cart's puller, a trunk)
 let vx_BLEND = 0.8                                                      // how far body parts melt into each other, body units (round 1's 2.2 made muscles)
 
 class vx_prim:
@@ -835,6 +835,10 @@ def vx_fallen(parts:[vx_prim], t:float) -> [vx_prim]:
 // Does the unit fly (its body's, or its mount's)? Its ground isn't under its lowest point.
 def vx_flies(u:vx_unit_def) -> bool: return vx_body_of(u.body).flies > 0.0 or (u.mount != "" and vx_body_of(u.mount).flies > 0.0)
 
+// Is the unit's ground its body's z 0 (a flier's: not under its lowest point; an engine's or a war beast's: under its
+// wheels and feet, not its crew's)? A fall lies on the ground (not a flier's).
+def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and not falling) or u.crew != nil
+
 // The unit's size: its body's (a mount is scaled to it).
 def vx_size_of(u:vx_unit_def) -> float: return vx_body_of(u.body).size
 
@@ -1243,7 +1247,7 @@ def vx_halo(cw:int, ch:int):
 // One facing's shadow on the ground (the sun's, as the world's props and buildings cast it): a cell of its own, drawn
 // under every unit. vx_SCELL wide and high round vx_SANCHOR; drawn in vx_sbox; reused by the next call.
 let vx_SCELL = int2 { vx_CELL.x * 2, vx_CELL.y }
-let vx_SANCHOR = int2 { vx_SCELL.x / 2 - int(14.0 * vx_RES), vx_SCELL.y - int(30.0 * vx_RES) }
+let vx_SANCHOR = int2 { vx_SCELL.x / 2 - int(14.0 * vx_RES), vx_SCELL.y - int(44.0 * vx_RES) }
 let vx_SHADOW = float4 { 0.05, 0.04, 0.02, 0.5 }
 var vx_sout = []::float4
 var vx_sbox = int4_0

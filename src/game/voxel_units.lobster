@@ -64,7 +64,7 @@ def vx_engine_made(r:JV) -> bool: return not has(r, "crew") or starts_with(vx_bo
 // An engine's colours in its style (the body's `styles`, by the id's last part; else its first).
 def vx_style_of(body:string, body_id:string) -> float3, float3, float3:
     let b = vx_body_of(body)
-    let style = body_id.substring(body.length + 1, max(0, body_id.length - body.length - 1))
+    let style = if body_id.length > body.length + 1: body_id.substring(body.length + 1, body_id.length - body.length - 1) else: ""
     var k = find(b.style_names) n: n == style
     if k < 0: k = 0
     return b.style_cols[k * 3], b.style_cols[k * 3 + 1], b.style_cols[k * 3 + 2]
@@ -239,7 +239,7 @@ def vx_job_step(j:vx_job, until:float) -> bool:
             if m == VX_DIE: parts = vx_fallen(parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
             vx_act = ""
             vx_stand = false
-            j.filling = vx_fill_begin(parts, vx_size_of(u), vx_flies(u) and m != VX_DIE)
+            j.filling = vx_fill_begin(parts, vx_size_of(u), vx_on_zero(u, m == VX_DIE))
     return false
 
 // A job done: its atlas made a sheet and its frames published; kept in the cache by vx_save (in play, a frame of its
@@ -453,7 +453,9 @@ def vx_frame_for(id:int, k:int, state:string, d:int, n:int) -> int:
     let f = (d + 2) % 8  // (facing 2 faces screen right)
     let m = if state == "attack": VX_ATTACK elif state == "walk" or find_string(state, "carry") == 0: VX_WALK elif find_string(state, "work") == 0: VX_WORK else: VX_IDLE
     let st = if m == VX_IDLE: 0 elif m == VX_ATTACK: min(n, 7) else: n % 8
-    return vx_frame(lk, vx_look_v(id, lk), m, f, st)
+    let fr = vx_frame(lk, vx_look_v(id, lk), m, f, st)
+    if fr < 0: vx_want(lk)  // (drawn before it's baked: a unit of a later age put down, asked for first)
+    return fr
 
 // A dead unit's frame, t seconds after it fell: its fall, then lying.
 def vx_dead_frame(id:int, k:int, d:int, t:float) -> int:
