@@ -65,6 +65,9 @@ PIXELFUNCTIONS
         return 0.94 + 0.12 * (m - 0.5) - 0.18 * clamp((m - 0.68) * 3.0, 0.0, 1.0) + 0.05 * (uinoise(vec2(p.x * 0.3, p.y * 0.04) + 52.0) - 0.5);
     }
 
+    // the materials at a little over half the strength they were painted with (Dominic: the pause menu's texture was
+    // a bit much): the grain stays, behind the words rather than over them
+    float uiflat(float v) { return 0.8 + (v - 0.8) * 0.55; }
     // the painted materials of src/view/ui/ui_materials.gd, by kind: 0 wood, 1 bronze, 2 gold, 3 iron, 4 marble,
     // 5 stone, 6 sandstone, 7 parchment, 8 felt, 9 leather, 10 reed, 11 lacquer, 12 bone
     vec3 uipaint(vec3 c, int k, vec2 p) {
@@ -83,7 +86,7 @@ PIXELFUNCTIONS
         } else if (k == 3) {   // iron: hammered and darker, rust blooming in patches
             v = uimetal(p, 0.9, 25.0);
             float r = clamp((uifbm(p * 0.02 + 26.0) - 0.6) * 2.5, 0.0, 0.35);
-            return mix(uitone(c, v), vec3(0.478, 0.243, 0.11), r);
+            return mix(uitone(c, uiflat(v)), vec3(0.478, 0.243, 0.11), r * 0.55);
         } else if (k == 4) {   // marble: pale clouds, thin dark veins on a warped sine
             float w = uifbm(p * 0.008 + 31.0);
             float vein = abs(sin((p.x + p.y) * 6.2832 / 256.0 + w * 14.0));
@@ -112,7 +115,7 @@ PIXELFUNCTIONS
             v = uiparchment(p);
             if (uinoise(p * 0.45 + 95.0) > 0.78) v *= 0.75;
         }
-        return uitone(c, v);
+        return uitone(c, uiflat(v));
     }
 
 SHADER uimat
