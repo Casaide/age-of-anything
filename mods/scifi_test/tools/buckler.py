@@ -3,7 +3,7 @@
 #   blender -b --python mods/scifi_test/tools/buckler.py -- mods/scifi_test/models/buckler.glb
 # Modelled in the game's part units, facing +X, up +Z (glTF turns it into the game's +X forward, +Y
 # up); built round the off hand, its face turned out and towards the viewer like the game's shields.
-# Materials are named for what the game puts there (src/mods.gd, UnitModels.mod_materials): "iron"
+# Materials are named for what the game puts there (src/model/glb.lobster): "iron"
 # (a game texture), "team" (the team colour), "glow_7fe6ff" (lit, unshaded).
 import sys
 import bpy
