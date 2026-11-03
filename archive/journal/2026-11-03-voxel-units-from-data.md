@@ -193,3 +193,23 @@ positions; town life without views; then the files, with a read-only survey firs
 still share (the depth and occlusion shaders, `pixelize`, the model kit, the bake settings, now
 `view/bake_cache.lobster`). A small pass then took out every definition left that nothing used. Golden stayed the
 same in every section (the buildings' digest too), less its models section.
+
+## Milestone 24 begun: buildings and props as voxels (D-203)
+
+The pediment first: its gable was two thick slabs tilted to the roof ("some weird angles", Dominic); now a vertical
+triangle of level courses at the roof's slope, a level base cornice and raking cornices under the roof's edges
+(picture 40). Then, as Dominic picked (C: the models voxelized for coverage, voxel data culture by culture after):
+
+- `view/voxel_mesh.lobster` rasterizes a model's triangles into a shell of voxels (1.5 art px a voxel), each the
+  colour its material gives there (its texture sampled, triplanar where it is; a lit material glows), drawn with the
+  voxel units' light, shadow, occlusion and outline, in the old baker's frame exactly. So every look, construction and
+  broken-up stage, near layer, wall arm, gate tower and prop bakes as voxels through the art kits unchanged.
+- Speed: the light worked out only for the voxels that show, and the fill sampling at 0.7 a voxel with the last
+  voxel remembered: a Town Center (720,000 voxels) 7 s -> 1.9 s, a house 0.33 s. The prebake (every architecture:
+  1,868 frames) 23 min on the build machine, shipped as 104 MB; a warm start 5-6 s in all, the buildings 6 ms.
+- `vbcheck` (a game option): every look of every architecture as voxels: no specks (none), and the model's team
+  colour in sight. 16 looks keep theirs out of sight by the model's own doing (the same camera as the old bake): a
+  house variant's shutters behind its cypress, the mills', the diagonal gates' bands facing away. Listed for the art
+  review. (On the way: the first threshold took shaded magenta for no team at all; then walls, farms and palisades,
+  which carry none by design.)
+- Pictures 41-42 (Romans, frogs in a match), 43 (stone, junk and thatch buildings voxelized).

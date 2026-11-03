@@ -76,7 +76,7 @@ def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
             let fs = rec
             if not err and fs and ak_load_frames(fs): return
     bake_breath()
-    let sprite, w, h, anchor = world_bake(model, shadow, reach)
+    let sprite, w, h, anchor = voxel_bake(model, shadow)  // (D-203: as voxels)
     let kept = []::AkFrame
     if reach > 1.0:
         let art, shade = split_shadow(sprite, w, h)
