@@ -81,6 +81,12 @@ if args.length > 2 and args[1] == "legs":
     let u = if b == "human": units[1] elif b == "rat": units[1 - 1] elif b == "cat": units[2] elif b == "pony": units[9] else: unit(b, b, float3_0, float3_0, [ "spear", "shield", "cap" ], "", float3_0)
     let lu = if b == "rat": units[1] else: u
     for([ "stand", "walk", "attack" ]) m: rows.push(row { if b == "human": units[5] else: lu, m, "scarf", true, 0 })
+// `skins`: a worker in each human palette, each look (no skin may clip to white)
+if args.length > 1 and args[1] == "skins":
+    while rows.length: rows.pop()
+    for([ float3 { 0.94, 0.78, 0.63 }, float3 { 0.78, 0.57, 0.35 }, ROMAN ]) c:
+        let u = unit("worker", "human", c, c * 0.8, [ "axe", "cap" ], "", float3_0)
+        for(vx_looks_of(u)) v: rows.push(row { u, "stand", "scarf", true, v })
 // `looks`: the early Romans and the legionary in each of the three looks
 if args.length > 1 and args[1] == "looks":
     while rows.length: rows.pop()
