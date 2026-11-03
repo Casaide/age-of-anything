@@ -30,7 +30,7 @@ let img = map(iw * ih): float3 { 86.0, 120.0, 46.0 } / 255.0
 let t0 = seconds_elapsed()
 for(NAMES) name, r:
     let b = vx_body_of(name)
-    let u = vx_unit_def { name, name, float3_0, float3_0, float3_0, [], "", false, float3_0, float3_0, float3_0 }
+    let u = vx_unit_def { name, name, float3_0, float3_0, float3_0, [], "", false, float3_0, float3_0, float3_0, nil }
     vx_set_look(u, 0)
     let parts = []::vx_prim
     vx_whole_body(parts, u, b, vx_body_points(b, 0.0, float3_0), 0.0, 0.0, vx_flags_of(u))

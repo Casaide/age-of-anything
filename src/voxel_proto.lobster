@@ -24,7 +24,7 @@ let ROMAN2 = float3 { 0.35, 0.20, 0.13 }
 let RAT = float3 { 0.48, 0.35, 0.25 }  // (rat_brown)
 let RAT2 = float3 { 0.78, 0.66, 0.58 }
 def unit(label:string, body:string, skin:float3, pale:float3, gear:[string], mount:string, coat:float3) -> vx_unit_def:
-    return vx_unit_def { label, body, skin, pale, float3_0, gear, mount, false, coat, coat * 0.45, float3_0 }
+    return vx_unit_def { label, body, skin, pale, float3_0, gear, mount, false, coat, coat * 0.45, float3_0, nil }
 let units = [
     unit("rat worker", "rat", RAT, RAT2, [ "axe", "cap" ], "", float3_0),
     unit("rat spear", "rat", RAT, RAT2, [ "spear", "shield", "cap" ], "", float3_0),

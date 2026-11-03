@@ -49,16 +49,36 @@ def vx_palette(id:string) -> float3, float3, float3:
     def c(i:int) -> float3: return if i < cs.length: xyz(hex_col(hex_of(cs[i]))) else: float3_0
     return c(0), c(1), c(2)
 
-// The voxel body for a body id (bodies/<id>.json without the "body."), or its creature's, or a human's.
+// The voxel body for a body id (bodies/<id>.json without the "body."; an engine's, siege.<kind>.<style>, its kind's),
+// or its creature's, or a human's.
 def vx_body_for(body_id:string, creature:string) -> string:
     let id = if starts_with(body_id, "body."): body_id.substring(5, body_id.length - 5) else: body_id
-    return if vx_bodies.get(id): id elif vx_bodies.get(creature): creature else: "human"
+    if vx_bodies.get(id): return id
+    let dot = find_string_reverse(id, ".")
+    if starts_with(id, "siege.") and dot > 6 and vx_bodies.get(id.substring(0, dot)): return id.substring(0, dot)
+    return if vx_bodies.get(creature): creature else: "human"
+
+// Has the voxel kit an engine (or war beast) for this recipe? (Until it has, the composed one is drawn.)
+def vx_engine_made(r:JV) -> bool: return not has(r, "crew") or starts_with(vx_body_for(rstr(r, "body"), ""), "siege.")
+
+// An engine's colours in its style (the body's `styles`, by the id's last part; else its first).
+def vx_style_of(body:string, body_id:string) -> float3, float3, float3:
+    let b = vx_body_of(body)
+    let style = body_id.substring(body.length + 1, max(0, body_id.length - body.length - 1))
+    var k = find(b.style_names) n: n == style
+    if k < 0: k = 0
+    return b.style_cols[k * 3], b.style_cols[k * 3 + 1], b.style_cols[k * 3 + 2]
 
 // A recipe as a voxel body and gear: its body (bodies/<body id>.json), the race's colours, each part's gear by
 // gear.json's rules, its mount (its mount body, in its own colours).
 def vx_def_of(r:JV) -> vx_unit_def:
-    let body = vx_body_for(rstr(r, "body"), rstr(r, "creature"))
-    let skin, pale, mark = vx_palette(rstr(r, "skin"))
+    let body = vx_body_for(rstr(r, "body"), gstr(r, "creature", ""))
+    var skin, pale, mark = vx_palette(gstr(r, "skin", ""))
+    var crew:vx_unit_def? = nil
+    if has(r, "crew"):  // an engine or a war beast: its frame in its style, its crew in their own colours
+        assert vx_body_of(body).style_names.length
+        skin, pale, mark = vx_style_of(body, rstr(r, "body"))
+        crew = vx_def_of(at(r, "crew"))
     let gear = []::string
     let parts = gobj(r, "parts")
     for(sorted_strs(parts.keys)) slot:
@@ -75,7 +95,13 @@ def vx_def_of(r:JV) -> vx_unit_def:
         fused = gbool(mo, "fused", false)
         mount = vx_body_for(gstr(c, "mount_body", gstr(c, "body", "")), mc)
         coat, mane, coat_mark = vx_palette(rstr(mo, "skin"))
-    return vx_unit_def { rstr(r, "name"), body, skin, pale, mark, gear, mount, fused, coat, mane, coat_mark }
+    return vx_unit_def { gstr(r, "name", ""), body, skin, pale, mark, gear, mount, fused, coat, mane, coat_mark, crew }
+
+// The look key of a unit def (what it's drawn as), its crew's too.
+def vx_key_of(u:vx_unit_def) -> string:
+    let c = u.crew
+    let ck = if c: " crew \{" + vx_key_of(c) + "\}" else: ""
+    return "{u.body} {u.skin} {u.pale} {u.mark} {u.gear} {u.mount} {u.fused} {u.coat} {u.mane} {u.coat_mark}{ck}"
 
 // How far a foot swings out from under the hip, body units (the body's, or its mount's).
 def vx_reach(u:vx_unit_def) -> float:
@@ -86,7 +112,7 @@ def vx_reach(u:vx_unit_def) -> float:
 def vx_look_for(r:JV) -> int:
     let u = vx_def_of(r)
     let worker = gstr(r, "role", "") == "worker"
-    let key = "{u.body} {u.skin} {u.pale} {u.mark} {u.gear} {u.mount} {u.fused} {u.coat} {u.mane} {u.coat_mark} {worker}"
+    let key = vx_key_of(u) + " {worker}"
     let have = vx_lk_ids.get(key, -1)
     if have >= 0: return have
     // a cycle of 8 steps is a stride (the body moves its foot's reach twice each half cycle, the planted foot fixed),
@@ -178,6 +204,7 @@ def vx_job_step(j:vx_job, until:float) -> bool:
     let l = vx_lks[j.lk]
     let u = l.u
     vx_set_look(u, j.v)  // (every slice: a figure baked between them sets its own colours)
+    vx_pat_scale = vx_RES * vx_size_of(u)
     while seconds_elapsed() < until:
         let fl = j.filling
         let sh = j.shape
@@ -206,7 +233,7 @@ def vx_job_step(j:vx_job, until:float) -> bool:
             if m == VX_WORK:  // (work: chopping; what it wears kept)
                 let tools = [ "axe" ]
                 for(u.gear) g: if vx_worn_gear(g): tools.push(g)
-                wu = vx_unit_def { u.label, u.body, u.skin, u.pale, u.mark, tools, u.mount, u.fused, u.coat, u.mane, u.coat_mark }
+                wu = vx_unit_def { u.label, u.body, u.skin, u.pale, u.mark, tools, u.mount, u.fused, u.coat, u.mane, u.coat_mark, u.crew }
             var parts = vx_unit_prims(wu, if m == VX_DIE: 0.0 else: float(pose.y) * 45.0)
             if m == VX_DIE: parts = vx_fallen(parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
             vx_act = ""
@@ -313,14 +340,15 @@ def vx_start():
         let lks = []::int
         for(max(1, line.length)) s:
             let r = if s < line.length: at(line[s], "recipe") else: su_type_recipe[k]
-            if has(r, "crew"): lks.push(-1)  // (composed)
-            else:
-                let lk = vx_look_for(r)
-                lks.push(lk)
-                let age = if line.length: as_int(at(line[s], "age")) else: t_age[k]
-                let ahead = max(0, age - (if t_player[k] >= 0 and t_player[k] < ages.length: ages[t_player[k]] else: 1))
-                while by_age.length <= ahead: by_age.push([])
-                if (find(by_age[ahead]) x: x == lk) < 0: by_age[ahead].push(lk)
+            if not vx_engine_made(r):
+                lks.push(-1)
+                continue
+            let lk = vx_look_for(r)
+            lks.push(lk)
+            let age = if line.length: as_int(at(line[s], "age")) else: t_age[k]
+            let ahead = max(0, age - (if t_player[k] >= 0 and t_player[k] < ages.length: ages[t_player[k]] else: 1))
+            while by_age.length <= ahead: by_age.push([])
+            if (find(by_age[ahead]) x: x == lk) < 0: by_age[ahead].push(lk)
         vx_type_lks.push(lks)
         vx_cur.push(lks[0])
     let now = []::vx_job
@@ -357,7 +385,7 @@ def vx_refresh():
             let line = su_type_line[k]
             for(max(1, line.length)) s:
                 let r = if s < line.length: at(line[s], "recipe") else: su_type_recipe[k]
-                if s < vx_type_lks[k].length: vx_type_lks[k][s] = if has(r, "crew"): -1 else: vx_look_for(r)
+                if s < vx_type_lks[k].length: vx_type_lks[k][s] = if vx_engine_made(r): vx_look_for(r) else: -1
     vx_type_gen = type_gen
     for(vx_cur) cur, k:
         let lks = vx_type_lks[k]
@@ -439,8 +467,8 @@ def vx_figure(recipe:JV) -> int: return vx_figure_facing(recipe, float2_1)
 
 // The same, facing screen direction `to` (a canvas vector: the lobby's armies face each other).
 def vx_figure_facing(recipe:JV, to:float2) -> int:
-    if has(recipe, "crew"): return -1
     vx_init()
+    if not vx_engine_made(recipe): return -1
     let lk = vx_look_for(recipe)
     if not vx_ready(lk):
         vx_want(lk)

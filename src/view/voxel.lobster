@@ -7,7 +7,7 @@
 
 let vx_ELEV = 30.0                                                      // the camera's elevation, degrees
 let vx_RES = 2.0                                                        // voxels a body unit (a body unit is about a world pixel; a voxel a baked pixel)
-let vx_CELL = int2 { int(52.0 * vx_RES), int(74.0 * vx_RES) }           // a sprite cell
+let vx_CELL = int2 { int(100.0 * vx_RES), int(130.0 * vx_RES) }         // a sprite cell (room for a siege tower; each is cropped to what's drawn)
 let vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(14.0 * vx_RES) }  // the ground under the unit, in its cell
 let vx_BLEND = 0.8                                                      // how far body parts melt into each other, body units (round 1's 2.2 made muscles)
 
@@ -234,8 +234,12 @@ class vx_body_spec:
     astride:[int]
     seat:float3  // a mount: where its rider sits, how far out its rider's knees go
     wide:float
-    looks:[float]  // per look: the skin shade
-    hair:[float3]  // and hair colour
+    looks:[float]              // per look: the skin shade
+    hair:[float3]              // and hair colour
+    crew:[float3] = []         // an engine: where its crew stand (on their own legs, walking as it moves)
+    seats:[float3] = []        // a war beast: where its crew sit (a howdah), at their seat height
+    style_names:[string] = []  // an engine in each culture's style (siege.<kind>.<style>): its skin, pale, mark
+    style_cols:[float3] = []
 
 class vx_hold_spec:
     rest:float3
@@ -323,6 +327,12 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
     if has(o, "looks"):
         b.looks = map(glist(o, "looks")) l: gfloat(l, "skin", 1.0)
         b.hair = map(glist(o, "looks")) l: vx_hex(gstr(l, "hair", "#1f1714"))
+    b.crew = map(glist(o, "crew")) v: vx_v3(v)
+    b.seats = map(glist(o, "seats")) v: vx_v3(v)
+    let so = gobj(o, "styles")
+    for(so.keys) name, k:
+        b.style_names.push(name)
+        for([ "skin", "pale", "mark" ]) c: b.style_cols.push(vx_hex(gstr(so.a[k], c, "#808080")))
     return b
 
 def gfloat(o:JV, k:string, fallback:float) -> float: return if has(o, k): as_float(at(o, k)) else: fallback
@@ -394,10 +404,36 @@ def vx_load(dirs:[string]):
             for(sorted_strs(names)) n:
                 if ends_with(n, ".json"):
                     let id = substring(n, 0, n.length - 5)
-                    let o = parse_json(assert read_file(d + "/bodies/" + n))
+                    let o = vx_based(d, parse_json(assert read_file(d + "/bodies/" + n)))
                     let b = vx_parse_body(id, o)
                     vx_bodies.set(id, b)
                     for(gstrs(o, "also")) a: vx_bodies.set(a, b)  // (other body ids drawn the same, their palettes apart)
+
+// A body built on another (its `base`, in the same folder): the base's fields, this one's over them, and its
+// `add_shapes` after the base's shapes (a war boar: the boar, bigger, with a howdah and seats).
+def vx_based(d:string, o:JV) -> JV:
+    if not has(o, "base"): return o
+    let b = vx_based(d, parse_json(assert read_file(d + "/bodies/" + gstr(o, "base", "") + ".json")))
+    for(o.keys) k, i:
+        if k != "base" and k != "add_shapes": set(b, k, o.a[i])
+    let ss = glist(b, "shapes")
+    for(glist(o, "add_shapes")) x: ss.push(x)
+    set(b, "shapes", jarr(ss))
+    if has(o, "remap"): vx_remap(b, at(o, "remap"))
+    return b
+
+// Every material named in a body (its shapes', its legs'), renamed by `remap` (an engine built on a creature: its
+// skin is its crew's, so the creature's skin becomes a hide of its own).
+def vx_remap(v:JV, remap:JV) -> void:
+    if v.kind == J_ARR:
+        for(v.a) x: vx_remap(x, remap)
+    elif v.kind == J_OBJ:
+        for(v.keys) k, i:
+            let x = v.a[i]
+            if (k == "mat" or k == "base_mat") and x.kind == J_STR and has(remap, x.s): v.a[i] = at(remap, x.s)
+            elif k == "mats" and x.kind == J_ARR:
+                for(x.a) m, n: if m.kind == J_STR and has(remap, m.s): x.a[n] = at(remap, m.s)
+            elif k != "remap": vx_remap(x, remap)
 
 // The data's text (every file read): part of the bake cache's key, so a change to the data bakes again.
 def vx_data_text() -> string:
@@ -436,6 +472,7 @@ class vx_unit_def:
     coat:float3    // the mount's colours (zero: its body's)
     mane:float3
     coat_mark:float3
+    crew:vx_unit_def?  // an engine's or a war beast's crew (each of its body's crew spots and seats)
 
 var vx_variant = 0          // the look being built
 var vx_seated = false       // a rider being built: no legs of its own (shapes with `unless: seated` left off)
@@ -444,8 +481,15 @@ var vx_act = ""             // the pose being drawn: "" (standing or walking) or
 
 def vx_looks_of(u:vx_unit_def) -> int: return vx_body_of(u.body).looks.length
 
-// The materials for unit u in look v (its mount's coat too).
-def vx_set_look(u:vx_unit_def, v:int):
+// The materials for unit u in look v (its mount's coat too; an engine's frame in its style, its crew's own colours).
+def vx_set_look(u:vx_unit_def, v:int) -> void:
+    let c = u.crew
+    if c:
+        vx_set_look(c, v % vx_looks_of(c))
+        vx_mat_cols[vx_mat("frame")] = u.skin
+        vx_mat_cols[vx_mat("frame2")] = u.pale
+        vx_mat_cols[vx_mat("trim")] = u.mark
+        return
     let b = vx_body_of(u.body)
     vx_variant = v
     let skin = if u.skin != float3_0: u.skin else: b.skin
@@ -687,6 +731,33 @@ def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:
 
 // A whole unit's parts, walking at phase ph0 (degrees) or, when acting, at ph0 / 360 through the act.
 def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
+    let out = vx_rider_prims(u, ph0)
+    let c = u.crew
+    if c: vx_crew_prims(out, u, c, ph0)
+    return out
+
+// An engine's or a war beast's crew: one on each crew spot (standing, walking with it, at work when it acts) and seat
+// (sat in its howdah), each at its own size.
+def vx_crew_prims(out:[vx_prim], u:vx_unit_def, c:vx_unit_def, ph0:float):
+    let b = vx_body_of(u.body)
+    let cb = vx_body_of(c.body)
+    let ms = cb.size / b.size
+    let ph = if vx_act == "": ph0 else: 0.0
+    let t = ph0 / 360.0
+    let ps = []::vx_prim
+    for(b.crew) at:
+        vx_whole_body(ps, c, cb, vx_body_points(cb, ph, float3_0), ph, t, vx_flags_of(c))
+        for(ps) q: out.push(vx_prim { q.a * ms + at, q.b * ms + at, q.ra * ms, q.rb * ms, q.mat, q.hard, q.disc, q.box * ms })
+        while ps.length: ps.pop()
+    vx_seated = true
+    for(b.seats) at:
+        vx_whole_body(ps, c, cb, vx_body_points(cb, 0.0, float3 { 0.0, 0.0, -cb.seat_z }), 0.0, t, vx_flags_of(c))
+        for(ps) q: out.push(vx_prim { q.a * ms + at, q.b * ms + at, q.ra * ms, q.rb * ms, q.mat, q.hard, q.disc, q.box * ms })
+        while ps.length: ps.pop()
+    vx_seated = false
+
+// A unit and its mount (without a crew).
+def vx_rider_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     let out = []::vx_prim
     let ph = if vx_act == "": ph0 else: 0.0
     let t = ph0 / 360.0
@@ -698,7 +769,7 @@ def vx_unit_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     // on a fused mount (a centaur) the rider's body grows out of it
     let mb = vx_body_of(u.mount)
     let mount = []::vx_prim
-    let mu = vx_unit_def { u.label, u.mount, float3_0, float3_0, float3_0, [], "", false, float3_0, float3_0, float3_0 }
+    let mu = vx_unit_def { u.label, u.mount, float3_0, float3_0, float3_0, [], "", false, float3_0, float3_0, float3_0, nil }
     let fused = u.fused
     assert not fused or mb.fused_pt != ""
     let mp = vx_body_points(mb, ph, float3_0)
