@@ -24,7 +24,7 @@ let ROMAN2 = float3 { 0.35, 0.20, 0.13 }
 let RAT = float3 { 0.48, 0.35, 0.25 }     // (rat_brown)
 let RAT2 = float3 { 0.78, 0.66, 0.58 }
 def unit(label:string, body:string, skin:float3, pale:float3, gear:[string], mount:string, coat:float3) -> vx_unit_def:
-    return vx_unit_def { label, body, skin, pale, gear, mount, coat }
+    return vx_unit_def { label, body, skin, pale, float3_0, gear, mount, false, coat, coat * 0.45, float3_0 }
 let units = [
     unit("rat worker", "rat", RAT, RAT2, [ "axe", "cap" ], "", float3_0),
     unit("rat spear", "rat", RAT, RAT2, [ "spear", "shield", "cap" ], "", float3_0),
@@ -53,6 +53,17 @@ let out_path = if args.length: args[0] else: "voxel_proto.ppm"
 if args.length > 1 and args[1] == "romans":
     while rows.length: rows.pop()
     for([ units[5], units[6], units[11], units[12] ]) u: rows.push(row { u, "stand", "scarf", true, 0 })
+// `creatures`: every creature as a soldier, and every mount ridden
+if args.length > 1 and args[1] == "creatures":
+    while rows.length: rows.pop()
+    let kit = [ "spear", "shield", "cap" ]
+    for([ "human", "rat", "frog", "bear", "spider", "beetle_rear" ]) b: rows.push(row { unit(b, b, float3_0, float3_0, kit, "", float3_0), "stand", "scarf", true, 0 })
+    let centaur = unit("centaur", "human", float3_0, float3_0, [ "spear", "shield" ], "pony", float3 { 0.66, 0.66, 0.63 })
+    centaur.fused = true
+    rows.push(row { centaur, "stand", "scarf", true, 0 })
+    for([ [ "rat", "cat" ], [ "human", "pony" ], [ "frog", "newt" ], [ "rat", "capybara" ], [ "human", "bear_mount" ], [ "rat", "beetle" ], [ "frog", "spider" ], [ "rat", "hummingbird" ] ]) pr:
+        rows.push(row { unit("{pr[0]} on a {pr[1]}", pr[0], float3_0, float3_0, kit, pr[1], float3_0), "stand", "scarf", true, 0 })
+    rows.push(row { unit("spider", "spider", float3_0, float3_0, kit, "", float3_0), "walk", "scarf", true, 0 })
 // `looks`: the early Romans and the legionary in each of the three looks
 if args.length > 1 and args[1] == "looks":
     while rows.length: rows.pop()
@@ -62,11 +73,15 @@ let step = vx_CELL.x * 3 / 2  // a column (room for the shadows)
 if args.length > 1 and args[1] == "check":
     var bad = 0
     var n = 0
-    for(units) u:
+    let all = copy(units)
+    let kit = [ "spear", "shield", "cap" ]
+    for([ "bear", "spider", "beetle_rear" ]) b: all.push(unit(b, b, float3_0, float3_0, kit, "", float3_0))
+    for([ [ "frog", "newt" ], [ "rat", "capybara" ], [ "human", "bear_mount" ], [ "rat", "beetle" ], [ "frog", "spider" ] ]) pr: all.push(unit("{pr[0]} on a {pr[1]}", pr[0], float3_0, float3_0, kit, pr[1], float3_0))
+    for(filter(all) u: not vx_flies(u)) u:   // (a flier's shadow is on the ground under it)
         vx_set_look(u, 0)
         vx_act = ""
         for(9) st:
-            let g = vx_fill(vx_unit_prims(u, float(st) * 45.0), vx_size_of(u))
+            let g = vx_fill(vx_unit_prims(u, float(st) * 45.0), vx_size_of(u), vx_flies(u))
             for(8) f:
                 let cell = copy(vx_cell(g, f))
                 let sc = vx_ground_shadow(g, f)
@@ -92,11 +107,11 @@ else:  // the sheet
         vx_act = if rw.mode == "attack": "attack" else: ""
         if rw.mode == "stand":
             let t = seconds_elapsed()
-            let stand = vx_fill(vx_unit_prims(u, 0.0), vx_size_of(u))
+            let stand = vx_fill(vx_unit_prims(u, 0.0), vx_size_of(u), vx_flies(u))
             fills += seconds_elapsed() - t
             for(8) c: vx_draw(stand, (c + 3) % 8, img, iw, c * step, r * vx_CELL.y)  // (columns as the composed sheet's)
         else:
-            for(8) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 45.0), vx_size_of(u)), 2, img, iw, k * step, r * vx_CELL.y)
+            for(8) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 45.0), vx_size_of(u), vx_flies(u)), 2, img, iw, k * step, r * vx_CELL.y)
         print "{u.label} ({rw.mode}): drawn"
     print "{rows.length} rows in {seconds_elapsed() - t0} s ({fills} s filling the standing ones)"
     let ppm = "P6\n{iw} {ih}\n255\n"

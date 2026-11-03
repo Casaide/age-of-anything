@@ -27,3 +27,17 @@ floated; gear is hard by default now, and the feet check caught it.
 ## Next
 Every creature the generator fields (spider, beetle, capybara, newt, hummingbird, bears, centaur), wild animals,
 heroes, siege crews, deaths; baking by age; voxels as the default; checks in voxel space.
+
+## Round 2: every creature the generator fields
+Voxel bodies are keyed by the recipe's body id now (a creature's race body and its mount body differ: a beetle rears
+up as a soldier and stays flat when ridden, a bear stands as a race and goes on all fours as a mount), falling back to
+its creature, then a human. New in data (Claude): bear (and the black and polar bears, as `also`), bear_mount,
+capybara, newt (spotted, a long tail, sprawled legs), spider (eight legs, its abdomen with the team on top),
+beetle_rear and beetle (six legs, a horn), hummingbird (it flies: `flies`, wings that `flap` as it moves), and the
+centaur (the pony with its head and neck left off, `fused`, the rider's body growing out of it).
+Builder features for them: a `harness` for creatures with no hands (spider, beetle: the weapon at their side, lowered
+into a thrust in a blow), `flap` on points, a `fused` mount, a mount in its own palette (its skin, pale and mark drawn
+as coat, mane and coat_mark), the palette's third colour as `mark` (a bear's muzzle, a newt's spots, a cat's white).
+The feet check covers every creature (1512 frames; fliers skipped): bug leg tips needed small feet.
+Pictures 03 (every creature, and every mount ridden), 04 (a spider worker in its town).
+The first bake of a new race pair is too slow now (69 looks, 63 s for bears against centaurs): next round.
