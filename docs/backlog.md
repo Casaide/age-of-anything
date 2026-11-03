@@ -182,13 +182,10 @@ Godot Variant reader in Lobster. Only worth it if old saves need to carry over.
 
 ## 3. Balance tooling
 
-- **Open counter pairs (Claude, 2026-11-03, D-200, D-204; Dominic's call).** Horse archers' counters are now the large
-  line and scouts (D-204: 8 of 8 and 8 of 8 in age 2, 8 of 8 and 6 of 8 in age 3), not spears. Still short: skirmishers
-  against horse archers (5 of 8 in age 2, 2 of 8 in age 3; raising their +4 against archers to +8 only reaches 4 of 8
-  in age 3: horse archers outrun them), and the large line against archers in age 2 (8 of 12: crossbows against the
-  Royal Humans' lancers, archers against giant beetle axemen on foot). Options for the skirmishers: more range or
-  speed, or a bonus against mounted archers alone (a tag the line would need). `gen/counters.lobster`
-  RR_COUNTERS_OPEN.
+- **Open counter pair (Claude, 2026-11-03, D-200, D-204, D-205; Dominic's call).** Horse archers' counters are the
+  large line, scouts and skirmishers (D-204, D-205: all hold in ages 2 and 3 at the refitted prices). Still short: the
+  large line against archers in age 2 (8 of 12: crossbows against the Royal Humans' lancers, archers against giant
+  beetle axemen on foot). `gen/counters.lobster` RR_COUNTERS_OPEN.
 - **Upgrades that do little in a fight (D-200, `calibrate.lobster upgrades`; proposals, not applied).** Effect on the
   lines they reach, win-rate points against the panel, one side upgraded: sharp sticks +10, bronze edges +8, ring mail
   +8, saddle blankets +8, barbed heads +7, good hay +7, quick draw +7, hoof wraps +6, padded coats +5, scale barding +5,

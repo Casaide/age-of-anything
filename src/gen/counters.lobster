@@ -12,8 +12,6 @@ let RR_COUNTERS = [ [ "infantry", "spear", "spear" ], [ "spear", "large", "large
 let RR_COUNTER_PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans",
                            "greek hoplites", "royal knights", "viking beetle riders" ]
 // Pairs the chain asks for that the fights don't give at calibrated prices with the soldiers' research (D-200;
-// Dominic's call, docs/backlog.md): skirmishers against horse archers (5 of 8 in age 2, 2 of 8 in age 3; +8 against
-// archers only reaches 4 of 8 in age 3), and in age 2
-// crossbows and giants on foot turn the large line's fights with archers. calibrate.lobster pairs reports them without
-// failing.
-let RR_COUNTERS_OPEN = [ "skirmisher>mounted_archer", "large>archer" ]
+// Dominic's call, docs/backlog.md): in age 2 crossbows and giants on foot turn the large line's fights with archers.
+// calibrate.lobster pairs reports them without failing.
+let RR_COUNTERS_OPEN = [ "large>archer" ]
