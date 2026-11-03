@@ -1424,3 +1424,8 @@ step are gone; the Race Lab's Test still shows one round of fights. The batch ch
 (`calibrate.lobster measure check:45`), and `mod_check.sh` prices a mod's new parts. The commits say D-194 (that
 number was taken the same day). Under D-193 the calibration, like balance by fights, belongs to the race-generation
 toolkit module (`modules/racegen`), not the engine core.
+
+**D-196, 2026-11-03: The engine's licence will be Apache 2.0** (Dominic: "apache is fine"). It matches Lobster's own
+licence, lets anyone use it in closed games (ours stays closed) and grants patent rights; engine changes aren't forced
+back, which MPL would have done. Not GPL: Lobster compiles the game and its mods into one program with the engine
+(D-191). The reference bot ships with the engine as its default AI, tuned through `ai.json` or replaced through hooks.
