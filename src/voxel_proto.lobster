@@ -74,6 +74,13 @@ if args.length > 1 and args[1] == "animals":
     while rows.length: rows.pop()
     for([ "deer", "boar", "sheep" ]) b: rows.push(row { unit(b, b, float3_0, float3_0, [], "", float3_0), "stand", "scarf", true, 0 })
     rows.push(row { unit("deer", "deer", float3_0, float3_0, [], "", float3_0), "walk", "scarf", true, 0 })
+// `legs <body>`: a body standing (8 facings), walking and attacking (8 steps), in its first look, for a close look at its legs
+if args.length > 2 and args[1] == "legs":
+    while rows.length: rows.pop()
+    let b = args[2]
+    let u = if b == "human": units[1] elif b == "rat": units[1 - 1] elif b == "cat": units[2] elif b == "pony": units[9] else: unit(b, b, float3_0, float3_0, [ "spear", "shield", "cap" ], "", float3_0)
+    let lu = if b == "rat": units[1] else: u
+    for([ "stand", "walk", "attack" ]) m: rows.push(row { if b == "human": units[5] else: lu, m, "scarf", true, 0 })
 // `looks`: the early Romans and the legionary in each of the three looks
 if args.length > 1 and args[1] == "looks":
     while rows.length: rows.pop()

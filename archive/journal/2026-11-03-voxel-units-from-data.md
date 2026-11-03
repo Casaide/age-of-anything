@@ -70,3 +70,19 @@ heroes, portraits, baking by age, the switch.
 Next: voxel siege engines and war beasts; workers' tools by job and their loads; the remaining gear (lance, sling,
 hoplon, horned and other helms, bark, satchels, capes, banners); the lobby's pages in voxels; the voxel-space checks
 (pieces connected, legs counted, nothing past the helmet).
+
+## Round 3b: "Dwarf legs really weird" (Dominic)
+
+There are no dwarves in the game ("dwarves" is an unknown word; the beetles volunteer), so the dwarves were the voxel
+humans: 4.5 heads, often bearded, and short in the leg. Close up (picture 20, top) the hip was at 16 of 38 body
+units and the kilt hid most of the thigh, so a leg showed as about a quarter of the figure. And every leg was
+exactly as long as hip to foot: standing dead straight, with no room to reach a full stride, so the walk was a stiff
+shuffle, the foot falling short of where it should land.
+
+- **The builder** (all bodies): a body whose foot is out of its leg's reach is lowered until every foot is in reach,
+  with a little bend left (the hips dip at full stride). A reach check over every body found six that stretched: human,
+  bear, cat (front), pony (front), the rearing beetle (front), newt (front).
+- **The human** (data): the hip up to 19 (legs about 2 heads), bones 8.4, thinner shins, the rider's seat to match.
+  Picture 20 (bottom), and in a match, picture 21.
+- **The other short legs** (picture 22): rat, frog, bear, cat and pony walk as they should; their short legs are
+  their build (the rat's sit under its crouch, the frog's are folded).
