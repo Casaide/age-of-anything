@@ -462,6 +462,84 @@ or two, with no edited engine files: real work, mostly content, and the building
 are voxels too.
 
 
+## 6. Maps: a drawing and what it means (proposal, Dominic 2026-11-03)
+
+Today a map is one JSON file (`data/maps/*.json`: `rows`, `legend`, `heights`, `starts`) written by a Python layout
+script (`tools/maps/*.py`); terrain types (`data/terrain.json`) and ground textures (`assets/art/textures/*.svg`)
+can't be modded, props (trees, rocks) are models in code, the lobby lists only `data/maps`, and there's no editor or
+random map generator.
+
+Dominic: "a simple format defining it all, we could have editor later", with "a second file drawing the map in pure
+ASCII, and then JSON defining what it means". A map is a folder:
+
+```
+maps/reed_meadow/
+  terrain.txt     the map drawn in plain ASCII, one character a cell, one line a row
+  height.txt      optional: the same grid as digits 0-9 (flat where missing)
+  map.json        what the characters mean, the objects, the settings
+```
+
+`terrain.txt` is just the drawing:
+
+```
+~~~~~......TTTT.....
+~~~~......TTTTT..1..
+~~~.......TTT.......
+~~.....g............
+~...D.......s.......
+~..........2........
+```
+
+`map.json` says what it means. A character is either a terrain type, or a marker for something placed on that cell
+(drawn on its terrain's default ground):
+
+```json
+{
+  "id": "reed_meadow", "name": "Reed Meadow",
+  "legend": {
+    ".": "grass", "~": "water", "T": "forest", "g": "gold", "s": "stone",
+    "1": { "start": 1 }, "2": { "start": 2 },
+    "D": { "animal": "deer", "count": 4 }
+  },
+  "objects": [
+    { "prop": "oak", "at": [30.5, 41.2], "turn": 90 },
+    { "resource": "gold", "at": [50, 50], "amount": 800 }
+  ],
+  "rules": { "mode": "conquest", "players": [2, 4] }
+}
+```
+
+- Grids for what covers the map (terrain, height); markers in the drawing for single things on a cell; `objects`
+  for anything with exact positions or properties; `rules` for the mode, player counts and (later) triggers through
+  the rule hooks.
+- Readable and diffable in git, and easy for a person or an AI to draw and edit. An editor later reads and writes
+  the same three files; a random map generator writes them from a style and a seed, so the engine loads one format.
+- Today's maps convert mechanically (`rows` -> `terrain.txt`, `heights` -> `height.txt`, `starts` -> markers).
+- Engine: the format, loading, pathing per movement class, the ground renderer, the generator and editor as tools.
+  Game or mod: terrain types (`terrain.json`, moddable), textures, props (as voxel data like units), the maps.
+
+Steps: (1) the folder format and the converter, mod maps in the lobby, `terrain.json` and textures moddable; (2)
+props as voxels from data; (3) a random map generator with styles as data; (4) a simple in-game editor; (5) scenario
+triggers through the rule hooks.
+
+## 7. Era capabilities: tanks, planes and the like
+
+If it's a unit with different numbers or a different look, it's game data; if units behave in a way the sim doesn't
+model yet, it's engine work, added as a general capability that data switches on.
+
+| Capability | Today | Engine work | Data that switches it on |
+|---|---|---|---|
+| Heavy armoured vehicle with a cannon (a tank) | works: armour, splash, minimum range, a shell shot, counter tags, points | none needed | the unit and its parts |
+| A turret aiming apart from the hull | no: a unit faces one way | a voxel part that turns to the target while the body faces its way (view only) | `turret` on a part |
+| Turn rate (vehicles, ships) | no: facing changes at once | turning in the sim, slowing while it turns | `turn_rate` per unit type |
+| Hovering flyers (helicopters, birds, dragons) | works: the flying movement class over terrain and water | none | `mclass` flying |
+| Flyers that can't stop (planes) | no | circling when idle, passes and turning back, a turn radius | `must_keep_moving`, `turn_radius` |
+| Air and ground target layers, anti-air | no: `targets` is only `none` or `buildings` | targeting by layer in combat | `targets: air`, `targets: ground` |
+| Landing and rearming (airfields) | no | a building behaviour: land, rearm, take off | `rearms_at` on the unit, a role on the building |
+| Height for flyers (vision, shadow) | no | sight and drawing by altitude | `altitude` per unit type |
+
+These come with the era packs (gunpowder, then sci-fi), each built when a pack needs it.
+
 ## Fixed since (2026-11-03)
 
 - A mod's `data/voxel/` is accepted (`MOD_DATA_DIRS` in `src/gen/mods.lobster`).
