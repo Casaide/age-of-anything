@@ -1,4 +1,4 @@
-// Prices calibrated offline (D-186): what a part is worth, from fights, once, not per match. Run from src:
+// Prices calibrated offline (D-194): what a part is worth, from fights, once, not per match. Run from src:
 //   ./shards.sh calibrate.lobster lines <age> <races> [jobs=4]
 //       <races> races from the lexicon's words (training prompts, the lobby's dice made deterministic); each of
 //       their lines in <age> is fought against a fixed panel (every line of a few random races) at equal cost, its
@@ -14,6 +14,10 @@
 //       pool: every held-out line in one round robin (some 140 fights a line, not 13: far less noise).
 //       oracle: each line at its own fair price against the panel instead (./shards.sh calibrate.lobster oracle
 //       first): the best pricing by panel can do, fit or no fit.
+//   lobster calibrate.lobster -- mod <id>
+//       a mod's new parts priced (mod_check.sh): its check prompts' lines that wear them fought against the panel in
+//       ages 2 and 3, then only its parts fitted, the base prices held; prints each part's price_points to set.
+// Under D-193 this belongs with the generator in the race-generation toolkit module (modules/racegen), not the engine.
 import std
 import vec
 import dictionary
@@ -25,6 +29,7 @@ import gen.identity
 import gen.pricing
 import gen.heroes
 import gen.generator
+import gen.mods
 import lib.consts
 import lib.fixed
 import lib.tokens
@@ -92,7 +97,9 @@ let logs = if combine_at >= 0: args0.slice(combine_at + 1, -1) else: []::string
 let args = filter(if combine_at >= 0: args0.slice(0, combine_at) else: args0) a: not starts_with(a, "shard:")
 lib_load("../data")
 id_load("../data")
-let rules = load_rules("default")
+let mod_id = if args0.length > 1 and args0[0] == "mod": args0[1] else: ""
+if mod_id != "": assert mods_use([ mod_id ]).length == 1
+let rules = load_rules(if mod_id != "": gstr(gobj(mods_active[0].manifest, "check"), "rules", "default") else: "default")
 let bare = bare_rules(rules)
 
 // ---- prompts: the lobby's dice (fe_random_words), from a seed
@@ -244,7 +251,9 @@ def curve_inverse(id:string, c:float) -> float:
 
 // A sample's target points: its fair price over its age's typical one (the geometric mean, so the panel's own
 // price level doesn't move every price), through the curve's inverse.
-def targets(samples:[Sample]) -> [float]:
+// normalize false: against the panel as it stands (a mod's lines, once the base data is calibrated: its lines' mean is
+// the panel's, about 100%).
+def targets(samples:[Sample], normalize:bool) -> [float]:
     let cid = as_str(at(at(rules, "cost"), "curve"))
     let mean_log = map(5): 0.0
     let n_age = map(5): 0
@@ -254,7 +263,7 @@ def targets(samples:[Sample]) -> [float]:
     for(5) a:
         if n_age[a] > 0: mean_log[a] /= float(n_age[a])
     return map(samples) s:
-        let m = float(s.pct) / pow(2.718281828, mean_log[s.age])
+        let m = float(s.pct) / (if normalize: pow(2.718281828, mean_log[s.age]) else: 100.0)
         curve_inverse(cid, float(curve(cid, s.points)) * m)
 
 def writable_parts() -> [string]:
@@ -271,26 +280,32 @@ def roster_points(slot:string) -> int:
         if as_str(at(sd, "slot")) == slot: return gint(sd, "price_points", 0)
     return 0
 
-def run_fit(lambda:float, write:bool):
-    let samples = read_samples([ OUT_DIR + "/age2.txt", OUT_DIR + "/age3.txt" ])
-    assert samples.length
-    let t = targets(samples)
+// The base data's prices: every part in parts.json, the lines' and the sizes' points.
+def base_ids() -> [string]:
     let ids = writable_parts()
     for(RR_SLOTS) slot: ids.push("slot:" + slot)
     for(RR_SLOTS_AGE3) slot: ids.push("slot:" + slot)
     ids.push("size:giant")
     ids.push("size:tiny")
+    return ids
+
+// The fitted price points of ids (everything else held at its price), from the samples. Returns {id: points}.
+def run_fit(samples:[Sample], ids:[string], lambda:float, normalize:bool) -> JV:
+    assert samples.length
+    let t = targets(samples, normalize)
     let index = dictionary<string, int>(ids.length * 2)
     for(ids) id, n: index.set(id, n)
     let x0 = map(ids) id: float(if starts_with(id, "slot:"): roster_points(id.substring(5, id.length - 5)) elif starts_with(id, "size:"): size_points(id.substring(5, id.length - 5)) else: price_of(part(id)))
     let rows = map(samples) s:
         let r = filter(map(s.parts) id: index.get(id, -1)) n: n >= 0
-        r.push(index.get("slot:" + s.slot, -1))
-        if s.size != "-": r.push(index.get("size:" + s.size, -1))
+        if index.get("slot:" + s.slot, -1) >= 0: r.push(index.get("slot:" + s.slot, -1))
+        if index.get("size:" + s.size, -1) >= 0: r.push(index.get("size:" + s.size, -1))
         r
     // what the samples want of the parts and lines: target - fixed points - the parts it holds that aren't fitted
     let want = map(samples) s, k:
-        var rest = float(s.fixed - roster_points(s.slot) - size_points(s.size))
+        var rest = float(s.fixed)
+        if index.get("slot:" + s.slot, -1) >= 0: rest -= float(roster_points(s.slot))
+        if index.get("size:" + s.size, -1) >= 0: rest -= float(size_points(s.size))
         for(s.parts) id:
             if index.get(id, -1) < 0: rest += float(price_of(part(id)))
         t[k] - rest
@@ -369,7 +384,7 @@ def run_fit(lambda:float, write:bool):
             groups.set(g, [ acc[0] + want[k] - s, acc[1] + 1.0 ])
     for(sorted_strs(groups.get_keys())) g:
         let acc = groups.get(g, [ 0.0, 0.0 ])
-        if acc[1] >= 10.0 and abs(acc[0] / acc[1]) > 0.5: print "  left on {g}: {acc[0] / acc[1]} points ({int(acc[1])} lines)"
+        if normalize and acc[1] >= 10.0 and abs(acc[0] / acc[1]) > 0.5: print "  left on {g}: {acc[0] / acc[1]} points ({int(acc[1])} lines)"
     let prices = jobj()
     var moved = 0
     for(ids) id, n:
@@ -378,9 +393,41 @@ def run_fit(lambda:float, write:bool):
             print "  {id}: {int(x0[n])} -> {int(xi[n])} ({uses[n].length} samples, fit {x[n]})"
         if uses[n].length: set(prices, id, jint(int(xi[n])))
     print "{moved} parts moved"
-    if write:
-        write_file(OUT_DIR + "/prices.json", stringify(prices))
-        print "wrote " + OUT_DIR + "/prices.json"
+    return prices
+
+// A mod's new parts priced: each line of its check prompts that wears one, in ages 2 and 3, fought against the panel;
+// then only its parts fitted, every base price held (mod_check.sh). Prints what each of its parts' price_points
+// should be; prices.json is not touched.
+def run_mod(id:string):
+    let own = map(load_json(mods_active[0].dir + "/" + gstr(mods_active[0].manifest, "data", "data") + "/parts.json").a) p: as_str(at(p, "id"))
+    let samples = []::Sample
+    for([ 2, 3 ]) age:
+        let panel_races = panel_of()
+        let panel = rr_units(panel_races, age)
+        for(gstrs(gobj(mods_active[0].manifest, "check"), "prompts")) prompt:
+            let races = copy(panel_races)
+            races.push(generate(prompt, rules, 0))
+            for(rr_units(races, age)) u:
+                if u.race == races.length - 1:
+                    let step = step_of(races[u.race], u.slot, age)
+                    let parts = line_parts(at(step, "recipe"))
+                    if (filter(parts) pid: has_s(own, pid)).length:
+                        let e = at(step, "eval")
+                        var sum = 0
+                        for(parts) pid: sum += price_of(part(pid))
+                        let tags = eval_tags(e)
+                        let size = if has_s(tags, "giant"): "giant" elif has_s(tags, "tiny"): "tiny" else: "-"
+                        let pct = fair_pct(races, age, u, panel)
+                        print "  age {age}: {u.label}: fair at {pct}% of its price"
+                        samples.push(Sample { age, u.slot, pct, as_int(at(e, "points")), as_int(at(e, "points")) - sum, parts, u.label, size })
+    if not samples.length:
+        print "mod {id}: no line of its check prompts wears its parts (nothing to price)"
+        return
+    let fitted = run_fit(samples, filter(own) pid: has(lib_parts, pid), 3.0, false)
+    for(own) pid:
+        if has(fitted, pid):
+            let p = part(pid)
+            print "  {pid}: price_points {as_int(at(fitted, pid))} (points {as_int(at(p, "points"))}" + (if has(p, "price_points"): ", now {price_of(p)})" else: ")")
 
 // ---- measure: round robins of held-out groups at the prices as they are
 
@@ -495,7 +542,12 @@ if mode == "lines":
     else:
         run_lines(age, string_to_int(args[2]))
 elif mode == "fit":
-    run_fit(string_to_float(opt(args, "lambda", "1")), find_index(args, "write") >= 0)
+    let prices = run_fit(read_samples([ OUT_DIR + "/age2.txt", OUT_DIR + "/age3.txt" ]), base_ids(), string_to_float(opt(args, "lambda", "1")), true)
+    if find_index(args, "write") >= 0:
+        write_file(OUT_DIR + "/prices.json", stringify(prices))
+        print "wrote " + OUT_DIR + "/prices.json"
+elif mode == "mod":
+    run_mod(mod_id)
 elif mode == "measure":
     run_measure(string_to_int(opt(args, "check", "-1")), find_index(args, "oracle") >= 0, find_index(args, "pool") >= 0)
 elif mode == "oracle":
@@ -509,5 +561,5 @@ elif mode == "oracle":
     else:
         run_oracle()
 else:
-    print "calibrate.lobster: lines <age> <races> | fit [lambda:<n>] [write] | measure [check:<n>] [oracle] | oracle"
+    print "calibrate.lobster: lines <age> <races> | fit [lambda:<n>] [write] | measure [pool] [check:<n>] [oracle] | oracle | mod <id>"
     assert false
