@@ -37,9 +37,8 @@ var vx_source = ""                              // the builder's source's and da
 
 def vx_fkey(lk:int, v:int, m:int, f:int, st:int) -> int: return (((lk * 4 + v) * 5 + m) * 8 + f) * 8 + st
 
-// Is type k a voxel body now? (Not an engine with a crew.) Is it in every step of its line?
-def vx_drawn(k:int) -> bool: return voxel_units and k < vx_cur.length and vx_cur[k] >= 0
-def vx_always(k:int) -> bool: return voxel_units and k < vx_type_lks.length and (find(vx_type_lks[k]) lk: lk < 0) < 0
+// Is type k drawn now (its look made)?
+def vx_drawn(k:int) -> bool: return k < vx_cur.length and vx_cur[k] >= 0
 
 // A palette's colours (palettes.json): its first three, zero where it has none.
 def vx_palette(id:string) -> float3, float3, float3:
@@ -399,7 +398,6 @@ def vx_refresh():
 
 // In play: each type's look, then the queue baked on for up to `budget` seconds of this frame.
 def vx_tick(budget:float):
-    if not voxel_units: return
     vx_refresh()
     vx_bake_tick(budget)
 
