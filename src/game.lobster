@@ -75,6 +75,7 @@ import .game.doodads
 import .game.paths
 import .game.fx
 import .game.ui
+import .game.text_cache
 import .game.levels
 import .game.perf
 import .game.pace
@@ -127,6 +128,7 @@ for(args) a, k:
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
+        if a == "oldtext": text_off = true                 // (measuring: text drawn as before game/text_cache.lobster)
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
         if a == "follow": follow = true
@@ -1013,9 +1015,7 @@ def load_species(map_id:string):
     species = species_from_map(map_id)
     pack_from_data(map_id)
 
-def lobby_text(p:float2, s:string, col:float4):
-    gl.color(col):
-        gl.translate(p): gl.text(s)
+def lobby_text(p:float2, s:string, col:float4): text_label(p, s, gl.get_font_size(), col, TEXT_FACE, 0.0, float4_0)
 
 // A filled box from its top-left corner (gl.rect draws -size..size round its point in this build).
 def box(at:float2, size:float2, col:float4): ui_fill(at, size, col)
@@ -1796,9 +1796,7 @@ import .game.boot
 def label_size(s:string, fs:int) -> float2: return float2 { 0.6 * float(fs) * float(s.length), float(fs) }
 
 def outlined_text(p:float2, s:string, col:float4, u:float):
-    for([ float2 { -1.0, 0.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, -1.0 }, float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 } ]) d:
-        lobby_text(p + d * 1.5 * u, s, float4 { 0.05, 0.04, 0.02, 0.9 })
-    lobby_text(p, s, col)
+    text_label(p, s, gl.get_font_size(), col, TEXT_FACE, 1.5 * u, float4 { 0.05, 0.04, 0.02, 0.9 })
 
 def draw_groups():
     let keys = sorted_ints_g(groups.get_keys())
