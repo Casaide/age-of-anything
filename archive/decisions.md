@@ -1515,7 +1515,8 @@ the feet-on-shadow check (in the quick batch, which went from about 100 s to 25 
 loads by job (the rats' barrow and handcart), the stables' mounts grazing, the engines' packed and throwing poses,
 the culture styles' shapes (they're colours only). Claude, for Dominic.
 
-**D-203, 2026-11-03: Buildings and props go voxel; the Creel name and its mock site stand.** Dominic, after the
+**D-208, 2026-11-03: Buildings and props go voxel; the Creel name and its mock site stand.** (Numbered D-203 at first, a
+clash with the voxel session's D-203 the same hour; renumbered. The building choice itself is D-203.) Dominic, after the
 building experiment's second round (pictures 30-32, 39): "buildings yes" (a pediment bug to fix first). The rollout
 is planned in its own milestone, as the units' was (D-201, D-202). He also turned down a charge for spears against
 horse archers ("charge, no"; backlog, open counter pairs) and approved the Creel mock site (`docs/engine/site-mockup/`,
