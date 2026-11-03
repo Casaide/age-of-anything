@@ -192,10 +192,13 @@ engine/                      the RTS engine (its name, once picked)
   build/                     deck, android
   packs/test/                a tiny pack the engine's own tests run on (a flat map, a worker, a spear, a hub)
   tests/                     test_sim, save_check, net_check, path_audit on the test pack
+modules/                     optional toolkit modules a game can use or leave (D-193)
+  racegen/                   races from prompts: the generator, words, pricing by points, identity, heroes, balance
+                             by fights; a game with fixed factions never imports it
 games/age-of-anything/
   pack.json                  the game's manifest (kind "game")
   data/                      today's data/
-  gen/                       the race generator, pricing, identity, heroes, balance, swap
+  gen/                       our generator settings and content (lexicon, parts, cultures) on modules/racegen, swap
   model/                     our units', buildings' and props' models
   ui/                        lobby, Race Lab, the panel and top bar's game parts, paths, town life, art lists
   hooks/                     our rule hooks (the web, the Wonder, Fortress and Siege) and UI hooks

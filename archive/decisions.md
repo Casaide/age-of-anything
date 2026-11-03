@@ -1386,3 +1386,11 @@ plan step 1, as D-190 and D-191 asked).**
   `expand.camps` in `data/ai.json` name buildings, and `btype_named` finds them.
 - Saves outlive builds (D-141): a save from before roles comes back with each type's roles read from
   `buildings.json` by its id (`roles_from_data` in `gen/start.lobster`, called by the load); so does a scenario file.
+
+**D-193, 2026-11-03: Race generation is a toolkit module, not part of the engine.** Dominic: "clear race generation
+should be part of a tool kit and game, not the engine. If people want the randomised selection it's available as a
+module to use in their game." The engine has three layers: the core (sim, bots, view, UI, net, tools), optional
+modules a game can import or leave (`modules/racegen/`: prompts to races, pricing by points, identity, heroes,
+balance by fights), and the game (ours brings its words, parts and cultures on top of racegen). So a game with fixed
+factions loads them from data and never touches the generator; the unit type seam in `docs/engine-hooks.md` is what
+makes that work. `docs/engine-plan.md` section 3 updated.
