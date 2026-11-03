@@ -509,7 +509,7 @@ def fe_draw_units(vs:[UV], spots:[float2], z:float, p:int, alpha:float, dt:float
 // struck through (as the tech tree page crosses it out) and not counted. Returns the words and which are struck.
 def fe_lacks(race:JV, slot:string) -> bool:
     let ident = identity_of(rstr(race, "creature"), rstr(race, "family"))
-    return race_lacks(ident, slot) or has_s(gstrs(race, "lacks"), slot)
+    return race_lacks(ident, slot, fe_rules) or has_s(gstrs(race, "lacks"), slot)
 
 def fe_lines(race:JV) -> [string], [bool], string:
     let units = filter(glist(race, "units")) u: rstr(at(u, "recipe"), "slot") != "hero"
@@ -565,13 +565,7 @@ def fe_lines_card(race:JV) -> [string]:
 // The tech tree page for a side's race (over the lobby until Esc or B).
 def fe_open_tree(i:int):
     let race = fe_sides[i].race
-    let ident = identity_of(rstr(race, "creature"), rstr(race, "family"))
-    tree_page = build_tree_of(race, ident, fe_rules)
-    tree_words = race_words_of(race, ident, fe_rules)
-    tree_title = rstr(race, "name")
-    tree_lobby = true
-    tree_open = true
-    tree_scroll = 0.0
+    open_tree_of(race, identity_of(rstr(race, "creature"), rstr(race, "family")), fe_rules, i)
 
 // ---- the side panel
 
@@ -1235,7 +1229,7 @@ def run_front(page0:string, typed:[string]) -> string:
             tree_tick()
             ui_flush()
             fe_frames++
-            if shot != "" and fe_frames == shot_frame + 5:  // (captures: lobbytree)
+            if shot != "" and fe_frames >= shot_frame + 5 and (tree_waiting == 0 or fe_frames > shot_frame + 600):  // (captures: lobbytree, once its pictures are painted)
                 gl.screenshot(shot)
                 return ""
             continue

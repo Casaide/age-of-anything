@@ -113,8 +113,10 @@ SURRENDER, the bots' walls and abilities.
       race's names, what it lacks struck through, other races' own research left off; F1 in a match (`18-...`).
       The race panel too (its bonuses and where each comes from, its own research, what it lacks; `27-...`).
       Research effects in words (`gen/effect_words.lobster`, all 56 as Godot's: `effect_words_check.lobster`) and the
-      heroes' nodes since 2026-10-27 (`02-...`). (In this Lobster build `gl.rect`
-      draws -size..size round its point: the page's boxes allow for it.)
+      heroes' nodes since 2026-10-27 (`02-...`). (In this Lobster build `gl.rect` draws -size..size round its point:
+      the page's boxes allow for it.) Drawn as the Godot page since 2026-11-03 (`game/techtree_page.lobster`: the
+      race panel and its army, the age rail, pictures and lines, the hover card, the match's progress;
+      `2026-11-03/11-...` to `15-...`).
 - [x] The Race Lab, in the lobby (2026-10-26): each typed race's whole roster drawn from the part library as you
       type, idling in its team colour, under its stats (`lab` with `races:A|B` captures it; `19-...`). Rerolls too: a
       Reroll button per race, another take on the same prompt, played as shown (`reroll:a|b`; `28-...`). And Test: every line of the two
