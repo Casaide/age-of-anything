@@ -1394,3 +1394,11 @@ modules a game can import or leave (`modules/racegen/`: prompts to races, pricin
 balance by fights), and the game (ours brings its words, parts and cultures on top of racegen). So a game with fixed
 factions loads them from data and never touches the generator; the unit type seam in `docs/engine-hooks.md` is what
 makes that work. `docs/engine-plan.md` section 3 updated.
+
+**D-194, 2026-11-03: The lobby draws at 30 frames a second, a match at 60, a minimised match not at all; the HUD and
+the world batch their draws (Claude, on Dominic's "my laptop still gets hot").** Frame pacing lives in
+`game/pace.lobster`. Every baked frame is still a sheet of its own on disk and in memory, but sprites are drawn from
+shared atlas pages (`game/pack.lobster`): a small sheet is copied onto a page the frame after it's first drawn, so
+nothing about baking or the bake cache changes. Flat UI fills, lines and studs inside `ui_batch` gather into one
+mesh until anything else is drawn, which keeps the layering exact (the panel, top bar and minimap captures are byte
+for byte the same). The `perf:` check now also guards the main thread's busy share (22%).
