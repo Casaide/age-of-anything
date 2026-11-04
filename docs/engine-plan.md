@@ -301,7 +301,7 @@ names and signatures of the packs it was made with.
 - `voxel_proto`: the voxel builder's sheet and contact check.
 - `golden` and `shards`, `batch`: the golden-file runner and the test runner; the sections are each pack's.
 - `gen_reset.lobster`: save and reset code from the sim's globals.
-- Later: `pack` (`tools/mods/pack.py` grown up), `.vox` import and export (backlog 00).
+- Later: `pack` (`tools/mods/pack.sh` grown up), `.vox` import and export (backlog 00).
 
 ### Builds
 
@@ -334,14 +334,14 @@ read CLAUDE.md, learn `play.sh`'s options. This is the plan for someone who isn'
 | Step | What the developer does | What exists today | What's missing |
 |---|---|---|---|
 | 1. Get it | One download: Lobster's binary (our fork, pinned) and the engine | Build Lobster from source, clone this repo | A release zip per platform with `lobster` inside; one `creel` script on the path |
-| 2. Start a game | `creel new my_game` | `tools/mods/new_mod.py` for mods only | A game template: a pack of kind `game`, one map, a worker, a soldier, a hub, a barracks, a `main.lobster` of ~50 lines. It runs on the first try |
+| 2. Start a game | `creel new my_game` | `tools/mods/new_mod.sh` for mods only | A game template: a pack of kind `game`, one map, a worker, a soldier, a hub, a barracks, a `main.lobster` of ~50 lines. It runs on the first try |
 | 3. Run it | `creel run` (a match vs the reference bot), `creel run --title` | `./play.sh lobby "races:..." watch` | One entry point with the options named and listed by `--help`, not read from `play.sh`'s comments |
 | 4. Change data | Edit a JSON file or the map's ASCII, see it in the running match | Restart the game (a few seconds) | **Data reload**: the window watches the pack's `data/` and reloads looks, UI, sounds and numbers live; sim data changes restart the match from its command log (deterministic, so the same match, replayed to now). Errors as `file:line: what's wrong` on screen, not a crash |
 | 5. Change code | Edit a hook, the game reloads | Restart (JIT compile ~2 s) | Hooks recompile on save; the match replays to now (same trick) |
 | 6. Look inside | A dev overlay | `perf:`, logs, `shot:` | F1 overlay: tick, state hash, frame cost; click a unit for its columns (hp, order, target, path); toggles for the flow field, fog, spatial cells, bot intents |
 | 7. Replay and share a bug | `creel replay match.log` | The command stream exists (lockstep); `save_check` | Every match writes its command log; a replay plays it back with the overlay, step by tick, scrub. A bug report is the log plus the pack signatures |
 | 8. Test | `creel check` (pack loads, determinism, placement, a short bot match twice, same hash) and `creel test` | `mod_check`, `test_sim`, `golden.sh`, `batch.sh`, `lint.py` | The same checks, named for a game: a template test file, golden files per pack, `creel check` in the template's CI |
-| 9. Ship | `creel build mac|deck|android|windows`, `creel pack` for mods | `src/deck/build.sh`, `src/android/build.sh`, `tools/mods/pack.py` | One build command over those; a Windows build (none today); Steam depot layout |
+| 9. Ship | `creel build mac|deck|android|windows`, `creel pack` for mods | `src/deck/build.sh`, `src/android/build.sh`, `tools/mods/pack.sh` | One build command over those; a Windows build (none today); Steam depot layout |
 
 ### Editor support
 
@@ -370,8 +370,8 @@ game's own options pass straight through. `creel help [command]` lists them; eve
 
 | Command | What it does | Today's tool behind it |
 |---|---|---|
-| `creel new <game> [--from template]` | A new game pack from the template: `pack.json` (kind `game`), `data/` (one map, a worker, a soldier, a hub, a barracks, terrain, tech), `main.lobster`, `tests/`, a README. Runs on the first try | none (`tools/mods/new_mod.py` for mods) |
-| `creel new-mod <id> --for <game> [--era <tag>] [--private]` | A mod pack scaffold | `tools/mods/new_mod.py` |
+| `creel new <game> [--from template]` | A new game pack from the template: `pack.json` (kind `game`), `data/` (one map, a worker, a soldier, a hub, a barracks, terrain, tech), `main.lobster`, `tests/`, a README. Runs on the first try | none (`tools/mods/new_mod.sh` for mods) |
+| `creel new-mod <id> --for <game> [--era <tag>] [--private]` | A mod pack scaffold | `tools/mods/new_mod.sh` |
 | `creel run [lobby] [races:A\|B] [map:<id>] [mods:a,b] [watch] [mute] [speed:<x>]` | The game: the title, or straight into a match | `./play.sh` |
 | `creel run ... shot:<png> at:<s> [look:x,y] [page:<name>]` | A capture | `play.sh`'s capture options |
 | `creel replay <log> [from:<tick>] [speed:<x>]` | Plays a match's command log back with the dev overlay | none: every match writes `logs/<date>-<n>.cmdlog` (planned) |
@@ -383,7 +383,7 @@ game's own options pass straight through. `creel help [command]` lists them; eve
 | `creel balance [age] [refit]` | The equal-cost round robin; `refit` fits prices from stored fights | `balance.lobster`, `calibrate.lobster` |
 | `creel perf [secs]` | The frame budget in the real window | `play.sh ... perf:<s>` |
 | `creel prebake` | Bakes fixed art once into the pack's `baked/` | `src/prebake.sh` |
-| `creel pack <id>` | Zips a pack with its signature (`id@version#sha256`) | `tools/mods/pack.py` |
+| `creel pack <id>` | Zips a pack with its signature (`id@version#sha256`) | `tools/mods/pack.sh` |
 | `creel build mac\|deck\|android\|windows` | A release build of the game with its packs | `src/deck/build.sh`, `src/android/build.sh`; Mac and Windows none yet |
 | `creel fmt` | Formats every `.lobster` file | `lint.sh --fix` |
 

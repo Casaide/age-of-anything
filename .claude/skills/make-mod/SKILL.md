@@ -25,7 +25,7 @@ Ask (or confirm from the request) and write it into the mod's README before any 
 
 ## Steps
 
-1. Scaffold: `python3 tools/mods/new_mod.py <id> ["Name"] [--era <tag>] [--private]`, then check it
+1. Scaffold: `tools/mods/new_mod.sh <id> ["Name"] [--era <tag>] [--private]`, then check it
    green straight away (step 4).
 2. Concept first (the game's rule for new art): sketch 2-3 directions as voxel looks (`data/voxel/` in the mod,
    drawn by `src/voxel_proto.lobster`) beside game units for scale; the person picks before you build the rest.
@@ -40,7 +40,7 @@ Ask (or confirm from the request) and write it into the mod's README before any 
    - A plain prompt without the mod's words gets none of its parts.
 5. Look: `lobster voxel_proto.lobster -- <out.ppm> legs <body> <gear>,...` (from `src/`); look at every picture at 3x and
    at game size before showing anyone. A squad in a match: `./play.sh lobby mods:<id> rules:anything "races:<prompt>|romans" watch mute shot:<png> at:<s>`.
-6. Pack (public only): `python3 tools/mods/pack.py <id>`.
+6. Pack (public only): `tools/mods/pack.sh <id>`.
 
 ## Report
 

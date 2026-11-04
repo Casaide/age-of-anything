@@ -25,11 +25,11 @@ Work in progress elsewhere, not findings here:
 Dominic's example: "disable most units and buildings and focus on reduced tree, like just infantry fighting ... easily
 make some aliens, and add custom SFX and lasers". The starting point is `mods/scifi_test/` (a future soldier: sealed
 helmet, plate, power pack, pulse rifle, arc blade, a `pulse` shot look) and the scaffold
-`tools/mods/new_mod.py`. Call the new mod `zorbs`.
+`tools/mods/new_mod.sh`. Call the new mod `zorbs`.
 
 ### 1.1 Scaffold and load
 
-**Data today.** `python3 tools/mods/new_mod.py zorbs --era scifi` writes `mod.json`, `data/parts.json`,
+**Data today.** `tools/mods/new_mod.sh zorbs --era scifi` writes `mod.json`, `data/parts.json`,
 `data/lexicon.json`, `data/rules/anything.json`, a model file and a sheet spec. `src/mod_check.sh zorbs` loads it or says
 why not. The loader is `src/gen/mods.lobster` (`mods_use`, `mod_read`, `mod_check_data`, `mod_apply`); the game takes
 `mods:zorbs` on the command line (`game.lobster`, `mods_use(mods_wanted)`).
@@ -251,7 +251,7 @@ by fights) doesn't take `mods:` yet. Both small.
 
 | Step | Data today | Small engine change | Game source |
 |---|---|---|---|
-| Scaffold, load, check | `new_mod.py`, `mod_check.sh` | `mods_gen` reads `mods_private` | |
+| Scaffold, load, check | `new_mod.sh`, `mod_check.sh` | `mods_gen` reads `mods_private` | |
 | Units off | rules `roster` (extends a rule) | `-roster` removal in `mod_merge` | |
 | Buildings off | per race: culture `lacks` | `buildings.json` merge, one accessor, rule-wide removal | |
 | Tech and ages off | | `tech.json` merge; rule `ages` caps the sim's ages | |
@@ -357,7 +357,7 @@ unblock the most.
 | 6 ★ | **Voxel-only units**: a body, head or gear part with `"voxel"` instead of a model case; sockets from the voxel body; `mod_check` runs the voxel contact check | 1.5, 1.6; 2.1's units | load | `gen/mods.lobster` `mod_check_data`; `game/voxel_units.lobster` `vx_body_for`, `vx_def_of`; `src/mod_check.lobster`; `src/voxel_proto.lobster` | 1-2 |
 | 7 | **Shot and hit looks as data**: `draw: beam`, a `hit` effect recipe (sparks, colour, sound), blow sounds by data not tags | 1.6 | UI | `game/fx.lobster` `shot_style`, `fx_spark`; `game.lobster` `shot_kind_of`, `race_facts` | 1-2 (more with backlog 00's voxel effects) |
 | 8 | **The lobby from data, and a Mods page**: rules, maps and modes listed from the merged data; mods picked and remembered | 1.11, 1.13 | UI | `game/lobby.lobster` (`FE_RULES`, `fe_load_maps`), `game.lobster` `map_ids`, `MODE_IDS`; `settings.txt` | 2 |
-| 9 | **Starter kit**: `new_mod.py --template`, a template game pack, `mod_check` with a sheet of the unit firing (section 4) | everything, for a newcomer | tools | `tools/mods/new_mod.py`, `src/mod_check.sh`, `tests/sheets/`, `src/sheet.sh` | 2 |
+| 9 | **Starter kit**: `new_mod.sh --template`, a template game pack, `mod_check` with a sheet of the unit firing (section 4) | everything, for a newcomer | tools | `tools/mods/new_mod.sh`, `src/mod_check.sh`, `tests/sheets/`, `src/sheet.sh` | 2 |
 | 10 ★ | **The unit type seam: factions from data** (engine plan step 5): the sim built from a plain unit type table; a `factions/*.json` loader; the generator fills the table for our game | 2.2's biggest tangle | load | `gen/setup.lobster` `add_type`, `gen/start.lobster` `setup_world`, `setup_identities`; `game.lobster`'s `generate` calls | 2-3 |
 | 11 | **Pack signatures in multiplayer and saves** (engine plan step 4) | any mod played online | load | `net/lan.lobster`, `net/lockstep.lobster`, `gen/save.lobster` | 1-2 |
 | 12 | **Rule hook `ability(kind)`**: `use(p, ids, x, y)`, `tick()`; hook state in declared columns; plus a data vocabulary of effect kinds (slow, damage over time, heal, stat buff) | 1.8 | rule | `lib/abilities.lobster` `cmd_ability`; `mods_gen.lobster` writing `hooks_active.lobster`; `gen_reset.lobster` | 3 (the first hook carries the hook machinery) |
@@ -394,7 +394,7 @@ line between "a pack" and "a fork".
 
 ### The starter kit
 
-- **A template mod**, scaffolded: `python3 tools/mods/new_mod.py <id> --template infantry`. It is the sci-fi mod
+- **A template mod**, scaffolded: `tools/mods/new_mod.sh <id> --template infantry`. It is the sci-fi mod
   rebuilt as Dominic described it, standing in for `mods/scifi_test`:
   - `data/rules/infantry.json`: extends `default`, roster of worker, infantry and skirmisher, `ages: 2`, buildings
     left: Town Center, house, farm, barracks, lumber camp; `victory: [ no_hub ]`.
@@ -413,13 +413,13 @@ line between "a pack" and "a fork".
   tests run on the template, so the template can't rot.
 - **The tools that come with them:** `mod_check` (loads or says exactly why not; the determinism lint for hooks; the
   voxel contact check; a short bot match to the end with the mod), `sheet.sh` (the unit close up, firing), `races.lobster
-  -- mods:<id>` (who gets what and what it costs), `./play.sh ... watch` (a bot match to watch), `tools/mods/pack.py`.
+  -- mods:<id>` (who gets what and what it costs), `./play.sh ... watch` (a bot match to watch), `tools/mods/pack.sh`.
 
 ### The first hour
 
 From nothing to an alien firing lasers in a match, once the easy set exists:
 
-1. `python3 tools/mods/new_mod.py zorbs --template infantry` (a green mod that already plays).
+1. `tools/mods/new_mod.sh zorbs --template infantry` (a green mod that already plays).
 2. Edit `mods/zorbs/data/voxel/bodies/zorb.json` (size, skin, eyes, legs) and `data/shots.json` (the beam's colour),
    and drop a WAV over `audio/sfx/shoot_laser_1.wav` if they have one.
 3. `src/mod_check.sh zorbs` (loaded, checks pass, and a sheet of the zorb firing to look at).
