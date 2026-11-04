@@ -12,7 +12,8 @@
   "rgb": "#857357"
  },
  "leather": {
-  "rgb": "#6b4729"
+  "rgb": "#6b4729",
+  "shine": 0.15
  },
  "hair": {
   "rgb": "#1f1714",
@@ -22,7 +23,8 @@
   "rgb": "#8c6133"
  },
  "metal": {
-  "rgb": "#b3b8c2"
+  "rgb": "#b3b8c2",
+  "shine": 1.0
  },
  "coat": {
   "rgb": "#805230",
@@ -49,7 +51,8 @@
   "fur": true
  },
  "gold": {
-  "rgb": "#ebbd33"
+  "rgb": "#ebbd33",
+  "shine": 0.9
  },
  "mouth": {
   "rgb": "#4d1a1a"
@@ -58,7 +61,8 @@
   "rgb": "#dbb3a8"
  },
  "bronze": {
-  "rgb": "#bd8f4d"
+  "rgb": "#bd8f4d",
+  "shine": 0.9
  },
  "kilt": {
   "rgb": "#36211f"
@@ -94,7 +98,8 @@
   }
  },
  "frame2": {
-  "rgb": "#4a4a50"
+  "rgb": "#4a4a50",
+  "shine": 0.5
  },
  "trim": {
   "rgb": "#9a7a50"
@@ -125,7 +130,8 @@
   "fur": true
  },
  "beak": {
-  "rgb": "#d8a030"
+  "rgb": "#d8a030",
+  "shine": 0.4
  },
  "mantis": {
   "rgb": "#7aa040"
@@ -143,6 +149,7 @@
  },
  "tarantula": {
   "rgb": "#4a3428",
+  "shine": 0.2,
   "fur": true
  },
  "tarantula2": {
@@ -151,5 +158,67 @@
  },
  "tarantula3": {
   "rgb": "#c04a20"
+ },
+ "frog_belly": {
+  "rgb": "#efe08a",
+  "shine": 0.35
+ },
+ "frog_dark": {
+  "rgb": "#173c10",
+  "shine": 0.4
+ },
+ "frog_flank": {
+  "rgb": "#3a52b0",
+  "shine": 0.4
+ },
+ "frog_toe": {
+  "rgb": "#ec8a2a"
+ },
+ "stag_shine": {
+  "rgb": "#b4d2f4"
+ },
+ "chitin": {
+  "rgb": "#1e1a1c",
+  "shine": 0.6
+ },
+ "chitin_hi": {
+  "rgb": "#6a6470",
+  "shine": 0.7
+ },
+ "mandible": {
+  "rgb": "#6e2a14",
+  "shine": 0.4
+ },
+ "mandible_tip": {
+  "rgb": "#2a120a",
+  "shine": 0.5
+ },
+ "sp_band": {
+  "rgb": "#6a4e36"
+ },
+ "sp_fang": {
+  "rgb": "#141010",
+  "shine": 0.5
+ },
+ "sp_eye": {
+  "rgb": "#0a0808",
+  "shine": 0.6
+ },
+ "sp_gleam": {
+  "rgb": "#e8e4dc"
+ },
+ "hoof": {
+  "rgb": "#3a3430",
+  "shine": 0.3
+ },
+ "antler": {
+  "rgb": "#d8c8a0"
+ },
+ "elephant_ear": {
+  "rgb": "#68625e",
+  "fur": true
+ },
+ "wing": {
+  "rgb": "#a8b4b8"
  }
 }

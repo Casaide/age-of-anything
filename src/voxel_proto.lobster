@@ -1,6 +1,7 @@
 // The procedural voxel units on a sheet (view/voxel.lobster): every unit in 8 facings, walks and attacks, at a
 // voxel a baked pixel (the game draws them at 0.55 world px a pixel).
 //   lobster voxel_proto.lobster -- <out.ppm>   (then: magick out.ppm -filter box -resize 55% out.png)
+//   lobster voxel_proto.lobster -- <out.ppm> solo <body> [gear,...]   (one body alone at 3x: make it from scratch)
 import std
 import vec
 import dictionary
@@ -135,6 +136,41 @@ if args.length > 1 and args[1] == "check":
                     print "FLOATS: {u.label}, step {st}, facing {f}: no shadow showing under its feet as the game draws it"
     print "contact: {n} frames, {bad} float"
     if bad: set_exit_code(1)
+elif args.length > 2 and args[1] == "solo":  // `solo <body> [gear,...]`: one body alone, 3x, four facings standing then four walk steps (for making it from scratch)
+    let kit = if args.length > 3: tokenize(args[3], ",", "") else: []
+    let u = unit(args[2], args[2], float3_0, float3_0, kit, "", float3_0)
+    vx_set_look(u, 0)
+    vx_team_wear = "scarf"
+    vx_shadows = true
+    vx_act = ""
+    let iw = step * 8
+    let ih = vx_CELL.y
+    let bg = float3 { 86.0, 120.0, 46.0 } / 255.0
+    let img = map(iw * ih): bg
+    vx_stand = true
+    let stand = vx_fill(vx_unit_prims(u, 0.0), vx_size_of(u), vx_on_zero(u, false))
+    for(4) c: vx_draw(stand, (c * 2 + 3) % 8, img, iw, c * step, 0)
+    vx_stand = false
+    for(4) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 90.0), vx_size_of(u), vx_on_zero(u, false)), 2, img, iw, (k + 4) * step, 0)
+    var x0, y0, x1, y1 = step, ih, 0, 0  // one box round the figure, the same in every cell (relative to the cell)
+    for(ih) y: for(iw) x:
+        if img[y * iw + x] != bg:
+            x0 = min(x0, x % step)
+            y0 = min(y0, y)
+            x1 = max(x1, x % step)
+            y1 = max(y1, y)
+    x0, y0 = max(0, x0 - 3), max(0, y0 - 3)
+    x1, y1 = min(step - 1, x1 + 3), min(ih - 1, y1 + 3)
+    let Z = 3
+    let cw = x1 - x0 + 1
+    let ow, oh = cw * 8 * Z, (y1 - y0 + 1) * Z
+    let bytes = []::int
+    for(oh) y: for(ow) x:
+        let cx = x / Z
+        let c = img[(y0 + y / Z) * iw + (cx / cw) * step + x0 + cx % cw]
+        for(3) ch: bytes.push(clamp(int(c[ch] * 255.0), 0, 255))
+    write_file(out_path, "P6\n{ow} {oh}\n255\n" + vector_to_buffer(bytes, 1), 0, 1)
+    print "wrote {out_path} ({args[2]} alone, 3x: four facings standing, four walk steps)"
 else:  // the sheet
     let iw = step * 8
     let ih = vx_CELL.y * rows.length

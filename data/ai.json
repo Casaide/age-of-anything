@@ -299,13 +299,15 @@
    "lifting_frames",
    "stonecutting",
    "bastion",
+   "fortified_walls",
    "slit_windows",
    "night_lanterns"
   ],
   "army_min": 4,
   "wait_for": {
    "bastion": "castle",
-   "slit_windows": "castle"
+   "slit_windows": "castle",
+   "fortified_walls": "castle"
   },
   "_doc_wait_for": "wait_for: research it leaves until it has that building (the Bastion's stone waits for the Castle's)"
  },

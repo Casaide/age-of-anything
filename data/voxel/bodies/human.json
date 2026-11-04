@@ -1,33 +1,33 @@
 {
- "_doc": "A human at 4.5 heads (Dominic's pick, 2026-11-01), the composed heroic human's height (D-173). Body units: z up, y forward, x right, the ground at z 0. Legs 2 heads to the hip (Dominic, 2026-11-03: \"dwarf legs really weird\"; the hip was at 16, the kilt hid most of the thigh).",
+ "_doc": "Trial C (2026-11-03): a realistically proportioned human, about 7 heads tall, built like the rat: few shapes, strong tapers, a natural stance. Legs half the height; shoulders 2 heads wide over narrower hips; oval torso from paired capsules; thighs taper hard to the knee and ankle. Team colour is the tunic (AoE readability); bare arms and legs read as skin against it.",
  "skin": "#dba880",
  "pale": "#ebbf99",
  "size": 1.15,
  "fur": 0.0,
  "skin_scale": 1.3,
- "reach": 4.6,
+ "reach": 5.2,
  "points": {
   "hip": {
    "at": [
     0,
     0,
-    19.0
+    21.0
    ],
    "bob": 0.5
   },
   "chest": {
    "at": [
     0,
-    0.5,
-    27.16
+    0.3,
+    29.6
    ],
    "bob": 0.5
   },
   "head": {
    "at": [
     0,
-    1.2,
-    34.37
+    0.7,
+    37.1
    ]
   }
  },
@@ -35,20 +35,20 @@
   {
    "hip": [
     "hip",
-    1.74,
+    1.75,
     0,
     0
    ],
    "foot": [
-    1.96,
+    1.9,
     0,
-    2.3
+    1.9
    ],
-   "stride": 4.6,
+   "stride": 5.2,
    "lift": 2.2,
    "bones": [
-    8.4,
-    8.4
+    9.58,
+    9.58
    ],
    "pole": [
     0,
@@ -56,56 +56,57 @@
     0
    ],
    "r": [
-    1.75,
+    2.2,
+    1.45,
     1.4,
-    1.35,
-    0.95
+    0.9
    ],
    "mats": [
-    "trousers",
-    "trousers"
+    "skin",
+    "skin"
    ],
    "shapes": [
     {
      "cap": [
       "ankle",
       0,
-      0,
-      1.8
+      -0.1,
+      1.4
      ],
      "to": [
       "ankle",
       0,
       0,
-      -1.0
+      -0.6
      ],
      "r": [
-      1.2,
-      1.14
+      1.0,
+      0.95
      ],
      "mat": "leather",
      "hard": true,
-     "_doc": "a short boot"
+     "_doc": "low boot"
     },
     {
      "cap": [
       "ankle",
       0,
-      0,
-      -1.2
+      -0.4,
+      -0.8
      ],
      "to": [
       "ankle",
       0,
-      2.61,
-      -1.5
+      2.3,
+      -1.0
      ],
      "r": [
-      1.09,
-      0.98
+      0.95,
+      0.8
      ],
      "mat": "leather",
-     "hard": true
+     "hard": true,
+     "_doc": "foot, about a head long"
     }
    ]
   }
@@ -113,47 +114,47 @@
  "arms": {
   "shoulder": [
    "chest",
-   4.68,
-   0,
-   -0.4
+   4.3,
+   -0.2,
+   1.2
   ],
-  "bone": 5.78,
-  "thick": 1.47,
+  "bone": 6.7,
+  "thick": 1.4,
   "sleeve": "skin",
   "hand": "skin"
  },
  "helm": {
   "at": [
    "head",
-   0.0,
-   -0.4,
-   2.14
+   0,
+   -0.3,
+   1.0
   ],
-  "r": 3.33
+  "r": 2.75
  },
  "armour": {
   "a": [
    "hip",
    0,
-   0.2,
-   2.8
+   0.1,
+   2.6
   ],
   "b": [
    "chest",
    0,
    0,
-   -0.3
+   0.4
   ],
   "r": [
-   2.66,
-   3.21
+   2.7,
+   3.2
   ]
  },
  "seat": {
-  "z": 19.5,
+  "z": 21.5,
   "astride": [
-   "trousers",
-   "trousers",
+   "skin",
+   "skin",
    "leather"
   ]
  },
@@ -173,207 +174,328 @@
  ],
  "shapes": [
   {
-   "disc": [
+   "cap": [
+    "chest",
+    -1.25,
+    0,
+    1.2
+   ],
+   "to": [
+    "chest",
+    -1.0,
+    0.1,
+    -3.2
+   ],
+   "r": [
+    2.15,
+    1.85
+   ],
+   "mat": "team",
+   "_doc": "ribcage (paired: oval section)"
+  },
+  {
+   "cap": [
+    "hip",
+    -1.0,
+    0,
+    3.6
+   ],
+   "to": [
+    "hip",
+    -1.25,
+    0,
+    0.6
+   ],
+   "r": [
+    1.75,
+    1.95
+   ],
+   "mat": "team",
+   "_doc": "waist to pelvis"
+  },
+  {
+   "cap": [
+    "hip",
+    -1.125,
+    0.1,
+    0.4
+   ],
+   "to": [
+    "hip",
+    -1.5,
+    0.15,
+    -4.6
+   ],
+   "r": [
+    2.0,
+    2.25
+   ],
+   "mat": "team",
+   "_doc": "tunic skirt to mid-thigh"
+  },
+  {
+   "cap": [
+    "chest",
+    1.25,
+    0,
+    1.2
+   ],
+   "to": [
+    "chest",
+    1.0,
+    0.1,
+    -3.2
+   ],
+   "r": [
+    2.15,
+    1.85
+   ],
+   "mat": "team",
+   "_doc": "ribcage (paired: oval section)"
+  },
+  {
+   "cap": [
+    "hip",
+    1.0,
+    0,
+    3.6
+   ],
+   "to": [
+    "hip",
+    1.25,
+    0,
+    0.6
+   ],
+   "r": [
+    1.75,
+    1.95
+   ],
+   "mat": "team",
+   "_doc": "waist to pelvis"
+  },
+  {
+   "cap": [
+    "hip",
+    1.125,
+    0.1,
+    0.4
+   ],
+   "to": [
+    "hip",
+    1.5,
+    0.15,
+    -4.6
+   ],
+   "r": [
+    2.0,
+    2.25
+   ],
+   "mat": "team",
+   "_doc": "tunic skirt to mid-thigh"
+  },
+  {
+   "cap": [
+    "hip",
+    0,
+    0.3,
+    0.4
+   ],
+   "to": [
     "hip",
     0,
     0.2,
-    -0.7
-   ],
-   "n": [
-    0,
-    0.08,
-    1
+    -4.6
    ],
    "r": [
-    2.83,
-    2.6
+    2.7,
+    3.0
    ],
-   "mat": "kilt",
-   "_doc": "an undyed tunic, bare arms, a dark kilt with its hem in team colour (Dominic: less red)"
-  },
-  {
-   "disc": [
-    "hip",
-    0,
-    0.42,
-    -3.0
-   ],
-   "n": [
-    0,
-    0.08,
-    1
-   ],
-   "r": [
-    3.32,
-    0.65
-   ],
-   "mat": "team"
-  },
-  {
-   "cap": [
-    "hip",
-    0,
-    0,
-    1
-   ],
-   "to": [
-    "chest",
-    0,
-    0,
-    0
-   ],
-   "r": [
-    2.39,
-    2.99
-   ],
-   "mat": "cloth"
+   "mat": "team",
+   "_doc": "skirt front/back fill: one skirt, not shorts"
   },
   {
    "cap": [
     "chest",
-    -3.81,
-    0,
-    -0.1
+    -3.6,
+    -0.2,
+    1.9
    ],
    "to": [
     "chest",
-    3.81,
-    0,
-    -0.1
+    3.6,
+    -0.2,
+    1.9
    ],
    "r": [
-    1.74,
-    1.74
+    1.3,
+    1.3
    ],
-   "mat": "cloth"
+   "mat": "team",
+   "_doc": "shoulder line"
   },
   {
-   "disc": [
+   "box": [
     "hip",
     0,
     0.1,
-    1.9
+    1.7
    ],
    "n": [
     0,
+    1,
+    0
+   ],
+   "half": [
+    3.25,
+    2.3,
+    0.4
+   ],
+   "round": 0.35,
+   "mat": "leather",
+   "_doc": "belt"
+  },
+  {
+   "bead": [
+    "hip",
     0,
-    1
+    2.4,
+    1.7
+   ],
+   "r": 0.5,
+   "mat": "bronze",
+   "_doc": "buckle"
+  },
+  {
+   "cap": [
+    "hip",
+    -1.3,
+    0.2,
+    -4.5
+   ],
+   "to": [
+    "hip",
+    1.3,
+    0.2,
+    -4.5
    ],
    "r": [
-    2.72,
-    0.45
+    2.35,
+    2.35
    ],
-   "mat": "leather",
-   "_doc": "a belt"
+   "mat": "kilt",
+   "hard": false,
+   "_doc": "dark hem band",
+   "if": [
+    "look:9"
+   ]
   },
   {
    "cap": [
     "chest",
     0,
     0,
-    0
+    2.2
    ],
    "to": [
     "head",
     0,
-    -0.63,
-    -3.8
+    -0.3,
+    -2.2
    ],
    "r": [
-    1.41,
-    1.31
+    1.15,
+    1.0
    ],
    "mat": "skin",
-   "_doc": "the neck"
-  },
-  {
-   "cap": [
-    "head",
-    0.0,
-    0.79,
-    -1.58
-   ],
-   "to": [
-    "head",
-    0.0,
-    -0.16,
-    0.79
-   ],
-   "r": [
-    3.17,
-    3.64
-   ],
-   "mat": "skin"
-  },
-  {
-   "cap": [
-    "head",
-    0.0,
-    3.64,
-    -0.16
-   ],
-   "to": [
-    "head",
-    0.0,
-    4.2,
-    -1.11
-   ],
-   "r": [
-    0.87,
-    0.79
-   ],
-   "mat": "skin",
-   "_doc": "the nose"
-  },
-  {
-   "bead": [
-    "head",
-    1.35,
-    3.4,
-    0.48
-   ],
-   "r": 0.35,
-   "mat": "eye",
-   "mirror": true,
-   "_doc": "an eye: a dark pixel at game size"
+   "_doc": "neck"
   },
   {
    "ball": [
     "head",
-    3.72,
-    -0.16,
-    -0.32
+    0,
+    -0.15,
+    0.35
    ],
-   "r": 0.95,
+   "r": 2.55,
+   "mat": "skin",
+   "_doc": "cranium"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    0.35,
+    -0.5
+   ],
+   "to": [
+    "head",
+    0,
+    1.05,
+    -2.0
+   ],
+   "r": [
+    2.0,
+    1.25
+   ],
+   "mat": "skin",
+   "_doc": "jaw tapering to the chin"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    2.3,
+    0.3
+   ],
+   "to": [
+    "head",
+    0,
+    2.75,
+    -0.6
+   ],
+   "r": [
+    0.55,
+    0.5
+   ],
+   "mat": "skin",
+   "_doc": "nose"
+  },
+  {
+   "ball": [
+    "head",
+    2.5,
+    -0.2,
+    0.0
+   ],
+   "r": 0.7,
    "mat": "skin",
    "mirror": true,
    "unless": [
     "helm:galea"
-   ],
-   "_doc": "ears"
+   ]
   },
   {
    "bead": [
     "head",
-    0.0,
-    -0.4,
-    2.06
+    0,
+    -0.45,
+    1.05
    ],
-   "r": 3.64,
+   "r": 2.7,
    "mat": "hair",
    "unless": [
     "helm"
    ],
-   "_doc": "short hair, close to the skull"
+   "_doc": "short hair over the crown"
   },
   {
    "bead": [
     "head",
-    0.0,
+    0,
     -0.95,
-    0.32
+    0.0
    ],
-   "r": 3.72,
+   "r": 2.6,
    "mat": "hair",
    "unless": [
     "helm"
@@ -382,49 +504,49 @@
   {
    "bead": [
     "head",
-    0.0,
-    -2.06,
-    -1.74
+    0,
+    -1.4,
+    -1.4
    ],
-   "r": 2.45,
+   "r": 1.9,
    "mat": "hair",
    "if": [
     "look:1"
    ],
-   "_doc": "look 1: down the nape"
+   "_doc": "look 1: longer at the nape"
   },
   {
    "cap": [
     "head",
-    -2.38,
-    1.58,
-    -1.58
+    -1.6,
+    1.0,
+    -1.2
    ],
    "to": [
     "head",
-    2.38,
-    1.58,
-    -1.58
+    1.6,
+    1.0,
+    -1.2
    ],
    "r": [
-    1.43,
-    1.43
+    1.0,
+    1.0
    ],
    "mat": "hair",
    "hard": true,
    "if": [
     "look:2"
    ],
-   "_doc": "look 2: a short beard"
+   "_doc": "look 2: beard"
   },
   {
    "bead": [
     "head",
-    0.0,
-    2.93,
-    -2.45
+    0,
+    1.6,
+    -1.9
    ],
-   "r": 1.82,
+   "r": 1.15,
    "mat": "hair",
    "if": [
     "look:2"

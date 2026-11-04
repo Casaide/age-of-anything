@@ -1,20 +1,20 @@
 {
  "skins": {
   "frog_green": [
-   "#6bbf59",
-   "#c8e6a0"
+   "#2f7424",
+   "#9cd84a"
   ],
   "frog_blue": [
-   "#2f9fa6",
-   "#a8e0e0"
+   "#1d6a78",
+   "#8fd6dc"
   ],
   "toad_brown": [
-   "#8a7a4a",
-   "#c8b88a"
+   "#5e4c2a",
+   "#c4b07a"
   ],
   "poison_red": [
-   "#d4357a",
-   "#f4a8c8"
+   "#a01e50",
+   "#f088b0"
   ],
   "rat_grey": [
    "#8a8a8a",
@@ -69,8 +69,8 @@
    "#40a0c0"
   ],
   "beetle_stag": [
-   "#3a2a4a",
-   "#6a4a8a"
+   "#22305e",
+   "#4a72b4"
   ],
   "beetle_jade": [
    "#2a6a5a",

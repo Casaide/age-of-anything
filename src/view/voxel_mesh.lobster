@@ -147,6 +147,7 @@ def vm_fill(model:MNode, v:float) -> vm_shell:
         let glow = m.unshaded or m.emission != float3_0
         var k = 0
         while k + 2 < d.p.length:
+            bake_pulse()
             let a = d.p[k]
             let e1 = d.p[k + 1] - a
             let e2 = d.p[k + 2] - a
@@ -192,6 +193,7 @@ def vm_fill(model:MNode, v:float) -> vm_shell:
     // each normal blended with its six neighbours' (the voxel stairs don't speckle the light)
     let raw = copy(sh.nrm)
     for(sh.pos) q, i:
+        bake_pulse()
         var n = raw[i] * 2.0
         for(VM_SIDES) o:
             let j = vm_slot(sh, q + o)
@@ -223,6 +225,7 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
     var lo = float2_1 * 1000000000.0
     var hi = float2_1 * -1000000000.0
     for(sh.pos) q:
+        bake_pulse()
         let p = (float(q) + float3_1 * 0.5) * v
         let s = screen(p)
         lo = min(lo, s)
@@ -241,6 +244,7 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
     let hx = 0.5 * v * px * (abs(cx.x) + abs(cx.y) + abs(cx.z))
     let hy = 0.5 * v * px * (abs(cy.x) + abs(cy.y) + abs(cy.z))
     for(sh.pos) q, i:
+        bake_pulse()
         let p = (float(q) + float3_1 * 0.5) * v
         let s = screen(p) - lo
         let d = dot(p, cz)  // (nearer: more)
@@ -260,6 +264,7 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
     for(win) i, j:
         if i >= 0:
             if shade[i] < 0.0:
+                bake_pulse()
                 let q = sh.pos[i]
                 var k = 1.0
                 if not sh.glow[i]:
@@ -280,6 +285,7 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
     // the outline: only round the whole silhouette's outside (not every gap between stakes or posts), soft: the colour
     // beside it darkened a little, half seen (Dominic: "a lot of hard edges... we should soften")
     for(h) y: for(w) x:
+        if x == 0: bake_pulse()
         let j = y * w + x
         var c = cols[j]
         if c.w == 0.0:
@@ -296,6 +302,7 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
     if shadow:
         let rx = int(ceiling(hx)) + 1
         for(sh.pos) q:
+            bake_pulse()
             let p = (float(q) + float3_1 * 0.5) * v
             if p.y < v * 3.0:
                 let g = screen(float3 { p.x, 0.0, p.z }) - lo
@@ -305,6 +312,7 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
                     if xx >= 0 and yy >= 0 and xx < w and yy < h and out[(yy * w + xx) * 4 + 3] == 0:
                         for(4) ch: write_int8_le(out, (yy * w + xx) * 4 + ch, WB_CONTACT[ch])
         for(sh.pos) q:
+            bake_pulse()
             let p = (float(q) + float3_1 * 0.5) * v
             if p.y > v * 0.5:
                 let g = screen(p + sun * (p.y / -sun.y)) - lo

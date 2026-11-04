@@ -94,6 +94,124 @@ def page_buildings(page:int) -> [int]:
             if bt_name[k] == id: out.push(k)
     return out
 
+// ---- what a hover card says (sim_debug.gd's _unit_tip, _building_tip, _age_tip, _research_tip): what it is and
+// does, what makes it better, and in red just what stops you now (resources short, or a building or age missing).
+def names_list(names:[string], most:int) -> string:
+    let shown = concat_string(names.slice(0, min(most, names.length)), ", ")
+    return if names.length > most: shown + " +{names.length - most} more" else: shown
+
+def short_of(cost:[int]) -> string:
+    let parts = []::string
+    for(cost) c, r:
+        if stock[r][ME] < c: parts.push("{c - stock[r][ME]} {resource_names[r]}")
+    return if parts.length: "!Not enough resources: short {concat_string(parts, ", ")}" else: ""
+
+// Why the building bi can't research r (or age up, r -1) now: "" when it can.
+def why_barred(bi:int, r:int) -> string:
+    if bi < 0: return ""
+    if b_done[bi] == 0: return "!The building isn\'t finished yet."
+    if r < 0:
+        let a = next_age(ME)
+        if a < 0: return "~The last age."
+        if tech_queued(ME, AGE_UP_ENTRY): return "~Already ageing up."
+        let need = filter(ages_list[a].needs[ME]) k: not has_building(ME, k)
+        if need.length: return "!Needs a building first: " + concat_string(map(need) k: bname(k), ", ")
+        if b_queue[bi].length >= r_queue_max: return "!The queue is full."
+        return short_of(ages_list[a].cost)
+    let item = research[r]
+    if researched[ME][r] == 1: return "~Done."
+    if tech_queued(ME, r): return "~Being researched."
+    if ages[ME] < item.age: return "!Needs the {age_name(item.age)} first."
+    if item.after >= 0 and researched[ME][item.after] == 0: return "!Needs {research_name(item.after)} first."
+    if item.before[ME] >= 0 and researched[ME][item.before[ME]] == 0: return "!Needs {research_name(item.before[ME])} first."
+    if b_queue[bi].length >= r_queue_max: return "!The queue is full."
+    return short_of(research_cost(ME, r))
+
+def any_bonus(bonus:[int], tags:[int]) -> bool:
+    for(tags) tag:
+        if tag >= 0 and tag < bonus.length and bonus[tag] > 0: return true
+    return false
+
+def betters_unit(item:Research, tags:[int]) -> bool:  // a unit stat effect (attack, hp, armour, bonus...) that reaches it
+    for(item.effects) fx:
+        if fx.kind <= 4 and reaches(fx, tags): return true
+    return false
+
+def unit_tip(k:int, room:bool) -> string:
+    let rows = []::string
+    if t_worker[k]: rows.push("Gathers food, wood, stone and gold, and builds.")
+    else:
+        for(card_lines(k)) l: rows.push(l)
+        let bonus = []::string
+        for(t_bonus[k]) v, c:
+            if v > 0 and c < su_classes.length: bonus.push("+{v} vs {su_classes[c]}")
+        if bonus.length: rows.push("Bonus " + concat_string(bonus, ", "))
+        let strong = []::string
+        let weak = []::string
+        for(t_player) owner, f:
+            if is_foe(ME, owner) and t_animal[f] == 0:
+                let fname = unit_name(f)
+                if any_bonus(t_bonus[k], t_tags[f]) and not contains_str(strong, fname): strong.push(fname)
+                if any_bonus(t_bonus[f], t_tags[k]) and not contains_str(weak, fname): weak.push(fname)
+        if strong.length: rows.push("+Strong vs: " + names_list(strong, 3))
+        if weak.length: rows.push("Weak vs: " + names_list(weak, 3))
+    let ups = []::string
+    for(research) item, r:
+        if researched[ME][r] == 0 and item.open[ME] != 0 and betters_unit(item, t_tags[k]):
+            ups.push("{research_name(r)} ({bname(item.building)})")
+    if ups.length: rows.push("~Upgrades: " + names_list(ups, 4))
+    for(su_type_line[k]) l, n:
+        let age = as_int(at(l, "age"))
+        if n > 0 and age > ages[ME]: rows.push("~{age_name(age)}: becomes {gstr(at(l, "recipe"), "name", unit_name(k))}")
+    if not room: rows.push("!The queue is full.")
+    else:
+        let short = short_of(t_cost[k])
+        if short != "": rows.push(short)
+    return concat_string(rows, "\n")
+
+def building_tip(k:int) -> string:
+    let rows = []::string
+    let desc = if k < su_btypes.length: gstr(su_btypes[k], "desc", "") else: ""
+    if desc != "": rows.push(desc)
+    let trains = map(bm_trains[ME][k]) u: unit_name(u)
+    if trains.length: rows.push("Trains: " + names_list(trains, 5))
+    let res = []::string
+    for(research) item, r:
+        if item.building == k and item.open[ME] != 0 and item.line_has[ME] and researched[ME][r] == 0: res.push(research_name(r))
+    if res.length: rows.push("Research: " + names_list(res, 5))
+    if bt_pop[k] > 0: rows.push("Houses {bt_pop[k]}")
+    let takes = []::string
+    for(bt_drop[k]) d, r:
+        if d == 1: takes.push(resource_names[r].lowercase())
+    if takes.length: rows.push("Takes in: " + concat_string(takes, ", "))
+    for(ages_list) a:
+        if a.age > ages[ME] and contains(a.needs[ME], k): rows.push("+Needed to reach the {age_name(a.age)}")
+    let short = short_of(bm_cost[ME][k])
+    if short != "": rows.push(short)
+    return concat_string(rows, "\n")
+
+def age_tip(bi:int) -> string:
+    let a = next_age(ME)
+    if a < 0: return ""
+    let ag = ages_list[a]
+    let rows = [ "~Takes {ag.ticks / 20} s at the {bname(ag.building)}" ]
+    let unlocks = []::string
+    for(bt_age) age, k:
+        if age == ag.age and not bt_special[k]: unlocks.push(bname(k))
+    if unlocks.length: rows.push("+Unlocks: " + names_list(unlocks, 6))
+    let why = why_barred(bi, -1)
+    if why != "": rows.push(why)
+    return concat_string(rows, "\n")
+
+def research_tip(bi:int, r:int) -> string:
+    let rows = []::string
+    let desc = gstr(su_research[r], "desc", "")
+    if desc != "": rows.push(desc)
+    let why = why_barred(bi, r)
+    if why != "": rows.push(why)
+    elif not rows.length: rows.push("Click to research it.")
+    return concat_string(rows, "\n")
+
 def build_btn(k:int) -> Btn:
     let can = buildable()
     var n = -1
@@ -105,7 +223,7 @@ def build_btn(k:int) -> Btn:
     b.cost = cost_words(b.costv)
     b.enabled = can_afford(ME, b.costv)
     b.glyph = bt_name[k]
-    b.tip = if b.enabled: "Click, then where to build it." else: "You can\'t pay for it yet."
+    b.tip = building_tip(k)
     return b
 
 def panel_buttons() -> [Btn]:
@@ -121,7 +239,7 @@ def panel_buttons() -> [Btn]:
             b.cost = cost_words(b.costv)
             b.enabled = b_done[bi] != 0 and room and can_afford(ME, b.costv)
             b.group = if t_hero[k] != 0: "Heroes" else: "Train"
-            b.tip = if not room: "The queue is full." elif not can_afford(ME, b.costv): "You can\'t pay for it yet." else: "Hit points {t_hp[k]}."
+            b.tip = unit_tip(k, room) + (if b_done[bi] == 0: "\n!The building isn\'t finished yet." else: "")
             out.push(b)
         for(offered(bi)) r, n:
             let b = Btn { research_name(r), if n < RESEARCH_KEYS.length: RESEARCH_KEYS[n].uppercase() else: "", 1, r }
@@ -129,7 +247,7 @@ def panel_buttons() -> [Btn]:
             b.cost = cost_words(b.costv)
             b.enabled = not tech_barred(ME, bi, r)
             b.group = "Research"
-            b.tip = if b.enabled: "Click to research it." else: "You can\'t pay for it yet, or the queue is full."
+            b.tip = research_tip(bi, r)
             research_look(b, r)
             out.push(b)
         if next_age(ME) >= 0 and ages_list[next_age(ME)].building == b_kind[bi]:
@@ -140,7 +258,7 @@ def panel_buttons() -> [Btn]:
             b.accent = true
             b.enabled = not tech_barred(ME, bi, -1)
             b.group = "Age up"
-            b.tip = if b.enabled: "On to the next age." else: "Needs its buildings first, or you can\'t pay for it yet."
+            b.tip = age_tip(bi)
             out.push(b)
         if capacity(bi) > 0:  // a building that holds a garrison: everyone out
             let inside = b_inside[bi].length / REC_SIZE
@@ -286,8 +404,12 @@ def press(b:Btn):
         case 4: issue_cmd(ME, CMD_STOP, selected_units(), 0, 0, 0, 0)
         case 6: build_page = b.arg
         case 7: issue_cmd(ME, CMD_STANCE, selected_units(), b.arg, 0, 0, 0)
-        case 8: issue_cmd(ME, CMD_CALL_TO_ARMS, []::int, sel_building, 0, 0, 0)
-        case 9: issue_cmd(ME, CMD_BACK_TO_WORK, []::int, 0, 0, 0, 0)
+        case 8:
+            issue_cmd(ME, CMD_CALL_TO_ARMS, []::int, sel_building, 0, 0, 0)
+            play_sound("town_bell", -2.0)
+        case 9:
+            issue_cmd(ME, CMD_BACK_TO_WORK, []::int, 0, 0, 0, 0)
+            play_sound("town_bell_clear", -4.0)
         case 10: arming_attack = true
         case 11: arming_ability = true
         case 12: issue_cmd(ME, CMD_UNGARRISON, []::int, sel_building, 0, 0, 0)
@@ -747,8 +869,8 @@ def draw_panel():
     var q_hover = -1
     for(q_items) it, n:
         if mpos.x >= it.at.x and mpos.y >= it.at.y and mpos.x <= it.at.x + it.side and mpos.y <= it.at.y + it.side: q_hover = n
-    if hover >= 0: tip_card(mpos, items[hover].b.label, items[hover].b.cost, items[hover].b.tip, items[hover].b.enabled)
-    elif q_hover >= 0: tip_card(mpos, q_items[q_hover].b.label, "", "Click to cancel.", true)
+    if hover >= 0: tip_card(mpos, items[hover].b.label, items[hover].b.costv, items[hover].b.tip, items[hover].b.enabled)
+    elif q_hover >= 0: tip_card(mpos, q_items[q_hover].b.label, []::int, "Click to cancel.", true)
     tb_flush()
     ui_flush()
 
@@ -771,7 +893,6 @@ def cost_row(c:[int], at:float2, w:float):
         tb_icon("res_" + resource_names[n], float2 { x + tw + 1.0 * s, at.y + 1.0 * s }, fs * 1.15, 1.0)
         x += tw + fs * 1.15 + 2.0 * s
 
-// A tooltip card (theme.gd's tip_card): the name in bold, the cost, a line; above the mouse.
 // ---- the pad's wheel (D-133; also touch's): the panel's own buttons, bigger, in a ring round the screen's middle
 // (a page a group when there are many), over the battle dimmed; the one pointed at lifted, its card beside the ring.
 let WHEEL_BIG = 1.35
@@ -880,7 +1001,7 @@ def wheel_draw():
             edged_text(float2 { x, ty }, c, fsz, if k == pad_page: PANEL_GOLD else: float4 { 0.8, 0.76, 0.66, 0.7 }, 2)
             x += tb_text_w(c, fsz, 2) + 18.0 * s
     let card_at = mid + float2 { r + bw * 0.5 + 36.0 * s, 40.0 * s }
-    if hot >= 0: tip_card(card_at, items[hot].b.label, items[hot].b.cost, items[hot].b.tip, items[hot].b.enabled)
+    if hot >= 0: tip_card(card_at, items[hot].b.label, items[hot].b.costv, items[hot].b.tip, items[hot].b.enabled)
     else:
         let hint = if touch_play: "Tap to choose, tap elsewhere to close" else: "Point, A to choose, B to close"
         tb_text(float2 { mid.x - tb_text_w(hint, int(15.0 * s), 0) / 2.0, mid.y + r + bw * 0.5 + 18.0 * s }, hint, int(15.0 * s), ui_look.dim, 0)
@@ -930,14 +1051,60 @@ def build_button():
             sel_building = 0
         wheel_open()
 
-def tip_card(m:float2, name:string, cost:string, line:string, ok:bool):
+// A tooltip card (theme.gd's tip_card): the name in bold, the cost (each part a number and its icon, red when
+// short), then the tip's lines, wrapped. A line can start with a mark: "!" red (what stops it), "+" green (what it
+// gives), "~" dim (an aside). A disabled button's plain tip, with no marks at all, shows red. Drawn after everything
+// queued under it, so the panel's own words don't show through (Dominic, 2026-11-04).
+let TIP_GOOD = float4 { 0.56, 0.82, 0.45, 1.0 }
+let TIP_TEXT = float4 { 0.94, 0.89, 0.78, 1.0 }
+
+def tip_line_marked(l:string) -> bool:
+    if l == "": return false
+    let mark = l.substring(0, 1)
+    return mark == "!" or mark == "+" or mark == "~"
+
+def tip_card(m:float2, name:string, costv:[int], tip:string, ok:bool):
+    tb_flush()
+    ui_flush()
     let s = hud_s()
-    let tlines = filter([ cost, line ]) l: l != ""
+    let fs = int(14.0 * s)
+    let lh = 19.0 * s
+    let maxw = 360.0 * s
+    let rows = []::string
+    let cols = []::float4
+    let tiplines = tokenize(tip, "\n", "")
+    let has_marks = exists(tiplines): tip_line_marked(_)
+    for(tiplines) raw:
+        if raw == "": continue
+        let mark = raw.substring(0, 1)
+        let col = if mark == "!": PANEL_SHORT elif mark == "+": TIP_GOOD elif mark == "~": ui_look.dim elif not ok and not has_marks: PANEL_SHORT else: TIP_TEXT
+        let body = if tip_line_marked(raw): raw.substring(1, raw.length - 1) else: raw
+        for(wrap(body, fs, 0, maxw)) l:
+            rows.push(l)
+            cols.push(col)
+    let parts = filter(costv.length) r: costv[r] > 0
+    let ifs = 14.0 * s
+    var cost_w = 0.0
+    for(parts) r: cost_w += tb_text_w(string(costv[r]), int(ifs), 1) + ifs * 1.2 + 10.0 * s
     var w = tb_text_w(name, int(16.0 * s), 1)
-    for(tlines) l: w = max(w, tb_text_w(l, int(14.0 * s), 0))
+    w = max(w, cost_w)
+    for(rows) l: w = max(w, tb_text_w(l, fs, 0))
     w += 28.0 * s
-    let h = 16.0 * s + 22.0 * s + float(tlines.length) * 19.0 * s + 8.0 * s
-    let at = float2 { clamp(m.x - w * 0.3, 4.0, float(gl.window_size().x) - w - 4.0), m.y - h - 14.0 * s }
+    let cost_h = if parts.length: lh + 2.0 * s else: 0.0
+    let h = 16.0 * s + 22.0 * s + cost_h + float(rows.length) * lh + 8.0 * s
+    let at = float2 { clamp(m.x - w * 0.3, 4.0, float(gl.window_size().x) - w - 4.0), max(4.0, m.y - h - 14.0 * s) }
     hud_box(at, float2 { w, h }, 3.0, ui_look.face * float4 { 1.08, 1.08, 1.08, 1.0 }, false, 4.0)
     tb_text(at + float2 { 14.0 * s, 9.0 * s }, name, int(16.0 * s), ui_look.title, 1)
-    for(tlines) l, n: tb_text(at + float2 { 14.0 * s, 9.0 * s + 22.0 * s + float(n) * 19.0 * s }, l, int(14.0 * s), if l == line and not ok: PANEL_SHORT else: float4 { 0.94, 0.89, 0.78, 1.0 }, 0)
+    var y = at.y + 9.0 * s + 22.0 * s
+    if parts.length:
+        var x = at.x + 14.0 * s
+        for(parts) r:
+            let txt = string(costv[r])
+            let tw = tb_text_w(txt, int(ifs), 1)
+            edged_text(float2 { x, y }, txt, int(ifs), if stock[r][ME] < costv[r]: PANEL_SHORT else: float4_1, 1)
+            tb_icon("res_" + resource_names[r], float2 { x + tw + 2.0 * s, y + 1.0 * s }, ifs * 1.15, 1.0)
+            x += tw + ifs * 1.2 + 10.0 * s
+        y += cost_h
+    for(rows) l, n: tb_text(float2 { at.x + 14.0 * s, y + float(n) * lh }, l, fs, cols[n], 0)
+    tb_flush()
+    ui_flush()
