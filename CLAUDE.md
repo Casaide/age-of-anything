@@ -17,7 +17,7 @@ macOS and the Steam Deck.
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
 | `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools
 | `docs/milestones/lobster-port.md` | The move from Godot to Lobster: what was ported, how it was checked, what's left |
-| `docs/audio.md` | How the sound is made: the offline synth (`tools/audio/`), effects, creature voices, the theme in stems by age |
+| `docs/audio.md` | How the sound is made: the offline synth (`src/audio/`), effects, creature voices, the theme in stems by age |
 
 Before starting a milestone, read `docs/milestones/<its file>.md` (and the related parts of
 `docs/mvp-plan.md`), write the plan into the milestone file, and keep its checklist current. If you postpone something,
@@ -77,7 +77,7 @@ branch is pushed with every commit to it, since the game can't be rebuilt withou
   map and movement (m2), economy (m3), combat (m4), the art rework (m5), foundations (m6), progression (m7), AI and
   match flow (m8), fog and juice (m9), playtest and balance (m10), cleanup (m11), the land tech tree and maps (m12,
   m15), unit lines (m13), race identity and heroes (m14), sieges (m16), living towns (m17), the UI (m19), modability
-  (m21), save and load (D-140 to D-142), sound (`tools/audio/`, 2026-10-11), bears (D-161 to D-163).
+  (m21), save and load (D-140 to D-142), sound (`src/audio/`, 2026-10-11), bears (D-161 to D-163).
 
 ## Layout
 
@@ -120,12 +120,12 @@ src/             the game, in Lobster; run everything from here (paths are ../da
 assets/          SVG icons and textures, audio (rendered), fonts
 tests/           batch.sh (the tests side by side), sheets/*.json (concept sheet specs), mods/ (bad-mod fixtures)
 mods/            mods (docs/modding.md): data + Lobster models; scifi_test is the example. mods_private/ is gitignored
-tools/           audio/ (the synth), mods/ (new_mod.sh, pack.sh), perf/, deck/pull_lobster.sh
+tools/           mods/ (new_mod.sh, pack.sh), perf/, deck/pull_lobster.sh
 ```
 
 ## Commands
 
-Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `game` branch (alias it as `lobster`). Run programs from `src/`. No new Python: tools are Lobster programs or shell (#114 removes what's there).
+Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `game` branch (alias it as `lobster`). Run programs from `src/`. No Python: tools are Lobster programs or shell (#114).
 
 ```sh
 ./play.sh                                                          # the game: the title screen (Battle the AI, network, saves, Race Lab)
@@ -152,7 +152,7 @@ lobster race_matches.lobster -- reed_meadow; lobster mass_battle.lobster -- 2; l
 src/deck/build.sh                                                  # the Deck build (podman machine `aoa-build` running)
 src/android/build.sh                                               # the Android APK (build/android/age-of-anything.apk; adb install -r it)
 src/prebake.sh                                                     # every building and prop baked once into src/baked/ (the builds ship it, D-185)
-python3 tools/audio/render.py [sfx|voices|music|<name>...]         # re-render the sounds into assets/audio (from the repo root)
+./render_audio.sh [sfx|voices|music|<name>...]                     # re-render the sounds into assets/audio
 tools/mods/new_mod.sh <id> [--era <tag>] [--private]       # scaffold a mod (docs/modding.md); tools/mods/pack.sh <id> zips it
 ```
 
@@ -171,7 +171,7 @@ background. The batch runs 4 processes at once by default (`jobs=N` or `AOA_JOBS
 time. Each shard is its own seeded world, so results match a serial run. The tick-time check measures wall time:
 on a busy machine it can fail. Raise `BAKE_VERSION` (`view/bake_cache.lobster`: buildings and props) once for a batch of bake changes, not
 per tweak: every raise rebakes everything. Tests are silent (`mute`, and every capture option mutes). Look at a
-screenshot after visual changes. After a change to `tools/audio/`, re-render and commit `assets/audio/` with it.
+screenshot after visual changes. After a change to `src/audio/`, re-render and commit `assets/audio/` with it.
 
 ## Rules that matter
 

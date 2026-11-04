@@ -569,7 +569,7 @@ def g_cat():
     expect(has(asked, "mount") and rstr(at(asked, "mount"), "creature") == "cat", "\'cats\' asks for the cat mount")
 
 // Every sound data/audio.json names has its takes on disk; every creature's voice has its files; every
-// music piece has every stem, a loop long (all rendered by tools/audio/render.py).
+// music piece has every stem, a loop long (all rendered by render_audio.sh).
 def g_audio():
     let cfg = load_json(DATA + "/audio.json")
     let buses = at(cfg, "buses")
