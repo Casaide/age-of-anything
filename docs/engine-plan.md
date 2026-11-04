@@ -379,7 +379,7 @@ game's own options pass straight through. `creel help [command]` lists them; eve
 | `creel test [quick\|all] [jobs:N]` | The pack's tests and the engine's, side by side | `tests/batch.sh` |
 | `creel golden [update] [section]` | The golden files: starts, buildings, effects, research text | `src/golden.sh` |
 | `creel voxel <body> [gear,...] [mode:legs\|skins\|deaths]` | A live voxel preview window, reloads on save; with `out:<png>` a sheet | `voxel_proto.lobster` |
-| `creel map <id>` | Checks a map (legend, starts, reachability) and draws it as a picture | `path_audit`, `tools/maps/` |
+| `creel map <id>` | Checks a map (legend, starts, reachability) and draws it as a picture | `path_audit` |
 | `creel balance [age] [refit]` | The equal-cost round robin; `refit` fits prices from stored fights | `balance.lobster`, `calibrate.lobster` |
 | `creel perf [secs]` | The frame budget in the real window | `play.sh ... perf:<s>` |
 | `creel prebake` | Bakes fixed art once into the pack's `baked/` | `src/prebake.sh` |
