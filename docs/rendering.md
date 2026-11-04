@@ -164,7 +164,7 @@ Units, buildings and props are baked by Lobster code and kept on disk.
 - **Buildings and props: shipped, not baked at the start (D-185).** They don't depend on the prompt, only on the
   culture's architecture, so they're baked once on the build machine: `src/prebake.sh` runs the game with `prebake`,
   which bakes every prop and every architecture's buildings into `src/baked/` (not committed; remade when
-  `BAKE_VERSION` changes) and compresses the PNGs (`tools/art/squeeze_png.py`). The game reads `baked/` before
+  `BAKE_VERSION` changes) and compresses the PNGs (ImageMagick `mogrify`, pixels unchanged). The game reads `baked/` before
   `bake_cache/` (`bake_shipped_dir`); the Deck and Android builds run the prebake and ship the folder. Sheets from
   disk load when first drawn (`add_sheet_later`, `sheet_texture` in `game/pack.lobster`). One look of one building
   with its stages is a job (`akb_bake_look`, `art_kit_buildings.lobster`), a prop with its stages another (`ak_bake`,

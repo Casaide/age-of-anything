@@ -43,7 +43,7 @@ cp "$here/android/sdl/"*.java "$proj/app/src/main/java/org/libsdl/app/"
 cp "$here/android/Game.java" "$proj/app/src/main/java/com/ageofanything/game/"
 cp "$here/android/AndroidManifest.xml" "$proj/app/src/main/AndroidManifest.xml"
 sed -i '' 's#<string name="app_name">.*</string>#<string name="app_name">Age of Anything</string>#' "$proj/app/src/main/res/values/strings.xml"
-python3 "$here/android/icon.py" "$root" "$proj/app/src/main/res"   # (the game icon as the icon and splash)
+"$here/android/icon.sh" "$root" "$proj/app/src/main/res"   # (the game icon as the icon and splash)
 sed -i '' 's#^APP_PLATFORM=.*#APP_PLATFORM=android-24#' "$proj/app/jni/Application.mk"
 sed -i '' "s#gradle-[0-9.]*-all.zip#gradle-$GRADLE_VERSION-bin.zip#" "$proj/gradle/wrapper/gradle-wrapper.properties"
 cat > "$proj/build.gradle" <<EOF
@@ -91,7 +91,7 @@ rsync -a --exclude '*.import' --exclude '*.uid' "$root/mods/" "$assets/mods/"
 rsync -a "$here/textures" "$here/icons" "$assets/"
 echo "== Lobster -> C++"
 # Folders the game lists come from a table of the APK's folders (apk_files.lobster).
-python3 "$here/android/apk_files.py" "$assets" "$stage/apk_files.lobster"
+"$LOBSTER_SRC/bin/lobster" "$here/android/apk_files.lobster" -- "$assets" "$stage/apk_files.lobster"
 sed -i '' 's#^import std$#import std\
 import .apk_files#' "$stage/game.lobster"
 sed -i '' 's#let names = scan_folder("data/maps", false)#let names = apk_scan("data/maps")#' "$stage/game.lobster"

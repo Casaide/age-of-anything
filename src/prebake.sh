@@ -13,5 +13,11 @@ if [ "$(cat baked/version 2>/dev/null)" != "$version" ]; then
 	echo "$version" > baked/version
 fi
 "$LOBSTER" game.lobster -- none - prebake mute 2>&1 | grep '^prebake:'
-python3 ../tools/art/squeeze_png.py baked
+# Recompressed in place (the game's PNG writer, model/build_mats.lobster bmat_png, stores the pixels uncompressed), only
+# what's new since the last run. Pixels unchanged.
+newer=""
+if [ -f baked/squeezed ]; then newer="-newer baked/squeezed"; fi
+find baked -name '*.png' $newer -print0 | xargs -0 -P4 -n32 magick mogrify -define png:compression-level=9 \
+	-define png:compression-filter=0 -define png:compression-strategy=0 -define png:color-type=6 -define png:exclude-chunks=all
+touch baked/squeezed
 echo "baked/: $(ls baked | wc -l | tr -d ' ') files, $(du -sh baked | cut -f1)"
