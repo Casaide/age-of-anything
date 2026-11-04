@@ -321,7 +321,7 @@ def draw_topbar(speed:float, paused:bool):
     if tb_tip != "":
         let fs = int(15.0 * s)
         let cw = tb_text_w(tb_tip, fs, 0) + 24.0 * s
-        let m = float(gl.mouse_pos(0))
+        let m = mouse_px()
         let cat = float2 { clamp(m.x - 20.0 * s, 4.0, float(gl.window_size().x) - cw - 4.0), at.y + h + 6.0 * s }
         hud_box(cat, float2 { cw, 34.0 * s }, 3.0, ui_look.face * float4 { 1.08, 1.08, 1.08, 1.0 }, false, 4.0)
         tb_text(cat + float2 { 12.0 * s, (34.0 * s - float(fs)) / 2.0 - 2.0 * s }, tb_tip, fs, float4 { 0.94, 0.89, 0.78, 1.0 }, 0)

@@ -196,7 +196,11 @@ var zoom = 2.0      // screen px per art px
 def to_screen(p:float2) -> float2: return (p - cam) * zoom + float(gl.window_size()) / 2.0
 def from_screen(p:float2) -> float2: return (p - float(gl.window_size()) / 2.0) / zoom + cam
 var fake_mouse = float2 { -1.0, -1.0 }  // the self-test's mouse (screen px), when set
-def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))
+var vc_on = false                       // the OS cursor hidden and a virtual one in its place (game/cursors.lobster)
+var vc_pos = float2_0                   // where it is (screen px)
+var vc_scale = 1.0                      // screen px a window point: what gl.mouse_delta moves in
+var vc_free = false                     // tests and captures leave the OS cursor alone
+def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse elif vc_on: vc_pos else: float(gl.mouse_pos(0))
 def mouse_milli() -> float2: return pick_milli(from_screen(mouse_px()))  // (on raised ground: the hill under the mouse)
 
 // ------------------------------------------------------------------ the ground
@@ -1385,7 +1389,7 @@ def mouse():
 
 def scroll():
     let ws = float(gl.window_size())
-    let m = float(gl.mouse_pos(0))
+    let m = mouse_px()
     let sp = 1400.0 * gl.delta_time() / zoom
     var d = float2_0
     if gl.button("left") >= 1 or gl.button("a") >= 1: d.x -= 1.0  // (the arrows or WASD)
@@ -1626,7 +1630,7 @@ def draw_hud(paused:bool, speed:float):
             text_at(ws / 2.0 - float2 { 160.0, 40.0 }, if winner == teams[ME]: "Victory!" else: "Defeat")
     ui_batch(): draw_minimap()
     if dragging:
-        let m = float(gl.mouse_pos(0))
+        let m = mouse_px()
         let lo = float2 { min(m.x, drag_from.x), min(m.y, drag_from.y) }
         let hi = float2 { max(m.x, drag_from.x), max(m.y, drag_from.y) }
         gl.color(float4 { 0.95, 0.91, 0.79, 0.8 }):
@@ -1909,6 +1913,8 @@ fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if no_vsync: gl.window_
 pace(PACE_MATCH)                           // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon_mac.png")  // (the Dock's icon on the Mac)
 note("window")
+vc_scale = max(1.0, round(float(gl.window_size().x) / 1600.0))  // (the window asked for 1600 points; a small screen trims it)
+vc_free = shot != "" or selftest or padtest or reload_at >= 0.0 or perf_for > 0.0
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
@@ -2429,6 +2435,8 @@ def pause_menu():
             else: quit_game = true
     ui_flush()
 
+import .game.cursors
+
 // A match from its start: the camera on your Town Center, the clock at 0, played until it's quit (or a capture's done).
 def play_match():
     tc0 = town_center(ME)
@@ -2452,6 +2460,7 @@ def play_match():
         if perf_for > 0.0:  // (the Town Center selected: its panel and queue drawn, the HUD full)
             perf_begin()
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
+        vc_tick()
         if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
         if gl.button("controller_start") == 1 and not typing_race and not tree_open: menu_open = not menu_open
         if has_s(args, "menu") and frame_no == 2: menu_open = true  // (captures)
@@ -2588,6 +2597,7 @@ def play_match():
             elif end_screen_up(): end_screen()
             draw_banner()
             if typing_race: typing_tick()
+            draw_cursor()
         perf_lap(9)
         if has_s(args, "savegame") and clock_s >= 3.0:  // (tests: the pause menu's Save game, then quit)
             save_game()
@@ -2688,6 +2698,7 @@ while not quit_app and not bake_quit:
         if front_choice == "": break
     if not make_match(): break
     play_match()
+    vc_release()
     if quit_app or bake_quit or not back_to_lobby: break
     new_match_reset()
     front_first = true
