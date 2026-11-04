@@ -15,14 +15,14 @@ let VX_WALK = 1
 let VX_WORK = 2
 let VX_ATTACK = 3
 let VX_DIE = 4
-let VX_BUILD = 5   // a worker's jobs, each with its tool (Dominic, 2026-11-04: the right tool for the job): hammering,
-let VX_MINE = 6    // picking at stone and gold, picking fruit into a basket (VX_WORK: chopping, the axe),
+let VX_BUILD = 5  // a worker's jobs, each with its tool (Dominic, 2026-11-04: the right tool for the job): hammering,
+let VX_MINE = 6   // picking at stone and gold, picking fruit into a basket (VX_WORK: chopping, the axe),
 let VX_FORAGE = 7
-let VX_CARRY = 8   // and walking a load home behind a wheelbarrow
+let VX_CARRY = 8  // and walking a load home behind a wheelbarrow
 let VX_MODES = 9
-let VX_STEPS = [ 1, 8, 8, 8, 6, 8, 8, 8, 8 ]  // steps in each mode (a fall's last step is lying)
+let VX_STEPS = [ 1, 8, 8, 8, 6, 8, 8, 8, 8 ]                                 // steps in each mode (a fall's last step is lying)
 let VX_JOB_TOOL = [ "", "", "axe", "", "", "hammer", "pick", "basket", "" ]  // a work mode's tool
-let VX_DRAW_K = 1.1 / ART_K       // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
+let VX_DRAW_K = 1.1 / ART_K                                                  // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
 
 // A look: a unit def, drawn the same by every type and step that has it.
 class vx_lk:
