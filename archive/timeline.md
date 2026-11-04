@@ -187,3 +187,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-11-03:** The lobby and HUD checked against the Godot game: the lobby back at Godot's size (76% of the window) and type (spaced captions, bold buttons), the match loader and pause menu redrawn as Godot's (the menu sized to its contents, its danger group set apart), the UI's materials at Godot's finer grain with metal's scratches the right way round, the opening tips back.
 - **2026-11-03:** Milestone 24: every building, stage, wall, gate and prop voxelized, the old baker removed (D-208); walls baked whole per tile, gates sorted piece by piece and opening at last; perf 1.0 ms median.
 - **2026-11-04:** The still ground is drawn once into a picture and redrawn at 15 Hz for the water: GPU power cut by more than half in a match (D-209).
+- 2026-11-04: Clean Lobster fork (`game` branch), issues first, the backlog in GitHub issues; Android runs a match on it again.

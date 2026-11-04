@@ -1588,3 +1588,5 @@ the port). Claude, for Dominic.
 
 **D-209, 2026-11-04: The still ground is a picture.**
 The ground and hills go through a window-sized texture while the camera holds still (`draw_ground_cached`, game/ground.lobster), redrawn at 15 Hz for the water (its `time` in the same steps) and when the masks, paths or wear change. A moving camera draws them straight, because the picture cost 1 W more than drawing live when redrawn every frame. GPU 2.1-3.1 W to 1.0-1.3 W with the camera still. Water moves at 15 Hz. Claude, for Dominic's hot laptop.
+
+**D-210, 2026-11-04: Issues first, and the game on a clean Lobster fork.** Dominic: things were getting out of hand. Everything implemented gets a GitHub issue first; the backlog and every upstream Lobster change are issues. The game builds only against the `game` branch of `Drache93/lobster`: upstream master plus one commit per fix, with a message detailed enough to split later. No stashes, no patching the engine in a build. A change stays only if removing it breaks something. Python goes (#114). Rules in CLAUDE.md. Dominic.

@@ -13,6 +13,10 @@ Goal: one clean fork branch, every change committed, each one proven needed by t
 - The branch is 8 commits behind upstream, including #467's `--mir` fixes.
 - Local `master` isn't upstream's, and the fork's `master` is different again.
 
+## State, end of 2026-11-04
+
+`game` is on the fork and in `~/Dev/lobster`: upstream plus pool, `gl.draw_mesh`/`gl.buffers_made`, `gl.window_focused`, frame sleep, `gl.window_icon`, ReadTexture, touch, lobsterfmt. It's everything the game used, minus the LSP and old formatter commits, so **most of these aren't yet proven needed**: that's the next step, one at a time. Quick batch and `perf:` pass; a match runs on the Android emulator. The old binary is kept as `bin/lobster.pre-fork`.
+
 ## What's in it
 
 | # | Change | Where it is | Game uses it | PR | Our bug or Lobster's? | Evidence |
