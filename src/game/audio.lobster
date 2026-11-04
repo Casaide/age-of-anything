@@ -1,5 +1,5 @@
 // ------------------------------------------------------------------ sound (src/view/audio.gd, data/audio.json)
-// Every sound and voice is a WAV in assets/audio, rendered by tools/audio. A sound has takes played in
+// Every sound and voice is a WAV in assets/audio, rendered by src/render_audio.sh. A sound has takes played in
 // turn, a gap it won't repeat within, and a bus (a volume in dB); voices are a creature's
 // select / ack / die takes.
 

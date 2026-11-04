@@ -188,3 +188,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-11-03:** Milestone 24: every building, stage, wall, gate and prop voxelized, the old baker removed (D-208); walls baked whole per tile, gates sorted piece by piece and opening at last; perf 1.0 ms median.
 - **2026-11-04:** The still ground is drawn once into a picture and redrawn at 15 Hz for the water: GPU power cut by more than half in a match (D-209).
 - 2026-11-04: Clean Lobster fork (`game` branch), issues first, the backlog in GitHub issues; Android runs a match on it again.
+- 2026-11-04: No Python left in the project: tools are Lobster or shell, the synth renders every sound sample for sample the same (D-211).

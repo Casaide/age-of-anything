@@ -1,7 +1,7 @@
 # How the sound is made (audio pipeline)
 
 Everything you hear is a file in `assets/audio/`, rendered offline by our own synthesiser
-(`tools/audio/`, pure Python, no dependencies) and committed like the `.glb` models. The game
+(`src/audio/`, in Lobster) and committed like the `.glb` models. The game
 only plays files. Nothing is downloaded, sampled or borrowed: every sound is ours, and a
 re-render gives the same bytes (seeded noise, fixed recipes). This page is the map; the code
 says the details.
@@ -38,7 +38,7 @@ Rules the sounds follow:
 ## The music
 
 The theme ("Whatever"; two more pieces below), D Dorian, 92 to the minute, 32 bars (A A B A'), about 84 seconds,
-written in `tools/audio/music.py` as text notes. It is rendered as **stems**, one seamless
+written in `src/audio/music.lobster` as text notes. It is rendered as **stems**, one seamless
 loop each (note tails and the room's tail wrap round), all the same length and in time, so
 any mix of them is the same tune:
 
@@ -72,8 +72,8 @@ and the stings in D sit in all three:
 
 Every piece has the same stems in the same roles (`pluck` carries the tune, `drums`, `flute`, `drone`,
 `horns`, `battle`), so the mixes by age work on each unchanged. Files: `music/<piece>_<stem>.ogg`;
-code: `tools/audio/music.py` (the theme and `PIECES`), `music_hearth.py`, `music_march.py`, `score.py`
-(the clock and note text they share). `render.py music` renders all three, `render.py hearth` one.
+code: `src/audio/music.lobster` (the theme), `music_hearth.lobster`, `music_march.lobster`, `score.lobster`
+(the clock and note text they share). `render_audio.sh music` renders all three, `render_audio.sh hearth` one.
 
 How the game picks (`music_tick`, numbers in `data/audio.json` music): the lobby plays the rotation's
 first piece (the theme). In a match the calm rotation (`theme`, `hearth`) turns over every `plays` (2)
@@ -86,17 +86,17 @@ and are halted, so at most two pieces play at once, briefly.
 ## Where things are
 
 ```
-tools/audio/
-  synth.py        the DSP: oscillators, noise, envelopes, one-pole and biquad filters, formants,
-                  modal bodies, soft clip, a Schroeder room, WAV out, panning
-  instruments.py  pluck (Karplus-Strong, tuned), flute, horn, war horn, drone, frame drum,
+src/audio/
+  synth.lobster   the DSP: the rng, oscillators, noise, envelopes, one-pole and biquad filters, formants,
+                  modal bodies, soft clip, a Schroeder room, WAV out
+  instruments.lobster  pluck (Karplus-Strong, tuned), flute, horn, war horn, drone, frame drum,
                   low drum, shaker, bell (wood / bronze), note_hz()
-  sfx.py          every effect as a recipe; TABLE says takes and peak level
-  voices.py       the creature voices (a glottal pulse through formants, plus animal noisemakers)
-  music.py        the theme: notes as text, the stems, PIECES, the seamless-loop render
-  music_hearth.py, music_march.py   the other two pieces; score.py what the three share
-  render.py       writes assets/audio/{sfx,voice,music}; music goes through ffmpeg to Ogg Vorbis
-  check.py        numbers for a file: length, peak, RMS, a pitch guess (ears-free sanity check)
+  sfx.lobster     every effect as a recipe; the table at its end says takes and peak level
+  voices.lobster  the creature voices (a glottal pulse through formants, plus animal noisemakers)
+  music.lobster   the theme: notes as text, the stems
+  music_hearth.lobster, music_march.lobster   the other two pieces; score.lobster what the three share
+src/render_audio.sh, render_audio.lobster   write assets/audio/{sfx,voice,music}, 4 at once; music goes through ffmpeg to Ogg Vorbis
+src/audio_check.lobster  numbers for a file: length, peak, RMS, a pitch guess (ears-free sanity check)
 assets/audio/
   sfx/<name>_<take>.wav        44.1 kHz mono 16-bit
   voice/<voice>_<kind>_<take>.wav
@@ -109,9 +109,9 @@ src/game/audio.lobster         the game's sound: play_sound(), say(), music_star
 Rendering:
 
 ```sh
-python3 tools/audio/render.py              # everything (about 15 s on this Mac, in parallel)
-python3 tools/audio/render.py sfx voices   # or music, or single names: chop frog horns
-python3 tools/audio/check.py assets/audio/sfx/chop_*.wav
+src/render_audio.sh                 # everything (about 10 s on this Mac, 4 at once)
+src/render_audio.sh sfx voices       # or music, or single names: chop frog horns
+(cd src; lobster audio_check.lobster -- ../assets/audio/sfx/chop_1.wav)
 afplay assets/audio/sfx/chop_1.wav         # listen (macOS)
 ```
 

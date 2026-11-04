@@ -159,7 +159,7 @@ game sound once 1.6's `sound` is read.
 **Needs a small engine change:** `audio.json` in the merge (sounds by name, voices, music mixes), and one lookup for a
 sound's file: the last pack in load order that has `audio/sfx/<name>_<n>.wav` wins, else the game's (as
 `data_path` does for data in `gen/datalib.lobster`). Then a mod's `audio/sfx/shoot_laser_1.wav` and
-`audio/voice/zorb_ack_1.wav` just work. A mod's sounds can come from `tools/audio/` (the synth) or anywhere; the pack
+`audio/voice/zorb_ack_1.wav` just work. A mod's sounds can come from `src/audio/` (the synth) or anywhere; the pack
 ships the WAVs.
 
 ### 1.8 New abilities
@@ -403,7 +403,7 @@ line between "a pack" and "a fork".
   - `data/parts.json`: the rifle and a blade, priced against a game part, `"voxel"` instead of a model case.
   - `data/shots.json`: a `laser` beam with its `hit` sparks and `sound`.
   - `data/ai.json`: the bots' build order for that tree.
-  - `audio/sfx/shoot_laser_1.wav`, `audio/voice/<alien>_ack_1.wav`: placeholders rendered by `tools/audio/`.
+  - `audio/sfx/shoot_laser_1.wav`, `audio/voice/<alien>_ack_1.wav`: placeholders rendered by `src/audio/`.
   - `sheets/<id>.json`: the alien in 8 facings, walking and firing.
   - `README.md`: what each file does, in the order a newcomer edits them.
 - **A template mini-game on the engine** (after rows 10 and 18): `games/template/` with `pack.json` of kind `game`,

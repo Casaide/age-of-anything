@@ -23,7 +23,7 @@ Why this model:
 |---|---|---|---|
 | 0 | **Wishlists** (no money, but they decide everything else) | from the day the Steam page goes up | Steam ranks launches by wishlists; this is the number to watch |
 | 1 | **The base game** on Steam (Early Access) | after a Next Fest | suggested $14.99-19.99, rising at 1.0; Steam's regional prices; a 10-15% launch discount |
-| 2 | **Supporter edition** (DLC bundle) | at Early Access | the soundtrack (we already render it: `tools/audio/`), a digital art book from the concept sheets in `docs/concepts/`, name in the credits. Cheap to make, and it's what fans buy to say thanks |
+| 2 | **Supporter edition** (DLC bundle) | at Early Access | the soundtrack (we already render it: `src/audio/`), a digital art book from the concept sheets in `docs/concepts/`, name in the credits. Cheap to make, and it's what fans buy to say thanks |
 | 3 | **Era packs** (paid DLC) | after 1.0 | gunpowder first, then steampunk, then sci-fi: they're already the plan (`CLAUDE.md` "Later", backlog). New parts, words, buildings, a theme. Priced ~$5-10 |
 | 4 | **Free updates** (not money, but they sell the game again) | throughout Early Access | new creatures (the bears, beavers), maps, modes; each update is a reason to post and a news hit |
 | 5 | Maybe: Ko-fi or Patreon for the devlog | any time | small, but it builds the core group early; only if Dominic wants to write for it |
