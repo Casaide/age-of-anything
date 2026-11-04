@@ -4,7 +4,7 @@
 races, and (2) the classic RTS game loop. Everything sits on a deterministic, integer-only, fixed-tick
 sim driven by a command stream, so lockstep networking slots in later without a rewrite.
 
-Technical background and sources: `research.md`. Post-MVP items: `backlog.md`.
+Technical background and sources: `research.md`. Post-MVP items: the `backlog` issues.
 
 > **Change from the original research plan:** the research suggested cutting the text-prompt
 > generator from the MVP. We built it first instead (milestone 0, done), so the demo can use

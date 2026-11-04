@@ -6,7 +6,6 @@ build/
 mods_private/
 # video footage and old-build worktrees (docs/video/ holds the plans)
 /video/
-.godot/
 
 # test shards and local game settings
 src/.shards.*/
