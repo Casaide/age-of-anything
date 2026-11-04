@@ -9,7 +9,8 @@ let CURSOR_SIZE = 0.65                    // of the 32 px art: about 21 points
 let CURSOR_TIP = 0.5                      // a tool's pointer, at half size
 let CURSOR_TOOL_AT = float2 { 7.0, 7.0 }  // where the tool sits after its pointer
 
-var vc_waiting = false  // the focus came back: not taken again until a click in the window (it may be on the title bar)
+var vc_waiting = false  // no focus at the start, or lost: not taken until a click in the window (not the title bar's)
+var vc_focused = false
 
 def vc_axis(v:int) -> int: return if v < 0: v - 1 else: v  // (undoes the rounding but for -1)
 
@@ -28,11 +29,13 @@ def vc_release():
 // Once a frame in a match, before the mouse is read.
 def vc_tick():
     if vc_free or touch_play or frame_no < 1: return  // (not during the load: frame 1 bakes)
-    if not gl.window_focused():
+    let focused = gl.window_focused()
+    if frame_no == 1: vc_waiting = not focused
+    elif vc_focused and not focused:
         vc_release()
         vc_waiting = true
-    elif vc_waiting:
-        if gl.button("mouse1") >= 1: vc_waiting = false
+    vc_focused = focused
+    if gl.button("mouse1") >= 1: vc_waiting = false  // (a click in the window: it's ours, whatever the flag says)
     if menu_open or vc_waiting: vc_release()
     elif not vc_on: vc_capture()
     if vc_on:
