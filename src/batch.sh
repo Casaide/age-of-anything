@@ -30,7 +30,7 @@ add() {   # add <name> <command...>
 }
 L="$LOBSTER"
 add run_tests "$L" run_tests.lobster
-add lint python3 lint.py   # lobsterfmt leaves every file as it is, every program compiles with no warnings
+add lint ./lint.sh   # lobsterfmt leaves every file as it is, every program compiles with no warnings
 add test_heroes "$L" test_heroes.lobster
 add race_identity "$L" test_race_identity.lobster
 add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand in their shadows as drawn (the voxels option)
