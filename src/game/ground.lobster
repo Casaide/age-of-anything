@@ -292,6 +292,13 @@ var arc_tex:resource<texture>? = nil
 var wear_tex:resource<texture>? = nil
 var ground_quad:resource<mesh>? = nil
 var fog_mesh:resource<mesh>? = nil
+let GROUND_HZ = 15.0  // how often still ground redraws (only its water moves; a fragment shader over every pixel: the laptop ran hot)
+var ground_tex:resource<texture>? = nil
+var ground_tex_size = int2_0
+var ground_tex_cam = float2_0
+var ground_tex_zoom = 0.0
+var ground_tex_step = -1.0
+var ground_stale = true  // a texture its shader reads was rebuilt
 
 def mask_channel(name:string) -> int:
     return switch name:
@@ -336,6 +343,7 @@ def build_masks():
     mask_bytes = map(w * h * 4) i: clamp(int(a[i] * 255.0 + 0.5), 0, 255)
     let rows = map(h) y: map(w) x: float4 { byte_of(a[(y * w + x) * 4]), byte_of(a[(y * w + x) * 4 + 1]), byte_of(a[(y * w + x) * 4 + 2]), byte_of(a[(y * w + x) * 4 + 3]) }
     mask_tex = gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap)
+    ground_stale = true
     if not paths_tex:  // (until the paths are painted: game/paths.lobster)
         let zero = map(4): map(4): float4_0
         paths_tex = gl.create_texture(zero, texture_format_clamp | texture_format_nomipmap)
@@ -351,6 +359,7 @@ def byte_of(v:float) -> float: return float(clamp(int(v * 255.0 + 0.5), 0, 255))
 
 // The trails worn by walkers (trails.lobster's wear, per tile), for the shader.
 def build_wear():
+    ground_stale = true
     wear_tex = gl.create_texture(map(H) y: map(W) x: float4 { float(if y * W + x < wear.length: wear[y * W + x] else: 0) / 255.0, 0.0, 0.0, 0.0 },
                                  texture_format_clamp | texture_format_nomipmap)
 
@@ -635,7 +644,7 @@ def draw_terrain_mesh(m:resource<mesh>, art_px:float):
     gl.set_shader("terrain")
     gl.set_uniform("map_size", float2 { float(W), float(H) })
     gl.set_uniform("art_px", art_px)
-    gl.set_uniform("time", gl.time())
+    gl.set_uniform("time", ground_step())
     gl.set_mesh_texture(m, 0, 0, mt)
     gl.set_mesh_texture(m, 0, 1, pt)
     gl.set_mesh_texture(m, 0, 2, wt)
@@ -660,12 +669,56 @@ def draw_ground(art_px:float):
     gl.set_shader("terrain")
     gl.set_uniform("map_size", float2 { float(W), float(H) })
     gl.set_uniform("art_px", art_px)
-    gl.set_uniform("time", gl.time())
+    gl.set_uniform("time", ground_step())
     gl.set_mesh_texture(gq, 0, 0, mt)
     gl.set_mesh_texture(gq, 0, 1, pt)
     gl.set_mesh_texture(gq, 0, 2, wt)
     gl.set_mesh_texture(gq, 0, 3, at)
     gl.render_mesh(gq)
+
+// The time the terrain shader sees: in steps, so the water moves only when the still ground is redrawn.
+def ground_step() -> float: return floor(gl.time() * GROUND_HZ) / GROUND_HZ
+
+// The ground and hills under everything, as they lie in the world's transform.
+def draw_ground_at(fs:float2, cam_px:float2, zoom:float, art_px:float):
+    gl.translate(fs / 2.0):
+        gl.scale(zoom):
+            gl.translate(-cam_px):
+                draw_ground(art_px)
+                draw_relief(art_px)
+
+// The same through a window-sized picture while the camera holds still, redrawn only when a texture they read changes
+// or the water's next step comes. A moving camera draws them straight (the picture would cost more than it saves).
+// (A framebuffer's rows run bottom up: read flipped. gl_FragCoord is the window's there too, so the dither lines up.)
+def draw_ground_cached(ws:int2, cam_px:float2, zoom:float, art_px:float):
+    let fs = float(ws)
+    if cam_px != ground_tex_cam or zoom != ground_tex_zoom:
+        ground_tex_cam = cam_px
+        ground_tex_zoom = zoom
+        ground_stale = true
+        draw_ground_at(fs, cam_px, zoom, art_px)
+        return
+    if ground_tex_size != ws:
+        ground_tex = gl.create_blank_texture(int3 { ws.x, ws.y, 0 }, texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min | texture_format_clamp)
+        ground_tex_size = ws
+        ground_stale = true
+    let step = ground_step()
+    if ground_stale or step != ground_tex_step:
+        gl.switch_to_framebuffer(ground_tex)
+        gl.ortho()
+        gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })  // (the frame's own, off the map's edge)
+        draw_ground_at(fs, cam_px, zoom, art_px)
+        gl.switch_to_framebuffer(nil)
+        gl.ortho()
+        ground_stale = false
+        ground_tex_step = step
+    let was = gl.blend(blend_none)
+    gl.set_shader("sprite_copy")
+    gl.set_primitive_texture(0, assert ground_tex)
+    gl.draw_mesh("PT", [ float3 { 0.0, 0.0, 0.0 }, float3 { fs.x, 0.0, 0.0 }, float3 { fs.x, fs.y, 0.0 }, float3 { 0.0, fs.y, 0.0 } ],
+                 []::float4, []::float3, [ float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, 0.0 } ], []::float2,
+                 [ 0, 2, 1, 0, 3, 2 ])
+    gl.blend(was)
 
 def draw_fog():
     let fm = fog_mesh

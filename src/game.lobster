@@ -823,11 +823,10 @@ def draw_world(alpha:float):
         mask_tick = tick
     if relief_built and tick % 20 == 0: refresh_paths()
     let ws = float(gl.window_size())
+    draw_ground_cached(gl.window_size(), float2 { floor(cam.x), floor(cam.y) }, zoom, zoom / ART_K)  // (screen px an art px: finer art, D-173)
     gl.translate(ws / 2.0):
         gl.scale(zoom):
             gl.translate(-float2 { floor(cam.x), floor(cam.y) }):
-                draw_ground(zoom / ART_K)
-                draw_relief(zoom / ART_K)  // (screen px an art px: finer art, D-173)
                 draw_fog()
                 perf_lap(1)
                 set_view_rect()
