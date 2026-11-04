@@ -80,14 +80,15 @@ def touch_back():
 def touch_tick(dt:float) -> bool:
     pad_on = true  // (the pad's drawing: the circle, the wheel)
     if gl.button("ac back") == 1: touch_back()
-    let one = gl.button("mouse1")
+    let one, one_up = gl.button("mouse1")
+    let quick = one < 1 and one_up == 1 and not touch_down and not touch_hud  // (see ui_clicked)
     let two = gl.button("mouse11")
     let m = float(gl.mouse_pos(0))
     if placing != touch_placing:
         touch_placing = placing
         if placing >= 0 and one < 1: fake_mouse = float(gl.window_size()) / 2.0
     let line = placing >= 0 and bt_line[placing] != 0  // (a wall or gate: the finger drags its line, not the view)
-    if one == 1 and two < 1:                           // a finger went down
+    if (one == 1 or quick) and two < 1:                // a finger went down
         touch_hud = in_panel(m) or in_topbar(m) or in_minimap(m) or (in_build_button(m) and placing < 0 and not pad_wheel.length)
         touch_down = not touch_hud
         touch_at = m

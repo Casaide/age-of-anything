@@ -122,7 +122,9 @@ var touch_play = false  // touch: play by touch, through the pad's controls (gam
 for(args) a, k:
     if k >= 2:
         if a == "watch": watch = true
-        if a == "touch": touch_play = true
+        if a == "touch":
+            touch_play = true
+            ui_touch = true
         let key, val = split_string(a, ":")
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
@@ -2478,6 +2480,7 @@ def play_match():
     note("loop")
     pace(PACE_MATCH)
     while gl.frame() and not quit_game and not bake_quit:
+        ui_click_tick()
         if perf_for > 0.0:  // (the Town Center selected: its panel and queue drawn, the HUD full)
             perf_begin()
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]

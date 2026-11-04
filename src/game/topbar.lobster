@@ -151,7 +151,7 @@ def hud_button(at:float2, size:float2, accent:bool, enabled:bool) -> bool:
     ui_outline(at, size, 1.0, float4 { 0.0, 0.0, 0.0, 0.8 })
     let rim = if over and enabled: 0.85 elif down: 0.6 elif accent: 0.7 else: 0.0
     if rim > 0.0: ui_outline(inner, isz, max(1.5, 2.0 * s), float4 { ui_look.accent.x, ui_look.accent.y, ui_look.accent.z, rim })
-    return over and enabled and gl.button("mouse1") == 1
+    return over and enabled and ui_clicked()
 
 def tb_over(at:float2, size:float2) -> bool:
     let m = mouse_px()  // (the self-tests' fake mouse too)
