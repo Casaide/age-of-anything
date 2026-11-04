@@ -46,7 +46,9 @@ branch is pushed with every commit to it, since the game can't be rebuilt withou
   evidence, and its PR if any. `reports/lobster-fork.md` is the overview.
 - Before changing Lobster, prove the fault is Lobster's and not our code. Reproduce it without the game if you can, measure with and
   without the change, and keep it only if removing it breaks something. A workaround in the game may be the right fix.
-- Upstream PRs are made when wanted, each on its own branch from upstream master, one change only.
+- Only what's validated stays on `game` (Dominic, 2026-11-04): if we aren't sure it's needed, it comes off until we are.
+- A PR upstream only for what's committed on `game` and tested with our game (Dominic, 2026-11-04): no loose files, nothing that
+  has only been tried on its own. Each PR is then made on its own branch from upstream master, one change only.
 
 ## Status
 
