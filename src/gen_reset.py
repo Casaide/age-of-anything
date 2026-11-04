@@ -74,7 +74,7 @@ save += ['    pad_saved_columns()  // (a save from an older build: its missing p
          '    roles_from_data()  // (... and its building types\' roles, D-192)',
          '    spatial_clear()  // (... and its spatial buckets, which an older build filled over the whole map)', '    return s.bots']
 open(os.path.join(here, 'gen', 'save.lobster'), 'w').write('\n'.join(save) + '\n')
-# Both files in the formatter's layout, so `python3 lint.py` stays clean after a run.
+# Both files in the formatter's layout, so `./lint.sh` stays clean after a run.
 import subprocess
-subprocess.run([os.path.expanduser('~/Dev/lobster/bin/lobster'), os.path.expanduser('~/Dev/lobster/tools/lobsterfmt/lobsterfmt.lobster'),
-                '--', '-w', os.path.join(here, 'gen', 'reset.lobster'), os.path.join(here, 'gen', 'save.lobster')], check=True)
+subprocess.run([os.path.expanduser('~/Dev/lobster/bin/lobsterfmt'), '-w', '-program', os.path.join(here, 'game.lobster'),
+                os.path.join(here, 'gen', 'reset.lobster'), os.path.join(here, 'gen', 'save.lobster')], check=True)
