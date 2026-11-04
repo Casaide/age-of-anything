@@ -193,7 +193,7 @@ def building_fx_tick(dt:float):
             let at = building_anchor(b)
             let fx = bfx.get(look)
             if fx and fx.has_smoke and (is_house(b_kind[b]) or b_queue[b].length > 0):
-                emit("{b_id[b]}:s", 2.5, dt)(): Puff2 { at + fx.smoke, rnd_dir(float2 { 0.2, -1.0 }, 12.0, 4.0, 7.0), 0.0, 4.0, 0, rnd_range(0.12, 0.2) * 16.0 }
+                emit("{b_id[b]}:s", 2.5, dt) (): Puff2 { at + fx.smoke, rnd_dir(float2 { 0.2, -1.0 }, 12.0, 4.0, 7.0), 0.0, 4.0, 0, rnd_range(0.12, 0.2) * 16.0 }
             let full = bm_hp[b_owner[b]][b_kind[b]]
             let damage = if full > 0: 1.0 - float(b_hp[b]) / float(full) else: 0.0
             if damage >= DAMAGE_FIRE:
@@ -201,16 +201,16 @@ def building_fx_tick(dt:float):
                 let burning = min(spots.length, 1 + int((damage - DAMAGE_FIRE) / (1.0 - DAMAGE_FIRE) * 3.0))
                 for(burning) k:
                     let sp = at + spots[k]
-                    emit("{b_id[b]}:f{k}", 20.0, dt)(): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
-                    emit("{b_id[b]}:b{k}", 4.0, dt)(): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
+                    emit("{b_id[b]}:f{k}", 20.0, dt) (): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
+                    emit("{b_id[b]}:b{k}", 4.0, dt) (): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
     for(fx_ruins) r:  // a fallen building burns on a while in its ruin
         if clock_s - r.t0 < RUIN_BURN:
             let at = r.at / 1.5
             let spots = fire_spots_on(r.id, r.body)
             for(min(r.fires, spots.length)) k:
                 let sp = at + spots[k]
-                emit("r{r.id}:f{k}", 20.0, dt)(): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
-                emit("r{r.id}:b{k}", 4.0, dt)(): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
+                emit("r{r.id}:f{k}", 20.0, dt) (): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
+                emit("r{r.id}:b{k}", 4.0, dt) (): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
     for(town_parts) q:
         q.t += dt
         let g = if q.kind == 0: float2 { 2.0, -1.0 } elif q.kind == 1: float2 { 0.0, -8.0 } else: float2 { 2.5, -1.5 }

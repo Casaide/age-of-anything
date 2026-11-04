@@ -612,7 +612,7 @@ def bld_fort_post(arch:string) -> MNode:
     let h = bld_wh("fortified_wall")
     add_child(body, bbox(bv(WALL_D, h, WALL_D), m, bv(0.0, h / 2.0, 0.0)))
     add_child(body, bbox(bv(WALL_D - 0.24, 0.01, WALL_D - 0.24), bm("stone"), bv(0.0, h + 0.003, 0.0)))
-    add_child(body, bbox(bv(WALL_D + 0.18, 0.22, WALL_D + 0.18), m, bv(0.0, 0.11, 0.0)))   // the sloped foot, in two steps
+    add_child(body, bbox(bv(WALL_D + 0.18, 0.22, WALL_D + 0.18), m, bv(0.0, 0.11, 0.0)))  // the sloped foot, in two steps
     add_child(body, bbox(bv(WALL_D + 0.09, 0.2, WALL_D + 0.09), m, bv(0.0, 0.32, 0.0)))
     for([ -1.0, 1.0 ]) z:  // a buttress pier on each face, capped in the trim stone
         add_child(body, bbox(bv(0.26, h * 0.78, 0.12), m, bv(0.0, h * 0.39, z * (WALL_D / 2.0 + 0.06))))
@@ -628,7 +628,7 @@ def bld_fort_arm(arch:string, k:int) -> MNode:
     let right = bv(1.0, 0.0, 0.0)
     add_child(body, bbox(bv(l, h, WALL_D), m, bv(l / 2.0, h / 2.0, 0.0)))
     add_child(body, bbox(bv(l, 0.01, WALL_D - 0.24), bm("stone"), bv(l / 2.0, h + 0.003, 0.0)))  // the walk
-    add_child(body, bbox(bv(l, 0.22, WALL_D + 0.18), m, bv(l / 2.0, 0.11, 0.0)))  // the sloped foot
+    add_child(body, bbox(bv(l, 0.22, WALL_D + 0.18), m, bv(l / 2.0, 0.11, 0.0)))                 // the sloped foot
     add_child(body, bbox(bv(l, 0.2, WALL_D + 0.09), m, bv(l / 2.0, 0.32, 0.0)))
     for([ -1.0, 1.0 ]) z:
         add_child(body, bbox(bv(l, 0.05, 0.04), trim, bv(l / 2.0, h * 0.55, z * (WALL_D / 2.0 + 0.02))))  // the string course

@@ -1077,7 +1077,7 @@ def building_at(mm:float2) -> int:
     let bid = occupied[cell_of(x, y)]
     return if bid != 0: b_index_of(bid) else: -1
 
-var last_click_at = -10.0   // the last click on one of my units (a second one soon after, near it, is a double click)
+var last_click_at = -10.0  // the last click on one of my units (a second one soon after, near it, is a double click)
 var last_click_at_m = float2_0
 var last_click_kind = -1
 
@@ -1620,7 +1620,7 @@ def draw_hud(paused:bool, speed:float):
     let u = ui()
     ui_batch(): draw_topbar(speed, paused)  // (game/topbar.lobster; its fills in as few draws as can be)
     gl.set_shader("color")                  // (placing: the panel's info line says how)
-    if winner >= 0 and end_watching:  // (the end screen put away: the result stays up while you watch)
+    if winner >= 0 and end_watching:        // (the end screen put away: the result stays up while you watch)
         gl.set_font_size(int(48.0 * u))
         gl.color(float4 { 1.0, 0.85, 0.3, 1.0 }):
             text_at(ws / 2.0 - float2 { 160.0, 40.0 }, if winner == teams[ME]: "Victory!" else: "Defeat")
@@ -2302,8 +2302,8 @@ var speed = start_speed
 var steps = 0
 var frame_no = 0
 var step_time = 0.0
-var menu_open = false   // the pause menu (Esc)
-var menu_saves = false  // ...showing the saved games (Load game)
+var menu_open = false      // the pause menu (Esc)
+var menu_saves = false     // ...showing the saved games (Load game)
 var menu_settings = false  // ...showing Settings (game/lobby.lobster)
 var quit_game = false
 var told_end = false  // the match's end was shown (the menu opens once)

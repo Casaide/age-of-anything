@@ -481,7 +481,7 @@ var vx_variant = 0          // the look being built
 var vx_seated = false       // a rider being built: no legs of its own (shapes with `unless: seated` left off)
 var vx_team_wear = "scarf"  // where a creature without a tunic wears the team: scarf or vest (a concept option)
 var vx_act = ""             // the pose being drawn: "" (standing or walking) or "attack", at a step through it
-var vx_barrow = false      // pushing a wheelbarrow (a worker carrying a load home): both hands on its handles
+var vx_barrow = false       // pushing a wheelbarrow (a worker carrying a load home): both hands on its handles
 var vx_stand = false        // standing (not walking): every foot planted where it rests (idle, a blow, at work)
 
 def vx_looks_of(u:vx_unit_def) -> int: return vx_body_of(u.body).looks.length
@@ -1150,11 +1150,11 @@ var vx_shadows = true                                  // shadows on the body (i
 // above (cool) and a bounce from the ground below (warm), both kept out of creases; a rim of sky light round the
 // silhouette, most on the shadow side, so a dark body stands off the outline and the ground; a specular glint by each
 // material's shine (metal hard and bright, fur a soft sheen). Banded like the key light, so it stays pixel art.
-let vx_SKY = float3 { 0.13, 0.15, 0.2 }     // the sky fill at full (a surface facing straight up, open)
-let vx_BOUNCE = float3 { 0.07, 0.06, 0.03 } // the ground's bounce (a surface facing straight down)
-let vx_RIM = float3 { 0.62, 0.7, 0.85 }     // the rim's light (the sky behind the unit)
-let vx_SUN = normalize(float3 { -0.55, 0.45, 1.0 })    // towards the sun, as the camera sees it: upper left (the world's)
-var vx_depth = []::float                               // the cell being drawn (reused: only the last one's box is cleared)
+let vx_SKY = float3 { 0.13, 0.15, 0.2 }              // the sky fill at full (a surface facing straight up, open)
+let vx_BOUNCE = float3 { 0.07, 0.06, 0.03 }          // the ground's bounce (a surface facing straight down)
+let vx_RIM = float3 { 0.62, 0.7, 0.85 }              // the rim's light (the sky behind the unit)
+let vx_SUN = normalize(float3 { -0.55, 0.45, 1.0 })  // towards the sun, as the camera sees it: upper left (the world's)
+var vx_depth = []::float                             // the cell being drawn (reused: only the last one's box is cleared)
 var vx_cols = []::float3
 var vx_mat = []::int
 var vx_out = []::float4
@@ -1173,8 +1173,8 @@ def vx_cell_in(sh:vx_shape, facing:int, cw:int, ch:int, anchor:int2) -> [float4]
     let rv = rot(float3 { 0.0, sin(vx_ELEV), cos(vx_ELEV) })
     let rd = rot(float3 { 0.0, cos(vx_ELEV), -sin(vx_ELEV) })
     let light = rot(vx_LIGHT)
-    let view = rd * -1.0                       // towards the camera
-    let gloss = normalize(light + view)        // the specular's half vector
+    let view = rd * -1.0                                // towards the camera
+    let gloss = normalize(light + view)                 // the specular's half vector
     let hx = 0.5 * (abs(ru.x) + abs(ru.y) + abs(ru.z))  // the cube's half extent on screen
     let hy = 0.5 * (abs(rv.x) + abs(rv.y) + abs(rv.z))
     if vx_depth.length != cw * ch:

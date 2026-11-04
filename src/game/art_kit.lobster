@@ -74,7 +74,7 @@ def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
         let shipped = if bake_shipped_dir != "": read_file(ak_stem_in(bake_shipped_dir, name) + ".bin", true) else: nil
         let data = shipped or read_file(stem + ".bin", true)
         if data:
-            let rec, err = flexbuffers_binary_to_value(typeof [ AkFrame ], data)
+            let rec, err = flexbuffers_binary_to_value(typeof [AkFrame], data)
             let fs = rec
             if not err and fs and ak_load_frames(fs): return
     bake_breath()
