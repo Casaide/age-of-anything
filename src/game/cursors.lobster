@@ -51,7 +51,7 @@ def cursor_kind(m:float2) -> string:
     if not all.length: return "pointer"
     let ids = filter(all) id: not is_animal(index_of(id))
     if not ids.length: return "move"
-    let mm = mouse_milli()
+    let mm = order_milli(m)
     let x = int(mm.x)
     let y = int(mm.y)
     if x < 0 or y < 0 or x >= W * TILE or y >= H * TILE: return "pointer"
@@ -74,6 +74,7 @@ def cursor_kind(m:float2) -> string:
                 for(ids) id:
                     let i = index_of(id)
                     if takes_in(b, i): return cursor_of_resource(u_carry_kind[i])
+    elif b >= 0 and places(c) > 0 and teams[b_owner[b]] == teams[ME]: return "wall"  // (up onto our wall)
     return "move"
 
 def cursor_of_resource(res:int) -> string:
@@ -89,7 +90,7 @@ def draw_cursor():
     let k = CURSOR_SIZE * vc_scale
     tb_flush()
     ui_flush()
-    if kind == "pointer" or kind == "move" or kind == "attack":
+    if kind == "pointer" or kind == "move" or kind == "attack" or kind == "wall":
         let spot = float2 { 3.0, if kind == "attack": 3.0 else: 2.0 }  // (in the art)
         tb_icon("cursor_" + kind, m - spot * k, 32.0 * k, 1.0)
     else:  // a tool, with a small pointer at its top left: the pointer's tip is the spot
