@@ -13,7 +13,7 @@ macOS and the Steam Deck.
 | `docs/mvp-plan.md` | The 10-minute demo: scope, cut list, architecture, milestone overview, metrics, risks |
 | `docs/milestones/` | One file per milestone: plan, checklist, results, changes. Status lives here |
 | `docs/research.md` | Technical reference and sources (lockstep, pathing, Holepunch bridge) |
-| [Issues](https://github.com/Drache93/age-of-whatever/issues) | The backlog, bugs and upstream Lobster changes (`docs/backlog.md` is only an index of what moved) |
+| [Issues](https://github.com/Drache93/age-of-whatever/issues) | The backlog, bugs and upstream Lobster changes |
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
 | `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools
 | `docs/milestones/lobster-port.md` | The move from Godot to Lobster: what was ported, how it was checked, what's left |
@@ -53,7 +53,7 @@ branch is pushed with every commit to it, since the game can't be rebuilt withou
 - **The game is Lobster (2026-10-28, D-184).** The Godot game was ported whole (sim, bots, generator, models, bakers,
   composer, UI, lobby, network, saves, pad) and held to it tick for tick, triangle for triangle and draw list for draw
   list, then retired: `src/` is the game, `./play.sh` plays it. The golden files (`src/golden.sh`) keep what the
-  parity checks proved. See `docs/milestones/lobster-port.md`; what's left of it is in `docs/backlog.md`.
+  parity checks proved. See `docs/milestones/lobster-port.md`; what's left of it is in the issues.
 - **In progress (milestone 23): fidelity** (D-173): art baked at 2x (`ART_SCALE` 3.0 in `src/view/art.lobster`, the world
   in the old art pixels, `ART_BASE` 1.5), heroic 5.5-head humans; destruction in baked stages with pixel dust and
   fading ruins (D-171, D-172); rat B and frog B (D-177, D-178, D-181); every legged body walks on keyed legs baked per

@@ -2,9 +2,9 @@
 
 A draft for Dominic to react to (Claude, 2026-11-03). Nothing here is decided and no code has moved. It follows D-190
 (the long-term shape is an engine with the game as content on it, the way Spring, now Recoil, splits engine and games)
-and the order already in `docs/backlog.md`, section 00. The open questions are in section 7.
+and the order already in #20. The open questions are in section 7.
 
-What's agreed so far (D-190 and the backlog):
+What's agreed so far (D-190 and #20):
 
 - The engine owns the deterministic lockstep sim, pathing, rendering, sound, networking and saves.
 - A game is content plus scripts on top; mods are more of the same, and may depend on and override each other.
@@ -128,7 +128,7 @@ plays. (Gone since D-192: buildings are looked up by role.)
 |---|---|---|---|
 | `ui` | 473 | engine | The widget layer, its look from `data/ui.json` |
 | `pad`, `touch`, `perf`, `audio`, `order_marks`, `ruin`, `doodads`, `levels` | 1,186 | engine | None to speak of: input, the frame budget, the sound player from `data/audio.json`, order marks, ruins |
-| `ground`, `fx` | 920 | engine | The terrain shader (from terrain data) and combat effects (to become voxel effect recipes, backlog 00) |
+| `ground`, `fx` | 920 | engine | The terrain shader (from terrain data) and combat effects (to become voxel effect recipes, #19) |
 | `pack`, `pack_data`, `bake_missing`, `voxel_units` | 838 | tangled | The art pipeline: reads parts and recipes; `voxel_units` reads the recipe's body and parts |
 | `panel`, `topbar`, `techtree` | 1,676 | tangled | Generic RTS panels with our ideas in them: the culture's crest on the frame, the age badge, the Wonder clock, the tech tree's rows as ages |
 | `paths`, `town` | 802 | game | Each culture's paths, living towns: game view extras (UI hooks later) |
@@ -159,7 +159,7 @@ it:
 | Files | Lines | Read by | Class |
 |---|---|---|---|
 | `terrain`, `resources`, `maps/`, `audio`, `ui`, `bridges`, `siege_shots`, `animals`, `modes`, `tips` | ~600, maps 1,426 | the sim and view | engine schema, game content |
-| `buildings`, `tech`, `ai`, `rules/` | ~3,800 | the sim and bots | engine schema, game content; not yet moddable (backlog 00) |
+| `buildings`, `tech`, `ai`, `rules/` | ~3,800 | the sim and bots | engine schema, game content; not yet moddable (#18) |
 | `voxel/` | 6,646 | the voxel builder | engine schema, game content |
 | `parts`, `creatures`, `families`, `palettes`, `lexicon`, `cost_curves`, `groups`, `uniques`, `heroes`, `creature_kit` | ~17,000 | the generator | game: the parts kit is Age of Anything's idea, not the engine's |
 | `later/` | 6,341 | concept sheets | game, staged |
@@ -300,7 +300,7 @@ names and signatures of the packs it was made with.
 - `voxel_proto`: the voxel builder's sheet and contact check.
 - `golden` and `shards`, `batch`: the golden-file runner and the test runner; the sections are each pack's.
 - `gen_reset.lobster`: save and reset code from the sim's globals.
-- Later: `pack` (`tools/mods/pack.sh` grown up), `.vox` import and export (backlog 00).
+- Later: `pack` (`tools/mods/pack.sh` grown up), `.vox` import and export (#24).
 
 ### Builds
 
@@ -350,7 +350,7 @@ read CLAUDE.md, learn `play.sh`'s options. This is the plan for someone who isn'
   `creel.<name>/<n>` with the engine), so an editor completes fields and flags typos before the game sees them.
 - **Maps:** the ASCII drawing is the editor (any text editor); later an in-game paint mode that writes the same file.
 - **Voxels:** JSON bodies with a live preview (`voxel_proto` grown into `creel voxel <body>`: turn, zoom, every facing,
-  reloads on save); `.vox` import and export later (backlog 00).
+  reloads on save); `.vox` import and export later (#24).
 
 ### Docs
 
@@ -424,7 +424,7 @@ content and its generator closed. Section 7 has the questions.
 
 ## 5. Migration steps
 
-In order. Each is small, shippable on its own, and the game plays after every one. Steps 1 to 4 are backlog 00 and
+In order. Each is small, shippable on its own, and the game plays after every one. Steps 1 to 4 are #20 and
 help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 waits for voxel units to be the default
 (Dominic, 2026-11-03), and so does this. Efforts are rough, in working days of a session like today's.
 
@@ -435,7 +435,7 @@ help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 wai
    `animals` and the bots look up by role; the bots' resource lists come from `data/resources.json`; `tech`'s
    "machine" and "mounted" become data. Done: `grep 'btype_named("\|bt_name\[' src/lib` finds nothing; `golden.sh`
    unchanged; `test_ai` and `test_sim` give the same matches tick for tick.
-2. **Moddable buildings, tech, AI and sound (3-5 days, backlog 00).** `MOD_DATA_FILES` covers `buildings`, `tech`,
+2. **Moddable buildings, tech, AI and sound (3-5 days, #18).** `MOD_DATA_FILES` covers `buildings`, `tech`,
    `ai`, `audio` and the rest; entries can be removed or disabled; a mod brings its own `audio/` WAVs; the bots read
    what exists. Done: the sci-fi mod as Dominic described it (infantry only, a short tree, lasers, its own sounds)
    plays a bot match to the end; without mods the golden files are unchanged.
@@ -500,7 +500,7 @@ never brings code. That needs its own decision entry when hooks start.
 Not yet:
 
 - Separate repos, or a public engine release.
-- A runtime script (the Lua-like options in backlog 00): only after the compiled-in hooks have users.
+- A runtime script (the Lua-like options in #22): only after the compiled-in hooks have users.
 - A general entity system, a new scene graph, or rewriting the sim's columns: the sim works and is fast.
 - Renaming identifiers across the code (`aow.*` schemas, `AOW_MODS`) to the engine's name: only when the name is
   picked, in one commit, if at all.
