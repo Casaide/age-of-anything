@@ -480,7 +480,7 @@ def ui_button(at:float2, size:float2, label:string, primary:bool) -> bool:
     let u = ui()
     let k = ui_hits.length
     ui_hits.push(UiHit { at, size })
-    let m = float(gl.mouse_pos(0))
+    let m = mouse_px()
     let over = m.x >= at.x and m.y >= at.y and m.x <= at.x + size.x and m.y <= at.y + size.y
     let focused = ui_focus == k
     let down = over and gl.button("mouse1") >= 1

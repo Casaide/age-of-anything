@@ -613,7 +613,7 @@ def tree_tick() -> bool:
     tree_waiting = waiting
     // where things are
     let lk = ui_look
-    let m = float(gl.mouse_pos(0))
+    let m = mouse_px()
     let top = 12.0 * k
     let head_h = 46.0 * k
     let row_top = top + head_h + 26.0 * k

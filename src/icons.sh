@@ -9,5 +9,9 @@ for f in assets/art/icons/*.svg assets/art/icons/glyph/*.svg; do
 	o=src/icons/${f#assets/art/icons/}
 	rsvg-convert -z 2 "$f" -o "${o%.svg}.png"
 done
+for f in assets/art/cursors/*.svg; do
+	n=${f##*/}
+	rsvg-convert -z 2 "$f" -o "src/icons/cursor_${n%.svg}.png"
+done
 python3 src/icons_crests.py
 python3 src/icons_game.py
