@@ -95,7 +95,7 @@ plays. (Gone since D-192: buildings are looked up by role.)
 |---|---|---|---|
 | `json`, `sha256`, `rng` | 445 | engine | None (JSON in Godot's key order is a leftover worth keeping: the race keys depend on it) |
 | `scenario_out` | 233 | engine | None: writes the sim's arrays as a scenario |
-| `save`, `reset` | 3,212 | engine (generated) | Written by `src/gen_reset.py` from every global in `lib/`, `gen/setup`, `gen/start`. The mechanism is engine; the globals it lists include the game's systems. Hook state will need to join it |
+| `save`, `reset` | 3,212 | engine (generated) | Written by `src/gen_reset.lobster` from every global in `lib/`, `gen/setup`, `gen/start`. The mechanism is engine; the globals it lists include the game's systems. Hook state will need to join it |
 | `datalib` | 177 | tangled | Reads the game's files by name (parts, creatures, cultures, uniques, heroes, palettes, lexicon) from `../data` |
 | `mods` | 229 | tangled | The pack loader we'll build on, but: `MOD_DATA_FILES` is the generator's files only, `MOD_GAME_VERSION = "0.21"`, `MOD_BASE_ERAS` are our eras, roots are `../mods` |
 | `setup` | 420 | tangled | Fills the sim from data, but its unit types come from race recipes and `gen/pricing`: the engine's unit type is today "a priced recipe" |
@@ -183,7 +183,7 @@ it:
 engine/                      the RTS engine (its name, once picked)
   sim/                       lib/ today: the tick, systems, commands, fog, flow fields
   bots/                      the reference bot (bot, eco_bot, land, expand, scout, walls_ai), reading roles
-  core/                      json, sha256, rng, packs (gen/mods grown up), scenario, save mechanism, gen_reset.py
+  core/                      json, sha256, rng, packs (gen/mods grown up), scenario, save mechanism, gen_reset.lobster
   view/                      baker, world_bake, voxel, rig3d, geom, node, art; ground, fx, ruin, order marks
   ui/                        widgets (game/ui), pad, touch, audio, perf, the loop and camera from game.lobster
   model/                     the model kit: base, kit, glb, flat, grng
@@ -280,7 +280,7 @@ order, no clocks, no files). A first set, each from a case we have:
 | `victory() -> winner or -1` | each second | no hub left; the Wonder clock (`lib/match.lobster`) |
 | `start(mode)` | the match start, after the usual start | Fortress and Siege (`gen/modes.lobster`) |
 
-A hook's own state lives in sim columns it declares (`hook_ints("web.ends")`), so `gen_reset.py` puts it in saves
+A hook's own state lives in sim columns it declares (`hook_ints("web.ends")`), so `gen_reset.lobster` puts it in saves
 and the state hash covers it.
 
 UI hooks run on one machine only and may do as they like (floats, the view's randomness, no writes to the sim): draw
@@ -300,7 +300,7 @@ names and signatures of the packs it was made with.
 - `mod_check`: loads a pack or says why not, the sandbox above, placement on its units.
 - `voxel_proto`: the voxel builder's sheet and contact check.
 - `golden` and `shards`, `batch`: the golden-file runner and the test runner; the sections are each pack's.
-- `gen_reset.py`: save and reset code from the sim's globals.
+- `gen_reset.lobster`: save and reset code from the sim's globals.
 - Later: `pack` (`tools/mods/pack.py` grown up), `.vox` import and export (backlog 00).
 
 ### Builds
