@@ -334,5 +334,5 @@ optimised." Done in this order, each step checked against Godot while it still e
   (a match start's 134 s of buildings now 0.13 s); the 3D placement check's attachments cached; the forest ram's
   crash (a recursive sort on 100k triangles) fixed.
 - **Removed**: the GDScript game, its tests, the parity tools; the code moved to `src/`; CLAUDE.md, README, rendering,
-  modding, audio and playtest docs, the make-mod skill and new_mod.py rewritten for Lobster.
+  modding, audio and playtest docs, the make-mod skill and new_mod.sh rewritten for Lobster.
 Left over: `docs/backlog.md`, "Left from the Lobster port".

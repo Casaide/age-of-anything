@@ -120,8 +120,8 @@ src/             the game, in Lobster; run everything from here (paths are ../da
 assets/          SVG icons and textures, audio (rendered), fonts
 tests/           batch.sh (the tests side by side), sheets/*.json (concept sheet specs), mods/ (bad-mod fixtures)
 mods/            mods (docs/modding.md): data + Lobster models; scifi_test is the example. mods_private/ is gitignored
-tools/           audio/ (the synth), blender/ (bpy model scripts -> assets/models), maps/, mods/ (new_mod.py,
-                 pack.py), ui/ (crests), art/ (texture and pixel-kit scripts), deck/pull_lobster.sh
+tools/           audio/ (the synth), blender/ (bpy model scripts -> assets/models), maps/, mods/ (new_mod.sh,
+                 pack.sh), ui/ (crests), art/ (texture and pixel-kit scripts), deck/pull_lobster.sh
 ```
 
 ## Commands
@@ -155,7 +155,7 @@ src/android/build.sh                                               # the Android
 src/prebake.sh                                                     # every building and prop baked once into src/baked/ (the builds ship it, D-185)
 python3 tools/audio/render.py [sfx|voices|music|<name>...]         # re-render the sounds into assets/audio (from the repo root)
 python3 tools/maps/reed_meadow.py; python3 tools/maps/siege_vale.py   # rebuild maps from their layouts
-python3 tools/mods/new_mod.py <id> [--era <tag>] [--private]       # scaffold a mod (docs/modding.md); tools/mods/pack.py <id> zips it
+tools/mods/new_mod.sh <id> [--era <tag>] [--private]       # scaffold a mod (docs/modding.md); tools/mods/pack.sh <id> zips it
 ```
 
 Never pass `--mir`: it miscompiles model and rig code (D-182). Lobster's window never takes Ctrl-C; `play.sh` stops the
