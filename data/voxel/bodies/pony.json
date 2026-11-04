@@ -1,116 +1,55 @@
 {
- "_doc": "A pony to ride, in its palette's coat (coat and mane).",
- "skin": "#805230",
- "pale": "#33241a",
+ "_doc": "A horse (a pony to ride, and a centaur's lower half): as long as it is tall at the withers, a deep barrel, a round muscled croup with the hindquarter sweeping forward to the stifle, long thin legs, dark lower legs and hooves, a high tail; a long head on a neck rising forward (left off when a centaur's rider grows out of the front).",
+ "skin": "#80502c",
+ "pale": "#1e1612",
  "size": 1.15,
- "fur": 0.05,
- "reach": 4.0,
+ "fur": 0.03,
+ "reach": 5.2,
+ "mark": "#f0ebe0",
  "points": {
-  "front": {
-   "at": [
-    0,
-    7.5,
-    20.0
-   ]
-  },
   "back": {
    "at": [
     0,
-    -8.5,
-    20.5
-   ]
+    -9.0,
+    19.0
+   ],
+   "bob": 0.5
+  },
+  "front": {
+   "at": [
+    0,
+    5.4,
+    19.2
+   ],
+   "bob": 0.5
   },
   "head": {
    "at": [
     0,
-    15.5,
-    29.0
-   ]
+    14.2,
+    27.4
+   ],
+   "bob": 0.6
   }
- },
- "seat": {
-  "at": [
-   0,
-   -1.0,
-   27.0
-  ],
-  "wide": 5.4
  },
  "legs": [
   {
    "hip": [
-    "front",
-    3.0,
-    1.0,
-    -2.0
-   ],
-   "foot": [
-    3.0,
-    8.5,
-    1.0
-   ],
-   "stride": 4.0,
-   "lift": 2.0,
-   "bones": [
-    8.4,
-    8.8
-   ],
-   "pole": [
-    0,
-    1,
-    0
-   ],
-   "r": [
-    2.0,
-    1.6,
-    1.6,
-    1.2
-   ],
-   "mats": [
-    "skin",
-    "pale"
-   ],
-   "shapes": [
-    {
-     "cap": [
-      "ankle",
-      0,
-      0,
-      0
-     ],
-     "to": [
-      "ankle",
-      0,
-      1.0,
-      -0.3
-     ],
-     "r": [
-      1.2,
-      1.1
-     ],
-     "mat": "pale",
-     "_doc": "a hoof"
-    }
-   ]
-  },
-  {
-   "hip": [
     "back",
-    3.2,
-    -1.0,
-    -2.0
+    3.0,
+    0.6,
+    -2.4
    ],
    "foot": [
-    3.2,
-    -9.5,
-    1.0
+    3.0,
+    -10.4,
+    1.4
    ],
-   "stride": 4.0,
-   "lift": 2.0,
-   "phase": 180,
+   "stride": 5.0,
+   "lift": 2.4,
    "bones": [
-    9.0,
-    9.5
+    8.1,
+    8.3
    ],
    "pole": [
     0,
@@ -118,10 +57,10 @@
     0
    ],
    "r": [
-    2.0,
-    1.6,
-    1.6,
-    1.2
+    2.2,
+    1.0,
+    0.85,
+    0.7
    ],
    "mats": [
     "skin",
@@ -129,23 +68,103 @@
    ],
    "shapes": [
     {
+     "bead": [
+      "ankle",
+      0,
+      0.1,
+      0.4
+     ],
+     "r": 0.95,
+     "mat": "pale",
+     "_doc": "the fetlock"
+    },
+    {
      "cap": [
       "ankle",
       0,
-      0,
-      0
+      0.4,
+      -0.3
      ],
      "to": [
       "ankle",
       0,
-      1.0,
-      -0.3
+      0.7,
+      -0.9
      ],
      "r": [
-      1.2,
-      1.1
+      0.95,
+      1.05
      ],
-     "mat": "pale"
+     "mat": "hoof",
+     "_doc": "the hoof"
+    }
+   ]
+  },
+  {
+   "hip": [
+    "front",
+    2.6,
+    1.0,
+    -4.4
+   ],
+   "foot": [
+    2.8,
+    7.0,
+    1.4
+   ],
+   "stride": 5.0,
+   "lift": 2.4,
+   "phase": 180,
+   "bones": [
+    6.7,
+    6.9
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    1.6,
+    1.0,
+    0.85,
+    0.7
+   ],
+   "mats": [
+    "skin",
+    "pale"
+   ],
+   "shapes": [
+    {
+     "bead": [
+      "ankle",
+      0,
+      0.1,
+      0.4
+     ],
+     "r": 0.95,
+     "mat": "pale",
+     "_doc": "the fetlock"
+    },
+    {
+     "cap": [
+      "ankle",
+      0,
+      0.4,
+      -0.3
+     ],
+     "to": [
+      "ankle",
+      0,
+      0.7,
+      -0.9
+     ],
+     "r": [
+      0.95,
+      1.05
+     ],
+     "mat": "hoof",
+     "_doc": "the hoof"
     }
    ]
   }
@@ -154,96 +173,234 @@
   {
    "cap": [
     "back",
-    0,
+    1.3,
     0,
     0
    ],
    "to": [
     "front",
-    0,
+    1.3,
     0,
     0
    ],
    "r": [
-    5.4,
-    5.8
+    3.9,
+    4.4
    ],
-   "mat": "skin"
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "the barrel, deep and level"
+  },
+  {
+   "ball": [
+    "back",
+    0,
+    -0.8,
+    0.7
+   ],
+   "r": 4.9,
+   "mat": "skin",
+   "_doc": "the round croup, the top of the horse"
+  },
+  {
+   "cap": [
+    "back",
+    2.6,
+    5.6,
+    -1.0
+   ],
+   "to": [
+    "back",
+    3.2,
+    -1.0,
+    0.4
+   ],
+   "r": [
+    3.4,
+    3.9
+   ],
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "the hindquarter muscle sweeping forward to the stifle, about 40% of the body"
+  },
+  {
+   "cap": [
+    "back",
+    2.9,
+    -1.2,
+    0.2
+   ],
+   "to": [
+    "back",
+    3.1,
+    -1.8,
+    -6.4
+   ],
+   "r": [
+    3.4,
+    1.7
+   ],
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "thigh and gaskin"
+  },
+  {
+   "cap": [
+    "front",
+    2.3,
+    0.8,
+    0.8
+   ],
+   "to": [
+    "front",
+    2.5,
+    1.4,
+    -4.6
+   ],
+   "r": [
+    2.6,
+    1.5
+   ],
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "the shoulder and forearm muscle"
+  },
+  {
+   "cap": [
+    "back",
+    1.6,
+    2.0,
+    -3.4
+   ],
+   "to": [
+    "front",
+    1.6,
+    -2.0,
+    -3.6
+   ],
+   "r": [
+    2.4,
+    2.4
+   ],
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "shade under the belly"
   },
   {
    "cap": [
     "back",
     0,
-    -1.5,
-    1.5
+    -5.0,
+    2.6
    ],
    "to": [
     "back",
     0,
-    -5.5,
-    -6.0
+    -7.0,
+    -1.0
    ],
    "r": [
     1.3,
-    0.8
+    1.1
    ],
    "mat": "pale",
-   "hard": true,
-   "_doc": "the tail"
+   "_doc": "tail, set high"
+  },
+  {
+   "cap": [
+    "back",
+    0,
+    -7.0,
+    -1.0
+   ],
+   "to": [
+    "back",
+    0,
+    -7.6,
+    -8.0
+   ],
+   "r": [
+    1.2,
+    0.5
+   ],
+   "mat": "pale",
+   "_doc": "tail falling"
   },
   {
    "cap": [
     "front",
     0,
-    1.0,
-    2.0
+    2.4,
+    1.2
    ],
    "to": [
     "head",
     0,
-    0,
-    0
+    -1.6,
+    -0.6
    ],
    "r": [
     3.2,
-    2.0
+    1.9
    ],
    "mat": "skin",
-   "_doc": "the neck",
    "unless": [
     "fused"
-   ]
+   ],
+   "_doc": "the neck, rising forward"
   },
   {
    "cap": [
-    "head",
-    0,
-    -1.2,
-    0.8
-   ],
-   "to": [
     "front",
     0,
-    0.5,
-    6.0
+    0.6,
+    4.2
+   ],
+   "to": [
+    "head",
+    0,
+    -2.2,
+    1.2
    ],
    "r": [
-    0.9,
-    0.9
+    1.0,
+    0.8
    ],
    "mat": "pale",
-   "hard": true,
-   "_doc": "the mane",
    "unless": [
     "fused"
-   ]
+   ],
+   "_doc": "the mane"
   },
   {
    "cap": [
     "head",
     0,
+    -0.6,
+    0.0
+   ],
+   "to": [
+    "head",
     0,
-    0
+    4.4,
+    -3.0
+   ],
+   "r": [
+    1.75,
+    1.05
+   ],
+   "mat": "skin",
+   "unless": [
+    "fused"
+   ],
+   "_doc": "the long head, sloping down to the muzzle"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    3.9,
+    -2.7
    ],
    "to": [
     "head",
@@ -252,20 +409,45 @@
     -3.2
    ],
    "r": [
-    2.0,
+    1.15,
+    1.0
+   ],
+   "mat": "pale",
+   "unless": [
+    "fused"
+   ],
+   "_doc": "dark muzzle"
+  },
+  {
+   "cap": [
+    "head",
+    0.8,
+    -0.8,
     1.4
+   ],
+   "to": [
+    "head",
+    1.0,
+    -1.0,
+    2.8
+   ],
+   "r": [
+    0.55,
+    0.35
    ],
    "mat": "skin",
    "unless": [
     "fused"
-   ]
+   ],
+   "mirror": true,
+   "_doc": "ears"
   },
   {
    "bead": [
     "head",
     1.5,
-    1.4,
-    0.4
+    0.6,
+    0.1
    ],
    "r": 0.45,
    "mat": "eye",
@@ -273,40 +455,51 @@
    "unless": [
     "fused"
    ]
-  },
-  {
-   "cap": [
-    "head",
-    1.0,
-    -0.6,
-    1.6
-   ],
-   "to": [
-    "head",
-    1.1,
-    -0.4,
-    3.4
-   ],
-   "r": [
-    0.7,
-    0.35
-   ],
-   "mat": "skin",
-   "mirror": true,
-   "unless": [
-    "fused"
-   ]
   }
  ],
- "mark": "#f0ebe0",
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.5,
+   1.4
+  ],
+  "r": 2.2
+ },
+ "armour": {
+  "a": [
+   "back",
+   0,
+   0,
+   1.0
+  ],
+  "b": [
+   "front",
+   0,
+   0,
+   1.0
+  ],
+  "r": [
+   4.6,
+   4.6
+  ]
+ },
+ "seat": {
+  "at": [
+   0,
+   -2.0,
+   24.2
+  ],
+  "wide": 5.6
+ },
  "fused": [
   "front",
   0,
-  1.5,
-  5.0
+  2.8,
+  6.2
  ],
  "_fused_doc": "a centaur: its rider grows out of the front here (the head, neck and mane left off)",
  "check": {
-  "knees": 45
+  "knees": 60
  }
 }

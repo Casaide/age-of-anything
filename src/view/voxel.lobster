@@ -76,6 +76,7 @@ let vx_MAT_C2 = []::float3     // the second colour
 let vx_MAT_PROUND = []::int    // laid round a round wall (centred on vx_pat_centre), not flat across it
 var vx_pat_centre = float2_0   // the shape's centre, grid voxels / vx_pat_scale (a round wall's axis)
 let vx_MAT_GLOW = []::int      // a light (a lit window, a fire): its own colour unshaded, and a halo round it
+let vx_MAT_SHINE = []::float   // how glossy (materials.json's "shine", 0..1; fur 0.25 by default): the specular highlight
 var vx_pat_scale = 2.0         // voxels a body unit in the shape being drawn (the patterns are in body units)
 let vx_PATTERNS = [ "", "blocks", "planks", "ripples", "tiles", "wear", "mottle" ]
 var vx_mat_team = 0  // the team colour's material (the sprite shader's key)
@@ -359,11 +360,13 @@ def vx_load(dirs:[string]):
                     vx_MAT_PMIX.push(0.0)
                     vx_MAT_C2.push(float3_0)
                     vx_MAT_GLOW.push(0)
+                    vx_MAT_SHINE.push(0.0)
                     vx_MAT_PROUND.push(0)
                     m = vx_mat_names.length - 1
                 vx_MAT_BASE[m] = vx_hex(gstr(mo.a[k], "rgb", "#ff00ff"))
                 vx_MAT_FUR[m] = if gbool(mo.a[k], "fur", false): 1 else: 0
                 vx_MAT_GLOW[m] = if gbool(mo.a[k], "glow", false): 1 else: 0
+                vx_MAT_SHINE[m] = gfloat(mo.a[k], "shine", if vx_MAT_FUR[m] != 0: 0.25 else: 0.0)
                 if has(mo.a[k], "pattern"):
                     let po = at(mo.a[k], "pattern")
                     vx_MAT_PAT[m] = find(vx_PATTERNS) n: n == gstr(po, "kind", "")
@@ -478,6 +481,7 @@ var vx_variant = 0          // the look being built
 var vx_seated = false       // a rider being built: no legs of its own (shapes with `unless: seated` left off)
 var vx_team_wear = "scarf"  // where a creature without a tunic wears the team: scarf or vest (a concept option)
 var vx_act = ""             // the pose being drawn: "" (standing or walking) or "attack", at a step through it
+var vx_barrow = false      // pushing a wheelbarrow (a worker carrying a load home): both hands on its handles
 var vx_stand = false        // standing (not walking): every foot planted where it rests (idle, a blow, at work)
 
 def vx_looks_of(u:vx_unit_def) -> int: return vx_body_of(u.body).looks.length
@@ -686,6 +690,9 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
             hl = vx_mix(hl, sh_l + h.raise * L, up)
             hr = vx_mix(hr, sh_r + h.draw * L, up * (1.0 - k))
             drawn = up * (1.0 - k) > 0.5
+    if vx_barrow:  // both hands low and forward on the handles
+        hr = sh_r + float3 { 0.1, 0.55, -0.62 } * L
+        hl = sh_l + float3 { -0.1, 0.55, -0.62 } * L
     for([ 1.0, -1.0 ]) side:
         let sh = if side > 0.0: sh_r else: sh_l
         let target = if side > 0.0: hr else: hl
@@ -695,6 +702,9 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         out.push(vx_ball(hand, b.thick * 0.8, b.hand))
         if side > 0.0: hr = hand
         else: hl = hand
+    if vx_barrow:
+        vx_wheelbarrow(out, hr, hl, b.arm)
+        return
     if right:  // its frame: along the held direction, out of its front, to the right
         let d = normalize(dr)
         let o = cross(vx_X, d)
@@ -705,6 +715,23 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         let sd = normalize(cross(o, vx_Z))
         let gp = vx_points { [ "hand", "draw" ], [ hl, if drawn: hr else: hl - o * 0.4 ] }
         for(left.shapes) s: vx_emit(out, s, gp, vx_Z, o, sd, flags, nil)
+
+// A wheelbarrow pushed by hands hr and hl (the ground at z 0), sized to the arm (a bone of length a): the handles
+// from the hands down to a tub, a wheel in front on the ground.
+def vx_wheelbarrow(out:[vx_prim], hr:float3, hl:float3, a:float):
+    let wood = vx_mat("wood")
+    let mid = (hr + hl) * 0.5
+    let half = max(1.4, abs(hr.x - hl.x) * 0.5)
+    let r = a * 0.3
+    let tub = float3 { mid.x, mid.y + a * 1.0, max(r + a * 0.2, mid.z * 0.45) }
+    let wr = max(1.0, a * 0.24)
+    let wheel = float3 { mid.x, tub.y + r * 1.3, wr }
+    out.push(vx_cap(hr, float3 { mid.x + half * 0.8, tub.y - r * 0.5, tub.z }, 0.35, 0.35, wood))
+    out.push(vx_cap(hl, float3 { mid.x - half * 0.8, tub.y - r * 0.5, tub.z }, 0.35, 0.35, wood))
+    out.push(vx_cap(float3 { mid.x - half, tub.y, tub.z }, float3 { mid.x + half, tub.y, tub.z }, r, r * 0.9, wood))
+    out.push(vx_cap(float3 { mid.x, tub.y + r * 0.6, tub.z - r * 0.4 }, wheel, 0.3, 0.3, wood))
+    out.push(vx_disc(wheel, float3 { 1.0, 0.0, 0.0 }, wr, 0.6, wood))
+    out.push(vx_ball(wheel, 0.4, vx_mat("metal")))
 
 // What a body with no hands holds, in its harness: the right item along the harness's direction (lowered into a thrust
 // in a blow), the left on its side.
@@ -1118,6 +1145,14 @@ def vx_hash(v:int3) -> int:
 
 let vx_LIGHT = normalize(float3 { -0.65, 0.1, 0.75 })  // the body's key light, as the camera sees it: high on the sun's side
 var vx_shadows = true                                  // shadows on the body (its own, and occlusion in creases), and on the ground
+// The light's other layers (Dominic, 2026-11-04: "bears too dark... missing a lighting specular etc"): the key light
+// only multiplies a colour, so a dark coat went black in its shade and lost its form. On top of it: a sky fill from
+// above (cool) and a bounce from the ground below (warm), both kept out of creases; a rim of sky light round the
+// silhouette, most on the shadow side, so a dark body stands off the outline and the ground; a specular glint by each
+// material's shine (metal hard and bright, fur a soft sheen). Banded like the key light, so it stays pixel art.
+let vx_SKY = float3 { 0.13, 0.15, 0.2 }     // the sky fill at full (a surface facing straight up, open)
+let vx_BOUNCE = float3 { 0.07, 0.06, 0.03 } // the ground's bounce (a surface facing straight down)
+let vx_RIM = float3 { 0.62, 0.7, 0.85 }     // the rim's light (the sky behind the unit)
 let vx_SUN = normalize(float3 { -0.55, 0.45, 1.0 })    // towards the sun, as the camera sees it: upper left (the world's)
 var vx_depth = []::float                               // the cell being drawn (reused: only the last one's box is cleared)
 var vx_cols = []::float3
@@ -1138,6 +1173,8 @@ def vx_cell_in(sh:vx_shape, facing:int, cw:int, ch:int, anchor:int2) -> [float4]
     let rv = rot(float3 { 0.0, sin(vx_ELEV), cos(vx_ELEV) })
     let rd = rot(float3 { 0.0, cos(vx_ELEV), -sin(vx_ELEV) })
     let light = rot(vx_LIGHT)
+    let view = rd * -1.0                       // towards the camera
+    let gloss = normalize(light + view)        // the specular's half vector
     let hx = 0.5 * (abs(ru.x) + abs(ru.y) + abs(ru.z))  // the cube's half extent on screen
     let hy = 0.5 * (abs(rv.x) + abs(rv.y) + abs(rv.z))
     if vx_depth.length != cw * ch:
@@ -1158,16 +1195,34 @@ def vx_cell_in(sh:vx_shape, facing:int, cw:int, ch:int, anchor:int2) -> [float4]
         let u = dot(p, ru)
         let w = dot(p, rv)
         let d = dot(p, rd)
-        var k = dot(sh.normals[i], light) * 0.5 + 0.5
+        let nv = sh.normals[i]
+        var k = dot(nv, light) * 0.5 + 0.5
+        var lit = k > 0.42  // in the key light (not shadowed, not turned away)
         if vx_shadows:
             // in its own shadow? a few steps towards the light through the grid
             var q = p + sh.normals[i] * 1.2 + light * 1.0
             for(8):
                 if k > 0.42 and vx_solid_at(sh.grid, sh.lo, sh.dims, int3 { int(floor(q.x)), int(floor(q.y)), int(floor(q.z)) }) and q.z > 0.0:
                     k = 0.3
+                    lit = false
                 q += light * 1.7
             k -= sh.occl[i] * 0.3
-        var c = vx_mat_cols[m] * (if k > 0.8: 1.08 elif k > 0.62: 0.94 elif k > 0.45: 0.76 elif k > 0.28: 0.6 else: 0.47)
+        let base = vx_mat_cols[m]
+        var c = base * (if k > 0.8: 1.08 elif k > 0.62: 0.94 elif k > 0.45: 0.76 elif k > 0.28: 0.6 else: 0.47)
+        if vx_MAT_GLOW[m] == 0:
+            let opn = 1.0 - (if vx_shadows: sh.occl[i] else: 0.0) * 0.8
+            let up = nv.z
+            // the fill: added light, tinted half by the surface's own colour (so it lifts a dark coat, barely moves a
+            // pale one); the team's key only scaled (the sprite shader reads its hue)
+            let fill = (vx_SKY * max(up, 0.0) + vx_SKY * 0.45 + vx_BOUNCE * max(-up, 0.0)) * opn
+            let rimk = 1.0 - max(dot(nv, view), 0.0)
+            let rim = (if rimk > 0.82: 0.2 elif rimk > 0.68: 0.09 else: 0.0) * (if lit: 0.55 else: 1.0) * opn
+            let sp = dot(nv, gloss)
+            let shine = vx_MAT_SHINE[m] * (if not lit: 0.0 elif sp > 0.975: 0.3 elif sp > 0.92: 0.1 else: 0.0)
+            // (the darker the surface, the more the fill and rim show: a pale one is lit enough already)
+            let dark = 1.0 - clamp((base.x * 0.3 + base.y * 0.59 + base.z * 0.11 - 0.15) / 0.5, 0.0, 0.75)
+            if m == vx_mat_team: c *= 1.0 + rim * 1.2 + shine * 1.4
+            else: c += (fill + vx_RIM * rim) * (base * 0.5 + float3_1 * 0.5) * dark + vx_mix(float3_1, base, 0.4) * shine
         if vx_MAT_PAT[m] != 0: c = vx_patterned(m, p, sh.normals[i], c)
         if vx_MAT_FUR[m] != 0: c *= 1.0 + vx_fur * (float(vx_hash(v)) / 511.5 - 1.0)
         if vx_MAT_GLOW[m] != 0: c = vx_mat_cols[m]  // (a light: unshaded)

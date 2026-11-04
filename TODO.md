@@ -1,0 +1,15 @@
+- Add back customer cursors
+- Why do i occasionally see the macos loading cursor?
+- Why is the macos icon a big square and not normal mac icon?
+- loader shows units but just green behind them -> need some cool, or just grass
+- hover over buttons to see cost etc -> too transparent, can see words underneath making it hard to read
+- bears are building while holding their fruit picking basket
+- rats are getting fruits and trees with an axe - we have lost them pushing wheel barrows?
+- unexplored space we no longer see trees
+- laptop still getting hot where it didnt with godot afaik
+- hover to show costs, doesnt show icon for the cost (aka food icon etc), the costs we cant afford should show red
+- not being able to upgrade should be clear if its because of resources or buildings things - it was before
+- little more zoomed out by default is really satisfying on mac
+- the bell to get everyone into town center has no sound
+- when our unit is targetting someone, the line to the target is blue. Should be red
+- double click to select units of same type is missing again

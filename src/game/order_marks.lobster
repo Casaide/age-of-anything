@@ -1,8 +1,8 @@
 // ------------------------------------------------------------------ a selected unit's orders, in the world (src/view/order_marks.gd)
 // What it's doing now, then each shift-queued order in turn, joined by a dashed route from the unit; later legs
 // fade. A move ends in a ring and a little flag, an attack-move the same in red, a build or drop-off outlines its
-// building, a gather its tile, an attack rings its target in red. A unit in a fight gets a thin line in its team's
-// colour to the foe. A crowd heading for one spot shares one first leg from its middle. A selected building shows
+// building, a gather its tile, an attack rings its target in red. A unit in a fight gets a thin red line
+// to the foe. A crowd heading for one spot shares one first leg from its middle. A selected building shows
 // its rally flag. View only: it reads the sim. Drawn on the ground with the selection rings (draw_rings).
 
 let OM_RING = float4 { 0.95, 0.91, 0.79, 1.0 }  // #f2e9c9
@@ -163,7 +163,7 @@ def draw_orders(alpha:float):
             let f = om_on(5, fighting, 0, alpha)
             if f:
                 ui_line(me, f.at, 3.5 * px, OM_EDGE * float4 { 1.0, 1.0, 1.0, 0.9 })
-                ui_line(me, f.at, 1.5 * px, float4 { min(1.0, team.x + 0.25), min(1.0, team.y + 0.25), min(1.0, team.z + 0.25), 0.85 })
+                ui_line(me, f.at, 1.5 * px, OM_FOE * float4 { 1.0, 1.0, 1.0, 0.85 })  // red to the foe (Dominic, 2026-11-04)
                 spots.push(f)
         var prev:OmSpot? = nil
         for(om_route(i, alpha)) s:

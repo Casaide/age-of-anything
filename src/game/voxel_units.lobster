@@ -15,7 +15,13 @@ let VX_WALK = 1
 let VX_WORK = 2
 let VX_ATTACK = 3
 let VX_DIE = 4
-let VX_STEPS = [ 1, 8, 8, 8, 6 ]  // steps in each mode (a fall's last step is lying)
+let VX_BUILD = 5   // a worker's jobs, each with its tool (Dominic, 2026-11-04: the right tool for the job): hammering,
+let VX_MINE = 6    // picking at stone and gold, picking fruit into a basket (VX_WORK: chopping, the axe),
+let VX_FORAGE = 7
+let VX_CARRY = 8   // and walking a load home behind a wheelbarrow
+let VX_MODES = 9
+let VX_STEPS = [ 1, 8, 8, 8, 6, 8, 8, 8, 8 ]  // steps in each mode (a fall's last step is lying)
+let VX_JOB_TOOL = [ "", "", "axe", "", "", "hammer", "pick", "basket", "" ]  // a work mode's tool
 let VX_DRAW_K = 1.1 / ART_K       // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
 
 // A look: a unit def, drawn the same by every type and step that has it.
@@ -34,7 +40,7 @@ var vx_type_lks = []::[int]                     // type -> its line steps' looks
 var vx_cur = []::int                            // type -> the look it's drawn in now
 var vx_source = ""                              // the builder's source's and data's hash (the cache key's code part)
 
-def vx_fkey(lk:int, v:int, m:int, f:int, st:int) -> int: return (((lk * 4 + v) * 5 + m) * 8 + f) * 8 + st
+def vx_fkey(lk:int, v:int, m:int, f:int, st:int) -> int: return (((lk * 4 + v) * VX_MODES + m) * 8 + f) * 8 + st
 
 // Is type k drawn now (its look made)?
 def vx_drawn(k:int) -> bool: return k < vx_cur.length and vx_cur[k] >= 0
@@ -226,17 +232,20 @@ def vx_job_step(j:vx_job, until:float) -> bool:
         else:
             let pose = j.poses[j.at]
             let m = pose.x
-            vx_act = if m == VX_ATTACK or m == VX_WORK: "attack" else: ""
-            vx_stand = m != VX_WALK
+            let job = m == VX_WORK or m == VX_BUILD or m == VX_MINE or m == VX_FORAGE
+            vx_act = if m == VX_ATTACK or job: "attack" else: ""
+            vx_stand = m != VX_WALK and m != VX_CARRY
+            vx_barrow = m == VX_CARRY
             var wu = u
-            if m == VX_WORK:  // (work: chopping; what it wears kept)
-                let tools = [ "axe" ]
+            if job or m == VX_CARRY:  // (work: the job's tool alone, what it wears kept; carrying: the barrow, hands free)
+                let tools = if VX_JOB_TOOL[m] != "": [ VX_JOB_TOOL[m] ] else: []::string
                 for(u.gear) g: if vx_worn_gear(g): tools.push(g)
                 wu = vx_unit_def { u.label, u.body, u.skin, u.pale, u.mark, tools, u.mount, u.fused, u.coat, u.mane, u.coat_mark, u.crew }
             var parts = vx_unit_prims(wu, if m == VX_DIE: 0.0 else: float(pose.y) * 45.0)
             if m == VX_DIE: parts = vx_fallen(parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
             vx_act = ""
             vx_stand = false
+            vx_barrow = false
             j.filling = vx_fill_begin(parts, vx_size_of(u), vx_on_zero(u, m == VX_DIE))
     return false
 
@@ -269,10 +278,13 @@ def vx_save(j:vx_job):
 // The modes a look's first bake has (what its units do from the start), and the rest.
 def vx_first_modes(lk:int) -> [int]: return if vx_lks[lk].worker: [ VX_IDLE, VX_WALK, VX_WORK ] else: [ VX_IDLE, VX_WALK ]
 def vx_moving_modes(lk:int) -> [int]: return if vx_lks[lk].worker: [ VX_WALK, VX_WORK ] else: [ VX_WALK ]
-def vx_later_modes(lk:int) -> [[int]]: return [ [ VX_ATTACK ], [ VX_DIE ] ]  // (a job a mode: small atlases, short saves)
+def vx_later_modes(lk:int) -> [[int]]:  // (a job a mode: small atlases, short saves; a worker's jobs first)
+    let ms = [ [ VX_ATTACK ], [ VX_DIE ] ]
+    if vx_lks[lk].worker: ms.insert(0, [ VX_BUILD, VX_MINE, VX_FORAGE, VX_CARRY ])
+    return ms
 def vx_all_modes(lk:int) -> [[int]]:
     let ms = [ [ VX_IDLE, VX_WALK ], [ VX_ATTACK ], [ VX_DIE ] ]
-    if vx_lks[lk].worker: ms.insert(1, [ VX_WORK ])
+    if vx_lks[lk].worker: ms.insert(1, [ VX_WORK, VX_BUILD, VX_MINE, VX_FORAGE, VX_CARRY ])
     return ms
 
 // A job loaded from the cache, or else queued (at the front, or the back).
@@ -364,7 +376,7 @@ def vx_start():
     bake_total = now.length
     bake_count = 0
     for(now) j:
-        while not vx_job_step(j, seconds_elapsed() + 0.2): bake_breath()
+        while not vx_job_step(j, seconds_elapsed() + 0.05): bake_breath()
         vx_save(j)
         bake_count++
         bake_breath()
@@ -444,15 +456,27 @@ def vx_look_v(id:int, lk:int) -> int: return ((id * 2654435761) >> 13 & 1023) % 
 def vx_frame(lk:int, v:int, m:int, f:int, st:int) -> int:
     var fr = vx_frames.get(vx_fkey(lk, v, m, f, st), -1)
     if fr < 0: fr = vx_frames.get(vx_fkey(lk, 0, m, f, st), -1)
+    if fr < 0 and m >= VX_BUILD: return vx_frame(lk, v, if m == VX_CARRY: VX_WALK else: VX_WORK, f, st)  // (a job not baked yet)
     if fr < 0 and m != VX_DIE: fr = vx_frames.get(vx_fkey(lk, v, VX_IDLE, f, 0), -1)
     if fr < 0 and m != VX_DIE: fr = vx_frames.get(vx_fkey(lk, 0, VX_IDLE, f, 0), -1)
     return fr
+
+// unit_state's name -> a mode: each worker's job its own (its tool), carrying home the barrow.
+def vx_mode_of(state:string) -> int:
+    if state == "attack": return VX_ATTACK
+    if state == "walk": return VX_WALK
+    if find_string(state, "carry") == 0: return VX_CARRY
+    if state == "work_build": return VX_BUILD
+    if state == "work_mine": return VX_MINE
+    if state == "work_forage": return VX_FORAGE
+    if find_string(state, "work") == 0: return VX_WORK
+    return VX_IDLE
 
 // The frame for unit id of type k in state (unit_state's names), moving or facing screen direction d (dir_of's).
 def vx_frame_for(id:int, k:int, state:string, d:int, n:int) -> int:
     let lk = vx_cur[k]
     let f = (d + 2) % 8  // (facing 2 faces screen right)
-    let m = if state == "attack": VX_ATTACK elif state == "walk" or find_string(state, "carry") == 0: VX_WALK elif find_string(state, "work") == 0: VX_WORK else: VX_IDLE
+    let m = vx_mode_of(state)
     let st = if m == VX_IDLE: 0 elif m == VX_ATTACK: min(n, 7) else: n % 8
     let fr = vx_frame(lk, vx_look_v(id, lk), m, f, st)
     if fr < 0: vx_want(lk)  // (drawn before it's baked: a unit of a later age put down, asked for first)

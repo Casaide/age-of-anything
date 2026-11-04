@@ -198,9 +198,8 @@ def mantis():
                    leg(float3 { 2.5, -4.0, 12.0 }, float3 { 12.0, -14.0, 0.8 }, float2 { 8.5, 8.5 }, UP, float4 { 1.0, 0.8, 0.7, 0.5 }, [ "mantis", "mantis" ], 2.6, 1.6, 180.0) ]) l: with_foot(l, 1.0, "mantis", false)
     vxw_body(OUT + "siege.beast.mantis.json", "A war mantis: a long green body reared up at the front, a triangle head with great gold eyes, its claws folded up before it, four thin legs, wings folded on its back; a saddle, its crew sat on it.", 1.0, [ HOWDAH, legs(ls), "\"reach\": 2.6", spots("seats", [ float3 { 0.0, -6.0, 17.0 } ]) ])
 
-elephant()
-heron()
-mantis()
+// The war elephant, heron and mantis are hand-made bodies now (data/voxel/bodies/siege.beast.*.json, 2026-11-04),
+// so they aren't written here any more (their functions are kept for reference).
 ram()
 catapult()
 bolt()

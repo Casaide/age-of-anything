@@ -51,6 +51,8 @@
   "bastion",
   "wall",
   "stone_gate",
+  "fortified_wall",
+  "fortified_gate",
   "wall_tower",
   "ladder",
   "siege_workshop",
@@ -104,7 +106,9 @@
    "palisade",
    "wall_tower",
    "stone_gate",
-   "palisade_gate"
+   "palisade_gate",
+   "fortified_wall",
+   "fortified_gate"
   ],
   "repair_pct": 40
  },
@@ -845,6 +849,72 @@
    "sight": 10,
    "upgrade_of": "watchtower",
    "note": "what the Bastion research at the University makes of every Watchtower (in place, keeping its share of health); after it, ordering a Watchtower builds a Bastion"
+  },
+  "fortified_wall": {
+   "blocks_flyers": true,
+   "name": "Fortified Wall",
+   "desc": "A stone wall raised on a sloped stone foot, faced in dressed blocks, with a deeper parapet and stone hoardings along the top: much harder to knock down. Drag to lay a line.",
+   "size": 1,
+   "hp": 2600,
+   "cost": {
+    "food": 0,
+    "wood": 0,
+    "stone": 7
+   },
+   "build_time": 8,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 3,
+   "hotkey": "X",
+   "armour": {
+    "melee": 9,
+    "pierce": 13
+   },
+   "note": "what the Fortified Walls research at the University makes of every Stone Wall (in place, keeping its share of health); after it, laying a Stone Wall lays a Fortified Wall",
+   "line": true,
+   "walkway": 2,
+   "upgrade_of": "wall"
+  },
+  "fortified_gate": {
+   "blocks_flyers": true,
+   "sees_over_trees": true,
+   "name": "Fortified Gate",
+   "desc": "A gatehouse on a sloped stone foot with an iron portcullis behind the leaves: drop it on your wall and it follows the line (on open ground, R turns it). It opens for your side and stays shut to everyone else.",
+   "size": 1,
+   "hp": 3000,
+   "cost": {
+    "food": 0,
+    "wood": 0,
+    "stone": 35
+   },
+   "build_time": 30,
+   "pop": 0,
+   "house": false,
+   "drop_off": [],
+   "trains": [],
+   "age": 3,
+   "hotkey": "",
+   "armour": {
+    "melee": 9,
+    "pierce": 13
+   },
+   "note": "what the Fortified Walls research makes of every Stone Gate; opens for its owner's team",
+   "gate": true,
+   "length": 3,
+   "replaces": [
+    "wall",
+    "fortified_wall"
+   ],
+   "walkway": 2,
+   "stairs": true,
+   "pour": {
+    "damage": 20,
+    "reload": 100,
+    "reach": 1
+   },
+   "upgrade_of": "stone_gate"
   }
  }
 }

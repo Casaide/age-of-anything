@@ -1,301 +1,527 @@
 {
- "_doc": "A beetle to ride: flat, six legs, a horn out in front.",
- "skin": "#3a2a4a",
- "pale": "#6a4a8a",
- "mark": "#1c1a12",
+ "_doc": "A stag beetle, from scratch: low and long (about 30 units snout to tail, 9 high), glossy chestnut wing cases split by a team-coloured seam, a black pronotum wider than long, a broad flat head with huge antler mandibles curving in to crossed tips with an inner tine, elbowed antennae, six thin legs splayed wide (front forward, middle out, hind back), walking in tripods. No arms: holds no gear.",
+ "skin": "#1e1a1c",
+ "pale": "#6a6470",
  "size": 1.4,
  "fur": 0.0,
- "reach": 2.6,
+ "reach": 3.8,
  "points": {
-  "abdomen": {
+  "abd": {
    "at": [
     0,
-    -4.5,
-    7.5
+    -6.0,
+    5.6
    ],
-   "bob": 0.3
+   "bob": 0.2
   },
   "thorax": {
    "at": [
     0,
-    2.5,
-    7.0
+    2.6,
+    5.4
    ],
-   "bob": 0.3
+   "bob": 0.25
   },
   "head": {
    "at": [
     0,
-    6.5,
-    6.8
+    6.6,
+    5.0
    ],
-   "bob": 0.3
+   "bob": 0.25
   }
- },
- "seat": {
-  "at": [
-   0,
-   -2.0,
-   13.0
-  ],
-  "wide": 5.6
  },
  "legs": [
   {
    "hip": [
     "thorax",
-    2.8,
-    1.5,
-    -1.0
+    2.2,
+    1.2,
+    -1.6
    ],
    "foot": [
-    7.0,
-    7.0,
-    0.6
+    7.6,
+    8.6,
+    0.7
    ],
-   "stride": 2.6,
-   "lift": 1.4,
+   "stride": 2.2,
+   "lift": 1.0,
    "phase": 0,
    "bones": [
-    4.2,
-    5.0
+    5.2,
+    5.4
    ],
    "pole": [
-    0.5,
-    0,
+    1,
+    0.3,
     1
    ],
    "r": [
-    1.15,
-    0.9,
     0.85,
-    0.55
+    0.65,
+    0.6,
+    0.45
    ],
    "mats": [
-    "mark",
-    "mark"
+    "chitin",
+    "chitin"
    ],
    "shapes": [
     {
-     "ball": [
+     "cap": [
       "ankle",
       0,
-      0.3,
-      -0.2
+      0,
+      0
      ],
-     "r": 0.75,
-     "mat": "mark",
-     "_doc": "a foot"
+     "to": [
+      "ankle",
+      1.3,
+      0.4,
+      -0.5
+     ],
+     "r": [
+      0.45,
+      0.4
+     ],
+     "mat": "chitin"
     }
    ]
   },
   {
    "hip": [
     "thorax",
-    2.8,
-    -0.5,
-    -1.0
+    2.6,
+    -1.2,
+    -1.6
    ],
    "foot": [
-    7.0,
-    1.0,
-    0.6
+    9.6,
+    -1.4,
+    0.7
    ],
-   "stride": 2.6,
-   "lift": 1.4,
+   "stride": 2.2,
+   "lift": 1.0,
    "phase": 180,
    "bones": [
-    4.2,
-    5.0
+    5.0,
+    5.4
    ],
    "pole": [
-    0.5,
+    1,
     0,
     1
    ],
    "r": [
-    1.15,
-    0.9,
     0.85,
-    0.55
+    0.65,
+    0.6,
+    0.45
    ],
    "mats": [
-    "mark",
-    "mark"
+    "chitin",
+    "chitin"
    ],
    "shapes": [
     {
-     "ball": [
+     "cap": [
       "ankle",
       0,
-      0.3,
-      -0.2
+      0,
+      0
      ],
-     "r": 0.75,
-     "mat": "mark",
-     "_doc": "a foot"
+     "to": [
+      "ankle",
+      1.3,
+      0.4,
+      -0.5
+     ],
+     "r": [
+      0.45,
+      0.4
+     ],
+     "mat": "chitin"
     }
    ]
   },
   {
    "hip": [
-    "abdomen",
-    2.8,
-    3.0,
-    -1.0
+    "abd",
+    2.6,
+    3.2,
+    -1.8
    ],
    "foot": [
-    7.0,
-    -5.0,
-    0.6
+    8.6,
+    -11.0,
+    0.7
    ],
-   "stride": 2.6,
-   "lift": 1.4,
+   "stride": 2.2,
+   "lift": 1.0,
    "phase": 0,
    "bones": [
-    4.2,
-    5.0
+    5.6,
+    6.0
    ],
    "pole": [
-    0.5,
-    0,
+    1,
+    -0.3,
     1
    ],
    "r": [
-    1.15,
-    0.9,
     0.85,
-    0.55
+    0.65,
+    0.6,
+    0.45
    ],
    "mats": [
-    "mark",
-    "mark"
+    "chitin",
+    "chitin"
    ],
    "shapes": [
     {
-     "ball": [
+     "cap": [
       "ankle",
       0,
-      0.3,
-      -0.2
+      0,
+      0
      ],
-     "r": 0.75,
-     "mat": "mark",
-     "_doc": "a foot"
+     "to": [
+      "ankle",
+      1.3,
+      0.4,
+      -0.5
+     ],
+     "r": [
+      0.45,
+      0.4
+     ],
+     "mat": "chitin"
     }
    ]
   }
  ],
+ "helm": {
+  "at": [
+   "thorax",
+   0,
+   0,
+   2.6
+  ],
+  "r": 2.5
+ },
+ "armour": {
+  "a": [
+   "abd",
+   0,
+   2.0,
+   1.0
+  ],
+  "b": [
+   "thorax",
+   0,
+   0,
+   0.6
+  ],
+  "r": [
+   3.8,
+   3.0
+  ]
+ },
  "shapes": [
   {
    "cap": [
-    "abdomen",
-    0,
-    -1.0,
-    0.3
+    "abd",
+    2.15,
+    4.2,
+    0
    ],
    "to": [
-    "thorax",
-    0,
-    -1.0,
-    0.3
+    "abd",
+    1.2,
+    -6.6,
+    -0.6
    ],
    "r": [
-    5.4,
-    4.4
+    3.1,
+    1.6
    ],
    "mat": "skin",
-   "_doc": "the shell"
+   "mirror": true
   },
   {
    "cap": [
-    "abdomen",
+    "abd",
+    1.6,
+    3.4,
+    2.5
+   ],
+   "to": [
+    "abd",
+    1.1,
+    -4.5,
+    1.6
+   ],
+   "r": [
+    0.55,
+    0.45
+   ],
+   "mat": "pale",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "abd",
+    1.7,
+    1.8,
+    2.95
+   ],
+   "r": 0.5,
+   "mat": "stag_shine",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "abd",
+    0,
+    3.0,
+    -1.3
+   ],
+   "to": [
+    "abd",
     0,
     -5.5,
-    5.0
+    -1.0
+   ],
+   "r": [
+    2.8,
+    1.8
+   ],
+   "mat": "chitin",
+   "_doc": "underside"
+  },
+  {
+   "cap": [
+    "thorax",
+    -2.3,
+    0,
+    0.4
    ],
    "to": [
     "thorax",
+    2.3,
     0,
-    -2.0,
-    4.6
+    0.4
    ],
    "r": [
-    0.3,
-    0.3
+    2.5,
+    2.5
    ],
-   "mat": "mark",
-   "hard": true
+   "mat": "chitin"
   },
   {
-   "ball": [
+   "bead": [
     "thorax",
-    0,
-    1.0,
-    0
+    -1.4,
+    0.3,
+    2.6
    ],
-   "r": 3.6,
-   "mat": "pale"
+   "r": 0.55,
+   "mat": "chitin_hi"
   },
   {
-   "ball": [
+   "cap": [
     "head",
-    0,
+    -2.2,
     0,
     0
    ],
-   "r": 2.6,
-   "mat": "skin"
+   "to": [
+    "head",
+    2.2,
+    0,
+    0
+   ],
+   "r": [
+    1.7,
+    1.7
+   ],
+   "mat": "chitin"
   },
   {
    "bead": [
     "head",
-    1.5,
-    1.6,
-    0.6
+    -1.2,
+    0.4,
+    1.5
    ],
    "r": 0.45,
-   "mat": "eye",
+   "mat": "chitin_hi"
+  },
+  {
+   "bead": [
+    "head",
+    3.4,
+    0.4,
+    0.3
+   ],
+   "r": 0.6,
+   "mat": "chitin_hi",
    "mirror": true
   },
   {
-   "chain": [
-    [
-     "head",
-     0,
-     1.6,
-     0.8
-    ],
-    [
-     "head",
-     0,
-     3.8,
-     2.2
-    ],
-    [
-     "head",
-     0,
-     4.9,
-     4.4
-    ],
-    [
-     "head",
-     0,
-     4.5,
-     6.2
-    ]
+   "cap": [
+    "head",
+    2.4,
+    1.4,
+    0.2
+   ],
+   "to": [
+    "head",
+    3.8,
+    3.6,
+    0.9
    ],
    "r": [
-    1.1,
-    -0.25,
-    0.35,
-    0.15
+    1.05,
+    0.95
    ],
-   "mats": [
-    "skin",
-    "skin"
+   "mat": "mandible",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "head",
+    3.8,
+    3.6,
+    0.9
    ],
-   "_doc": "the horn"
+   "to": [
+    "head",
+    4.3,
+    6.4,
+    1.6
+   ],
+   "r": [
+    0.95,
+    0.8
+   ],
+   "mat": "mandible",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "head",
+    4.3,
+    6.4,
+    1.6
+   ],
+   "to": [
+    "head",
+    3.6,
+    9.0,
+    2.2
+   ],
+   "r": [
+    0.8,
+    0.65
+   ],
+   "mat": "mandible_tip",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "head",
+    3.6,
+    9.0,
+    2.2
+   ],
+   "to": [
+    "head",
+    1.8,
+    10.6,
+    2.4
+   ],
+   "r": [
+    0.65,
+    0.5
+   ],
+   "mat": "mandible_tip",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "head",
+    4.1,
+    5.6,
+    1.4
+   ],
+   "to": [
+    "head",
+    2.4,
+    6.6,
+    1.9
+   ],
+   "r": [
+    0.6,
+    0.4
+   ],
+   "mat": "mandible_tip",
+   "mirror": true,
+   "_doc": "inner tine"
+  },
+  {
+   "cap": [
+    "head",
+    2.6,
+    1.2,
+    0.9
+   ],
+   "to": [
+    "head",
+    3.6,
+    2.6,
+    2.8
+   ],
+   "r": [
+    0.45,
+    0.45
+   ],
+   "mat": "chitin",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "head",
+    3.6,
+    2.6,
+    2.8
+   ],
+   "to": [
+    "head",
+    5.0,
+    3.4,
+    3.0
+   ],
+   "r": [
+    0.45,
+    0.6
+   ],
+   "mat": "chitin",
+   "mirror": true
   }
- ]
+ ],
+ "check": {
+  "knees": 160,
+  "_doc": "an insect's knees ride high above its body"
+ },
+ "mark": "#1c1a12",
+ "seat": {
+  "at": [
+   0,
+   -2.0,
+   9.6
+  ],
+  "wide": 5.6
+ }
 }

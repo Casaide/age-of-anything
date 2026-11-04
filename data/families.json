@@ -59,8 +59,7 @@
    "bog_poultice"
   ],
   "lacks": [
-   "wall",
-   "stone_gate"
+   "fortified_walls"
   ],
   "prefixes": [
    "Bog",
@@ -699,8 +698,7 @@
    "saddle_bows"
   ],
   "lacks": [
-   "wall",
-   "stone_gate"
+   "fortified_walls"
   ],
   "prefixes": [
    "Khan",
@@ -960,6 +958,8 @@
        "palisade_gate",
        "wall",
        "stone_gate",
+       "fortified_wall",
+       "fortified_gate",
        "watchtower",
        "bastion"
       ],

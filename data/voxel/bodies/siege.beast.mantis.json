@@ -1,25 +1,444 @@
 {
- "_doc": "A war mantis: a long green body reared up at the front, a triangle head with great gold eyes, its claws folded up before it, four thin legs, wings folded on its back; a saddle, its crew sat on it.",
+ "_doc": "A war mantis, from scratch: a long green abdomen low behind with the wings folded flat along it, a long prothorax rearing up at the front, a triangle head with great gold eyes and thin antennae, the raptorial forelegs folded up before it (spiked femur, tibia folded back), four thin walking legs, knees high; a saddle on its back, its crew sat on it.",
  "size": 1.0,
- "styles": {"howdah": {"skin": "#8c6133", "pale": "#4a3a2a", "mark": "#8a3a2a"}},
- "legs": [{"bones":[8.0,8.0],"foot":[11.0,7.0,0.8],"hip":["o",2.5,2.0,12.0],"lift":1.6,"mats":["mantis","mantis"],"phase":0.0,"pole":[0.0,0.0,1.0],"r":[1.0,0.8,0.7,0.5],"shapes":[{"ball":["ankle",0.0,0.3,-0.2],"mat":"mantis","r":1.0}],"stride":2.6},{"bones":[8.5,8.5],"foot":[12.0,-14.0,0.8],"hip":["o",2.5,-4.0,12.0],"lift":1.6,"mats":["mantis","mantis"],"phase":180.0,"pole":[0.0,0.0,1.0],"r":[1.0,0.8,0.7,0.5],"shapes":[{"ball":["ankle",0.0,0.3,-0.2],"mat":"mantis","r":1.0}],"stride":2.6}],
+ "styles": {
+  "howdah": {
+   "skin": "#8c6133",
+   "pale": "#4a3a2a",
+   "mark": "#8a3a2a"
+  }
+ },
  "reach": 2.6,
- "seats": [[0.0,-6.0,17.0]],
- "points": {"o": {"at": [0, 0, 0]}},
+ "seats": [
+  [
+   0.0,
+   -6.0,
+   17.0
+  ]
+ ],
+ "points": {
+  "o": {
+   "at": [
+    0,
+    0,
+    0
+   ],
+   "bob": 0.0
+  },
+  "abd": {
+   "at": [
+    0,
+    -7.0,
+    11.4
+   ],
+   "bob": 0.4
+  },
+  "thorax": {
+   "at": [
+    0,
+    2.0,
+    12.6
+   ],
+   "bob": 0.4
+  },
+  "head": {
+   "at": [
+    0,
+    7.6,
+    22.0
+   ],
+   "bob": 0.4
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "thorax",
+    1.6,
+    0,
+    -1.4
+   ],
+   "foot": [
+    8.0,
+    2.0,
+    0.6
+   ],
+   "stride": 3.0,
+   "lift": 1.6,
+   "phase": 0,
+   "bones": [
+    7.0,
+    7.6
+   ],
+   "pole": [
+    1,
+    0,
+    1.2
+   ],
+   "r": [
+    0.7,
+    0.55,
+    0.5,
+    0.35
+   ],
+   "mats": [
+    "mantis",
+    "mantis"
+   ],
+   "shapes": [
+    {
+     "cap": [
+      "ankle",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "ankle",
+      1.2,
+      0.6,
+      -0.4
+     ],
+     "r": [
+      0.35,
+      0.3
+     ],
+     "mat": "mantis_dark"
+    }
+   ]
+  },
+  {
+   "hip": [
+    "thorax",
+    1.4,
+    -2.4,
+    -1.6
+   ],
+   "foot": [
+    7.6,
+    -9.6,
+    0.6
+   ],
+   "stride": 3.0,
+   "lift": 1.6,
+   "phase": 180,
+   "bones": [
+    8.4,
+    9.0
+   ],
+   "pole": [
+    1,
+    -0.2,
+    1.2
+   ],
+   "r": [
+    0.7,
+    0.55,
+    0.5,
+    0.35
+   ],
+   "mats": [
+    "mantis",
+    "mantis"
+   ],
+   "shapes": [
+    {
+     "cap": [
+      "ankle",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "ankle",
+      1.2,
+      -0.6,
+      -0.4
+     ],
+     "r": [
+      0.35,
+      0.3
+     ],
+     "mat": "mantis_dark"
+    }
+   ]
+  }
+ ],
  "shapes": [
-  {"cap":["o",0.0,-6.0,12.0],"hard":false,"mat":"mantis","r":[5.5,3.0],"to":["o",0.0,-24.0,10.0]},
-  {"cap":["o",0.0,-6.0,12.0],"hard":false,"mat":"mantis","r":[3.2,3.0],"to":["o",0.0,6.0,14.0]},
-  {"cap":["o",0.0,6.0,14.0],"hard":false,"mat":"mantis","r":[2.2,1.8],"to":["o",0.0,11.0,26.0]},
-  {"ball":["o",0.0,12.0,29.0],"hard":false,"mat":"mantis","r":3.0},
-  {"ball":["o",-2.6,13.0,30.0],"hard":true,"mat":"gold","r":1.3},
-  {"ball":["o",2.6,13.0,30.0],"hard":true,"mat":"gold","r":1.3},
-  {"box":["o",0.0,-14.0,16.0],"half":[4.2,10.0,0.6],"mat":"mantis_dark","n":[0.0,0.08,1.0],"round":0.3},
-  {"cap":["o",-2.0,10.0,24.0],"hard":true,"mat":"mantis","r":[1.3,1.1],"to":["o",-4.0,17.0,18.0]},
-  {"cap":["o",-4.0,17.0,18.0],"hard":true,"mat":"mantis_dark","r":[1.1,0.6],"to":["o",-3.0,15.0,27.0]},
-  {"cap":["o",2.0,10.0,24.0],"hard":true,"mat":"mantis","r":[1.3,1.1],"to":["o",4.0,17.0,18.0]},
-  {"cap":["o",4.0,17.0,18.0],"hard":true,"mat":"mantis_dark","r":[1.1,0.6],"to":["o",3.0,15.0,27.0]},
-  {"box":["o",0.0,-6.0,16.0],"half":[3.0,4.0,1.0],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
-  {"box":["o",-3.8,-6.0,13.0],"half":[4.0,0.5,3.0],"mat":"trim","n":[1.0,0.0,0.0],"round":0.2},
-  {"box":["o",3.8,-6.0,13.0],"half":[4.0,0.5,3.0],"mat":"trim","n":[1.0,0.0,0.0],"round":0.2}
+  {
+   "cap": [
+    "abd",
+    0,
+    5.0,
+    0
+   ],
+   "to": [
+    "abd",
+    0,
+    -9.0,
+    -2.6
+   ],
+   "r": [
+    3.4,
+    1.6
+   ],
+   "mat": "mantis",
+   "_doc": "the long abdomen"
+  },
+  {
+   "cap": [
+    "abd",
+    1.3,
+    5.0,
+    2.4
+   ],
+   "to": [
+    "abd",
+    0.8,
+    -9.6,
+    0.2
+   ],
+   "r": [
+    1.6,
+    0.8
+   ],
+   "mat": "mantis_dark",
+   "mirror": true,
+   "_doc": "wings folded flat"
+  },
+  {
+   "cap": [
+    "thorax",
+    0,
+    -2.0,
+    -0.8
+   ],
+   "to": [
+    "thorax",
+    0,
+    1.0,
+    0.2
+   ],
+   "r": [
+    2.0,
+    1.8
+   ],
+   "mat": "mantis",
+   "_doc": "the thorax"
+  },
+  {
+   "cap": [
+    "thorax",
+    0,
+    1.0,
+    0.2
+   ],
+   "to": [
+    "head",
+    0,
+    -1.0,
+    -2.6
+   ],
+   "r": [
+    1.6,
+    1.1
+   ],
+   "mat": "mantis",
+   "_doc": "the long prothorax, reared"
+  },
+  {
+   "cap": [
+    "head",
+    -2.0,
+    0,
+    0.6
+   ],
+   "to": [
+    "head",
+    2.0,
+    0,
+    0.6
+   ],
+   "r": [
+    1.1,
+    1.1
+   ],
+   "mat": "mantis",
+   "_doc": "the triangle head"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    0.4,
+    0
+   ],
+   "to": [
+    "head",
+    0,
+    1.2,
+    -2.0
+   ],
+   "r": [
+    1.2,
+    0.5
+   ],
+   "mat": "mantis",
+   "_doc": "the jaw point"
+  },
+  {
+   "ball": [
+    "head",
+    2.4,
+    0.2,
+    0.8
+   ],
+   "r": 1.2,
+   "mat": "gold",
+   "mirror": true,
+   "_doc": "great eyes"
+  },
+  {
+   "cap": [
+    "head",
+    0.6,
+    0.4,
+    1.4
+   ],
+   "to": [
+    "head",
+    2.6,
+    4.0,
+    5.0
+   ],
+   "r": [
+    0.2,
+    0.15
+   ],
+   "mat": "mantis_dark",
+   "mirror": true,
+   "_doc": "antennae"
+  },
+  {
+   "cap": [
+    "head",
+    1.4,
+    -0.6,
+    -3.4
+   ],
+   "to": [
+    "head",
+    2.0,
+    2.4,
+    -6.6
+   ],
+   "r": [
+    0.9,
+    0.7
+   ],
+   "mat": "mantis",
+   "mirror": true,
+   "_doc": "raptorial femur"
+  },
+  {
+   "cap": [
+    "head",
+    2.0,
+    2.4,
+    -6.6
+   ],
+   "to": [
+    "head",
+    1.8,
+    0.6,
+    -3.4
+   ],
+   "r": [
+    0.6,
+    0.4
+   ],
+   "mat": "mantis_dark",
+   "mirror": true,
+   "_doc": "tibia folded back"
+  },
+  {
+   "bead": [
+    "head",
+    1.7,
+    1.2,
+    -5.0
+   ],
+   "r": 0.4,
+   "mat": "mantis_dark",
+   "mirror": true,
+   "_doc": "spike"
+  },
+  {
+   "box": [
+    "o",
+    0,
+    -6.0,
+    16.0
+   ],
+   "n": [
+    0,
+    1,
+    0
+   ],
+   "half": [
+    3.0,
+    4.0,
+    1.0
+   ],
+   "round": 0.3,
+   "mat": "frame",
+   "hard": true,
+   "_doc": "saddle"
+  },
+  {
+   "box": [
+    "o",
+    3.8,
+    -6.0,
+    13.0
+   ],
+   "n": [
+    1,
+    0,
+    0
+   ],
+   "half": [
+    4.0,
+    0.5,
+    3.0
+   ],
+   "round": 0.3,
+   "mat": "trim",
+   "hard": true,
+   "mirror": true
+  },
+  {
+   "box": [
+    "o",
+    4.2,
+    -6.0,
+    11.0
+   ],
+   "n": [
+    1,
+    0,
+    0
+   ],
+   "half": [
+    3.6,
+    0.4,
+    0.8
+   ],
+   "round": 0.3,
+   "mat": "team",
+   "hard": true,
+   "mirror": true,
+   "_doc": "team cloths"
+  }
  ]
 }

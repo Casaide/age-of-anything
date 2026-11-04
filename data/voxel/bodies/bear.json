@@ -1,37 +1,31 @@
 {
- "_doc": "A bear on two legs (the race: D-126): stout, short legs, a round head with a pale muzzle and round ears, a stub tail; the team a scarf.",
- "also": [
-  "bear_black",
-  "bear_polar"
- ],
- "skin": "#6b4528",
- "pale": "#3a2416",
- "mark": "#9c7450",
- "size": 1.15,
+ "skin": "#6b4529",
+ "pale": "#c79a62",
+ "size": 1.75,
  "fur": 0.08,
- "reach": 4.0,
+ "reach": 6.0,
  "points": {
-  "hip": {
+  "pelvis": {
    "at": [
     0,
-    0,
-    13.0
+    -1.2,
+    13.6
    ],
-   "bob": 0.5
+   "bob": 0.6
   },
   "chest": {
    "at": [
     0,
-    0.6,
-    25.0
+    5.0,
+    21.6
    ],
-   "bob": 0.5
+   "bob": 0.6
   },
   "head": {
    "at": [
     0,
-    1.8,
-    31.5
+    10.6,
+    25.4
    ],
    "bob": 0.5
   }
@@ -39,21 +33,21 @@
  "legs": [
   {
    "hip": [
-    "hip",
-    2.8,
+    "pelvis",
+    3.8,
     0,
-    0
+    -1.4
    ],
    "foot": [
-    3.0,
-    0,
-    2.2
+    4.0,
+    0.0,
+    1.9
    ],
-   "stride": 4.0,
-   "lift": 2.0,
+   "stride": 5.0,
+   "lift": 2.2,
    "bones": [
-    5.6,
-    5.6
+    5.4,
+    5.4
    ],
    "pole": [
     0,
@@ -61,10 +55,10 @@
     0
    ],
    "r": [
-    3.6,
-    3.0,
-    2.8,
-    2.3
+    4.6,
+    2.7,
+    2.3,
+    1.8
    ],
    "mats": [
     "skin",
@@ -75,21 +69,41 @@
      "cap": [
       "ankle",
       0,
-      0,
-      -0.4
+      0.2,
+      -0.6
      ],
      "to": [
       "ankle",
       0,
-      2.8,
+      3.2,
       -1.2
      ],
      "r": [
-      2.1,
-      1.8
+      1.9,
+      1.6
      ],
      "mat": "skin",
-     "_doc": "a broad foot"
+     "_doc": "a broad flat paw"
+    },
+    {
+     "cap": [
+      "ankle",
+      0,
+      3.5,
+      -1.5
+     ],
+     "to": [
+      "ankle",
+      0,
+      4.2,
+      -1.7999999999999998
+     ],
+     "r": [
+      0.9,
+      0.45
+     ],
+     "mat": "hair",
+     "_doc": "claws"
     }
    ]
   }
@@ -98,11 +112,11 @@
   "shoulder": [
    "chest",
    5.0,
-   0,
-   -0.8
+   1.0,
+   -1.4
   ],
-  "bone": 6.0,
-  "thick": 2.3,
+  "bone": 7.0,
+  "thick": 2.1,
   "sleeve": "skin",
   "hand": "skin"
  },
@@ -110,29 +124,173 @@
   "at": [
    "head",
    0,
-   -0.3,
-   1.4
+   -0.4,
+   1.6
   ],
-  "r": 3.5
+  "r": 3.2
  },
  "armour": {
   "a": [
-   "hip",
+   "pelvis",
    0,
    0.4,
-   3.0
+   1.0
   ],
   "b": [
    "chest",
    0,
    0.2,
-   -0.8
+   0.0
   ],
   "r": [
-   6.1,
-   5.5
+   5.6,
+   5.9
   ]
  },
+ "shapes": [
+  {
+   "cap": [
+    "pelvis",
+    1.4,
+    0,
+    0
+   ],
+   "to": [
+    "chest",
+    1.4,
+    0,
+    0
+   ],
+   "r": [
+    5.4,
+    5.6
+   ],
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "the barrel"
+  },
+  {
+   "cap": [
+    "chest",
+    0,
+    2.4,
+    0.8
+   ],
+   "to": [
+    "head",
+    0,
+    -1.4,
+    -0.2
+   ],
+   "r": [
+    4.4,
+    3.2
+   ],
+   "mat": "skin",
+   "_doc": "the thick neck"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    -1.0,
+    0.3
+   ],
+   "to": [
+    "head",
+    0,
+    0.9,
+    0.2
+   ],
+   "r": [
+    3.1,
+    2.7
+   ],
+   "mat": "skin",
+   "_doc": "the broad skull"
+  },
+  {
+   "cap": [
+    "head",
+    0,
+    1.4,
+    -0.6
+   ],
+   "to": [
+    "head",
+    0,
+    5.0,
+    -1.4
+   ],
+   "r": [
+    1.9,
+    1.2
+   ],
+   "mat": "pale",
+   "_doc": "the muzzle"
+  },
+  {
+   "bead": [
+    "head",
+    0,
+    5.3,
+    -1.1
+   ],
+   "r": 0.95,
+   "mat": "eye",
+   "_doc": "the nose"
+  },
+  {
+   "bead": [
+    "head",
+    1.5,
+    1.6,
+    0.9
+   ],
+   "r": 0.4,
+   "mat": "eye",
+   "mirror": true
+  },
+  {
+   "ball": [
+    "head",
+    2.2,
+    -1.0,
+    2.4
+   ],
+   "r": 1.25,
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "small round ears"
+  },
+  {
+   "ring": [
+    "chest",
+    0,
+    3.0,
+    1.4
+   ],
+   "r": [
+    4.5,
+    0.75
+   ],
+   "mat": "team",
+   "unless": [
+    "armour"
+   ],
+   "_doc": "team scarf at the neck"
+  }
+ ],
+ "_doc": "A grizzly half-reared to fight: about 30 tall, the torso leaning forward about 45 degrees over short thick hind legs, weight back, forelegs free and of bear length (reaching to the knee), a broad head low and forward, small round ears, tan muzzle, black nose. Team colour: a cloth over the shoulders.",
+ "check": {
+  "knees": 70,
+  "_doc": "half-reared on bent hind legs"
+ },
+ "also": [
+  "bear_black",
+  "bear_polar"
+ ],
+ "mark": "#9c7450",
  "seat": {
   "z": 13.5,
   "astride": [
@@ -151,182 +309,5 @@
   {
    "skin": 1.12
   }
- ],
- "shapes": [
-  {
-   "cap": [
-    "hip",
-    0,
-    0,
-    1.5
-   ],
-   "to": [
-    "chest",
-    0,
-    0,
-    0
-   ],
-   "r": [
-    6.0,
-    5.2
-   ],
-   "mat": "skin",
-   "_doc": "the trunk"
-  },
-  {
-   "cap": [
-    "hip",
-    0,
-    1.8,
-    3.0
-   ],
-   "to": [
-    "chest",
-    0,
-    1.6,
-    -3.0
-   ],
-   "r": [
-    4.4,
-    3.4
-   ],
-   "mat": "mark",
-   "_doc": "the belly"
-  },
-  {
-   "cap": [
-    "chest",
-    -4.2,
-    0,
-    -0.4
-   ],
-   "to": [
-    "chest",
-    4.2,
-    0,
-    -0.4
-   ],
-   "r": [
-    3.0,
-    3.0
-   ],
-   "mat": "skin",
-   "_doc": "the shoulders"
-  },
-  {
-   "cap": [
-    "chest",
-    0,
-    0,
-    0
-   ],
-   "to": [
-    "head",
-    0,
-    -0.6,
-    -2.4
-   ],
-   "r": [
-    3.4,
-    3.1
-   ],
-   "mat": "skin"
-  },
-  {
-   "ball": [
-    "head",
-    0,
-    0,
-    0
-   ],
-   "r": 3.6,
-   "mat": "skin"
-  },
-  {
-   "cap": [
-    "head",
-    0,
-    2.0,
-    -1.1
-   ],
-   "to": [
-    "head",
-    0,
-    4.0,
-    -1.5
-   ],
-   "r": [
-    2.1,
-    1.6
-   ],
-   "mat": "mark",
-   "_doc": "the muzzle"
-  },
-  {
-   "bead": [
-    "head",
-    0,
-    5.1,
-    -1.0
-   ],
-   "r": 0.85,
-   "mat": "eye",
-   "_doc": "the nose"
-  },
-  {
-   "bead": [
-    "head",
-    1.35,
-    2.9,
-    0.7
-   ],
-   "r": 0.42,
-   "mat": "eye",
-   "mirror": true
-  },
-  {
-   "ball": [
-    "head",
-    2.7,
-    -0.5,
-    2.5
-   ],
-   "r": 1.35,
-   "mat": "skin",
-   "mirror": true,
-   "unless": [
-    "helm"
-   ],
-   "_doc": "round ears"
-  },
-  {
-   "ball": [
-    "hip",
-    0,
-    -5.0,
-    0.5
-   ],
-   "r": 1.5,
-   "mat": "skin",
-   "_doc": "a stub tail"
-  },
-  {
-   "ring": [
-    "chest",
-    0,
-    1.4,
-    1.4
-   ],
-   "r": [
-    3.6,
-    1.0
-   ],
-   "mat": "team",
-   "_doc": "the scarf"
-  }
- ],
- "check": {
-  "knees": 35,
-  "_doc": "a bear stands with soft knees"
- }
+ ]
 }

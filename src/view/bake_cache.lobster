@@ -6,10 +6,13 @@ let BAKE_VERSION = 21              // (21: no floating or lit pieces in stages a
 var bake_cache_dir = "bake_cache"  // (play.sh makes it; Lobster can't make a folder)
 var bake_shipped_dir = "baked"     // the buildings and props a build ships, baked by prebake.sh (read before bake_cache/)
 
-// While the art bakes (a first start with no cache: minutes), the window stays alive: a few times a second a frame
+// While the art bakes (a first start with no cache: minutes), the window stays alive: ten times a second a frame
 // says how far it is, and the window's events are read, so closing it (or Ctrl-C, which SDL makes a quit) stops the
-// baking (bake_quit; the game then quits). The game turns it on; checks bake without it.
+// baking (bake_quit; the game then quits), and macOS doesn't call it unresponsive when it's clicked or resized. The
+// game turns it on; checks bake without it.
+let BAKE_FRAME_EVERY = 0.1
 var bake_live = false
+var bake_loading = false  // a match's load, when a long bake may draw in its middle (bake_pulse); not during play
 var bake_quit = false
 var bake_done = 0  // things baked since the game began
 // The progress drawn by the game's match loader while it's up (game.lobster sets it to fe_loader, game/lobby.lobster):
@@ -24,10 +27,7 @@ var bake_total = 0  // how many things this bake has to make (0: not counted), a
 var bake_count = 0
 var bake_said = 0.0
 
-def bake_breath():
-    bake_done++
-    if not bake_live or bake_quit or seconds_elapsed() - bake_said < 0.25: return
-    bake_said = seconds_elapsed()
+def bake_frame():
     gl.switch_to_framebuffer(nil)
     gl.ortho()
     gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
@@ -37,6 +37,7 @@ def bake_breath():
         let done = if bake_total > 0: float(bake_count) / float(bake_total) else: 0.0
         bake_progress("Making {bake_what}", bake_progress_from + (bake_progress_to - bake_progress_from) * done)
         if not gl.frame(): bake_quit = true
+        bake_said = seconds_elapsed()
         return
     gl.set_font_size(int(max(16.0, ws.y / 36.0)))
     gl.color(float4 { 0.92, 0.86, 0.7, 1.0 }):
@@ -46,6 +47,19 @@ def bake_breath():
         gl.translate(float2 { ws.x * 0.08, ws.y * 0.45 + ws.y / 22.0 }):
             gl.text("The first start bakes every picture; later starts take them from bake_cache. Close the window to stop.")
     if not gl.frame(): bake_quit = true
+    bake_said = seconds_elapsed()
+
+def bake_due() -> bool:
+    return bake_live and not bake_quit and seconds_elapsed() - bake_said >= BAKE_FRAME_EVERY
+
+// Between two things baked.
+def bake_breath():
+    bake_done++
+    if bake_due(): bake_frame()
+
+// In the middle of one: only where no framebuffer is bound and nothing the frame draws is half made.
+def bake_pulse():
+    if bake_loading and bake_due(): bake_frame()
 
 // Where x is in xs (-1: not there).
 def find_s(xs:[string], x:string) -> int:

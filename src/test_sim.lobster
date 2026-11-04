@@ -2012,38 +2012,42 @@ def test_modes():
     check(winner == teams[0], "modes: an attacker with nothing left is out")
     test_modes_lift_lacks()
 
-// The modes fill the gap: a race that lacks walls (the centaurs) can't build or mend them in a normal
-// match; in Siege and Fortress every side can, defenders and attackers alike, and rebuild a breach.
+// The modes fill the gap: a race that lacks part of the walls (the rats: no stone gate; every race has walls
+// since Dominic's 2026-11-04 call) can't build or mend it in a normal match; in Siege and Fortress every side
+// can, defenders and attackers alike, and rebuild a breach.
 def test_modes_lift_lacks():
-    let centaurs = gen_race("centaur romans")
-    let both = [ centaurs, centaurs ]
+    let rats = gen_race("rat romans")
+    let both = [ rats, rats ]
     new_world("siege_vale", both, rules0, [])
     let ids = [ "wall", "stone_gate", "wall_tower", "palisade" ]
     let wk = btype_index("wall")
-    check(bm_lacks[0][wk] != 0, "modes: the centaurs lack stone walls in a normal match (the case this tests)")
-    for([ "wall", "stone_gate", "palisade" ]) id:
-        check(bm_lacks[0][btype_index(id)] != 0 and build_barred(0, btype_index(id)), "modes: no {id} for centaurs in a normal match")
-    fort_put(0, wk, 5, 5, 0)  // (one handed to them all the same)
+    let gk = btype_index("stone_gate")
+    check(bm_lacks[0][gk] != 0, "modes: the rats lack stone gates in a normal match (the case this tests)")
+    check(build_barred(0, gk), "modes: no stone_gate for rats in a normal match")
+    fort_put(0, gk, 5, 5, 0)  // (one handed to them all the same)
     let nb = b_id[b_id.length - 1]
     b_hp[b_index_of(nb)] -= 100
-    check(not can_mend(0, nb), "modes: centaurs can\'t mend a stone wall in a normal match")
+    check(not can_mend(0, nb), "modes: rats can\'t mend a stone gate in a normal match")
     for([ "siege", "fortress" ]) mode:
         new_world("siege_vale", both, mode_rules(mode), [])
         for(2) p:
-            for(ids) id: check(not build_barred(p, btype_index(id)), "modes: {mode} side {p} (centaurs) may build a {id}")
+            for(ids) id: check(not build_barred(p, btype_index(id)), "modes: {mode} side {p} (rats) may build a {id}")
         var wall = -1
         for(b_owner) o, b:
             if wall < 0 and o == 0 and bt_name[b_kind[b]] == "wall": wall = b
-        check(wall >= 0, "modes: {mode} walls the centaurs in")
-        let id = b_id[wall]
-        b_hp[wall] -= 100
-        check(can_mend(0, id), "modes: {mode} centaurs may mend their stone wall")
+        check(wall >= 0, "modes: {mode} walls the rats in")
+        var gb = -1
+        for(b_owner) o, b:
+            if gb < 0 and o == 0 and b_kind[b] == gk: gb = b
+        if gb >= 0:
+            b_hp[gb] -= 100
+            check(can_mend(0, b_id[gb]), "modes: {mode} rats may mend their stone gate")
         let cell = b_cy[wall] * W + b_cx[wall]
         knock_down(wall)
         tick_on()
-        check(rebuild_of(0, cell) == "wall" and can_place(0, wk, cell % W, cell / W), "modes: {mode} centaurs may rebuild a breach in their wall")
+        check(rebuild_of(0, cell) == "wall" and can_place(0, wk, cell % W, cell / W), "modes: {mode} rats may rebuild a breach in their wall")
     new_world("siege_vale", both, rules0, [])
-    check(bm_lacks[0][wk] != 0, "modes: a mode\'s lift doesn\'t reach a later normal match\'s centaurs")
+    check(bm_lacks[0][gk] != 0, "modes: a mode\'s lift doesn\'t reach a later normal match\'s rats")
 
 // ------------------------------------------------------------------ movement classes, the land, hills, flow patches
 
@@ -3727,6 +3731,19 @@ def test_university_castle():
         let k = btype_index(id)
         check(bm_hp[0][k] == bt_hp_base[k] * 210 / 100, "thick walls (after Stonecutting): {id} +100% HP ({bm_hp[0][k]})")
     check(bm_hp[0][hk] == house_before, "thick walls: ...houses as they were")
+    // Fortified Walls (Dominic: a real wall tier in the last age, not just health): stone walls and gates become
+    // the fortified ones where they stand, keeping their share of health, and laying a wall lays a fortified one.
+    let swk = btype_index("wall")
+    let fwk = btype_index("fortified_wall")
+    let fwall = b_index_of(put(0, "wall", sx / 1000 - 6, sy / 1000 - 6, 0))
+    b_hp[fwall] = bm_hp[0][swk] / 2
+    give(0, "fortified_walls")
+    let fw2 = b_index_of(b_id[fwall])
+    check(b_kind[fw2] == fwk, "fortified walls: the stone wall becomes a fortified wall where it stands")
+    check(abs(b_hp[fw2] - bm_hp[0][fwk] / 2) <= 1, "fortified walls: ...keeping its share of health ({b_hp[fw2]} of {bm_hp[0][fwk]})")
+    check(bt_hp_base[fwk] > bt_hp_base[swk] and bm_arm[0][fwk][melee] > bm_arm[0][swk][melee] and bm_arm[0][fwk][pierce] > bm_arm[0][swk][pierce], "fortified walls: more health and armour than stone")
+    check(bm_hp[0][fwk] == bt_hp_base[fwk] * 210 / 100, "fortified walls: ...and Thick Walls counts for them too")
+    check(build_type(0, swk) == fwk and build_type(0, btype_index("stone_gate")) == btype_index("fortified_gate") and build_type(1, swk) == swk, "fortified walls: laying a wall lays a fortified one (the rival\'s stays stone)")
     // Siege Wrights: +1 range for siege (none yet: a ranged line stands in, tagged siege).
     var rk = -1
     for(t_slot.length) k:

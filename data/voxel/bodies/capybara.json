@@ -1,34 +1,10 @@
 {
- "_doc": "A capybara to ride: a barrel body on short legs, a big blunt head, small ears.",
+ "_doc": "A capybara to ride, from scratch: a heavy barrel with no tail, the rump higher and rounder than the shoulders, short legs, a big blunt box of a head with eyes and small ears high up, a darker muzzle.",
  "skin": "#9a6a40",
  "pale": "#6a4a2c",
  "mark": "#6a4a2c",
  "size": 1.3,
  "fur": 0.08,
- "reach": 2.8,
- "points": {
-  "front": {
-   "at": [
-    0,
-    5.0,
-    9.5
-   ]
-  },
-  "back": {
-   "at": [
-    0,
-    -6.0,
-    10.0
-   ]
-  },
-  "head": {
-   "at": [
-    0,
-    10.5,
-    11.0
-   ]
-  }
- },
  "seat": {
   "at": [
    0,
@@ -37,24 +13,52 @@
   ],
   "wide": 5.6
  },
+ "reach": 2.8,
+ "points": {
+  "back": {
+   "at": [
+    0,
+    -6.0,
+    10.0
+   ],
+   "bob": 0.4
+  },
+  "front": {
+   "at": [
+    0,
+    5.0,
+    9.4
+   ],
+   "bob": 0.4
+  },
+  "head": {
+   "at": [
+    0,
+    10.6,
+    10.6
+   ],
+   "bob": 0.4
+  }
+ },
  "legs": [
   {
    "hip": [
-    "front",
-    2.8,
-    0.5,
+    "back",
+    2.6,
+    0,
     -2.5
    ],
    "foot": [
     2.8,
-    6.0,
-    0.9
+    -6.0,
+    0.8
    ],
-   "stride": 2.8,
-   "lift": 1.4,
+   "stride": 3.0,
+   "lift": 1.6,
+   "phase": 0,
    "bones": [
-    3.5,
-    3.5
+    3.6,
+    3.6
    ],
    "pole": [
     0,
@@ -62,10 +66,10 @@
     0
    ],
    "r": [
-    2.3,
-    1.9,
-    1.8,
-    1.5
+    2.6,
+    1.2,
+    1.0,
+    0.8
    ],
    "mats": [
     "skin",
@@ -73,44 +77,36 @@
    ],
    "shapes": [
     {
-     "cap": [
+     "ball": [
       "ankle",
       0,
-      0,
-      -0.3
+      0.5,
+      -0.25
      ],
-     "to": [
-      "ankle",
-      0,
-      1.2,
-      -0.4
-     ],
-     "r": [
-      1.4,
-      1.2
-     ],
-     "mat": "pale"
+     "r": 0.9,
+     "mat": "pale",
+     "_doc": "paw"
     }
    ]
   },
   {
    "hip": [
-    "back",
-    3.0,
-    -0.5,
-    -2.5
+    "front",
+    2.4,
+    0.6,
+    -2.6
    ],
    "foot": [
-    3.0,
-    -6.5,
-    0.9
+    2.6,
+    5.6,
+    0.8
    ],
-   "stride": 2.8,
-   "lift": 1.4,
+   "stride": 3.0,
+   "lift": 1.6,
    "phase": 180,
    "bones": [
-    3.7,
-    3.7
+    3.3,
+    3.3
    ],
    "pole": [
     0,
@@ -118,10 +114,10 @@
     0
    ],
    "r": [
-    2.6,
-    2.0,
-    1.8,
-    1.5
+    1.6,
+    1.0,
+    0.9,
+    0.8
    ],
    "mats": [
     "skin",
@@ -129,55 +125,76 @@
    ],
    "shapes": [
     {
-     "cap": [
+     "ball": [
       "ankle",
       0,
-      0,
-      -0.3
+      0.5,
+      -0.25
      ],
-     "to": [
-      "ankle",
-      0,
-      1.2,
-      -0.4
-     ],
-     "r": [
-      1.4,
-      1.2
-     ],
-     "mat": "pale"
+     "r": 0.9,
+     "mat": "pale",
+     "_doc": "paw"
     }
    ]
   }
  ],
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.8,
+   2.2
+  ],
+  "r": 2.4
+ },
+ "armour": {
+  "a": [
+   "back",
+   0,
+   0,
+   0.8
+  ],
+  "b": [
+   "front",
+   0,
+   0,
+   0.6
+  ],
+  "r": [
+   4.6,
+   4.2
+  ]
+ },
  "shapes": [
   {
    "cap": [
     "back",
+    1.0,
     0,
-    0,
-    0
+    0.4
    ],
    "to": [
     "front",
+    1.0,
     0,
-    0,
-    0
+    0.2
    ],
    "r": [
-    5.6,
-    5.0
+    4.6,
+    4.0
    ],
-   "mat": "skin"
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "the barrel"
   },
   {
    "ball": [
     "back",
     0,
-    -1.0,
-    0.3
+    -1.2,
+    0.6
    ],
-   "r": 5.6,
+   "r": 4.4,
    "mat": "skin",
    "_doc": "the round rump"
   },
@@ -191,63 +208,61 @@
    "to": [
     "head",
     0,
-    3.0,
+    2.4,
     -0.8
    ],
    "r": [
-    3.2,
-    2.7
+    2.6,
+    2.2
    ],
    "mat": "skin",
    "_doc": "the blunt head"
   },
   {
-   "ball": [
+   "cap": [
     "head",
     0,
-    3.4,
+    2.4,
+    -0.8
+   ],
+   "to": [
+    "head",
+    0,
+    3.2,
     -1.2
    ],
-   "r": 2.5,
-   "mat": "skin"
-  },
-  {
-   "bead": [
-    "head",
-    0.7,
-    5.5,
-    -0.6
-   ],
-   "r": 0.5,
-   "mat": "mouth",
-   "mirror": true,
-   "_doc": "nostrils"
-  },
-  {
-   "bead": [
-    "head",
+   "r": [
     2.0,
-    0.8,
-    1.2
+    1.8
    ],
-   "r": 0.48,
-   "mat": "eye",
-   "mirror": true
+   "mat": "pale",
+   "_doc": "darker muzzle"
   },
   {
    "ball": [
     "head",
-    2.0,
+    1.6,
     -1.6,
-    2.6
+    2.4
    ],
-   "r": 0.85,
+   "r": 0.7,
    "mat": "pale",
    "mirror": true,
    "_doc": "small ears"
+  },
+  {
+   "bead": [
+    "head",
+    1.9,
+    0.4,
+    1.4
+   ],
+   "r": 0.4,
+   "mat": "eye",
+   "mirror": true
   }
  ],
  "check": {
-  "knees": 65
+  "knees": 70
  }
 }
