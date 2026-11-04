@@ -476,6 +476,17 @@ def ui_frame(pad:bool):
         if not (magnitude(dir) > 0.0): ui_focus = -1
 
 // A button (primary: the lacquered one). True on the frame it's pressed.
+// A click this frame. On touch a press and lift within one frame only shows as the lift, since Lobster
+// gives touch the last frame's state (for gl.hit), so that counts as one too.
+var ui_touch = false
+var ui_was_down = false
+var ui_click = false
+def ui_click_tick():
+    let down, up = gl.button("mouse1")
+    ui_click = down == 1 or (ui_touch and down < 1 and up == 1 and not ui_was_down)
+    ui_was_down = down >= 1
+def ui_clicked(): return ui_click
+
 def ui_button(at:float2, size:float2, label:string, primary:bool) -> bool:
     let u = ui()
     let k = ui_hits.length
@@ -493,7 +504,7 @@ def ui_button(at:float2, size:float2, label:string, primary:bool) -> bool:
     if label != "":  // (bold, as theme.gd's buttons)
         let fs = if ui_label_px > 0: ui_label_px else: int(min(18.0 * u, size.y * 0.45))
         ui_text_f(at + lift + float2 { (size.x - ui_text_wf(label, fs, 1)) / 2.0, (size.y - float(fs)) / 2.0 - 2.0 * u }, label, fs, ui_look.text, 1, 0.0)
-    return (over and gl.button("mouse1") == 1) or (focused and ui_pad_a)
+    return (over and ui_clicked()) or (focused and ui_pad_a)
 
 // A titled panel: a raised box with a caption in the title colour.
 def ui_panel(at:float2, size:float2, title:string):

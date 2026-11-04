@@ -277,7 +277,7 @@ def fe_dice(at:float2, side:float) -> bool:
 def fe_box(id:int, at:float2, size:float2, text:string, placeholder:string, fs:int, centred:bool):
     fe_well(at, size)
     if fe_field == id: ui_outline(at + float2_1 * 2.0, size - float2_1 * 4.0, 2.0 * fe_k, float4 { ui_look.accent.x, ui_look.accent.y, ui_look.accent.z, 0.6 })
-    if gl.button("mouse1") == 1 and fe_over(at, size): fe_focus(id, text)
+    if ui_clicked() and fe_over(at, size): fe_focus(id, text)
     let caret = if fe_field == id and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""
     let s = if text == "": placeholder else: text + caret  // (empty: the placeholder stays, the caret before it)
     let col = if text == "": ui_look.dim else: ui_look.text
@@ -1302,6 +1302,7 @@ def run_front(page0:string, typed:[string]) -> string:
     var shot_frame = -1
     pace(PACE_MENU)
     while gl.frame():
+        ui_click_tick()
         if bake_quit: return ""
         let dt = gl.delta_time()
         fe_fit()
