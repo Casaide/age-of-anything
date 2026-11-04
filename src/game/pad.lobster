@@ -111,7 +111,7 @@ def soldiers_on_screen() -> [int]:
 
 // One frame of pad play. Returns true while the pad has the controls (the mouse's are skipped).
 def pad_tick(pin:PadIn, dt:float) -> bool:
-    let m = float(gl.mouse_pos(0))
+    let m = if vc_on: vc_pos else: float(gl.mouse_pos(0))
     let moved = pad_last_mouse.x >= 0.0 and magnitude(m - pad_last_mouse) > 2.0
     pad_last_mouse = m
     let any_pad = pin.down.length > 0 or (filter(pin.axes) x: abs(x) > 0.2).length > 0
