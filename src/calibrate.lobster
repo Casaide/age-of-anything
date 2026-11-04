@@ -9,7 +9,7 @@
 //   lobster calibrate.lobster -- fit [lambda:<n>] [write]
 //       each sample's fair price -> its target points (the cost curve's inverse), then every part's
 //       price_points by regularized least squares (a unit's points are the sum of its parts'); prints what
-//       moved, and with write puts them in ../build/calibrate/prices.json for tools/balance/write_prices.py.
+//       moved, and with write puts them in ../build/calibrate/prices.json for write_prices.lobster.
 //   ./shards.sh calibrate.lobster measure [pool] [neutral|expect] [check:<n>] [oracle] [jobs=4]
 //       held-out races and the setup's defaults in groups, each group's round robin at the prices as they are
 //       (no fights at load): how many lines are more than 10 points off the mean of their group. check:<n> fails

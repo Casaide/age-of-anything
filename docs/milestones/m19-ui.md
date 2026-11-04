@@ -84,7 +84,7 @@ sits best with the buildings); B and C are a one-line switch in `data/ui.json`.
   `ui_materials.gd` (wood, bronze, gold, iron, marble, stone, sandstone, parchment, felt, leather, reed,
   lacquer, bone, painted in code as seamless 2x tiles), `ui_box.gd` (lit frames and faces, raised or sunk,
   studs, rivets, reed bindings, stitching, a crest on top), `ui_banner.gd` (cloth banners in eight cuts with a
-  team-coloured hem), `assets/art/ui/crest_*.svg` (twelve cast crests, written by `tools/ui/crests.py`).
+  team-coloured hem), `assets/art/ui/crest_*.svg` (twelve cast crests, written by `src/crests.lobster`).
 - Per culture: a `ui` block in `data/families.json` (frame, frame_colour, panel, colour, button, primary,
   accent, metal, thread, ornament, banner) for all eleven cultures.
 - The title screen (the rolled armies facing each other on a lit hill), the lobby (type 20-46 px, the window

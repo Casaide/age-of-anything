@@ -79,7 +79,7 @@ The manifest:
 - `depends`: mods that must be in use and load earlier. `load_order` (then id) orders the merge.
 - `eras`: era tags the mod introduces (its parts may only use the game's eras or these).
 - `check`: what the placement check generates for this mod (prompts under a rule).
-- `private`: never packed (`tools/mods/pack.py` refuses it).
+- `private`: never packed (`tools/mods/pack.sh` refuses it).
 
 A part may be a `.glb` instead of a builder: `"glb": "models/x.glb"`, its materials named for what the
 game puts there (`team`, `skin`, `cloth`, `cloth2`, a game texture's name such as `iron`, or
@@ -145,12 +145,12 @@ as a layer" (an era per race, every role re-kitted, buildings by era), which sta
 
 ## Tooling for an agent
 
-- `python3 tools/mods/new_mod.py <id> ["Name"] [--private] [--era <tag>]`: the folder, a manifest, an
+- `tools/mods/new_mod.sh <id> ["Name"] [--private] [--era <tag>]`: the folder, a manifest, an
   example part that passes the checks, its model, a word, a rules change for the era, a sheet spec.
 - The model helpers in `unit_models.gd`, the creature kit (`scenes/art_pixel/creature_kit.gd`, for
   creatures: moddable later), Blender scripts for `.glb` parts.
 - `tests/mod_check.gd`, `tests/sheet.gd`, `tests/print_races.gd` (`AOW_MODS`, `AOW_RULES`).
-- `python3 tools/mods/pack.py <id>`: `build/mods/<id>-<version>.zip`.
+- `tools/mods/pack.sh <id>`: `build/mods/<id>-<version>.zip`.
 - `docs/modding.md`: the walkthrough and a mod checklist.
 
 ## Distribution
@@ -214,7 +214,7 @@ as a layer" (an era per race, every role re-kitted, buildings by era), which sta
 - [x] Era pack switch: a mod's era tag, rules `+era`, words with notes, `only_if`, `upgrade_within`
 - [x] Example mod `mods/scifi_test/`, sheet beside a spearman and a legionary, 8 facings, walk, firing, in a match
 - [x] Private fan test in `mods_private/` (gitignored, export-excluded), sheet rendered there only
-- [x] Agent tooling: `tools/mods/new_mod.py`, `tests/mod_check.gd`, `tools/mods/pack.py`, `docs/modding.md`
+- [x] Agent tooling: `tools/mods/new_mod.sh`, `tests/mod_check.gd`, `tools/mods/pack.sh`, `docs/modding.md`
 - [x] Exports exclude `mods/` and `mods_private/`
 - [x] Dominic's look at the example mod and the private test (closed without the check, 2026-10-17)
 - [ ] Lobby: mod list, enable/disable, refusals shown, missing mods for a shared race (moved to `../backlog.md` §0b, 2026-10-17)

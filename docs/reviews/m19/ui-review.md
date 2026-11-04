@@ -104,7 +104,7 @@ UI Dominic asked for goes furthest in it), and it sits best with the art. Switch
 - `src/view/ui/ui_box.gd`: a StyleBox of a frame round a face, lit, raised or sunk, studs/rivets/bindings/
   stitching at the corners, a crest on the top edge.
 - `src/view/ui/ui_banner.gd`: the cloth banner (eight cuts) on a metal rod, folds, the team-coloured hem.
-- `assets/art/ui/crest_*.svg` (by `tools/ui/crests.py`): twelve cast crests: sun (menus), laurel, meander,
+- `assets/art/ui/crest_*.svg` (by `src/crests.lobster`): twelve cast crests: sun (menus), laurel, meander,
   reeds, rivets and bottle cap, stitched lozenge with tassels, oak leaves and acorn, crown, crossed bones,
   lotus, cloud scrolls, stepped fret.
 - `data/families.json`: a `ui` block per culture (all eleven; imperial, hellenic, swamp, sewer, steppe and

@@ -8,7 +8,7 @@ to copy from is `mods/scifi_test/` (an armoured future soldier). Paths are from 
 ## 1. Scaffold
 
 ```sh
-python3 tools/mods/new_mod.py <id> ["Name"] [--era <tag>] [--private]
+tools/mods/new_mod.sh <id> ["Name"] [--era <tag>] [--private]
 ```
 
 - `<id>`: lower case, digits, underscores (`steam_rats`).
@@ -112,7 +112,7 @@ with the mod on. A private mod's pictures stay in its own folder (`mods_private/
 ## 6. Pack
 
 ```sh
-python3 tools/mods/pack.py <id>      # build/mods/<id>-<version>.zip (refuses private mods)
+tools/mods/pack.sh <id>      # build/mods/<id>-<version>.zip (refuses private mods)
 ```
 
 To install: unzip into the game's `mods/` folder and play with it (`mods:<id>`). Bump `version` when you change it: a shared race names
@@ -129,4 +129,4 @@ the mods (and their data) it was made with.
 - [ ] `src/mod_check.sh <id>`: loaded
 - [ ] Looked at close up and at game size; firing if it shoots
 - [ ] A race without the mod's words gets none of it (`races.lobster -- mods:<id> anything` on a plain prompt)
-- [ ] `tools/mods/pack.py <id>` (public mods only)
+- [ ] `tools/mods/pack.sh <id>` (public mods only)

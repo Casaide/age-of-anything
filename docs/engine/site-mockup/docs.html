@@ -73,7 +73,7 @@
   <h2 id="packs">1. A pack</h2>
   <p>A pack is a folder with a manifest, zipped when you share it. Start from the scaffold: it writes a pack that
     already passes every check, so you begin from something that works.</p>
-<pre><code>python3 tools/mods/new_mod.py zorbs --era scifi</code></pre>
+<pre><code>tools/mods/new_mod.sh zorbs --era scifi</code></pre>
 <pre><code>mods/zorbs/
   mod.json                 the manifest
   data/
@@ -211,7 +211,7 @@ def victory() -> int:
 <pre><code>src/mod_check.sh zorbs                      # loads it or says why not; races, placement, prices
 src/sheet.sh mods/zorbs/sheets/zorbs.json /tmp/zorbs   # your units on a sheet, every facing
 ./play.sh lobby mods:zorbs rules:anything   # a match with it
-python3 tools/mods/pack.py zorbs            # build/mods/zorbs-0.1.0.zip</code></pre>
+tools/mods/pack.sh zorbs            # build/mods/zorbs-0.1.0.zip</code></pre>
   <p>If something's wrong, the checker tells you what to fix, by file and id. To install a pack, unzip it into
     <code>mods/</code>. Raise the version whenever you change it, so players can tell your releases apart.</p>
 </article>
