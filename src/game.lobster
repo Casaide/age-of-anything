@@ -1081,6 +1081,27 @@ def building_at(mm:float2) -> int:
     let bid = occupied[cell_of(x, y)]
     return if bid != 0: b_index_of(bid) else: -1
 
+// The wall cell drawn at m (-1: none): a wall is its footprint raised to the height it's drawn at, so a click on its
+// face or top finds it, the frontmost first, and not past anything standing in front of it (Dominic, 2026-11-04).
+let WALL_REACH = 160.0  // art px, more than a gate tower
+def wall_cell_at(m:float2) -> int:
+    let p = from_screen(m)
+    var t = WALL_REACH
+    while t >= 0.0:
+        let mm = pick_milli(p + float2 { 0.0, t })
+        let b = building_at(mm)
+        if b >= 0:
+            let c = cell_of(int(mm.x), int(mm.y))
+            if (find(bld_hits) h: h.id == b_id[b] and h.lo.y <= p.y) >= 0 and (teams[b_owner[b]] == teams[ME] or fog[ME][c] != 0):
+                return if bt_wall[b_kind[b]] != 0 or bt_gate[b_kind[b]] != 0: c else: -1
+        t -= 4.0
+    return -1
+
+// The ground under m for an order: a wall drawn there, or what's under the mouse.
+def order_milli(m:float2) -> float2:
+    let c = wall_cell_at(m)
+    return if c >= 0: float2 { float((c % W) * TILE + TILE / 2), float((c / W) * TILE + TILE / 2) } else: mouse_milli()
+
 var last_click_at = -10.0  // the last click on one of my units (a second one soon after, near it, is a double click)
 var last_click_at_m = float2_0
 var last_click_kind = -1
@@ -1113,7 +1134,7 @@ def click_select(m:float2):
     if add: return
     selected = []::int
     var b = my_building_drawn_at(m)  // (the frontmost drawn there: a tower's top, over the ground behind it)
-    if b < 0: b = building_at(mouse_milli())
+    if b < 0: b = building_at(order_milli(m))
     if b >= 0 and b_owner[b] == ME: sel_building = b_id[b]
 
 def box_select(a:float2, b:float2):
@@ -1155,7 +1176,7 @@ def takes_in(b:int, i:int) -> bool: return u_carry[i] > 0 and u_carry_kind[i] > 
 // attack a foe's building, gather, rebuild a broken bridge, mend, wall up our breach, climb our wall, help
 // build, trade at a market, drop off, reseed a fallow farm, go inside our building, or move.
 def order(m:float2, attack_move:bool = false):
-    let mm = mouse_milli()
+    let mm = order_milli(m)
     let x = int(mm.x)
     let y = int(mm.y)
     if x < 0 or y < 0 or x >= W * TILE or y >= H * TILE: return
