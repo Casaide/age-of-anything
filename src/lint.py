@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Formatting and compiler warnings, as one check (Dominic: "we should be using the formatter and checking for compiler
 # warnings"). Run from src: python3 lint.py [--fix]
-#   - lobsterfmt (~/Dev/lobster/tools/lobsterfmt) must leave every .lobster file under src/ as it is; --fix writes it.
+#   - lobsterfmt (~/Dev/lobster/bin/lobsterfmt) must leave every .lobster file under src/ as it is; --fix writes it.
 #   - every program in src/ compiles with no warnings. A global "use let" warning only counts when nothing under src/
 #     reassigns that name: a shared global set only by another program (gen/reset for the game, voxel_proto for the
 #     sheet's options) looks unassigned in the programs that don't include that code.
@@ -12,13 +12,13 @@ import subprocess
 import sys
 
 LOBSTER = os.environ.get("LOBSTER", os.path.expanduser("~/Dev/lobster/bin/lobster"))
-FMT = os.path.expanduser("~/Dev/lobster/tools/lobsterfmt/lobsterfmt.lobster")
+FMT = os.environ.get("LOBSTERFMT", os.path.expanduser("~/Dev/lobster/bin/lobsterfmt"))
 src = os.path.dirname(os.path.abspath(__file__))
 os.chdir(src)
 fix = "--fix" in sys.argv[1:]
 bad = []
 
-fmt = subprocess.run([LOBSTER, FMT, "--", "-w" if fix else "-l", src], capture_output=True, text=True)
+fmt = subprocess.run([FMT, "-w" if fix else "-l", src], capture_output=True, text=True)
 for line in fmt.stdout.splitlines():
     if line.strip() and not fix:
         bad.append("not formatted: " + os.path.relpath(line.strip(), src) + " (python3 lint.py --fix)")
