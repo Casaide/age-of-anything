@@ -97,6 +97,8 @@ import .apk_files#' "$stage/game.lobster"
 sed -i '' 's#let names = scan_folder("data/maps", false)#let names = apk_scan("data/maps")#' "$stage/game.lobster"
 sed -E -i '' 's#scan_folder\((here|root|MOD_TEX_DIR), true\)#apk_scan(\1)#' "$stage/gen/mods.lobster"
 grep -q 'apk_scan("data/maps")' "$stage/game.lobster"
+sed -i '' 's#scan_folder(d + "/bodies", false)#apk_scan(d + "/bodies")#' "$stage/view/voxel.lobster"
+grep -q "apk_scan(d" "$stage/view/voxel.lobster"
 # A phone's keyboard covers half the screen: the setup page's race box takes it only when tapped, not on opening.
 sed -i '' 's#fe_field = if go == "setup": 0 elif go == "lab": 10 else: -1#fe_field = -1#' "$stage/game/lobby.lobster"
 grep -q '            fe_field = -1$' "$stage/game/lobby.lobster"
