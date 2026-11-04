@@ -210,7 +210,7 @@ mod plays a bot match to the end.
 ### 1.11 New maps
 
 **Data today.** `maps/` is in `MOD_DATA_DIRS`; `gen/setup.lobster` `load_map` reads `data_path("maps/<id>.json")`,
-so a mod's map plays with `map:<id>`. The map tools (`tools/maps/*.py`) write the format.
+so a mod's map plays with `map:<id>`. The rows are the source: edit them by hand.
 
 **Small engine change for the lobby:** `game.lobster` `map_ids` scans `../data/maps` only and `game/lobby.lobster`
 loads the preview from `lib_root`, so a mod's map isn't in the battle setup. Both should go through the mods'
@@ -465,8 +465,8 @@ are voxels too.
 
 ## 6. Maps: a drawing and what it means (proposal, Dominic 2026-11-03)
 
-Today a map is one JSON file (`data/maps/*.json`: `rows`, `legend`, `heights`, `starts`) written by a Python layout
-script (`tools/maps/*.py`); terrain types (`data/terrain.json`) and ground textures (`assets/art/textures/*.svg`)
+Today a map is one JSON file (`data/maps/*.json`: `rows`, `legend`, `heights`, `starts`) edited by hand; terrain types
+(`data/terrain.json`) and ground textures (`assets/art/textures/*.svg`)
 can't be modded, props (trees, rocks) are models in code, the lobby lists only `data/maps`, and there's no editor or
 random map generator.
 
