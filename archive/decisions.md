@@ -1585,3 +1585,6 @@ culture by culture are Dominic's, later ("dont do any hand building for cultures
 Dominic on the wall pieces: "They MUST end before next model": a wall tile bakes whole; a gate's towers, posts and
 middle are frames sorted where each stands. Gates also open now (their open look had been baked but never drawn since
 the port). Claude, for Dominic.
+
+**D-209, 2026-11-04: The still ground is a picture.**
+The ground and hills go through a window-sized texture while the camera holds still (`draw_ground_cached`, game/ground.lobster), redrawn at 15 Hz for the water (its `time` in the same steps) and when the masks, paths or wear change. A moving camera draws them straight, because the picture cost 1 W more than drawing live when redrawn every frame. GPU 2.1-3.1 W to 1.0-1.3 W with the camera still. Water moves at 15 Hz. Claude, for Dominic's hot laptop.

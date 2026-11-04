@@ -216,6 +216,7 @@ def paint_paths():
             for(w) x:
                 for(4) c: a[(y * w + x) * 4 + c] = (b[(y0 * w + x) * 4 + c] + b[(y * w + x) * 4 + c] + b[(y1 * w + x) * 4 + c]) / 3.0
     path_bytes = map(w * h * 4) k: clamp(int(a[k] * 255.0 + 0.5), 0, 255)
+    ground_stale = true
     paths_tex = gl.create_texture(map(h) y: map(w) x: float4 { path_bytes[(y * w + x) * 4] / 255.0, path_bytes[(y * w + x) * 4 + 1] / 255.0,
                                                                path_bytes[(y * w + x) * 4 + 2] / 255.0, path_bytes[(y * w + x) * 4 + 3] / 255.0 },
                                   texture_format_clamp | texture_format_nomipmap)
