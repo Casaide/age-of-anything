@@ -107,7 +107,7 @@ src/             the game, in Lobster; run everything from here (paths are ../da
                    rng, no floats, no clocks: test_sim lints it); fog, flow fields, combat, economy, sieges, walls,
                    the bots (bot, eco_bot, land, expand, scout)
   gen/             races from prompts (generator, pricing, identity, heroes, datalib, rng), the match start (setup,
-                   start, modes), saves (save, reset: written by gen_reset.py), balance by fights, mods
+                   start, modes), saves (save, reset: written by gen_reset.lobster), balance by fights, mods
   view/            the voxel units' builder (voxel: bodies, gear and engines from data/voxel/, baked in 8 facings),
                    the buildings' and props' voxelizer (voxel_mesh), the bake settings (bake_cache), art.lobster
   model/           the buildings', props', trees' and bridges' 3D models in code (units are voxel bodies)
@@ -148,7 +148,7 @@ lobster races.lobster -- default "centaur romans" "flying greeks with wings"   #
 lobster balance.lobster -- rr 2                                    # equal-cost round robin in age 2 (auto: prices from fights)
 lobster race_matches.lobster -- reed_meadow; lobster mass_battle.lobster -- 2; lobster resource_audit.lobster -- reed_meadow; lobster path_audit.lobster
 ./shards.sh <tool.lobster> [args] [jobs=N]                         # any sharded tool side by side
-python3 gen_reset.py                                               # after adding a sim global: reset and save code
+./gen_reset.sh                                      # after adding a sim global: reset and save code
 ./textures.sh; ./icons.sh                                          # SVG textures and icons as PNGs (rsvg-convert), after one changes
 src/deck/build.sh                                                  # the Deck build (podman machine `aoa-build` running)
 src/android/build.sh                                               # the Android APK (build/android/age-of-anything.apk; adb install -r it)
@@ -186,7 +186,7 @@ screenshot after visual changes. After a change to `tools/audio/`, re-render and
 - Recipes hold only strings and ints. The race key hashes names + recipes, not derived stats.
 - Saves outlive builds (D-141): a new sim or AI variable must make sense in a match loaded from an older save. A field a save
   lacks loads empty, per-unit and per-building columns are padded with 0 (`pad_saved_columns`); anything else whose
-  empty value is wrong mid-match needs its own fix after `load_world`. Run `python3 gen_reset.py` after adding a global.
+  empty value is wrong mid-match needs its own fix after `load_world`. Run `./gen_reset.sh` after adding a global.
 - The sim (`src/lib/`): integer maths, a fixed 20 Hz tick, driven only by the command stream. The AI issues commands
   like a player. Views read sim state; the sim never draws.
 

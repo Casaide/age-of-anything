@@ -81,7 +81,7 @@ SURRENDER, the bots' walls and abilities.
       captures). Cracks on damaged walls (sorted with their building; `25-...`)
       and the town's sound (the meadow loop, the town's quiet and busy loops by its size and the camera) are in. Chimney smoke, lit windows
       and fire on badly hurt buildings are in (`building_fx.gd` writes where each look's chimney and windows are; `15-...`).
-- [x] Save and load (2026-10-26): `gen/save.lobster`, written by `gen_reset.py` from the same list of globals as
+- [x] Save and load (2026-10-26): `gen/save.lobster`, written by `gen_reset.lobster` from the same list of globals as
       the reset: every sim and setup global plus the bots, one record as a flexbuffer (about 3 MB, saved in 15 ms,
       loaded in 10 ms). F5 saves, F9 loads (`reload:<s>` in tests). `save_check.lobster`: a bot match saved at
       7.5 minutes and loaded plays the next 4,000 ticks hash for hash. Not yet: Godot's saves (JSON, its own
