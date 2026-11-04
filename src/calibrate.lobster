@@ -603,7 +603,7 @@ def run_pairs(age:int, plain:bool):
                 if losses: print "    lost {losses} of 2: {c[0].label} vs {d[0].label}"
         let open = has_s(RR_COUNTERS_OPEN, pair[0] + ">" + pair[1])
         let short = fights and wins * 100 < fights * 70
-        print "  {pair[0]} > {pair[1]}: {wins} of {fights}" + (if short: (if open: "  short (open: docs/backlog.md)" else: "  FAILS") else: "")
+        print "  {pair[0]} > {pair[1]}: {wins} of {fights}" + (if short: (if open: "  short (open: an issue)" else: "  FAILS") else: "")
         if short and not open: set_exit_code(1)
 
 def research_json() -> [JV]: return glist(load_json(lib_root + "/tech.json"), "research")

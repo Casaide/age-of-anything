@@ -2,7 +2,7 @@
 
 The source of truth for *what* the game is and *why*. For *how* and *when*, see `mvp-plan.md`.
 For technical reference and sources, see `research.md`. For everything deliberately postponed,
-see `backlog.md`.
+see the `backlog` issues.
 
 ## 1. Pitch
 
@@ -201,7 +201,7 @@ Each leans on a different part of the counter system so matchups play differentl
 **Later:** each race type gets one or two small signature mechanics (asymmetric play:
 amphibians build on and swim in shallow water, Romans throw pilum volleys, vikings form shield
 walls). The starter roster leads with animals and bronze/iron age cultures, with non-European
-picks as a priority. See `backlog.md` §8.
+picks as a priority. See #69.
 
 **Theme guards:** signature gear (a culture's kit, cheese hammers) only appears when the prompt,
 family or creature asks for it. Humans and centaurs don't become giants unless asked; their large
