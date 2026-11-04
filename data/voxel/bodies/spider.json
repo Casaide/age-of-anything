@@ -1,279 +1,616 @@
 {
- "_doc": "A spider (the race, and a mount): a big round abdomen with the team on its back, eight long legs knee-high, a small head with eyes and fangs. No hands: it carries its weapon in a harness at its side.",
- "skin": "#2a2a2e",
- "pale": "#4a4a55",
- "mark": "#c88a4a",
+ "_doc": "A big hunting spider, from scratch: low, two parts joined at a thin waist; a dark prosoma with two pale stripes, a pair of big glossy eyes at the front with smaller ones behind, black fangs and short banded palps; an egg-shaped abdomen larger than the prosoma with a pale spine stripe and three team chevrons; six walking legs, femurs dark, tibiae banded, pale knee rings, knees high above the body, feet in a wide ring; the front pair is raised as arms (as a spider rears its front legs to threaten) to hold weapons. The front tilted up about 15 degrees about the abdomen; all six walking feet planted, flat tarsi.",
+ "skin": "#3b2a1e",
+ "pale": "#c4a274",
  "size": 1.0,
- "fur": 0.08,
- "reach": 2.4,
+ "fur": 0.04,
+ "reach": 6.0,
  "points": {
   "abdomen": {
    "at": [
     0,
-    -5.5,
-    8.5
+    -6.2,
+    5.2
    ],
-   "bob": 0.4
+   "bob": 0.3
   },
   "thorax": {
    "at": [
     0,
-    1.5,
-    7.5
+    1.386,
+    7.026
    ],
-   "bob": 0.4
-  },
-  "head": {
-   "at": [
-    0,
-    5.0,
-    8.0
-   ],
-   "bob": 0.4
+   "bob": 0.25
   }
  },
  "legs": [
   {
    "hip": [
     "thorax",
-    2.0,
-    3.0,
-    -0.5
+    2.2,
+    0.586,
+    -0.257
    ],
    "foot": [
-    8.0,
-    9.5,
-    0.5
+    10.6,
+    6.4,
+    1.1
    ],
-   "stride": 2.4,
-   "lift": 1.6,
+   "stride": 2.6,
+   "lift": 0.9,
    "phase": 0,
    "bones": [
-    6.0,
+    7.2,
     7.6
    ],
    "pole": [
-    0.3,
-    0,
-    1
+    1,
+    0.2,
+    1.2
    ],
    "r": [
-    0.95,
-    0.75,
+    0.85,
     0.7,
+    0.62,
     0.4
    ],
    "mats": [
     "skin",
-    "skin"
+    "sp_band"
    ],
    "shapes": [
     {
-     "ball": [
+     "bead": [
+      "knee",
+      0,
+      0,
+      0
+     ],
+     "r": 0.8799999999999999,
+     "mat": "pale"
+    },
+    {
+     "cap": [
       "ankle",
       0,
-      0.3,
-      -0.2
+      0,
+      0
      ],
-     "r": 0.75,
+     "to": [
+      "ankle",
+      0.599245111692448,
+      0.3618083693237423,
+      -0.6
+     ],
+     "r": [
+      0.42,
+      0.4
+     ],
+     "mat": "skin"
+    },
+    {
+     "cap": [
+      "ankle",
+      0.599245111692448,
+      0.3618083693237423,
+      -0.6
+     ],
+     "to": [
+      "ankle",
+      2.5681933358247773,
+      1.5506072971017526,
+      -0.6
+     ],
+     "r": [
+      0.42,
+      0.36
+     ],
      "mat": "skin",
-     "_doc": "a foot"
+     "_doc": "the tarsus: a flat foot along the ground"
     }
    ]
   },
   {
    "hip": [
     "thorax",
-    2.5,
-    1.5,
-    -0.5
+    2.2,
+    -0.476,
+    -0.542
    ],
    "foot": [
-    10.0,
-    4.0,
-    0.5
+    10.4,
+    -3.6,
+    1.1
    ],
-   "stride": 2.4,
-   "lift": 1.6,
+   "stride": 2.6,
+   "lift": 0.9,
    "phase": 180,
    "bones": [
-    6.0,
-    7.6
+    6.8,
+    7.4
    ],
    "pole": [
-    0.3,
-    0,
-    1
-   ],
-   "r": [
-    0.95,
-    0.75,
-    0.7,
-    0.4
-   ],
-   "mats": [
-    "skin",
-    "skin"
-   ],
-   "shapes": [
-    {
-     "ball": [
-      "ankle",
-      0,
-      0.3,
-      -0.2
-     ],
-     "r": 0.75,
-     "mat": "skin",
-     "_doc": "a foot"
-    }
-   ]
-  },
-  {
-   "hip": [
-    "thorax",
-    2.5,
+    1,
     -0.1,
-    -0.5
-   ],
-   "foot": [
-    10.0,
-    -1.5,
-    0.5
-   ],
-   "stride": 2.4,
-   "lift": 1.6,
-   "phase": 0,
-   "bones": [
-    6.0,
-    7.6
-   ],
-   "pole": [
-    0.3,
-    0,
-    1
+    1.2
    ],
    "r": [
-    0.95,
-    0.75,
+    0.85,
     0.7,
+    0.62,
     0.4
    ],
    "mats": [
     "skin",
-    "skin"
+    "sp_band"
    ],
    "shapes": [
     {
-     "ball": [
+     "bead": [
+      "knee",
+      0,
+      0,
+      0
+     ],
+     "r": 0.8799999999999999,
+     "mat": "pale"
+    },
+    {
+     "cap": [
       "ankle",
       0,
-      0.3,
-      -0.2
+      0,
+      0
      ],
-     "r": 0.75,
+     "to": [
+      "ankle",
+      0.6614902514081806,
+      -0.22897739471821638,
+      -0.6
+     ],
+     "r": [
+      0.42,
+      0.4
+     ],
+     "mat": "skin"
+    },
+    {
+     "cap": [
+      "ankle",
+      0.6614902514081806,
+      -0.22897739471821638,
+      -0.6
+     ],
+     "to": [
+      "ankle",
+      2.8349582203207744,
+      -0.9813316916494988,
+      -0.6
+     ],
+     "r": [
+      0.42,
+      0.36
+     ],
      "mat": "skin",
-     "_doc": "a foot"
+     "_doc": "the tarsus: a flat foot along the ground"
     }
    ]
   },
   {
    "hip": [
     "thorax",
-    2.0,
-    -1.6,
-    -0.5
+    1.6,
+    -1.442,
+    -0.8
    ],
    "foot": [
-    8.0,
-    -7.0,
-    0.5
+    7.6,
+    -11.6,
+    1.1
    ],
-   "stride": 2.4,
-   "lift": 1.6,
-   "phase": 180,
+   "stride": 2.6,
+   "lift": 0.9,
+   "phase": 0,
    "bones": [
-    6.0,
-    7.6
+    8.0,
+    8.6
    ],
    "pole": [
-    0.3,
-    0,
-    1
+    1,
+    -0.4,
+    1.2
    ],
    "r": [
-    0.95,
-    0.75,
+    0.85,
     0.7,
+    0.62,
     0.4
    ],
    "mats": [
     "skin",
-    "skin"
+    "sp_band"
    ],
    "shapes": [
     {
-     "ball": [
+     "bead": [
+      "knee",
+      0,
+      0,
+      0
+     ],
+     "r": 0.8799999999999999,
+     "mat": "pale"
+    },
+    {
+     "cap": [
       "ankle",
       0,
-      0.3,
-      -0.2
+      0,
+      0
      ],
-     "r": 0.75,
+     "to": [
+      "ankle",
+      0.38361838011761096,
+      -0.5855227907058274,
+      -0.6
+     ],
+     "r": [
+      0.42,
+      0.4
+     ],
+     "mat": "skin"
+    },
+    {
+     "cap": [
+      "ankle",
+      0.38361838011761096,
+      -0.5855227907058274,
+      -0.6
+     ],
+     "to": [
+      "ankle",
+      1.6440787719326186,
+      -2.50938338873926,
+      -0.6
+     ],
+     "r": [
+      0.42,
+      0.36
+     ],
      "mat": "skin",
-     "_doc": "a foot"
+     "_doc": "the tarsus: a flat foot along the ground"
     }
    ]
   }
  ],
- "harness": {
-  "right": [
+ "arms": {
+  "shoulder": [
    "thorax",
-   3.4,
-   1.6,
-   1.0
+   2.0,
+   2.0,
+   2.2
   ],
-  "dir": [
-   0,
-   0.2,
-   1
-  ],
-  "left": [
-   "thorax",
-   -3.6,
-   1.4,
-   0.6
-  ]
+  "bone": 3.4,
+  "thick": 0.8,
+  "sleeve": "skin",
+  "hand": "sp_band"
  },
  "helm": {
   "at": [
-   "head",
+   "thorax",
    0,
-   -0.2,
-   1.2
+   -0.621,
+   2.318
   ],
-  "r": 2.8
+  "r": 1.7
  },
  "armour": {
   "a": [
-   "thorax",
+   "abdomen",
    0,
-   -1.0,
-   0
+   0.707,
+   1.225
   ],
   "b": [
    "thorax",
    0,
-   1.5,
-   0.2
+   -0.155,
+   0.58
   ],
   "r": [
-   3.8,
-   3.2
+   3.6,
+   2.6
   ]
  },
+ "shapes": [
+  {
+   "cap": [
+    "thorax",
+    1.1,
+    -2.073,
+    -0.763
+   ],
+   "to": [
+    "thorax",
+    0.9,
+    2.292,
+    0.718
+   ],
+   "r": [
+    2.5,
+    2.0
+   ],
+   "mat": "skin",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "thorax",
+    1.5,
+    -2.101,
+    0.886
+   ],
+   "to": [
+    "thorax",
+    1.2,
+    1.982,
+    1.877
+   ],
+   "r": [
+    0.75,
+    0.6
+   ],
+   "mat": "pale",
+   "mirror": true,
+   "_doc": "pale stripes"
+  },
+  {
+   "cap": [
+    "thorax",
+    0,
+    -2.318,
+    -0.621
+   ],
+   "to": [
+    "thorax",
+    0,
+    -3.722,
+    -0.79
+   ],
+   "r": [
+    1.1,
+    1.1
+   ],
+   "mat": "skin",
+   "_doc": "waist"
+  },
+  {
+   "ball": [
+    "abdomen",
+    0,
+    0.0,
+    0.0
+   ],
+   "r": 3.7,
+   "mat": "skin"
+  },
+  {
+   "ball": [
+    "abdomen",
+    0,
+    -2.82,
+    -1.066
+   ],
+   "r": 3.0,
+   "mat": "skin"
+  },
+  {
+   "cap": [
+    "abdomen",
+    0,
+    1.838,
+    3.184
+   ],
+   "to": [
+    "abdomen",
+    0,
+    -4.813,
+    0.574
+   ],
+   "r": [
+    0.8,
+    0.6
+   ],
+   "mat": "pale",
+   "_doc": "spine stripe"
+  },
+  {
+   "bead": [
+    "abdomen",
+    0.9,
+    0.44,
+    3.379
+   ],
+   "r": 0.5,
+   "mat": "team",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "abdomen",
+    2.04,
+    -0.172,
+    2.884
+   ],
+   "r": 0.5,
+   "mat": "team",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "abdomen",
+    0.9,
+    -1.716,
+    2.926
+   ],
+   "r": 0.5,
+   "mat": "team",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "abdomen",
+    2.04,
+    -1.878,
+    0.749
+   ],
+   "r": 0.5,
+   "mat": "team",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "abdomen",
+    0.9,
+    -3.509,
+    1.503
+   ],
+   "r": 0.5,
+   "mat": "team",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "abdomen",
+    2.04,
+    -4.002,
+    0.563
+   ],
+   "r": 0.5,
+   "mat": "team",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "thorax",
+    0.75,
+    3.457,
+    2.169
+   ],
+   "r": 0.75,
+   "mat": "sp_eye",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "thorax",
+    0.5,
+    3.801,
+    2.623
+   ],
+   "r": 0.3,
+   "mat": "sp_gleam",
+   "mirror": true
+  },
+  {
+   "bead": [
+    "thorax",
+    1.9,
+    2.58,
+    2.348
+   ],
+   "r": 0.5,
+   "mat": "sp_eye",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "thorax",
+    0.7,
+    3.826,
+    0.404
+   ],
+   "to": [
+    "thorax",
+    0.6,
+    5.064,
+    -1.128
+   ],
+   "r": [
+    0.9,
+    0.6
+   ],
+   "mat": "sp_fang",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "thorax",
+    1.4,
+    3.826,
+    0.404
+   ],
+   "to": [
+    "thorax",
+    2.2,
+    5.254,
+    2.029
+   ],
+   "r": [
+    0.5,
+    0.45
+   ],
+   "mat": "skin",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "thorax",
+    2.2,
+    5.254,
+    2.029
+   ],
+   "to": [
+    "thorax",
+    2.4,
+    6.969,
+    1.039
+   ],
+   "r": [
+    0.5,
+    0.45
+   ],
+   "mat": "sp_band",
+   "mirror": true
+  },
+  {
+   "cap": [
+    "thorax",
+    2.4,
+    6.969,
+    1.039
+   ],
+   "to": [
+    "thorax",
+    2.3,
+    7.962,
+    -0.351
+   ],
+   "r": [
+    0.5,
+    0.45
+   ],
+   "mat": "sp_band",
+   "mirror": true
+  }
+ ],
+ "check": {
+  "knees": 170,
+  "_doc": "a spider's knees ride high above its body"
+ },
+ "mark": "#c88a4a",
  "seat": {
-  "z": 8.0,
+  "z": 6.0,
   "astride": [
    "skin",
    "skin",
@@ -281,127 +618,9 @@
   ],
   "at": [
    0,
-   -2.0,
-   13.5
+   -6.2,
+   10.0
   ],
   "wide": 4.8
- },
- "shapes": [
-  {
-   "ball": [
-    "abdomen",
-    0,
-    0,
-    0
-   ],
-   "r": 5.6,
-   "mat": "skin"
-  },
-  {
-   "ball": [
-    "abdomen",
-    0,
-    -0.6,
-    2.6
-   ],
-   "r": 3.6,
-   "mat": "pale",
-   "_doc": "a pattern on the abdomen"
-  },
-  {
-   "disc": [
-    "abdomen",
-    0,
-    -0.4,
-    5.5
-   ],
-   "n": [
-    0,
-    -0.3,
-    1
-   ],
-   "r": [
-    2.6,
-    0.4
-   ],
-   "mat": "team",
-   "_doc": "the team on its back"
-  },
-  {
-   "cap": [
-    "thorax",
-    0,
-    -1.0,
-    0
-   ],
-   "to": [
-    "thorax",
-    0,
-    1.5,
-    0.2
-   ],
-   "r": [
-    3.6,
-    3.0
-   ],
-   "mat": "skin"
-  },
-  {
-   "ball": [
-    "head",
-    0,
-    0,
-    0
-   ],
-   "r": 2.6,
-   "mat": "skin"
-  },
-  {
-   "bead": [
-    "head",
-    0.8,
-    2.2,
-    1.0
-   ],
-   "r": 0.55,
-   "mat": "eye",
-   "mirror": true
-  },
-  {
-   "bead": [
-    "head",
-    1.6,
-    1.8,
-    0.5
-   ],
-   "r": 0.38,
-   "mat": "eye",
-   "mirror": true
-  },
-  {
-   "cap": [
-    "head",
-    0.8,
-    2.0,
-    -1.2
-   ],
-   "to": [
-    "head",
-    0.6,
-    2.8,
-    -2.6
-   ],
-   "r": [
-    0.55,
-    0.2
-   ],
-   "mat": "mark",
-   "mirror": true,
-   "hard": true,
-   "_doc": "fangs"
-  }
- ],
- "check": {
-  "knees": 95
  }
 }

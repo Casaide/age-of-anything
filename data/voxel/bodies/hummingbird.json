@@ -1,39 +1,10 @@
 {
- "_doc": "A hummingbird to ride: it flies (its wings flap as it moves), a long thin beak, its throat in the palette's second colour.",
+ "_doc": "A hummingbird to ride, from scratch: a small compact body tilted head-up, iridescent back, a bright gorget at the throat, a long straight needle beak, a forked tail, wings a long blur flapping from the shoulders.",
  "skin": "#22a060",
  "pale": "#d0103a",
  "mark": "#f0ebe0",
  "size": 2.0,
  "fur": 0.05,
- "reach": 3.0,
- "flies": 12.0,
- "points": {
-  "body": {
-   "at": [
-    0,
-    0,
-    16.0
-   ],
-   "bob": 1.0
-  },
-  "head": {
-   "at": [
-    0,
-    5.0,
-    19.0
-   ],
-   "bob": 1.0
-  },
-  "wing": {
-   "at": [
-    0,
-    -1.0,
-    20.0
-   ],
-   "bob": 1.0,
-   "flap": 3.5
-  }
- },
  "seat": {
   "at": [
    0,
@@ -42,27 +13,102 @@
   ],
   "wide": 3.4
  },
+ "flies": 12.0,
+ "reach": 3.0,
+ "points": {
+  "body": {
+   "at": [
+    0,
+    0,
+    16.0
+   ],
+   "bob": 0.3
+  },
+  "head": {
+   "at": [
+    0,
+    4.2,
+    19.4
+   ],
+   "bob": 0.3
+  },
+  "wing": {
+   "at": [
+    0,
+    0.6,
+    18.2
+   ],
+   "flap": 2.4
+  }
+ },
+ "legs": [],
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.2,
+   1.0
+  ],
+  "r": 1.6
+ },
+ "armour": {
+  "a": [
+   "body",
+   0,
+   -1.0,
+   0.4
+  ],
+  "b": [
+   "body",
+   0,
+   1.4,
+   0.6
+  ],
+  "r": [
+   2.0,
+   2.0
+  ]
+ },
  "shapes": [
   {
-   "ball": [
+   "cap": [
     "body",
     0,
-    0,
-    0
+    2.2,
+    1.2
    ],
-   "r": 4.0,
-   "mat": "skin"
-  },
-  {
-   "ball": [
+   "to": [
     "body",
     0,
-    1.2,
+    -3.0,
     -1.6
    ],
-   "r": 3.0,
+   "r": [
+    2.0,
+    1.1
+   ],
+   "mat": "skin",
+   "_doc": "body, head-up"
+  },
+  {
+   "cap": [
+    "body",
+    0,
+    1.6,
+    -0.2
+   ],
+   "to": [
+    "body",
+    0,
+    -2.2,
+    -2.0
+   ],
+   "r": [
+    1.6,
+    0.9
+   ],
    "mat": "mark",
-   "_doc": "a pale belly"
+   "_doc": "pale belly"
   },
   {
    "ball": [
@@ -71,92 +117,93 @@
     0,
     0
    ],
-   "r": 2.6,
-   "mat": "skin"
+   "r": 1.6,
+   "mat": "skin",
+   "_doc": "head"
   },
   {
    "ball": [
     "head",
     0,
-    1.4,
-    -2.0
+    0.7,
+    -1.1
    ],
-   "r": 1.8,
+   "r": 1.2,
    "mat": "pale",
-   "_doc": "the throat"
+   "_doc": "the gorget"
   },
   {
    "cap": [
     "head",
     0,
-    2.0,
-    0
+    1.4,
+    -0.1
    ],
    "to": [
     "head",
     0,
-    8.0,
-    -0.6
+    6.6,
+    -0.7
    ],
    "r": [
-    0.5,
+    0.35,
     0.15
    ],
    "mat": "eye",
-   "hard": true,
-   "_doc": "the beak"
+   "_doc": "needle beak"
   },
   {
    "bead": [
     "head",
-    1.6,
-    1.2,
-    0.6
+    1.0,
+    0.6,
+    0.4
    ],
-   "r": 0.5,
+   "r": 0.35,
    "mat": "eye",
    "mirror": true
   },
   {
    "cap": [
     "body",
-    0,
+    0.5,
     -3.0,
-    0
+    -1.6
    ],
    "to": [
     "body",
-    0,
-    -8.0,
-    -1.2
+    1.0,
+    -6.0,
+    -2.6
    ],
    "r": [
-    1.6,
-    0.6
-   ],
-   "mat": "skin",
-   "_doc": "the tail"
-  },
-  {
-   "cap": [
-    "body",
-    2.0,
-    0,
-    2.0
-   ],
-   "to": [
-    "wing",
-    9.0,
-    -2.0,
-    0
-   ],
-   "r": [
-    1.6,
-    0.5
+    0.7,
+    0.3
    ],
    "mat": "skin",
    "mirror": true,
-   "_doc": "the wings, flapping"
+   "_doc": "forked tail"
+  },
+  {
+   "cap": [
+    "wing",
+    1.2,
+    0,
+    0
+   ],
+   "to": [
+    "wing",
+    6.4,
+    -1.6,
+    1.6
+   ],
+   "r": [
+    1.0,
+    0.35
+   ],
+   "mat": "wing",
+   "mirror": true,
+   "_doc": "wing"
   }
  ]
 }

@@ -291,9 +291,11 @@ def akb_keep_frame(name:string, sprite:string, w:int, h:int, at:float2):
     if akb_check_dump != "" and w > 0 and h > 0:  // (sheet: every frame of a look as a PNG)
         write_file("{akb_check_dump}/{tokenize(name, ":", "")[tokenize(name, ":", "").length - 1]}.png", bmat_png(map(sprite.length) i: sprite[i], w, h), 0, 1)
     keep_frame(name, sprite, w, h, at)
+    bake_pulse()
     if akb_cache_stem != "" and w > 0 and h > 0:
         let file = "{akb_cache_stem}_{akb_cache_frames.length}.png"
         write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
+        bake_pulse()
         akb_cache_frames.push(AkbFrame { name, file, w, h, int(at.x + 0.5), int(at.y + 0.5) })
 
 // One look of a building, with its stages and extra parts, into the pack; its Look and BFx.
@@ -437,6 +439,7 @@ def bake_buildings_for(archs:[string]) -> int:
         if ai > 0 and sorted_strs(archs)[ai - 1] == arch: continue
         for(akb_types()) type:
             for(akb_looks_of(arch, type)) ml:
+                bake_pulse()
                 let name = "{arch}:{type}{ml[1]}"
                 let lk = looks.get(name)
                 let unbroken = lk and akb_breaks(type, lk) and frame_index(name + ":ruin1") < 0  // (a pack made before D-171)

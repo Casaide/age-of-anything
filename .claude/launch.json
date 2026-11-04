@@ -4,20 +4,47 @@
     {
       "name": "site-concept",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "docs/concepts/website"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8765",
+        "--directory",
+        "docs/concepts/website"
+      ],
       "port": 8765
     },
     {
       "name": "lobster-docs",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "/private/tmp/claude-501/-Users-me-Dev-age-of-whatever/da3d7d4f-5a44-45e1-a43f-0e09a83404b7/scratchpad/lobster-docs/docs"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8766",
+        "--directory",
+        "/private/tmp/claude-501/-Users-me-Dev-age-of-whatever/da3d7d4f-5a44-45e1-a43f-0e09a83404b7/scratchpad/lobster-docs/docs"
+      ],
       "port": 8766
     },
     {
       "name": "website-preview",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "cd ~/Dev/casaide/age-of-anything-website && npm run preview"],
+      "runtimeArgs": [
+        "-c",
+        "cd ~/Dev/casaide/age-of-anything-website && npm run preview"
+      ],
       "port": 4173
+    },
+    {
+      "name": "creel-mockup",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8767",
+        "--directory",
+        "docs/engine/site-mockup"
+      ],
+      "port": 8767
     }
   ]
 }

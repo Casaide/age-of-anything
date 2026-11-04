@@ -626,8 +626,19 @@ def building_fell(e:Event):
         fx_ruins.push(RuinFx { s.look.ruins[3], s.look.body, e.a, s.at, s.sort_y, s.flat, s.owner, s.cells, burning, clock_s })
     fx_collapse(ground_at(e.x, e.y), max(1, e.c))
 
+// Where each building seen this frame stands drawn (its body's frame, in world px): a click anywhere on a tall
+// building (a tower's top) picks it, not just on its footprint.
+class BldHit:
+    id:int
+    lo:float2
+    hi:float2
+    sort_y:float
+
+var bld_hits = []::BldHit
+
 def collect_buildings():
     let seen = dictionary<int, BldSeen>(256)
+    bld_hits = []
     for(b_id.length) b:
         let k = b_kind[b]
         let p = b_owner[b]
@@ -653,6 +664,18 @@ def collect_buildings():
                 let flat = walk_over[cell] == 1
                 if b_done[b] == 1: seen.set(b_id[b], BldSeen { look, float2 { at.x, at.y - up }, at.y, flat, p, int4 { b_cx[b], b_cy[b], b_sx[b], b_sy[b] }, damage_of(b) })
                 let col = float4 { tc.x, tc.y, tc.z, shade }
+                // its hit box: every piece drawn for it (the body, its front, a gate's towers), so a click on a
+                // tower's top picks it too (Dominic, 2026-11-04)
+                var hlo = float2 { 1000000000.0, 1000000000.0 }
+                var hhi = -hlo
+                for(append([ name, look.front, name + ":open" ], look.towers)) piece:
+                    let hf = if piece == "-": -1 else: frame_index(piece)
+                    if hf >= 0:
+                        let fr = frames[hf]
+                        let lo = float2 { floor(at.x) - float(fr.ox) * fr.k, floor(at.y - up) - float(fr.oy) * fr.k }
+                        hlo = min(hlo, lo)
+                        hhi = max(hhi, lo + float2 { float(fr.w), float(fr.h) } * fr.k)
+                if hhi.x > hlo.x: bld_hits.push(BldHit { b_id[b], hlo, hhi, at.y })
                 if look.arms.length and b_done[b] == 1:  // a wall: the tile whole with the joins it has, its shadow on the ground
                     let links = wall_links(b)
                     let tile = akb_wall_tile(name, links)
@@ -786,7 +809,8 @@ def collect_props():
         // (under the fog, the ground as you last saw it: a farm sown in the dark stays grass until you look, Fog's memory)
         let now = fog[ME][c] == 2 or fog_ground.length <= ME
         let tt = if now: terrain[c] else: fog_ground[ME][c]
-        if fog[ME][c] != 0 and (tr_res[tt] != 0 or species[c] != "-") and near_view(iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))):
+        // (trees show even where never explored, as the map was made: the land's lie is no secret; the rest waits to be seen)
+        if (fog[ME][c] != 0 or tr_names[tt] == "tree") and (tr_res[tt] != 0 or species[c] != "-") and near_view(iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))):
             let tname = tr_names[tt]
             var kind = prop_of.get(tname, "")
             if kind == "tree": kind = species[c]
@@ -799,7 +823,7 @@ def collect_props():
                 let name = staged(kind, pick % doodads.get(kind, 1), stage)
                 let at = iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))
                 let up = lift_at(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500)) * 1.5
-                let shade = if fog[ME][c] == 2: 1.0 else: 0.6
+                let shade = if fog[ME][c] == 2: 1.0 elif fog[ME][c] == 1: 0.6 else: 0.3
                 let flat = pool[c] >= 0
                 add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, float4 { 1.0, 1.0, 1.0, shade })
                 let sh = frame_index(name + "~shadow")
@@ -1033,6 +1057,19 @@ def unit_at_screen(m:float2, mine:bool) -> int:
                 best = i
     return best
 
+// My building drawn under the mouse (the frontmost), else -1.
+def my_building_drawn_at(m:float2) -> int:
+    let p = from_screen(m)
+    var best = -1
+    var best_y = -1000000000.0
+    for(bld_hits) h:
+        if p.x >= h.lo.x and p.y >= h.lo.y and p.x <= h.hi.x and p.y <= h.hi.y and h.sort_y > best_y:
+            let b = b_index_of(h.id)
+            if b >= 0 and b_owner[b] == ME:
+                best = b
+                best_y = h.sort_y
+    return best
+
 def building_at(mm:float2) -> int:
     let x = int(mm.x)
     let y = int(mm.y)
@@ -1040,20 +1077,39 @@ def building_at(mm:float2) -> int:
     let bid = occupied[cell_of(x, y)]
     return if bid != 0: b_index_of(bid) else: -1
 
-// Select what's under the mouse (shift: add a unit to the selection, or take it out).
+var last_click_at = -10.0   // the last click on one of my units (a second one soon after, near it, is a double click)
+var last_click_at_m = float2_0
+var last_click_kind = -1
+
+// All my units of a kind on screen (a double click on one of them; shift adds them).
+def select_kind_on_screen(kind:int, add:bool):
+    let ws = float(gl.window_size())
+    if not add: selected = []::int
+    for(u_x.length) i:
+        if u_owner[i] == ME and u_kind[i] == kind:
+            let s = to_screen(iso(float(u_x[i]), float(u_y[i])))
+            if s.x >= 0.0 and s.y >= 0.0 and s.x <= ws.x and s.y <= ws.y and not contains(selected, u_id[i]): selected.push(u_id[i])
+
+// Select what's under the mouse (shift: add a unit to the selection, or take it out; a double click: all of its kind on screen).
 def click_select(m:float2):
     let add = shift_held() and sel_building == 0
     sel_building = 0
     let i = unit_at_screen(m, true)
     if i >= 0 and u_owner[i] == ME:
-        if not add: selected = [ u_id[i] ]
+        let dbl = u_kind[i] == last_click_kind and gl.time() - last_click_at < 0.4 and magnitude(m - last_click_at_m) < 12.0
+        last_click_at = if dbl: -10.0 else: gl.time()  // (a third click starts over)
+        last_click_at_m = m
+        last_click_kind = u_kind[i]
+        if dbl: select_kind_on_screen(u_kind[i], add)
+        elif not add: selected = [ u_id[i] ]
         elif contains(selected, u_id[i]): selected = filter(selected) id: id != u_id[i]
         else: selected.push(u_id[i])
         say(ME, "select")
         return
     if add: return
     selected = []::int
-    let b = building_at(mouse_milli())
+    var b = my_building_drawn_at(m)  // (the frontmost drawn there: a tower's top, over the ground behind it)
+    if b < 0: b = building_at(mouse_milli())
     if b >= 0 and b_owner[b] == ME: sel_building = b_id[b]
 
 def box_select(a:float2, b:float2):
@@ -1556,13 +1612,15 @@ def stock_text() -> string:
 def unit_name(k:int) -> string: return unit_names.get(k, t_slot[k])
 def bname(k:int) -> string: return building_names.get(k, bt_name[k])
 
+var end_watching = false  // the end screen put away (Keep watching)
+
 def draw_hud(paused:bool, speed:float):
     gl.set_shader("color")
     let ws = float(gl.window_size())
     let u = ui()
     ui_batch(): draw_topbar(speed, paused)  // (game/topbar.lobster; its fills in as few draws as can be)
     gl.set_shader("color")                  // (placing: the panel's info line says how)
-    if winner >= 0:
+    if winner >= 0 and end_watching:  // (the end screen put away: the result stays up while you watch)
         gl.set_font_size(int(48.0 * u))
         gl.color(float4 { 1.0, 0.85, 0.3, 1.0 }):
             text_at(ws / 2.0 - float2 { 160.0, 40.0 }, if winner == teams[ME]: "Victory!" else: "Defeat")
@@ -1876,6 +1934,8 @@ startup_frame("Loading...", 0.05)
 for(args) a:  // cache:<folder>: the parts kept there instead of bake_cache/ ("cache:" alone: baked afresh, kept nowhere)
     if starts_with(a, "cache:"): bake_cache_dir = a.substring(6, a.length - 6)
 zoom = 2.0 * floor(ui() + 0.5)  // two screen points an art pixel, as the game's camera
+// Desktops start one zoom step further out; Steam Deck-sized screens (800 px tall or less) and touch keep the closer view
+if not touch_play and gl.framebuffer_size().y > 800: zoom = max(1.0, zoom - 1.0)
 // The tables come from data (game/pack_data.lobster); units are voxel bodies (game/voxel_units.lobster); buildings and
 // props are baked once (src/baked/) or at the start. (A Godot art pack, args[0], is gone with Godot: D-184.)
 pack_library = true
@@ -2244,8 +2304,45 @@ var frame_no = 0
 var step_time = 0.0
 var menu_open = false   // the pause menu (Esc)
 var menu_saves = false  // ...showing the saved games (Load game)
+var menu_settings = false  // ...showing Settings (game/lobby.lobster)
 var quit_game = false
 var told_end = false  // the match's end was shown (the menu opens once)
+
+def end_screen_up() -> bool: return winner >= 0 and not end_watching and not menu_open
+
+// The match's end: Victory or Defeat over the dimmed world, how long it was played, and the ways out.
+def end_screen():
+    let ws = float(gl.window_size())
+    ui_frame(true)
+    let k = hud_s()
+    ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.6 })
+    let from_lobby = args[1] == "lobby"
+    let buttons = filter([ "Back to the menu", "Quit" ]) l: l != "Back to the menu" or from_lobby
+    let bw = 380.0
+    let size = float2 { bw + 48.0, 250.0 + 54.0 * float(buttons.length) } * k
+    let at = ws / 2.0 - size / 2.0
+    ui_box(at, size, 1, ui_look.face, true)
+    tb_icon_wide("crest_" + hud_crest, float2 { at.x + size.x / 2.0, at.y + 2.0 * k }, 34.0 * k)
+    let x = at.x + 24.0 * k
+    var y = at.y + 34.0 * k
+    ui_text_c(ws.x / 2.0, y, if winner == teams[ME]: "Victory!" else: "Defeat", int(52.0 * k), ui_look.title, 2, 2.0 * k)
+    y += 80.0 * k
+    let secs = tick / 20
+    def two(n:int) -> string: return (if n < 10: "0" else: "") + string(n)
+    let played = if secs >= 3600: "{secs / 3600}:{two(secs / 60 % 60)}:{two(secs % 60)}" else: "{secs / 60}:{two(secs % 60)}"
+    ui_text_c(ws.x / 2.0, y, "Played for " + played, int(20.0 * k), ui_look.dim, 0, 0.0)
+    y += 44.0 * k
+    if ui_button(float2 { x, y }, float2 { bw * k, 56.0 * k }, "", true) or gl.button("controller_b") == 1: end_watching = true
+    ui_text_c(ws.x / 2.0, y + (56.0 * k - 24.0 * k) / 2.0 - 3.0 * k, "Keep watching", int(24.0 * k), ui_look.title, 2, 1.5 * k)
+    y += 68.0 * k
+    for(buttons) label:
+        let fs = int(19.0 * k)
+        if ui_button(float2 { x, y }, float2 { bw * k, 42.0 * k }, "", false):
+            if label == "Back to the menu": back_to_lobby = true
+            quit_game = true
+        ui_text_f(float2 { x + (bw * k - ui_text_wf(label, fs, 1)) / 2.0, y + (42.0 * k - float(fs)) / 2.0 - 2.0 * k }, label, fs, ui_look.text, 1, 1.0 * k)
+        y += 54.0 * k
+    ui_flush()
 
 // The pause menu (Esc, or Start on the pad): a panel of buttons over the dimmed match. In a network
 // match the world goes on (only you stop looking), and Load isn't offered.
@@ -2263,19 +2360,24 @@ def pause_menu():
         fe_draw_tip()
         ui_flush()
         return
+    if menu_settings:  // Settings: the volumes and the UI scale (game/lobby.lobster)
+        fe_fit()
+        if fe_settings_card() == "back": menu_settings = false
+        ui_flush()
+        return
     if gl.button("controller_b") == 1: menu_open = false
     // sim_debug.gd's _make_pause_menu: a framed card in your race's look, its crest on top, sized to what's in it: the
-    // title, your race and the map, a rule; Resume (the primary), the everyday buttons, the volumes; then, set apart
+    // title, your race and the map, a rule; Resume (the primary), the everyday buttons (Settings among them); then, set apart
     // under a rule, the ones that end the match (in red)
     let k = hud_s()
     ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.5 })
     let from_lobby = args[1] == "lobby"
     let title = if winner >= 0: (if winner == teams[ME]: "Victory!" else: "Defeat") elif net_on: "Menu" else: "Paused"
     let sub = rstr(su_races[ME], "name") + "  ·  " + gstr(su_map, "name", map_name_now) + (if net_on: "  ·  the match goes on" else: "")
-    let everyday = filter([ "Save game", "Load game", "Tech tree" ]) l: l != "Load game" or not net_on
+    let everyday = filter([ "Save game", "Load game", "Settings", "Tech tree" ]) l: l != "Load game" or not net_on
     let ending = filter([ "Surrender", "Back to the menu", "Quit" ]) l: (l != "Surrender" or (winner < 0 and defeated[ME] == 0)) and (l != "Back to the menu" or from_lobby)
     let bw = 380.0
-    let size = float2 { bw + 48.0, 356.0 + 62.0 * float(everyday.length) + 54.0 * float(ending.length) } * k  // (the rows below, top to bottom)
+    let size = float2 { bw + 48.0, 268.0 + 62.0 * float(everyday.length) + 54.0 * float(ending.length) } * k  // (the rows below, top to bottom)
     let at = ws / 2.0 - size / 2.0
     ui_box(at, size, 1, ui_look.face, true)
     tb_icon_wide("crest_" + hud_crest, float2 { at.x + size.x / 2.0, at.y + 2.0 * k }, 34.0 * k)
@@ -2310,10 +2412,10 @@ def pause_menu():
                 save_game()
                 menu_open = false
             elif label == "Load game": menu_saves = true
+            elif label == "Settings": menu_settings = true
             else:
                 menu_open = false
                 open_tree(ME)
-    y += volume_rows(float2 { x, y }, bw * k, 36.0 * k, 8.0 * k) + 8.0 * k
     rule()
     let danger = float4 { 0.91, 0.54, 0.44, 1.0 }  // #e88a70, as a lacked line
     for(ending) label:
@@ -2340,8 +2442,10 @@ def play_match():
     step_time = 0.0
     menu_open = false
     menu_saves = false
+    menu_settings = false
     quit_game = false
     told_end = false
+    end_watching = false
     note("loop")
     pace(PACE_MATCH)
     while gl.frame() and not quit_game and not bake_quit:
@@ -2381,6 +2485,7 @@ def play_match():
             if bake_live and fe_sides.length == num_players and front_choice != "":  // (the match loader shows the bake's progress)
                 bake_progress = fn(st, f): fe_loader(st, f)
                 bake_progress_on = true
+            bake_loading = true
             bake_progress_from = 0.5
             bake_progress_to = 0.95
             bake_what = "the armies"
@@ -2396,6 +2501,7 @@ def play_match():
             let nb = bake_buildings_for(arch_of)
             print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
             bake_progress_on = false
+            bake_loading = false
         if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
         if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
         if reload_at >= 0.0 and clock_s >= reload_at:
@@ -2454,7 +2560,7 @@ def play_match():
                         fy += u_y[i]
                         nf++
             if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
-        if not typing_race and not tree_open and not menu_open:
+        if not typing_race and not tree_open and not menu_open and not end_screen_up():
             let padded = (touch_play and touch_tick(dt)) or pad_tick(if padtest: pad_script() else: read_pad(), dt)
             if touch_wants_menu:
                 menu_open = true
@@ -2479,6 +2585,7 @@ def play_match():
                 open_tree(ME)
             tree_tick()
             if menu_open: pause_menu()
+            elif end_screen_up(): end_screen()
             draw_banner()
             if typing_race: typing_tick()
         perf_lap(9)

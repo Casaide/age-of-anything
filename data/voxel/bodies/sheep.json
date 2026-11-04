@@ -1,5 +1,5 @@
 {
- "_doc": "A sheep (animals.json): tame, to herd. A round woolly body on thin dark legs, a dark face.",
+ "_doc": "A sheep, from scratch: a round woolly body hiding the tops of its legs, thin dark legs, a narrow dark face with ears out sideways, a wool cap on the poll, a short tail.",
  "skin": "#e4dccb",
  "pale": "#2e2622",
  "mark": "#e8dcc4",
@@ -7,102 +7,50 @@
  "fur": 0.12,
  "reach": 2.4,
  "points": {
-  "front": {
-   "at": [
-    0,
-    4.5,
-    11.5
-   ]
-  },
   "back": {
    "at": [
     0,
-    -4.5,
-    11.5
-   ]
+    -4.2,
+    11.0
+   ],
+   "bob": 0.4
+  },
+  "front": {
+   "at": [
+    0,
+    4.0,
+    11.4
+   ],
+   "bob": 0.4
   },
   "head": {
    "at": [
     0,
-    9.0,
-    14.0
-   ]
+    8.6,
+    13.0
+   ],
+   "bob": 0.4
   }
  },
  "legs": [
   {
    "hip": [
-    "front",
-    2.4,
-    0.5,
-    -3.0
-   ],
-   "foot": [
-    2.4,
-    5.0,
-    1.0
-   ],
-   "stride": 2.4,
-   "lift": 1.4,
-   "bones": [
-    3.86,
-    3.86
-   ],
-   "pole": [
-    0,
-    1,
-    0
-   ],
-   "r": [
-    0.8,
-    0.7,
-    0.7,
-    0.6
-   ],
-   "mats": [
-    "skin",
-    "pale"
-   ],
-   "shapes": [
-    {
-     "cap": [
-      "ankle",
-      0,
-      0,
-      0
-     ],
-     "to": [
-      "ankle",
-      0,
-      0.8,
-      -0.3
-     ],
-     "r": [
-      0.6,
-      0.54
-     ],
-     "mat": "pale",
-     "_doc": "a hoof"
-    }
-   ]
-  },
-  {
-   "hip": [
     "back",
-    2.4,
-    -0.5,
+    2.2,
+    0,
     -3.0
    ],
    "foot": [
-    2.4,
-    -5.0,
-    1.0
+    2.2,
+    -4.6,
+    0.8
    ],
-   "stride": 2.4,
-   "lift": 1.4,
+   "stride": 3.0,
+   "lift": 1.6,
+   "phase": 0,
    "bones": [
-    3.86,
-    3.86
+    3.8,
+    3.8
    ],
    "pole": [
     0,
@@ -110,133 +58,241 @@
     0
    ],
    "r": [
-    0.8,
-    0.7,
-    0.7,
-    0.6
+    1.0,
+    0.6,
+    0.55,
+    0.45
    ],
    "mats": [
-    "skin",
+    "pale",
     "pale"
    ],
-   "phase": 180,
    "shapes": [
     {
      "cap": [
       "ankle",
       0,
-      0,
-      0
+      0.1,
+      -0.1
      ],
      "to": [
       "ankle",
       0,
-      0.8,
-      -0.3
+      0.35,
+      -0.55
      ],
      "r": [
-      0.6,
-      0.54
+      0.55,
+      0.6050000000000001
      ],
      "mat": "pale",
-     "_doc": "a hoof"
+     "_doc": "hoof"
+    }
+   ]
+  },
+  {
+   "hip": [
+    "front",
+    2.2,
+    0.6,
+    -3.0
+   ],
+   "foot": [
+    2.2,
+    4.8,
+    0.8
+   ],
+   "stride": 3.0,
+   "lift": 1.6,
+   "phase": 180,
+   "bones": [
+    4.0,
+    4.0
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    1.0,
+    0.6,
+    0.55,
+    0.45
+   ],
+   "mats": [
+    "pale",
+    "pale"
+   ],
+   "shapes": [
+    {
+     "cap": [
+      "ankle",
+      0,
+      0.1,
+      -0.1
+     ],
+     "to": [
+      "ankle",
+      0,
+      0.35,
+      -0.55
+     ],
+     "r": [
+      0.55,
+      0.6050000000000001
+     ],
+     "mat": "pale",
+     "_doc": "hoof"
     }
    ]
   }
  ],
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.6,
+   1.2
+  ],
+  "r": 1.9
+ },
+ "armour": {
+  "a": [
+   "back",
+   0,
+   0,
+   0.6
+  ],
+  "b": [
+   "front",
+   0,
+   0,
+   0.6
+  ],
+  "r": [
+   4.8,
+   4.6
+  ]
+ },
  "shapes": [
   {
-   "cap": [
+   "ball": [
     "back",
     0,
     0,
-    0
+    0.3
    ],
-   "to": [
-    "front",
-    0,
-    0,
-    0
-   ],
-   "r": [
-    5.6,
-    5.6
-   ],
+   "r": 4.6,
    "mat": "skin"
   },
   {
    "ball": [
     "front",
     0,
-    0.5,
-    2.5
+    -0.6,
+    0.5
    ],
    "r": 4.4,
+   "mat": "skin"
+  },
+  {
+   "cap": [
+    "back",
+    1.2,
+    0,
+    0.3
+   ],
+   "to": [
+    "front",
+    1.2,
+    0,
+    0.4
+   ],
+   "r": [
+    4.3,
+    4.2
+   ],
    "mat": "skin",
-   "_doc": "the fleece's shoulders"
+   "mirror": true,
+   "_doc": "the woolly body"
   },
   {
    "cap": [
     "head",
     0,
-    -0.5,
-    0.5
+    -0.9,
+    0.2
    ],
    "to": [
     "head",
     0,
-    3.0,
-    -1.6
+    2.4,
+    -1.4
    ],
    "r": [
-    2.0,
-    1.2
+    1.5,
+    0.95
    ],
    "mat": "pale",
-   "_doc": "the face"
+   "_doc": "the narrow dark face"
+  },
+  {
+   "cap": [
+    "head",
+    1.1,
+    -0.6,
+    0.3
+   ],
+   "to": [
+    "head",
+    2.6,
+    -0.5,
+    -0.3
+   ],
+   "r": [
+    0.5,
+    0.35
+   ],
+   "mat": "pale",
+   "mirror": true,
+   "_doc": "ears out sideways"
   },
   {
    "ball": [
     "head",
     0,
-    -0.6,
-    1.4
+    -1.3,
+    1.0
    ],
-   "r": 1.8,
+   "r": 1.4,
    "mat": "skin",
-   "_doc": "wool on the head"
+   "_doc": "wool cap"
   },
   {
    "bead": [
     "head",
-    1.5,
-    1.0,
-    0.0
+    1.1,
+    0.4,
+    0.4
    ],
-   "r": 0.4,
+   "r": 0.3,
    "mat": "eye",
    "mirror": true
   },
   {
-   "cap": [
-    "head",
-    1.6,
-    -0.4,
-    0.4
+   "ball": [
+    "back",
+    0,
+    -4.6,
+    0.6
    ],
-   "to": [
-    "head",
-    3.2,
-    -0.2,
-    -0.4
-   ],
-   "r": [
-    0.6,
-    0.4
-   ],
-   "mat": "pale",
-   "mirror": true,
-   "_doc": "an ear"
+   "r": 1.1,
+   "mat": "skin",
+   "_doc": "tail"
   }
- ]
+ ],
+ "check": {
+  "knees": 45
+ }
 }

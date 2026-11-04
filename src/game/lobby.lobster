@@ -44,7 +44,7 @@ class FeTrait:
 let FE_TRAITS = [ FeTrait { "Bonuses", "bonus" }, FeTrait { "Own research", "own research" }, FeTrait { "Lacks", "lack" }, FeTrait { "Heroes", "hero" }, FeTrait { "Notes", "note" } ]
 
 var fe_sides = []::FeSide
-var fe_page = "title"  // title, setup, lab, saves, net
+var fe_page = "title"  // title, setup, lab, saves, net, settings
 var fe_back = "title"  // where the saves and network pages go back to
 var fe_k = 1.0         // screen px per design px
 var fe_w = 1600.0      // the window's width in design px
@@ -90,7 +90,7 @@ def fe_trim(s:string) -> string:
 def fe_fit():
     let ws = float(gl.window_size())
     let fill = min(ws.x / FE_DESIGN.x, ws.y / FE_DESIGN.y)
-    fe_k = max(min(1.0, fill), fill * FE_SIZE)
+    fe_k = min(fill, max(min(1.0, fill), fill * FE_SIZE) * float(hud_size) / 115.0)  // (the player's UI scale, 115% the default)
     fe_w = ws.x / fe_k
     fe_h = ws.y / fe_k
 
@@ -607,6 +607,28 @@ def fe_traits(s:FeSide, at:float2, w:float, h:float, fs:int):
 // the dice and the prompt, the roster as a line of its rows_' names, a line of bonuses, lacks and notes. Compact (a
 // team game, two panels a column): a smaller banner (the traits ride on it), stage and type, an AI's level in its
 // top row.
+// The game's own ground under a stage (Dominic, 2026-11-04: "just put them on our ground texture"): the terrain shader
+// over a patch of plain grass (blank masks: no paths, reeds, swamp or rock), at the units' scale (k screen px a world
+// px), each side's patch a different stretch of it.
+var fe_turf_tex:resource<texture>? = nil
+def fe_turf(at:float2, size:float2, k:float, side:int):
+    if not fe_turf_tex: fe_turf_tex = gl.create_texture(map(2): map(2): float4_0, texture_format_clamp | texture_format_nomipmap)
+    let tex = assert fe_turf_tex
+    ui_batch_flush()
+    let local = size / k
+    let o = float2 { float(side) * 200.0 - 300.0, 1400.0 }  // (world px: well inside the 128 x 128 map it says)
+    gl.set_shader("terrain")
+    gl.set_uniform("map_size", float2 { 128.0, 128.0 })
+    gl.set_uniform("art_px", max(1.0, k))
+    gl.set_uniform("time", 0.0)
+    for(4) u: gl.set_primitive_texture(u, tex)
+    gl.translate(at):
+        gl.scale(k):
+            gl.translate(-o):
+                gl.draw_mesh("PT", [ float3 { o.x, o.y, 0.0 }, float3 { o.x + local.x, o.y, 0.0 }, float3 { o.x + local.x, o.y + local.y, 0.0 }, float3 { o.x, o.y + local.y, 0.0 } ],
+                             []::float4, []::float3, map(4): float2_0, []::float2, [ 0, 2, 1, 0, 3, 2 ])
+    gl.set_shader("color")
+
 def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:float):
     let s = fe_sides[i]
     let lk = ui_look_of(rstr(s.race, "family"))
@@ -649,15 +671,15 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
         let tx = x + 20.0 * fe_k + ui_text_wf(line, lfs, 1) + 14.0 * fe_k
         fe_traits(s, float2 { tx, line_y - 1.0 * fe_k }, x + w - tx - 8.0 * fe_k, 24.0 * fe_k, fz(12.0))
     y += bh + 12.0 * fe_k
-    // the stage: the army idling on turf, lit from above, sunk in the panel
+    // the stage: the army idling on the game's ground, sunk in the panel
     let foot_h = (if compact: 48.0 + 9.0 + 22.0 else: 68.0 + 9.0 + 48.0 + 9.0 + 30.0) * fe_k
     let st_at = float2 { x, y }
     let st_size = float2 { w, at.y + size.y - pad - foot_h - 12.0 * fe_k - y }
     fe_well(st_at, st_size)
     let in_at = st_at + float2_1 * 3.0 * fe_k
     let in_size = st_size - float2_1 * 6.0 * fe_k
-    ui_paint(in_at, in_size, FE_GRASS, "felt")
-    ui_radial(in_at, in_size, float2 { 0.5, 0.75 }, float2 { 0.75, 1.05 }, float4 { 1.0, 0.92, 0.7, 0.12 }, float4 { 0.02, 0.03, 0.0, 0.75 })
+    let turf_zm = max((if st_size.y >= 144.0 * 1.45 * fe_k: 3.0 else: 2.0) * fe_k, min(in_size.x / (float(max(1, min(s.picks.length, 6))) * 40.0), in_size.y / 62.0))
+    fe_turf(in_at, in_size, turf_zm / 1.5, i)
     let forging = s.views_gen != s.gen
     if s.picks.length:
         // as many as the stage has room for: one each FE_UNIT_INCHES at 96 dpi, at most six (gl.dpi(0) isn't a
@@ -728,12 +750,12 @@ def fe_title_page(dt:float) -> string:
             let vs = map(n) k: s.picks[n - 1 - k]  // the big ones at the front
             let spots = map(n) k: float2 { (if i == 0: cw * (0.42 - 0.055 * float(k)) else: cw * (0.58 + 0.055 * float(k))) * zm, hill_at.y + hill_h * (if k % 2 == 0: 0.7 else: 0.86) }
             fe_draw_units(vs, spots, zm / 1.5, i, 1.0, i == 1)
-    // the column (match_setup.gd's _menu): crest, title, tag line, the plaque of buttons, the volumes, the foot; centred
+    // the column (match_setup.gd's _menu): crest, title, tag line, the plaque of buttons, the foot; centred
     // over the hill's upper half
     let cx = ws.x / 2.0
     let foot = fe_wrap("Type \"centaur romans\" or \"sewer rats with cheese hammers\": the game builds the race and prices every unit fairly.", fz(17.0), 640.0 * fe_k)
-    let plaque_size = float2 { 400.0 + 48.0, 88.0 + 62.0 * 4.0 + 14.0 * 4.0 + 44.0 }
-    let col_h = 90.0 + 130.0 + 33.0 + 26.0 + plaque_size.y + 98.0 + 10.0 + 22.0 * float(foot.length) + 10.0 * 7.0
+    let plaque_size = float2 { 400.0 + 48.0, 88.0 + 62.0 * 5.0 + 14.0 * 5.0 + 44.0 }
+    let col_h = 90.0 + 130.0 + 33.0 + 26.0 + plaque_size.y + 20.0 + 22.0 * float(foot.length) + 10.0 * 7.0
     var y = max(0.0, (fe_h - 270.0 * 0.55 - col_h) / 2.0)
     tb_icon_wide("crest_" + lk.ornament, float2 { cx, (y + 45.0) * fe_k }, 90.0 * fe_k)
     y += 100.0
@@ -745,36 +767,55 @@ def fe_title_page(dt:float) -> string:
     ui_box(plaque_at, plaque_size * fe_k, 1, lk.frame * float4 { 0.6, 0.6, 0.6, 1.0 }, true)
     var by = y + 22.0
     var go = ""
-    for([ [ "Battle the AI", "setup" ], [ "Play on the network", "net" ], [ "Load game", "saves" ], [ "Race Lab", "lab" ], [ "Quit", "quit" ] ]) item, k:
+    for([ [ "Battle the AI", "setup" ], [ "Play on the network", "net" ], [ "Load game", "saves" ], [ "Race Lab", "lab" ], [ "Settings", "settings" ], [ "Quit", "quit" ] ]) item, k:
         let h = if k == 0: 88.0 else: 62.0
         if ui_button(D(cx / fe_k - 200.0, by), D(400.0, h), "", k == 0): go = item[1]
         if k == 0: ui_text_c(cx, (by + h / 2.0 - 21.0) * fe_k, item[0], fz(31.0), lk.title, 2, 1.5 * fe_k)
         else: ui_text_c(cx, (by + h / 2.0 - 15.0) * fe_k, item[0], fz(24.0), lk.text, 1, 1.0 * fe_k)
         by += h + 14.0
-    y += plaque_size.y + 10.0
-    let vh = volume_rows(D(cx / fe_k - 200.0, y), 400.0 * fe_k, 40.0 * fe_k, 8.0 * fe_k)
-    y += vh / fe_k + 20.0
+    y += plaque_size.y + 20.0
     for(foot) l, k: ui_text_c(cx, (y + 22.0 * float(k)) * fe_k, l, fz(17.0), lk.dim, 0, 0.0)
     if gl.button("escape") == 1 or gl.button("controller_b") == 1: go = "quit"
     return go
 
-// The volumes: a row each for the music and the sound, - and + either side of the level (saved as it changes).
-// Returns the rows' height.
-def volume_rows(at:float2, w:float, h:float, gap:float) -> float:
-    let lk = ui_look
-    for([ "Music", "Sound" ]) name, k:
-        let y = at.y + float(k) * (h + gap)
-        let lv = if k == 0: music_level else: sound_level
+// Settings (the title's and the pause menu's): a card like the saves', the music, the sound and the UI scale, each a
+// row with - and + either side of the level (saved to settings.txt as it changes). Returns "back" when it's left.
+def fe_settings_card() -> string:
+    let ws = float(gl.window_size())
+    let lk = ui_look_of("")
+    ui_use(lk)
+    ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.5 })
+    let size = D(560.0, 26.0 + 66.0 + 14.0 + 3.0 * 58.0 + 40.0 + 50.0 + 30.0)
+    let at = (ws - size) / 2.0
+    fe_panel(at, size, lk, true)
+    var y = at.y + 26.0 * fe_k
+    ui_text_c(ws.x / 2.0, y, "Settings", fz(44.0), lk.title, 2, 2.0 * fe_k)
+    y += 66.0 * fe_k
+    fe_rule(at.x + 40.0 * fe_k, y, size.x - 80.0 * fe_k, lk.metal)
+    y += 14.0 * fe_k
+    let w = size.x - 80.0 * fe_k
+    for([ "Music", "Sound", "UI scale" ]) name, k:
+        let h = 48.0 * fe_k
+        let lv = if k == 0: music_level elif k == 1: sound_level else: hud_size
+        let step = if k == 2: 10 else: 1
         var nv = lv
-        if ui_button(float2 { at.x, y }, float2 { h, h }, "-", false): nv = max(0, lv - 1)
-        if ui_button(float2 { at.x + w - h, y }, float2 { h, h }, "+", false): nv = min(10, lv + 1)
-        let fs = int(h * 0.42)
-        ui_text_c(at.x + w / 2.0, y + (h - float(fs)) / 2.0 - 2.0, "{name}: {if nv == 0: "off" else: string(nv * 10) + "%"}", fs, lk.text, 1, 0.0)
+        if ui_button(float2 { at.x + 40.0 * fe_k, y }, float2 { h, h }, "-", false): nv = max(if k == 2: 70 else: 0, lv - step)
+        if ui_button(float2 { at.x + 40.0 * fe_k + w - h, y }, float2 { h, h }, "+", false): nv = min(if k == 2: 200 else: 10, lv + step)
+        let fs = fz(21.0)
+        let shown = if k == 2: "{nv}%" elif nv == 0: "off" else: "{nv * 10}%"
+        ui_text_c(ws.x / 2.0, y + (h - float(fs)) / 2.0 - 2.0 * fe_k, "{name}: {shown}", fs, lk.text, 1, 0.0)
         if nv != lv:
             if k == 0: music_level = nv
-            else: sound_level = nv
+            elif k == 1: sound_level = nv
+            else: hud_size = nv
             volume_save()
-    return h * 2.0 + gap
+        y += 58.0 * fe_k
+    ui_text_c(ws.x / 2.0, y + 4.0 * fe_k, "In a match, Ctrl/Cmd + and - change the UI scale too.", fz(16.0), lk.dim, 0, 0.0)
+    y += 40.0 * fe_k
+    var go = ""
+    if ui_button(float2 { at.x + 40.0 * fe_k, y }, float2 { w, 50.0 * fe_k }, "Back", false): go = "back"
+    if gl.button("escape") == 1 or gl.button("controller_b") == 1: go = "back"
+    return go
 
 // The battle setup: a panel per player (your team on the left), the middle column, Start.
 def fe_setup_page(dt:float) -> string:
@@ -1095,6 +1136,41 @@ def fe_loader_pick(race:JV) -> [JV]:
         if k >= 0: out.push(units[k])
     return out
 
+// The loader's stage (Dominic, 2026-11-04: "just green behind them"): a meadow under a hazy sky, hills far off, the
+// grass in tufts and a few flowers, smaller towards the horizon. Fixed (no randomness from frame to frame).
+def fe_h01(n:int) -> float: return float(((n * 2654435761) >> 9) & 0xffff) / 65536.0  // a fixed 0..1 for n
+
+def fe_ld_meadow(at:float2, size:float2, k:float):
+    let hz = size.y * 0.3  // the horizon
+    ui_shade(at, float2 { size.x, hz }, 1, 4) u, v: float4 { 0.55 + 0.3 * v, 0.68 + 0.14 * v, 0.80 - 0.16 * v, 1.0 }
+    let strip = max(2.0, 3.0 * k)
+    var x = 0.0
+    while x < size.x:  // two ranges of hills, the far one paler
+        let t = x / size.x
+        let far = hz * (0.42 + 0.16 * sin(t * 760.0 + 40.0) + 0.1 * sin(t * 1900.0))
+        ui_fill(float2 { at.x + x, at.y + hz - far }, float2 { strip, far }, float4 { 0.47, 0.58, 0.48, 1.0 })
+        let near = hz * (0.2 + 0.12 * sin(t * 1300.0 + 200.0) + 0.06 * sin(t * 3100.0 + 15.0))
+        ui_fill(float2 { at.x + x, at.y + hz - near }, float2 { strip, near }, float4 { 0.34, 0.47, 0.25, 1.0 })
+        x += strip
+    ui_shade(float2 { at.x, at.y + hz }, float2 { size.x, size.y - hz }, 1, 6) u, v:
+        float4 { 0.52 - 0.22 * v, 0.6 - 0.18 * v, 0.27 - 0.13 * v, 1.0 }
+    for(420) n:
+        let d = fe_h01(n * 16)  // 0 at the horizon, 1 at the front
+        let depth = d * d
+        let p = float2 { at.x + fe_h01(n * 16 + 1) * size.x, at.y + hz + 4.0 * k + depth * (size.y - hz - 6.0 * k) }
+        let h = (3.0 + 11.0 * depth) * k * (0.7 + 0.6 * fe_h01(n * 16 + 2))
+        let shade = 0.75 + 0.5 * fe_h01(n * 16 + 3)
+        let col = float4 { 0.2 * shade, 0.33 * shade, 0.1 * shade, 0.55 + 0.4 * depth }
+        let lw = max(1.0, (0.8 + 1.4 * depth) * k)
+        for(3) b:
+            let lean = (float(b) - 1.0) * h * 0.35 + (fe_h01(n * 16 + 4 + b) - 0.5) * h * 0.3
+            ui_line(p + float2 { (float(b) - 1.0) * lw, 0.0 }, p + float2 { lean, -h }, lw, col)
+        if n % 9 == 0:  // a flower
+            let fc = if n % 2 == 0: float4 { 0.95, 0.9, 0.75, 0.9 } else: float4 { 0.95, 0.78, 0.25, 0.9 }
+            let r = (1.2 + 2.0 * depth) * k
+            ui_fill(p + float2 { -r, -h * 0.8 - r }, float2_1 * r * 2.0, fc)
+    ui_shade(float2 { at.x, at.y + size.y * 0.8 }, float2 { size.x, size.y * 0.2 }, 1, 3) u, v: float4 { 0.0, 0.0, 0.0, 0.25 * v }  // the front, darker
+
 // A plain box with an edge (loader_style.gd's box).
 def fe_ld_box(at:float2, size:float2, fill:float4, edge:float4, w:float):
     ui_fill(at, size, edge)
@@ -1145,12 +1221,12 @@ def fe_loader(status:string, frac:float):
         else: rn++
     ui_text_c(ws.x / 2.0, (y + names_h / 2.0) * k - float(fz(40.0)) * 0.6, "vs", fz(40.0), FE_LD_BRONZE, 0, 4.0 * k)
     y += names_h + 18.0
-    // the stage: grass darkening to the back, both armies facing the middle, the big ones nearest the foe
+    // the stage: the game's ground, both armies facing the middle, the big ones nearest the foe
     let st_at = float2 { x0, y * k }
     let st_size = float2 { w, st_h * k }
     fe_ld_box(st_at - float2_1 * 3.0 * k, st_size + float2_1 * 6.0 * k, FE_GRASS, FE_LD_EDGE, 3.0 * k)
-    ui_shade(st_at, st_size, 1, 6) u, v: float4 { 0.05, 0.08, 0.02, 0.6 * (1.0 - v) }
     let zm = 2.5 * k * (if st_h >= 480.0: 1.6 elif st_h >= 360.0: 1.3 else: 1.0)
+    fe_turf(st_at, st_size, zm / 1.5, 1)  // the game's own ground (Dominic, 2026-11-04: "game loading still has no bg, just ugly green")
     for(fe_sides) s, i:
         let left = s.team == you
         let rank = (filter(i) j: (fe_sides[j].team == you) == left).length
@@ -1284,6 +1360,7 @@ def run_front(page0:string, typed:[string]) -> string:
                 if picked == "back": go = "back"
                 elif picked != "": go = "load:" + picked
             elif fe_page == "net": go = fe_net_page()
+            elif fe_page == "settings": go = fe_settings_card()
         if fe_page == "setup" or fe_page == "lab" or fe_page == "title":
             ui_flush()
         fe_draw_tip()
@@ -1326,7 +1403,7 @@ def run_front(page0:string, typed:[string]) -> string:
             fe_back = "title"
             fe_field = -1
             fe_note = ""
-        elif go == "setup" or go == "lab" or go == "saves" or go == "net":
+        elif go == "setup" or go == "lab" or go == "saves" or go == "net" or go == "settings":
             fe_page = go
             fe_frames = 0
             fe_note = ""

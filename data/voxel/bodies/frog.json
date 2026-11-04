@@ -1,65 +1,65 @@
 {
- "_doc": "A frog: squat and wide on folded hind legs (knees out, long webbed toes), a wide flat head with a mouth seam, two big gold eyes bulging on top. Smooth skin, a pale throat; the team a scarf.",
- "skin": "#618f38",
- "pale": "#dbd68f",
+ "_doc": "A war frog, from scratch: a tree frog crouched to spring, about 14 tall and 20 long. The body is a short wedge, rump low on the ground line and chest lifted about 35 degrees, the head wide and flat with big golden eyes bulging on top. The huge hind legs stay folded in a tight Z beside the body (thigh forward, shin back, long webbed feet flat and forward on the ground): they carry it. The thin front legs are free as arms, holding a sword and shield. Bright lime green with dark spots, cream throat and belly, a blue stripe from eye to flank, orange toes. Team colour: a cloth over the back.",
+ "skin": "#9cd84a",
+ "pale": "#f2e6a0",
  "size": 1.15,
- "fur": 0.03,
- "reach": 2.0,
+ "fur": 0.0,
+ "reach": 4.5,
  "points": {
-  "rump": {
+  "pelvis": {
    "at": [
     0,
-    -3.0,
-    5.4
+    -3.4,
+    4.4
    ],
-   "bob": 0.8
+   "bob": 0.5
   },
-  "front": {
+  "chest": {
    "at": [
     0,
-    1.8,
-    7.6
+    1.4,
+    8.8
    ],
-   "bob": 0.8
+   "bob": 0.5
   },
   "head": {
    "at": [
     0,
     5.0,
-    9.0
+    11.0
    ],
-   "bob": 0.8
+   "bob": 0.4
   }
  },
  "legs": [
   {
    "hip": [
-    "rump",
-    3.2,
-    0,
-    -1.0
+    "pelvis",
+    2.4,
+    0.4,
+    -0.6
    ],
    "foot": [
-    5.6,
-    -3.4,
-    1.2
+    4.6,
+    -4.4,
+    0.9
    ],
-   "stride": 2.0,
-   "lift": 0.0,
+   "stride": 2.4,
+   "lift": 1.6,
    "bones": [
-    6.25,
-    6.44
+    5.4,
+    5.6
    ],
    "pole": [
-    0.7,
-    0.7,
-    0.3
+    1.0,
+    0.8,
+    0.5
    ],
    "r": [
-    2.5,
-    1.8,
-    1.6,
-    1.0
+    2.1,
+    1.2,
+    1.0,
+    0.6
    ],
    "mats": [
     "skin",
@@ -67,23 +67,14 @@
    ],
    "shapes": [
     {
-     "cap": [
-      "ankle",
+     "bead": [
+      "knee",
       0,
       0,
       0
      ],
-     "to": [
-      "ankle",
-      -0.16,
-      4.4,
-      -0.5
-     ],
-     "r": [
-      0.6,
-      0.5
-     ],
-     "mat": "skin"
+     "r": 1.25,
+     "mat": "frog_dark"
     },
     {
      "cap": [
@@ -94,265 +85,451 @@
      ],
      "to": [
       "ankle",
-      0.8,
-      4.4,
+      0.3,
+      3.4,
       -0.5
      ],
      "r": [
       0.6,
       0.5
      ],
-     "mat": "skin"
+     "mat": "skin",
+     "_doc": "the long tarsus, flat on the ground"
     },
     {
      "cap": [
       "ankle",
-      0,
-      0,
-      0
+      0.3,
+      3.4,
+      -0.5
      ],
      "to": [
       "ankle",
-      1.76,
-      4.4,
+      -0.4,
+      5.6,
       -0.5
      ],
      "r": [
-      0.6,
-      0.5
+      0.45,
+      0.4
      ],
-     "mat": "skin"
+     "mat": "frog_toe",
+     "_doc": "inner toe"
+    },
+    {
+     "cap": [
+      "ankle",
+      0.3,
+      3.4,
+      -0.5
+     ],
+     "to": [
+      "ankle",
+      1.4,
+      5.4,
+      -0.5
+     ],
+     "r": [
+      0.45,
+      0.4
+     ],
+     "mat": "frog_toe",
+     "_doc": "outer toe"
+    },
+    {
+     "disc": [
+      "ankle",
+      0.5,
+      4.6,
+      -0.75
+     ],
+     "n": [
+      0,
+      0,
+      1
+     ],
+     "r": [
+      1.4,
+      0.25
+     ],
+     "mat": "skin",
+     "_doc": "the web between the toes"
     }
    ]
   }
  ],
  "arms": {
   "shoulder": [
-   "front",
-   3.3,
-   1.2,
-   -0.4
+   "chest",
+   3.4,
+   2.2,
+   1.4
   ],
-  "bone": 4.2,
-  "thick": 1.0,
-  "sleeve": "skin",
-  "hand": "skin"
+  "bone": 2.6,
+  "thick": 1.15,
+  "sleeve": "pale",
+  "hand": "frog_toe"
  },
  "helm": {
   "at": [
    "head",
    0,
    -1.0,
-   1.9
+   1.2
   ],
-  "r": 1.7
+  "r": 1.6
  },
  "armour": {
   "a": [
-   "rump",
+   "pelvis",
    0,
-   0,
-   1.0
+   0.4,
+   1.2
   ],
   "b": [
-   "front",
+   "chest",
    0,
-   -0.6,
+   0,
    0.8
   ],
   "r": [
-   4.0,
-   3.5
-  ]
- },
- "seat": {
-  "z": 5.8,
-  "astride": [
-   "skin",
-   "skin",
-   "skin"
+   3.4,
+   3.0
   ]
  },
  "shapes": [
   {
    "cap": [
-    "rump",
-    0,
-    0,
+    "pelvis",
+    1.1,
+    -0.4,
     0
    ],
    "to": [
-    "front",
+    "chest",
+    1.0,
     0,
-    0,
-    0
+    0.2
    ],
    "r": [
-    4.4,
-    3.9
-   ],
-   "mat": "skin"
-  },
-  {
-   "cap": [
-    "rump",
-    -1.8,
-    2.0,
-    0.6
-   ],
-   "to": [
-    "rump",
-    1.8,
-    2.0,
-    0.6
-   ],
-   "r": [
-    4.4,
-    4.4
+    2.8,
+    2.4
    ],
    "mat": "skin",
-   "_doc": "wide"
+   "mirror": true,
+   "_doc": "the body, a wedge from the low rump to the chest"
   },
   {
    "cap": [
-    "rump",
+    "pelvis",
     0,
-    2.0,
-    -1.2
+    1.0,
+    -1.6
    ],
    "to": [
-    "front",
+    "chest",
     0,
-    0.9,
+    0.8,
     -1.6
    ],
    "r": [
-    3.4,
-    2.9
+    2.5,
+    2.1
    ],
-   "mat": "pale",
-   "_doc": "the belly"
+   "mat": "frog_belly",
+   "_doc": "cream belly"
   },
   {
    "cap": [
     "head",
-    -2.0,
-    0,
+    -1.7,
+    -0.4,
     0
    ],
    "to": [
     "head",
-    2.0,
-    0,
+    1.7,
+    -0.4,
     0
    ],
    "r": [
-    3.0,
-    3.0
+    2.2,
+    2.2
    ],
-   "mat": "skin"
+   "mat": "skin",
+   "_doc": "the wide flat head"
   },
   {
    "cap": [
     "head",
-    -1.6,
-    0.4,
-    -1.4
+    -1.3,
+    1.3,
+    -0.5
    ],
    "to": [
     "head",
+    1.3,
+    1.3,
+    -0.5
+   ],
+   "r": [
     1.6,
-    0.4,
-    -1.4
+    1.6
    ],
-   "r": [
-    2.3,
-    2.3
-   ],
-   "mat": "pale",
-   "_doc": "the throat"
+   "mat": "skin",
+   "_doc": "blunt snout, as wide as the head and short"
   },
   {
    "cap": [
     "head",
-    -3.4,
-    1.9,
+    -1.4,
+    0.2,
+    -1.4
+   ],
+   "to": [
+    "head",
+    1.4,
+    0.2,
+    -1.4
+   ],
+   "r": [
+    1.7,
+    1.7
+   ],
+   "mat": "frog_belly",
+   "_doc": "cream throat"
+  },
+  {
+   "cap": [
+    "head",
+    3.0,
+    0.4,
     -0.9
    ],
    "to": [
     "head",
-    3.4,
-    1.9,
-    -0.9
+    1.4,
+    2.6,
+    -1.0
    ],
    "r": [
-    0.3,
-    0.3
+    0.28,
+    0.28
    ],
-   "mat": "mouth",
-   "hard": true
+   "mat": "frog_dark",
+   "mirror": true,
+   "_doc": "the long mouth line"
   },
   {
    "ball": [
     "head",
-    2.5,
-    0.6,
-    3.2
+    1.7,
+    -0.4,
+    2.0
    ],
-   "r": 2.1,
-   "mat": "skin",
-   "mirror": true,
-   "_doc": "big eyes, bulging up off the top of the head"
-  },
-  {
-   "bead": [
-    "head",
-    2.7,
-    1.5,
-    3.7
-   ],
-   "r": 1.65,
+   "r": 1.1,
    "mat": "gold",
-   "mirror": true
+   "mirror": true,
+   "_doc": "bulging golden eye, on top of the head, set back"
   },
   {
    "cap": [
     "head",
-    2.5,
-    2.9,
-    3.8
+    2.55,
+    -0.8,
+    2.1
    ],
    "to": [
     "head",
-    3.2,
-    2.9,
-    3.8
+    2.55,
+    0.0,
+    2.1
    ],
    "r": [
+    0.4,
+    0.4
+   ],
+   "mat": "eye",
+   "mirror": true,
+   "_doc": "the horizontal pupil, on the side of the eye"
+  },
+  {
+   "cap": [
+    "head",
+    2.6,
+    -0.4,
+    0.6
+   ],
+   "to": [
+    "pelvis",
+    3.4,
     0.6,
     0.6
    ],
-   "mat": "eye",
-   "hard": true,
-   "mirror": true
+   "r": [
+    0.65,
+    0.55
+   ],
+   "mat": "frog_flank",
+   "mirror": true,
+   "_doc": "blue stripe from eye to flank"
   },
   {
-   "ring": [
-    "front",
-    0,
-    1.6,
-    0.2
+   "cap": [
+    "pelvis",
+    0.7,
+    -0.6,
+    0.9
+   ],
+   "to": [
+    "chest",
+    0.6,
+    -0.2,
+    1.0
    ],
    "r": [
-    3.2,
-    0.8
+    2.3,
+    2.0
    ],
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "darker back saddle over the lime flanks"
+  },
+  {
+   "cap": [
+    "head",
+    0.9,
+    -1.0,
+    0.7
+   ],
+   "to": [
+    "head",
+    0.8,
+    1.0,
+    0.5
+   ],
+   "r": [
+    1.7,
+    1.4
+   ],
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "the saddle runs on over the crown"
+  },
+  {
+   "cap": [
+    "chest",
+    2.3,
+    -0.2,
+    1.8
+   ],
+   "to": [
+    "pelvis",
+    2.6,
+    0.2,
+    2.0
+   ],
+   "r": [
+    0.4,
+    0.35
+   ],
+   "mat": "pale",
+   "mirror": true,
+   "_doc": "pale line between back and flank"
+  },
+  {
+   "bead": [
+    "pelvis",
+    1.0,
+    -0.8,
+    3.5
+   ],
+   "r": 0.75,
+   "mat": "frog_dark"
+  },
+  {
+   "bead": [
+    "pelvis",
+    -0.9,
+    1.4,
+    3.5
+   ],
+   "r": 0.75,
+   "mat": "frog_dark"
+  },
+  {
+   "bead": [
+    "pelvis",
+    2.6,
+    1.8,
+    2.6
+   ],
+   "r": 0.75,
+   "mat": "frog_dark"
+  },
+  {
+   "bead": [
+    "chest",
+    -0.7,
+    -2.2,
+    3.3
+   ],
+   "r": 0.75,
+   "mat": "frog_dark"
+  },
+  {
+   "bead": [
+    "chest",
+    1.2,
+    -0.4,
+    3.2
+   ],
+   "r": 0.75,
+   "mat": "frog_dark"
+  },
+  {
+   "bead": [
+    "pelvis",
+    -2.2,
+    -0.6,
+    3.0
+   ],
+   "r": 0.75,
+   "mat": "frog_dark"
+  },
+  {
+   "box": [
+    "pelvis",
+    0,
+    2.4,
+    5.1
+   ],
+   "n": [
+    0,
+    -0.55,
+    0.83
+   ],
+   "half": [
+    2.2,
+    0.4,
+    1.7
+   ],
+   "round": 0.4,
    "mat": "team",
-   "_doc": "the scarf"
+   "hard": true,
+   "_doc": "team cloth over the back"
   }
  ],
  "check": {
-  "knees": 150,
-  "_doc": "folded legs: a frog crouches"
+  "knees": 170,
+  "_doc": "a frog's hind knees fold right up beside its body"
+ },
+ "seat": {
+  "z": 3.0,
+  "astride": [
+   "skin",
+   "skin",
+   "skin"
+  ]
  }
 }

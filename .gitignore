@@ -11,3 +11,11 @@ mods_private/
 # test shards and local game settings
 src/.shards.*/
 src/settings.txt
+
+# Scratch: captures from checks, generated diffs, backups, tool output
+reports/playtest-check/
+reports/*.diff
+.claude/tmp/
+__pycache__/
+*.bak
+src/builtin_functions_names.txt

@@ -821,10 +821,36 @@
       "palisade",
       "palisade_gate",
       "wall",
-      "stone_gate"
+      "stone_gate",
+      "fortified_wall",
+      "fortified_gate"
      ],
      "stat": "hp",
      "pct": 100
+    }
+   ]
+  },
+  {
+   "id": "fortified_walls",
+   "name": "Fortified Walls",
+   "desc": "Rebuild the defences properly: every Stone Wall becomes a Fortified Wall and every Stone Gate a Fortified Gate, on a sloped stone foot with a deeper parapet, far tougher and better armoured.",
+   "cost": {
+    "food": 250,
+    "wood": 0,
+    "stone": 300
+   },
+   "time": 60,
+   "building": "university",
+   "age": 3,
+   "effect": "Stone Walls and Gates become Fortified: more HP and armour",
+   "effects": [
+    {
+     "building": "wall",
+     "becomes": "fortified_wall"
+    },
+    {
+     "building": "stone_gate",
+     "becomes": "fortified_gate"
     }
    ]
   },

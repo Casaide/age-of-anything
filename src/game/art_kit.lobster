@@ -67,6 +67,7 @@ def ak_cache_frame(stem:string, n:int, name:string, sprite:string, w:int, h:int,
 
 var ak_dump = ""  // propframes dump:<folder>: every prop as a PNG (art review)
 def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
+    bake_pulse()
     if bake_quit or (not ak_rebake and frame_index(name) >= 0): return
     let stem = if bake_cache_dir != "": ak_stem(name) else: ""
     if stem != "" and not ak_rebake:

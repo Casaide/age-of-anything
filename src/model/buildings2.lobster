@@ -587,6 +587,62 @@ def bld_wall_spec(arch:string, stakes:bool, team:float3) -> BSpec:
 def bld_wall(arch:string, team:float3) -> BSpec:
     return bld_wall_spec(arch, false, team)
 
+// Fortified Wall (the University's Fortified Walls, age 3): the same curtain raised on a sloped stone foot,
+// faced in dressed blocks (earth walls are refaced in stone), a string course, stone corbels carrying a deeper
+// parapet and buttress piers at the posts. Same height and walk as the Stone Wall, so lines and gates still meet.
+def fort_stone(arch:string) -> string: return if wall_stone(arch) == "mud": "stone" else: wall_stone(arch)
+
+def bld_fortified_wall(arch:string, team:float3) -> BSpec:
+    let arms = map(BLD_LINKS.length) k: bld_fort_arm(arch, k)
+    let icon = mnode()
+    add_child(icon, bld_fort_post(arch))
+    add_child(icon, bld_fort_arm(arch, 0))
+    add_child(icon, bld_fort_arm(arch, 4))
+    let sp = bspec(bld_fort_post(arch))
+    sp.arms = arms
+    sp.icon = icon
+    return bteam(sp, team)
+
+def fort_trim(arch:string) -> MMat: return bflat(if fort_stone(arch) == "brick": html("#8a5a44") else: html("#b8ad98"), 0.85)
+
+def bld_fort_post(arch:string) -> MNode:
+    let body = mnode()
+    let m = bm(fort_stone(arch))
+    let trim = fort_trim(arch)
+    let h = bld_wh("fortified_wall")
+    add_child(body, bbox(bv(WALL_D, h, WALL_D), m, bv(0.0, h / 2.0, 0.0)))
+    add_child(body, bbox(bv(WALL_D - 0.24, 0.01, WALL_D - 0.24), bm("stone"), bv(0.0, h + 0.003, 0.0)))
+    add_child(body, bbox(bv(WALL_D + 0.18, 0.22, WALL_D + 0.18), m, bv(0.0, 0.11, 0.0)))   // the sloped foot, in two steps
+    add_child(body, bbox(bv(WALL_D + 0.09, 0.2, WALL_D + 0.09), m, bv(0.0, 0.32, 0.0)))
+    for([ -1.0, 1.0 ]) z:  // a buttress pier on each face, capped in the trim stone
+        add_child(body, bbox(bv(0.26, h * 0.78, 0.12), m, bv(0.0, h * 0.39, z * (WALL_D / 2.0 + 0.06))))
+        add_child(body, bbox(bv(0.3, 0.06, 0.16), trim, bv(0.0, h * 0.78 + 0.03, z * (WALL_D / 2.0 + 0.06))))
+    return body
+
+def bld_fort_arm(arch:string, k:int) -> MNode:
+    let body, l = bld_arm(k)
+    let m = bm(fort_stone(arch))
+    let trim = fort_trim(arch)
+    let dark = bflat(html("#1e1a16"), 1.0)
+    let h = bld_wh("fortified_wall")
+    let right = bv(1.0, 0.0, 0.0)
+    add_child(body, bbox(bv(l, h, WALL_D), m, bv(l / 2.0, h / 2.0, 0.0)))
+    add_child(body, bbox(bv(l, 0.01, WALL_D - 0.24), bm("stone"), bv(l / 2.0, h + 0.003, 0.0)))  // the walk
+    add_child(body, bbox(bv(l, 0.22, WALL_D + 0.18), m, bv(l / 2.0, 0.11, 0.0)))  // the sloped foot
+    add_child(body, bbox(bv(l, 0.2, WALL_D + 0.09), m, bv(l / 2.0, 0.32, 0.0)))
+    for([ -1.0, 1.0 ]) z:
+        add_child(body, bbox(bv(l, 0.05, 0.04), trim, bv(l / 2.0, h * 0.55, z * (WALL_D / 2.0 + 0.02))))  // the string course
+        let n = max(1, int(roundf(l / 0.25)))
+        for(n) c:  // the corbels under the parapet
+            add_child(body, bbox(bv(0.07, 0.1, 0.08), trim, bv((float(c) + 0.5) * l / float(n), h - 0.1, z * (WALL_D / 2.0 + 0.04))))
+        add_child(body, merlon(bv(l, 0.06, 0.08), trim, bv(l / 2.0, h - 0.02, z * (WALL_D / 2.0 + 0.04)), right))  // the parapet's lip, proud
+        add_child(body, merlon(bv(l, 0.1, 0.14), m, bv(l / 2.0, h + 0.05, z * (WALL_D / 2.0 - 0.04)), right))
+        bld_crenel(body, "stone", m, bv(0.2, 0.3, 0.14), bv(l / 2.0, h + 0.1, z * (WALL_D / 2.0 - 0.04)), right)
+        if k == 0:  // an arrow loop with its cross slit
+            add_child(body, bbox(bv(0.05, 0.3, 0.02), dark, bv(l * 0.5, h * 0.72, z * (WALL_D / 2.0 + 0.005))))
+            add_child(body, bbox(bv(0.14, 0.04, 0.02), dark, bv(l * 0.5, h * 0.74, z * (WALL_D / 2.0 + 0.005))))
+    return body
+
 def bld_walk_mat(arch:string) -> MMat: return bm(if wall_stone(arch) != "mud": "stone" else: "wood")
 
 def bld_stone_post(arch:string) -> MNode:
@@ -853,6 +909,38 @@ def bld_stone_gate(arch:string, team:float3) -> BSpec:
     sp.open = bld_gatehouse(arch, team, true)
     return bteam(sp, team)
 
+// Fortified Gate: the gatehouse on the fortified wall's sloped foot, refaced in stone, with an iron portcullis
+// (down behind the shut leaves, up in the passage's head when open) and a trim band at the walk.
+def bld_fortified_gate(arch:string, team:float3) -> BSpec:
+    let sp = bspec(bld_fort_gatehouse(arch, team, false))
+    sp.open = bld_fort_gatehouse(arch, team, true)
+    return bteam(sp, team)
+
+def bld_fort_gatehouse(arch:string, team:float3, open:bool) -> MNode:
+    let body = bld_gatehouse(if wall_stone(arch) == "mud": "stone" else: arch, team, open)
+    let m = bm(fort_stone(arch))
+    let trim = fort_trim(arch)
+    let iron = bflat(html("#3e4044"), 0.5, 0.7)
+    let h = bld_wh("fortified_gate")
+    let half = gate_span / 2.0
+    let inner = half - GATE_TOWER_W
+    let arch_h = GATE_ARCH * wall_rescale
+    for([ -1, 1 ]) side:  // the foot under each tower
+        let cx = float(side) * (half - GATE_TOWER_W / 2.0)
+        add_child(body, bbox(bv(GATE_TOWER_W + 0.16, 0.24, GATE_TOWER_D + 0.16), m, bv(cx, 0.12, 0.0)))
+    for([ -1.0, 1.0 ]) z:
+        add_child(body, bbox(bv(2.0 * inner, 0.06, 0.05), trim, bv(0.0, h - 0.03, z * (WALL_D / 2.0 + 0.05))))
+    let pz = -WALL_D / 2.0 + 0.12
+    let py = if open: arch_h - 0.12 else: 0.0
+    let ph = if open: 0.1 else: arch_h - 0.02
+    let bars = max(4, int(roundf(2.0 * inner / 0.14)))
+    for(bars) i:
+        add_child(body, bbox(bv(0.03, ph, 0.03), iron, bv(-inner + (float(i) + 0.5) * 2.0 * inner / float(bars), py + ph / 2.0, pz)))
+    if not open:
+        for([ 0.3, 0.65 ]) f:
+            add_child(body, bbox(bv(2.0 * inner, 0.03, 0.03), iron, bv(0.0, arch_h * f, pz)))
+    return body
+
 // Stone Gate, built into the wall: the curtain over the passage, flanking towers, the iron-banded leaves.
 def bld_gatehouse(arch:string, team:float3, open:bool) -> MNode:
     let body = mnode()
@@ -949,6 +1037,8 @@ def building(type:string, arch:string, team:float3) -> BSpec?:
         case "palisade": return bld_palisade(arch, team)
         case "palisade_gate": return bld_palisade_gate(arch, team)
         case "stone_gate": return bld_stone_gate(arch, team)
+        case "fortified_wall": return bld_fortified_wall(arch, team)
+        case "fortified_gate": return bld_fortified_gate(arch, team)
         case "wall_tower": return bld_wall_tower(arch, team)
         case "ladder": return bld_ladder(arch, team)
         case "outpost": return bld_outpost(arch, team)

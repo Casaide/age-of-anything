@@ -230,7 +230,9 @@
        "palisade",
        "palisade_gate",
        "wall",
-       "stone_gate"
+       "stone_gate",
+       "fortified_wall",
+       "fortified_gate"
       ],
       "stat": "cost",
       "pct": -50
@@ -455,10 +457,7 @@
    "gallop"
   ],
   "lacks": [
-   "palisade",
-   "palisade_gate",
-   "wall",
-   "stone_gate"
+   "fortified_walls"
   ],
   "body": "body.human",
   "head": "head.human",

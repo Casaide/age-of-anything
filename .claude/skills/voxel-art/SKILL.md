@@ -1,112 +1,60 @@
 ---
 name: voxel-art
-description: Make or change Age of Anything's voxel units, mounts, gear, engines, buildings or props (data/voxel/, view/voxel.lobster) as high-quality voxel art. Use for any new voxel body or gear, any fix to how one looks, and before showing Dominic a voxel picture. It starts from what makes the subject recognisable and how to show that cleanly at game size, then builds, checks and reviews.
+description: Make Age of Anything's voxel units, gear, engines, buildings or props (data/voxel/) as high-quality voxel art, from scratch. Use for any new voxel body or gear, any fix to how one looks, and before showing Dominic a voxel picture.
 ---
 
 # Voxel art
 
-The voxel builder makes every unit, mount, engine, building and prop from data (`data/voxel/`: bodies, gear, holds,
-materials; the format is in `docs/rendering.md`, "Voxel units"). The format is easy. The craft is making a 30 to 60
-pixel figure that is instantly readable, clean and appealing.
+Goal: a 30 to 60 px figure that reads instantly and looks real, the way the rat does. Dominic judges by **realism and
+proportion**. Chunky or big-headed reads as wrong.
 
-The goal is high-quality voxel art in its own right. It's not a match for some other art style. The voxel rat is the
-best so far, because it was worked round after round. "It looks cheaper, AND with problems" is the failure to avoid
-(Dominic, 2026-11-03).
+## The only two inputs
+**What it is** (the subject, in real life) and **how big** (its height on screen, in body units; a human is about 40,
+a rat about 20). Everything else comes from the subject itself, never from what's in the game now.
 
-## 1. Know the subject before you model it
+## Make it from scratch
+- **Never start from, tweak or compare against an existing body.** Old bodies anchor you to their faults: tweaks on
+  the same proportions read as "looks the same". Don't open the body you're replacing, and never show an old body
+  next to the new one.
+- Start from the real subject: write its `_doc` first (silhouette, proportions in its own measures, two or three
+  signature features, stance), then build the shapes from that.
+- Start a new body by copying `blank_body.json` (next to this file: a biped skeleton about 40 units tall, no shapes)
+  to `data/voxel/bodies/<new id>.json`. Scale its points to the size asked. Use a new id until Dominic signs off.
+- `bodies/rat.json` is the one reference for *method*: few shapes, strong tapers, a natural pose. Use it for how to
+  build, not for what to build.
 
-Before you write a shape, write down in the body's `_doc` what makes this thing *this* thing:
-- **Silhouette:** the shape you'd know from its shadow alone.
-- **Proportions:** in its own measures (heads tall, legs to body, neck to back).
-- **Signature features:** the two or three details people draw first.
-- **Stance and movement:** how it stands, which way each joint bends, where its weight sits, how it moves.
+## Read only this
+This file, `blank_body.json`, `rat.json`, and the gear entries you touch. Don't read `view/voxel.lobster` or
+`docs/rendering.md`: the cheat sheet below is enough.
 
-Then decide how to show each feature at game size:
-- **Exaggerate the defining feature, simplify the rest.** A figure 40 px tall has room for about three ideas.
-- **Separate features by value and hue, not just shape.** A dark muzzle on a light face; a pale belly; a bright weapon
-  against the body.
-- **Stay above a voxel.** Anything under about a voxel (half a body unit) vanishes or breaks into specks. Make it
-  bigger, or drop it.
-- **Make the silhouette alone say what it is.** Check it as a black shape in two facings.
+## Format cheat sheet
+- Body units: z up, y forward, x right, ground z 0. 2 voxels a unit. `size` scales the figure.
+- Points: `["point", x, y, z]` offsets. Legs: `hip`, `foot`, `bones` [thigh, shin] (their sum ≈ hip z − foot z, or
+  the knees bend more than 15°), `r` [thigh, knee, shin, ankle], `shapes` on `ankle`/`knee`.
+- Arms are capsules drawn by the engine: set `shoulder`, `bone`, `thick`, `sleeve`, `hand`.
+- Shapes: `cap` (to, r [a,b]), `ball`/`bead` (bead is hard), `disc` (n, r [radius, thick]), `box` (n = face normal,
+  `half` [across, depth along n, height], `round`), `chain`, `ring`. Plus `mirror`, `if`/`unless` (`helm`,
+  `helm:galea`, `look:N`, `armour`).
+- An oval section (a torso): two capsules side by side at x ±1.2.
+- Gear frame: `["hand", along, out, side]`. Fits are per body id; a new id gets only the `*` fit, so give it its own
+  fit for helmets and armour.
 
-Worked examples (each was a real failure):
-- **Bear.** It reads by the hump of its shoulders, heavy forelimbs, a long muzzle, small round ears, big flat-footed
-  paws and a forward lean. Armour must be **plates that follow that shape**: a collar over the hump, a plate down the
-  back, plates on the forelimbs, with the muzzle and paws bare. One capsule over the trunk made it "trunky": "with
-  helmet and armour they lose their shape". The aim is a big-shouldered bear in fitted plates, not a barrel with a
-  head.
-- **Beetle against spider.** A beetle is one hard, glossy domed shell, with a seam down the middle (the wing cases),
-  a small head with mandibles or a horn, and six short legs tucked under the shell. A spider is two soft parts and
-  eight long jointed legs that rise above its body and splay out. If both are "a body and some thin legs" they read
-  the same.
-- **Human.** 4.5 heads, legs about 2 heads to the hip, the head round and skull-shaped (not flat-topped), eyes a single
-  dark pixel, a helmet head-sized. Its skin is its palette's colour: lifted to white, or capped to grey, it "looks
-  unwell".
-- **Deer, horse, sheep.** Thin legs, about as long as hip to hoof. The front leg's middle joint bends forward and the
-  hock bends back. Reversed joints folded the deer's legs into an X.
-- **Buildings.** Big flat planes need texture and wear, or they look low-poly.
-  - Roof tiles: the courses run along the eaves; each tile's rounded ridge runs down the slope.
-  - Patterns average out to the material's own colour, not darker.
-  - Rocks read by a few big planes and sharp breaks, not a heap of turned cubes.
+## Design rules
+- **Humans:** about 7 heads, small head, legs half the height, shoulders 2 heads wide over narrower hips, thighs
+  tapering hard to knee and ankle. No eye pixels. Team colour on the tunic.
+- **Gear contrasts with what it covers** (a grey helmet reads as grey hair: use bronze, a rim, a crest) and follows
+  the real object (a scutum is curved: panels round an arc).
+- Exaggerate the defining feature and drop anything under a voxel. One light from the upper left. Colour ramps, never
+  white or grey by accident. Team colour on one clear region.
 
-## 2. Colour, light and finish
+## Build, check, look
+- `lobster voxel_proto.lobster -- out.ppm solo <body> [gear,...]` (from `src/`): that one body alone at 3x, in four
+  facings standing and four walk steps, cropped tight. This is the only picture you need. Look at it yourself before anyone else sees it.
+- Checks must pass first: `lobster voxel_check.lobster` and `lobster voxel_proto.lobster -- - check`.
+- Cloud threads: the device can't run lobster (aarch64). Stage the Linux lobster binary and its modules,
+  `src/{gen/*, view/voxel, voxel_check, voxel_proto}.lobster` and `data/`, then
+  `apt-get install libopengl0 libgl1 libegl1`.
 
-- **Ramps, not darkening.** Each material needs a ramp from light to shadow, and the shadow steps may shift hue
-  (cooler or warmer), not only darken. Keep each material's ramp short (3 to 4 bands) and its bands distinct from
-  its neighbours'.
-- **No white or grey by accident.** Nothing clips white in the lit band, and nothing loses its saturation. A light
-  palette is not brightened. A pale or white creature still has a visible ramp.
-- **Clean pixels.** No lone pixels or noise:
-  - Fur flecks and patterns stay subtle at game size.
-  - Thin parts (whiskers, tails, shafts) stay at least a voxel thick, or they break into specks.
-  - Outlines are continuous.
-- **One light.** The key light comes from the upper left, the ground shadow is cast by the same sun, and occlusion
-  darkens the creases. Shading must not fight the silhouette.
-- **Team colour** goes on one clear region (a scarf, a hem, a crest, a shield), never scattered.
-
-## 3. Build it in data
-
-- **Bodies:** `data/voxel/bodies/<id>.json`. A body can build on another (`base`, `add_shapes`, `remap`).
-- **Gear:** `data/voxel/gear.json`. Give a body its own armour fit (`fits` by body id) when the generic fit would hide
-  its shape.
-- **Engines and buildings:** written by Lobster programs (`voxel_engines_gen.lobster`, `voxel_buildings_gen.lobster`,
-  helpers in `gen/vx_write.lobster`). Never Python.
-- **Resolution:** 2 voxels a body unit, a voxel a baked pixel.
-  - Finer detail needs a finer bake. Not built yet; the idea is to bake at 4 and downsample (half-size voxels), for
-    finer edges, details and textures, at about 6x the bake time.
-  - Patterns (`materials.json`, `pattern`) are texture in the colour, limited by the same resolution.
-- **A body's intended oddities** (a frog's folded legs) go in its file's `check` block, with the reason in a `_doc`.
-  Never loosen a check globally.
-
-## 4. Check, then review
-
-Checks (they must pass before anyone sees a picture):
-- `lobster voxel_check.lobster` (in the quick batch):
-  - standing knees;
-  - skin as drawn, in every palette and every look (no white, no grey);
-  - kit that keeps the creature's shape;
-  - no two bodies alike;
-  - no specks.
-- `lobster voxel_proto.lobster -- - check`: feet on their shadow, standing and walking.
-- When Dominic names a fault, first add a check that catches it, then fix it. The check stays.
-
-Review: draw the body and look at it yourself, closely, before showing it.
-- **Sheets:** `voxel_proto.lobster -- out.ppm <mode>`.
-  - Modes: `creatures`, `legs <body> [gear,...]` (standing, walking and attacking in 8 facings), `skins`, `deaths`,
-    `animals`.
-  - Look at 3x (point filter), and at game size in a match capture.
-- **Questions to ask:**
-  - Does the silhouette alone say what it is?
-  - Are its signature features visible in every facing?
-  - Is any pixel noisy, any part speckled, any joint wrong?
-  - Is the colour alive in every palette?
-- **Work one creature at a time** to Dominic's sign-off. Coverage without quality is what made it look cheaper.
-
-## 5. Showing Dominic
-
-Show three things together:
-- before and after, in the same facing and palette;
-- a 3x close-up;
-- a match capture at game size.
-
-Say plainly what's still off. Don't call a body done until he's said so.
+## Showing Dominic
+Show the new thing on its own, at 3x, with a short line on what's still off. Fix one named fault at a time. Don't call
+it done until he says so.
