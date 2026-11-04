@@ -448,6 +448,24 @@ def lost(rng):
     return _rev(out, 1.0, 0.35)
 
 
+def town_bell(rng):
+    """Call to arms: the town centre's big bronze bell, struck hard four times."""
+    out = []
+    for k in range(4):
+        at = k * 0.42
+        mix_into(out, I.bell(I.note_hz("D3"), 2.2, rng, 1.0 - 0.08 * k, wood=False), seconds(at))
+        mix_into(out, I.bell(I.note_hz("D4"), 1.2, rng, 0.35, wood=False), seconds(at))
+    return _rev(out, 1.0, 0.3)
+
+
+def town_bell_clear(rng):
+    """Back to work: the same bell, two slow soft strokes, a fourth up."""
+    out = []
+    mix_into(out, I.bell(I.note_hz("D3"), 2.4, rng, 0.7, wood=False), 0)
+    mix_into(out, I.bell(I.note_hz("G3"), 2.4, rng, 0.6, wood=False), seconds(0.7))
+    return _rev(out, 1.0, 0.3)
+
+
 def alarm(rng):
     """Under attack: a war horn, twice, and the big drum."""
     out = []
@@ -589,6 +607,7 @@ TABLE = {
     "trained": (trained, 1, -4.0), "built": (built, 1, -3.0), "research": (research, 1, -5.0),
     "heal": (heal, 2, -12.0),
     "age": (age, 1, -1.0), "won": (won, 1, -1.0), "lost": (lost, 1, -1.0), "alarm": (alarm, 1, -1.0),
+    "town_bell": (town_bell, 1, -1.5), "town_bell_clear": (town_bell_clear, 1, -4.0),
     "hero_up": (hero_up, 1, -2.0), "hero_fell": (hero_fell, 1, -2.0),
     "meadow": (meadow, 1, -14.0), "town_quiet": (town_quiet, 1, -12.0), "town_busy": (town_busy, 1, -10.0),
 }
