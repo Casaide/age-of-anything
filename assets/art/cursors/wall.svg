@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<!-- Wall: the pointer over a battlement, an arrow going up it: right-click sends them up onto the wall. -->
+<defs>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="0.5" stop-color="#d4a640"/><stop offset="1" stop-color="#8a6420"/></linearGradient>
+<linearGradient id="stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8d2c4"/><stop offset="1" stop-color="#8c8676"/></linearGradient>
+</defs>
+<path d="M14,31 L14,18 L17.5,18 L17.5,21 L20.3,21 L20.3,18 L23.7,18 L23.7,21 L26.5,21 L26.5,18 L30,18 L30,31 Z" fill="url(#stone)" stroke="#1c120a" stroke-width="1.6" stroke-linejoin="round"/>
+<path d="M15,26 H29 M22,26 V31 M18,21.5 V26 M26,21.5 V26" fill="none" stroke="#5c5648" stroke-width="1"/>
+<path d="M22,2.5 L27.5,9 L24.2,9 L24.2,16 L19.8,16 L19.8,9 L16.5,9 Z" fill="#7fd060" stroke="#1c120a" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M3,2 L3,20 L7.5,16 L10.6,23 L14,21.5 L11,14.7 L17,14.5 Z" fill="url(#gold)" stroke="#1c120a" stroke-width="1.6" stroke-linejoin="round"/>
+<path d="M4.6,5.6 L4.6,16.4 L7.8,13.6 L13.6,13.4 Z" fill="#fff6d0" opacity="0.55"/>
+</svg>
