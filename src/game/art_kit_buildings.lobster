@@ -544,7 +544,7 @@ def akb_wall_tick():
     let stem = ak_stem(key)
     let data = if bake_cache_dir != "": read_file(stem + ".bin", true) else: nil
     if data:
-        let rec, err = flexbuffers_binary_to_value(typeof [ AkFrame ], data)
+        let rec, err = flexbuffers_binary_to_value(typeof [AkFrame], data)
         let fs = rec
         if not err and fs and ak_load_frames(fs): return
     let kept = []::AkFrame

@@ -613,7 +613,7 @@ def fe_traits(s:FeSide, at:float2, w:float, h:float, fs:int):
 var fe_turf_tex:resource<texture>? = nil
 def fe_turf(at:float2, size:float2, k:float, side:int):
     if not fe_turf_tex: fe_turf_tex = gl.create_texture(map(2): map(2): float4_0, texture_format_clamp | texture_format_nomipmap)
-    let tex = assert fe_turf_tex
+    let tex = fe_turf_tex
     ui_batch_flush()
     let local = size / k
     let o = float2 { float(side) * 200.0 - 300.0, 1400.0 }  // (world px: well inside the 128 x 128 map it says)
