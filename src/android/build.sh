@@ -32,8 +32,7 @@ echo "== The Android project"
 # Lobster's template finds the engine at ../../.. from its jni folder: the engine's folders linked beside it.
 for d in external include; do ln -sfn "$LOBSTER_SRC/dev/$d" "$out/dev/$d"; done
 rm -rf "$out/dev/src"
-rsync -a "$LOBSTER_SRC/dev/src/" "$out/dev/src/"   # (a copy: patched for GLES below)
-python3 "$here/android/lobster_android.py" "$out/dev/src"
+rsync -a "$LOBSTER_SRC/dev/src/" "$out/dev/src/"
 rm -rf "$proj"
 rsync -a --exclude 'build' --exclude '.gradle' --exclude 'app/src/main/assets' "$LOBSTER_SRC/dev/android-project/" "$proj/"
 mkdir -p "$proj/app/src/main/java/com/ageofanything/game"

@@ -345,7 +345,7 @@ read CLAUDE.md, learn `play.sh`'s options. This is the plan for someone who isn'
 ### Editor support
 
 - **Lobster:** the Lobster VS Code extension and language server (Lobster's `dev/lsp`) for hooks and models;
-  `lobsterfmt` and the warnings check (`lint.py`) in `creel check`.
+  `lobsterfmt` and the warnings check (`lint.sh`) in `creel check`.
 - **Data:** a JSON Schema for every data file, from the `"schema": "aow.<name>/<n>"` each already names (renamed
   `creel.<name>/<n>` with the engine), so an editor completes fields and flags typos before the game sees them.
 - **Maps:** the ASCII drawing is the editor (any text editor); later an in-game paint mode that writes the same file.
@@ -384,7 +384,7 @@ game's own options pass straight through. `creel help [command]` lists them; eve
 | `creel prebake` | Bakes fixed art once into the pack's `baked/` | `src/prebake.sh` |
 | `creel pack <id>` | Zips a pack with its signature (`id@version#sha256`) | `tools/mods/pack.py` |
 | `creel build mac\|deck\|android\|windows` | A release build of the game with its packs | `src/deck/build.sh`, `src/android/build.sh`; Mac and Windows none yet |
-| `creel fmt` | Formats every `.lobster` file | `lint.py --fix` |
+| `creel fmt` | Formats every `.lobster` file | `lint.sh --fix` |
 
 Step 1 below is only the table's right column wired to the left: no new behaviour. `new`, `replay`, schemas,
 `map`'s picture, the Mac and Windows builds and the live `voxel` window are the new work, in the order below.
