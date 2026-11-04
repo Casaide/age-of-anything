@@ -1,7 +1,7 @@
 # The Lobster the game runs on
 
 Goal: one clean fork branch, every change committed, each one proven needed by the game and sorted into
-"our bug" or "Lobster's bug". Audit of 2026-11-04. "Evidence" is what has actually been measured so far.
+"our bug" or "Lobster's bug". Audit of 2026-11-04. "Evidence" is what has actually been measured so far. Numbers in full: `performance.md`.
 
 ## Why it's unclear today
 
@@ -17,11 +17,11 @@ Goal: one clean fork branch, every change committed, each one proven needed by t
 
 | # | Change | Where it is | Game uses it | PR | Our bug or Lobster's? | Evidence |
 |---|---|---|---|---|---|---|
-| 1 | Buffer pool | `lsp-index`, `gl-pooled-buffers` | Yes, indirectly | #468 | Lobster's (macOS waits on buffer delete) | Stress test only: 133 ms to 3.5 ms. Not measured on the game |
-| 2 | `gl.draw_mesh` | `lsp-index` | Yes, 9 files | None | Unknown: may be how we draw | None |
+| 1 | Buffer pool | `lsp-index`, `gl-pooled-buffers` | Yes, indirectly | #468 | Lobster's (macOS waits on buffer delete) | Game: work about 29 ms to 2 ms, from a test build. Worst case 133 ms to 3.5 ms |
+| 2 | `gl.draw_mesh` | `lsp-index` | Yes, 9 files | None | Partly ours: we made a mesh per shape per frame (D-188) | Work 13.7 ms to 3.3 ms, 1,500 buffers a frame to 0. Against pooled `gl.polygon`: not measured |
 | 3 | `gl.buffers_made` | `lsp-index` | Only `game/perf.lobster` | None | Test tool | None |
-| 4 | `gl.window_focused` | `lsp-index`, `window-focused` | `game/pace.lobster` | None (you said don't) | Missing feature | None |
-| 5 | Frame sleep | `lsp-index`, `frame-sleep` | Yes, every frame | None (you said don't) | Unknown | Context switches 2,100 to 1,400 a second |
+| 4 | `gl.window_focused` | `lsp-index`, `window-focused` | `game/pace.lobster` | None (you said don't) | Missing feature | Match in the background 13-19% to 4.7% CPU |
+| 5 | Frame sleep | `lsp-index`, `frame-sleep` | Yes, every frame | None (you said don't) | Unknown | Context switches 2,100 to 1,400 a second, no heat measurement |
 | 6 | `gl.window_icon` | Stash only | `game.lobster`, uncommitted | None | Missing feature | None |
 | 7 | LSP, `--index`, `--warn-unused` (13 commits) | `lsp-index` | Not at runtime | #459 | Tooling, shouldn't be in the game's build | n/a |
 | 8 | `parsed_tokens`, lexer logging | Stash only | No, old formatter only | #466 | Goes with the old formatter | n/a |

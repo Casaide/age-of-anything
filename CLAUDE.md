@@ -13,7 +13,7 @@ macOS and the Steam Deck.
 | `docs/mvp-plan.md` | The 10-minute demo: scope, cut list, architecture, milestone overview, metrics, risks |
 | `docs/milestones/` | One file per milestone: plan, checklist, results, changes. Status lives here |
 | `docs/research.md` | Technical reference and sources (lockstep, pathing, Holepunch bridge) |
-| `docs/backlog.md` | Everything postponed, in rough priority order |
+| [Issues](https://github.com/Drache93/age-of-whatever/issues) | The backlog, bugs and upstream Lobster changes (`docs/backlog.md` is only an index of what moved) |
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
 | `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools
 | `docs/milestones/lobster-port.md` | The move from Godot to Lobster: what was ported, how it was checked, what's left |
@@ -21,7 +21,30 @@ macOS and the Steam Deck.
 
 Before starting a milestone, read `docs/milestones/<its file>.md` (and the related parts of
 `docs/mvp-plan.md`), write the plan into the milestone file, and keep its checklist current. If you postpone something,
-move it to `docs/backlog.md` rather than deleting it.
+open an issue labelled `backlog` rather than deleting it.
+
+## Issues, commits and pushes (Dominic, 2026-11-04)
+
+Things were getting out of hand: uncommitted work, overlapping engine changes, nothing to say why. These are not optional.
+
+**Issue first.** Everything we implement gets a GitHub issue before any code is written, saying the problem, the plan and how
+we'll know it's done. Find or open it first; a fix found while working gets its own issue. The backlog is issues (`backlog`), and
+so are bugs (`bug`). Commit messages name the issue (`#12`), and close it when it's actually done, with the evidence in it.
+
+**Commit.** Commit each tested piece straight away, by file name, so nothing sits uncommitted: `git status` is clean at the end of
+every task. Run `src/lint.sh` and the piece's tests first. Scratch goes in `.gitignore`d places, never left lying around.
+
+**Push.** Push `main` once its quick batch passes, at the end of each piece of work. Never force push. The Lobster fork's `game`
+branch is pushed with every commit to it, since the game can't be rebuilt without it.
+
+**Lobster.** The game builds only against the `game` branch of `Drache93/lobster`, checked out in `~/Dev/lobster`:
+- It's upstream master plus one commit per fix, however big, with a message detailed enough to split it into several commits or PRs
+  later. `bin/lobster` is always built from a clean checkout of it. No stashes, no uncommitted changes, no patching the engine in a game build.
+- Every change to Lobster has an `upstream-lobster` issue here, opened first: what it does, whether it's Lobster's bug or ours, the
+  evidence, and its PR if any. `reports/lobster-fork.md` is the overview.
+- Before changing Lobster, prove the fault is Lobster's and not our code. Reproduce it without the game if you can, measure with and
+  without the change, and keep it only if removing it breaks something. A workaround in the game may be the right fix.
+- Upstream PRs are made when wanted, each on its own branch from upstream master, one change only.
 
 ## Status
 
@@ -101,7 +124,7 @@ tools/           audio/ (the synth), blender/ (bpy model scripts -> assets/model
 
 ## Commands
 
-Lobster on this Mac: `~/Dev/lobster/bin/lobster` (alias it as `lobster`). Run programs from `src/`.
+Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `game` branch (alias it as `lobster`). Run programs from `src/`. No new Python: tools are Lobster programs or shell (#114 removes what's there).
 
 ```sh
 ./play.sh                                                          # the game: the title screen (Battle the AI, network, saves, Race Lab)
@@ -137,7 +160,9 @@ Never pass `--mir`: it miscompiles model and rig code (D-182). Lobster's window 
 game for it. A Lobster leak report at exit (`memory_leaks.txt`) is noise.
 
 **Format and warnings** (Dominic, 2026-11-03): every Lobster file is in `lobsterfmt`'s layout and every program
-compiles with no warnings. `python3 lint.py` checks both (`--fix` formats; in the quick batch); run it before a commit.
+compiles with no warnings. `./lint.sh` checks both (`--fix` formats; in the quick batch); run it before a commit.
+
+**Performance:** everything found so far is in `reports/performance.md`. `perf:` can't see the GPU: heat is measured in watts with `tools/perf/pw.c`.
 
 **Testing rhythm** (Dominic: iteration must stay fast, and the machine quiet). While working: `run_tests` after every
 change to `data/` or `src/`, the piece you're touching (`test_sim -- part:<name>`, `test_ai -- piece:<name>`,
