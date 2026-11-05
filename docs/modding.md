@@ -115,7 +115,8 @@ roster has, a new building without `extends` (it uses that one's model; new mode
 real buildings, research at a building that isn't there, a sound without `takes`.
 
 Sounds: `<mod>/audio/sfx/<name>_<take>.wav` (also `voice/`, `music/`), used before the game's file of that name. A new sound
-goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. `audio.json` and WAVs stay out of the mod's
+goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. `"draw": "beam"` on a shot look draws it as a line from muzzle to
+target while it flies, not as a flying shot; the sim is the same either way. `audio.json` and WAVs stay out of the mod's
 signature, so a sound never changes a race key.
 
 A mod match is local for now: the network doesn't compare mods yet (#132), and players with different

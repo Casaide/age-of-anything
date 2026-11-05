@@ -1472,6 +1472,11 @@ def draw_shots(alpha:float):
             let ahead = at(min(t + 0.03, 1.0))
             let dir = if magnitude(ahead - p) > 0.0001: normalize(ahead - p) else: normalize(b - a + float2 { 0.0001, 0.0 })
             let lift = h * 4.0 * t * (1.0 - t)
+            if st.beam:
+                let fade = 1.0 - t * t
+                if st.glow.w > 0.0: ui_line(a, b, st.w * 2.6, float4 { st.glow.x, st.glow.y, st.glow.z, 0.4 * fade })
+                ui_line(a, b, st.w, float4 { st.col.x, st.col.y, st.col.z, fade })
+                continue
             if st.glow.w > 0.0:  // a bolt of light: a soft halo under its core
                 ui_line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2, float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 })
             if st.len > 0.0: ui_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w, st.col)
