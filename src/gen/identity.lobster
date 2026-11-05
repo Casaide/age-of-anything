@@ -10,7 +10,7 @@ var id_cache = dictionary<string, JV>(31)
 
 def id_load(root:string):
     id_groups = at(load_json(root + "/groups.json"), "groups")
-    id_buildings = at(load_json(root + "/buildings.json"), "buildings")
+    id_buildings = at(lib_data("buildings.json"), "buildings")
     id_cache = dictionary<string, JV>(31)
 
 def starts_with(s:string, pre:string) -> bool: return s.length >= pre.length and substring(s, 0, pre.length) == pre

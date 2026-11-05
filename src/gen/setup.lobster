@@ -78,7 +78,7 @@ def load_map(map_id:string):
     let d = load_json(data_path("maps/" + map_id + ".json"))
     assert gstr(d, "schema", "") == "aow.map/2" and gstr(d, "id", "") == map_id
     su_map = d
-    let types = at(load_json(lib_root + "/terrain.json"), "terrain")
+    let types = at(lib_data("terrain.json"), "terrain")
     tr_names = sorted_strs(types.keys)
     W = as_int(at(d, "width"))
     H = as_int(at(d, "height"))
@@ -287,14 +287,14 @@ def add_animal_types(d:JV):
 // ---- building types (Economy.load_btypes) and research (Tech.load_tech)
 
 def load_btypes():
-    let d = at(load_json(lib_root + "/buildings.json"), "buildings")
+    let d = at(lib_data("buildings.json"), "buildings")
     su_btype_ids = sorted_strs(filter(d.keys) id: gstr(at(d, id), "status", "") != "planned")
     su_btypes = map(su_btype_ids) id: at(d, id)
 
 def built(item:JV) -> bool: return gstr(item, "status", "") != "planned"
 
 def load_tech_data():
-    let d = load_json(lib_root + "/tech.json")
+    let d = lib_data("tech.json")
     su_ages = filter(glist(d, "ages")) a: built(a)
     // a creature's or culture's own research: only theirs (Identity.owners)
     let owners = jobj()

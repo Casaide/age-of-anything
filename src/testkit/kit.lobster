@@ -176,7 +176,7 @@ def think_all(sides:[Side]):
 // load_ai_config (gen/start.lobster) at any level, after `tweak` has had the raw config (the test's
 // changes, made before Bot.new applies the level).
 def ai_config(lvl:string, tweak):
-    let cfg0 = ai_ints(load_json(lib_root + "/ai.json"))
+    let cfg0 = ai_ints(lib_data("ai.json"))
     tweak(cfg0)
     cfg_nums.clear()
     cfg_strs.clear()

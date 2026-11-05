@@ -93,7 +93,7 @@ def music_play(m:JV, piece:string):
     print "music: {piece}, {music_ids.length} tracks playing"
 
 def music_start():
-    let m = at(load_json("../data/audio.json"), "music")
+    let m = at(lib_data("audio.json"), "music")
     music_cfg = m
     music_play(m, gstrs(m, "rotation")[0])
 

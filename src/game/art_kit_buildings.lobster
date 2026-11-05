@@ -24,7 +24,7 @@ var akb_baked = 0
 def akb_bdata() -> JV:
     let d = akb_data
     if d: return d
-    let n = load_json(lib_root + "/buildings.json")
+    let n = lib_data("buildings.json")
     akb_data = n
     return n
 
