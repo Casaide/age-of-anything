@@ -8,4 +8,6 @@
 
 **Funny moments.** The headless match passed first, then the real window fell over asking the art kit whether a `pen` that no longer exists is a gate. `golden.sh` had also been failing on main for days; working out why turned up a second cause, walls for every race, hiding behind the fortified walls.
 
-**Ideas parked.** A real beam for lasers; the other data files, each with its own test case; new building models for mods.
+**Later that day.** Dominic asked why the beam was parked, then asked for knobs rather than a beam type (D-214). The first `"draw": "beam"` was thrown away the same hour.
+
+**Ideas parked.** The other data files, each with its own test case; new building models for mods.
