@@ -413,7 +413,7 @@ def akb_types() -> [string]:
     let rest = []::string
     for(b.keys) t:
         if not has_s(types, t) and gstr(at(b, t), "status", "") != "planned": rest.push(t)
-    return append(types, sorted_strs(rest))
+    return filter(append(types, sorted_strs(rest))) t: has(b, t)  // (a mod can take out what the menus name)
 
 // Every look of a building in an architecture: [model, suffix] (the base, age looks, variants, a gate's ways).
 def akb_looks_of(arch:string, type:string) -> [[string]]:
@@ -423,13 +423,13 @@ def akb_looks_of(arch:string, type:string) -> [[string]]:
     for(by_age.keys) age: out.push([ as_str(at(by_age, age)), "@" + age ])
     let nv = gint(gobj(d, "variants"), type, 1)
     for(nv - 1) v: out.push([ "", "#{v + 1}" ])
-    if gbool(gobj(gobj(d, "buildings"), type), "gate", false):
+    if gbool(at(gobj(d, "buildings"), type), "gate", false):
         for(AKB_ALONG.slice(1, -1)) sfx: out.push([ "", sfx ])
     return out
 
 // Whether a building look has broken-up stages: not walls and gates, nor what has a near layer.
 def akb_breaks(type:string, lk:Look) -> bool:
-    return not lk.arms.length and (lk.front == "-" or lk.front == "") and not gbool(gobj(gobj(akb_bdata(), "buildings"), type), "gate", false)
+    return not lk.arms.length and (lk.front == "-" or lk.front == "") and not gbool(at(gobj(akb_bdata(), "buildings"), type), "gate", false)
 
 // Bake every look of every building of these architectures the pack lacks (all with ak_rebake). Frames baked.
 def bake_buildings_for(archs:[string]) -> int:
