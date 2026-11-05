@@ -813,7 +813,27 @@ def g_heroes():
 // Milestone 21's mods (gen/mods.lobster): the example mod merges in load order, its parts only come when
 // asked for and allowed, the race key holds the mod set (and a race without mods keeps its key), and
 // every broken fixture in tests/mods is refused with its reason.
+def g_merge():
+    let base = parse_json("\{\"a\":\{\"hp\":1,\"cost\":\{\"wood\":5\},\"trains\":[\"x\",\"y\"]\},\"b\":\{\"hp\":2\},\"list\":[\{\"id\":\"p\",\"t\":1\},\{\"id\":\"q\",\"t\":2\}],\"ages\":[\{\"age\":1\},\{\"age\":2\}],\"plain\":[1,2]\}")
+    def merged(mod:string) -> JV: return data_merge(base, parse_json(mod))
+    expect(stringify(merged("\{\}")) == stringify(base), "merge: nothing changes nothing")
+    expect(stringify(at(at(merged("\{\"a\":\{\"cost\":\{\"food\":1\}\}\}"), "a"), "cost")) == stringify(parse_json("\{\"wood\":5,\"food\":1\}")), "merge: objects merge")
+    expect(not has(merged("\{\"b\":\{\"remove\":true\}\}"), "b"), "merge: remove takes an entry out")
+    expect(as_int(at(at(merged("\{\"c\":\{\"extends\":\"b\",\"size\":3\}\}"), "c"), "hp")) == 2, "merge: extends copies a sibling")
+    expect(gstrs(at(merged("\{\"a\":\{\"+trains\":[\"z\"]\}\}"), "a"), "trains").length == 3, "merge: +key appends")
+    expect(strs_eq(gstrs(at(merged("\{\"a\":\{\"-trains\":[\"x\"]\}\}"), "a"), "trains"), [ "y" ]), "merge: -key takes items out")
+    let by_id = glist(merged("\{\"list\":[\{\"id\":\"q\",\"t\":9\},\{\"id\":\"p\",\"remove\":true\},\{\"id\":\"r\",\"t\":3\}]\}"), "list")
+    expect(by_id.length == 2 and gstr(by_id[0], "id", "") == "q" and as_int(at(by_id[0], "t")) == 9 and gstr(by_id[1], "id", "") == "r", "merge: a list with ids merges item by item")
+    expect(glist(merged("\{\"ages\":[\{\"age\":2,\"remove\":true\}]\}"), "ages").length == 1, "merge: ages by their age")
+    expect(glist(merged("\{\"plain\":[3]\}"), "plain").length == 1, "merge: other lists are replaced whole")
+    let two = data_merge(data_merge(base, parse_json("\{\"b\":\{\"hp\":7\}\}")), parse_json("\{\"b\":\{\"hp\":8\}\}"))
+    expect(as_int(at(at(two, "b"), "hp")) == 8, "merge: the later mod wins")
+
 def g_mods():
+    g_merge()
+    let looks = lib_data("shots.json")
+    for(looks.keys) k:
+        if not starts_with(k, "_"): expect(mod_check_shot(k, at(looks, k)) == "", "shots: the game\'s {k} is sound ({mod_check_shot(k, at(looks, k))})")
     let base_anything = load_rules("anything")
     let base_default = load_rules("default")
     let plain_key = rstr(generate("future soldiers", base_anything, 0), "key")
@@ -835,7 +855,7 @@ def g_mods():
     let tags = gstrs(at(sk, "eval"), "tags")
     let shot = gobj(mod_shots, "pulse")
     expect(has_s(tags, gstr(shot, "tag", "-")), "mods: the pulse rifle\'s tags call the mod\'s shot (pulse: {gstr(shot, "tag", "none")})")
-    let bad = [ "bad_era", "needs_other", "future_game", "bad_file", "clash" ]
+    let bad = [ "bad_era", "needs_other", "future_game", "bad_file", "clash", "no_hub", "bad_trains", "bad_research", "bad_extends", "bad_age", "new_building", "no_takes", "bad_draw", "bad_knob", "bad_pulses", "bolt_hold" ]
     fresh_lib()
     expect(strs_eq(mods_use(append(bad, [ "scifi_test" ]), append(mod_roots, [ "../tests/mods" ])), [ "scifi_test" ]), "mods: broken mods refused, a good one beside them still loads")
     for(bad) id:

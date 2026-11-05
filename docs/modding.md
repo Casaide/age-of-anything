@@ -73,7 +73,7 @@ game size: the voxel-art skill (`.claude/skills/voxel-art/`).
   game one and changes only what you name.
 - `mod.json` `check.prompts`: the prompts that show your parts (they drive the checks).
 
-- Buildings (`data/buildings.json`; mods can't change them yet, `docs/engine-plan.md` step 2): the sim and the
+- Buildings: `data/buildings.json` in your mod changes them (below). The sim and the
   bots never look a building up by its id, only by what it does, so a building can be called anything. A building
   says what it does by `roles`, a list of:
 
@@ -100,6 +100,28 @@ cd src && lobster races.lobster -- mods:<id> anything "<prompt>"   # the whole r
 ```
 
 A refusal says exactly what to fix ("parts.json helm.x: needs 'tags' (a list)").
+
+## 4b. Change the game itself: buildings, tech, the AI, sound
+
+A mod can bring `data/buildings.json`, `tech.json`, `ai.json` and `audio.json`. They merge over the game's for every
+player in a match using the mod: the same id changes that entry (objects merge), `"remove": true` takes it out,
+`"extends": "<id>"` copies a sibling, `"+key"` adds to a list and `"-key"` takes items out. A list with ids (`research`, or
+`ages` by their `age`) merges item by item; any other list, such as `build_order`, is replaced whole. In a rule, `"-roster":
+["large"]` takes lines out by slot.
+
+Taking a building out takes its research with it, an age stops asking for it, and the bots skip what
+asked for it. The rest is refused at load with the reason: no `hub` or `housing` building left, `trains` naming a line no
+roster has, a new building without `extends` (it uses that one's model; new models come later), ages that don't run 1, 2, 3 at
+real buildings, research at a building that isn't there, a sound without `takes`.
+
+Sounds: `<mod>/audio/sfx/<name>_<take>.wav` (also `voice/`, `music/`), used before the game's file of that name. A new sound
+goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. A shot look is knobs that mix freely (`arc`, `form`, `pulses`, `scatter`, `wobble`, `jag`, `fade` and more; `data/shots.json` says what each
+does, and `"extends": "arrow"` starts from one of the game's). They only change what's drawn: the sim fires one shot and decides one hit. `audio.json` and WAVs stay out of the mod's
+signature, so a sound never changes a race key.
+
+A mod match is local for now: the network doesn't compare mods yet (#132), and players with different
+mods would fall out of step. `mods/scifi_short` is the example: infantry only, two ages:
+`./play.sh lobby mods:scifi_test,scifi_short rules:short`. `src/test_mod_match.lobster` plays it to the end.
 
 ## 5. Look at it
 
