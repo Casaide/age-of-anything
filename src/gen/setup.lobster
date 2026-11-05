@@ -252,7 +252,8 @@ def type_vectors(k:int):
     let no_heal = gstrs(at(su_rules, "combat"), "heal_not")
     t_no_heal.push(if any_in(eval_tags(e), no_heal): 1 else: 0)
     t_sight.push(gint(e, "sight", 0))
-    t_role.push(if t_healer[k] or t_harmless[k] or has_s(eval_tags(e), "machine"): 2 elif has_s(eval_tags(e), "mounted"): 3 elif ranged: 1 else: 0)
+    let combat = at(su_rules, "combat")
+    t_role.push(if t_healer[k] or t_harmless[k] or has_s(eval_tags(e), rstr(combat, "band_machine")): 2 elif has_s(eval_tags(e), rstr(combat, "band_mounted")): 3 elif ranged: 1 else: 0)
 
 // Animal types (Animals.add_types), owned by gaia, after the players'.
 def add_animal_types(d:JV):

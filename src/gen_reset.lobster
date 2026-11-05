@@ -154,6 +154,7 @@ for(lets) v: save += "    {v}.clear()\n"
 for(lets) v: save += "    s.{v}.forkv() k, v: {v}.set(k, v)\n"
 save += "    pad_saved_columns()  // (a save from an older build: its missing per-unit and per-building columns, D-141)\n"
 save += "    roles_from_data()  // (... and its building types\' roles, D-192)\n"
+save += "    staples_from_data()  // (... and its staple resources)\n"
 save += "    spatial_clear()  // (... and its spatial buckets, which an older build filled over the whole map)\n"
 save += "    return s.bots\n"
 assert write_file("gen/save.lobster", save, 1)
