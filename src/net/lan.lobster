@@ -79,6 +79,17 @@ def lan_scan(seconds:float) -> [LanHost]:
         at += batch
     return found
 
+// The packs in use, as a hello carries them, and what's wrong if a joiner's differ from ours.
+def net_packs() -> string: return concat_string(lib_mods, ",")
+
+def packs_differ(theirs:string) -> string:
+    let them = if theirs == "": []::string else: tokenize(theirs, ",", "")
+    for(lib_mods) sig:
+        if not has_s(them, sig): return "this host plays with the mod {sig_id(sig)} ({sig}), and you don\'t"
+    for(them) sig:
+        if not has_s(lib_mods, sig): return "you\'re playing with the mod {sig_id(sig)} ({sig}), and this host isn\'t"
+    return ""
+
 // The host's door: accept whoever knocks; answer a '?' and let it go; a 'J' with our version becomes the
 // match's link (true once there is one). A 'J' from another version gets an 'X' with why.
 class HostDoor:
@@ -116,12 +127,14 @@ def door_tick(d:HostDoor) -> Link?:
                     net_send(k, 'I', "{d.name}|{net_version()}|{d.map}")
                     k.closed = true
                 elif f[0] == "J":
-                    if f[1] == net_version(): joined = k
+                    let hello = tokenize(f[1], "|", "")
+                    let why = if hello[0] != net_version(): "this host plays another build of the game ({net_version()}, yours {hello[0]})" else: packs_differ(if hello.length > 1: hello[1] else: "")
+                    if why == "": joined = k
                     else:
-                        net_send(k, 'X', "this host plays another build of the game ({net_version()}, yours {f[1]})")
+                        net_send(k, 'X', why)
                         k.closed = true
     d.knocking = filter(d.knocking) k: not k.closed and (not joined or k != joined)
     return joined
 
 // The joiner's side: once connected, say who's joining (with our version).
-def join_hello(link:Link): net_send(link, 'J', net_version())
+def join_hello(link:Link): net_send(link, 'J', net_version() + "|" + net_packs())
