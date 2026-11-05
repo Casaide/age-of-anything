@@ -1,0 +1,6 @@
+{
+ "_doc": "The match this mod is for: infantry only (spears, swords, rifles) and no riders, archers, siege or heroes.",
+ "extends": "default",
+ "+era": ["scifi"],
+ "-roster": ["archer", "large", "healer", "mounted_archer", "scout", "war_beast", "ram", "catapult", "bolt_thrower", "siege_tower", "unique", "sapper", "great_sling", "trader", "hero"]
+}
