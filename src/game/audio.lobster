@@ -3,8 +3,6 @@
 // turn, a gap it won't repeat within, and a bus (a volume in dB); voices are a creature's
 // select / ack / die takes.
 
-let AUDIO_DIR = "../assets/audio"
-
 class Sound:
     takes:int
     gap:float  // seconds
@@ -46,7 +44,7 @@ def play_sound(name:string, db:float):
     s.last = now
     let n = s.next % s.takes + 1
     s.next++
-    let ch = play_wav("{AUDIO_DIR}/sfx/{name}_{n}.wav")
+    let ch = play_wav(audio_file("sfx/{name}_{n}.wav"))
     if ch > 0: sound_volume(ch, db_to_volume(buses.get(s.bus, 0.0) + db) * float(sound_level) / 10.0)
 
 // One of the player's creature voices: "select", "ack" or "die".
@@ -56,7 +54,7 @@ def say(p:int, kind:string):
     if now - voice_last < 0.4: return
     voice_last = now
     let n = rnd(max(1, voice_takes.get(kind, 1))) + 1
-    let ch = play_wav("{AUDIO_DIR}/voice/{voice_of[p]}_{kind}_{n}.wav")
+    let ch = play_wav(audio_file("voice/{voice_of[p]}_{kind}_{n}.wav"))
     if ch > 0: sound_volume(ch, db_to_volume(buses.get("Voice", 0.0)) * float(sound_level) / 10.0)
 
 // ---- the music (Audio.music, battle): three pieces (data/audio.json music.pieces, each a loop's
@@ -83,7 +81,7 @@ def music_play(m:JV, piece:string):
     music_gen++
     music_since = gl.time()
     for(gstrs(m, "stems")) stem:
-        let id = play_music("{AUDIO_DIR}/music/{piece}_{stem}.ogg", -1)
+        let id = play_music(audio_file("music/{piece}_{stem}.ogg"), -1)
         if id > 0:
             music_volume(id, 0.0)
             music_ids.push(id)
@@ -150,7 +148,7 @@ let amb_now = [ 0.0, 0.0, 0.0 ]
 
 def ambience_start():
     for([ "sfx/meadow_1.wav", "sfx/town_quiet_1.wav", "sfx/town_busy_1.wav" ]) f:
-        let id = play_music("{AUDIO_DIR}/{f}", -1)
+        let id = play_music(audio_file(f), -1)
         if id > 0: music_volume(id, 0.0)
         amb_ids.push(id)
     print "ambience: {(filter(amb_ids) id: id > 0).length} loops playing"
