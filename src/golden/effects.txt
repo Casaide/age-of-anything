@@ -33,7 +33,8 @@ stonecutting: Buildings +10% HP, +1 melee armour, +1 pierce armour
 lifting_frames: Workers build 20% faster
 bastion: Watchtowers become Bastions
 slit_windows: Watchtowers, Bastions, Castles and Town Centers +1 range
-thick_walls: Palisades, Palisade Gates, Walls and Stone Gates +100% HP
+thick_walls: Palisades, Palisade Gates, Walls, Stone Gates, Fortified Walls and Fortified Gates +100% HP
+fortified_walls: Walls become Fortified Walls, Stone Gates become Fortified Gates
 siege_wrights: Siege units (not ram, docks) +1 range
 gnawing_teeth: Every unit (not worker, heal, siege) +2 bonus.building
 clever_hands: Workers build 25% faster
