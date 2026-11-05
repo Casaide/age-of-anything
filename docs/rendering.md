@@ -30,7 +30,8 @@ Coordinates are body units: z up, y forward, x right, the ground at z 0. A body 
   the sprite shader's key.
 - `bodies/<creature>.json` (the id is the generator's creature): `size`, `fur` (flecks), `skin`/`pale` (when the race
   gives none), `skin_scale`, `reach` (a foot's swing: the walk steps by ground covered with it), and:
-  - `points`: named points, `{at, bob}` (bob: how far it rises in the walk).
+  - `points`: named points, `{at, bob}` (bob: how far it rises in the walk); with a `gait`, also `lean`, `sway`, `drive` (how far it goes forward walking, over the planted foot, into a blow).
+  - `gait` (optional; without it a foot's sine and an arm's reach): `heel`, `toe`, `toes` (the foot's roll), `arm`, `held` (hands' swing against the leg), `twist` (shoulders walking), `front`, `back`, `dip`, `turn` (a blow's stance and body).
   - `legs`: a pair each (the right one given, mirrored): `hip` (a point and offset), `foot` (where it stands),
     `stride`, `lift`, `phase` (degrees: a back pair 180), `bones` (two lengths), `pole` (where the middle joint
     bends: a knee forward, a beast's front elbow back), `r` (thigh and shin radii), `mats`, and `shapes` on `hip`,
