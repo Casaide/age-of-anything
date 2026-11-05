@@ -11,35 +11,116 @@ class ShotStyle:
     len:float
     w:float
     col:float4
-    glow = float4_0  // a soft halo round it (a mod's bolt of light); alpha 0: none
+    glow = float4_0  // a soft halo round it; alpha 0: none
     sticks = true    // a miss stands in the ground (false: a bolt of light)
-    beam = false     // drawn as a line from muzzle to target while the shot flies (shots.json "draw": "beam")
+    beam = false     // a line from muzzle to target, for `hold` seconds
+    hold = 0.12
+    pulses = 1
+    gap = 0.0
+    scatter = 1
+    spread = 0.0
+    wobble = 0.0
+    jag = 1
+    fade = 0.0
+
+    // One flying shot: the sim's own timing, no timers of the view's.
+    def plain() -> bool: return pulses == 1 and scatter == 1 and not beam
 
 def hex_col(h:string) -> float4:
     def byte(i:int) -> float: return float(string_to_int(h.substring(i, 2), 16)) / 255.0
     return float4 { byte(0), byte(2), byte(4), 1.0 }
 
 let SHOT_STYLES = dictionary<string, ShotStyle>(16)
-for([ [ "arrow", "0.22", "7.0", "1.0", "e8dcc0" ], [ "bolt", "0.08", "6.0", "1.4", "c8c0a8" ], [ "javelin", "0.3", "11.0", "1.3", "b08a5a" ],
-      [ "stone", "0.18", "0.0", "2.4", "8a8a80" ], [ "dart", "0.04", "4.0", "0.8", "2a2a20" ], [ "ball", "0.02", "0.0", "1.8", "303030" ],
-      [ "boulder", "0.42", "0.0", "4.2", "8f8a7c" ], [ "siege_bolt", "0.1", "13.0", "1.9", "a89a7c" ], [ "sling_stone", "0.5", "0.0", "5.0", "8f8a7c" ] ]) s:
-    SHOT_STYLES.set(s[0], ShotStyle { string_to_float(s[1]), string_to_float(s[2]), string_to_float(s[3]), hex_col(s[4]) })
+
+// A look's knobs (data/shots.json with the mods' over it; mod_check_shot has said they're sound).
+def shot_style_of(m:JV) -> ShotStyle:
+    def num(k:string, f:float) -> float: return if has(m, k): as_float(at(m, k)) else: f
+    let s = ShotStyle { num("arc", 0.0), num("len", 0.0), num("w", 1.0), hex_col(substring(rstr(m, "col"), 1, 6)) }
+    if has(m, "glow"): s.glow = hex_col(substring(rstr(m, "glow"), 1, 6))
+    s.sticks = gbool(m, "sticks", true)
+    s.beam = gstr(m, "form", "bolt") == "beam"
+    s.hold = num("hold", 0.12)
+    let pulses = gobj(m, "pulses")
+    s.pulses = gint(pulses, "count", 1)
+    s.gap = if has(pulses, "gap"): as_float(at(pulses, "gap")) else: 0.0
+    let scatter = gobj(m, "scatter")
+    s.scatter = gint(scatter, "count", 1)
+    s.spread = if has(scatter, "spread"): as_float(at(scatter, "spread")) else: 0.0
+    s.wobble = num("wobble", 0.0)
+    s.jag = max(1, gint(m, "jag", 1))
+    s.fade = num("fade", 0.0)
+    return s
 
 def shot_style(kind:string) -> ShotStyle:
     let s = SHOT_STYLES.get(kind)
     if s: return s
-    let m = get(mod_shots, kind)  // a mod's look (its shots.json: colours as "#rrggbb")
-    if m:
-        def num(k:string, f:float) -> float: return if has(m, k): as_float(at(m, k)) else: f
-        let made = ShotStyle { num("arc", 0.0), num("len", 0.0), num("w", 1.0), hex_col(substring(gstr(m, "col", "#ffffff"), 1, 6)) }
-        if has(m, "glow"): made.glow = hex_col(substring(gstr(m, "glow", "#ffffff"), 1, 6))
-        made.sticks = gbool(m, "sticks", true)
-        made.beam = gstr(m, "draw", "") == "beam"
-        SHOT_STYLES.set(kind, made)
-        return made
-    let a = SHOT_STYLES.get("arrow")
-    assert a
-    return a
+    let m = get(lib_data("shots.json"), kind)
+    let made = if m: shot_style_of(m) else: shot_style("arrow")
+    SHOT_STYLES.set(kind, made)
+    return made
+
+// A flying shot at u (0..1) of its way from a to b, with a speck of shadow under it.
+def draw_bolt(st:ShotStyle, a:float2, b:float2, u:float, alpha:float):
+    let h = magnitude(b - a) * st.arc
+    def at(v:float) -> float2: return a + (b - a) * v - float2 { 0.0, h * 4.0 * v * (1.0 - v) }
+    let p = at(u)
+    let ahead = at(min(u + 0.03, 1.0))
+    let dir = if magnitude(ahead - p) > 0.0001: normalize(ahead - p) else: normalize(b - a + float2 { 0.0001, 0.0 })
+    let lift = h * 4.0 * u * (1.0 - u)
+    let col = float4 { st.col.x, st.col.y, st.col.z, st.col.w * alpha }
+    if st.glow.w > 0.0:  // a bolt of light: a soft halo under its core
+        ui_line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2, float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 * alpha })
+    if st.len > 0.0: ui_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w, col)
+    else: fx_circle(p, st.w, col)
+    fx_circle(p + float2 { 0.0, lift + 1.0 }, 0.8, float4 { 0.0, 0.0, 0.0, 0.25 * alpha })
+
+// What the view draws for one sim shot beyond a plain flying one: its pulses and pellets, on their own timers.
+class Tracer:
+    a:float2
+    b:float2
+    t:float  // seconds since it set off (below 0: still waiting)
+    dur:float
+    st:ShotStyle
+    seed:float
+    sound:string
+
+var fx_tracers = []::Tracer
+
+def fx_fire(st:ShotStyle, a:float2, b:float2, flight:float, sound:string):
+    for(st.pulses) p:
+        for(st.scatter) s:
+            let angle = rnd_range(0.0, 360.0)
+            let r = if st.scatter > 1: st.spread * sqrt(rnd_float()) else: 0.0
+            let to = b + float2 { cos(angle) * r, sin(angle) * r * 0.5 }
+            let again = if p > 0 and s == 0: sound else: ""  // (the sim's shot sounds the first)
+            fx_tracers.push(Tracer { a, to, -float(p) * st.gap, if st.beam: st.hold else: flight, st, rnd_range(0.0, 360.0), again })
+
+def tracers_tick(dt:float):
+    for(fx_tracers) t:
+        t.t += dt
+        if t.t >= 0.0 and t.sound != "":
+            play_sound(t.sound, -4.0)
+            t.sound = ""
+    fx_tracers = filter(fx_tracers) t: t.t < t.dur
+
+def draw_beam(tr:Tracer, alpha:float):
+    let st = tr.st
+    let across = normalize(float2 { tr.b.y - tr.a.y, tr.a.x - tr.b.x } + float2 { 0.0001, 0.0 })
+    def point(i:int) -> float2:
+        let u = float(i) / float(st.jag)
+        let shake = if i == 0 or i == st.jag: 0.0 else: st.wobble * sin(tr.seed + float(i) * 137.0 + tr.t * 900.0)
+        return tr.a + (tr.b - tr.a) * u + across * shake
+    for(st.jag) i:
+        if st.glow.w > 0.0: ui_line(point(i), point(i + 1), st.w * 2.6, float4 { st.glow.x, st.glow.y, st.glow.z, 0.4 * alpha })
+    for(st.jag) i: ui_line(point(i), point(i + 1), st.w, float4 { st.col.x, st.col.y, st.col.z, alpha })
+
+def draw_tracers():
+    for(fx_tracers) tr:
+        if tr.t >= 0.0:
+            let u = tr.t / tr.dur
+            let alpha = if tr.st.fade > 0.0: clamp((1.0 - u) / tr.st.fade, 0.0, 1.0) else: 1.0
+            if tr.st.beam: draw_beam(tr, alpha)
+            else: draw_bolt(tr.st, tr.a, tr.b, u, alpha)
 
 let RADIUS_PX = 64.0 * 0.5 * 1.41421356 / 1000.0  // canvas px a milli-tile of radius
 let STUCK_TIME = 3.0
@@ -183,6 +264,7 @@ def fx_puff(at:float2, tip:float):
 
 def fx_clear():
     fx_sparks = []
+    fx_tracers = []
     fx_dusts = []
     fx_stuck = []
     fx_heals = []
@@ -190,6 +272,7 @@ def fx_clear():
     fx_ruins = []
 
 def fx_tick(dt:float):
+    tracers_tick(dt)
     for(fx_sparks) s: s.t += dt
     fx_sparks = filter(fx_sparks) s: s.t < 0.25
     for(fx_dusts) d: d.t += dt

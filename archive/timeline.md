@@ -191,3 +191,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-04: No Python left in the project: tools are Lobster or shell, the synth renders every sound sample for sample the same (D-211).
 - 2026-11-05: Engine plan step 1 done: the lib reads no building names, staple resources and formation bands are data (D-212).
 - 2026-11-05: Mods can take the game apart: mods/scifi_short plays a bot match to the end with infantry only, two ages and its own rifle sound (D-213).
+- 2026-11-05: Shot looks became combinable knobs: bursts, scatter and jagged beams from one set, the game's arrows as presets (D-214).
