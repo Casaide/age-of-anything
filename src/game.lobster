@@ -84,8 +84,9 @@ let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
 var watch = false
-var follow = false    // the camera follows the fighting (captures)
-var selftest = false  // play a few orders through the controls, check the sim took them, quit
+var follow = false        // the camera follows the fighting (captures)
+var look_at_army = false  // a skirmish you play: the camera starts on your army and stays yours
+var selftest = false      // play a few orders through the controls, check the sim took them, quit
 var shot = ""
 var shot_at = 0.0
 var start_speed = 1.0
@@ -2247,10 +2248,12 @@ def make_match() -> bool:
             let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0
             issue_cmd(ME, CMD_MOVE, map(mine) i: u_id[i], fort_gate.x * 1000 + 500, (fort_gate.y + 4) * 1000, 0, 0, 0)
         if skirmish:
-            let mid_x = (start_x[0] + start_x[1]) / 2
-            let mid_y = (start_y[0] + start_y[1]) / 2
-            cam = iso(float(mid_x), float(mid_y))
-            follow = true  // (the camera goes where they fight)
+            if watch:
+                let mid_x = (start_x[0] + start_x[1]) / 2
+                let mid_y = (start_y[0] + start_y[1]) / 2
+                cam = iso(float(mid_x), float(mid_y))
+                follow = true  // (watching: the camera goes where they fight)
+            else: look_at_army = true
     if hurt_pct >= 0:
         for(b_id.length) b:
             if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
@@ -2465,6 +2468,9 @@ import .game.cursors
 def play_match():
     tc0 = town_center(ME)
     if tc0 >= 0: cam = iso(float(b_cx[tc0] * 1000 + 1500), float(b_cy[tc0] * 1000 + 1500))
+    if look_at_army:
+        let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
+        if mine.length: cam = iso(float(fold(mine, 0) a, i: a + u_x[i]) / float(mine.length), float(fold(mine, 0) a, i: a + u_y[i]) / float(mine.length))
     if look_x >= 0: cam = iso(float(look_x * 1000 + 500), float(look_y * 1000 + 500))
     acc = 0.0
     paused = false
@@ -2701,6 +2707,7 @@ def new_match_reset():
     skirmish = false
     army_n = 0
     follow = false
+    look_at_army = false
     ai_levels = []
     back_to_lobby = false
     ui_setup("")
