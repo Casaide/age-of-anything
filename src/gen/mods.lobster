@@ -1,12 +1,11 @@
 // ------------------------------------------------------------------ mods (src/mods.gd, docs/modding.md)
 // A mod is a folder of more data (parts, creatures, cultures, palettes, words, rules, maps, shot looks)
-// plus models for the bake, with a manifest (mod.json). Used only when asked for (mods_use, from the
+// plus models for the bake, with a manifest (pack.json, as the game has in data/). Used only when asked for (mods_use, from the
 // game's mods:a,b option). Merged over the base data in load order (the manifest's load_order, then
 // id), each checked first: a mod that fails is refused with the reason and none of it is used. Each
 // mod's signature ("id@version#hash" of its parsed data) goes into the races made with it (the race
 // key), as in GDScript. The models are the bake's (Godot's, until step 6c).
 
-let MOD_GAME_VERSION = "0.21"
 let mod_roots = [ "../mods", "../mods_private" ]  // (a later folder's copy of a mod wins)
 let MOD_DATA_FILES = [ "parts.json", "creatures.json", "families.json", "palettes.json", "lexicon.json", "shots.json", "buildings.json", "tech.json", "ai.json", "audio.json" ]
 let MOD_DATA_DIRS = [ "rules", "maps", "voxel" ]
@@ -63,23 +62,39 @@ def mods_discover(roots:[string]) -> dictionary<string, ModRec>:
                 if sizes[k] < 0 and n != "." and n != "..": dirs.push(n)
             for(sorted_strs(dirs)) d:
                 let dir = root + "/" + d
-                let text = read_file(dir + "/mod.json")
+                let text = read_file(dir + "/pack.json")
                 if text:
                     let m = parse_json(text)
                     let id = if m.kind == J_OBJ: gstr(m, "id", d) else: d
                     out.set(id, ModRec { id, dir, m, jobj() })
     return out
 
+// Whether a pack made for version `want` runs on `have`: the same major, and a minor no newer.
+def version_ok(want:string, have:string) -> bool:
+    let w = tokenize(want, ".", "")
+    let h = tokenize(have, ".", "")
+    return w[0] == h[0] and string_to_int(w[1]) <= string_to_int(h[1])
+
+// A depends entry, "id" or "id@version": its id and version ("": any).
+def dep_parts(dep:string) -> string, string:
+    let n = find_string(dep, "@")
+    return if n < 0: dep else: substring(dep, 0, n), if n < 0: "" else: substring(dep, n + 1, dep.length - n - 1)
+
 def mod_check_manifest(id:string, m:JV) -> string:
-    if m.kind != J_OBJ: return "mod.json isn\'t a JSON object"
-    for([ "id", "name", "version", "game_version" ]) key:
-        if not has(m, key): return "mod.json has no \'{key}\'"
-    if gstr(m, "id", "") != id: return "mod.json\'s id \'{gstr(m, "id", "")}\' isn\'t the folder\'s"
-    let gv = at(m, "game_version")
-    let want = tokenize(if gv.kind == J_STR: gv.s else: godot_float(gv.f), ".", "")
-    let have = tokenize(MOD_GAME_VERSION, ".", "")
-    if want[0] != have[0] or string_to_int(want[1]) > string_to_int(have[1]): return "made for game version {concat_string(want, ".")}; this is {MOD_GAME_VERSION}"
-    return ""
+    if m.kind != J_OBJ: return "pack.json isn\'t a JSON object"
+    for([ "id", "name", "version" ]) key:
+        if not has(m, key): return "pack.json has no \'{key}\'"
+    if gstr(m, "id", "") != id: return "pack.json\'s id \'{gstr(m, "id", "")}\' isn\'t the folder\'s"
+    if gstr(m, "kind", "mod") != "mod": return "kind \'{gstr(m, "kind", "")}\': a match has one game, and a mod is kind mod"
+    let game = gstr(lib_pack, "id", "")
+    let have = gstr(lib_pack, "version", "")
+    for(gstrs(m, "depends")) dep:
+        let dep_id, want = dep_parts(dep)
+        if dep_id == game:
+            if want == "": return "pack.json: depends names {game} with no version"
+            if not version_ok(want, have): return "made for {game} {want}; this is {have}"
+            return ""
+    return "pack.json: depends doesn\'t name the game ({game}@<version>)"
 
 // The mod's data files, parsed; "" or why it can't be read.
 def mod_read(rec:ModRec) -> string:
@@ -285,7 +300,11 @@ def mods_use(ids:[string], roots = mod_roots) -> [string]:
     for(picked) rec:
         var why = ""
         for(gstrs(rec.manifest, "depends")) dep:
-            if why == "" and not (filter(mods_active) a: a.id == dep).length: why = "needs the mod \'{dep}\' loaded before it"
+            let dep_id, want = dep_parts(dep)
+            if why == "" and dep_id != gstr(lib_pack, "id", ""):
+                let there = find(mods_active) a: a.id == dep_id
+                if there < 0: why = "needs the mod \'{dep_id}\' loaded before it"
+                elif want != "" and not version_ok(want, gstr(mods_active[there].manifest, "version", "")): why = "needs {dep_id} {want}"
         if why == "": why = mod_read(rec)
         let with_own = append(eras, gstrs(rec.manifest, "eras"))
         if why == "": why = mod_check_data(rec, with_own)

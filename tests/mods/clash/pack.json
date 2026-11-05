@@ -1,7 +1,6 @@
 {
- "id": "bad_file",
- "name": "bad_file",
+ "id": "clash",
+ "name": "clash",
  "version": "0.1.0",
- "game_version": "0.21",
  "description": "A refusal fixture (tests/run_tests.gd _test_mods): this mod must be refused."
 }
