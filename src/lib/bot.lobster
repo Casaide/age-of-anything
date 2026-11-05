@@ -189,43 +189,42 @@ def build_order_step(bot:Bot, tc:int, workers:[int], count:int):
     if tick < bot.next_build or building_underway(bot.eco, false): return
     let p = bot.player
     bot.blocked = []::int
-    let have_ids = []::string
+    let have_kinds = []::int
     let have_n = []::int
-    def add_have(id:string):
-        for(have_ids) h, n:
-            if h == id:
+    def add_have(kind:int):
+        for(have_kinds) h, n:
+            if h == kind:
                 have_n[n]++
                 return
-        have_ids.push(id)
+        have_kinds.push(kind)
         have_n.push(1)
-    def have(id:string) -> int:
-        for(have_ids) h, n:
-            if h == id: return have_n[n]
+    def have(kind:int) -> int:
+        for(have_kinds) h, n:
+            if h == kind: return have_n[n]
         return 0
     for(b_id.length) b:
         if b_owner[b] == p and (b_done[b] == 1 or reaches_building(bot.eco.reach, bot.eco.wln, bot.eco.home, b)):
-            add_have(bt_name[b_kind[b]])  // (the build order names buildings by id: it's data)
+            add_have(b_kind[b])
             let was = upgrade_of(b_kind[b])
-            if was >= 0: add_have(bt_name[was])
-    let wanted_ids = []::string
+            if was >= 0: add_have(was)
+    let wanted_kinds = []::int
     let wanted_n = []::int
     for(build_order) step:
-        let id = step.building
-        let k = btype_named(id)
+        let k = btype_named(step.building)    // (the build order names buildings by id: it's data)
         if k < 0 or bm_lacks[p][k]: continue  // (a building the game or a mod doesn't have: its steps are skipped)
         var prev = 0
         var at = -1
-        for(wanted_ids) wid, n:
-            if wid == id:
+        for(wanted_kinds) wk, n:
+            if wk == k:
                 prev = wanted_n[n]
                 at = n
         let want = if step.count >= 0: step.count else: prev + 1
         if at < 0:
-            wanted_ids.push(id)
+            wanted_kinds.push(k)
             wanted_n.push(want)
         else:
             wanted_n[at] = want
-        if have(id) >= want: continue
+        if have(k) >= want: continue
         if ages[p] < step.age: continue
         if step.guard_step == 1 and not (lv_guard_crossing and bot.on_back_foot): continue
         var need = step.workers
@@ -913,7 +912,7 @@ def via(bot:Bot, ids:[int], vx:int, vy:int, tx:int, ty:int):
 // The enemy economy worth raiding, nearest us first (Bot._eco_targets).
 def eco_targets(bot:Bot, hx:int, hy:int) -> [int]:
     let p = bot.player
-    let kinds = cfg_list("military.raid_targets")
+    let kinds = map(cfg_list("military.raid_targets")) id: btype_named(id)
     let safe = cfg("military.raid_safe")
     let seen = sorted_seen(p)
     let sxs = []::int
@@ -927,7 +926,7 @@ def eco_targets(bot:Bot, hx:int, hy:int) -> [int]:
     let keys = []::int
     let pts = []::int
     for(seen) s:
-        if is_enemy(p, s[2]) and contains_str(kinds, bt_name[s[1]]):
+        if is_enemy(p, s[2]) and kinds.contains(s[1]):
             let x = s[3] + s[5] / 2
             let y = s[4] + s[9] / 2
             var under = false
@@ -1125,8 +1124,7 @@ def bot_trade(bot:Bot):
     bot.next_trade = tick + cfg("economy.trade.every") * 20
     let g = resource_index("gold")
     var low = -1
-    for([ "food", "wood" ]) res:
-        let r = resource_index(res)
+    for(staple_resources) r:
         if stock[r][p] < cfg("economy.trade.below") and (low < 0 or stock[r][p] < stock[low][p]): low = r
     if low >= 0 and stock[g][p] >= cfg("economy.trade.above") + saving_of(bot, g):
         issue_cmd(p, CMD_TRADE, []::int, b_id[mk], low, 1, 0)

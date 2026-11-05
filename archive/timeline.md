@@ -189,3 +189,4 @@ One line per moment worth remembering. Newest at the bottom.
 - **2026-11-04:** The still ground is drawn once into a picture and redrawn at 15 Hz for the water: GPU power cut by more than half in a match (D-209).
 - 2026-11-04: Clean Lobster fork (`game` branch), issues first, the backlog in GitHub issues; Android runs a match on it again.
 - 2026-11-04: No Python left in the project: tools are Lobster or shell, the synth renders every sound sample for sample the same (D-211).
+- 2026-11-05: Engine plan step 1 done: the lib reads no building names, staple resources and formation bands are data (D-212).
