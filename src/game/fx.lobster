@@ -13,6 +13,7 @@ class ShotStyle:
     col:float4
     glow = float4_0  // a soft halo round it (a mod's bolt of light); alpha 0: none
     sticks = true    // a miss stands in the ground (false: a bolt of light)
+    beam = false     // drawn as a line from muzzle to target while the shot flies (shots.json "draw": "beam")
 
 def hex_col(h:string) -> float4:
     def byte(i:int) -> float: return float(string_to_int(h.substring(i, 2), 16)) / 255.0
@@ -33,6 +34,7 @@ def shot_style(kind:string) -> ShotStyle:
         let made = ShotStyle { num("arc", 0.0), num("len", 0.0), num("w", 1.0), hex_col(substring(gstr(m, "col", "#ffffff"), 1, 6)) }
         if has(m, "glow"): made.glow = hex_col(substring(gstr(m, "glow", "#ffffff"), 1, 6))
         made.sticks = gbool(m, "sticks", true)
+        made.beam = gstr(m, "draw", "") == "beam"
         SHOT_STYLES.set(kind, made)
         return made
     let a = SHOT_STYLES.get("arrow")
