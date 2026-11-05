@@ -11,26 +11,17 @@ let MOD_DATA_FILES = [ "parts.json", "creatures.json", "families.json", "palette
 let MOD_DATA_DIRS = [ "rules", "maps", "voxel" ]
 let MOD_BASE_ERAS = [ "bronze", "medieval", "gunpowder" ]
 
-class ModRec:
-    id:string
-    dir:string
-    manifest:JV
-    data:JV  // relative path (parts.json, rules/<id>.json, maps/<id>.json) -> parsed
-    sig = ""
-
-var mods_active = []::ModRec
 var mods_refused = dictionary<string, string>(8)
-var mod_shots = jobj()  // shot looks the mods add (kind -> {tag, speed, arc, len, w, col, glow?})
 let AUDIO_DIR = "../assets/audio"
 let audio_found = dictionary<string, string>(63)
 
 // A sound's file: the last mod in load order that has it (<mod>/audio/<rel>), else the game's.
 def audio_file(rel:string) -> string:
-    if not mods_active.length: return AUDIO_DIR + "/" + rel
+    if not pack_mods().length: return AUDIO_DIR + "/" + rel
     let known = audio_found.get(rel, "")
     if known != "": return known
     var path = AUDIO_DIR + "/" + rel
-    for(mods_active) rec:
+    for(pack_mods()) rec:
         if read_file(rec.dir + "/audio/" + rel, true): path = rec.dir + "/audio/" + rel
     audio_found.set(rel, path)
     return path
@@ -52,8 +43,8 @@ def mod_files(dir:string, rel:string) -> [string]:
         for(mod_files(dir, if rel == "": d else: rel + "/" + d)) f: out.push(f)
     return out
 
-def mods_discover(roots:[string]) -> dictionary<string, ModRec>:
-    let out = dictionary<string, ModRec>(8)
+def mods_discover(roots:[string]) -> dictionary<string, Pack>:
+    let out = dictionary<string, Pack>(8)
     for(roots) root:
         let names, sizes = scan_folder(root, true)
         if names and sizes:
@@ -66,7 +57,7 @@ def mods_discover(roots:[string]) -> dictionary<string, ModRec>:
                 if text:
                     let m = parse_json(text)
                     let id = if m.kind == J_OBJ: gstr(m, "id", d) else: d
-                    out.set(id, ModRec { id, dir, m, jobj() })
+                    out.set(id, pack_open(id, dir, m))
     return out
 
 // Whether a pack made for version `want` runs on `have`: the same major, and a minor no newer.
@@ -97,8 +88,8 @@ def mod_check_manifest(id:string, m:JV) -> string:
     return "pack.json: depends doesn\'t name the game ({game}@<version>)"
 
 // The mod's data files, parsed; "" or why it can't be read.
-def mod_read(rec:ModRec) -> string:
-    let root = rec.dir + "/" + gstr(rec.manifest, "data", "data")
+def mod_read(rec:Pack) -> string:
+    let root = rec.root
     for(mod_files(root, "")) f:
         let base = if has_char(f, '/'): substring(f, 0, find_string(f, "/")) else: ""
         if not (has_s(MOD_DATA_FILES, f) or (has_s(MOD_DATA_DIRS, base) and ends_with(f, ".json"))):
@@ -178,7 +169,7 @@ def mod_check_match_data(d:JV) -> string:
         if not starts_with(name, "_") and gint(at(snd, name), "takes", 0) < 1: return "audio.json {name}: needs \'takes\'"
     return ""
 
-def mod_check_data(rec:ModRec, eras:[string]) -> string:
+def mod_check_data(rec:Pack, eras:[string]) -> string:
     let d = rec.data
     let slots = []::string
     for(lib_parts.keys) id: push_new(slots, gstr(at(lib_parts, id), "slot", ""))
@@ -247,46 +238,14 @@ def mod_check_data(rec:ModRec, eras:[string]) -> string:
                 if sound != "" and not has(gobj(data_merge(lib_data("audio.json"), gobj(d, "audio.json")), "sounds"), sound): return "shots.json {k}: its hit\'s sound \'{sound}\' isn\'t in audio.json"
     return mod_check_match_data(d)
 
-def mod_extended(all:JV, e:JV) -> JV:
-    if not has(e, "extends"): return e
-    let out = mod_merge(at(all, gstr(e, "extends", "")), e)
-    return jobj_without(out, "extends")
-
-def mod_apply(rec:ModRec):
-    let d = rec.data
-    for(glist(d, "parts.json")) p: set(lib_parts, gstr(p, "id", ""), deep_copy(p))
-    let cs = gobj(d, "creatures.json")
-    for(cs.keys) id:
-        if not starts_with(id, "_"): set(lib_creatures, id, mod_extended(lib_creatures, at(cs, id)))
-    let fs = gobj(d, "families.json")
-    for(fs.keys) id:
-        if not starts_with(id, "_"): set(lib_families, id, mod_extended(lib_families, at(fs, id)))
-    lib_palettes = mod_merge(lib_palettes, gobj(d, "palettes.json"))
-    let lex = gobj(d, "lexicon.json")
-    let words = gobj(lex, "words")
-    for(words.keys) w:
-        if not starts_with(w, "_"): set(lib_lexicon, w, at(words, w))
-    for(gstrs(lex, "stopwords")) w: push_new(lib_stopwords, w)
-    lib_stopwords = sorted_strs(lib_stopwords)
-    let mshots = gobj(d, "shots.json")
-    for(mshots.keys) k:
-        if not starts_with(k, "_"): set(mod_shots, k, at(mshots, k))
-    lib_mods.push(rec.sig)
-    lib_part_ids = sorted_strs(lib_parts.keys)
-    lib_cands = dictionary<string, [JV]>(31)
-
 // Use exactly these mods (after lib_load): checked against the data before them, in load order.
 // Returns the ids in use; mods_refused says why the others weren't.
 def mods_use(ids:[string], roots = mod_roots) -> [string]:
-    mods_active = []
-    lib_mods = []
     audio_found.clear()
-    lib_mod_data = []
-    lib_mod_dirs = []
+    lib_load(lib_root)  // (the game alone: what another mods_use put in goes)
     mods_refused = dictionary<string, string>(8)
-    mod_shots = jobj()
     let found = mods_discover(roots)
-    let picked = []::ModRec
+    let picked = []::Pack
     for(ids) id:
         let rec = found.get(id)
         if not rec: mods_refused.set(id, "not found in {concat_string(roots, ", ")}")
@@ -302,19 +261,17 @@ def mods_use(ids:[string], roots = mod_roots) -> [string]:
         for(gstrs(rec.manifest, "depends")) dep:
             let dep_id, want = dep_parts(dep)
             if why == "" and dep_id != gstr(lib_pack, "id", ""):
-                let there = find(mods_active) a: a.id == dep_id
+                let there = find(pack_mods()) a: a.id == dep_id
                 if there < 0: why = "needs the mod \'{dep_id}\' loaded before it"
-                elif want != "" and not version_ok(want, gstr(mods_active[there].manifest, "version", "")): why = "needs {dep_id} {want}"
+                elif want != "" and not version_ok(want, gstr(pack_mods()[there].manifest, "version", "")): why = "needs {dep_id} {want}"
         if why == "": why = mod_read(rec)
         let with_own = append(eras, gstrs(rec.manifest, "eras"))
         if why == "": why = mod_check_data(rec, with_own)
         if why != "": mods_refused.set(rec.id, why)
         else:
             eras = with_own
-            mod_apply(rec)
-            mods_active.push(rec)
-            lib_mod_data.push(rec.data)
-            lib_mod_dirs.push(rec.dir + "/" + gstr(rec.manifest, "data", "data"))
+            lib_packs.push(rec)
+            pack_apply(rec)
     id_load(lib_root)  // (what a race lacks depends on the buildings)
     for(mods_refused.get_keys()) id: print "Mod \'{id}\' refused: {mods_refused.get(id, "")}"
-    return map(mods_active) a: a.id
+    return map(pack_mods()) p: p.id
