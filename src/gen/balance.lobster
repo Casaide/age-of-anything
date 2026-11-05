@@ -48,7 +48,7 @@ var rr_upgrades = true       // false: line upgrades only (calibrate.lobster pai
 
 def rr_generic_ids() -> [string]:
     if not rr_generic.length:
-        for(glist(load_json(lib_root + "/tech.json"), "research")) r:
+        for(glist(lib_data("tech.json"), "research")) r:
             if has_s(RR_RESEARCH_BUILDINGS, gstr(r, "building", "")) and not has(r, "own"): rr_generic.push(rstr(r, "id"))
     return rr_generic
 

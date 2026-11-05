@@ -10,7 +10,7 @@ let FORT_SIDES = [ "n", "e", "s", "w" ]
 def setup_mode():
     let id = gstr(su_rules, "mode", "")
     if id == "" or id == "standard": return
-    let modes = at(load_json(lib_root + "/modes.json"), "modes")
+    let modes = at(lib_data("modes.json"), "modes")
     assert has(modes, id)
     let m = at(modes, id)
     let lift = gstrs(m, "lift_lacks")

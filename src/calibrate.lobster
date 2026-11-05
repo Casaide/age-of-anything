@@ -606,7 +606,7 @@ def run_pairs(age:int, plain:bool):
         print "  {pair[0]} > {pair[1]}: {wins} of {fights}" + (if short: (if open: "  short (open: an issue)" else: "  FAILS") else: "")
         if short and not open: set_exit_code(1)
 
-def research_json() -> [JV]: return glist(load_json(lib_root + "/tech.json"), "research")
+def research_json() -> [JV]: return glist(lib_data("tech.json"), "research")
 
 def reaches_any(r:JV, tags:[string]) -> bool:
     for(glist(r, "effects")) fx:
