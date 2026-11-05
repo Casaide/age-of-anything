@@ -192,6 +192,19 @@ class vx_leg_spec:  // a pair of legs, the one given on the right, mirrored on t
     mats:[int]
     shapes:[vx_spec]  // on hip, knee, ankle
 
+// How a body walks and strikes, when that's more than a foot's sine and an arm's reach (none: it keeps those).
+class vx_gait:
+    heel:float   // degrees the toes dip leaving the ground
+    toe:float    // and rise landing
+    toes:float   // the ankle to the toes: a heel up, the ankle rises by this
+    arm:float    // a free hand's swing, in reaches, against the leg on its side
+    held:float   // a busy hand's
+    twist:float  // the shoulders' turn against the walk, in units
+    front:float  // a blow's stance: the left foot this far forward
+    back:float   // the right foot this far back
+    dip:float    // the body's drop into a blow
+    turn:float   // the shoulders' turn into a blow, in units
+
 class vx_body_spec:
     id:string
     size:float
@@ -241,6 +254,10 @@ class vx_body_spec:
     seats:[float3] = []        // a war beast: where its crew sit (a howdah), at their seat height
     style_names:[string] = []  // an engine in each culture's style (siege.<kind>.<style>): its skin, pale, mark
     style_cols:[float3] = []
+    plean:[float] = []   // per point, with a gait: how far forward it leans walking
+    psway:[float] = []   // how far it shifts over the planted foot
+    pdrive:[float] = []  // how far a blow carries it forward
+    gait:vx_gait? = nil
 
 class vx_hold_spec:
     rest:float3
@@ -291,6 +308,9 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
         b.pat.push(vx_v3(at(pts.a[k], "at")))
         b.pbob.push(gfloat(pts.a[k], "bob", 0.0))
         b.pflap.push(gfloat(pts.a[k], "flap", 0.0))
+        b.plean.push(gfloat(pts.a[k], "lean", 0.0))
+        b.psway.push(gfloat(pts.a[k], "sway", 0.0))
+        b.pdrive.push(gfloat(pts.a[k], "drive", 0.0))
     for(glist(o, "legs")) l:
         let pa, a = vx_pt(at(l, "hip"))
         let rs = map(glist(l, "r")) v: as_float(v)
@@ -328,6 +348,10 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
     if has(o, "looks"):
         b.looks = map(glist(o, "looks")) l: gfloat(l, "skin", 1.0)
         b.hair = map(glist(o, "looks")) l: vx_hex(gstr(l, "hair", "#1f1714"))
+    if has(o, "gait"):
+        let g = at(o, "gait")
+        b.gait = vx_gait { gfloat(g, "heel", 0.0), gfloat(g, "toe", 0.0), gfloat(g, "toes", 0.0), gfloat(g, "arm", 0.0), gfloat(g, "held", 0.0),
+                           gfloat(g, "twist", 0.0), gfloat(g, "front", 0.0), gfloat(g, "back", 0.0), gfloat(g, "dip", 0.0), gfloat(g, "turn", 0.0) }
     b.crew = map(glist(o, "crew")) v: vx_v3(v)
     b.seats = map(glist(o, "seats")) v: vx_v3(v)
     let so = gobj(o, "styles")
@@ -527,6 +551,9 @@ def vx_blow(t:float) -> float:
 def vx_raise(t:float) -> float:  // raised through the wind-up, held, lowered
     return if t < 0.45: t / 0.45 elif t < 0.75: 1.0 else: 1.0 - (t - 0.75) / 0.25
 
+// Where a body is in a blow: drawn back through the wind-up (below 0), thrown forward at the hit (1).
+def vx_strike(t:float) -> float: return vx_blow(t) - 0.4 * vx_raise(t) * (1.0 - vx_blow(t))
+
 def vx_mix(a:float3, b:float3, k:float) -> float3: return a + (b - a) * k
 
 // Points a shape can stand on: named, with where each is now.
@@ -600,6 +627,31 @@ def vx_flags_of(u:vx_unit_def) -> [string]:
         for(gs.flags) x: f.push(x)
     return f
 
+// Where a foot is at walk phase ph, and its pitch (degrees, toes up). With a gait, a planted foot goes back at the
+// ground's own speed (a sine would skate), its heel rises as it leaves; the swing lifts it early, behind, so the knee bends.
+def vx_foot(b:vx_body_spec, l:vx_leg_spec, side:float, ph:float) -> float3, float:
+    let rest = l.foot * float3 { side, 1.0, 1.0 }
+    let g = b.gait
+    if vx_stand:
+        if g and vx_act == "attack": return rest + float3 { 0.0, if side > 0.0: -g.back else: g.front, 0.0 }, 0.0
+        return rest, 0.0
+    let w = ph + l.phase
+    if not g: return rest + float3 { 0.0, sin(w) * side * l.stride, max(0.0, cos(w) * side) * l.lift }, 0.0
+    let u = if side > 0.0: w else: w + 180.0
+    var y, up, pitch = 0.0, 0.0, 0.0
+    if cos(u) > 0.0:
+        y = sin(u) * l.stride
+        up = cos(u) * (1.0 - 0.5 * sin(u)) * l.lift
+        pitch = -g.heel + (g.heel + g.toe) * (sin(u) + 1.0) * 0.5
+    else:
+        var a = u - 90.0
+        while a < 0.0: a += 360.0
+        while a >= 360.0: a -= 360.0
+        let v = a / 180.0
+        y = (1.0 - 2.0 * v) * l.stride
+        pitch = if v < 0.35: g.toe * (1.0 - v / 0.35) elif v > 0.65: -g.heel * (v - 0.65) / 0.35 else: 0.0
+    return rest + float3 { 0.0, y, up + max(0.0, sin(-pitch)) * g.toes }, pitch
+
 // A body's points at walk phase ph (its bob), raised by lift.
 // A body that would have to stretch a leg past its bones to reach its foot (a long stride on short legs) is lowered
 // until every foot is in reach, with a little bend left (the hips dip at full stride, as a walker's do); else the
@@ -607,15 +659,15 @@ def vx_flags_of(u:vx_unit_def) -> [string]:
 def vx_body_points(b:vx_body_spec, ph:float, lift:float3) -> vx_points:
     let bob = abs(sin(ph * 2.0))
     let flap = sin(ph * 4.0)
-    let p = vx_points { copy(b.pnames), map(b.pat) a, k: a + float3 { 0.0, 0.0, b.pbob[k] * bob + b.pflap[k] * flap } + lift }
+    let wk = if b.gait and not vx_stand and not vx_seated: 1.0 else: 0.0  // (leaning and shifting only walking)
+    let p = vx_points { copy(b.pnames), map(b.pat) a, k: a + float3 { -b.psway[k] * cos(ph) * wk, b.plean[k] * wk, b.pbob[k] * bob + b.pflap[k] * flap } + lift }
     if vx_seated: return p  // (a rider's legs are its seat's)
     var drop = 0.0
     for(b.legs) l:
         for([ 1.0, -1.0 ]) side:
             let m = float3 { side, 1.0, 1.0 }
-            let w = ph + l.phase
             let hip = vx_where(p, l.pa) + l.a * m
-            let foot = if vx_stand: l.foot * m else: l.foot * m + float3 { 0.0, sin(w) * side * l.stride, max(0.0, cos(w) * side) * l.lift }
+            let foot = vx_foot(b, l, side, ph)
             let d = hip - foot
             let reach = (l.l1 + l.l2) * (if vx_stand: 0.995 else: 0.97)  // (standing, a leg may be straight)
             let across = d.x * d.x + d.y * d.y
@@ -629,19 +681,18 @@ def vx_legs(out:[vx_prim], b:vx_body_spec, p:vx_points, ph:float, flags:[string]
     for(b.legs) l:
         for([ 1.0, -1.0 ]) side:
             let m = float3 { side, 1.0, 1.0 }
-            let w = ph + l.phase
-            let st = if vx_stand: 0.0 else: sin(w) * side * l.stride
-            let up = if vx_stand: 0.0 else: max(0.0, cos(w) * side) * l.lift
             let hip = vx_where(p, l.pa) + l.a * m
-            let foot = l.foot * m + float3 { 0.0, st, up }
+            let foot, pitch = vx_foot(b, l, side, ph)
+            let fy = float3 { 0.0, cos(pitch), sin(pitch) }  // (the foot's shapes, rolled with it)
+            let fz = float3 { 0.0, -sin(pitch), cos(pitch) }
             let knee, ankle = vx_ik(hip, foot, l.l1, l.l2, l.pole * m)
             out.push(vx_cap(hip, knee, l.r[0], l.r[1], l.mats[0]))
             out.push(vx_cap(knee, ankle, l.r[2], l.r[3], l.mats[1]))
             let lp = vx_points { [ "hip", "knee", "ankle" ], [ hip, knee, ankle ] }
             for(l.shapes) s:
                 let s2 = s  // (the left one mirrored: its offsets' x turned)
-                if side > 0.0: vx_emit(out, s2, lp, vx_X, vx_Y, vx_Z, flags, nil)
-                else: vx_emit(out, vx_mirrored(s2), lp, vx_X, vx_Y, vx_Z, flags, nil)
+                if side > 0.0: vx_emit(out, s2, lp, vx_X, fy, fz, flags, nil)
+                else: vx_emit(out, vx_mirrored(s2), lp, vx_X, fy, fz, flags, nil)
 
 def vx_mirrored(s:vx_spec) -> vx_spec:
     let m = float3 { -1.0, 1.0, 1.0 }
@@ -664,20 +715,28 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
     let k = vx_blow(t)
     let up = vx_raise(t)
     let attack = vx_act == "attack"
-    let sh_r = vx_where(p, b.sh_pt) + b.sh
-    let sh_l = vx_where(p, b.sh_pt) + b.sh * float3 { -1.0, 1.0, 1.0 }
+    let g = b.gait
+    // with a gait the shoulders turn against the walk (the right one back as the right foot goes forward), and into a blow
+    let turned = if not g: 0.0 elif attack: g.turn * vx_strike(t) else: -g.twist * swing
+    let sh_r = vx_where(p, b.sh_pt) + b.sh + float3 { 0.0, turned, 0.0 }
+    let sh_l = vx_where(p, b.sh_pt) + b.sh * float3 { -1.0, 1.0, 1.0 } - float3 { 0.0, turned, 0.0 }
     let hang = vx_holds.get("hang")
     assert hang
-    var hr = sh_r + (hang.rest + float3 { 0.0, swing * hang.swing, 0.0 }) * L  // hanging, swung
+    // hanging, swung (with a gait, against the leg on its side, the elbow bending as it comes forward)
+    let fore = if g: -swing * g.arm else: swing * hang.swing
+    let raised = if g: max(0.0, fore) * 0.4 else: 0.0
+    let lowered = if g: max(0.0, -fore) * 0.3 else: 0.0
+    var hr = sh_r + (hang.rest + float3 { 0.0, fore, raised }) * L
     var dr = hang.dir
-    var hl = sh_l + (hang.rest * float3 { -1.0, 1.0, 1.0 } - float3 { 0.0, swing * hang.swing, 0.0 }) * L
+    var hl = sh_l + (hang.rest * float3 { -1.0, 1.0, 1.0 } + float3 { 0.0, -fore, lowered }) * L
+    let carry = if g: float3 { 0.0, -swing * g.held, 0.0 } * L else: float3_0  // a busy hand moves a little too
     var drawn = false
     let right = vx_held(u, 1)
     let left = vx_held(u, -1)
     if right:
         let h = vx_holds.get(right.hold)
         assert h
-        hr = sh_r + h.rest * L
+        hr = sh_r + h.rest * L + carry
         dr = if right.dir != float3_0: right.dir else: h.dir
         if attack and h.act:
             hr = vx_mix(vx_mix(hr, sh_r + h.wind * L, up), sh_r + h.hit * L, k)
@@ -685,7 +744,7 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
     if left:
         let h = vx_holds.get(left.hold)
         assert h
-        hl = sh_l + h.rest * L
+        hl = sh_l + h.rest * L - carry
         if attack and h.draws:
             hl = vx_mix(hl, sh_l + h.raise * L, up)
             hr = vx_mix(hr, sh_r + h.draw * L, up * (1.0 - k))
@@ -762,6 +821,10 @@ def vx_worn(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, flags:[st
 
 // A body with its worn gear and arms (when it has them) at points p.
 def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:float, t:float, flags:[string]):
+    let g = b.gait
+    if g and vx_act == "attack":  // the body behind the blow
+        let s = vx_strike(t)
+        p.at = map(p.at) a, k: a + float3 { 0.0, b.pdrive[k] * s, -g.dip * max(0.0, s) }
     if not vx_seated: vx_legs(out, b, p, ph, flags)
     for(b.shapes) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
     vx_worn(out, u, b, p, flags)
