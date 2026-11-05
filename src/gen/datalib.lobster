@@ -112,6 +112,7 @@ def load_rules(id:string) -> JV:
                 out = load_rules(gstr(r, "extends", ""))
                 set(out, "id", jstr(id))
             out = mod_merge(out, jobj_without(r, "extends"))
+    if not out.keys.length: print "No rule \'{id}\' in {lib_root}/rules or the mods in use ({lib_mods})"
     assert out.keys.length
     return out
 
