@@ -356,6 +356,9 @@
   "heal_note": "healers (heal.gd): each one heals the most wounded unit of its own team (not itself, not animals, not buildings) within heal_sight, walking up to heal_range (edge to edge) when idle: heal_amount hp (x the unit's heal stat) every heal_reload ticks",
   "splash_friend_pct": 50,
   "splash_note": "splash (catapults, combat.gd): a shot whose weapon has `splash` (milli-tiles) lands on its spot and hurts every unit within it (and enemy buildings), less further out: damage x (splash - gap) / splash, gap from the spot to the body's edge; its target takes it in full if still there, a building always. Friends in the area take splash_friend_pct of it (the genre's stone throwers hurt their own side too). `min_range` (tiles): it can't hit what is closer, and steps back from a foe that comes in. `pass` (milli-tiles, bolt throwers): the shot also hits every foe whose body is on its last `pass` of flight. `reload` (ticks) on a weapon overrides melee_reload / ranged_reload. `targets: buildings` (rams, the great sling, the sapper): goes for buildings only. `unpack` / `pack` (ticks, the great sling): it stands that long before its first shot, and packs up that long before it can move (world.gd _pack). `blast` (milli-tiles, the sapper): its blow blows it up, hurting everything within (less further out, friends at splash_friend_pct), a wall, palisade or gate under it losing `blast_line_pct` of its hit points.",
+  "band_machine": "machine",
+  "band_mounted": "mounted",
+  "band_note": "formation bands: units of the band_machine class march behind with healers and the harmless, the band_mounted class on the flanks",
   "heal_not": [
    "machine"
   ]

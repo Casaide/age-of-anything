@@ -317,6 +317,7 @@ class WorldSave:
     t_slot:[string]
     t_trader:[int]
     resource_names:[string]
+    staple_resources:[int]
     tr_names:[string]
     start_x:[int]
     start_y:[int]
@@ -777,6 +778,7 @@ def world_bytes(bots:[Bot]) -> string:
         t_slot,
         t_trader,
         resource_names,
+        staple_resources,
         tr_names,
         start_x,
         start_y,
@@ -1247,6 +1249,7 @@ def load_world_bytes(data:string) -> [Bot]:
     t_slot = s.t_slot
     t_trader = s.t_trader
     resource_names = s.resource_names
+    staple_resources = s.staple_resources
     tr_names = s.tr_names
     start_x = s.start_x
     start_y = s.start_y
@@ -1393,5 +1396,6 @@ def load_world_bytes(data:string) -> [Bot]:
     s.ray_par.forkv() k, v: ray_par.set(k, v)
     pad_saved_columns()  // (a save from an older build: its missing per-unit and per-building columns, D-141)
     roles_from_data()    // (... and its building types' roles, D-192)
+    staples_from_data()  // (... and its staple resources)
     spatial_clear()      // (... and its spatial buckets, which an older build filled over the whole map)
     return s.bots
