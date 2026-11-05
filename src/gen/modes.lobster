@@ -10,7 +10,7 @@ let FORT_SIDES = [ "n", "e", "s", "w" ]
 def setup_mode():
     let id = gstr(su_rules, "mode", "")
     if id == "" or id == "standard": return
-    let modes = at(load_json(lib_root + "/modes.json"), "modes")
+    let modes = at(lib_data("modes.json"), "modes")
     assert has(modes, id)
     let m = at(modes, id)
     let lift = gstrs(m, "lift_lacks")
@@ -45,7 +45,7 @@ def mode_start(p:int, s:JV):
         fortify_ring(p, cx, cy, as_int(at(wl, "radius")), wl)
     var tc = -1
     for(b_id.length) b:
-        if tc < 0 and b_owner[b] == p and bt_name[b_kind[b]] == "town_center": tc = b
+        if tc < 0 and b_owner[b] == p and has_role(b_kind[b], ROLE_HUB): tc = b
     let worker = type_of_slot(p, "worker")
     for(gint(s, "workers", 0)):
         if tc >= 0:

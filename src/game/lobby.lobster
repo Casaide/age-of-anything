@@ -337,9 +337,9 @@ def fe_draw_tip():
 def fe_load_maps():
     let ids = filter(map_ids()) m: not has_s(FE_NOT_MAPS, m)
     fe_maps = append(filter(ids) m: find_string(m, "test") < 0, filter(ids) m: find_string(m, "test") >= 0)
-    let d = at(load_json(lib_root + "/modes.json"), "modes")
+    let d = at(lib_data("modes.json"), "modes")
     fe_modes = map(d.keys) id: [ id, gstr(at(d, id), "name", id), gstr(at(d, id), "desc", "") ]
-    fe_tips = map(glist(load_json(lib_root + "/tips.json"), "tips")) t: as_str(t)
+    fe_tips = map(glist(lib_data("tips.json"), "tips")) t: as_str(t)
 
 let fe_map_meshes = dictionary<string, resource<mesh>>(16)
 
@@ -347,7 +347,7 @@ let fe_map_meshes = dictionary<string, resource<mesh>>(16)
 def fe_map_mesh(id:string, m:JV) -> resource<mesh>:
     let had = fe_map_meshes.get(id)
     if had: return had
-    let terr = at(load_json(lib_root + "/terrain.json"), "terrain")
+    let terr = at(lib_data("terrain.json"), "terrain")
     let w = gint(m, "width", 1)
     let h = gint(m, "height", 1)
     let legend = gobj(m, "legend")
@@ -525,7 +525,7 @@ def fe_lines(race:JV) -> [string], [bool], string:
 // Why a race has no such line, from whichever of its creature and culture lacks it.
 def fe_lack_reason(race:JV, slot:string) -> string:
     if not fe_lacks(race, slot): return ""
-    let blds = at(load_json(lib_root + "/buildings.json"), "buildings")
+    let blds = at(lib_data("buildings.json"), "buildings")
     let cr = creature(rstr(race, "creature"))
     let fam = family(rstr(race, "family"))
     let srcs = [ cr, fam ]

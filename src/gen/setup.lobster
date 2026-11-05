@@ -78,7 +78,7 @@ def load_map(map_id:string):
     let d = load_json(data_path("maps/" + map_id + ".json"))
     assert gstr(d, "schema", "") == "aow.map/2" and gstr(d, "id", "") == map_id
     su_map = d
-    let types = at(load_json(lib_root + "/terrain.json"), "terrain")
+    let types = at(lib_data("terrain.json"), "terrain")
     tr_names = sorted_strs(types.keys)
     W = as_int(at(d, "width"))
     H = as_int(at(d, "height"))
@@ -287,14 +287,14 @@ def add_animal_types(d:JV):
 // ---- building types (Economy.load_btypes) and research (Tech.load_tech)
 
 def load_btypes():
-    let d = at(load_json(lib_root + "/buildings.json"), "buildings")
+    let d = at(lib_data("buildings.json"), "buildings")
     su_btype_ids = sorted_strs(filter(d.keys) id: gstr(at(d, id), "status", "") != "planned")
     su_btypes = map(su_btype_ids) id: at(d, id)
 
 def built(item:JV) -> bool: return gstr(item, "status", "") != "planned"
 
 def load_tech_data():
-    let d = load_json(lib_root + "/tech.json")
+    let d = lib_data("tech.json")
     su_ages = filter(glist(d, "ages")) a: built(a)
     // a creature's or culture's own research: only theirs (Identity.owners)
     let owners = jobj()
@@ -305,7 +305,7 @@ def load_tech_data():
                 at(owners, r).a.push(jstr(id))
     su_research = []
     for(glist(d, "research")) r:
-        if built(r):
+        if built(r) and (gstr(r, "building", "all") == "all" or has_s(su_btype_ids, gstr(r, "building", ""))):
             let o = shallow_copy(r)
             set(o, "only", if has(r, "only"): at(r, "only") else: gobj(owners, rstr(r, "id")))
             if not has(o, "only") or at(o, "only").kind != J_ARR: set(o, "only", jarr([]))
@@ -351,7 +351,10 @@ def encode_effect(fx:JV) -> Effect:
     var kind = -1
     var stat = 0
     let value = gint(fx, "add", gint(fx, "pct", 0))
-    if has(fx, "becomes"): return Effect { 8, btype_index(rstr(fx, "building")), btype_index(rstr(fx, "becomes")), -2, [], [], [] }
+    if has(fx, "becomes"):
+        let was = btype_index(rstr(fx, "building"))
+        let to = btype_index(rstr(fx, "becomes"))
+        return Effect { if was >= 0 and to >= 0: 8 else: -1, was, to, -2, [], [], [] }  // (-1: a mod took one out)
     if has(fx, "gather"):
         kind = 7
         stat = str_index(resource_names, rstr(fx, "gather"))
@@ -384,7 +387,7 @@ def encode_effect(fx:JV) -> Effect:
     if has(fx, "building"):
         let b = at(fx, "building")
         let ids = if b.kind == J_ARR: map(b.a) v: as_str(v) else: [ as_str(b) ]
-        blds = if has_s(ids, "all"): [ -1 ] else: map(ids) id: btype_index(id)
+        blds = if has_s(ids, "all"): [ -1 ] else: filter(map(ids) id: btype_index(id)) k: k >= 0
     return Effect { kind, stat, value, if has(fx, "tag"): tag_or_none(rstr(fx, "tag")) else: -2, ands, nots, blds }
 
 // A line step's eval as the sim's LineStep (export.gd _write_tech).
