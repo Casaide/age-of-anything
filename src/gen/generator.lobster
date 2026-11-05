@@ -109,9 +109,6 @@ def lookup(word:string) -> string:
             if has(lib_lexicon, stem): return stem
     return ""
 
-def push_new(xs:[string], s:string):
-    if not has_s(xs, s): xs.push(s)
-
 def interpret(prompt:string, rules:JV) -> Brief:
     let brief = Brief {}
     var riding = false
