@@ -237,9 +237,11 @@ def panel_buttons() -> [Btn]:
             b.unit = k
             b.costv = t_cost[k]
             b.cost = cost_words(b.costv)
-            b.enabled = b_done[bi] != 0 and room and can_afford(ME, b.costv)
+            b.enabled = b_done[bi] != 0 and room and can_afford(ME, b.costv) and ages[ME] >= t_age[k]
             b.group = if t_hero[k] != 0: "Heroes" else: "Train"
             b.tip = unit_tip(k, room) + (if b_done[bi] == 0: "\n!The building isn\'t finished yet." else: "")
+            if ages[ME] < t_age[k]: b.tip += "\n!Needs the {age_name(t_age[k])} first."
+            elif pop[ME] + t_pop[k] > pop_cap[ME]: b.tip += "\n!Population full: build a house."
             out.push(b)
         for(offered(bi)) r, n:
             let b = Btn { research_name(r), if n < RESEARCH_KEYS.length: RESEARCH_KEYS[n].uppercase() else: "", 1, r }
