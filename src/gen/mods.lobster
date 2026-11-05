@@ -200,6 +200,8 @@ def mod_check_data(rec:ModRec, eras:[string]) -> string:
         if not starts_with(k, "_"):
             for([ "tag", "speed", "col" ]) key:
                 if not has(at(mshots, k), key): return "shots.json {k}: needs \'{key}\'"
+            let draw = gstr(at(mshots, k), "draw", "")
+            if draw != "" and draw != "beam": return "shots.json {k}: draw \'{draw}\' isn\'t a way to draw a shot (beam, or leave it out)"
     return mod_check_match_data(d)
 
 def mod_extended(all:JV, e:JV) -> JV:
