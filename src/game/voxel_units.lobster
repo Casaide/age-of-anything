@@ -155,7 +155,9 @@ def vx_new_job(lk:int, v:int, modes:[int]) -> vx_job:
     let l = vx_lks[lk]
     let stem = bake_cache_dir + "/vx_" + sha256_text("{vx_source}|{l.key}|look {v}|modes {modes}").substring(0, 20)
     let poses = []::int2
-    for(modes) m: for(VX_STEPS[m]) st: poses.push(int2 { m, st })
+    // (a body with a gait shifts its weight standing; the rest stand on one frame, and vx_frame falls back to it)
+    let stirs = vx_body_of(l.u.body).gait != nil and l.u.mount == ""
+    for(modes) m: for(if m == VX_IDLE and stirs: 4 else: VX_STEPS[m]) st: poses.push(int2 { m, st })
     return vx_job { lk, v, modes, stem, poses, 0, 0, nil, nil, []::[float4], int2_0, 0, []::string, 0, nil }
 
 // A cell just drawn (its box in a cell cw wide, the ground at anchor), packed: its index among the job's cells.
@@ -477,7 +479,7 @@ def vx_frame_for(id:int, k:int, state:string, d:int, n:int) -> int:
     let lk = vx_cur[k]
     let f = (d + 2) % 8  // (facing 2 faces screen right)
     let m = vx_mode_of(state)
-    let st = if m == VX_IDLE: 0 elif m == VX_ATTACK: min(n, 7) else: n % 8
+    let st = if m == VX_IDLE: n % 4 elif m == VX_ATTACK: min(n, 7) else: n % 8
     let fr = vx_frame(lk, vx_look_v(id, lk), m, f, st)
     if fr < 0: vx_want(lk)  // (drawn before it's baked: a unit of a later age put down, asked for first)
     return fr
