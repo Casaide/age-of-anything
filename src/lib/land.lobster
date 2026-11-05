@@ -613,6 +613,9 @@ def road_camp(l:Land, bot:Bot):
             l.want = []::int
             return
     let k = camp_for(resource_index("wood"))
+    if k < 0:
+        l.camp_laid = true
+        return
     if not can_afford(bot.player, bm_cost[bot.player][k]):
         l.want = bm_cost[bot.player][k]
         return
