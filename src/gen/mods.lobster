@@ -8,7 +8,7 @@
 
 let MOD_GAME_VERSION = "0.21"
 let mod_roots = [ "../mods", "../mods_private" ]  // (a later folder's copy of a mod wins)
-let MOD_DATA_FILES = [ "parts.json", "creatures.json", "families.json", "palettes.json", "lexicon.json", "shots.json" ]
+let MOD_DATA_FILES = [ "parts.json", "creatures.json", "families.json", "palettes.json", "lexicon.json", "shots.json", "buildings.json", "tech.json", "ai.json", "audio.json" ]
 let MOD_DATA_DIRS = [ "rules", "maps", "voxel" ]
 let MOD_BASE_ERAS = [ "bronze", "medieval", "gunpowder" ]
 
@@ -22,6 +22,19 @@ class ModRec:
 var mods_active = []::ModRec
 var mods_refused = dictionary<string, string>(8)
 var mod_shots = jobj()  // shot looks the mods add (kind -> {tag, speed, arc, len, w, col, glow?})
+let AUDIO_DIR = "../assets/audio"
+let audio_found = dictionary<string, string>(63)
+
+// A sound's file: the last mod in load order that has it (<mod>/audio/<rel>), else the game's.
+def audio_file(rel:string) -> string:
+    if not mods_active.length: return AUDIO_DIR + "/" + rel
+    let known = audio_found.get(rel, "")
+    if known != "": return known
+    var path = AUDIO_DIR + "/" + rel
+    for(mods_active) rec:
+        if read_file(rec.dir + "/audio/" + rel, true): path = rec.dir + "/audio/" + rel
+    audio_found.set(rel, path)
+    return path
 
 // Every file under dir, relative, sorted (the bake's leftovers left out).
 def mod_files(dir:string, rel:string) -> [string]:
@@ -79,7 +92,7 @@ def mod_read(rec:ModRec) -> string:
         if not text: return "data/{f} can\'t be read"
         set(rec.data, f, parse_json(text))
     // (the hash is of the parsed data, not the files' bytes: line endings differ between checkouts)
-    rec.sig = "{rec.id}@{gstr(rec.manifest, "version", "")}#{substring(sha256_text(stringify(rec.data)), 0, 8)}"
+    rec.sig = "{rec.id}@{gstr(rec.manifest, "version", "")}#{substring(sha256_text(stringify(jobj_without(rec.data, "audio.json"))), 0, 8)}"
     return ""
 
 // What's wrong with a mod's data against the data before it (the base and earlier mods), or "".
@@ -87,6 +100,46 @@ def mod_read(rec:ModRec) -> string:
 
 // The mods a race was made with that aren't in use here ([]: it can be played; Mods.missing).
 def mods_missing(race:JV) -> [string]: return filter(gstrs(race, "mods")) s: not has_s(lib_mods, s)
+
+// A mod's buildings, tech, AI and sound, against what's there before it: "" or what's wrong.
+def mod_check_match_data(d:JV) -> string:
+    let bfile = gobj(d, "buildings.json")
+    let before = at(lib_data("buildings.json"), "buildings")
+    let mine = gobj(bfile, "buildings")
+    for(mine.keys) id:
+        let b = at(mine, id)
+        if b.kind != J_OBJ: return "buildings.json {id}: isn\'t an object"
+        if not has(before, id) and not has(b, "extends"): return "buildings.json {id}: a new building needs \'extends\' (it takes that one\'s model)"
+        if has(b, "extends") and not has(before, gstr(b, "extends", "")): return "buildings.json {id}: extends unknown building \'{gstr(b, "extends", "")}\'"
+    let after = data_merge(before, mine)
+    let roles = []::string
+    for(after.keys) id:
+        if gstr(at(after, id), "status", "") != "planned":
+            for(gstrs(at(after, id), "roles")) r: push_new(roles, r)
+    for([ "hub", "housing" ]) r:
+        if not has_s(roles, r): return "buildings.json: leaves no \'{r}\' building, and a match needs one"
+    let slots = []::string
+    for(d.keys) f:
+        if starts_with(f, "rules/"):
+            for(glist(at(d, f), "roster")) e: push_new(slots, gstr(e, "slot", ""))
+    for(glist(load_rules("default"), "roster")) e: push_new(slots, gstr(e, "slot", ""))
+    for(after.keys) id:
+        for(append(gstrs(at(after, id), "trains"), gstrs(at(after, id), "+trains"))) s:
+            if has(mine, id) and not has_s(slots, s) and not has_s(gstrs(at(before, id), "trains"), s):
+                return "buildings.json {id}: trains \'{s}\', which no roster has"
+    let there = filter(after.keys) id: not starts_with(id, "_")
+    let tech = data_merge(lib_data("tech.json"), gobj(d, "tech.json"))
+    if has(d, "tech.json") or has(d, "buildings.json"):
+        for(glist(tech, "ages")) a, k:
+            if as_int(at(a, "age")) != k + 1: return "tech.json: the ages must run 1, 2, 3 with none missing"
+            if not has_s(there, gstr(a, "building", "")): return "tech.json age {k + 1}: at \'{gstr(a, "building", "")}\', which isn\'t a building"
+        for(glist(gobj(d, "tech.json"), "research")) r:
+            if not gbool(r, "remove", false) and has(r, "building") and gstr(r, "building", "") != "all" and not has_s(there, gstr(r, "building", "")):
+                return "tech.json {gstr(r, "id", "")}: at \'{gstr(r, "building", "")}\', which isn\'t a building"
+    let snd = gobj(gobj(d, "audio.json"), "sounds")
+    for(snd.keys) name:
+        if not starts_with(name, "_") and gint(at(snd, name), "takes", 0) < 1: return "audio.json {name}: needs \'takes\'"
+    return ""
 
 def mod_check_data(rec:ModRec, eras:[string]) -> string:
     let d = rec.data
@@ -147,7 +200,7 @@ def mod_check_data(rec:ModRec, eras:[string]) -> string:
         if not starts_with(k, "_"):
             for([ "tag", "speed", "col" ]) key:
                 if not has(at(mshots, k), key): return "shots.json {k}: needs \'{key}\'"
-    return ""
+    return mod_check_match_data(d)
 
 def mod_extended(all:JV, e:JV) -> JV:
     if not has(e, "extends"): return e
@@ -182,6 +235,7 @@ def mod_apply(rec:ModRec):
 def mods_use(ids:[string], roots = mod_roots) -> [string]:
     mods_active = []
     lib_mods = []
+    audio_found.clear()
     lib_mod_data = []
     lib_mod_dirs = []
     mods_refused = dictionary<string, string>(8)
