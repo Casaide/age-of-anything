@@ -118,7 +118,7 @@ Sounds: `<mod>/audio/sfx/<name>_<take>.wav` (also `voice/`, `music/`), used befo
 goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. `audio.json` and WAVs stay out of the mod's
 signature, so a sound never changes a race key.
 
-A mod match is local for now: the network doesn't compare mods yet (`docs/engine-plan.md` step 4), and players with different
+A mod match is local for now: the network doesn't compare mods yet (#132), and players with different
 mods would fall out of step. `mods/scifi_short` is the example: infantry only, two ages, its own rifle sound:
 `./play.sh lobby mods:scifi_test,scifi_short rules:short`. `src/test_mod_match.lobster` plays it to the end.
 
