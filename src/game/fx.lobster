@@ -6,6 +6,15 @@
 // is built over it (drawn in game/town.lobster). Canvas units (Godot's), drawn under a 1.5 scale.
 // Cosmetic, so Lobster's own random numbers.
 
+// A shot's own impact: sparks lines thrown out from the hit, fading.
+class HitLook:
+    sparks:int
+    size:float
+    spread:float
+    life:float
+    col:float4
+    sound:string
+
 class ShotStyle:
     arc:float
     len:float
@@ -22,6 +31,7 @@ class ShotStyle:
     wobble = 0.0
     jag = 1
     fade = 0.0
+    hit = HitLook { 0, 0.0, 0.0, 0.0, float4_0, "" }  // its own impact (shots.json "hit"); no sparks: the game's
 
     // One flying shot: the sim's own timing, no timers of the view's.
     def plain() -> bool: return pulses == 1 and scatter == 1 and not beam
@@ -49,6 +59,10 @@ def shot_style_of(m:JV) -> ShotStyle:
     s.wobble = num("wobble", 0.0)
     s.jag = max(1, gint(m, "jag", 1))
     s.fade = num("fade", 0.0)
+    let h = get(m, "hit")
+    if h:
+        def hnum(k:string, f:float) -> float: return if has(h, k): as_float(at(h, k)) else: f
+        s.hit = HitLook { as_int(at(h, "sparks")), hnum("size", 3.0), hnum("spread", 10.0), hnum("life", 0.3), hex_col(substring(rstr(h, "col"), 1, 6)), gstr(h, "sound", "") }
     return s
 
 def shot_style(kind:string) -> ShotStyle:
@@ -148,7 +162,14 @@ class Heal:
     t:float
     motes:[float4]  // offset x, y, rise speed, delay
 
+class Burst:
+    pos:float2
+    t:float
+    look:HitLook
+    dirs:[float2]
+
 var fx_sparks = []::Spark
+var fx_bursts = []::Burst
 var fx_dusts = []::Dust
 var fx_stuck = []::Stuck
 var fx_heals = []::Heal
@@ -157,6 +178,12 @@ def rnd_range(a:float, b:float) -> float: return a + rnd_float() * (b - a)
 
 def fx_spark(at:float2, heavy:bool):
     fx_sparks.push(Spark { at + float2 { rnd_range(-2.0, 2.0), rnd_range(-2.0, 2.0) }, 0.0, heavy })
+
+def fx_hit(at:float2, look:HitLook):
+    let dirs = map(look.sparks):
+        let a = rnd_range(0.0, 360.0)
+        float2 { cos(a), sin(a) * 0.6 }
+    fx_bursts.push(Burst { at, 0.0, look, dirs })
 
 def fx_splash(at:float2, r:float):
     fx_spark(at, true)
@@ -264,6 +291,7 @@ def fx_puff(at:float2, tip:float):
 
 def fx_clear():
     fx_sparks = []
+    fx_bursts = []
     fx_tracers = []
     fx_dusts = []
     fx_stuck = []
@@ -275,6 +303,8 @@ def fx_tick(dt:float):
     tracers_tick(dt)
     for(fx_sparks) s: s.t += dt
     fx_sparks = filter(fx_sparks) s: s.t < 0.25
+    for(fx_bursts) b: b.t += dt
+    fx_bursts = filter(fx_bursts) b: b.t < b.look.life
     for(fx_dusts) d: d.t += dt
     fx_dusts = filter(fx_dusts) d: d.t < 1.6
     for(fx_stuck) s: s.t += dt
@@ -318,6 +348,12 @@ def fx_draw(ground_of):
             for(4) k:
                 let a = float(k) * 90.0 + 22.9
                 ui_line(s.pos, s.pos + float2 { cos(a), sin(a) } * r, 1.0, float4 { 1.0, 0.92, 0.7, f })
+    for(fx_bursts) b:
+        let f = b.t / b.look.life
+        let c = b.look.col
+        for(b.dirs) d:
+            let p = b.pos + d * b.look.spread * f
+            ui_line(p, p + d * b.look.size * (1.0 - f), 1.0, float4 { c.x, c.y, c.z, 1.0 - f })
     draw_puffs()
     for(fx_dusts) d:
         if d.t >= 0.0:

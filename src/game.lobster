@@ -309,7 +309,9 @@ def sounds_after_step():
         elif e.kind == EV_HIT and on_screen(e.x, e.y) and fog[ME][cell_of(e.x, e.y)] == 2:
             let i = index_of(e.a)
             if i >= 0:
-                if t_ranged[u_kind[i]]: play_sound("arrow_land", -8.0)
+                if t_ranged[u_kind[i]]:
+                    let own = shot_style(unit_shotk.get(u_kind[i], "arrow")).hit.sound
+                    play_sound(if own != "": own else: "arrow_land", -8.0)
                 else: play_sound(unit_blow.get(u_kind[i], "hit_pierce"), 0.0)
         elif e.kind == EV_DIE and on_screen(e.x, e.y) and fog[ME][cell_of(e.x, e.y)] != 0:
             if e.b == 1: play_sound("building_fall", -2.0)
@@ -459,14 +461,19 @@ def fx_events():
     for(events) e:
         if e.kind == EV_HIT and seen_at(e.x, e.y):
             let i = index_of(e.a)
-            if i >= 0 and not t_ranged[u_kind[i]]:
+            if i >= 0:
+                let look = shot_style(unit_shotk.get(u_kind[i], "arrow")).hit
                 let j = index_of(e.b)
                 let to = if j >= 0: ground_at(u_x[j], u_y[j]) - float2 { 0.0, 10.0 } else: ground_at(e.x, e.y) - float2 { 0.0, 20.0 }
-                fx_spark(to, e.c >= 8)
+                if not t_ranged[u_kind[i]]: fx_spark(to, e.c >= 8)
+                elif look.sparks > 0: fx_hit(to, look)
         elif e.kind == EV_MISS:
             if seen_at(e.x, e.y):
                 let i = index_of(e.a)
                 fx_stick(ground_at(e.x, e.y), if i >= 0: unit_shotk.get(u_kind[i], "arrow") else: "arrow")
+                if i >= 0:
+                    let look = shot_style(unit_shotk.get(u_kind[i], "arrow")).hit
+                    if look.sparks > 0: fx_hit(ground_at(e.x, e.y), look)
         elif e.kind == EV_HEAL:
             if index_of(e.b) >= 0: fx_heal(e.b)
         elif e.kind == EV_SPLASH:
