@@ -50,6 +50,10 @@
   "rgb": "#242126",
   "fur": true
  },
+ "rock": {
+  "rgb": "#8f8a80",
+  "fur": false
+ },
  "gold": {
   "rgb": "#ebbd33",
   "shine": 0.9

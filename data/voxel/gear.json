@@ -118,7 +118,48 @@
     0.5,
     -0.65
    ],
-   "_doc": "a basket on the forearm at the waist, in front (foraging)"
+   "pick": [
+    0.3,
+    0.85,
+    0.05
+   ],
+   "drop": [
+    -0.25,
+    0.55,
+    -0.5
+   ],
+   "_doc": "a basket on the forearm at the waist, in front (foraging); in the act the other hand picks from up and ahead and drops into it"
+  },
+  "shoulder": {
+   "rest": [
+    0.0,
+    0.12,
+    0.14
+   ],
+   "dir": [
+    0.0,
+    1.0,
+    0.12
+   ],
+   "_doc": "a load up on the right shoulder, the hand steadying it"
+  }
+ },
+ "loads": {
+  "*": {
+   "food": {
+    "gear": "basket"
+   },
+   "wood": {
+    "gear": "logs"
+   },
+   "stone": {
+    "push": "barrow",
+    "heap": "rock"
+   },
+   "gold": {
+    "push": "cart",
+    "heap": "gold"
+   }
   }
  },
  "gear": {
@@ -1736,6 +1777,70 @@
       0.15
      ],
      "mat": "metal"
+    }
+   ]
+  },
+  "logs": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "a bundle of cut logs on the shoulder, carried home",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -8.0,
+      -1.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      6.0,
+      -1.0,
+      0.0
+     ],
+     "r": [
+      1.0,
+      0.9
+     ],
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -7.0,
+      -1.0,
+      -1.5
+     ],
+     "to": [
+      "hand",
+      6.5,
+      -1.0,
+      -1.5
+     ],
+     "r": [
+      0.85,
+      0.8
+     ],
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -7.5,
+      0.3,
+      -0.7
+     ],
+     "to": [
+      "hand",
+      5.5,
+      0.3,
+      -0.7
+     ],
+     "r": [
+      0.85,
+      0.75
+     ],
+     "mat": "wood"
     }
    ]
   },
