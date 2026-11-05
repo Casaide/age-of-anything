@@ -1,0 +1,3 @@
+{
+ "pulse": {"tag": "energy", "speed": 980, "arc": 0.0, "len": 8, "w": 1.6, "col": "#d8fbff", "glow": "#38c8ff", "sticks": false, "sound": "shoot_pulse"}
+}
