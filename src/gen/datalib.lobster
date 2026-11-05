@@ -3,6 +3,7 @@
 // lexicon, resources, cost curves. Mods are merged over it by gen/mods.lobster (mods_use).
 
 var lib_root = "data"
+var lib_pack = jobj()  // the game's manifest (data/pack.json)
 var lib_parts = jobj()
 var lib_part_ids:[string] = []  // sorted
 var lib_creatures = jobj()
@@ -31,6 +32,8 @@ def sorted_strs(xs:[string]) -> [string]:
 
 def lib_load(root:string):
     lib_root = root
+    lib_pack = load_json(root + "/pack.json")
+    assert gstr(lib_pack, "kind", "") == "game"
     lib_parts = jobj()
     for(load_json(root + "/parts.json").a) p: set(lib_parts, as_str(at(p, "id")), p)
     lib_creatures = load_json(root + "/creatures.json")

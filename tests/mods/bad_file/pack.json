@@ -1,7 +1,6 @@
 {
- "id": "future_game",
- "name": "future_game",
+ "id": "bad_file",
+ "name": "bad_file",
  "version": "0.1.0",
- "game_version": "0.99",
  "description": "A refusal fixture (tests/run_tests.gd _test_mods): this mod must be refused."
 }

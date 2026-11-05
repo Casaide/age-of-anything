@@ -14,7 +14,7 @@ if refused != "" or not has_s(map(used) u: tokenize(u, "@", "")[0], id):
     set_exit_code(1)
 else:
     print "mod {id}: loaded ({used})"
-    let manifest = load_json("../mods/{id}/mod.json")
+    let manifest = load_json("../mods/{id}/pack.json")
     let check = gobj(manifest, "check")
     let rules_id = gstr(check, "rules", "default")
     let rules = load_rules(rules_id)
