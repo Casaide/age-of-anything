@@ -1,0 +1,7 @@
+{
+ "id": "bad_pulses",
+ "name": "A broken mod (test)",
+ "version": "0.1.0",
+ "game_version": "0.21",
+ "data": "data"
+}

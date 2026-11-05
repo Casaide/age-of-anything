@@ -1,0 +1,7 @@
+{
+ "_doc": "Words that ask for this mod's guns.",
+ "words": {
+  "laser": {"era": "scifi", "tags": {"scifi": 5, "laser": 5}, "substitute": {"heavy": 1}, "note": "Lasers haven't happened here yet. Issued a very shiny spear."},
+  "scatter": {"era": "scifi", "tags": {"scifi": 5, "scatter": 5}, "substitute": {"heavy": 1}, "note": "Scatter guns haven't happened here yet. Issued a handful of gravel."}
+ }
+}

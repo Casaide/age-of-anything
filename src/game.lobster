@@ -1453,7 +1453,8 @@ def draw_shots(alpha:float):
         let land = shots[o + SHOT_LAND]
         let key = shots[o + SHOT_BY] * 65536 + land % 65536
         var t_from = shot_from.get(key, -1)
-        if t_from < 0:
+        let firstseen = t_from < 0
+        if firstseen:
             t_from = tick - 1
             shot_from.set(key, t_from)
         let t = clamp((float(tick - t_from) + alpha) / float(max(1, land - t_from)), 0.0, 1.0)
@@ -1466,22 +1467,9 @@ def draw_shots(alpha:float):
             let st = shot_style(if src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
             let a = ground_at(sx, sy) - float2 { 0.0, 12.0 }
             let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
-            let h = magnitude(b - a) * st.arc
-            def at(u:float) -> float2: return a + (b - a) * u - float2 { 0.0, h * 4.0 * u * (1.0 - u) }
-            let p = at(t)
-            let ahead = at(min(t + 0.03, 1.0))
-            let dir = if magnitude(ahead - p) > 0.0001: normalize(ahead - p) else: normalize(b - a + float2 { 0.0001, 0.0 })
-            let lift = h * 4.0 * t * (1.0 - t)
-            if st.beam:
-                let fade = 1.0 - t * t
-                if st.glow.w > 0.0: ui_line(a, b, st.w * 2.6, float4 { st.glow.x, st.glow.y, st.glow.z, 0.4 * fade })
-                ui_line(a, b, st.w, float4 { st.col.x, st.col.y, st.col.z, fade })
-                continue
-            if st.glow.w > 0.0:  // a bolt of light: a soft halo under its core
-                ui_line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2, float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 })
-            if st.len > 0.0: ui_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w, st.col)
-            else: fx_circle(p, st.w, st.col)
-            fx_circle(p + float2 { 0.0, lift + 1.0 }, 0.8, float4 { 0.0, 0.0, 0.0, 0.25 })
+            if st.plain(): draw_bolt(st, a, b, t, 1.0)
+            elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
+    draw_tracers()
     if tick % 200 == 0: shot_from = dictionary<int, int>(1024)  // (forget the landed ones now and then)
 
 // Health bars over hurt units you can see, and over the selected.
