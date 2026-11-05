@@ -193,3 +193,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-05: Mods can take the game apart: mods/scifi_short plays a bot match to the end with infantry only, two ages and its own rifle sound (D-213).
 - 2026-11-05: Shot looks became combinable knobs: bursts, scatter and jagged beams from one set, the game's arrows as presets (D-214).
 - 2026-11-05: The game became a pack: data/pack.json, and mod.json is gone (D-215).
+- 2026-11-05: One load path: the game and mods go through the same code (D-216).

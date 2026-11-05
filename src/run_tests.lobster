@@ -831,14 +831,15 @@ def g_merge():
 
 def g_mods():
     g_merge()
-    expect(gstr(lib_pack, "id", "") == "age_of_anything" and gstr(lib_pack, "kind", "") == "game", "packs: the game is the first pack read")
+    expect(lib_packs[0].id == "age_of_anything" and gstr(lib_packs[0].manifest, "kind", "") == "game", "packs: the game is the first pack read")
+    expect(has(lib_parts, "weapon.spear.wood"), "packs: its parts came through pack_apply")
     let looks = lib_data("shots.json")
     for(looks.keys) k:
         if not starts_with(k, "_"): expect(mod_check_shot(k, at(looks, k)) == "", "shots: the game\'s {k} is sound ({mod_check_shot(k, at(looks, k))})")
     let base_anything = load_rules("anything")
     let base_default = load_rules("default")
     let plain_key = rstr(generate("future soldiers", base_anything, 0), "key")
-    expect(not has(lib_parts, "weapon.pulse_rifle") or mods_active.length > 0, "mods: none used unless asked for")
+    expect(not has(lib_parts, "weapon.pulse_rifle") or pack_mods().length > 0, "mods: none used unless asked for")
     let used = mods_use([ "scifi_test" ])
     expect(strs_eq(used, [ "scifi_test" ]), "mods: the example mod loads ({mods_refused.get_keys()})")
     let anything = load_rules("anything")

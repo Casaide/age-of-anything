@@ -121,7 +121,9 @@ mods_use([])
 // One building at a time: the bots play on without it.
 for(SINGLES) id:
     let gone = parse_json("\{\"buildings\":\{\"{id}\":\{\"remove\":true\}\}\}")
-    lib_mod_data = [ jobj_with("buildings.json", gone) ]
+    let trial = pack_open("trial", "", jobj())
+    set(trial.data, "buildings.json", gone)
+    lib_packs = [ lib_packs[0], trial ]
     id_load(lib_root)
     let r2 = load_rules("default")
     let rc = map([ "centaur romans", "sewer rats" ]) p: generate(p, r2, 0)
@@ -131,7 +133,7 @@ for(SINGLES) id:
         if u_owner[i] < 2 and t_animal[k] == 0 and not t_worker[k]: army++
     print "  without {id}: {clock(tick)}, winner {winner}, army {army}, ages {ages[0]} {ages[1]}, lost {lost[0]} {lost[1]}"
     check(lost[0] + lost[1] > 0 or winner >= 0, "without {id} the bots still fight")
-lib_mod_data = []
+lib_packs = [ lib_packs[0] ]
 id_load(lib_root)
 print "\n{checks - failures} passed, {failures} failed"
 if failures > 0: set_exit_code(1)
