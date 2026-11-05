@@ -103,7 +103,7 @@ def mods_missing(race:JV) -> [string]: return filter(gstrs(race, "mods")) s: not
 
 // What's wrong with a shot look's knobs (see data/shots.json), or "".
 def mod_check_shot(k:string, m:JV) -> string:
-    let known = [ "_doc", "extends", "tag", "speed", "sound", "sticks", "arc", "form", "len", "w", "hold", "pulses", "scatter", "wobble", "jag", "col", "glow", "fade" ]
+    let known = [ "_doc", "extends", "tag", "speed", "sound", "sticks", "arc", "form", "len", "w", "hold", "pulses", "scatter", "wobble", "jag", "col", "glow", "fade", "hit" ]
     for(m.keys) key:
         if not has_s(known, key): return "shots.json {k}: no knob \'{key}\' (knobs: {concat_string(known, ", ")})"
     for([ "arc", "len", "w", "hold", "wobble", "jag", "fade" ]) key:
@@ -224,6 +224,12 @@ def mod_check_data(rec:ModRec, eras:[string]) -> string:
                 if not has(at(mshots, k), key): return "shots.json {k}: needs \'{key}\'"
             let bad = mod_check_shot(k, at(mshots, k))
             if bad != "": return bad
+            let hit = get(at(mshots, k), "hit")
+            if hit:
+                if gint(hit, "sparks", 0) < 1: return "shots.json {k}: its hit needs \'sparks\'"
+                if gstr(hit, "col", "").length != 7: return "shots.json {k}: its hit needs \'col\' as \"#rrggbb\""
+                let sound = gstr(hit, "sound", "")
+                if sound != "" and not has(gobj(data_merge(lib_data("audio.json"), gobj(d, "audio.json")), "sounds"), sound): return "shots.json {k}: its hit\'s sound \'{sound}\' isn\'t in audio.json"
     return mod_check_match_data(d)
 
 def mod_extended(all:JV, e:JV) -> JV:

@@ -1,3 +1,4 @@
 {
- "sounds": {"shoot_pulse": {"takes": 1, "bus": "Sfx", "gap_ms": 70}}
+ "sounds": {"shoot_pulse": {"takes": 1, "bus": "Sfx", "gap_ms": 70},
+  "hit_pulse": {"takes": 1, "bus": "Sfx", "gap_ms": 60}}
 }
