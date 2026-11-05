@@ -389,6 +389,7 @@ var t_bonus = []::[int]      // per unit type: its eval bonus vector with resear
 var t_slot = []::string      // per unit type: its roster slot
 var t_trader = []::int
 var resource_names = []::string
+var staple_resources = []::int  // the resources bots buy when short (resources.json "staple")
 var tr_names = []::string
 var start_x = []::int  // the map starts, milli-tiles
 var start_y = []::int

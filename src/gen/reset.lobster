@@ -316,6 +316,7 @@ var stashed_t_bonus = []::[int]
 var stashed_t_slot = []::string
 var stashed_t_trader = []::int
 var stashed_resource_names = []::string
+var stashed_staple_resources = []::int
 var stashed_tr_names = []::string
 var stashed_start_x = []::int
 var stashed_start_y = []::int
@@ -785,6 +786,7 @@ def reset_world():
     t_slot = []::string
     t_trader = []::int
     resource_names = []::string
+    staple_resources = []::int
     tr_names = []::string
     start_x = []::int
     start_y = []::int
@@ -1243,6 +1245,7 @@ def stash_world():
     stashed_t_slot = t_slot
     stashed_t_trader = t_trader
     stashed_resource_names = resource_names
+    stashed_staple_resources = staple_resources
     stashed_tr_names = tr_names
     stashed_start_x = start_x
     stashed_start_y = start_y
@@ -1695,6 +1698,7 @@ def unstash_world():
     t_slot = stashed_t_slot
     t_trader = stashed_t_trader
     resource_names = stashed_resource_names
+    staple_resources = stashed_staple_resources
     tr_names = stashed_tr_names
     start_x = stashed_start_x
     start_y = stashed_start_y

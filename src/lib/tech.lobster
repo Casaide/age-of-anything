@@ -88,7 +88,7 @@ var bm_research_cost = []::[int]
 var bm_range = []::[int]
 var bm_cost_pct = []::[int]
 var bm_trade_fee = []::[int]  // [player][type]: points off the market's fee
-var class_machine = -2        // the classes "machine" and "mounted" (formation bands), or -2
+var class_machine = -2        // the classes rules' combat band_machine and band_mounted name (formation bands), or -2
 var class_mounted = -2
 // Unit types' research and bonuses (Tech.retype).
 var t_heal_pct = []::int
