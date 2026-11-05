@@ -1,7 +1,7 @@
 #!/bin/sh
 # Formatting and compiler warnings, as one check. ./lint.sh [--fix]; exit 1 on anything found.
 #   - lobsterfmt must leave every file of every program in src/ as it is; --fix writes it.
-#   - every program compiles with no warnings. A "use let" only counts if nothing under src/ assigns that name: a shared
+#   - every program compiles with no warnings. A compile error counts too. A "use let" only counts if nothing under src/ assigns that name: a shared
 #     global set only by another program looks unassigned in the programs that don't include that code.
 cd "$(dirname "$0")"
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
@@ -14,7 +14,7 @@ else
 	"$LOBSTERFMT" -l *.lobster 2>&1 | sed 's/^/not formatted: /' >> "$out"
 fi
 for prog in *.lobster; do
-	"$LOBSTER" --compile-only "$prog" 2>&1 | grep 'warning:' | while IFS= read -r line; do
+	"$LOBSTER" --compile-only "$prog" 2>&1 | grep 'warning:\|error:' | while IFS= read -r line; do
 		name="$(printf '%s\n' "$line" | sed -n 's/.*use `let` to declare `\([a-zA-Z0-9_]*\)`.*/\1/p')"
 		if [ -n "$name" ] && grep -rqE --include='*.lobster' "(^|[^.a-zA-Z0-9_])$name *(=[^=]|\+=|-=|\*=|/=|\+\+|--)" .; then
 			continue
