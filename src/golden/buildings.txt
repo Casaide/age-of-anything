@@ -4,6 +4,8 @@ stone:barracks 40de73716e763e85
 stone:bastion 6b296d772f5eaa25
 stone:castle 1df220d7c27e930d
 stone:farm 784a13ff5a7be594
+stone:fortified_gate 2adfde064b9e7080
+stone:fortified_wall 429361fd2868e22d
 stone:house 1a8799853a8d88a7
 stone:ladder 64250303237b3fca
 stone:lumber_camp 6f1314774197e304
@@ -29,6 +31,8 @@ thatch:barracks ae883d0609a706dd
 thatch:bastion fe1f38bec8b45b96
 thatch:castle b052acec67471020
 thatch:farm 784a13ff5a7be594
+thatch:fortified_gate 1c6dad71a9683d6c
+thatch:fortified_wall 429361fd2868e22d
 thatch:house 22b61cf90b92ab37
 thatch:ladder 64250303237b3fca
 thatch:lumber_camp c3ee5c611269255c
@@ -54,6 +58,8 @@ junk:barracks 92eb10eadf463b8c
 junk:bastion 059a8dac093d5184
 junk:castle 4be882e942afd1e4
 junk:farm 784a13ff5a7be594
+junk:fortified_gate d6ca4d0acea26ca8
+junk:fortified_wall f982c24a71b0e853
 junk:house 27b4c5916ce91f1f
 junk:ladder 64250303237b3fca
 junk:lumber_camp c8cd297ec5997726
@@ -79,6 +85,8 @@ tent:barracks ca410c044788777e
 tent:bastion d9a37cb5640136af
 tent:castle a2a548d18079451c
 tent:farm 784a13ff5a7be594
+tent:fortified_gate 420d981261298dab
+tent:fortified_wall 429361fd2868e22d
 tent:house 5b01627208b601ec
 tent:ladder 64250303237b3fca
 tent:lumber_camp d8f07ba65a91d416
@@ -104,6 +112,8 @@ reed:barracks 73f776c361e6094b
 reed:bastion 0751ae986989aa97
 reed:castle 030b8cb6aee2964e
 reed:farm 784a13ff5a7be594
+reed:fortified_gate 2adfde064b9e7080
+reed:fortified_wall 429361fd2868e22d
 reed:house f60867a3008bb21d
 reed:ladder 64250303237b3fca
 reed:lumber_camp 196c0bb6a9ed0571
@@ -129,6 +139,8 @@ mound:barracks 1dae4d96933bfd27
 mound:bastion fce1384ae7710491
 mound:castle b02c9892a8d3755b
 mound:farm 784a13ff5a7be594
+mound:fortified_gate 2adfde064b9e7080
+mound:fortified_wall 429361fd2868e22d
 mound:house 26e099f476d938d7
 mound:ladder 64250303237b3fca
 mound:lumber_camp 9a99e2d69daac5fb
