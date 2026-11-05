@@ -2316,7 +2316,7 @@ def load_from(path:string):
     let t0 = seconds_elapsed()
     let loaded = load_world(path)
     if not loaded.length:
-        banner = "No save to load"
+        banner = if save_refused != "": save_refused else: "No save to load"
         banner_t = gl.time()
         return
     bots = loaded

@@ -32,6 +32,24 @@ def sorted_strs(xs:[string]) -> [string]:
     insertion_sort(out) a, b: a < b
     return out
 
+// Saves: the format this build writes, and what stops one loading. A save names the packs it was made with, and a
+// match only makes sense with those. A save from before formats reads as format 0 with no packs: the base game.
+let SAVE_FORMAT = 1
+var save_refused = ""  // why the last load didn't happen
+
+def sig_id(sig:string) -> string:
+    let n = find_string(sig, "@")
+    return if n < 0: sig else: substring(sig, 0, n)
+
+// Why a save can't load here, or "".
+def save_refusal(format:int, packs:[string]) -> string:
+    if format > SAVE_FORMAT: return "This save is from a newer build of the game."
+    for(packs) sig:
+        if not has_s(lib_mods, sig): return "This save needs the mod {sig_id(sig)} ({sig})."
+    for(lib_mods) sig:
+        if not has_s(packs, sig): return "This save was made without the mod {sig_id(sig)}."
+    return ""
+
 // A pack: the game (data/pack.json, always first) or a mod. Everything in lib_* comes from packs, through pack_apply.
 class Pack:
     id:string
