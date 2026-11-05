@@ -271,6 +271,15 @@ class vx_hold_spec:
     raise:float3  // a bow: raised, and drawn by the other hand
     draw:float3
     draws:bool
+    pick:float3  // a basket: where the other hand picks from, and drops into it
+    drop:float3
+    picks:bool
+
+// What a worker takes home: gear held, or a cart pushed (barrow or cart) under a heap of its material.
+class vx_load_spec:
+    gear:string
+    push:string
+    heap:int
 
 class vx_gear_spec:
     id:string
@@ -292,6 +301,7 @@ class vx_rule:
 let vx_bodies = dictionary<string, vx_body_spec>(64)
 let vx_gears = dictionary<string, vx_gear_spec>(128)
 let vx_holds = dictionary<string, vx_hold_spec>(32)
+let vx_loads = dictionary<string, vx_load_spec>(32)  // "<body or *> <resource>"
 var vx_rules = []::vx_rule
 var vx_loaded = false
 var vx_data_dirs = []::string
@@ -411,7 +421,16 @@ def vx_load(dirs:[string]):
                 let h = ho.a[k]
                 vx_holds.set(name, vx_hold_spec { vx_v3(at(h, "rest")), vx_v3_or(h, "dir"), gfloat(h, "swing", 0.0), vx_v3_or(h, "wind"),
                                                   vx_v3_or(h, "wind_dir"), vx_v3_or(h, "hit"), vx_v3_or(h, "hit_dir"), has(h, "hit"),
-                                                  vx_v3_or(h, "raise"), vx_v3_or(h, "draw"), has(h, "draw") })
+                                                  vx_v3_or(h, "raise"), vx_v3_or(h, "draw"), has(h, "draw"),
+                                                  vx_v3_or(h, "pick"), vx_v3_or(h, "drop"), has(h, "pick") })
+        if has(go, "loads"):
+            let lo = at(go, "loads")
+            for(lo.keys) who, i:
+                let rs = lo.a[i]
+                for(rs.keys) res, k:
+                    let l = rs.a[k]
+                    let heap = gstr(l, "heap", "")
+                    vx_loads.set("{who} {res}", vx_load_spec { gstr(l, "gear", ""), gstr(l, "push", ""), if heap != "": vx_mat(heap) else: 0 })
         if has(go, "gear"):
             let gs = at(go, "gear")
             for(gs.keys) name, k:
@@ -505,7 +524,7 @@ var vx_variant = 0          // the look being built
 var vx_seated = false       // a rider being built: no legs of its own (shapes with `unless: seated` left off)
 var vx_team_wear = "scarf"  // where a creature without a tunic wears the team: scarf or vest (a concept option)
 var vx_act = ""             // the pose being drawn: "" (standing or walking) or "attack", at a step through it
-var vx_barrow = false       // pushing a wheelbarrow (a worker carrying a load home): both hands on its handles
+var vx_carried = ""         // a worker's load carried home (a resource's name): what's pushed takes both hands
 var vx_stand = false        // standing (not walking): every foot planted where it rests (idle, a blow, at work)
 
 def vx_looks_of(u:vx_unit_def) -> int: return vx_body_of(u.body).looks.length
@@ -555,6 +574,16 @@ def vx_raise(t:float) -> float:  // raised through the wind-up, held, lowered
 def vx_strike(t:float) -> float: return vx_blow(t) - 0.4 * vx_raise(t) * (1.0 - vx_blow(t))
 
 def vx_mix(a:float3, b:float3, k:float) -> float3: return a + (b - a) * k
+
+// What this body takes home of resource res (its own rule, or everyone's; nil: nothing to see).
+def vx_load_of(body:string, res:string):
+    let own = vx_loads.get("{body} {res}")
+    return own or vx_loads.get("* {res}")
+
+// The gear a load is held by ("" when it's pushed or there's none).
+def vx_load_gear(body:string, res:string) -> string:
+    let l = vx_load_of(body, res)
+    return if l: l.gear else: ""
 
 // Points a shape can stand on: named, with where each is now.
 class vx_points:
@@ -745,11 +774,15 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         let h = vx_holds.get(left.hold)
         assert h
         hl = sh_l + h.rest * L - carry
+        if attack and h.picks and not right:
+            hr = vx_mix(vx_mix(hr, sh_r + h.pick * L, up), sh_l + h.drop * L, k)
         if attack and h.draws:
             hl = vx_mix(hl, sh_l + h.raise * L, up)
             hr = vx_mix(hr, sh_r + h.draw * L, up * (1.0 - k))
             drawn = up * (1.0 - k) > 0.5
-    if vx_barrow:  // both hands low and forward on the handles
+    let load = if vx_carried != "": vx_load_of(b.id, vx_carried) else: nil
+    let pushed = if load: load.push else: ""
+    if pushed != "":  // both hands low and forward on the handles
         hr = sh_r + float3 { 0.1, 0.55, -0.62 } * L
         hl = sh_l + float3 { -0.1, 0.55, -0.62 } * L
     for([ 1.0, -1.0 ]) side:
@@ -761,8 +794,8 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         out.push(vx_ball(hand, b.thick * 0.8, b.hand))
         if side > 0.0: hr = hand
         else: hl = hand
-    if vx_barrow:
-        vx_wheelbarrow(out, hr, hl, b.arm)
+    if pushed != "":
+        vx_pushed(out, hr, hl, b.arm, pushed == "cart", if load: load.heap else: 0)
         return
     if right:  // its frame: along the held direction, out of its front, to the right
         let d = normalize(dr)
@@ -775,22 +808,29 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         let gp = vx_points { [ "hand", "draw" ], [ hl, if drawn: hr else: hl - o * 0.4 ] }
         for(left.shapes) s: vx_emit(out, s, gp, vx_Z, o, sd, flags, nil)
 
-// A wheelbarrow pushed by hands hr and hl (the ground at z 0), sized to the arm (a bone of length a): the handles
-// from the hands down to a tub, a wheel in front on the ground.
-def vx_wheelbarrow(out:[vx_prim], hr:float3, hl:float3, a:float):
+// A barrow pushed by hands hr and hl (the ground at z 0), sized to the arm (a bone of length a): the handles
+// from the hands down to a tub, a wheel in front on the ground, or a cart's wider tub with one each side; a heap on it.
+def vx_pushed(out:[vx_prim], hr:float3, hl:float3, arm:float, cart:bool, heap:int):
+    let a = max(arm, 5.0)  // (a small body's barrow still holds something)
     let wood = vx_mat("wood")
     let mid = (hr + hl) * 0.5
-    let half = max(1.4, abs(hr.x - hl.x) * 0.5)
-    let r = a * 0.3
-    let tub = float3 { mid.x, mid.y + a * 1.0, max(r + a * 0.2, mid.z * 0.45) }
+    let r = a * (if cart: 0.36 else: 0.32)
+    let wide = if cart: r * 0.7 else: 0.0
+    let y = mid.y + a * 1.15
+    let z = max(r + a * 0.25, mid.z * 0.5)
     let wr = max(1.0, a * 0.24)
-    let wheel = float3 { mid.x, tub.y + r * 1.3, wr }
-    out.push(vx_cap(hr, float3 { mid.x + half * 0.8, tub.y - r * 0.5, tub.z }, 0.35, 0.35, wood))
-    out.push(vx_cap(hl, float3 { mid.x - half * 0.8, tub.y - r * 0.5, tub.z }, 0.35, 0.35, wood))
-    out.push(vx_cap(float3 { mid.x - half, tub.y, tub.z }, float3 { mid.x + half, tub.y, tub.z }, r, r * 0.9, wood))
-    out.push(vx_cap(float3 { mid.x, tub.y + r * 0.6, tub.z - r * 0.4 }, wheel, 0.3, 0.3, wood))
-    out.push(vx_disc(wheel, float3 { 1.0, 0.0, 0.0 }, wr, 0.6, wood))
-    out.push(vx_ball(wheel, 0.4, vx_mat("metal")))
+    out.push(vx_cap(hr, float3 { mid.x + wide + r * 0.5, y - a * 0.6, z }, 0.35, 0.35, wood))
+    out.push(vx_cap(hl, float3 { mid.x - wide - r * 0.5, y - a * 0.6, z }, 0.35, 0.35, wood))
+    for(if cart: [ -1.0, 1.0 ] else: [ 0.0 ]) sd:  // a tub along the way it goes (a cart's is two side by side)
+        let x = mid.x + sd * wide
+        out.push(vx_cap(float3 { x, y - a * 0.6, z }, float3 { x, y + a * 0.6, z }, r, r * 0.85, wood))
+    let wheels = if cart: [ float3 { mid.x - wide - r - 0.5, y, wr }, float3 { mid.x + wide + r + 0.5, y, wr } ] else: [ float3 { mid.x, y + a * 0.6 + r * 0.5, wr } ]
+    for(wheels) w:
+        if not cart: out.push(vx_cap(float3 { mid.x, y + a * 0.5, z - r * 0.5 }, w, 0.3, 0.3, wood))
+        out.push(vx_disc(w, float3 { 1.0, 0.0, 0.0 }, wr, 0.6, wood))
+        out.push(vx_ball(w, 0.4, vx_mat("metal")))
+    for([ float3 { -0.5, -0.4, 0.0 }, float3 { 0.5, 0.0, 0.0 }, float3 { -0.2, 0.45, 0.1 }, float3 { 0.1, -0.05, 0.5 } ]) o:  // (a heap above the rim)
+        out.push(vx_ball(float3 { mid.x + o.x * (wide + r * 0.4), y + o.y * a, z + r * 0.7 + o.z * r }, r * 0.5, heap))
 
 // What a body with no hands holds, in its harness: the right item along the harness's direction (lowered into a thrust
 // in a blow), the left on its side.
@@ -809,6 +849,13 @@ def vx_harness(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, t:floa
         let gp = vx_points { [ "hand", "draw" ], [ hl, hl - o * 0.4 ] }
         for(left.shapes) s: vx_emit(out, s, gp, vx_Z, o, normalize(cross(o, vx_Z)), flags, nil)
 
+// Is this unit's free hand picking (a basket on the other arm)?
+def vx_picking(u:vx_unit_def) -> bool:
+    let left = vx_held(u, -1)
+    if not left or vx_held(u, 1): return false
+    let h = vx_holds.get(left.hold)
+    return h and h.picks
+
 // Worn gear on a body (its fit for the body, or for any).
 def vx_worn(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, flags:[string]):
     for(u.gear) g:
@@ -822,8 +869,9 @@ def vx_worn(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, flags:[st
 // A body with its worn gear and arms (when it has them) at points p.
 def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:float, t:float, flags:[string]):
     let g = b.gait
-    if g and vx_act == "attack":  // the body behind the blow
-        let s = vx_strike(t)
+    if g and vx_act == "attack":  // the body behind the blow (or leaning in to pick)
+        let picks = vx_picking(u)
+        let s = if picks: vx_raise(t) - vx_blow(t) else: vx_strike(t)
         p.at = map(p.at) a, k: a + float3 { 0.0, b.pdrive[k] * s, -g.dip * max(0.0, s) }
     if not vx_seated: vx_legs(out, b, p, ph, flags)
     for(b.shapes) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
