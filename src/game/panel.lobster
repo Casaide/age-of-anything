@@ -312,7 +312,7 @@ def panel_buttons() -> [Btn]:
                         b.group = verb
                         b.tip = "{if buy: "Costs" else: "Pays"} {price} gold. Each trade moves the price: buying pushes it up, selling down."
                         out.push(b)
-        if bt_name[b_kind[bi]] == "town_center" and b_done[bi] != 0:  // one bell, rung and unrung
+        if has_role(b_kind[bi], ROLE_HUB) and b_done[bi] != 0:  // one bell, rung and unrung
             let rung = (filter(b_id.length) b: b_owner[b] == ME and (filter(b_inside[b].length / REC_SIZE) k: t_worker[b_inside[b][k * REC_SIZE + REC_KIND]] != 0).length > 0).length > 0
             let b = Btn { if rung: "Back to work" else: "Call to arms", "", if rung: 9 else: 8, 0 }
             b.icon = if rung: "back_to_work" else: "call_to_arms"
@@ -374,7 +374,7 @@ def panel_buttons() -> [Btn]:
         elif build_page < 0:
             for([ "Civilian", "Military" ]) name, page:
                 let b = Btn { "Build: " + name, "", 6, page }
-                b.building = btype_named(if page == 0: "house" else: "barracks")
+                b.building = btype_with(if page == 0: ROLE_HOUSING else: ROLE_BARRACKS)
                 b.glyph = if page == 0: "house" else: "barracks"
                 b.note = name
                 b.group = "Build"
