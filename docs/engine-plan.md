@@ -428,7 +428,7 @@ In order. Each is small, shippable on its own, and the game plays after every on
 help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 waits for voxel units to be the default
 (Dominic, 2026-11-03), and so does this. Efforts are rough, in working days of a session like today's.
 
-1. **Roles, not names (1-2 days).** *Done 2026-11-05: buildings by `roles` (D-192; what still names a building is `data/ai.json`: the
+1. **Roles, not names (1-2 days, #124).** *Done 2026-11-05: buildings by `roles` (D-192; what still names a building is `data/ai.json`: the
    build order, raid targets, camps, research waits, looked up by `btype_named`), `staple` in `data/resources.json`,
    `band_machine` and `band_mounted` in the rules' `combat`.* Give buildings their roles in `data/buildings.json`; `lib/match`, `trade`,
    `animals` and the bots look up by role; the bots' resource lists come from `data/resources.json`; `tech`'s
