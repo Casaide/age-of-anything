@@ -434,7 +434,7 @@ help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 wai
    `animals` and the bots look up by role; the bots' resource lists come from `data/resources.json`; `tech`'s
    "machine" and "mounted" become data. Done: `grep 'btype_named("\|bt_name\[' src/lib` finds nothing; `golden.sh`
    unchanged; `test_ai` and `test_sim` give the same matches tick for tick.
-2. **Moddable buildings, tech, AI and sound (3-5 days, #18).** `MOD_DATA_FILES` covers `buildings`, `tech`,
+2. **Moddable buildings, tech, AI and sound (3-5 days, #18).** *Done 2026-11-05: `lib_data`, `mods/scifi_short`; `buildings`, `tech`, `ai`, `audio` are open, the other files wait for a test case of their own.* `MOD_DATA_FILES` covers `buildings`, `tech`,
    `ai`, `audio` and the rest; entries can be removed or disabled; a mod brings its own `audio/` WAVs; the bots read
    what exists. Done: the sci-fi mod as Dominic described it (infantry only, a short tree, lasers, its own sounds)
    plays a bot match to the end; without mods the golden files are unchanged.
