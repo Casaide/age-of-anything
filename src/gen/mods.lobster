@@ -101,6 +101,28 @@ def mod_read(rec:ModRec) -> string:
 // The mods a race was made with that aren't in use here ([]: it can be played; Mods.missing).
 def mods_missing(race:JV) -> [string]: return filter(gstrs(race, "mods")) s: not has_s(lib_mods, s)
 
+// What's wrong with a shot look's knobs (see data/shots.json), or "".
+def mod_check_shot(k:string, m:JV) -> string:
+    let known = [ "_doc", "extends", "tag", "speed", "sound", "sticks", "arc", "form", "len", "w", "hold", "pulses", "scatter", "wobble", "jag", "col", "glow", "fade" ]
+    for(m.keys) key:
+        if not has_s(known, key): return "shots.json {k}: no knob \'{key}\' (knobs: {concat_string(known, ", ")})"
+    for([ "arc", "len", "w", "hold", "wobble", "jag", "fade" ]) key:
+        if has(m, key) and (at(m, key).kind != J_INT and at(m, key).kind != J_FLOAT or as_float(at(m, key)) < 0.0): return "shots.json {k}: \'{key}\' must be a number, 0 or more"
+    if has(m, "fade") and as_float(at(m, "fade")) > 1.0: return "shots.json {k}: \'fade\' is a share of its life, 0 to 1"
+    let form = gstr(m, "form", "bolt")
+    if form != "bolt" and form != "beam": return "shots.json {k}: form \'{form}\' isn\'t bolt or beam"
+    if form != "beam":
+        for([ "hold", "wobble", "jag" ]) key:
+            if has(m, key): return "shots.json {k}: \'{key}\' is for a beam, and this is a bolt"
+    for([ [ "pulses", "gap" ], [ "scatter", "spread" ] ]) knob:
+        if has(m, knob[0]):
+            let o = at(m, knob[0])
+            if o.kind != J_OBJ or gint(o, "count", 0) < 1: return "shots.json {k}: \'{knob[0]}\' needs a \'count\' of 1 or more"
+            if not has(o, knob[1]) or as_float(at(o, knob[1])) < 0.0: return "shots.json {k}: \'{knob[0]}\' needs a \'{knob[1]}\' of 0 or more"
+    for([ "col", "glow" ]) key:
+        if has(m, key) and (at(m, key).kind != J_STR or at(m, key).s.length != 7 or at(m, key).s[0] != '#'): return "shots.json {k}: \'{key}\' must be \"#rrggbb\""
+    return ""
+
 // A mod's buildings, tech, AI and sound, against what's there before it: "" or what's wrong.
 def mod_check_match_data(d:JV) -> string:
     let bfile = gobj(d, "buildings.json")
@@ -198,10 +220,10 @@ def mod_check_data(rec:ModRec, eras:[string]) -> string:
     let mshots = gobj(d, "shots.json")
     for(mshots.keys) k:
         if not starts_with(k, "_"):
-            for([ "tag", "speed", "col" ]) key:
+            for(if has(at(mshots, k), "extends"): [ "tag" ] else: [ "tag", "speed", "col" ]) key:
                 if not has(at(mshots, k), key): return "shots.json {k}: needs \'{key}\'"
-            let draw = gstr(at(mshots, k), "draw", "")
-            if draw != "" and draw != "beam": return "shots.json {k}: draw \'{draw}\' isn\'t a way to draw a shot (beam, or leave it out)"
+            let bad = mod_check_shot(k, at(mshots, k))
+            if bad != "": return bad
     return mod_check_match_data(d)
 
 def mod_extended(all:JV, e:JV) -> JV:
