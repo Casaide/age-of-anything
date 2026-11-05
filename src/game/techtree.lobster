@@ -133,7 +133,8 @@ def build_tree_of(race:JV, ident:JV, rules:JV) -> TTree:
         let lanes_g = []::[TNode]
         for(glist(rules, "roster")) sd:
             let slot = gstr(sd, "slot", "")
-            if gstr(sd, "building", "") == id and gstr(sd, "status", "") != "parked":
+            let trainers = filter(blds.keys) t: has_s(gstrs(at(blds, t), "trains"), slot)  // (a mod can move a line; a planned one has only its label)
+            if (if trainers.length: has_s(trainers, id) else: gstr(sd, "building", "") == id) and gstr(sd, "status", "") != "parked":
                 let tier = gint(sd, "tier", 1)
                 let first_age = max(tier, gint(b, "age", 1))
                 let line_planned = gstr(sd, "status", "") == "planned"

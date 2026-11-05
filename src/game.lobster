@@ -984,7 +984,8 @@ def race_facts(races:[JV]):
         unit_blow.set(k, if has_s(tags, "ram"): "ram_hit" elif has_s(tags, "blade"): "hit_blade" elif has_s(tags, "blunt"): "hit_blunt" else: "hit_pierce")
         let kind = shot_kind_of(tags)
         unit_shotk.set(k, kind)
-        unit_shot.set(k, if kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
+        let own_sound = gstr(gobj(mod_shots, kind), "sound", "")
+        unit_shot.set(k, if own_sound != "": own_sound elif kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
 
 // ------------------------------------------------------------------ becoming another race mid-match (gen/swap.lobster)
 // N: type a race; Enter: your people become it at its own prices (no fights, D-195), line by line,
@@ -1970,14 +1971,14 @@ if not touch_play and gl.framebuffer_size().y > 800: zoom = max(1.0, zoom - 1.0)
 pack_library = true
 startup_frame("Loading the sounds...", 0.2)
 volume_load()
-music_start()
-ambience_start()
 startup_frame("Loading the data...", 0.5)
 lib_load("../data")
 pack_teams()
 ui_setup("")
 let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mods
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
+music_start()  // (after the mods: they can bring their own)
+ambience_start()
 startup_frame("Loading the parts...", 0.8)
 id_load("../data")
 // propframes dump:<folder>: every prop baked as PNGs, then quit (art review).

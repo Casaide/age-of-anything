@@ -90,6 +90,10 @@ def mod_merge(a:JV, b:JV) -> JV:
                     if stringify(y) == stringify(x): seen = true
                 if not seen: list.push(x)
             set(out, k, jarr(list))
+        elif starts_with(key, "-"):
+            let k = substring(key, 1, key.length - 1)
+            let gone = map(v.a) x: stringify(x)
+            set(out, k, jarr(filter(glist(out, k)) x: not has_s(gone, stringify(x)) and not has_s(gone, stringify(jstr(item_key(x))))))
         elif has(out, key) and at(out, key).kind == J_OBJ and v.kind == J_OBJ: set(out, key, mod_merge(at(out, key), v))
         else: set(out, key, deep_copy(v))
     return out
@@ -113,6 +117,7 @@ def lib_data(file:string) -> JV:
 def item_key(x:JV) -> string:
     if x.kind != J_OBJ: return ""
     if has(x, "id"): return gstr(x, "id", "")
+    if has(x, "slot"): return gstr(x, "slot", "")
     return if has(x, "age"): "age " + string(as_int(at(x, "age"))) else: ""
 
 def data_merge(a:JV, b:JV) -> JV:
@@ -120,11 +125,7 @@ def data_merge(a:JV, b:JV) -> JV:
     for(b.keys) key, n:
         let v = b.a[n]
         let old = get(out, key)
-        if starts_with(key, "+"): out = mod_merge(out, jobj_with(key, v))
-        elif starts_with(key, "-"):
-            let k = substring(key, 1, key.length - 1)
-            let gone = map(v.a) x: stringify(x)
-            set(out, k, jarr(filter(glist(out, k)) x: not has_s(gone, stringify(x)) and not has_s(gone, stringify(jstr(item_key(x))))))
+        if starts_with(key, "+") or starts_with(key, "-"): out = mod_merge(out, jobj_with(key, v))
         elif v.kind == J_OBJ and gbool(v, "remove", false): out = jobj_without(out, key)
         elif v.kind == J_OBJ and has(v, "extends"): set(out, key, data_merge(at(out, gstr(v, "extends", "")), jobj_without(v, "extends")))
         elif old and old.kind == J_OBJ and v.kind == J_OBJ: set(out, key, data_merge(old, v))
