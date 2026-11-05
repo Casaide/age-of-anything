@@ -85,7 +85,7 @@ def queue_look(e:int) -> Btn:
 var build_menu_ids = []::[string]
 def page_buildings(page:int) -> [int]:
     if not build_menu_ids.length:
-        let menu = gobj(load_json(lib_root + "/buildings.json"), "menu")
+        let menu = gobj(lib_data("buildings.json"), "menu")
         build_menu_ids = [ gstrs(menu, "civilian"), gstrs(menu, "military") ]
     let can = buildable()
     let out = []::int
@@ -619,7 +619,7 @@ def hud_look():
     if fam == hud_culture: return
     hud_culture = fam
     ui_setup(fam)
-    let d = load_json(lib_root + "/ui.json")
+    let d = lib_data("ui.json")
     hud_crest = gstr(gobj(family(fam), "ui"), "ornament", gstr(at(at(d, "directions"), gstr(d, "direction", "timber")), "ornament", "sun"))
 
 // ---- the panel

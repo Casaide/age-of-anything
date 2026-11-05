@@ -45,7 +45,7 @@ def pack_teams():
 // The tables the pack lacks, from data (after the map and the match's types are set up).
 def pack_from_data(map_id:string):
     pack_teams()
-    let audio = load_json(lib_root + "/audio.json")
+    let audio = lib_data("audio.json")
     if not sounds.get_keys().length:
         let snd = gobj(audio, "sounds")
         for(snd.keys) name, n:
@@ -56,11 +56,11 @@ def pack_from_data(map_id:string):
         let kinds = gobj(gobj(audio, "voices"), "kinds")
         for(kinds.keys) name, n: voice_takes.set(name, as_int(kinds.a[n]))
     if not building_names.get_keys().length:
-        for(bt_name) id, k: building_names.set(k, gstr(at(at(load_json(lib_root + "/buildings.json"), "buildings"), id), "name", id))
+        for(bt_name) id, k: building_names.set(k, gstr(at(at(lib_data("buildings.json"), "buildings"), id), "name", id))
     if not research_names.get_keys().length:
         for(research) item, r: research_names.set(r, gstr(su_research[r], "name", item.id))
     if not ground_a.length:
-        let tj = gobj(load_json(lib_root + "/terrain.json"), "terrain")
+        let tj = gobj(lib_data("terrain.json"), "terrain")
         for(tr_names) id:
             let d = at(tj, id)
             ground_a.push(pd_rgb(gstr(d, "colour", "#808080")))

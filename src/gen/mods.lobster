@@ -212,5 +212,6 @@ def mods_use(ids:[string], roots = mod_roots) -> [string]:
             mods_active.push(rec)
             lib_mod_data.push(rec.data)
             lib_mod_dirs.push(rec.dir + "/" + gstr(rec.manifest, "data", "data"))
+    id_load(lib_root)  // (what a race lacks depends on the buildings)
     for(mods_refused.get_keys()) id: print "Mod \'{id}\' refused: {mods_refused.get(id, "")}"
     return map(mods_active) a: a.id

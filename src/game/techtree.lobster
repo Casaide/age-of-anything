@@ -85,8 +85,8 @@ def build_tree(p:int) -> TTree: return build_tree_of(su_races[p], su_idents[p], 
 // Any race's tree (the lobby's banners open it before there's a match).
 def build_tree_of(race:JV, ident:JV, rules:JV) -> TTree:
     let full = gbool(rules, "full_tech_tree", false)
-    let bdata = load_json(lib_root + "/buildings.json")
-    let tdata = load_json(lib_root + "/tech.json")
+    let bdata = lib_data("buildings.json")
+    let tdata = lib_data("tech.json")
     let blds = at(bdata, "buildings")
     let ages_d = glist(tdata, "ages")
     let last_age = gint(ages_d[ages_d.length - 1], "age", 1)
@@ -263,8 +263,8 @@ def slot_word(slot:string, rules:JV) -> string:
 def race_words(p:int) -> RaceWords: return race_words_of(su_races[p], su_idents[p], su_rules)
 
 def race_words_of(race:JV, ident:JV, rules:JV) -> RaceWords:
-    let tdata = load_json(lib_root + "/tech.json")
-    let blds = at(load_json(lib_root + "/buildings.json"), "buildings")
+    let tdata = lib_data("tech.json")
+    let blds = at(lib_data("buildings.json"), "buildings")
     def research_of(id:string) -> JV?:
         for(glist(tdata, "research")) r:
             if gstr(r, "id", "") == id: return r
@@ -289,7 +289,7 @@ def race_words_of(race:JV, ident:JV, rules:JV) -> RaceWords:
         let w = slot_word(slot, rules) + " line"
         if not has_s(lacks, w): lacks.push(w)
     // How it moves: the class each unit gets (rules.movement.classes, the first tag it has), in words.
-    let words = gobj(load_json(lib_root + "/groups.json"), "movement")
+    let words = gobj(lib_data("groups.json"), "movement")
     let classes = dictionary<string, [string]>(8)
     for(glist(race, "units")) u:
         let tags = gstrs(at(u, "eval"), "tags")
