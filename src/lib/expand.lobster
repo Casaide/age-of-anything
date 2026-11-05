@@ -35,7 +35,9 @@ def camps(e:Expand, bot:Bot, workers:[int]):
     e.next_camp = tick + cfg("expand.camp_every") * 20
     e.want = []::int
     let p = bot.player
-    for([ "food", "gold", "stone", "wood" ]) res:  // (the camps' names, sorted)
+    let names = copy(resource_names)
+    insertion_sort(names) a, b: a < b
+    for(names) res:  // (sorted: which camp goes first mustn't depend on the data's order)
         let camp = cfg_list("expand.camps.{res}")
         let kind = resource_index(res) + 1
         let k = if camp.length: btype_named(camp[0]) else: -1
