@@ -1,20 +1,22 @@
 {
  "schema": "aow.resources/1",
- "note": "Resources in a fixed order (stock arrays, costs and carried loads are indexed by it). Add new ones at the end. spots: gatherers stand at their own spots round a tile, as a formation does (economy.gd): true, all eight round a tile (a bush, a rock); sides, only the four sides, on open ground: a woodcutter stands at the forest edge facing its own tree, never reaching past one tree for another (Dominic, 2026-10-13)",
+ "note": "Resources in a fixed order (stock arrays, costs and carried loads are indexed by it). Add new ones at the end. spots: gatherers stand at their own spots round a tile, as a formation does (economy.gd): true, all eight round a tile (a bush, a rock); sides, only the four sides, on open ground: a woodcutter stands at the forest edge facing its own tree, never reaching past one tree for another (Dominic, 2026-10-13). staple: a bot short of it buys it at the market",
  "resources": [
   {
    "id": "food",
    "name": "Food",
    "short": "F",
    "colour": "#d65a7a",
-   "spots": true
+   "spots": true,
+   "staple": true
   },
   {
    "id": "wood",
    "name": "Wood",
    "short": "W",
    "colour": "#a07a4a",
-   "spots": "sides"
+   "spots": "sides",
+   "staple": true
   },
   {
    "id": "stone",

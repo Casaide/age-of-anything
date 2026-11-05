@@ -19,6 +19,7 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
         let sp = get(r, "spots")
         gather_spots.push(if sp and sp.kind == J_STR and sp.s == "sides": 2 elif sp and sp.kind == J_BOOL and sp.i != 0: 1 else: 0)
     num_resources = resource_names.length
+    staples_from_data()
     load_map(map_id)
     for(np) p: teams.push(if p < team_ids.length: team_ids[p] else: p)
     gaia = np
@@ -228,8 +229,8 @@ def setup_identities():
 
 def setup_tech():
     let np = num_players
-    class_machine = tag_or_none("machine")
-    class_mounted = tag_or_none("mounted")
+    class_machine = tag_or_none(rstr(rules_part("combat"), "band_machine"))
+    class_mounted = tag_or_none(rstr(rules_part("combat"), "band_mounted"))
     shot_speeds = map(su_classes.length): 0
     let ssd = gobj(rules_part("combat"), "shot_speeds")
     for(ssd.keys) tag, n:
@@ -512,6 +513,13 @@ def level_press(cfg:JV, l:JV):
     let to = at(at(cfg, "military"), "press")
     let by = at(l, "press")
     for(by.keys) k, n: set(to, k, by.a[n])
+
+// The resources bots buy when short of them (resources.json "staple"); a save from an older build has none.
+def staples_from_data():
+    if staple_resources.length: return
+    for(glist(load_json(lib_root + "/resources.json"), "resources")) r, k:
+        let st = get(r, "staple")
+        if st and st.i != 0: staple_resources.push(k)
 
 def load_ai_config(lvl:string = "normal"):  // (the lobby's AI levels: easy, normal, hard)
     let cfg = ai_ints(load_json(lib_root + "/ai.json"))
