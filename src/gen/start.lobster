@@ -13,7 +13,7 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
     let np = races.length
     num_players = np
     resource_names = []
-    let rd = at(load_json(lib_root + "/resources.json"), "resources")
+    let rd = at(lib_data("resources.json"), "resources")
     for(rd.a) r:
         resource_names.push(rstr(r, "id"))
         let sp = get(r, "spots")
@@ -76,7 +76,7 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
         for(glist(race, "units")) u:
             let r = at(u, "recipe")
             add_type(p, r, at(u, "eval"), if has(u, "line"): glist(u, "line") else: [ line_step(as_int(at(r, "tier")), r, at(u, "eval")) ])
-    add_animal_types(load_json(lib_root + "/animals.json"))
+    add_animal_types(lib_data("animals.json"))
     setup_classes()
     num_classes = su_classes.length
     for(t_slot.length) k: type_vectors(k)
@@ -101,12 +101,11 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
     mode_hold = -1
     setup_mode()  // (gen/modes.lobster: Fortress, Siege)
     if gbool(rules, "animals", false): place_animals()
-    let tc = btype_index("town_center")
     for(np) p:
         defeated.push(0)
         var towns = 0
         for(b_id.length) b:
-            if b_owner[b] == p and b_kind[b] == tc: towns++
+            if b_owner[b] == p and has_role(b_kind[b], ROLE_HUB): towns++
         started_with_town.push(if towns > 0: 1 else: 0)
     setup_bridges()
     for(np):
@@ -139,7 +138,7 @@ def setup_classes():
 // a scenario file, which carry none.
 def roles_from_data():
     if bt_roles.length == bt_name.length: return
-    let d = at(load_json(lib_root + "/buildings.json"), "buildings")
+    let d = at(lib_data("buildings.json"), "buildings")
     bt_roles = map(bt_name) id: role_bits(gstrs(at(d, id), "roles"))
 
 def setup_btypes():
@@ -192,7 +191,7 @@ def setup_btypes():
         bt_ladder.push(if ladder: 1 else: 0)
         bt_walkway.push(walkway)
         bt_blocks_flyers.push(if bflyers: 1 else: 0)
-        bt_replaces.push(map(gstrs(b, "replaces")) id: btype_index(id))
+        bt_replaces.push(filter(map(gstrs(b, "replaces")) id: btype_index(id)) k_: k_ >= 0)
         let pour = gobj(b, "pour")
         bt_pour.push(if pour.keys.length: [ gint(pour, "reach", 0), gint(pour, "reload", 0), gint(pour, "damage", 0) ] else: []::int)
         let pen = gobj(b, "pen")
@@ -237,7 +236,7 @@ def setup_tech():
         let k = str_index(su_classes, tag)
         if k >= 0: shot_speeds[k] = as_int(ssd.a[n])
     for(su_ages) a:
-        let needs = map(np) p: map(requires_for(p, a)) id: btype_index(id)
+        let needs = map(np) p: filter(map(requires_for(p, a)) id: btype_index(id)) k: k >= 0
         ages_list.push(Age { as_int(at(a, "age")), btype_index(rstr(a, "building")), as_int(at(a, "time")) * 20, cost_vec(at(a, "cost")), needs })
     for(su_research) item:
         let after = if rstr(item, "after") != "": research_index(rstr(item, "after")) else: -1
@@ -295,7 +294,7 @@ def requires_for(p:int, a:JV) -> [string]:
 
 // The rest of the systems' numbers (Garrison, Walls, Repair, Market, Trails, Abilities, Bridges, Match).
 def setup_rest():
-    let bd = load_json(lib_root + "/buildings.json")
+    let bd = lib_data("buildings.json")
     let g = gobj(bd, "garrison")
     r_garrison_heal_every = gint(g, "heal_every", 20)
     r_call_range = gint(g, "call_range", 16)
@@ -341,7 +340,7 @@ def setup_rest():
         t_ability.push(if can: 1 else: 0)
     let wr = rules_part("wonder")
     wonder_hold = if gbool(wr, "victory", false): as_int(at(wr, "hold_seconds")) * 20 else: 0
-    let bc = load_json(lib_root + "/bridges.json")
+    let bc = lib_data("bridges.json")
     br_full_hp = as_int(at(bc, "hp"))
     br_ticks = as_int(at(at(bc, "rebuild"), "time")) * TICK_HZ
     br_cost = map(resource_names) r: gint(at(at(bc, "rebuild"), "cost"), r, 0)
@@ -407,7 +406,7 @@ def add_animal(k:int, c:int):
     u_posture[i] = 0  // (Units.add's default: animals keep it)
 
 def place_animals():
-    var spawn = at(load_json(lib_root + "/animals.json"), "spawn")
+    var spawn = at(lib_data("animals.json"), "spawn")
     let ma = gobj(su_map, "animals")
     if ma.keys.length: spawn = ma
     let symmetry = gstr(su_map, "symmetry", "")
@@ -517,12 +516,12 @@ def level_press(cfg:JV, l:JV):
 // The resources bots buy when short of them (resources.json "staple"); a save from an older build has none.
 def staples_from_data():
     if staple_resources.length: return
-    for(glist(load_json(lib_root + "/resources.json"), "resources")) r, k:
+    for(glist(lib_data("resources.json"), "resources")) r, k:
         let st = get(r, "staple")
         if st and st.i != 0: staple_resources.push(k)
 
 def load_ai_config(lvl:string = "normal"):  // (the lobby's AI levels: easy, normal, hard)
-    let cfg = ai_ints(load_json(lib_root + "/ai.json"))
+    let cfg = ai_ints(lib_data("ai.json"))
     var lv_ratio = 0
     var lv_wave = 100
     var lv_up = 0

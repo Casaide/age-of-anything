@@ -272,7 +272,7 @@ def goal_of(bot:Bot, count:int) -> [int]:
         bot.saving_age = true
         return cost
     if bot.blocked.length: return bot.blocked
-    if bot.tower_x >= 0 and towers_up(p) < lv_towers: return bm_cost[p][btype_with(ROLE_TOWER)]
+    if bot.tower_x >= 0 and btype_with(ROLE_TOWER) >= 0 and towers_up(p) < lv_towers: return bm_cost[p][btype_with(ROLE_TOWER)]
     return []::int
 
 def age_three(bot:Bot, tc:int, count:int):
@@ -750,7 +750,7 @@ def tower_after_raid(bot:Bot, workers:[int]):
         bot.tower_y = -1
         return
     let k = btype_with(ROLE_TOWER)
-    if building_underway(bot.eco, true) or not can_afford(p, bm_cost[p][k]) or not workers.length: return
+    if k < 0 or building_underway(bot.eco, true) or not can_afford(p, bm_cost[p][k]) or not workers.length: return
     let sx, sy = house_spot(bot.eco, bot.tower_x / 1000, bot.tower_y / 1000, bt_size[k])
     bot.tower_x = -1
     bot.tower_y = -1

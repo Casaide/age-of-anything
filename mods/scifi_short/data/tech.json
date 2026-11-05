@@ -1,0 +1,4 @@
+{
+ "_doc": "A short tree: two ages. The third asks for a stable or an archery range, and those are gone.",
+ "ages": [{"age": 3, "remove": true}]
+}

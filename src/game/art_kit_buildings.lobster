@@ -24,7 +24,7 @@ var akb_baked = 0
 def akb_bdata() -> JV:
     let d = akb_data
     if d: return d
-    let n = load_json(lib_root + "/buildings.json")
+    let n = lib_data("buildings.json")
     akb_data = n
     return n
 
@@ -413,7 +413,7 @@ def akb_types() -> [string]:
     let rest = []::string
     for(b.keys) t:
         if not has_s(types, t) and gstr(at(b, t), "status", "") != "planned": rest.push(t)
-    return append(types, sorted_strs(rest))
+    return filter(append(types, sorted_strs(rest))) t: has(b, t)  // (a mod can take out what the menus name)
 
 // Every look of a building in an architecture: [model, suffix] (the base, age looks, variants, a gate's ways).
 def akb_looks_of(arch:string, type:string) -> [[string]]:

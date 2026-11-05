@@ -1,0 +1,3 @@
+{
+ "sounds": {"shoot_pulse": {"takes": 1, "bus": "Sfx", "gap_ms": 70}}
+}

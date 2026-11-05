@@ -188,7 +188,7 @@ let ui_looks = dictionary<string, UiLook>(32)
 def ui_look_of(culture:string) -> UiLook:
     let had = ui_looks.get(culture)
     if had: return had
-    let d = load_json(lib_root + "/ui.json")
+    let d = lib_data("ui.json")
     var dir = at(at(d, "directions"), gstr(d, "direction", "timber"))
     let fam = if culture != "" and has(lib_families, culture): family(culture) else: jobj()
     if culture != "":

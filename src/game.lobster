@@ -984,7 +984,8 @@ def race_facts(races:[JV]):
         unit_blow.set(k, if has_s(tags, "ram"): "ram_hit" elif has_s(tags, "blade"): "hit_blade" elif has_s(tags, "blunt"): "hit_blunt" else: "hit_pierce")
         let kind = shot_kind_of(tags)
         unit_shotk.set(k, kind)
-        unit_shot.set(k, if kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
+        let own_sound = gstr(gobj(mod_shots, kind), "sound", "")
+        unit_shot.set(k, if own_sound != "": own_sound elif kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
 
 // ------------------------------------------------------------------ becoming another race mid-match (gen/swap.lobster)
 // N: type a race; Enter: your people become it at its own prices (no fights, D-195), line by line,
@@ -1452,7 +1453,8 @@ def draw_shots(alpha:float):
         let land = shots[o + SHOT_LAND]
         let key = shots[o + SHOT_BY] * 65536 + land % 65536
         var t_from = shot_from.get(key, -1)
-        if t_from < 0:
+        let firstseen = t_from < 0
+        if firstseen:
             t_from = tick - 1
             shot_from.set(key, t_from)
         let t = clamp((float(tick - t_from) + alpha) / float(max(1, land - t_from)), 0.0, 1.0)
@@ -1465,17 +1467,9 @@ def draw_shots(alpha:float):
             let st = shot_style(if src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
             let a = ground_at(sx, sy) - float2 { 0.0, 12.0 }
             let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
-            let h = magnitude(b - a) * st.arc
-            def at(u:float) -> float2: return a + (b - a) * u - float2 { 0.0, h * 4.0 * u * (1.0 - u) }
-            let p = at(t)
-            let ahead = at(min(t + 0.03, 1.0))
-            let dir = if magnitude(ahead - p) > 0.0001: normalize(ahead - p) else: normalize(b - a + float2 { 0.0001, 0.0 })
-            let lift = h * 4.0 * t * (1.0 - t)
-            if st.glow.w > 0.0:  // a bolt of light: a soft halo under its core
-                ui_line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2, float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 })
-            if st.len > 0.0: ui_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w, st.col)
-            else: fx_circle(p, st.w, st.col)
-            fx_circle(p + float2 { 0.0, lift + 1.0 }, 0.8, float4 { 0.0, 0.0, 0.0, 0.25 })
+            if st.plain(): draw_bolt(st, a, b, t, 1.0)
+            elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
+    draw_tracers()
     if tick % 200 == 0: shot_from = dictionary<int, int>(1024)  // (forget the landed ones now and then)
 
 // Health bars over hurt units you can see, and over the selected.
@@ -1970,14 +1964,14 @@ if not touch_play and gl.framebuffer_size().y > 800: zoom = max(1.0, zoom - 1.0)
 pack_library = true
 startup_frame("Loading the sounds...", 0.2)
 volume_load()
-music_start()
-ambience_start()
 startup_frame("Loading the data...", 0.5)
 lib_load("../data")
 pack_teams()
 ui_setup("")
 let mods_wanted = if mods_arg != "": tokenize(mods_arg, ",", " ") else: pack_mods
 if mods_wanted.length: print "mods: {mods_use(mods_wanted)}"
+music_start()  // (after the mods: they can bring their own)
+ambience_start()
 startup_frame("Loading the parts...", 0.8)
 id_load("../data")
 // propframes dump:<folder>: every prop baked as PNGs, then quit (art review).

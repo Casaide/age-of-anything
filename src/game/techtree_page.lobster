@@ -158,7 +158,7 @@ def tt_open(race:JV, ident:JV, rules:JV, owner:int, in_match:bool):
     tt_arch = architecture(race)
     tt_arch_age = if in_match: ages[ME] else: 1
     tt_want_buildings = not in_match  // (the lobby has no buildings baked yet: the shipped bakes are read once it's open)
-    if not tt_res.length: tt_res = glist(load_json(lib_root + "/resources.json"), "resources")
+    if not tt_res.length: tt_res = glist(lib_data("resources.json"), "resources")
 
 // ---- the layout (design px), made again when the window's scale changes
 

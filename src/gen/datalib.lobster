@@ -90,6 +90,10 @@ def mod_merge(a:JV, b:JV) -> JV:
                     if stringify(y) == stringify(x): seen = true
                 if not seen: list.push(x)
             set(out, k, jarr(list))
+        elif starts_with(key, "-"):
+            let k = substring(key, 1, key.length - 1)
+            let gone = map(v.a) x: stringify(x)
+            set(out, k, jarr(filter(glist(out, k)) x: not has_s(gone, stringify(x)) and not has_s(gone, stringify(jstr(item_key(x))))))
         elif has(out, key) and at(out, key).kind == J_OBJ and v.kind == J_OBJ: set(out, key, mod_merge(at(out, key), v))
         else: set(out, key, deep_copy(v))
     return out
@@ -99,6 +103,51 @@ def jobj_without(o:JV, key:string) -> JV:
     for(o.keys) k, n:
         if k != key: set(out, k, o.a[n])
     return out
+
+// A data file with every mod's change to it, in load order: same id replaces (objects merge), "remove": true takes an entry
+// out, "extends": id copies a sibling, "+key" appends to a list, "-key" takes items out, and a list whose items have
+// an id (or an age) merges item by item.
+def lib_data(file:string) -> JV:
+    var out = load_json(lib_root + "/" + file)
+    for(lib_mod_data) md:
+        let m = get(md, file)
+        if m: out = data_merge(out, m)
+    return out
+
+def item_key(x:JV) -> string:
+    if x.kind != J_OBJ: return ""
+    if has(x, "id"): return gstr(x, "id", "")
+    if has(x, "slot"): return gstr(x, "slot", "")
+    return if has(x, "age"): "age " + string(as_int(at(x, "age"))) else: ""
+
+def data_merge(a:JV, b:JV) -> JV:
+    var out = deep_copy(a)
+    for(b.keys) key, n:
+        let v = b.a[n]
+        let old = get(out, key)
+        if starts_with(key, "+") or starts_with(key, "-"): out = mod_merge(out, jobj_with(key, v))
+        elif v.kind == J_OBJ and gbool(v, "remove", false): out = jobj_without(out, key)
+        elif v.kind == J_OBJ and has(v, "extends"): set(out, key, data_merge(at(out, gstr(v, "extends", "")), jobj_without(v, "extends")))
+        elif old and old.kind == J_OBJ and v.kind == J_OBJ: set(out, key, data_merge(old, v))
+        elif old and old.kind == J_ARR and v.kind == J_ARR and v.a.length and item_key(v.a[0]) != "": set(out, key, jarr(list_merge(old.a, v.a)))
+        else: set(out, key, deep_copy(v))
+    return out
+
+// A list with ids: the same id merges where it stands or goes, a new one goes at the end.
+def list_merge(a:[JV], b:[JV]) -> [JV]:
+    var out = map(a) x: x
+    for(b) m:
+        let k = item_key(m)
+        let at_ = find(out) x: item_key(x) == k
+        if gbool(m, "remove", false): out = filter(out) x: item_key(x) != k
+        elif at_ >= 0: out[at_] = data_merge(out[at_], m)
+        else: out.push(deep_copy(m))
+    return out
+
+def jobj_with(key:string, v:JV) -> JV:
+    let o = jobj()
+    set(o, key, v)
+    return o
 
 // A host rule with every mod's change to it, in load order (Mods.rules): a mod's rules/<id>.json
 // deep-merges into a game rule ("+key" appends), or adds a rule of its own ("extends" another, or whole).

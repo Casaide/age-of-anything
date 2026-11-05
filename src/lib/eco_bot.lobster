@@ -458,6 +458,7 @@ def farms(bot:EcoBot, tc:int, workers:[int], n:[int]):
     let p = bot.player
     let food = 1
     let fk = find(bt_farm): _ == 1
+    if fk < 0: return
     var count = 0
     for(b_id.length) b:
         if b_owner[b] == p and b_kind[b] == fk:
@@ -535,7 +536,7 @@ def bot_pen(bot:EcoBot, tc:int, workers:[int]):
             if u_owner[i] == p and t_behave[u_kind[i]] == B_HERD and dist2(hx, hy, u_x[i], u_y[i]) <= HUNT_RADIUS * HUNT_RADIUS * 1000000: near++
         let k = pen_type()
         let ageing = bot.push >= 100 and bot.goal.length > 0
-        if ages[p] <= 2 and not ageing and near >= PEN_SHEEP and can_afford(p, bm_cost[p][k]) and not building_underway(bot):
+        if k >= 0 and ages[p] <= 2 and not ageing and near >= PEN_SHEEP and can_afford(p, bm_cost[p][k]) and not building_underway(bot):
             let builder = pick_builder(bot, workers)
             let sx, sy = house_spot(bot, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[k])
             if builder >= 0 and sx >= 0:
@@ -654,7 +655,7 @@ def bot_think(bot:EcoBot):
     // Age up: with enough workers, a barracks, then save up and click it.
     let saving = ages[p] == 1 and count >= bot.age_workers
     let bk = btype_with(ROLE_BARRACKS)
-    if saving and not has_building(p, bk) and not building_underway(bot):
+    if bk >= 0 and saving and not has_building(p, bk) and not building_underway(bot):
         if can_afford(p, bm_cost[p][bk]):
             let sx, sy = house_spot(bot, b_cx[tc] + 1, b_cy[tc] + 1, bt_size[bk])
             let free = filter(workers): not is_ordered(bot, u_id[_])
