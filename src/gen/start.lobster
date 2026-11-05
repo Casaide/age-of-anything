@@ -101,12 +101,11 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
     mode_hold = -1
     setup_mode()  // (gen/modes.lobster: Fortress, Siege)
     if gbool(rules, "animals", false): place_animals()
-    let tc = btype_index("town_center")
     for(np) p:
         defeated.push(0)
         var towns = 0
         for(b_id.length) b:
-            if b_owner[b] == p and b_kind[b] == tc: towns++
+            if b_owner[b] == p and has_role(b_kind[b], ROLE_HUB): towns++
         started_with_town.push(if towns > 0: 1 else: 0)
     setup_bridges()
     for(np):
@@ -192,7 +191,7 @@ def setup_btypes():
         bt_ladder.push(if ladder: 1 else: 0)
         bt_walkway.push(walkway)
         bt_blocks_flyers.push(if bflyers: 1 else: 0)
-        bt_replaces.push(map(gstrs(b, "replaces")) id: btype_index(id))
+        bt_replaces.push(filter(map(gstrs(b, "replaces")) id: btype_index(id)) k_: k_ >= 0)
         let pour = gobj(b, "pour")
         bt_pour.push(if pour.keys.length: [ gint(pour, "reach", 0), gint(pour, "reload", 0), gint(pour, "damage", 0) ] else: []::int)
         let pen = gobj(b, "pen")
@@ -237,7 +236,7 @@ def setup_tech():
         let k = str_index(su_classes, tag)
         if k >= 0: shot_speeds[k] = as_int(ssd.a[n])
     for(su_ages) a:
-        let needs = map(np) p: map(requires_for(p, a)) id: btype_index(id)
+        let needs = map(np) p: filter(map(requires_for(p, a)) id: btype_index(id)) k: k >= 0
         ages_list.push(Age { as_int(at(a, "age")), btype_index(rstr(a, "building")), as_int(at(a, "time")) * 20, cost_vec(at(a, "cost")), needs })
     for(su_research) item:
         let after = if rstr(item, "after") != "": research_index(rstr(item, "after")) else: -1

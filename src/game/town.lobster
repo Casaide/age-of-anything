@@ -71,7 +71,7 @@ def town_now() -> float: return float(tick) / 20.0
 
 def near_home(i:int) -> bool:
     for(b_id.length) b:
-        if b_owner[b] == u_owner[i] and b_done[b] != 0 and (is_house(b_kind[b]) or bt_name[b_kind[b]] == "town_center"):
+        if b_owner[b] == u_owner[i] and b_done[b] != 0 and (is_house(b_kind[b]) or has_role(b_kind[b], ROLE_HUB)):
             let cx = (b_cx[b] * 2 + b_sx[b]) * 500
             let cy = (b_cy[b] * 2 + b_sy[b]) * 500
             if abs(cx - u_x[i]) + abs(cy - u_y[i]) < CHORE_NEAR_HOME: return true
@@ -299,7 +299,7 @@ def draw_building_fx():
 
 def make_critters():
     for(b_id.length) b:
-        if bt_name[b_kind[b]] == "town_center" and b_done[b] != 0 and not critter_towns.get(b_id[b], 0) and b_owner[b] < arch_of.length:
+        if has_role(b_kind[b], ROLE_HUB) and b_done[b] != 0 and not critter_towns.get(b_id[b], 0) and b_owner[b] < arch_of.length:
             critter_towns.set(b_id[b], 1)
             let arch = arch_of[b_owner[b]]
             let kind = if arch == "reed": "dragonfly" elif arch == "junk": "pigeon" else: "bird"
@@ -480,7 +480,7 @@ def town_level() -> float:
     for(b_id.length) b:
         if b_owner[b] == ME and b_done[b] == 1:
             buildings++
-            if centre.x < 0.0 and bt_name[b_kind[b]] == "town_center":
+            if centre.x < 0.0 and has_role(b_kind[b], ROLE_HUB):
                 centre = iso(float((b_cx[b] * 2 + b_sx[b]) * 500), float((b_cy[b] * 2 + b_sy[b]) * 500))
     var workers = 0
     for(u_id.length) i:
