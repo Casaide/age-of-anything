@@ -92,6 +92,7 @@ var watch = false
 var follow = false        // the camera follows the fighting (captures)
 var look_at_army = false  // a skirmish you play: the camera starts on your army and stays yours
 var selftest = false      // play a few orders through the controls, check the sim took them, quit
+var airtest = false       // does a click on an aircraft, where it's drawn, take it? Then quit (#185)
 var shot = ""
 var shot_at = 0.0
 var start_speed = 1.0
@@ -151,6 +152,7 @@ for(args) a, k:
         if a == "oldtext": text_off = true  // (measuring: text drawn as before game/text_cache.lobster)
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
+        if a == "airtest": airtest = true
         if a == "follow": follow = true
         if key == "races": races_arg = val
         if key == "map": map_arg = val
@@ -188,7 +190,7 @@ for(args) a, k:
             look_y = string_to_int(ly)
 
 // Tests and captures are silent (Dominic: no sound from testing); `mute` silences a game too.
-if has_s(args, "mute") or shot != "" or selftest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
+if has_s(args, "mute") or shot != "" or selftest or airtest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
     sound_on = false
     pace_background = false  // (tests and captures keep their pace with the window in the background, game/pace.lobster)
 
@@ -473,7 +475,7 @@ def fx_events():
             if i >= 0:
                 let look = shot_style(unit_shotk.get(u_kind[i], "arrow")).hit
                 let j = index_of(e.b)
-                let to = if j >= 0: ground_at(u_x[j], u_y[j]) - float2 { 0.0, 10.0 } else: ground_at(e.x, e.y) - float2 { 0.0, 20.0 }
+                let to = if j >= 0: ground_at(u_x[j], u_y[j]) - float2 { 0.0, 10.0 + air_lift(u_kind[j]) / 1.5 } else: ground_at(e.x, e.y) - float2 { 0.0, 20.0 }
                 if not t_ranged[u_kind[i]]: fx_spark(to, e.c >= 8)
                 elif look.sparks > 0: fx_hit(to, look)
                 if t_ranged[u_kind[i]]: fx_impact(shot_style(unit_shotk.get(u_kind[i], "arrow")), to, false)
@@ -508,6 +510,27 @@ def unit_state(i:int, moving:bool) -> string, int:
     return "idle", phase / 6  // (a slow shift of weight, each unit in its own time)
 
 def visible_to_me(c:int) -> bool: return reveal or fog[ME][c] == 2
+
+// How far up a unit type is drawn off the ground, world px: an aircraft's flying height; else 0.
+def air_lift(k:int) -> float:
+    if t_air[k] == 0 or not vx_drawn(k): return 0.0
+    let b = vx_body_of(vx_lks[vx_cur[k]].u.body)
+    return b.flies * cos(vx_ELEV) * vx_RES * b.size * VX_DRAW_K
+
+// A click on an aircraft where it's drawn must take it, and one on the ground under it must not.
+def air_test() -> bool:
+    if tick < 40: return false
+    let i = find(u_x.length) n: u_owner[n] == ME and t_air[u_kind[n]] != 0
+    assert i >= 0
+    let ground = iso(float(u_x[i]), float(u_y[i]))
+    let lift = air_lift(u_kind[i])
+    let drawn = unit_at_screen(to_screen(ground - float2 { 0.0, lift }), true)
+    let under = unit_at_screen(to_screen(ground), true)
+    print "airtest: lift {lift} px; a click on the plane takes {drawn} (the plane is {i}), a click under it takes {under}"
+    assert drawn == i
+    assert under != i
+    print "airtest: ok"
+    return true
 
 // What the units on screen sound like this frame (game/audio.lobster): a count for each sound.
 def unit_loops_tick(dt:float):
@@ -1151,7 +1174,7 @@ def unit_at_screen(m:float2, mine:bool) -> int:
     var best_d = 24.0 * zoom
     for(u_x.length) i:
         if (teams[u_owner[i]] == teams[ME]) == mine and (mine or visible_to_me(cell_of(u_x[i], u_y[i]))):
-            let s = to_screen(iso(float(u_x[i]), float(u_y[i])) - float2 { 0.0, 14.0 })
+            let s = to_screen(iso(float(u_x[i]), float(u_y[i])) - float2 { 0.0, 14.0 + air_lift(u_kind[i]) })
             let d = magnitude(s - m)
             if d < best_d:
                 best_d = d
@@ -1590,7 +1613,8 @@ def draw_shots(alpha:float):
             let own = if src >= 0 and mount < t_mounts[src].length: t_mounts[src][mount].shot else: ""
             let st = shot_style(if own != "": own elif src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
             let a = ground_at(sx, sy) + shot_mouth.get(key, float2 { 0.0, -12.0 })
-            let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
+            let to_j = index_of(shots[o + SHOT_TO])
+            let b = ground_at(ax, ay) - float2 { 0.0, 10.0 + (if to_j >= 0: air_lift(u_kind[to_j]) / 1.5 else: 0.0) }
             if firstseen and seen_at(sx, sy):  // (a gun firing out of the fog shows only its shell)
                 fx_muzzle(st, a, ground_at(sx, sy))
                 if st.muzzle.recoil > 0.0: unit_kick.set(shots[o + SHOT_BY] * 16 + mount, float2 { st.muzzle.recoil, clock_s })
@@ -1609,8 +1633,8 @@ def draw_bars(alpha:float):
             let px, py = prev_pos(i)
             let p = iso(px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha)
             let hpk = float(u_hp[i]) / float(max(1, t_hp[k]))
-            ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
-            ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
+            ui_fill(p + float2 { -9.0, -38.0 - air_lift(k) }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
+            ui_fill(p + float2 { -9.0, -38.0 - air_lift(k) }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
 
 def ring_of(owner:int) -> float4: return if is_foe(owner, ME): float4 { 0.9, 0.22, 0.16, 1.0 } else: float4 { 0.95, 0.91, 0.79, 1.0 }
 
@@ -2851,6 +2875,7 @@ def play_match():
             loop_round++
             back_to_lobby = true
             quit_game = true
+        if airtest and air_test(): break
         if selftest and self_test():
             if shot != "": gl.screenshot(shot)
             quit_app = true
