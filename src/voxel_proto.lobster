@@ -22,6 +22,7 @@ class row:
 
 let PARTS_OFF_PCT = 1.5     // (the outlines where a part meets its hull differ a little)
 let FLIER_LIFT_SHARE = 0.5  // how much of its flying height a flier's lowest pixel must be off the ground (its wings hang below its middle)
+let WRECK_KEEPS_PCT = 90    // how much of its standing outline a knocked-out vehicle covers (its turret is knocked askew)
 let vx_dirs = [ "../data/voxel" ]
 for(command_line_arguments()) a:
     if starts_with(a, "voxels:"): vx_dirs.push(a.substring(7, a.length - 7))  // (more data, a mod's)
@@ -276,6 +277,21 @@ elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (t
                 print "bodies: {id} flies at {b.flies}: lowest pixel {least} above its ground point, at least {want} wanted"
                 if least < want:
                     print "bodies: {id} is drawn on the ground"
+                    bad++
+            if b.death == "knocked_out":  // (it stays where it stood: nearly the same outline as standing, and the old fall isn't)
+                let up = map(copy(vx_cell(g, 2))) c: c.w > 0.0
+                let wreck = vx_fill(vx_knocked_out(u, b), b.size, vx_on_zero(u, true))
+                let fell = vx_fill(vx_fallen(vx_unit_prims(u, 0.0), 1.0), b.size, vx_on_zero(u, true))
+                def kept(sh:vx_shape) -> int:
+                    var hit, all = 0, 0
+                    for(vx_cell(sh, 2)) c, j:
+                        if up[j]: all++
+                        if up[j] and c.w > 0.0: hit++
+                    return hit * 100 / max(1, all)
+                let as_wreck, as_fallen = kept(wreck), kept(fell)
+                print "bodies: {id} knocked out keeps {as_wreck}% of its outline (the old fall keeps {as_fallen}%), {WRECK_KEEPS_PCT}% wanted"
+                if as_wreck < WRECK_KEEPS_PCT:
+                    print "bodies: {id} does not stay where it stood"
                     bad++
             if b.parts.length: bad += parts_faults(id, "-")
     print "bodies: {n} bodies, {bad} faults"

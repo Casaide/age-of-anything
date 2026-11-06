@@ -668,9 +668,33 @@ def collect_units(alpha:float):
                 if sf >= 0: add(sf, p.x, p.y - up, p.y - 0.5, float4 { 1.0, 1.0, 1.0, 1.0 })
                 add_parts(i, (d + 2) % 8, p.x, p.y - up, p.y, float4 { tc.x, tc.y, tc.z, flash })
 
+// Is this the wreck of a vehicle that stays where it stood (a body's "death": "knocked_out")?
+def is_wreck(c:Corpse) -> bool: return c.kind >= 0 and vx_drawn(c.kind) and vx_body_of(vx_lks[vx_cur[c.kind]].u.body).death == "knocked_out"
+
+let WRECK_BURNS = 5.0   // a wreck burns this long...
+let WRECK_STAYS = 16.0  // ...lies there this long in all...
+let WRECK_FADE = 4.0    // ...and fades away
+
+// A wreck: where it stood, burning then smoking, then fading.
+def collect_wreck(c:Corpse):
+    let t = clock_s - c.t0
+    let p = iso(c.x, c.y)
+    let up = lift_at(c.x, c.y) * 1.5
+    let fade = clamp(1.0 - (t - WRECK_STAYS) / WRECK_FADE, 0.0, 1.0)
+    let f = vx_dead_frame(c.id, c.kind, c.dir, t)
+    let tc = team_col(c.owner)
+    add(f, p.x, p.y - up, p.y - 2.0, float4 { tc.x, tc.y, tc.z, fade })
+    if f >= 0: add(vx_shadow_for(f), p.x, p.y - up, p.y - 2.5, float4 { 1.0, 1.0, 1.0, fade })
+    let at = canvas(c.x, c.y) - float2 { 0.0, lift_at(c.x, c.y) + 18.0 }
+    if t < WRECK_BURNS and rnd_float() < 0.2: fx_flame(at)
+    if t < WRECK_STAYS and rnd_float() < (if t < WRECK_BURNS: 0.18 else: 0.06): fx_smoke(at, 1, 3.0)
+
 def collect_corpses():
-    corpses = filter(corpses) c: clock_s - c.t0 < 4.0
+    corpses = filter(corpses) c: clock_s - c.t0 < (if is_wreck(c): WRECK_STAYS + WRECK_FADE else: 4.0)
     for(corpses) c:
+        if is_wreck(c):
+            collect_wreck(c)
+            continue
         if c.kind >= 0 and vx_drawn(c.kind):  // (a unit falls, lies, goes in a puff of dust and fades)
             let t = clock_s - c.t0
             let f = vx_dead_frame(c.id, c.kind, c.dir, t)
