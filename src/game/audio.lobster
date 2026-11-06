@@ -18,7 +18,8 @@ var voice_last = -10.0
 var sound_on = true
 var music_level = 5  // the player's volumes, 0..10 (settings.txt beside the saves)
 var sound_level = 10
-var hud_size = 115  // the match HUD's size in percent (Ctrl/Cmd + and -), in settings.txt too
+var hud_size = 115            // the match HUD's size in percent (Ctrl/Cmd + and -), in settings.txt too
+var windowed_setting = false  // a window rather than fullscreen (#223), in settings.txt too
 let SETTINGS_FILE = "settings.txt"
 
 def volume_load():
@@ -30,8 +31,9 @@ def volume_load():
             if kv[0] == "music": music_level = clamp(string_to_int(kv[1]), 0, 10)
             elif kv[0] == "sound": sound_level = clamp(string_to_int(kv[1]), 0, 10)
             elif kv[0] == "hud": hud_size = clamp(string_to_int(kv[1]), 70, 200)
+            elif kv[0] == "windowed": windowed_setting = kv[1] == "1"
 
-def volume_save(): write_file(SETTINGS_FILE, "music={music_level}\nsound={sound_level}\nhud={hud_size}\n")
+def volume_save(): write_file(SETTINGS_FILE, "music={music_level}\nsound={sound_level}\nhud={hud_size}\nwindowed={if windowed_setting: 1 else: 0}\n")
 
 def db_to_volume(db:float) -> float: return pow(10.0, db / 20.0)
 
