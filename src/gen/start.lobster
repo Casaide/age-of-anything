@@ -256,10 +256,11 @@ def setup_tech():
         for(su_btype_ids) id, k: bm_lacks[p][k] = if ident_lacks(p, id): 1 else: 0
     let nt = t_slot.length
     for([ t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
-          t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal ]) col:
+          t_blast, t_blast_line, t_air, t_hits_air, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal ]) col:
         for(nt): col.push(0)
     for(nt):
         t_tags.push([]::int)
+        t_mounts.push([]::Mount)
         t_bonus.push([]::int)
         t_eval_attack.push(0)
     let hr = at(lib_heroes, "rules")

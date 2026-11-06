@@ -1,0 +1,56 @@
+{
+  "_doc": "A fixture for two old traps (#184): every shape hard, and a box facing straight up. Both used to draw wrong without a word: nothing at all, and a slab.",
+  "skin": "#5a6234",
+  "size": 1.2,
+  "points": {
+    "o": {
+      "at": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "shapes": [
+    {
+      "box": [
+        "o",
+        0,
+        0,
+        6
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        8,
+        12,
+        6
+      ],
+      "mat": "skin",
+      "round": 0.3
+    },
+    {
+      "box": [
+        "o",
+        0,
+        0,
+        12.4
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "half": [
+        3,
+        0.3,
+        3
+      ],
+      "mat": "team",
+      "round": 0.1
+    }
+  ]
+}

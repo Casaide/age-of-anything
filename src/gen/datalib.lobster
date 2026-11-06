@@ -47,7 +47,7 @@ def sorted_strs(xs:[string]) -> [string]:
 
 // Saves: the format this build writes, and what stops one loading. A save names the packs it was made with, and a
 // match only makes sense with those. A save from before formats reads as format 0 with no packs: the base game.
-let SAVE_FORMAT = 2
+let SAVE_FORMAT = 4
 var save_refused = ""  // why the last load didn't happen
 
 def sig_id(sig:string) -> string:
@@ -332,3 +332,9 @@ def all_architectures() -> [string]:
             let a = gstr(at(table, k), "architecture", "")
             if a != "" and not has_s(out, a): out.push(a)
     return sorted_strs(out)
+
+// How loud a unit's loop is with this many units making it, 0 to 1: the first is clearly heard, more add less and less,
+// and past a dozen they add nothing (#182).
+def loop_share(count:int) -> float:
+    if count <= 0: return 0.0
+    return sqrt(float(min(count, 12))) / sqrt(12.0)

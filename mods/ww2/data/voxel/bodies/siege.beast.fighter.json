@@ -1,0 +1,645 @@
+{
+  "_doc": "A WW2 single-engine fighter: a low tapered wing a little wider than the plane is long, a long engine nose and three-blade prop, the canopy just behind the wing, a tall fin. Green-grey with dark earth patches, roundels and spinner in team colour.",
+  "skin": "#5c6a4c",
+  "pale": "#2a2a2a",
+  "mark": "#7a6644",
+  "fur": 0.0,
+  "size": 1.0,
+  "flies": 38.0,
+  "crew": [],
+  "points": {
+    "o": {
+      "at": [
+        0,
+        0,
+        38
+      ]
+    },
+    "muzzle": {
+      "at": [
+        0,
+        24,
+        43
+      ]
+    }
+  },
+  "styles": {
+    "fighter": {
+      "skin": "#5c6a4c",
+      "pale": "#2a2a2a",
+      "mark": "#7a6644"
+    }
+  },
+  "wheels": [
+    {
+      "at": [
+        0,
+        23.2,
+        43
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "r": 7,
+      "thick": 0.7,
+      "mat": "ww2_rubber",
+      "blades": 3
+    }
+  ],
+  "shapes": [
+    {
+      "cap": [
+        "o",
+        0,
+        13.0,
+        5.0
+      ],
+      "to": [
+        "o",
+        0,
+        -22.0,
+        6.2
+      ],
+      "r": [
+        3.1,
+        0.7
+      ],
+      "mat": "ww2_fighter",
+      "_doc": "fuselage, tapering to the tail"
+    },
+    {
+      "cap": [
+        "o",
+        0,
+        13.0,
+        5.0
+      ],
+      "to": [
+        "o",
+        0,
+        21.0,
+        5.0
+      ],
+      "r": [
+        3.1,
+        2.7
+      ],
+      "mat": "ww2_fighter",
+      "_doc": "long engine cowling"
+    },
+    {
+      "ball": [
+        "o",
+        0,
+        22.6,
+        5.0
+      ],
+      "r": 1.5,
+      "mat": "team",
+      "_doc": "spinner, team colour"
+    },
+    {
+      "cap": [
+        "o",
+        0,
+        1.0,
+        7.6
+      ],
+      "to": [
+        "o",
+        0,
+        -5.0,
+        7.4
+      ],
+      "r": [
+        1.8,
+        1.3
+      ],
+      "mat": "metal",
+      "_doc": "canopy glass"
+    },
+    {
+      "cap": [
+        "o",
+        0,
+        -5.0,
+        7.3
+      ],
+      "to": [
+        "o",
+        0,
+        -19.0,
+        6.8
+      ],
+      "r": [
+        1.1,
+        0.4
+      ],
+      "mat": "ww2_fighter",
+      "_doc": "spine behind the canopy"
+    },
+    {
+      "box": [
+        "o",
+        0,
+        -20.0,
+        6.3
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        7.775,
+        1.775,
+        0.025
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.225,
+      "_doc": "tailplane"
+    },
+    {
+      "box": [
+        "o",
+        0,
+        -20.4,
+        8.4
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        2.33,
+        0.03,
+        1.73
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.27,
+      "_doc": "fin root"
+    },
+    {
+      "box": [
+        "o",
+        0,
+        -21.0,
+        11.2
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        1.33,
+        0.03,
+        1.13
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.27,
+      "_doc": "fin top, tapered"
+    },
+    {
+      "box": [
+        "o",
+        0,
+        -22.6,
+        9.4
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        0.512,
+        0.032,
+        2.312
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.28800000000000003,
+      "_doc": "rudder"
+    },
+    {
+      "box": [
+        "o",
+        0,
+        -20.6,
+        9.6
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        1.2,
+        0.16,
+        0.6
+      ],
+      "mat": "team",
+      "round": 0.2,
+      "_doc": "fin flash"
+    },
+    {
+      "box": [
+        "o",
+        7.5,
+        4.0,
+        3.2
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        7.14,
+        4.44,
+        0.04
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.36000000000000004,
+      "_doc": "inner wing"
+    },
+    {
+      "box": [
+        "o",
+        17.0,
+        3.6,
+        3.6
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.185,
+        3.485,
+        0.035
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.315,
+      "_doc": "mid wing"
+    },
+    {
+      "box": [
+        "o",
+        23.5,
+        3.2,
+        3.9
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.73,
+        2.33,
+        0.03
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.27,
+      "_doc": "outer wing, tapered and rounded"
+    },
+    {
+      "box": [
+        "o",
+        10.0,
+        2.5,
+        3.7
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.865,
+        2.265,
+        0.015
+      ],
+      "mat": "ww2_fighter_mark",
+      "round": 0.135,
+      "_doc": "camo patch"
+    },
+    {
+      "disc": [
+        "o",
+        19.0,
+        3.6,
+        4.0
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        2.3,
+        0.12
+      ],
+      "mat": "white",
+      "_doc": "roundel"
+    },
+    {
+      "disc": [
+        "o",
+        19.0,
+        3.6,
+        4.15
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        1.3,
+        0.12
+      ],
+      "mat": "team"
+    },
+    {
+      "disc": [
+        "o",
+        2.6,
+        -9.0,
+        5.8
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "r": [
+        1.8,
+        0.3
+      ],
+      "mat": "white"
+    },
+    {
+      "disc": [
+        "o",
+        2.8,
+        -9.0,
+        5.8
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "r": [
+        1.1,
+        0.3
+      ],
+      "mat": "team"
+    },
+    {
+      "cap": [
+        "o",
+        11.0,
+        8.6,
+        3.0
+      ],
+      "to": [
+        "o",
+        11.0,
+        11.5,
+        3.0
+      ],
+      "r": [
+        0.3,
+        0.25
+      ],
+      "mat": "ww2_rubber",
+      "hard": true,
+      "_doc": "wing cannon"
+    },
+    {
+      "bead": [
+        "o",
+        2.8,
+        17.0,
+        5.6
+      ],
+      "r": 0.5,
+      "mat": "ww2_rubber"
+    },
+    {
+      "bead": [
+        "o",
+        2.8,
+        15.6,
+        5.6
+      ],
+      "r": 0.5,
+      "mat": "ww2_rubber"
+    },
+    {
+      "box": [
+        "o",
+        -7.5,
+        4.0,
+        3.2
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        7.14,
+        4.44,
+        0.04
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.36000000000000004,
+      "_doc": "inner wing"
+    },
+    {
+      "box": [
+        "o",
+        -17.0,
+        3.6,
+        3.6
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.185,
+        3.485,
+        0.035
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.315,
+      "_doc": "mid wing"
+    },
+    {
+      "box": [
+        "o",
+        -23.5,
+        3.2,
+        3.9
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.73,
+        2.33,
+        0.03
+      ],
+      "mat": "ww2_fighter",
+      "round": 0.27,
+      "_doc": "outer wing, tapered and rounded"
+    },
+    {
+      "box": [
+        "o",
+        -10.0,
+        2.5,
+        3.7
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.865,
+        2.265,
+        0.015
+      ],
+      "mat": "ww2_fighter_mark",
+      "round": 0.135,
+      "_doc": "camo patch"
+    },
+    {
+      "disc": [
+        "o",
+        -19.0,
+        3.6,
+        4.0
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        2.3,
+        0.12
+      ],
+      "mat": "white",
+      "_doc": "roundel"
+    },
+    {
+      "disc": [
+        "o",
+        -19.0,
+        3.6,
+        4.15
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        1.3,
+        0.12
+      ],
+      "mat": "team"
+    },
+    {
+      "disc": [
+        "o",
+        -2.6,
+        -9.0,
+        5.8
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "r": [
+        1.8,
+        0.3
+      ],
+      "mat": "white"
+    },
+    {
+      "disc": [
+        "o",
+        -2.8,
+        -9.0,
+        5.8
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "r": [
+        1.1,
+        0.3
+      ],
+      "mat": "team"
+    },
+    {
+      "cap": [
+        "o",
+        -11.0,
+        8.6,
+        3.0
+      ],
+      "to": [
+        "o",
+        -11.0,
+        11.5,
+        3.0
+      ],
+      "r": [
+        0.3,
+        0.25
+      ],
+      "mat": "ww2_rubber",
+      "hard": true,
+      "_doc": "wing cannon"
+    },
+    {
+      "bead": [
+        "o",
+        -2.8,
+        17.0,
+        5.6
+      ],
+      "r": 0.5,
+      "mat": "ww2_rubber"
+    },
+    {
+      "bead": [
+        "o",
+        -2.8,
+        15.6,
+        5.6
+      ],
+      "r": 0.5,
+      "mat": "ww2_rubber"
+    }
+  ]
+}

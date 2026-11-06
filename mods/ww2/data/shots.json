@@ -1,0 +1,10 @@
+{
+ "_doc": "The 75 mm shell: fast, flat, a thin bright tracer, a flash and smoke at the gun, a blast and a shake where it lands. The machine gun and the flak: small quick tracers. Called for by the weapons' tags.",
+ "shell": {"tag": "shell", "speed": 900, "arc": 0, "len": 13, "w": 0.8, "col": "#fff4c8", "glow": "#ff9a30", "trail": 24, "sticks": false, "sound": "shell_boom",
+           "muzzle": {"flash": 9, "col": "#ffe0a0", "smoke": 4, "ring": 7, "dust": 3, "recoil": 3},
+           "impact": {"blast": 9, "smoke": 5, "scorch": 9, "debris": 8, "shake": 2},
+           "hit": {"sparks": 6, "size": 3, "spread": 12, "life": 0.25, "col": "#ffd890", "sound": "shell_hit"}},
+ "mg": {"tag": "mg", "speed": 1200, "arc": 0, "len": 7, "w": 0.6, "col": "#fff2b0", "trail": 8, "sticks": false, "sound": "shoot_dart", "muzzle": {"flash": 3}},
+ "flak": {"tag": "flak", "speed": 1000, "arc": 0.03, "len": 5, "w": 0.8, "col": "#ffe8a0", "trail": 10, "sticks": false, "sound": "shoot_ball",
+          "muzzle": {"flash": 4, "smoke": 1}, "impact": {"blast": 4, "smoke": 2}}
+}
