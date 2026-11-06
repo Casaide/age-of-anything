@@ -48,6 +48,7 @@ else
 	add golden ./golden.sh
 	add vbcheck "$L" game.lobster -- none - vbcheck mute   # every building look as voxels: no specks (a window, but quick)
 	add cursor_check "$L" cursor_check.lobster   # the OS cursors in a real window (#222)
+	if [ "$(uname)" = Darwin ]; then add mac_app ../tests/mac_app_check.sh; fi   # the Mac app bundle: games category, name, icon, the binary inside (#224)
 	add prices "$L" calibrate.lobster -- measure expect check:42   # held-out round robins against the counter chain (D-199): 32% off now
 	add saves "$L" save_check.lobster
 	add network ./net_check.sh 2000
