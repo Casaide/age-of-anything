@@ -73,6 +73,8 @@ import view.facing
 import game.relief
 import vec
 import game.cursor_images
+import gl
+import game.window_mode
 
 let DATA = "../data"
 let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings",
@@ -955,10 +957,25 @@ def g_cursors():
         expect(src and find_string(src, "draw_cursor") < 0, "cursors: {f} doesn\'t draw one")
     let game = read_file("game.lobster")
     expect(game and find_string(game, "def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))") >= 0, "cursors: mouse_px reads the OS\'s mouse")
+// ------------------------------------------------------------------ fullscreen (#223)
+
+def g_window():
+    expect(starts_fullscreen([ "game.lobster", "none", "lobby" ], false), "window: the game starts fullscreen")
+    expect(starts_fullscreen([ "none", "lobby", "races:a|b", "watch" ], false), "window: a match from the command line too")
+    expect(not starts_fullscreen([ "none", "lobby", "windowed" ], false), "window: the windowed option keeps the window")
+    expect(not starts_fullscreen([ "none", "lobby" ], true), "window: so does the setting")
+    expect(starts_fullscreen([ "none", "lobby", "fullscreen" ], true), "window: the fullscreen option beats the setting")
+    for([ "mute", "selftest", "padtest", "labtest", "prebake", "vbcheck", "propframes", "shot:/tmp/s.png", "perf:20", "reload:5", "record:/tmp/r", "lookframes:a,b" ]) tool:
+        expect(not starts_fullscreen([ "none", "lobby", tool ], false), "window: {tool} is a tool: windowed")
+    expect(starts_fullscreen([ "none", "lobby", "shot:/tmp/s.png", "fullscreen" ], false), "window: a capture may ask for fullscreen")
+    expect(window_flags(false, false) == 0, "window: plain window flags")
+    expect(window_flags(true, true) == (gl.window_init_no_vsync | gl.window_init_fullscreen), "window: the flags add up")
+    let game = read_file("game.lobster")
+    expect(game and find_string(game, "window_flags(no_vsync, window_fullscreen)") >= 0, "window: the game opens with those flags")
 
 // ------------------------------------------------------------------ the run
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors" ]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window" ]
 
 def run_group(name:string):
     switch name:
@@ -978,6 +995,7 @@ def run_group(name:string):
         case "mods": g_mods()
         case "ground_path": g_ground_path()
         case "cursors": g_cursors()
+        case "window": g_window()
         default: assert false
 
 var shard = 0
