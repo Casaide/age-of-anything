@@ -44,6 +44,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -59,7 +60,7 @@ let SEED = 2026
 let MAP = "open_field"
 
 def archers(p:int, n:int, x:int, y:int) -> [int]:
-    let kind = find(t_slot.length) k: t_player[k] == p and t_ranged[k] != 0 and t_shot_speed[k] > 0 and not has(su_type_recipe[k], "crew")
+    let kind = find(t_slot.length) k: t_player[k] == p and t_ranged[k] != 0 and t_shot_speed[k] > 0 and not has(gobj(su_units[k], "look"), "crew")
     let ids = []::int
     for(n) a: ids.push(u_id[add_unit(p, kind, x + (a % 8) * 700, y + (a / 8) * 700)])
     return ids
