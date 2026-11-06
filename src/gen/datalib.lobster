@@ -140,7 +140,6 @@ def pack_apply(p:Pack):
 def lib_load(root:string):
     lib_root = root
     let manifest = load_json(root + "/pack.json")
-    assert gstr(manifest, "kind", "") == "game"
     lib_pack = manifest
     lib_parts = jobj()
     lib_creatures = jobj()
