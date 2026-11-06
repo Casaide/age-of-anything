@@ -77,7 +77,7 @@ go first).
 A body can list `parts`: `{"name": "turret", "pivot": [x, y, z], "shapes": [...]}`, its shapes in the body's frame. Each becomes a
 body of its own (`<id>#<name>`, round its pivot, at its own height), baked once per facing; the hull (`<id>#hull`) is baked without
 them, in every mode. The composer (`add_parts`, `game.lobster`) draws the hull, then each part over it in list order, at the pivot
-for the hull's facing. A turret faces its gun's aim (`u_aim`, `stats.turn`); any other part faces with the hull. The body itself
+for the hull's facing. A part named by a mount (`stats.mounts`) faces that mount's aim; any other part faces with the hull. A body can have several, as `tests/voxel/parts/bodies/test.twin.json` does. The body itself
 keeps everything, for falls and portraits. `voxel_proto -- <out.ppm or -> parts <body> [voxels:<dir>]` draws every pair of facings and
 checks that each pivot lands on the hull; the batch runs it on `tests/voxel/parts`.
 
