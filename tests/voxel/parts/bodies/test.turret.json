@@ -1,22 +1,173 @@
 {
- "_doc": "A fixture for articulated parts (#178): a plain hull, and a turret whose gun shows which way it points. Not art.",
- "skin": "#5a6234",
- "pale": "#24231f",
- "mark": "#b09c66",
- "size": 1.2,
- "points": {"o": {"at": [0, 0, 0]}},
- "shapes": [
-  {"cap": ["o", -8, -18, 4], "to": ["o", -8, 18, 4], "r": [3, 3], "mat": "pale"},
-  {"cap": ["o", 8, -18, 4], "to": ["o", 8, 18, 4], "r": [3, 3], "mat": "pale"},
-  {"box": ["o", 0, 0, 9], "n": [0, 1, 0], "half": [9, 20, 4], "mat": "skin", "round": 0.5},
-  {"box": ["o", 0, 18, 13.4], "n": [0, 1, 0], "half": [3, 1, 0.3], "mat": "team", "round": 0.1}
- ],
- "parts": [
-  {"name": "turret", "pivot": [0, -2, 13],
-   "shapes": [
-    {"disc": ["o", 0, -2, 15], "n": [0, 0, 1], "r": [7, 2], "mat": "mark"},
-    {"cap": ["o", 0, 4, 15], "to": ["o", 0, 26, 15], "r": [1, 0.8], "mat": "pale", "hard": true},
-    {"box": ["o", 0, -8, 15], "n": [0, 1, 0], "half": [3, 1, 1.5], "mat": "team", "round": 0.2}
-   ]}
- ]
+  "_doc": "A fixture for articulated parts (#178): a plain hull, and a turret whose gun shows which way it points. Not art.",
+  "skin": "#5a6234",
+  "pale": "#24231f",
+  "mark": "#b09c66",
+  "size": 1.2,
+  "points": {
+    "o": {
+      "at": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "shapes": [
+    {
+      "cap": [
+        "o",
+        -8,
+        -18,
+        4
+      ],
+      "to": [
+        "o",
+        -8,
+        18,
+        4
+      ],
+      "r": [
+        3,
+        3
+      ],
+      "mat": "pale"
+    },
+    {
+      "cap": [
+        "o",
+        8,
+        -18,
+        4
+      ],
+      "to": [
+        "o",
+        8,
+        18,
+        4
+      ],
+      "r": [
+        3,
+        3
+      ],
+      "mat": "pale"
+    },
+    {
+      "box": [
+        "o",
+        0,
+        0,
+        9
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        9,
+        20,
+        4
+      ],
+      "mat": "skin",
+      "round": 0.5
+    },
+    {
+      "box": [
+        "o",
+        0,
+        18,
+        13.4
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3,
+        1,
+        0.3
+      ],
+      "mat": "team",
+      "round": 0.1
+    }
+  ],
+  "parts": [
+    {
+      "name": "turret",
+      "pivot": [
+        0,
+        -2,
+        13
+      ],
+      "shapes": [
+        {
+          "disc": [
+            "o",
+            0,
+            -2,
+            15
+          ],
+          "n": [
+            0,
+            0,
+            1
+          ],
+          "r": [
+            7,
+            2
+          ],
+          "mat": "mark"
+        },
+        {
+          "cap": [
+            "o",
+            0,
+            4,
+            15
+          ],
+          "to": [
+            "o",
+            0,
+            26,
+            15
+          ],
+          "r": [
+            1,
+            0.8
+          ],
+          "mat": "pale",
+          "hard": true
+        },
+        {
+          "box": [
+            "o",
+            0,
+            -8,
+            15
+          ],
+          "n": [
+            0,
+            1,
+            0
+          ],
+          "half": [
+            3,
+            1,
+            1.5
+          ],
+          "mat": "team",
+          "round": 0.2
+        }
+      ],
+      "points": {
+        "muzzle": [
+          0,
+          26.6,
+          15
+        ]
+      }
+    }
+  ]
 }
