@@ -164,3 +164,44 @@ def ambience_tick(town_level:float, dt:float):
         if id > 0:
             amb_now[k] = move_toward(amb_now[k], (if sound_on: want[k] * master else: 0.0), dt * 0.5)
             music_volume(id, amb_now[k])
+
+// ---- units' loops (#182): what a body sounds like by state (data/audio.json units). One channel a sound, however many
+// units are making it: its volume grows with how many are on screen, up to a cap, so twenty tanks are a louder rumble
+// and not twenty rumbles. Sound can't change pitch here: an engine "revs" by fading from its idle loop into its move loop.
+
+class UnitLoop:
+    id:int
+    now:float   // its volume now
+    want:float  // its share this frame
+
+let unit_loops = dictionary<string, UnitLoop>(8)
+let UNIT_LOOP_FADE = 1.6  // how fast a loop comes and goes, volume a second
+
+// The sound a body makes in that state, or "".
+def unit_sound(body:string, state:string) -> string:
+    return gstr(gobj(gobj(lib_data("audio.json"), "units"), body), state, "")
+
+// A sound heard from units this frame: the loudest of it so far.
+def unit_loop_hear(name:string, count:int):
+    if name == "" or not sound_on: return
+    var l = unit_loops.get(name)
+    if not l:
+        let s = sounds.get(name)
+        if not s: return
+        let id = play_music(audio_file("sfx/{name}_1.wav"), -1)
+        if id <= 0: return
+        music_volume(id, 0.0)
+        l = UnitLoop { id, 0.0, 0.0 }
+        unit_loops.set(name, l)
+    if l: l.want = loop_share(count)
+
+// Every loop eased to what it was asked for this frame (a loop nobody asked for fades out, and keeps its channel).
+def unit_loops_fade(dt:float):
+    for(unit_loops.get_keys()) name:
+        let l = unit_loops.get(name)
+        if l:
+            let s = sounds.get(name)
+            let bus = if s: buses.get(s.bus, 0.0) else: 0.0
+            l.now = move_toward(l.now, if sound_on: l.want else: 0.0, dt * UNIT_LOOP_FADE)
+            music_volume(l.id, l.now * db_to_volume(bus) * float(sound_level) / 10.0)
+            l.want = 0.0
