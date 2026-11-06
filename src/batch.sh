@@ -48,6 +48,7 @@ else
 	for i in 0 1 2 3; do add test_ai.$i "$L" test_ai.lobster -- shard:$i/4; done
 	add test_2v2 "$L" test_2v2.lobster
 	add test_mod_match "$L" test_mod_match.lobster
+	add air_click ./air_check.sh   # a click takes an aircraft where it's drawn
 	add golden ./golden.sh
 	add vbcheck "$L" game.lobster -- none - vbcheck mute   # every building look as voxels: no specks (a window, but quick)
 	add cursor_check "$L" cursor_check.lobster   # the OS cursors in a real window (#222)
