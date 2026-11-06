@@ -87,8 +87,8 @@ def vx_def_of(r:JV) -> vx_unit_def:
     let parts = gobj(r, "parts")
     for(sorted_strs(parts.keys)) slot:
         let id = as_str(at(parts, slot))
-        let g = vx_gear_for(id, ptags_of(id), slot)
-        if g != "": gear.push(g)
+        let g = vx_tool_for(vx_body_of(body), vx_gear_for(id, ptags_of(id), slot))
+        if g != "" and not (vx_body_of(body).bare and vx_worn_gear(g)): gear.push(g)
     var mount = ""
     var fused = false
     var coat, mane, coat_mark = float3_0, float3_0, float3_0
@@ -238,7 +238,7 @@ def vx_job_step(j:vx_job, until:float) -> bool:
             vx_barrow = m == VX_CARRY
             var wu = u
             if job or m == VX_CARRY:  // (work: the job's tool alone, what it wears kept; carrying: the barrow, hands free)
-                let tools = if VX_JOB_TOOL[m] != "": [ VX_JOB_TOOL[m] ] else: []::string
+                let tools = if VX_JOB_TOOL[m] != "": [ vx_tool_for(vx_body_of(u.body), VX_JOB_TOOL[m]) ] else: []::string
                 for(u.gear) g: if vx_worn_gear(g): tools.push(g)
                 wu = vx_unit_def { u.label, u.body, u.skin, u.pale, u.mark, tools, u.mount, u.fused, u.coat, u.mane, u.coat_mark, u.crew }
             var parts = vx_unit_prims(wu, if m == VX_DIE: 0.0 else: float(pose.y) * 45.0)
