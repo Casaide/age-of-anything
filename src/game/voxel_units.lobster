@@ -414,7 +414,7 @@ def vx_start():
             vx_check_mounts(k, lk)
             lks.push(lk)
             let age = if line.length: as_int(at(line[s], "age")) else: t_age[k]
-            let ahead = if army_n > 0 and s == type_step(k): 0 else: max(0, age - (if t_player[k] >= 0 and t_player[k] < ages.length: ages[t_player[k]] else: 1))  // (army: they're all on the field)
+            let ahead = if (army_n > 0 or skirmish) and s == type_step(k): 0 else: max(0, age - (if t_player[k] >= 0 and t_player[k] < ages.length: ages[t_player[k]] else: 1))  // (army: they're all on the field)
             while by_age.length <= ahead: by_age.push([])
             if (find(by_age[ahead]) x: x == lk) < 0: by_age[ahead].push(lk)
             for(vx_lks[lk].pieces) plk:

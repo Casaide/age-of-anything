@@ -209,3 +209,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: Engines, tracks and turrets got sound: loops by state, one channel a sound, capped by how many are on screen (D-224, #182).
 - 2026-11-06: Aircraft are real in the sim: only what can hit air touches them, and they fly round what they fire at (D-225, #183).
 - 2026-11-06: Silent traps in bodies now work or say why, and every pack's bodies are checked (D-226, #184).
+- 2026-11-06: Shermans, Panzers, fighters and flak gunners in a match, all data on the new schema (D-227, #185).
