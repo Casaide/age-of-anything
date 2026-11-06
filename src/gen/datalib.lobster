@@ -1,8 +1,9 @@
 // ------------------------------------------------------------------ DataLib (src/data_lib.gd)
 // The data contract, read once: parts by id, creatures, cultures, uniques, heroes, palettes, the
-// lexicon, resources, cost curves. Mods are merged over it by gen/mods.lobster (mods_use).
+// lexicon, resources, cost curves. It comes from packs: the game's first, then the mods gen/mods.lobster checks (mods_use).
 
 var lib_root = "data"
+var lib_pack = jobj()  // the game's manifest (data/pack.json)
 var lib_parts = jobj()
 var lib_part_ids:[string] = []  // sorted
 var lib_creatures = jobj()
@@ -16,8 +17,10 @@ var lib_resources:[string] = []
 let lib_curves = dictionary<string, [int]>(17)
 var lib_cands = dictionary<string, [JV]>(31)  // slot|eras -> candidates
 var lib_mods:[string] = []
-var lib_mod_data = []::JV      // the mods in use, in load order: their data (path -> parsed)
-var lib_mod_dirs = []::string  // ...and their data folders
+var mod_shots = jobj()  // shot looks chosen by tag (kind -> look)
+
+def push_new(xs:[string], s:string):
+    if not has_s(xs, s): xs.push(s)
 
 def has_s(xs:[string], s:string) -> bool:
     for(xs) x:
@@ -29,31 +32,122 @@ def sorted_strs(xs:[string]) -> [string]:
     insertion_sort(out) a, b: a < b
     return out
 
+// Saves: the format this build writes, and what stops one loading. A save names the packs it was made with, and a
+// match only makes sense with those. A save from before formats reads as format 0 with no packs: the base game.
+let SAVE_FORMAT = 1
+var save_refused = ""  // why the last load didn't happen
+
+def sig_id(sig:string) -> string:
+    let n = find_string(sig, "@")
+    return if n < 0: sig else: substring(sig, 0, n)
+
+// Why a save can't load here, or "".
+def save_refusal(format:int, packs:[string]) -> string:
+    if format > SAVE_FORMAT: return "This save is from a newer build of the game."
+    for(packs) sig:
+        if not has_s(lib_mods, sig): return "This save needs the mod {sig_id(sig)} ({sig})."
+    for(lib_mods) sig:
+        if not has_s(packs, sig): return "This save was made without the mod {sig_id(sig)}."
+    return ""
+
+// A pack: the game (data/pack.json, always first) or a mod. Everything in lib_* comes from packs, through pack_apply.
+class Pack:
+    id:string
+    dir:string   // its folder
+    root:string  // its data folder
+    manifest:JV
+    data:JV  // relative path (parts.json, rules/<id>.json, maps/<id>.json) -> parsed, as far as read
+    sig = ""
+
+var lib_packs = []::Pack  // in load order, the game first
+
+def pack_open(id:string, dir:string, manifest:JV) -> Pack:
+    let d = gstr(manifest, "data", "data")
+    return Pack { id, dir, if d == ".": dir else: dir + "/" + d, manifest, jobj() }
+
+def pack_mods() -> [Pack]: return lib_packs.slice(1, -1)
+
+// One of a pack's data files, or nil if it hasn't that file. (A mod's were all read and checked before this.)
+def pack_file(p:Pack, file:string) -> JV?:
+    let known = get(p.data, file)
+    if known: return known
+    let text = read_file(p.root + "/" + file)
+    if not text: return nil
+    let parsed = parse_json(text)
+    set(p.data, file, parsed)
+    return parsed
+
+def extended(all:JV, e:JV) -> JV:
+    if not has(e, "extends"): return e
+    return jobj_without(mod_merge(at(all, gstr(e, "extends", "")), e), "extends")
+
+// A pack's data over what's there: the one way anything gets in, for the game and for mods.
+def pack_apply(p:Pack):
+    let parts = pack_file(p, "parts.json")
+    if parts:
+        for(parts.a) part: set(lib_parts, gstr(part, "id", ""), deep_copy(part))
+    let cs = pack_file(p, "creatures.json")
+    if cs:
+        for(cs.keys) id:
+            if not starts_with(id, "_"): set(lib_creatures, id, extended(lib_creatures, at(cs, id)))
+    let fs = pack_file(p, "families.json")
+    if fs:
+        for(fs.keys) id:
+            if not starts_with(id, "_"): set(lib_families, id, extended(lib_families, at(fs, id)))
+    let pal = pack_file(p, "palettes.json")
+    if pal: lib_palettes = mod_merge(lib_palettes, pal)
+    let uq = pack_file(p, "uniques.json")
+    if uq: lib_uniques = mod_merge(lib_uniques, at(uq, "themes"))
+    let hr = pack_file(p, "heroes.json")
+    if hr: lib_heroes = mod_merge(lib_heroes, hr)
+    let lex = pack_file(p, "lexicon.json")
+    if lex:
+        let words = gobj(lex, "words")
+        for(words.keys) w:
+            if not starts_with(w, "_"): set(lib_lexicon, w, at(words, w))
+        for(gstrs(lex, "stopwords")) w: push_new(lib_stopwords, w)
+        lib_stopwords = sorted_strs(lib_stopwords)
+    let res = pack_file(p, "resources.json")
+    if res: lib_resources = map(at(res, "resources").a) r: as_str(at(r, "id"))
+    let cc = pack_file(p, "cost_curves.json")
+    if cc:
+        for(cc.keys) id, n:
+            if not starts_with(id, "_"): lib_curves.set(id, map(at(cc.a[n], "permille").a) v: as_int(v))
+    let looks = pack_file(p, "shots.json")
+    if looks:
+        for(looks.keys) k:
+            if has(at(looks, k), "tag"): set(mod_shots, k, at(looks, k))  // (only a look with a tag is chosen by it)
+    let kits = pack_file(p, "creature_kit.json")
+    if kits: lib_kit_parts(kits)
+    if p.sig != "": lib_mods.push(p.sig)
+    lib_part_ids = sorted_strs(lib_parts.keys)
+    lib_cands = dictionary<string, [JV]>(31)
+
+// The game alone, as its pack says.
 def lib_load(root:string):
     lib_root = root
+    let manifest = load_json(root + "/pack.json")
+    assert gstr(manifest, "kind", "") == "game"
+    lib_pack = manifest
     lib_parts = jobj()
-    for(load_json(root + "/parts.json").a) p: set(lib_parts, as_str(at(p, "id")), p)
-    lib_creatures = load_json(root + "/creatures.json")
-    lib_families = load_json(root + "/families.json")
-    lib_uniques = at(load_json(root + "/uniques.json"), "themes")
-    lib_heroes = load_json(root + "/heroes.json")
-    lib_palettes = load_json(root + "/palettes.json")
-    let lex = load_json(root + "/lexicon.json")
-    lib_lexicon = at(lex, "words")
-    lib_stopwords = sorted_strs(gstrs(lex, "stopwords"))
+    lib_creatures = jobj()
+    lib_families = jobj()
+    lib_uniques = jobj()
+    lib_heroes = jobj()
+    lib_palettes = jobj()
+    lib_lexicon = jobj()
+    lib_stopwords = []
     lib_resources = []
-    for(at(load_json(root + "/resources.json"), "resources").a) r: lib_resources.push(as_str(at(r, "id")))
-    let cc = load_json(root + "/cost_curves.json")
-    for(cc.keys) id, n: lib_curves.set(id, map(at(cc.a[n], "permille").a) v: as_int(v))
-    lib_kit_parts(root)
-    lib_part_ids = sorted_strs(lib_parts.keys)
+    mod_shots = jobj()
+    lib_mods = []
+    let game = pack_open(gstr(manifest, "id", ""), root, manifest)
+    lib_packs = [ game ]
+    pack_apply(game)
 
 // Creature-kit bodies (the bears): their head and leg parts made, as CreatureKit.complete() makes
 // them. (What it fills in on the body itself, sockets, legs and poses, is for the views: 6b.)
-def lib_kit_parts(root:string):
-    let text = read_file(root + "/creature_kit.json")
-    if not text: return
-    let kits = at(parse_json(text), "kits")
+def lib_kit_parts(file:JV):
+    let kits = at(file, "kits")
     for(sorted_strs(lib_parts.keys)) id:
         let p = at(lib_parts, id)
         if has(p, "kit"):
@@ -109,8 +203,8 @@ def jobj_without(o:JV, key:string) -> JV:
 // an id (or an age) merges item by item.
 def lib_data(file:string) -> JV:
     var out = load_json(lib_root + "/" + file)
-    for(lib_mod_data) md:
-        let m = get(md, file)
+    for(pack_mods()) p:
+        let m = get(p.data, file)
         if m: out = data_merge(out, m)
     return out
 
@@ -154,8 +248,8 @@ def jobj_with(key:string, v:JV) -> JV:
 def load_rules(id:string) -> JV:
     let text = read_file(lib_root + "/rules/" + id + ".json")
     var out = if text: parse_json(text) else: jobj()
-    for(lib_mod_data) md:
-        let r = get(md, "rules/{id}.json")
+    for(pack_mods()) p:
+        let r = get(p.data, "rules/{id}.json")
         if r:
             if not out.keys.length and has(r, "extends"):
                 out = load_rules(gstr(r, "extends", ""))
@@ -167,9 +261,9 @@ def load_rules(id:string) -> JV:
 
 // Where a data file comes from: the last mod in load order that has it, else the game's (Mods.data_path).
 def data_path(rel:string) -> string:
-    var k = lib_mod_data.length - 1
-    while k >= 0:
-        if has(lib_mod_data[k], rel): return lib_mod_dirs[k] + "/" + rel
+    var k = lib_packs.length - 1
+    while k >= 1:
+        if has(lib_packs[k].data, rel): return lib_packs[k].root + "/" + rel
         k--
     return lib_root + "/" + rel
 
