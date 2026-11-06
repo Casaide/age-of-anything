@@ -8,6 +8,7 @@
 let CLAIM_EVERY = 10
 let PEN_GAP = 850
 let HERD_PEN = 3
+let PEN_FENCE = 150  // a pen's fence inside its footprint's edge, and a little air (the walk grids can't see it)
 
 def is_animal(i:int) -> bool: return t_animal[u_kind[i]] != 0
 def is_herd(i:int) -> bool: return t_behave[u_kind[i]] == B_HERD
@@ -69,9 +70,22 @@ def nearest_pen_with_room(p:int, x:int, y:int) -> int:
                 best = b
     return best
 
+// (x, y) kept inside pen b's fence by herd animal i's radius.
+def pen_inside(b:int, i:int, x:int, y:int) -> int, int:
+    let m = u_radius[i] + PEN_FENCE
+    return clamp(x, b_cx[b] * TILE + m, (b_cx[b] + b_sx[b]) * TILE - m), clamp(y, b_cy[b] * TILE + m, (b_cy[b] + b_sy[b]) * TILE - m)
+
+// The pen herd animal i stands in, or heads for a place in, while it's there: its fence holds it
+// (separate's correction), or -1. One walking out of it (released) isn't held.
+def pen_holding(i:int) -> int:
+    if not is_herd(i) or u_owner[i] == gaia: return -1
+    let b = pen_at(i)
+    if b < 0 or (u_moving[i] == 1 and not in_rect(b, u_tx[i], u_ty[i])): return -1
+    return b
+
 // Where herd animal i stands round `at`: the first of a 3 x 3 grid of places (then round again,
-// offset) no other herd animal of its owner is heading for or standing at.
-def herd_slot(ax:int, ay:int, i:int) -> int, int:
+// offset) no other herd animal of its owner is heading for or standing at. In pen b, kept inside its fence.
+def herd_slot(ax:int, ay:int, i:int, pen:int = -1) -> int, int:
     let taken = dictionary<int, int>(64)
     for(u_x.length) j:
         if j != i and u_owner[j] == u_owner[i] and is_herd(j): taken.set(u_tx[j] * 1000003 + u_ty[j], 1)
@@ -79,8 +93,9 @@ def herd_slot(ax:int, ay:int, i:int) -> int, int:
     var fy = -1
     for(18) n:
         let k = n % 9
-        let px = ax + (k % 3 - 1) * PEN_GAP + (n / 9) * PEN_GAP / 2
-        let py = ay + (k / 3 - 1) * PEN_GAP + (n / 9) * PEN_GAP / 2
+        var px = ax + (k % 3 - 1) * PEN_GAP + (n / 9) * PEN_GAP / 2
+        var py = ay + (k / 3 - 1) * PEN_GAP + (n / 9) * PEN_GAP / 2
+        if pen >= 0: px, py = pen_inside(pen, i, px, py)
         if fx < 0:
             fx = px
             fy = py
@@ -90,7 +105,7 @@ def herd_slot(ax:int, ay:int, i:int) -> int, int:
 def pen_send(i:int, b:int):
     u_orders[i] = []::Cmd
     let cx, cy = b_centre(b)
-    let px, py = herd_slot(cx, cy, i)
+    let px, py = herd_slot(cx, cy, i, b)
     order_move(i, px, py, 200, 0, -1, -1, 0)
 
 def cmd_pen(p:int, ids:[int], bid:int):
@@ -129,7 +144,7 @@ def pens_tick():
                     let cx, cy = b_centre(b)
                     let s = add_unit(u_owner[parent], u_kind[parent], cx, cy)
                     u_posture[s] = 0  // (Units.add: a newborn's posture is the arrays' default)
-                    let px, py = herd_slot(cx, cy, s)
+                    let px, py = herd_slot(cx, cy, s, b)
                     order_move(s, px, py, 200, 0, -1, -1, 0)
 
 // ---- claiming, hurting, dying
