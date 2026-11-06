@@ -12,7 +12,8 @@
     "frog": {
       "size": 0.885,
       "h": 28,
-      "crew_k": 1.35
+      "crew_k": 1.35,
+      "rides_as": 39
     },
     "spider": {
       "size": 1.0,
@@ -20,7 +21,8 @@
     },
     "beetle_rear": {
       "size": 0.92,
-      "h": 33
+      "h": 33,
+      "rides_as": 40
     },
     "bear": {
       "size": 1.25,
