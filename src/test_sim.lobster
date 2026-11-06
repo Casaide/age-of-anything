@@ -4211,6 +4211,23 @@ def test_turret():
     check(u_aim[index_of(mid)] >= 300 and u_aim[index_of(mid)] < 900 and t_turn[ks] == 10, "a save keeps a gun in mid-turn: {u_aim[index_of(mid)]}")
     for(100): tick_on()
     check(straight == state_hash(), "and it carries on the same")
+    // A building: the gun turns to it (buildings are in tiles, units in milli-tiles) and fires.
+    new_world("flat_test", races0, rules0, [])
+    let kt = type_of_slot(0, "archer")
+    t_turn[kt] = 30
+    t_arc[kt] = 50
+    let hall = find(b_id.length) bi: b_owner[bi] == 1
+    let hall_x, hall_y = b_cx[hall] * TILE + b_sx[hall] * TILE / 2, b_cy[hall] * TILE + b_sy[hall] * TILE / 2
+    let side = u_id[add_unit(0, kt, hall_x, hall_y + b_sy[hall] * TILE + 2000)]
+    u_hp[index_of(side)] = 100000
+    issue_cmd(0, CMD_ATTACK, [ side ], b_id[hall], 0, 0, 0)
+    var shot_at = -1
+    for(200):
+        tick_on()
+        if shot_at < 0 and u_cooldown[index_of(side)] > 0: shot_at = u_aim[index_of(side)]
+    check(shot_at >= 0, "a turret fires at a building")
+    let to = angle_of(hall_x - u_x[index_of(side)], hall_y - u_y[index_of(side)])
+    check(shot_at >= 0 and abs(angle_gap(shot_at, to)) <= 50, "with its gun on it: aim {shot_at}, the building at {to}")
     // From the data: a part's turn and arc, degrees, reach the sim as tenths; no other line has them.
     let bolt = part("engine.bolt")
     let plain = at(bolt, "stats")
