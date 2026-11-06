@@ -258,6 +258,9 @@ class vx_body_spec:
     psway:[float] = []   // how far it shifts over the planted foot
     pdrive:[float] = []  // how far a blow carries it forward
     gait:vx_gait? = nil
+    tool_jobs:[string] = []  // gear it uses in place of the kit's (a robot's laser cutter for the axe and the pick)
+    tool_gear:[string] = []
+    bare:bool = false  // it wears nothing (a robot: no caps or armour on it)
 
 class vx_hold_spec:
     rest:float3
@@ -291,6 +294,8 @@ class vx_gear_spec:
     fit_ids:[string]
     fits:[[vx_spec]]
     flags:[string]
+    legs:[vx_spec]  // worn gear's shapes on each leg (hip, knee, ankle) and arm (shoulder, elbow, hand), the right one
+    arms:[vx_spec]  // given, mirrored on the left: power armour's greaves and gauntlets
 
 class vx_rule:
     part:string
@@ -368,7 +373,16 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
     for(so.keys) name, k:
         b.style_names.push(name)
         for([ "skin", "pale", "mark" ]) c: b.style_cols.push(vx_hex(gstr(so.a[k], c, "#808080")))
+    let to = gobj(o, "tools")
+    b.tool_jobs = copy(to.keys)
+    b.tool_gear = map(to.a) t: as_str(t)
+    b.bare = gbool(o, "bare", false)
     return b
+
+// The gear body b uses for gear g (its own in its place, or g).
+def vx_tool_for(b:vx_body_spec, tool:string) -> string:
+    let k = find(b.tool_jobs) j: j == tool
+    return if k >= 0: b.tool_gear[k] else: tool
 
 def gfloat(o:JV, k:string, fallback:float) -> float: return if has(o, k): as_float(at(o, k)) else: fallback
 
@@ -440,7 +454,8 @@ def vx_load(dirs:[string]):
                 vx_gears.set(name, vx_gear_spec { name, if hand == "right": 1 elif hand == "left": -1 else: 0, gstr(g, "hold", ""),
                                                   vx_v3_or(g, "dir"), normalize(if has(g, "face"): vx_v3(at(g, "face")) else: float3 { 0.0, 1.0, 0.0 }),
                                                   vx_parse_gear_shapes(glist(g, "shapes")), copy(fits.keys), map(fits.a) l: vx_parse_gear_shapes(l.a),
-                                                  gstrs(g, "flags") })
+                                                  gstrs(g, "flags"), vx_parse_gear_shapes(glist(g, "legs")),
+                                                  vx_parse_gear_shapes(glist(g, "arms")) })
         if has(go, "parts"):  // a mod's rules go first: they're more particular
             let rs = map(glist(go, "parts")) r: vx_rule { gstr(r, "part", ""), gstr(r, "tag", ""), gstr(r, "slot", ""), gstr(r, "gear", "") }
             for(vx_rules) r: rs.push(r)
@@ -707,7 +722,7 @@ def vx_body_points(b:vx_body_spec, ph:float, lift:float3) -> vx_points:
 
 // The legs, walking at ph: each foot planted where it rests, moved along by sin(ph + its phase) * stride, lifted as
 // it swings forward; the knee (or a front leg's elbow) bent towards the pole.
-def vx_legs(out:[vx_prim], b:vx_body_spec, p:vx_points, ph:float, flags:[string]):
+def vx_legs(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:float, flags:[string]):
     for(b.legs) l:
         for([ 1.0, -1.0 ]) side:
             let m = float3 { side, 1.0, 1.0 }
@@ -723,6 +738,16 @@ def vx_legs(out:[vx_prim], b:vx_body_spec, p:vx_points, ph:float, flags:[string]
                 let s2 = s  // (the left one mirrored: its offsets' x turned)
                 if side > 0.0: vx_emit(out, s2, lp, vx_X, fy, fz, flags, nil)
                 else: vx_emit(out, vx_mirrored(s2), lp, vx_X, fy, fz, flags, nil)
+            vx_limb_gear(out, u, true, side, lp, fy, fz, flags)
+
+// Worn gear's shapes on a leg or an arm at its points lp (in the frame x, fy, fz), the left side's mirrored.
+def vx_limb_gear(out:[vx_prim], u:vx_unit_def, leg:bool, side:float, lp:vx_points, fy:float3, fz:float3, flags:[string]):
+    for(u.gear) g:
+        let gs = vx_gears.get(g)
+        if gs and gs.hand == 0:
+            for(if leg: gs.legs else: gs.arms) s:
+                if side > 0.0: vx_emit(out, s, lp, vx_X, fy, fz, flags, nil)
+                else: vx_emit(out, vx_mirrored(s), lp, vx_X, fy, fz, flags, nil)
 
 def vx_mirrored(s:vx_spec) -> vx_spec:
     let m = float3 { -1.0, 1.0, 1.0 }
@@ -793,6 +818,7 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         out.push(vx_cap(sh, elbow, b.thick, b.thick * 0.8, b.sleeve))
         out.push(vx_cap(elbow, hand, b.thick * 0.75, b.thick * 0.6, b.hand))
         out.push(vx_ball(hand, b.thick * 0.8, b.hand))
+        vx_limb_gear(out, u, false, side, vx_points { [ "shoulder", "elbow", "hand" ], [ sh, elbow, hand ] }, vx_Y, vx_Z, flags)
         if side > 0.0: hr = hand
         else: hl = hand
     if pushed != "":
@@ -802,7 +828,9 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         let d = normalize(dr)
         let o = cross(vx_X, d)
         let gp = vx_points { [ "hand", "draw" ], [ hr, hr ] }
-        for(right.shapes) s: vx_emit(out, s, gp, d, o, vx_X, flags, nil)
+        let f = copy(flags)
+        if attack and k > 0.35: f.push("firing")  // (the blow's moment: a beam, a muzzle's flash)
+        for(right.shapes) s: vx_emit(out, s, gp, d, o, vx_X, f, nil)
     if left:  // up, out of its face, to the side
         let o = left.face
         let sd = normalize(cross(o, vx_Z))
@@ -874,7 +902,7 @@ def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:
         let picks = vx_picking(u)
         let s = if picks: vx_raise(t) - vx_blow(t) else: vx_strike(t)
         p.at = map(p.at) a, k: a + float3 { 0.0, b.pdrive[k] * s, -g.dip * max(0.0, s) }
-    if not vx_seated: vx_legs(out, b, p, ph, flags)
+    if not vx_seated: vx_legs(out, u, b, p, ph, flags)
     for(b.shapes) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
     vx_worn(out, u, b, p, flags)
     if b.arms: vx_arms(out, u, b, p, if vx_seated or vx_stand: 0.0 else: sin(ph), t, flags)
