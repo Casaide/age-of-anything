@@ -193,7 +193,7 @@ def unit_loop_hear(name:string, count:int):
         music_volume(id, 0.0)
         l = UnitLoop { id, 0.0, 0.0 }
         unit_loops.set(name, l)
-    if l: l.want = loop_share(count)
+    l.want = loop_share(count)
 
 // Every loop eased to what it was asked for this frame (a loop nobody asked for fades out, and keeps its channel).
 def unit_loops_fade(dt:float):
