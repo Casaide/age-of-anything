@@ -73,7 +73,7 @@ def splash(o:int, recs:[int], b:int):
             while q < sp_end[cell]:
                 let k = sp_items[q]
                 q++
-                if u_id[k] != by and not is_beast(k):
+                if u_id[k] != by and not is_beast(k) and t_air[u_kind[k]] == 0:
                     let g = max(0, isqrt(dist2(x, y, u_x[k], u_y[k])) - u_radius[k])
                     if g < r:
                         let kk = u_kind[k]
@@ -135,7 +135,7 @@ def blast(i:int, b:int, d:int):
             while q < sp_end[cell]:
                 let k = sp_items[q]
                 q++
-                if k != i and not is_beast(k):
+                if k != i and not is_beast(k) and t_air[u_kind[k]] == 0:
                     let g = max(0, isqrt(dist2(x, y, u_x[k], u_y[k])) - u_radius[k])
                     if g < r:
                         let kk = u_kind[k]
