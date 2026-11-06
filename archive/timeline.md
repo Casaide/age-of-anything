@@ -199,3 +199,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-05: One load path: the game and mods go through the same code (D-217).
 - 2026-11-06: Packs must match in network matches and saves; saves have a format and an upgrade hook (D-218).
 - 2026-11-06: A left click shows enemy buildings and units, view-only, with their HP (#218).
+- 2026-11-06: order lines, flags and selection rings lie on the hills, and go behind them (#221).
