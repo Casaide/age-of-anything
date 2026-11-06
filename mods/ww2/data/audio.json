@@ -1,0 +1,8 @@
+{
+ "_doc": "What the tanks and the fighter sound like (the game's loops).",
+ "units": {
+  "siege.bolt.sherman": {"idle": "engine_idle", "move": "engine_move", "turret": "turret_servo"},
+  "siege.bolt.panzer": {"idle": "engine_idle", "move": "engine_move", "turret": "turret_servo"},
+  "siege.beast.fighter": {"move": "engine_move"}
+ }
+}

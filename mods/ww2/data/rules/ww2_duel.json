@@ -1,0 +1,7 @@
+{
+ "_doc": "Workers, flak gunners, tanks and fighters: a Sherman side against a Panzer side.",
+ "extends": "default",
+ "+era": ["ww2"],
+ "-roster": ["spear", "infantry", "skirmisher", "large", "healer", "mounted_archer", "scout", "ram", "catapult", "siege_tower", "unique", "sapper", "great_sling", "trader", "hero"],
+ "combat": {"shot_speeds": {"shell": 900, "mg": 1200, "flak": 1000}}
+}
