@@ -59,9 +59,13 @@ for(dirs) d:
     for(ms.keys) id, k:
         let m = vx_body_of(id)
         let o = ms.a[k]
-        let _, side = drawn(id, m.ride)
+        let _, side, front = drawn(id, m.ride)
         let seat = m.seat.z * 2.0 * m.ride / human.h
         let along = float(side) / human.h
+        if has(o, "span"):
+            let span = float(front) / float(side)
+            if report: print "{id}: wings {span} of its length"
+            if abs(span - gfloat(o, "span", 0.0)) > 0.05: fail("{id}: wings {span} of its length, the table says {gfloat(o, "span", 0.0)}")
         if report: print "{id}: ride {m.ride} seat {seat} length {along} heights of its rider"
         if has(o, "seat") and abs(seat - gfloat(o, "seat", 0.0)) > 0.03: fail("{id}: seat {seat} rider heights, the table says {gfloat(o, "seat", 0.0)}")
         if has(o, "length") and abs(along - gfloat(o, "length", 0.0)) > 0.03: fail("{id}: {along} rider heights long, the table says {gfloat(o, "length", 0.0)}")

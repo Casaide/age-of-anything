@@ -68,7 +68,7 @@
     },
     "hummingbird": {
       "size": 2.73,
-      "h": 120
+      "h": 124
     },
     "siege.beast.elephant": {
       "size": 1.12,
@@ -150,7 +150,8 @@
     },
     "hummingbird": {
       "ride": 2.73,
-      "length": 1.64
+      "length": 1.64,
+      "span": 1.2
     }
   }
 }
