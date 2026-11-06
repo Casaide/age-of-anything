@@ -405,7 +405,7 @@ def line_step_of(slot:string, l:JV) -> LineStep:
                       class_index(rstr(e, "damage")), as_int(at(e, "attack")), bonus, arm, map(eval_tags(e)) t: class_index(t),
                       as_int(at(e, "range")), gint(e, "reload", 0), gint(e, "min_range", 0), gint(e, "splash", 0), gint(e, "pass", 0),
                       if gstr(e, "targets", "") == "buildings": 1 else: 0, gint(e, "unpack", 0), gint(e, "pack", 0),
-                      gint(e, "blast", 0), gint(e, "blast_line_pct", 0), map(glist(e, "mounts")) m: parse_mount(m), gint(e, "heal", 0), gint(e, "sight", 0) }
+                      gint(e, "blast", 0), gint(e, "blast_line_pct", 0), map(glist(e, "mounts")) m: parse_mount(m), gint(e, "air", 0), gint(e, "hits_air", 0), gint(e, "heal", 0), gint(e, "sight", 0) }
 
 // A mount from data (a part's stats.mounts): degrees, tiles and ticks, into the sim's tenths and milli-tiles.
 def parse_mount(o:JV) -> Mount:

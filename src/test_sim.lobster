@@ -4293,6 +4293,89 @@ def test_turret():
     check(t_reach[kb] >= 7000, "the unit comes as close as its longest gun needs")
     check(t_mounts[type_of_slot(0, "archer")].length == 0, "and only on that line")
 
+// Aircraft (#183): only a weapon that can hit air touches one, what they fire at they fly round, they pass over the
+// crowd, and a stone's splash below doesn't reach them.
+def air_scene() -> int:
+    new_world("flat_test", races0, bare0, [])
+    let arch, spear, foe_arch = type_of_slot(0, "archer"), type_of_slot(0, "spear"), type_of_slot(1, "archer")
+    let plane = type_of_slot(1, "spear")
+    t_air[plane] = 1
+    t_mclass[plane] = FLYING
+    t_ranged[plane] = 1
+    t_reach[plane] = 5000
+    t_hits_air[plane] = 1
+    let x0, y0 = start_x[0] + 6000, start_y[0] + 6000
+    let a = u_id[add_unit(1, plane, x0, y0)]
+    u_hp[index_of(a)] = 100000
+    let sp = u_id[add_unit(0, spear, x0 + 800, y0)]
+    u_hp[index_of(sp)] = 100000
+    let ar = u_id[add_unit(0, arch, x0 + 2500, y0)]
+    u_hp[index_of(ar)] = 100000
+    issue_cmd(0, CMD_ATTACK, [ sp ], a, 0, 0, 0)
+    for(30): tick_on()
+    check(u_foe[index_of(sp)] != a, "a spear can\'t be ordered at an aircraft")
+    let start_hp = u_hp[index_of(a)]
+    var spear_on = false
+    var kept_moving = 0
+    var seen = 0
+    var far = 0
+    for(400):
+        tick_on()
+        if u_foe[index_of(sp)] == a: spear_on = true
+        if u_foe[index_of(a)] != 0:
+            seen++
+            if u_moving[index_of(a)] != 0: kept_moving++
+        far = max(far, isqrt(dist2(u_x[index_of(a)], u_y[index_of(a)], x0, y0)))
+    check(not spear_on, "nor does a spear pick one")
+    check(u_foe[index_of(ar)] == a and u_hp[index_of(a)] < start_hp, "an archer does, and hits it: {start_hp - u_hp[index_of(a)]}")
+    check(seen > 0 and kept_moving * 10 >= seen * 9, "the aircraft flies round what it fires at: moving {kept_moving} of {seen} ticks")
+    check(can_hit(foe_arch, index_of(sp)), "everyone can hit the ground")
+    let ram = type_of_slot(0, "catapult")
+    check(t_hits_air[ram] == 0, "an engine can\'t hit air")
+    check(t_hits_air[spear] == 0 and t_hits_air[arch] == 1, "melee can\'t, a bow can")
+    let h = state_hash()
+    return h
+
+def test_air():
+    let h1 = air_scene()
+    check(h1 == air_scene(), "the same on a second run")
+    // Two bots with aircraft for their heavy line: they play on, and it comes out the same twice.
+    def bots_with_air() -> int, int:
+        let rules = load_rules("default")
+        let races = map(PROMPTS.slice(0, 2)) p: generate(p, rules, 0)
+        new_world("reed_meadow", races, rules, [])
+        for(t_slot) slot, k:
+            if slot == "large":
+                t_air[k] = 1
+                t_mclass[k] = FLYING
+        let bots = map(2) p: new_bot(p)
+        var built = 0
+        while tick < 4800:
+            if tick == 2400:  // (a bot takes far longer to train its own: put some over each base)
+                for(2) p:
+                    for(6) n: add_unit(p, type_of_slot(p, "large"), start_x[1 - p] + n * 600, start_y[1 - p] + 3000)
+            for(bots) bot: full_bot_think(bot)
+            tick_on()
+            built = max(built, (filter(u_id.length) i: t_air[u_kind[i]] != 0).length)
+        return built, state_hash()
+    let n1, b1 = bots_with_air()
+    let n2, b2 = bots_with_air()
+    check(n1 == 12 and n2 == 12, "bots play on with aircraft over their bases: {n1}")
+    check(b1 == b2, "and it comes out the same twice")
+
+    // From the data: air on a body and hits_air on a weapon reach the sim; nobody else changes.
+    let bolt = part("siege.bolt.timber")
+    let plain = at(bolt, "stats")
+    let st = deep_copy(plain)
+    set(st, "air", jint(1))
+    set(bolt, "stats", st)
+    let race = gen_race(PROMPTS[1])
+    new_world("flat_test", [ race, race ], rules0, [])
+    let kb = type_of_slot(0, "bolt_thrower")
+    check(t_air[kb] == (if rstr(su_type_recipe[kb], "body") == "siege.bolt.timber": 1 else: 0), "air on a part reaches the sim")
+    check(t_air[type_of_slot(0, "archer")] == 0, "and only on that line")
+    set(bolt, "stats", plain)
+
 def test_save_load():
     let at_t = 4800
     let to_t = 8400
@@ -4348,7 +4431,7 @@ def test_save_load():
 
 // ------------------------------------------------------------------ the parts
 
-let PARTS = [ "fixed", "turret", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
+let PARTS = [ "fixed", "turret", "air", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
@@ -4405,6 +4488,7 @@ def run_part(name:string):
     elif name == "queue": test_queue()
     elif name == "wonder": test_wonder()
     elif name == "turret": test_turret()
+    elif name == "air": test_air()
     elif name == "save_load": test_save_load()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()
