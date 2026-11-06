@@ -735,6 +735,7 @@ var vx_variant = 0          // the look being built
 var vx_seated = false       // a rider being built: no legs of its own (shapes with `unless: seated` left off)
 var vx_team_wear = "scarf"  // where a creature without a tunic wears the team: scarf or vest (a concept option)
 var vx_act = ""             // the pose being drawn: "" (standing or walking) or "attack", at a step through it
+var vx_fall_t = 0.0         // how far through falling dead (0: not): the knees go, then the trunk
 var vx_carried = ""         // a worker's load carried home (a resource's name): what's pushed takes both hands
 var vx_stand = false        // standing (not walking): every foot planted where it rests (idle, a blow, at work)
 
@@ -1091,8 +1092,21 @@ def vx_worn(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, flags:[st
             if k < 0: k = find(gs.fit_ids) i: i == "*"
             if k >= 0: for(gs.fits[k]) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
 
+// A body going down as it dies: its hips drop and its trunk folds forward over them, so its knees bend (its feet stay), #263.
+let vx_SLUMP_HIPS = 0.6
+let vx_SLUMP_LEAN = 0.6
+let vx_SLUMP_FOLD = 0.3
+def vx_slump(b:vx_body_spec, p:vx_points):
+    let k = clamp(vx_fall_t / 0.6, 0.0, 1.0)
+    let e = k * k * (3.0 - 2.0 * k)
+    let hip = vx_where(p, b.legs[0].pa)
+    p.at = map(p.at) a:
+        let up = max(0.0, a.z - hip.z)
+        a + float3 { 0.0, up * vx_SLUMP_LEAN * e, -hip.z * vx_SLUMP_HIPS * e - up * vx_SLUMP_FOLD * e }
+
 // A body with its worn gear and arms (when it has them) at points p.
 def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:float, t:float, flags:[string]):
+    if vx_fall_t > 0.0 and b.arms and b.legs.length and not vx_seated: vx_slump(b, p)
     let g = b.gait
     if g and vx_act == "attack":  // the body behind the blow (or leaning in to pick)
         let picks = vx_picking(u)
@@ -1197,6 +1211,13 @@ def vx_fallen(parts:[vx_prim], t:float) -> [vx_prim]:
     let s = sin(a)
     def turn(q:float3) -> float3: return float3 { q.x * c + (q.z - mid) * s, q.y, -q.x * s + (q.z - mid) * c + mid }
     return map(parts) p: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, p.mat, p.hard, p.disc, p.box }
+
+// A unit's parts, falling dead at t.
+def vx_fallen_unit(u:vx_unit_def, t:float) -> [vx_prim]:
+    vx_fall_t = t
+    let parts = vx_unit_prims(u, 0.0)
+    vx_fall_t = 0.0
+    return vx_fallen(parts, t)
 
 // Does the unit fly (its body's, or its mount's)? Its ground isn't under its lowest point.
 def vx_flies(u:vx_unit_def) -> bool: return vx_body_of(u.body).flies > 0.0 or (u.mount != "" and vx_body_of(u.mount).flies > 0.0)
