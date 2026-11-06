@@ -329,8 +329,7 @@ def vx_want(lk:int):
 // The data (the game's and each active mod's data/voxel/) and the cache key's code part, once.
 def vx_init():
     if vx_source != "": return
-    let dirs = [ "../data/voxel" ]
-    for(mods_active) m: dirs.push(m.dir + "/data/voxel")  // (a mod's own, in its data/)
+    let dirs = map(lib_packs) p: p.root + "/voxel"  // (a mod's own rules come after the game's)
     vx_load(dirs)
     vx_source = sha256_text((read_file("view/voxel.lobster") or "") + vx_data_text())
     vx_mat_cols[vx_mat_team] = float3 { 0.85, 0.12, 0.85 }  // (the sprite shader's team key)
