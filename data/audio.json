@@ -1,5 +1,6 @@
 {
-  "_doc": "The game's sounds: every name here has assets/audio/sfx/<name>_<take>.wav takes (made by src/render_audio.sh, listed in src/audio/sfx.lobster); gap_ms is the least time between two plays of one sound; voices is how many may sound at once. Creature voices are assets/audio/voice/<voice>_<kind>_<take>.wav, with <voice> from creatures.json. Music is pieces (theme, hearth, march; each its loop's seconds), every piece in the same stems, assets/audio/music/<piece>_<stem>.ogg, one loop each, mixed by age (dB per stem; missing = silent). A match turns the rotation over every `plays` loops; tense_after_s of fighting brings the tense piece in.",
+  "_doc": "units: what a body sounds like by state, by its body id: idle and move loops, and turret while its gun turns (one channel a sound, however many units; see unit_loops_tick). The game's sounds: every name here has assets/audio/sfx/<name>_<take>.wav takes (made by src/render_audio.sh, listed in src/audio/sfx.lobster); gap_ms is the least time between two plays of one sound; voices is how many may sound at once. Creature voices are assets/audio/voice/<voice>_<kind>_<take>.wav, with <voice> from creatures.json. Music is pieces (theme, hearth, march; each its loop's seconds), every piece in the same stems, assets/audio/music/<piece>_<stem>.ogg, one loop each, mixed by age (dB per stem; missing = silent). A match turns the rotation over every `plays` loops; tense_after_s of fighting brings the tense piece in.",
+  "units": {"siege.cart": {"move": "cart_roll"}, "siege.ram": {"move": "cart_roll"}, "siege.catapult": {"move": "cart_roll"}, "siege.bolt": {"move": "cart_roll"}, "siege.tower": {"move": "cart_roll"}, "siege.sling": {"move": "cart_roll"}},
   "buses": {"Music": -8.0, "Sfx": -4.0, "Voice": -4.0, "Ui": -8.0, "Ambience": -14.0},
   "sounds": {
     "hit_blade": {"takes": 4, "bus": "Sfx", "gap_ms": 60, "voices": 3},
@@ -46,7 +47,13 @@
     "hero_fell": {"takes": 1, "bus": "Ui", "gap_ms": 1000, "voices": 1},
     "meadow": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1},
     "town_quiet": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1},
-    "town_busy": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1}
+    "town_busy": {"takes": 1, "bus": "Ambience", "gap_ms": 0, "voices": 1},
+    "engine_idle": {"takes": 1, "bus": "Sfx", "gap_ms": 0, "voices": 1},
+    "engine_move": {"takes": 1, "bus": "Sfx", "gap_ms": 0, "voices": 1},
+    "turret_servo": {"takes": 1, "bus": "Sfx", "gap_ms": 0, "voices": 1},
+    "cart_roll": {"takes": 1, "bus": "Sfx", "gap_ms": 0, "voices": 1},
+    "shell_boom": {"takes": 3, "bus": "Sfx", "gap_ms": 120, "voices": 3},
+    "shell_hit": {"takes": 3, "bus": "Sfx", "gap_ms": 120, "voices": 3}
   },
   "voices": {"kinds": {"select": 2, "ack": 3, "die": 2}, "gap_ms": 400, "die_gap_ms": 700},
   "music": {

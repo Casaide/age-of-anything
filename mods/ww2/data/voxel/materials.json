@@ -1,0 +1,28 @@
+{
+  "_doc": "The tanks' own paint and steel: an engine's skin, pale and mark are its crew's colours, and frame is wood.",
+  "ww2_olive": {
+    "rgb": "#5a6234"
+  },
+  "ww2_olive_worn": {
+    "rgb": "#7a8052"
+  },
+  "ww2_dunkelgelb": {
+    "rgb": "#9a8650"
+  },
+  "ww2_dunkelgelb_worn": {
+    "rgb": "#b09c66"
+  },
+  "ww2_rubber": {
+    "rgb": "#24231f"
+  },
+  "ww2_steel": {
+    "rgb": "#4a4a50",
+    "shine": 0.5
+  },
+  "ww2_fighter": {
+    "rgb": "#5c6a4c"
+  },
+  "ww2_fighter_mark": {
+    "rgb": "#7a6644"
+  }
+}
