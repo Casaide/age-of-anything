@@ -127,6 +127,7 @@ class WorldSave:
     t_min_damage:[int]
     t_sight:[int]
     t_mclass:[int]
+    t_mounts:[[Mount]]
     t_atk:[[int]]
     t_arm:[[int]]
     t_cls:[[int]]
@@ -181,11 +182,10 @@ class WorldSave:
     u_wnext:[int]
     u_wexit:[int]
     u_wtime:[int]
-    u_aim:[int]
     u_hull:[int]
     u_lx:[int]
     u_ly:[int]
-    u_gun:[int]
+    u_mount:[[int]]
     u_orders:[[Cmd]]
     t_tags:[[int]]
     t_damage:[int]
@@ -410,8 +410,6 @@ class WorldSave:
     t_kill_gold:[int]
     t_slow_on_hit:[int]
     t_min_range:[int]
-    t_turn:[int]
-    t_arc:[int]
     t_splash:[int]
     t_pass_len:[int]
     t_buildings_only:[int]
@@ -597,6 +595,7 @@ def world_bytes(bots:[Bot]) -> string:
         t_min_damage,
         t_sight,
         t_mclass,
+        t_mounts,
         t_atk,
         t_arm,
         t_cls,
@@ -651,11 +650,10 @@ def world_bytes(bots:[Bot]) -> string:
         u_wnext,
         u_wexit,
         u_wtime,
-        u_aim,
         u_hull,
         u_lx,
         u_ly,
-        u_gun,
+        u_mount,
         u_orders,
         t_tags,
         t_damage,
@@ -880,8 +878,6 @@ def world_bytes(bots:[Bot]) -> string:
         t_kill_gold,
         t_slow_on_hit,
         t_min_range,
-        t_turn,
-        t_arc,
         t_splash,
         t_pass_len,
         t_buildings_only,
@@ -1080,6 +1076,7 @@ def load_world_bytes(data:string) -> [Bot]:
     t_min_damage = s.t_min_damage
     t_sight = s.t_sight
     t_mclass = s.t_mclass
+    t_mounts = s.t_mounts
     t_atk = s.t_atk
     t_arm = s.t_arm
     t_cls = s.t_cls
@@ -1134,11 +1131,10 @@ def load_world_bytes(data:string) -> [Bot]:
     u_wnext = s.u_wnext
     u_wexit = s.u_wexit
     u_wtime = s.u_wtime
-    u_aim = s.u_aim
     u_hull = s.u_hull
     u_lx = s.u_lx
     u_ly = s.u_ly
-    u_gun = s.u_gun
+    u_mount = s.u_mount
     u_orders = s.u_orders
     t_tags = s.t_tags
     t_damage = s.t_damage
@@ -1363,8 +1359,6 @@ def load_world_bytes(data:string) -> [Bot]:
     t_kill_gold = s.t_kill_gold
     t_slow_on_hit = s.t_slow_on_hit
     t_min_range = s.t_min_range
-    t_turn = s.t_turn
-    t_arc = s.t_arc
     t_splash = s.t_splash
     t_pass_len = s.t_pass_len
     t_buildings_only = s.t_buildings_only
@@ -1431,10 +1425,9 @@ def load_world_bytes(data:string) -> [Bot]:
 // Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first. Format 1 needs none.
 def save_upgrade(s:WorldSave):
     assert s.save_format <= SAVE_FORMAT
-    if s.save_format < 2:  // (turrets, #177: no unit type had one)
+    if s.save_format < 2:  // (weapon mounts, #177, #211: no unit type had one)
         for(s.t_slot):
-            s.t_turn.push(0)
-            s.t_arc.push(0)
+            s.t_mounts.push([]::Mount)
 
 // Why this save file can't load here, or "".
 def save_refusal_of(path:string) -> string:

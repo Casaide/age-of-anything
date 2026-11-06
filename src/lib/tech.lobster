@@ -43,8 +43,7 @@ class LineStep:
     pack:int
     blast:int
     blast_line:int
-    turn:int  // a turret: how fast its gun turns (degrees a second), or 0 for none
-    arc:int   // a turret: how far off the target it can fire (degrees)
+    mounts:[Mount]  // guns that turn on their own (a part's stats.mounts)
     heal:int
     sight:int
 
@@ -97,8 +96,6 @@ var t_heal_pct = []::int
 var t_kill_gold = []::int
 var t_slow_on_hit = []::int
 var t_min_range = []::int
-var t_turn = []::int  // per unit type: a turret's turn (tenths of a degree a tick), or 0 for a unit that aims by facing
-var t_arc = []::int   // per unit type: how far off its aim it can fire (tenths of a degree)
 var t_splash = []::int
 var t_pass_len = []::int
 var t_buildings_only = []::int
@@ -193,9 +190,13 @@ def set_type_from(k:int, l:LineStep, fxs:[Effect]):
     t_pack[k] = l.pack
     t_blast[k] = l.blast
     t_blast_line[k] = l.blast_line
-    t_turn[k] = if l.turn > 0: max(1, l.turn / 2) else: 0
-    assert l.turn == 0 or l.arc > 0  // a gun that turns needs an arc to fire in
-    t_arc[k] = l.arc * 10
+    t_mounts[k] = l.mounts
+    for(l.mounts) m:
+        if m.attack >= 0:
+            m.atk = map(C): 0
+            m.atk[m.damage] = m.attack
+            for(C) c: m.atk[c] += bonus[c]
+        if m.range > t_reach[k]: t_reach[k] = m.range  // (it comes as close as its longest gun needs)
     t_eval_sight[k] = l.sight
     t_tags[k] = l.tags
     t_damage[k] = l.damage

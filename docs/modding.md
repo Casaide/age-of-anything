@@ -41,9 +41,10 @@ change it. What matters:
   `points` is also what the generator spends from a race's budget; the price can differ: `price_points`
   (the game's are calibrated by fights, D-195). `mod_check.sh` ends by fighting the lines that wear your
   parts against a fixed panel and prints the `price_points` each part should have; set them.
-- `stats.turn` and `stats.arc` on a weapon make it a turret: its gun turns at `turn` degrees a second, fires within
-  `arc` degrees of its target, fires on the move, and comes back over the hull with nothing to shoot at. Without them
-  a unit fires as soon as it's in reach.
+- `stats.mounts` on a body or weapon gives a unit guns that turn on their own, as many as it likes (a turret front and back, broadsides). Each is
+  `{"part": "turret", "rest": 0, "arc": 360, "turn": 60, "tolerance": 5}`: the voxel part it turns, its rest facing off the hull, how wide it can go round that,
+  degrees a second, and how far off its target it can fire. Its weapon falls back on the unit's where it says nothing: `range` (tiles), `reload` (ticks),
+  `attack`, `damage`, `shot`. Each mount picks its own target inside its arc, and fires on the move. Without mounts a unit fires as soon as it's in reach.
 - `tier`: 1-3, the age it can first appear. Add a tier-3 version to give the line an age-3 step.
 - `face`: on head gear, `"covered"` for a face guard with eye openings, `"sealed"` for a closed helmet.
 - `shapes`: a rough 2D outline (the data contract's reference): copy one from a similar game part.

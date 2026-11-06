@@ -160,6 +160,6 @@ save += "    roles_from_data()  // (... and its building types\' roles, D-192)\n
 save += "    staples_from_data()  // (... and its staple resources)\n"
 save += "    spatial_clear()  // (... and its spatial buckets, which an older build filled over the whole map)\n"
 save += "    return s.bots\n"
-save += "\n// Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first. Format 1 needs none.\ndef save_upgrade(s:WorldSave):\n    assert s.save_format <= SAVE_FORMAT\n    if s.save_format < 2:  // (turrets, #177: no unit type had one)\n        for(s.t_slot):\n            s.t_turn.push(0)\n            s.t_arc.push(0)\n"
+save += "\n// Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first. Format 1 needs none.\ndef save_upgrade(s:WorldSave):\n    assert s.save_format <= SAVE_FORMAT\n    if s.save_format < 2:  // (weapon mounts, #177, #211: no unit type had one)\n        for(s.t_slot):\n            s.t_mounts.push([]::Mount)\n"
 save += "\n// Why this save file can\'t load here, or \"\".\ndef save_refusal_of(path:string) -> string:\n    let data = read_file(path, true)\n    if not data: return \"No such save.\"\n    let w, err = flexbuffers_binary_to_value(typeof WorldSave, data)\n    if err: return \"That file is not a save.\"\n    let s = w\n    if not s: return \"That file is not a save.\"\n    return save_refusal(s.save_format, s.save_packs)\n"
 assert write_file("gen/save.lobster", save, 1)
