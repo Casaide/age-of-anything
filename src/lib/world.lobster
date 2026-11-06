@@ -31,7 +31,7 @@ def take_pending() -> [Cmd]:
 // The scratch arrays grow with the units (training adds them).
 def grow_scratch():
     let n = u_x.length
-    for([ sp_items, sp_cell, slot_x, slot_y, f_ahead, f_side, s_pushx, s_pushy, s_settle, s_stood, s_yields, s_role, s_planted,
+    for([ sp_items, sp_cell, slot_x, slot_y, slot_block, slot_bx, slot_by, f_ahead, f_side, s_pushx, s_pushy, s_settle, s_stood, s_yields, s_role, s_planted,
           c_hurt, c_hurt_by, c_engaged, c_inbound ]) a:
         while a.length < n: a.push(0)
 
@@ -317,8 +317,8 @@ def load(path:string):
     expect("UNITS")
     let cols = unit_columns()
     for(next_int()):
-        let f = read_ints(cols.length)
-        for(cols) col, k: col.push(f[k])
+        let f = read_ints(cols.length - 3)  // (a scenario has no marching blocks)
+        for(cols) col, k: col.push(if k < f.length: f[k] else: 0)
         u_orders.push([]::Cmd)  // (no queued orders at the start: asserted)
         u_mount.push([]::int)
     expect("BUILDINGS")

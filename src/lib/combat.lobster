@@ -733,7 +733,7 @@ def combat_tick():
                 crowded = cur >= 0 and c_engaged[cur] > CROWDED
             if (u_foe[i] == 0 and (idle or stance == ATTACK_MOVE)) or crowded:
                 let am = stance == ATTACK_MOVE
-                var f = nearest_foe(i, if am: sight_of(i) else: look(i), am or t_buildings_only[k] != 0, if posture == STAND and not am: 0 else: SPREAD,
+                var f = nearest_foe(i, if am and u_block[i] > 0: t_reach[k] + u_radius[i] + BLOCK_LEASH elif am: sight_of(i) else: look(i), am or t_buildings_only[k] != 0, if posture == STAND and not am: 0 else: SPREAD,
                                     false, near_of(i), not t_buildings_only[k])
                 if crowded and t_ranged[k] and f != 0 and gap(i, index_of(u_foe[i])) <= t_reach[k]:
                     let fj = index_of(f)

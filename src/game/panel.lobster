@@ -536,14 +536,14 @@ def draw_bust(key:int, recipe:JV, owner:int, at:float2, side:float):
 def draw_type_bust(k:int, at:float2, side:float): draw_bust(k, su_type_recipe[k], t_player[k], at, side)
 
 // A building's picture scaled into a box (its look's body bake; sprite_xf places the frame's corner).
-def draw_building_icon(k:int, at:float2, size:float):
-    let lk = looks.get(building_key(arch_of[ME], bt_name[k], ages[ME], 0))
+def draw_building_icon(k:int, owner:int, at:float2, size:float):
+    let lk = looks.get(building_key(arch_of[owner], bt_name[k], ages[owner], 0))
     if not lk: return
     let f = frame_index(lk.body)
     if f < 0: return
     let fr = frames[f]
     let s = size / float(max(fr.w, fr.h))
-    let tc = team_col(ME)
+    let tc = team_col(owner)
     sprite_xf(f, [ s, 0.0, 0.0, s, at.x + size / 2.0 - float(fr.w) / 2.0 * s, at.y + size / 2.0 - float(fr.h) / 2.0 * s ], float4 { tc.x, tc.y, tc.z, 1.0 })
 
 // ---- pieces of the look
@@ -651,6 +651,7 @@ def draw_panel():
     ui_frame(false)
     let ids = selected_units()
     let bi = b_index_of(sel_building)
+    let fi = index_of(sel_foreign)
     // (on a pad the orders live on the wheel, so the panel keeps who and the queue: command_panel.gd's compact)
     let btns = if pad_on or (build_menu and not selected_workers().length): []::Btn else: panel_buttons()
     // What's shown: title, hp, info lines, portrait, tray, queue.
@@ -666,12 +667,13 @@ def draw_panel():
     if bi >= 0:
         let k = b_kind[bi]
         let owner = b_owner[bi]
-        title = if owner == ME: bname(k) else: rstr(su_races[owner], "name") + " " + bname(k)
+        title = bname(k)
+        if owner != ME: info.push(rstr(su_races[owner], "name"))
         hp_now = b_hp[bi]
         hp_max = bm_hp[owner][k]
         b_pic = k
         if b_done[bi] == 0: info.push("Being built: {100 * b_progress[bi] / max(1, bt_build_ticks[k])}%")
-        else:
+        elif teams[owner] == teams[ME]:  // (an enemy's garrison and training don't show from outside)
             if bt_garrison[k] > 0:
                 let inside = b_inside[bi].length / REC_SIZE
                 let arrows = bt_arrows[k] + inside
@@ -709,8 +711,18 @@ def draw_panel():
                 else: tray_n[at]++
             insertion_sort(tray_k) a, b: a < b
             for(tray_k) kk, n: tray_n[n] = (filter(ids) id: u_kind[index_of(id)] == kk).length
+    elif fi >= 0:
+        let k = u_kind[fi]
+        let owner = u_owner[fi]
+        title = unit_name(k)
+        if owner != gaia: info.push(rstr(su_races[owner], "name"))
+        hp_now = u_hp[fi]
+        hp_max = t_hp[k]
+        portrait = k
+        if t_animal[k] == 0: info = append(info, card_lines(k))
     else:
         info.push("Select units or a building.")
+    panel_hp = hp_now
     if placing >= 0: info = [ "Placing {bname(placing)}: left-click to build, shift keeps placing, right-click/Esc cancels" ]
     // Lay it out (UI px times s): the who column, the button groups, the queue.
     let pad_l = 16.0 * s
@@ -829,9 +841,9 @@ def draw_panel():
     // Pictures: sprites (buildings, page buttons) after the boxes, then the textures, text last.
     b_sheet = -1
     let pic_at = float2 { x0 + pad_l, y }
-    if b_pic >= 0: draw_building_icon(b_pic, pic_at + float2_1 * 4.0 * s, (P_PORTRAIT - 8.0) * s)
+    if b_pic >= 0: draw_building_icon(b_pic, if bi >= 0: b_owner[bi] else: ME, pic_at + float2_1 * 4.0 * s, (P_PORTRAIT - 8.0) * s)
     for(items) it:
-        if it.b.building >= 0: draw_building_icon(it.b.building, it.at + float2 { 6.0 * s, 5.0 * s }, it.side - 22.0 * s)
+        if it.b.building >= 0: draw_building_icon(it.b.building, ME, it.at + float2 { 6.0 * s, 5.0 * s }, it.side - 22.0 * s)
     flush_sprites()
     // (busts render into their own textures the first time: after the sprites above are out)
     if portrait >= 0: draw_type_bust(portrait, pic_at + float2_1 * 2.0 * s, (P_PORTRAIT - 4.0) * s)
@@ -978,7 +990,7 @@ def wheel_draw():
         if hud_button(it.at, float2_1 * it.side, it.b.accent or n == hot, it.b.enabled): pressed = n
     b_sheet = -1
     for(items) it:
-        if it.b.building >= 0: draw_building_icon(it.b.building, it.at + float2 { 6.0 * s, 5.0 * s }, it.side - 22.0 * s)
+        if it.b.building >= 0: draw_building_icon(it.b.building, ME, it.at + float2 { 6.0 * s, 5.0 * s }, it.side - 22.0 * s)
     flush_sprites()
     for(items) it:
         btn_picture(it, 5.0 * s, if it.b.costv.length or it.b.note != "": 12.0 * s else: 0.0)
@@ -1033,7 +1045,7 @@ def build_button():
     let pressed = hud_button(at, float2_1 * r.z, true, true)
     b_sheet = -1
     let house = btype_named("house")
-    if house >= 0: draw_building_icon(house, at + float2 { 6.0 * s, 4.0 * s }, r.z - 24.0 * s)
+    if house >= 0: draw_building_icon(house, ME, at + float2 { 6.0 * s, 4.0 * s }, r.z - 24.0 * s)
     flush_sprites()
     let fsz = int(14.0 * s)
     edged_text(at + float2 { (r.z - tb_text_w("BUILD", fsz, 2)) * 0.5, r.z - 20.0 * s }, "BUILD", fsz, PANEL_GOLD, 2)
