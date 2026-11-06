@@ -130,7 +130,8 @@ for(args) a, k:
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
-        if a == "oldtext": text_off = true                 // (measuring: text drawn as before game/text_cache.lobster)
+        if a == "perflive": perf_live = true
+        if a == "oldtext": text_off = true  // (measuring: text drawn as before game/text_cache.lobster)
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
         if a == "follow": follow = true
@@ -509,6 +510,7 @@ def unit_anchor(id:int) -> float2:
     return canvas(x, y) - float2 { 0.0, lift_at(x, y) }
 
 def collect_units(alpha:float):
+    perf_unseen = 0
     for(u_x.length) i:
         let px, py = prev_pos(i)
         let x = px + (u_x[i] - px) * alpha
@@ -555,6 +557,7 @@ def collect_units(alpha:float):
             // (voxel units step by the ground they cover, so the planted foot doesn't slide)
             let n = if state == "walk" or find_string(state, "carry") == 0: vx_walk_step(u_id[i], u_kind[i], x, y) else: n0
             let f = vx_frame_for(u_id[i], u_kind[i], state, d, n)
+            if f < 0: perf_unseen++
             let p = iso(x, y)
             let tc = team_col(u_owner[i])
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
@@ -2515,8 +2518,8 @@ def play_match():
         let dt = gl.delta_time()
         frame_dt = dt
         fx_tick(dt)
-        vx_tick(0.006)   // (the voxel units' later bakes)
-        akb_wall_tick()  // (a wall tile with joins not seen before: one a frame)
+        vx_tick(0.006, u_x.length < 300 and gl.time() - last_battle >= 6.0)  // (the voxel units' later bakes, not in a fight)
+        akb_wall_tick()                                                      // (a wall tile with joins not seen before: one a frame)
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
@@ -2577,9 +2580,11 @@ def play_match():
                 if (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):
                     ai_level_for(p)
                     full_bot_think(bot)  // (watch: your own bot plays your side)
+            let t1 = seconds_elapsed()
             step()
             if net_on: ls_after_step(lockstep)
             step_time += seconds_elapsed() - t0
+            perf_tick(t1 - t0, seconds_elapsed() - t1)
             steps++
             clock_s += 0.05
             after_step()
@@ -2657,7 +2662,7 @@ def play_match():
             print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
             quit_app = true
             return
-        if perf_for > 0.0 and perf_end(clock_s):
+        if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return
 
