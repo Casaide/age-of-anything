@@ -294,6 +294,13 @@ def dir_of(v:float2) -> int:
     let a = atan2(normalize(v))
     return (int(floor(a / 45.0 + 0.5)) % 8 + 8) % 8
 
+// Facing d, now heading along v: d kept until v is clearly past the next direction's edge (so a heading along an edge doesn't flip).
+def dir_settled(d:int, v:float2) -> int:
+    let nd = dir_of(v)
+    if nd < 0 or nd == d: return nd
+    let off = abs((atan2(normalize(v)) - float(d) * 45.0 + 540.0) % 360.0 - 180.0)
+    return if off > 32.0: nd else: d
+
 // Is this milli-tile spot on screen (with a margin)? Sounds only play for what you can see.
 def on_screen(x:int, y:int) -> bool:
     let s = to_screen(iso(float(x), float(y)))
@@ -522,11 +529,12 @@ def collect_units(alpha:float):
         let y = py + (u_y[i] - py) * alpha
         let mine = teams[u_owner[i]] == teams[ME]
         if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and vx_drawn(u_kind[i]):
-            let moving = px != u_x[i] or py != u_y[i]
+            // (walking by its own order: the crowd's pushes move a unit too, a tick at a time and every way: no walk or turn for those)
+            let moving = u_moving[i] == 1 and (px != u_x[i] or py != u_y[i])
             var d = unit_dir.get(u_id[i], 2)
-            if moving:
-                let nd = dir_of(iso(float(u_x[i] - px), float(u_y[i] - py)))
-                if nd >= 0 and (abs(u_x[i] - px) + abs(u_y[i] - py)) > 4: d = nd
+            if moving:  // it faces where it's making for, not this tick's step
+                let nd = dir_settled(d, iso(float(u_wx[i] - u_x[i]), float(u_wy[i] - u_y[i])))
+                if nd >= 0: d = nd
             elif u_foe[i] != 0:
                 let j = index_of(u_foe[i])
                 var tx = -1.0
