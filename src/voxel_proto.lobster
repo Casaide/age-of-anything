@@ -120,38 +120,11 @@ if args.length > 1 and args[1] == "looks":
     for([ units[5], units[6], units[11], units[12] ]) u: for(vx_looks_of(u)) v: rows.push(row { u, "stand", "scarf", true, v })
 let step = vx_CELL.x * 3 / 2  // a column (room for the shadows)
 // `check`: every unit in every facing, standing and in each walk step, stands in its shadow (vx_contact_gap); exit 1 if not
-if args.length > 1 and args[1] == "check":
-    var bad = 0
-    var n = 0
-    let all = copy(units)
-    let kit = [ "spear", "shield", "cap" ]
-    for([ "bear", "spider", "beetle_rear" ]) b: all.push(unit(b, b, float3_0, float3_0, kit, "", float3_0))
-    for([ "deer", "boar", "sheep" ]) b: all.push(unit(b, b, float3_0, float3_0, [], "", float3_0))
-    let crew = unit("crew", "human", ROMAN, ROMAN2, [ "axe", "cap" ], "", float3_0)
-    for([ "siege.ram", "siege.catapult", "siege.bolt", "siege.tower", "siege.sling", "siege.cart", "siege.beast.elephant", "siege.beast.boar", "siege.beast.heron", "siege.beast.mantis",
-          "siege.beast.tarantula" ]) id: all.push(engine(id, crew))
-    for([ [ "frog", "newt" ], [ "rat", "capybara" ], [ "human", "bear_mount" ], [ "rat", "beetle" ], [ "frog", "spider" ] ]) pr: all.push(unit("{pr[0]} on a {pr[1]}", pr[0], float3_0, float3_0, kit, pr[1], float3_0))
-    for(filter(all) u: not vx_flies(u)) u:  // (a flier's shadow is on the ground under it)
-        vx_set_look(u, 0)
-        vx_act = ""
-        for(9) st:
-            vx_stand = st == 0  // (step 0: standing, as the game's idle frames, every foot planted; then the walk)
-            let g = vx_fill(vx_unit_prims(u, float(max(0, st - 1)) * 45.0), vx_size_of(u), vx_on_zero(u, false))
-            for(8) f:
-                let cell = copy(vx_cell(g, f))
-                let sc = vx_ground_shadow(g, f)
-                n++
-                var ok = true
-                for([ 0.0, 0.35, 0.7 ]) ph: if not vx_stands(cell, sc, 0.55, ph, st == 0): ok = false
-                if not ok:
-                    bad++
-                    print "FLOATS: {u.label}, step {st}, facing {f}: no shadow showing under its feet as the game draws it"
-    print "contact: {n} frames, {bad} float"
-    if bad: set_exit_code(1)
-elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull facing (rows) with every part facing (columns)
-    let b = vx_body_of(args[2])
+// What's wrong with a body's parts and running gear: the number of faults. out: a sheet of every pair of facings, or "-".
+def parts_faults(id:string, out:string) -> int:
+    let b = vx_body_of(id)
     assert b.parts.length
-    let u = unit(args[2], args[2], float3_0, float3_0, [], "", float3_0)
+    let u = unit(id, id, float3_0, float3_0, [], "", float3_0)
     vx_set_look(u, 0)
     vx_team_wear = "scarf"
     vx_shadows = true
@@ -219,7 +192,7 @@ elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull faci
         if not on:
             print "parts: {name} on {b.parts[n].name} is off the picture in facing {f}"
             bad++
-    if out_path != "-":
+    if out != "-":
         let ih = vx_CELL.y * 3 / 4
         let iw = step * 8
         let bg = float3 { 86.0, 120.0, 46.0 } / 255.0
@@ -237,8 +210,60 @@ elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull faci
                     if j >= 0 and j < img.length: img[j] = float3_1
         let bytes = []::int
         for(img) c: for(3) ch: bytes.push(clamp(int(c[ch] * 255.0), 0, 255))
-        write_file(out_path, "P6\n{iw} {ih * 8}\n255\n" + vector_to_buffer(bytes, 1), 0, 1)
-    print "parts: {args[2]}: {64 * b.parts.length} stacked, at worst {worst}% off the whole figure, {bad} faults"
+        write_file(out, "P6\n{iw} {ih * 8}\n255\n" + vector_to_buffer(bytes, 1), 0, 1)
+    print "parts: {id}: {64 * b.parts.length} stacked, at worst {worst}% off the whole figure, {bad} faults"
+    return bad
+
+if args.length > 1 and args[1] == "check":
+    var bad = 0
+    var n = 0
+    let all = copy(units)
+    let kit = [ "spear", "shield", "cap" ]
+    for([ "bear", "spider", "beetle_rear" ]) b: all.push(unit(b, b, float3_0, float3_0, kit, "", float3_0))
+    for([ "deer", "boar", "sheep" ]) b: all.push(unit(b, b, float3_0, float3_0, [], "", float3_0))
+    let crew = unit("crew", "human", ROMAN, ROMAN2, [ "axe", "cap" ], "", float3_0)
+    for([ "siege.ram", "siege.catapult", "siege.bolt", "siege.tower", "siege.sling", "siege.cart", "siege.beast.elephant", "siege.beast.boar", "siege.beast.heron", "siege.beast.mantis",
+          "siege.beast.tarantula" ]) id: all.push(engine(id, crew))
+    for([ [ "frog", "newt" ], [ "rat", "capybara" ], [ "human", "bear_mount" ], [ "rat", "beetle" ], [ "frog", "spider" ] ]) pr: all.push(unit("{pr[0]} on a {pr[1]}", pr[0], float3_0, float3_0, kit, pr[1], float3_0))
+    for(filter(all) u: not vx_flies(u)) u:  // (a flier's shadow is on the ground under it)
+        vx_set_look(u, 0)
+        vx_act = ""
+        for(9) st:
+            vx_stand = st == 0  // (step 0: standing, as the game's idle frames, every foot planted; then the walk)
+            let g = vx_fill(vx_unit_prims(u, float(max(0, st - 1)) * 45.0), vx_size_of(u), vx_on_zero(u, false))
+            for(8) f:
+                let cell = copy(vx_cell(g, f))
+                let sc = vx_ground_shadow(g, f)
+                n++
+                var ok = true
+                for([ 0.0, 0.35, 0.7 ]) ph: if not vx_stands(cell, sc, 0.55, ph, st == 0): ok = false
+                if not ok:
+                    bad++
+                    print "FLOATS: {u.label}, step {st}, facing {f}: no shadow showing under its feet as the game draws it"
+    print "contact: {n} frames, {bad} float"
+    if bad: set_exit_code(1)
+elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull facing (rows) with every part facing (columns)
+    assert parts_faults(args[2], out_path) == 0
+elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (the game's, and any voxels: dirs), fliers too
+    var bad = 0
+    var n = 0
+    assert vx_dist(float3 { 5.0, 0.0, 0.0 }, vx_box(float3_0, float3 { 0.0, 0.0, 1.0 }, float3 { 1.0, 1.0, 0.1 }, 0.0, 0)) > 0.0  // (a box facing straight up has edges)
+    for(sorted_strs(vx_bodies.get_keys())) id:
+        if find_string(id, "#") < 0:
+            n++
+            let b = vx_body_of(id)
+            let u = unit(id, id, float3_0, float3_0, [], "", float3_0)
+            vx_set_look(u, 0)
+            vx_act = ""
+            vx_stand = true
+            let g = vx_fill(vx_unit_prims(u, 0.0), b.size, vx_on_zero(u, false))
+            for(8) f:
+                vx_cell(g, f)
+                if vx_box.z < vx_box.x:
+                    print "bodies: {id} draws nothing in facing {f}"
+                    bad++
+            if b.parts.length: bad += parts_faults(id, "-")
+    print "bodies: {n} bodies, {bad} faults"
     assert bad == 0
 elif args.length > 2 and args[1] == "solo":  // `solo <body> [gear,...]`: one body alone, 3x, four facings standing then four walk steps (for making it from scratch)
     let kit = if args.length > 3 and not starts_with(args[3], "voxels:"): tokenize(args[3], ",", "") else: []
