@@ -358,6 +358,12 @@ def block_march(b:int):
         fb_x[b] = x + dx * min(fb_pace[b], d) / d
         fb_y[b] = y + dy * min(fb_pace[b], d) / d
 
+// An enemy close by: no marching in blocks, there's no time to form up (and a close fight stays as it was priced).
+def foe_near(player:int, x:int, y:int) -> bool:
+    for(u_x.length) i:
+        if u_owner[i] < num_players and is_enemy(player, u_owner[i]) and dist2(u_x[i], u_y[i], x, y) <= BLOCK_FOE_NEAR * BLOCK_FOE_NEAR: return true
+    return false
+
 // A group move's formation (World._formation): every unit's slot into slot_x / slot_y.
 // Returns the group, its centre (fx, fy) and pace.
 def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
@@ -388,7 +394,7 @@ def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
     if d > 0:
         ux = dx * ONE / d
         uy = dy * ONE / d
-    if n >= BLOCK_FROM:
+    if n >= BLOCK_FROM and not foe_near(player, cx, cy):
         block_formation(group, idx, x, y, cx, cy, ux, uy)
         return group, x, y, pace
     let bands = [ []::int, []::int, []::int ]
