@@ -82,7 +82,7 @@ def splash(o:int, recs:[int], b:int):
                         d = d * (r - g) / r
                         if not is_enemy(owner, u_owner[k]): d = d * r_splash_friend_pct / 100
                         if d > 0:
-                            c_hurt[k] += d
+                            c_hurt[k] += hook_on_hit(by, k, d)
                             c_hurt_by[k] = by
                             if events_on: events.push(Event { EV_HIT, by, u_id[k], d, x, y })
             xx++
@@ -142,7 +142,7 @@ def blast(i:int, b:int, d:int):
                         var dk = damage(t_atk[k0], t_arm[kk], t_cls[kk], max(r_min_damage, t_min_damage[kk])) * (r - g) / r
                         if not is_enemy(owner, u_owner[k]): dk = dk * r_splash_friend_pct / 100
                         if dk > 0:
-                            c_hurt[k] += dk
+                            c_hurt[k] += hook_on_hit(by, k, dk)
                             c_hurt_by[k] = by
                             if events_on: events.push(Event { EV_HIT, by, u_id[k], dk, x, y })
             xx++
@@ -188,7 +188,7 @@ def pass_through(o:int, recs:[int], aimed:int):
                     if dist2(nx, ny, u_x[k], u_y[k]) <= rr * rr:
                         let kk = u_kind[k]
                         let d = damage(t_atk[src], t_arm[kk], t_cls[kk], max(r_min_damage, t_min_damage[kk]))
-                        c_hurt[k] += d
+                        c_hurt[k] += hook_on_hit(by, k, d)
                         c_hurt_by[k] = by
                         if events_on: events.push(Event { EV_HIT, by, u_id[k], d, u_x[k], u_y[k] })
             xx++

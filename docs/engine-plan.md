@@ -456,7 +456,7 @@ help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 wai
 5. **The unit type seam (2-3 days).** *Done 2026-11-06 (#195, D-222).* Split `gen/setup.lobster`: the engine builds the sim from a plain unit type
    table; the game's `race_to_types` fills it from races. Done: golden starts unchanged; a test builds a match from a
    unit type table in data with no generator.
-6. **Hooks, first set (5-8 days).** `mods_gen.lobster` writes `hooks_active.lobster`; the web, the Wonder clock and
+6. **Hooks, first set (5-8 days).** *First hook points done 2026-11-06 (#231, D-223), as compiled game rules; hook mods run in Lua (#234). The web, the Wonder and the modes still to move.* `mods_gen.lobster` writes `hooks_active.lobster`; the web, the Wonder clock and
    victory, Fortress and Siege move out of `lib/` and `gen/modes` into the base pack's hooks; hook state is declared
    and saved; `mod_check` gets the builtin refusal and the lint; living towns become the first UI hook. Done: every
    match tick for tick as before (`test_sim`, `test_ai`, golden starts); a test pack with a clock call or a float in
