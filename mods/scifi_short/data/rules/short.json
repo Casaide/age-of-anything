@@ -1,6 +1,7 @@
 {
- "_doc": "The match this mod is for: infantry only (spears, swords, rifles) and no riders, archers, siege or heroes.",
+ "_doc": "The match this mod is for: one solid unit, the power-armoured pulse trooper, and robot workers (Dominic, 2026-11-06). No other soldiers, riders, archers, siege or heroes.",
  "extends": "default",
  "+era": ["scifi"],
- "-roster": ["archer", "large", "healer", "mounted_archer", "scout", "war_beast", "ram", "catapult", "bolt_thrower", "siege_tower", "unique", "sapper", "great_sling", "trader", "hero"]
+ "-roster": ["archer", "large", "healer", "mounted_archer", "scout", "war_beast", "ram", "catapult", "bolt_thrower", "siege_tower", "unique", "sapper", "great_sling", "trader", "hero", "spear", "infantry"],
+ "role_body": {"worker": {"body": "body.robot", "only_if": ["scifi"], "_doc": "workers are drones with laser cutters"}}
 }
