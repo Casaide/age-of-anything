@@ -19,10 +19,10 @@ let PERF_BUSY_MAX = 0.22      // the main thread's share of the wall clock spent
 let PERF_FPS_MAX = 66.0       // frames a second (the cap is 60: a 120 Hz display uncapped draws twice as often)
 let PERF_BUFFERS_P95 = 0      // GPU buffers made a frame, the 95th percentile (pooled: none once the pool is full)
 let PERF_TEXT_MAX = 0.0001    // seconds of text a frame (game/text_cache.lobster: labels from atlas pages)
-// A big battle (army:) has budgets of its own: 2026-11-06 on the MacBook, about 950 units, 4.7 ms median and 7.8 ms 95th.
-let PERF_BIG_MEDIAN = 0.008
-let PERF_BIG_P95 = 0.016
-let PERF_BIG_BUSY = 0.6
+// A big battle (army:) has budgets of its own: 2026-11-06 on the MacBook, 2,000 units on open_field, 12 ms median, 22 ms 95th, 71% busy.
+let PERF_BIG_MEDIAN = 0.014
+let PERF_BIG_P95 = 0.024
+let PERF_BIG_BUSY = 0.8
 let PERF_BIG_BUFFERS = 8  // (a batch past the pool's biggest buffer)
 
 var perf_for = 0.0       // perf:<seconds> (0: off)
