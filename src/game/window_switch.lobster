@@ -3,7 +3,8 @@
 var window_fullscreen = false
 var window_shown = int2_0
 var window_toggles = []::float  // fsat:<seconds>,<seconds>: switch then, whatever the keys (tests and captures)
-var window_report = false       // fsreport: say each size the window takes
+var window_report = ""          // fsreport:<file>: write each size the window takes
+var window_sizes = ""
 
 def window_combo() -> bool:
     if gl.button("return") != 1: return false
@@ -28,4 +29,6 @@ def window_tick():
         window_set(not window_fullscreen)
     if window_shown != gl.window_size():
         window_shown = gl.window_size()
-        if window_report: print "window: {window_shown} fullscreen {window_fullscreen}"
+        if window_report != "":
+            window_sizes += "window: {window_shown} fullscreen {window_fullscreen}\n"
+            write_file(window_report, window_sizes, 0, 1)
