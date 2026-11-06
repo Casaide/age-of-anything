@@ -75,6 +75,8 @@ var t_shot_speed = []::int
 var t_min_damage = []::int
 var t_sight = []::int  // the line's own sight plus research
 var t_mclass = []::int
+var t_air = []::int       // per unit type: 1 for an aircraft (winged creatures aren't: melee can reach them)
+var t_hits_air = []::int  // per unit type: 1 if its weapon can hit an aircraft
 // A gun on a unit that turns on its own (a part's stats.mounts): tenths of a degree, ticks, milli-tiles. Its weapon falls
 // back on the unit's where it says nothing.
 class Mount:

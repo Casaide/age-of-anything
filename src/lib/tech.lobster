@@ -44,6 +44,8 @@ class LineStep:
     blast:int
     blast_line:int
     mounts:[Mount]  // guns that turn on their own (a part's stats.mounts)
+    air:int         // an aircraft: only what can hit air can touch it
+    hits_air:int    // its weapon: 1 it can hit air, -1 it can't, 0 by its kind (ranged and not an engine)
     heal:int
     sight:int
 
@@ -190,6 +192,8 @@ def set_type_from(k:int, l:LineStep, fxs:[Effect]):
     t_pack[k] = l.pack
     t_blast[k] = l.blast
     t_blast_line[k] = l.blast_line
+    t_air[k] = l.air
+    t_hits_air[k] = if not ranged or l.hits_air < 0: 0 elif l.hits_air > 0: 1 elif t_machine[k] != 0 or t_min_range[k] > 0: 0 else: 1
     t_mounts[k] = l.mounts
     for(l.mounts) m:
         if m.attack >= 0:
