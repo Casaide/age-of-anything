@@ -481,6 +481,8 @@ class WorldSave:
     sight_cache:dictionary<int, [int]>
     ray_offs:dictionary<int, [int]>
     ray_par:dictionary<int, [int]>
+    save_format:int
+    save_packs:[string]
     bots:[Bot]  // the bots (the game keeps them)
 
 // The world and the bots as bytes (a save file, or the start of a network match).
@@ -966,6 +968,8 @@ def world_bytes(bots:[Bot]) -> string:
         sight_cache,
         ray_offs,
         ray_par,
+        SAVE_FORMAT,
+        lib_mods,
         bots }
     return flexbuffers_value_to_binary(w, 1000)
 
@@ -981,6 +985,9 @@ def load_world_bytes(data:string) -> [Bot]:
     if err: return []
     let s = w
     if not s: return []
+    save_refused = save_refusal(s.save_format, s.save_packs)
+    if save_refused != "": return []
+    save_upgrade(s)
     ab_kind = s.ab_kind
     ab_range = s.ab_range
     ab_radius = s.ab_radius
@@ -1471,3 +1478,17 @@ def load_world_bytes(data:string) -> [Bot]:
     staples_from_data()  // (... and its staple resources)
     spatial_clear()      // (... and its spatial buckets, which an older build filled over the whole map)
     return s.bots
+
+// Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first. Format 1 needs none.
+def save_upgrade(s:WorldSave):
+    assert s.save_format <= SAVE_FORMAT
+
+// Why this save file can't load here, or "".
+def save_refusal_of(path:string) -> string:
+    let data = read_file(path, true)
+    if not data: return "No such save."
+    let w, err = flexbuffers_binary_to_value(typeof WorldSave, data)
+    if err: return "That file is not a save."
+    let s = w
+    if not s: return "That file is not a save."
+    return save_refusal(s.save_format, s.save_packs)

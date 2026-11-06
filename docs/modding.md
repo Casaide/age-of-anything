@@ -17,7 +17,7 @@ tools/mods/new_mod.sh <id> ["Name"] [--era <tag>] [--private]
 - `--private`: the folder goes in `mods_private/` (gitignored, never exported, never packed). Use it
   for anything based on someone else's franchise: those stay private and unofficial.
 
-You get `mod.json`, `data/parts.json` (one example helmet), `data/lexicon.json` (one word),
+You get `pack.json`, `data/parts.json` (one example helmet), `data/lexicon.json` (one word),
 `data/rules/anything.json` (with an era), `data/voxel/gear.json` (the helmet's voxel look and the rule that gives it
 the part), `README.md`. It passes the checks as it is: check it now (step 4) so you start green.
 
@@ -71,7 +71,7 @@ game size: the voxel-art skill (`.claude/skills/voxel-art/`).
 - `data/rules/<rule>.json`: `{"+era": ["<your era>"]}` opens your era under that host rule.
 - Cultures and creatures: `data/families.json` / `creatures.json`; `"extends": "imperial"` copies a
   game one and changes only what you name.
-- `mod.json` `check.prompts`: the prompts that show your parts (they drive the checks).
+- `pack.json` `check.prompts`: the prompts that show your parts (they drive the checks).
 
 - Buildings: `data/buildings.json` in your mod changes them (below). The sim and the
   bots never look a building up by its id, only by what it does, so a building can be called anything. A building
@@ -119,8 +119,8 @@ goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. 
 does, and `"extends": "arrow"` starts from one of the game's). They only change what's drawn: the sim fires one shot and decides one hit. `audio.json` and WAVs stay out of the mod's
 signature, so a sound never changes a race key.
 
-A mod match is local for now: the network doesn't compare mods yet (#132), and players with different
-mods would fall out of step. `mods/scifi_short` is the example: infantry only, two ages:
+In a network match everyone needs the same mods: a joiner who differs is turned away, told which mod. A save needs the
+mods it was made with: start the game with them, and the Load page says which. `mods/scifi_short` is the example: infantry only, two ages:
 `./play.sh lobby mods:scifi_test,scifi_short rules:short`. `src/test_mod_match.lobster` plays it to the end.
 
 ## 5. Look at it
@@ -147,7 +147,7 @@ the mods (and their data) it was made with.
       `upgrade_within` if the mod has an era
 - [ ] Every part has a look (a voxel gear rule, its own or the game's); some team colour on every unit
 - [ ] Words for the prompts (era words with a note and a substitute); rules open the era
-- [ ] `mod.json`: version, game_version, depends, eras, check prompts
+- [ ] `pack.json`: version, depends (the game, `age_of_anything@0.21`, and any other mods), eras, check prompts
 - [ ] `src/mod_check.sh <id>`: loaded
 - [ ] Looked at close up and at game size; firing if it shoots
 - [ ] A race without the mod's words gets none of it (`races.lobster -- mods:<id> anything` on a plain prompt)
