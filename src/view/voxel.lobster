@@ -7,7 +7,7 @@
 
 let vx_ELEV = 30.0                                                      // the camera's elevation, degrees
 let vx_RES = 2.0                                                        // voxels a body unit (a body unit is about a world pixel; a voxel a baked pixel)
-let vx_CELL = int2 { int(100.0 * vx_RES), int(130.0 * vx_RES) }         // a sprite cell (room for a siege tower; each is cropped to what's drawn)
+let vx_CELL = int2 { int(100.0 * vx_RES), int(170.0 * vx_RES) }         // a sprite cell (room for a siege tower; each is cropped to what's drawn)
 let vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(40.0 * vx_RES) }  // the ground under the unit, in its cell (room in front: a cart's puller, a trunk)
 let vx_BLEND = 0.8                                                      // how far body parts melt into each other, body units (round 1's 2.2 made muscles)
 
@@ -375,6 +375,8 @@ class vx_body_spec:
     hull:string = ""           // with parts: the body without them
     piece:bool = false         // a hull or a part: on the ground as the whole body is, not under its own lowest point
     death:string = ""          // how it dies: "knocked_out", or falling over
+    h:float = 0.0              // sizes.json: its height, bare and standing, in voxels (a rider's mount is sized from it)
+    ride:float = 0.0           // sizes.json: a mount: its size under a rider of the human's height
     track:vx_track? = nil
     wheels:[vx_wheel] = []
     style_cols:[float3] = []
@@ -665,6 +667,17 @@ def vx_load(dirs:[string]):
                     let b = vx_parse_body(id, o)
                     vx_bodies.set(id, b)
                     for(gstrs(o, "also")) a: vx_bodies.set(a, b)  // (other body ids drawn the same, their palettes apart)
+        vx_load_sizes(parse_json(read_file(d + "/sizes.json") or "\{\}"))
+
+// The size table (docs/rendering.md, size_check.lobster): every body's size and height, and how big a mount is under its rider.
+def vx_load_sizes(o:JV):
+    let bs = gobj(o, "bodies")
+    for(bs.keys) id, k:
+        let b = vx_body_of(id)
+        b.size = gfloat(bs.a[k], "size", b.size)
+        b.h = gfloat(bs.a[k], "h", 0.0)
+    let ms = gobj(o, "mounts")
+    for(ms.keys) id, k: vx_body_of(id).ride = gfloat(ms.a[k], "ride", 0.0)
 
 // A body built on another (its `base`, in the same folder): the base's fields, this one's over them, and its
 // `add_shapes` after the base's shapes (a war boar: the boar, bigger, with a howdah and seats).
@@ -696,7 +709,7 @@ def vx_remap(v:JV, remap:JV) -> void:
 def vx_data_text() -> string:
     var t = ""
     for(vx_data_dirs) d:
-        t += (read_file(d + "/materials.json") or "") + (read_file(d + "/gear.json") or "")
+        t += (read_file(d + "/materials.json") or "") + (read_file(d + "/gear.json") or "") + (read_file(d + "/sizes.json") or "")
         let names = scan_folder(d + "/bodies", false)
         if names: for(sorted_strs(names)) n: t += read_file(d + "/bodies/" + n) or ""
     return t
@@ -1134,6 +1147,12 @@ def vx_crew_prims(out:[vx_prim], u:vx_unit_def, c:vx_unit_def, ph0:float):
         while ps.length: ps.pop()
     vx_seated = false
 
+// A mount's size under this rider: the table's, in proportion to the rider, so a rat on a beetle looks as a human on one does.
+def vx_mount_size(b:vx_body_spec, mb:vx_body_spec) -> float:
+    let human = vx_bodies.get("human")
+    if mb.ride > 0.0 and b.h > 0.0 and human and human.h > 0.0: return mb.ride * b.h / human.h
+    return mb.size
+
 // A unit and its mount (without a crew).
 def vx_rider_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     let out = []::vx_prim
@@ -1152,7 +1171,7 @@ def vx_rider_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     assert not fused or mb.fused_pt != ""
     let mp = vx_body_points(mb, ph, float3_0)
     vx_whole_body(mount, mu, mb, mp, ph, t, if fused: [ "fused" ] else: [])
-    let ms = mb.size / b.size
+    let ms = vx_mount_size(b, mb) / b.size
     let skin = vx_mat("skin")
     let pale = vx_mat("pale")
     let mark = vx_mat("mark")

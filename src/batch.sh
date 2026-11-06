@@ -37,6 +37,7 @@ add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand 
 add test_formations "$L" test_formations.lobster  # big armies in formation, headless: drift, jitter, facing, overlap, the framed map
 add test_shot_look "$L" test_shot_look.lobster  # shots look faster and land when they always did
 add voxel_check "$L" voxel_check.lobster                # the voxel units' art: straight standing knees, skins that never clip or grey, kit that keeps the creature's shape, no look-alikes, no specks
+add size_check "$L" size_check.lobster                  # the one size table (data/voxel/sizes.json): every body as tall as it says, every mount at its ratio
 add voxel_parts "$L" voxel_proto.lobster -- - parts test.turret voxels:../tests/voxel/parts   # a part stays on its hull in every pair of facings
 add voxel_parts_twin "$L" voxel_proto.lobster -- - parts test.twin voxels:../tests/voxel/parts   # two turrets on one hull
 add voxel_bodies "$L" voxel_proto.lobster -- - bodies voxels:../tests/voxel/parts $(for d in ../mods/*/data/voxel; do [ -d "$d" ] && printf "voxels:%s " "$d"; done)   # every body in every pack draws, its parts stay on it

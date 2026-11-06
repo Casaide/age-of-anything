@@ -1,7 +1,6 @@
 {
  "_doc": "A war boar: the boar, big, its hide its own (not its crew's), a howdah on its back, its crew sat in it.",
  "base": "boar",
- "size": 2.4,
  "remap": {
   "skin": "boar_hide",
   "pale": "boar_dark"
