@@ -2,7 +2,6 @@
  "_doc": "A worker drone, from scratch. An industrial walker a head shorter than a man: a deep boxy trunk in worn yellow paint, a small head block with one glowing optic, a battery on its back, thin dark limbs on reverse knees (bent backwards like a bird's), wide flat foot pads. Team colour on the chest panel and the antenna tip. It works with a laser cutter (tools). It wears nothing (bare) and uses its cutter in place of an axe, pick or hammer (tools).",
  "skin": "#d6a23a",
  "pale": "#e8c070",
- "size": 1.0,
  "fur": 0.0,
  "reach": 4.6,
  "tools": {

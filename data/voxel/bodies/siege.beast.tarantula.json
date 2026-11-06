@@ -1,7 +1,6 @@
 {
  "_doc": "A war tarantula: the spider, big and hairy, its hide its own, a saddle on its back, its crew sat on it.",
  "base": "spider",
- "size": 2.2,
  "remap": {
   "skin": "tarantula",
   "pale": "tarantula2",
