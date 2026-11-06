@@ -206,3 +206,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: Shells leave from the muzzle: bodies and parts can name points, and shots start from theirs (D-221, #179).
 - 2026-11-06: A shot became all data: thin tracers, muzzle flash and smoke, recoil, blast and shake, and siege_shots.json is gone (D-222, #180).
 - 2026-11-06: Tracks run: a belt and wheels are data, turning by the ground covered, with no seam (D-223, #181).
+- 2026-11-06: Engines, tracks and turrets got sound: loops by state, one channel a sound, capped by how many are on screen (D-224, #182).
