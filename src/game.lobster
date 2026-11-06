@@ -1607,8 +1607,8 @@ def scroll():
     if gl.button("right") >= 1 or gl.button("d") >= 1: d.x += 1.0
     if gl.button("up") >= 1 or gl.button("w") >= 1: d.y -= 1.0
     if gl.button("down") >= 1 or gl.button("s") >= 1: d.y += 1.0
-    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y  // (outside the window the mouse reads 0, 0)
-    if inside and shot == "" and rec_dir == "" and gl.window_focused():                   // (the mouse is free now: not while it works in another app)
+    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y   // (outside the window the mouse reads 0, 0)
+    if inside and shot == "" and rec_dir == "" and gl.window_focused():  // (the mouse is free now: not while it works in another app)
         if m.x <= 3.0: d.x -= 1.0
         if m.y <= 3.0: d.y -= 1.0
         if m.x >= ws.x - 4.0: d.x += 1.0
