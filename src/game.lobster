@@ -107,6 +107,7 @@ var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks thr
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
 var army_n = 0                   // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+var army_snap = false            // a skirmish's armies start in their blocks, once the first order has made them
 let ARMY_GAP = 600               // milli-tiles between them, in ranks
 var zoom_arg = 0.0               // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
 var reveal = false               // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
@@ -2245,6 +2246,7 @@ def make_match() -> bool:
                 if skirmish:
                     let foe = (p + 1) % num_players
                     issue_cmd(p, CMD_ATTACK_MOVE, ids, start_x[foe], start_y[foe], 0, 0)
+                    army_snap = true
         update_pop()
         if fort_gate.x >= 0 and has_s(args, "in_gate"):  // (captures: soldiers standing through the gate's arch, before, in it, past it)
             let gk = find(t_slot.length) j: t_player[j] == ME and t_slot[j] == "infantry"
@@ -2588,6 +2590,9 @@ def play_match():
             let t1 = seconds_elapsed()
             step()
             if net_on: ls_after_step(lockstep)
+            if army_snap and (find(fb_state) s: s != 0) >= 0:
+                blocks_snap()
+                army_snap = false
             step_time += seconds_elapsed() - t0
             perf_tick(t1 - t0, seconds_elapsed() - t1)
             steps++
