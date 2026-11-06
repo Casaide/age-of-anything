@@ -126,6 +126,8 @@ var stashed_t_shot_speed = []::int
 var stashed_t_min_damage = []::int
 var stashed_t_sight = []::int
 var stashed_t_mclass = []::int
+var stashed_t_air = []::int
+var stashed_t_hits_air = []::int
 var stashed_t_mounts = []::[Mount]
 var stashed_t_atk = []::[int]
 var stashed_t_arm = []::[int]
@@ -625,6 +627,8 @@ def reset_world():
     t_min_damage = []::int
     t_sight = []::int
     t_mclass = []::int
+    t_air = []::int
+    t_hits_air = []::int
     t_mounts = []::[Mount]
     t_atk = []::[int]
     t_arm = []::[int]
@@ -1113,6 +1117,8 @@ def stash_world():
     stashed_t_min_damage = t_min_damage
     stashed_t_sight = t_sight
     stashed_t_mclass = t_mclass
+    stashed_t_air = t_air
+    stashed_t_hits_air = t_hits_air
     stashed_t_mounts = t_mounts
     stashed_t_atk = t_atk
     stashed_t_arm = t_arm
@@ -1595,6 +1601,8 @@ def unstash_world():
     t_min_damage = stashed_t_min_damage
     t_sight = stashed_t_sight
     t_mclass = stashed_t_mclass
+    t_air = stashed_t_air
+    t_hits_air = stashed_t_hits_air
     t_mounts = stashed_t_mounts
     t_atk = stashed_t_atk
     t_arm = stashed_t_arm

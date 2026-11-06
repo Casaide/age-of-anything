@@ -127,6 +127,8 @@ class WorldSave:
     t_min_damage:[int]
     t_sight:[int]
     t_mclass:[int]
+    t_air:[int]
+    t_hits_air:[int]
     t_mounts:[[Mount]]
     t_atk:[[int]]
     t_arm:[[int]]
@@ -619,6 +621,8 @@ def world_bytes(bots:[Bot]) -> string:
         t_min_damage,
         t_sight,
         t_mclass,
+        t_air,
+        t_hits_air,
         t_mounts,
         t_atk,
         t_arm,
@@ -1124,6 +1128,8 @@ def load_world_bytes(data:string) -> [Bot]:
     t_min_damage = s.t_min_damage
     t_sight = s.t_sight
     t_mclass = s.t_mclass
+    t_air = s.t_air
+    t_hits_air = s.t_hits_air
     t_mounts = s.t_mounts
     t_atk = s.t_atk
     t_arm = s.t_arm
@@ -1505,6 +1511,10 @@ def save_upgrade(s:WorldSave):
         for(old_shots) v, n:
             s.shots.push(v)
             if n % 11 == 10: s.shots.push(0)
+    if s.save_format < 3:  // (aircraft, #183: no unit type was one)
+        for(s.t_slot):
+            s.t_air.push(0)
+            s.t_hits_air.push(0)
 
 // Why this save file can't load here, or "".
 def save_refusal_of(path:string) -> string:
