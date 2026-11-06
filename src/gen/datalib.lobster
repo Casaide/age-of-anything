@@ -34,7 +34,7 @@ def sorted_strs(xs:[string]) -> [string]:
 
 // Saves: the format this build writes, and what stops one loading. A save names the packs it was made with, and a
 // match only makes sense with those. A save from before formats reads as format 0 with no packs: the base game.
-let SAVE_FORMAT = 1
+let SAVE_FORMAT = 2
 var save_refused = ""  // why the last load didn't happen
 
 def sig_id(sig:string) -> string:
