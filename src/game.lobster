@@ -60,6 +60,7 @@ import .gen.setup
 import .gen.modes
 import .gen.start
 import .view.facing
+import .view.shot_look
 import .view.node
 import .view.art
 import .view.bake_cache
@@ -1467,7 +1468,7 @@ def draw_shots(alpha:float):
         if firstseen:
             t_from = tick - 1
             shot_from.set(key, t_from)
-        let t = clamp((float(tick - t_from) + alpha) / float(max(1, land - t_from)), 0.0, 1.0)
+        let t = shot_drawn_u((float(tick - t_from) + alpha) / 20.0, float(max(1, land - t_from)) / 20.0)
         let ax = shots[o + SHOT_X]
         let ay = shots[o + SHOT_Y]
         let sx = shots[o + SHOT_X0]
@@ -1477,7 +1478,8 @@ def draw_shots(alpha:float):
             let st = shot_style(if src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
             let a = ground_at(sx, sy) - float2 { 0.0, 12.0 }
             let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
-            if st.plain(): draw_bolt(st, a, b, t, 1.0)
+            if st.plain():
+                if t >= 0.0: draw_bolt(st, a, b, t, 1.0)  // (launched late: it looks faster, and lands on the sim's tick)
             elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
     draw_tracers()
     if tick % 200 == 0: shot_from = dictionary<int, int>(1024)  // (forget the landed ones now and then)
