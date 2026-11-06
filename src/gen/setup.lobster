@@ -206,6 +206,7 @@ def add_type(player:int, e:JV) -> int:
     t_flee.push(0)
     t_food.push(0)
     su_units.push(e)
+    if gbool(e, "tick", false): hook_tick_types.push(k)
     su_type_animal.push("")
     return k
 

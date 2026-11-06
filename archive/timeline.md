@@ -200,3 +200,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: The filming battle meets formed; shots look twice as fast and land when they did (#217, #175).
 - 2026-11-06: A left click shows enemy buildings and units, view-only, with their HP (#218).
 - 2026-11-06: The sim builds from a table of unit types; a match runs with no generator in the program (D-222).
+- 2026-11-06: The sim has hook points; sticky shots, carcasses and engine picks are game rules through them (D-223).

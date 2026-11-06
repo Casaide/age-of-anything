@@ -72,6 +72,8 @@ import lib.expand
 import lib.bot
 import lib.walls_ai
 import lib.world
+import hooks.active
+import hooks.rules
 import gen.setup
 import gen.race_to_types
 import gen.modes
@@ -254,17 +256,17 @@ def has_word(code:string, w:string) -> bool:  // w in code, not inside a longer 
 
 def test_source_lint():
     var files = 0
-    let names = filter(scan_folder("lib", true) or []) f: ends_with(f, ".lobster")
+    let names = append(map(filter(scan_folder("lib", true) or []) f: ends_with(f, ".lobster")) f: "lib/" + f, map(filter(scan_folder("hooks", true) or []) f: ends_with(f, ".lobster")) f: "hooks/" + f)
     let sorted_names = sorted_strs(names)
     for(sorted_names) f:
         files++
-        let src_lines = tokenize(read_file("lib/" + f) or "", "\n", "")
+        let src_lines = tokenize(read_file(f) or "", "\n", "")
         for(src_lines) line, n:
             let cut = find_string(line, "//")
             let code = if cut >= 0: substring(line, 0, cut) else: line
             for(BANNED) b:
-                if has_word(code, b): check(false, "lib/{f}:{n + 1} uses banned \'{b}\': {line}")
-            if has_decimal(code): check(false, "lib/{f}:{n + 1} has a float literal: {line}")
+                if has_word(code, b): check(false, "{f}:{n + 1} uses banned \'{b}\': {line}")
+            if has_decimal(code): check(false, "{f}:{n + 1} has a float literal: {line}")
     check(files >= 20, "lint saw the sim and AI sources ({files} files)")
 
 // ------------------------------------------------------------------ flow fields

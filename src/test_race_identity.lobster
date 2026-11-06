@@ -54,6 +54,8 @@ import lib.expand
 import lib.bot
 import lib.walls_ai
 import lib.world
+import hooks.active
+import hooks.rules
 import gen.setup
 import gen.race_to_types
 import gen.modes
