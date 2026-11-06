@@ -11,6 +11,7 @@ Playing it showed what a tank needs that the game doesn't have: shots came from 
 **Direction changes.** Vehicles became an engine feature instead of a mod's tricks. Planes will be real air units with anti-air counters, not a skin.
 
 **Funny moments.**
+- Dominic, playing: "planes go along the ground". `flies: 24` had been a comment all along: the plane was built at z 0.
 - With arrows that land where the target was, a plane that never stops can never be hit. The first air test: 400 ticks of an archer shooting at one, 0 damage.
 - A box whose normal points straight up has no idea which way is across, so a small camouflage patch became a slab as wide as the plane: brown wings, and a red deck panel the size of a garage door.
 - A body with no soft shape at all renders nothing, silently. The first true Sherman was invisible (#184).
