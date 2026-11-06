@@ -300,7 +300,9 @@ def test_hard():
             print "hard as player {h}, {rname(race)} each: winner {r.winner} at {clock(r.end_tick)}"
             if r.winner == h: hwon++
             if r.winner == 1 - h: hlost++
-    check(hwon > hlost, "hard beats normal over the mirrors ({hwon} won, {hlost} lost of 8)")
+    // Eight chaotic matches can't tell the levels apart: over 96 (12 seeds) hard goes 38-34-24, and a sim change that
+    // touches no bot can move one seed from 3-2 to 2-4 (#187). This only catches hard being clearly worse.
+    check(hwon * 2 >= hlost, "hard isn\'t clearly worse than normal over the mirrors ({hwon} won, {hlost} lost of 8)")
 
 // The checks across pieces: the same match twice is the same; the bots' healers heal someone over their
 // matches; the match lengths (reported).
