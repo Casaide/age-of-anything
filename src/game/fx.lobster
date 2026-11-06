@@ -353,6 +353,10 @@ def draw_puffs():
 def fx_smoke(at:float2, n:int, r:float):
     for(n): fx_smokes.push(Smoke { at + float2 { rnd_range(-r, r), rnd_range(-r, r) * 0.5 }, -rnd_float() * 0.1, rnd_range(1.6, 3.0), rnd_range(-5.0, 5.0) })
 
+// A lick of flame on a wreck.
+def fx_flame(at:float2):
+    fx_flashes.push(Flash { at + float2 { rnd_range(-5.0, 5.0), rnd_range(-3.0, 3.0) }, 0.0, rnd_range(2.5, 4.5), 0.2, float4 { 1.0, 0.56, 0.14, 0.95 }, false })
+
 // A shot leaves its gun: at the muzzle, with its shooter's feet below.
 def fx_muzzle(st:ShotStyle, at:float2, feet:float2):
     let m = st.muzzle

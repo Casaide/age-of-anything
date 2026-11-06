@@ -210,3 +210,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: Aircraft are real in the sim: only what can hit air touches them, and they fly round what they fire at (D-225, #183).
 - 2026-11-06: Silent traps in bodies now work or say why, and every pack's bodies are checked (D-226, #184).
 - 2026-11-06: Shermans, Panzers, fighters and flak gunners in a match, all data on the new schema (D-227, #185).
+- 2026-11-06: Tanks are knocked out where they stand, burning then smoking, not tipped over (D-228, #186).

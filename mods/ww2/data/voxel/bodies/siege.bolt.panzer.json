@@ -918,5 +918,6 @@
       "hub_r": 0.8,
       "mat": "ww2_rubber"
     }
-  ]
+  ],
+  "death": "knocked_out"
 }
