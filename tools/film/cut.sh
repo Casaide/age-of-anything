@@ -3,7 +3,8 @@
 # Every shot in the shots file (demo.shots) is cut to whole beats of the theme, the cards are drawn over darkened
 # frames of the game in EB Garamond, the mod shots get a ribbon in the corner, and the score is the game's own stems
 # faded in one by one, mastered to -14 LUFS. Missing takes are skipped (WW2 until its units are done).
-# Output: 1920x1080 at 60 fps, libx264 crf 16, AAC 192k. The segments are kept in <takes dir>/cut/ for a look.
+# Output: 1920x1080 at 60 fps, libx264 crf 16, AAC 192k, and <out>-web.mp4 at about 8 Mbit/s for the website. The segments
+# are kept in <takes dir>/cut/ for a look. Needs an ffmpeg with drawtext (on the Mac: ffmpeg-full's).
 set -e
 takes=${1:A} out=$2 shots=${3:-${0:A:h}/demo.shots}
 root=${0:A:h:h:h}
@@ -111,4 +112,6 @@ ff -i $seg/score.wav -af "loudnorm=I=-14:TP=-1:LRA=11:measured_I=$(j input_i):me
 
 # ---- the delivery
 ff -i $seg/picture.mp4 -i $seg/master.wav -map 0:v -map 1:a -c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -c:a aac -b:a 192k -movflags +faststart -shortest $out
-ffprobe -v error -show_entries format=duration,bit_rate -of default=nw=1 $out
+# (the website's copy: held to about 8 Mbit/s)
+ff -i $seg/picture.mp4 -i $seg/master.wav -map 0:v -map 1:a -c:v libx264 -preset slow -crf 20 -maxrate 8M -bufsize 16M -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart -shortest ${out%.mp4}-web.mp4
+ffprobe -v error -show_entries format=duration,bit_rate -of default=nw=1 $out ${out%.mp4}-web.mp4
