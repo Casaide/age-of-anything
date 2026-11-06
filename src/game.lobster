@@ -71,6 +71,7 @@ import .net.lockstep
 import .net.lan
 import .game.audio
 import .game.pack
+import .game.relief
 import .game.ground
 import .game.doodads
 import .game.paths
@@ -193,11 +194,6 @@ def team_col(p:int) -> float4:
     return if p < team_rgb.length: team_rgb[p] else: TEAM_COLS[p % TEAM_COLS.length]
 
 // ------------------------------------------------------------------ iso (Iso.to_screen * 1.5: art px)
-
-def iso_inv(p:float2) -> float2:
-    let a = p.x / 0.048
-    let b = p.y / 0.024
-    return float2 { (a + b) / 2.0, (b - a) / 2.0 }
 
 var cam = float2_0  // art px at the middle of the window
 var zoom = 2.0      // screen px per art px
@@ -875,8 +871,9 @@ def draw_world(alpha:float):
                 collect_town()
                 collect_units(alpha)
                 collect_corpses()
-                for(occluders) o, k: draws.push(Drawable { o.sort_y, draws.length, -2, float(k), 0.0, float4_1, [] })  // a hill's near-edge tops: what's behind it hides
-                draws.push(Drawable { -50000.0, draws.length, -4, 0.0, 0.0, float4_1, [] })                            // the selection rings: on the ground, over its flat props and shadows, under everything standing
+                for(occluders) o, k: draws.push(Drawable { o.sort_y, draws.length, -2, float(k), 0.0, float4_1, [] })                                          // a hill's near-edge tops: what's behind it hides
+                draws.push(Drawable { -50000.0, draws.length, -4, 0.0, 0.0, float4_1, [] })                                                                    // the selection rings: on the ground, over its flat props and shadows, under everything standing
+                draws.push(Drawable { if occluders.length: occluders[occluders.length - 1].sort_y else: -50000.0, draws.length, -6, 0.0, 0.0, float4_1, [] })  // the orders, and rings on a hill: on the ground, after the last hill top that would paint over them
                 perf_lap(2)
                 qsort_in_place(draws) a, b: a.y < b.y or (a.y == b.y and a.seq < b.seq)
                 perf_lap(3)
@@ -888,7 +885,11 @@ def draw_world(alpha:float):
                         b_sheet = -1
                     elif d.f == -4:
                         flush_sprites()
-                        draw_rings(alpha)
+                        draw_rings(alpha, false)
+                        b_sheet = -1
+                    elif d.f == -6:
+                        flush_sprites()
+                        draw_rings(alpha, true)
                         ui_batch(): draw_orders(alpha)  // (its dashes and rings in one draw)
                         b_sheet = -1
                     elif d.f == -3:  // a damaged building's cracks, sorted with it (game/town.lobster)
@@ -1525,20 +1526,22 @@ def ring_of(owner:int) -> float4: return if is_foe(owner, ME): float4 { 0.9, 0.2
 
 // The selection rings, on the ground under the selected units and building (drawn in the sorted world, before
 // anything standing: a unit stands in its ring, and what's in front of it covers it).
-def draw_rings(alpha:float):
+// Rings on raised ground (raised) are drawn after the hill's tops, which would paint over them.
+def draw_rings(alpha:float, raised:bool):
     gl.set_shader("color")
+    def ring(m:float2, r:float, col:float4):
+        if (lift_at(m.x, m.y) > 0.0) == raised: draw_ring(on_ground(m), r, col)
     for(selected_units()) id:
         let i = index_of(id)
         let px, py = prev_pos(i)
-        draw_ring(iso(px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha), float(u_radius[i]) * 0.068 + 3.0, float4 { 0.95, 0.91, 0.79, 1.0 })
+        ring(float2 { px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha }, float(u_radius[i]) * 0.068 + 3.0, float4 { 0.95, 0.91, 0.79, 1.0 })
     let f = index_of(sel_foreign)
     if f >= 0:
         let px, py = prev_pos(f)
-        draw_ring(iso(px + (u_x[f] - px) * alpha, py + (u_y[f] - py) * alpha), float(u_radius[f]) * 0.068 + 3.0, ring_of(u_owner[f]))
+        ring(float2 { px + (u_x[f] - px) * alpha, py + (u_y[f] - py) * alpha }, float(u_radius[f]) * 0.068 + 3.0, ring_of(u_owner[f]))
     let b = b_index_of(sel_building)
     if b >= 0:
-        let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
-        draw_ring(at, float(b_sx[b]) * 68.0 * 0.75, ring_of(b_owner[b]))
+        ring(float2 { float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500) }, float(b_sx[b]) * 68.0 * 0.75, ring_of(b_owner[b]))
 
 def draw_marks(alpha:float):
     gl.set_shader("color")

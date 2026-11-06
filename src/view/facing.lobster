@@ -3,6 +3,11 @@
 
 def iso(x:float, y:float) -> float2: return float2 { (x - y) * 0.048, (x + y) * 0.024 }
 
+def iso_inv(p:float2) -> float2:
+    let a = p.x / 0.048
+    let b = p.y / 0.024
+    return float2 { (a + b) / 2.0, (b - a) / 2.0 }
+
 def dir_of(v:float2) -> int:
     if v.x == 0.0 and v.y == 0.0: return -1
     let a = atan2(normalize(v))
