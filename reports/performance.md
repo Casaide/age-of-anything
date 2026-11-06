@@ -135,4 +135,6 @@ Tried and dropped: sorting sprites into depth bands by sheet to batch them. No g
 
 **Still open:** a first match with a new race bakes on the main thread outside fights, about 22 ms at the 95th percentile at 250 units. Moving bakes to a worker or a separate process is the real fix.
 
-To film: `./play.sh lobby "races:norse frogs|centaurs" map:open_field watch skirmish reveal army:107 zoom:1` (first run of a new race pair: about 45 s on the loader).
+To film: `./play.sh lobby mods:big_battle` (first run of a new race pair: about 45 s on the loader).
+
+**Measure on a quiet machine.** 2026-11-06, the big run with the filming setup (everyone alive, in view, marching): 8.4 / 17.2 ms and 12.0 / 24.2 ms a minute apart with other sessions at load 8; the fixed-cost text timing doubled (0.05 to 0.12 ms) in the slow runs. Frames with a sim tick sit near the 16.6 ms budget. The earlier 7.3 / 12.4 ms averaged in the later battle with fewer units.

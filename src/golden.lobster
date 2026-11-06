@@ -9,6 +9,7 @@ import game.deps
 import gen.scenario_out
 import gen.effect_words
 import model.buildings
+import model.future
 import model.buildings2
 import gen.reset
 
