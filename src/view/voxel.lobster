@@ -378,6 +378,7 @@ class vx_body_spec:
     h:float = 0.0              // sizes.json: its height, bare and standing, in voxels (a rider's mount is sized from it)
     ride:float = 0.0           // sizes.json: a mount: its size under a rider of the human's height
     deck:float2 = float2_0     // sizes.json: a war beast: the half sizes of the deck its crew sit on, body units
+    rides_as:float = 0.0       // sizes.json: a squat rider: the height to size its mount from, in voxels (its h if 0)
     crew_k:float = 1.0         // sizes.json: how much bigger or smaller this body sits as a crew member
     crew_seats:int = 0         // sizes.json: 1: it takes a howdah to itself, in the middle
     track:vx_track? = nil
@@ -679,6 +680,7 @@ def vx_load_sizes(o:JV):
         let b = vx_body_of(id)
         b.size = gfloat(bs.a[k], "size", b.size)
         b.h = gfloat(bs.a[k], "h", 0.0)
+        b.rides_as = gfloat(bs.a[k], "rides_as", 0.0)
         b.crew_k = gfloat(bs.a[k], "crew_k", 1.0)
         b.crew_seats = int(gfloat(bs.a[k], "crew_seats", 0.0))
         let dk = glist(bs.a[k], "deck")
@@ -1159,7 +1161,7 @@ def vx_crew_prims(out:[vx_prim], u:vx_unit_def, c:vx_unit_def, ph0:float):
 // A mount's size under this rider: the table's, in proportion to the rider, so a rat on a beetle looks as a human on one does.
 def vx_mount_size(b:vx_body_spec, mb:vx_body_spec) -> float:
     let human = vx_bodies.get("human")
-    if mb.ride > 0.0 and b.h > 0.0 and human and human.h > 0.0: return mb.ride * b.h / human.h
+    if mb.ride > 0.0 and b.h > 0.0 and human and human.h > 0.0: return mb.ride * (if b.rides_as > 0.0: b.rides_as else: b.h) / human.h
     return mb.size
 
 // A unit and its mount (without a crew).
