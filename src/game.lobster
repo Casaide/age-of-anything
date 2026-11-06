@@ -106,6 +106,10 @@ var rec_dir = ""  // record:<dir>: from:<seconds> of play on, for:<seconds>, one
 var rec_from = 0.0
 var rec_for = 10.0
 var rec_n = 0
+var rec_type = []::string  // typein:A|B: (filming the lobby)
+var rec_side = 0
+var rec_char = 0
+var rec_wait = 30
 var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks through it)
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
@@ -134,6 +138,7 @@ for(args) a, k:
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
         if key == "record": rec_dir = val
+        if key == "typein": rec_type = tokenize(val, "|", " ")
         if key == "from": rec_from = string_to_float(val)
         if key == "for": rec_for = string_to_float(val)
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
