@@ -24,19 +24,20 @@ def fail(what:string):
 def bare(body:string) -> vx_unit_def:
     return vx_unit_def { body, body, float3_0, float3_0, float3_0, [], "", false, float3_0, float3_0, float3_0, nil }
 
-// Its height and its length from the side, voxels, standing, at this size.
-def drawn(body:string, size:float) -> int, int:
+// Its height, its length from the side and its width from the front, voxels, standing, at this size.
+def drawn(body:string, size:float) -> int, int, int:
     let u = bare(body)
     vx_set_look(u, 0)
     vx_act = ""
     vx_stand = true
     let g = vx_fill(vx_unit_prims(u, 0.0), size, vx_on_zero(u, false))
-    var top, side = 0, 0
+    var top, side, front = 0, 0, 0
     for(8) f:
         vx_cell(g, f)
         top = max(top, vx_ANCHOR.y - vx_box.y)
         if f == 2: side = vx_box.z - vx_box.x + 1
-    return top, side
+        if f == 0: front = vx_box.z - vx_box.x + 1
+    return top, side, front
 
 // Every body in the game's own data has a line in the table, and is drawn as tall as it says.
 for(sorted_strs(assert scan_folder("../data/voxel/bodies", false))) n:
@@ -47,10 +48,11 @@ for(sorted_strs(assert scan_folder("../data/voxel/bodies", false))) n:
 for(dirs) d:
     let t = parse_json(read_file(d + "/sizes.json") or "\{\}")
     let bs = gobj(t, "bodies")
-    for(bs.keys) id:
+    for(bs.keys) id, k:
         let b = vx_body_of(id)
-        let top, side = drawn(id, b.size)
-        if report: print "{id}: size {b.size} h {top} side {side}"
+        let top, side, front = drawn(id, b.size)
+        if report: print "{id}: size {b.size} h {top} side {side} front {front}"
+        if not report and has(bs.a[k], "wide") and abs(front - int(gfloat(bs.a[k], "wide", 0.0))) > 1: fail("{id}: {front} voxels wide from the front, the table says {gfloat(bs.a[k], "wide", 0.0)}")
         if not report and abs(float(top) - b.h) > 1.0: fail("{id}: drawn {top} voxels tall at size {b.size}, the table says {b.h}")
     let ms = gobj(t, "mounts")
     let human = vx_body_of("human")

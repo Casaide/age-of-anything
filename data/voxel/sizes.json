@@ -26,7 +26,8 @@
       "size": 1.25,
       "h": 81,
       "crew_k": 0.8,
-      "crew_seats": 1
+      "crew_seats": 1,
+      "wide": 42
     },
     "deer": {
       "size": 0.7,
@@ -54,7 +55,8 @@
     },
     "bear_mount": {
       "size": 1.203,
-      "h": 59
+      "h": 59,
+      "wide": 38
     },
     "newt": {
       "size": 1.77,
