@@ -106,6 +106,9 @@ var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks thr
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
 var army_n = 0                   // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+let ARMY_GAP = 600                // milli-tiles between them, in ranks
+var zoom_arg = 0.0               // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
+var reveal = false               // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
 var page_arg = ""                // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
@@ -130,6 +133,8 @@ for(args) a, k:
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
+        if key == "zoom": zoom_arg = string_to_float(val)
+        if a == "reveal": reveal = true
         if a == "perflive": perf_live = true
         if a == "oldtext": text_off = true  // (measuring: text drawn as before game/text_cache.lobster)
         if key == "speed": start_speed = string_to_float(val)
@@ -455,7 +460,7 @@ import .game.town  // (here: it uses the views)
 // Where something stands on the canvas (Iso.to_ground: raised ground lifts it).
 def ground_at(x:int, y:int) -> float2: return canvas(float(x), float(y)) - float2 { 0.0, lift_at(float(x), float(y)) }
 
-def seen_at(x:int, y:int) -> bool: return fog[ME][cell_of(x, y)] == 2
+def seen_at(x:int, y:int) -> bool: return reveal or fog[ME][cell_of(x, y)] == 2
 
 // Combat's effects: a spark where a blow lands, a miss standing in the ground, a healed unit's glow, a stone's
 // splash, a fallen building's dust (game/fx.lobster).
@@ -498,7 +503,7 @@ def unit_state(i:int, moving:bool) -> string, int:
     if u_task[i] == BUILD and t_worker[k]: return "work_build", phase % 8
     return "idle", 0
 
-def visible_to_me(c:int) -> bool: return fog[ME][c] == 2
+def visible_to_me(c:int) -> bool: return reveal or fog[ME][c] == 2
 
 // Where an effect on unit id rises from (a heal's motes, which have their own heights): its feet on the ground
 // (canvas units); far off when it's gone or unseen.
@@ -868,7 +873,7 @@ def draw_world(alpha:float):
     gl.translate(ws / 2.0):
         gl.scale(zoom):
             gl.translate(-float2 { floor(cam.x), floor(cam.y) }):
-                draw_fog()
+                if not reveal: draw_fog()
                 perf_lap(1)
                 set_view_rect()
                 draws = []::Drawable
@@ -1970,6 +1975,7 @@ for(args) a:  // cache:<folder>: the parts kept there instead of bake_cache/ ("c
 zoom = 2.0 * floor(ui() + 0.5)  // two screen points an art pixel, as the game's camera
 // Desktops start one zoom step further out; Steam Deck-sized screens (800 px tall or less) and touch keep the closer view
 if not touch_play and gl.framebuffer_size().y > 800: zoom = max(1.0, zoom - 1.0)
+if zoom_arg > 0.0: zoom = zoom_arg
 // The tables come from data (game/pack_data.lobster); units are voxel bodies (game/voxel_units.lobster); buildings and
 // props are baked once (src/baked/) or at the start. (A Godot art pack, args[0], is gone with Godot: D-184.)
 pack_library = true
@@ -2233,9 +2239,14 @@ def make_match() -> bool:
                 for(t_slot.length) k:
                     if t_player[k] == p and not t_worker[k] and t_animal[k] == 0 and t_trader[k] == 0 and t_healer[k] == 0: push_new(slots, t_slot[k])
                 let ids = []::int
+                let side = int(ceiling(sqrt(float(slots.length * army_n))))  // (in ranks, not all on one spot)
                 for(slots) slot:
-                    for(army_n):
-                        let i = mode_put(p, type_of_slot(p, slot), start_x[p] + 4000, start_y[p] + 4000)
+                    let kind = type_of_slot(p, slot)
+                    for(if has(su_type_recipe[kind], "crew"): max(1, army_n / 8) else: army_n):  // (engines: a few, not as many as soldiers)
+                        let at = ids.length
+                        let x = clamp(start_x[p] + 4000 + (at % side - side / 2) * ARMY_GAP, TILE, (W - 1) * TILE)
+                        let y = clamp(start_y[p] + 4000 + (at / side - side / 2) * ARMY_GAP, TILE, (H - 1) * TILE)
+                        let i = mode_put(p, kind, x, y)
                         ids.push(u_id[i])
                 if skirmish:
                     let foe = (p + 1) % num_players
