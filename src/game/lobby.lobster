@@ -448,13 +448,16 @@ def fe_random_words() -> string:
     if rnd(2) == 0 and ki.length: words.push("with " + ki[rnd(ki.length)])
     return concat_string(words, " ")
 
+// The clock the army waits on: a recording's frames take far longer than they play for.
+def fe_clock() -> float: return if rec_dir != "": float(rec_n) / 30.0 else: seconds_elapsed()
+
 // A prompt changed: the name, roster and traits at once (generation is instant), the army once typing stops.
 def fe_regen(i:int):
     let s = fe_sides[i]
     let race = generate(fe_prompt(i), fe_rules, s.reroll)
     s.race = race
     s.gen++
-    s.dirty_at = seconds_elapsed()
+    s.dirty_at = fe_clock()
     let words = race_words_of(race, identity_of(rstr(race, "creature"), rstr(race, "family")), fe_rules)
     s.traits = [ words.bonuses, words.own, words.lacks,
                  map(glist(race, "heroes")) h: "{gstr(h, "name", "?")}: {gstr(h, "temper", "")} ({gstr(h, "aura", "")})",
@@ -1338,7 +1341,7 @@ def run_front(page0:string, typed:[string]) -> string:
         if fe_page == "net" and not fe_scanned and fe_frames > 1:
             fe_hosts = lan_scan(1.5)
             fe_scanned = true
-        if fe_page != "lab": fe_muster(seconds_elapsed())
+        if fe_page != "lab": fe_muster(fe_clock())
         gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
         gl.blend(1)
         if tree_open and tree_lobby:
@@ -1394,17 +1397,16 @@ def run_front(page0:string, typed:[string]) -> string:
             if rec_n == 0: gl.set_fixed_delta_time(1.0 / 30.0, 0.0)
             if fe_page == "setup":
                 let rs = rec_side
-                if rs < rec_type.length:
-                    if rec_wait > 0: rec_wait--
-                    else:
-                        if rec_char == 0: fe_focus(rs, "")
-                        rec_char++
-                        gl.set_text_input(rec_type[rs].substring(0, min(rec_char, rec_type[rs].length)))
-                        if rec_char >= rec_type[rs].length:
-                            rec_side++
-                            rec_char = 0
-                            rec_wait = 75
-                        else: rec_wait = 2
+                if rec_wait > 0: rec_wait--
+                elif rs < rec_type.length:
+                    if rec_char == 0: fe_focus(rs, "")
+                    rec_char++
+                    gl.set_text_input(rec_type[rs].substring(0, min(rec_char, rec_type[rs].length)))
+                    if rec_char >= rec_type[rs].length:
+                        rec_side++
+                        rec_char = 0
+                        rec_wait = 75
+                    else: rec_wait = 2
                 gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
                 rec_n++
                 if rec_side >= rec_type.length and rec_wait == 0:
