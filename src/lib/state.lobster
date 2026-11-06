@@ -123,14 +123,19 @@ var u_rx0 = []::int
 var u_ry0 = []::int
 var u_rx1 = []::int
 var u_ry1 = []::int
-var u_patient = []::int   // healers: the unit id being healed (or walked to), or 0
-var u_route = []::int     // trade carts: the home market's id (target: the far one), or 0
-var u_ready = []::int     // packing engines: ticks stood unpacking, or below 0 while packing up (World._pack)
-var u_perch = []::int     // walls you stand on (walls.gd), cells + 1: the walkway cell it stands on (0: the ground)
-var u_wgoal = []::int     // on a wall: the cell it walks to + 1; climbing: where it goes once up
-var u_wnext = []::int     // on a wall: the next cell on its way + 1
-var u_wexit = []::int     // on a wall: the way down it is leaving by (a building or siege tower id), or 0
-var u_wtime = []::int     // on a wall: ticks left climbing down, or 0
+var u_patient = []::int  // healers: the unit id being healed (or walked to), or 0
+var u_route = []::int    // trade carts: the home market's id (target: the far one), or 0
+var u_ready = []::int    // packing engines: ticks stood unpacking, or below 0 while packing up (World._pack)
+var u_perch = []::int    // walls you stand on (walls.gd), cells + 1: the walkway cell it stands on (0: the ground)
+var u_wgoal = []::int    // on a wall: the cell it walks to + 1; climbing: where it goes once up
+var u_wnext = []::int    // on a wall: the next cell on its way + 1
+var u_wexit = []::int    // on a wall: the way down it is leaving by (a building or siege tower id), or 0
+var u_wtime = []::int    // on a wall: ticks left climbing down, or 0
+var u_aim = []::int      // a turret: where its gun points (tenths of a degree, 0 along +x, 900 along +y)
+var u_hull = []::int     // a turret: the way its hull last moved (tenths of a degree)
+var u_lx = []::int       // a turret: where the hull was when that was worked out
+var u_ly = []::int
+var u_gun = []::int       // a turret: what its gun is on, a unit or building id, or 0 (it can differ from u_foe)
 var u_orders = []::[Cmd]  // per unit: shift-queued orders, oldest first (units.orders)
 
 // The columns in unit_fields order (the hash, the scenario file), then the rest.
@@ -138,10 +143,10 @@ def unit_columns() -> [[int]]:
     return [ u_id, u_x, u_y, u_tx, u_ty, u_moving, u_arrive, u_wx, u_wy, u_group, u_stuck, u_prog, u_fkey, u_pace,
              u_hp, u_foe, u_cooldown, u_stance, u_posture, u_gx, u_gy, u_amx, u_amy, u_amc,
              u_task, u_target, u_home, u_gspot, u_carry_kind, u_carry, u_work, u_reach, u_rx0, u_ry0, u_rx1, u_ry1, u_patient,
-             u_route, u_ready, u_perch, u_wgoal, u_wnext, u_wexit, u_wtime,
+             u_route, u_ready, u_perch, u_wgoal, u_wnext, u_wexit, u_wtime, u_aim, u_hull, u_lx, u_ly, u_gun,
              u_owner, u_kind, u_speed, u_radius, u_mclass ]
 
-let UNIT_HASHED = 44    // the columns hashed (unit_fields)
+let UNIT_HASHED = 49    // the columns hashed (unit_fields)
 var t_tags = []::[int]  // per unit type: its eval's tags (class indexes), as its line stands
 var t_damage = []::int  // per unit type: its attack's class (0 melee, 1 pierce, ...)
 
@@ -371,7 +376,7 @@ def insert_unit(uid:int, owner:int, k:int, x:int, y:int, speed:int, radius:int, 
     let v = [ uid, x, y, x, y, 0, 0, x, y, 0, 0, -1, -1, 0,
               hp, 0, 0, 0, 0, x, y, 0, 0, -1,
               0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0,
+              0, 0, 0, 0, 0, 0, 0, 0, 0, x, y, 0,
               owner, k, speed, radius, 0 ]
     unit_changes++
     for(unit_columns()) col, n: col.insert(at, v[n])

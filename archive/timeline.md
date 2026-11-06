@@ -193,3 +193,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-05: Mods can take the game apart: mods/scifi_short plays a bot match to the end with infantry only, two ages and its own rifle sound (D-213).
 - 2026-11-05: Shot looks became combinable knobs: bursts, scatter and jagged beams from one set, the game's arrows as presets (D-214).
 - 2026-11-05: Humans got a real walk (planted feet, opposite arm and leg), blows with the body behind them, a standing sway; workers pick fruit and carry each resource its own way (#142, #143, #151).
+- 2026-11-06: Guns got an aim in the sim: a turret turns on its own, fires on the move and only along its aim, the first piece of vehicles (D-216, #177).
