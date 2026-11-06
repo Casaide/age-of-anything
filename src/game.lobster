@@ -142,7 +142,7 @@ for(args) a, k:
         let key, val = split_string(a, ":")
         if key == "shot": shot = val
         if key == "fsat": window_toggles = map(tokenize(val, ",", " ")) t: string_to_float(t)
-        if a == "fsreport": window_report = true
+        if key == "fsreport": window_report = val
         if key == "at": shot_at = string_to_float(val)
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
