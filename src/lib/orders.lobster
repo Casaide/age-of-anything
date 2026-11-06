@@ -97,6 +97,183 @@ def form_space(part:[int]) -> int:
     for(part) i: g = max(g, t_gap[u_kind[i]])
     return 2 * form_rmax(part) + max(FORM_GAP + g, 0)
 
+// ---- marching blocks (#171)
+// A big order is several formations: a block a unit type (BLOCK_MAX at most), in rows by band, foot in front, flankers at
+// the ends of the front row. Each block has a centre that forms up where the army stands, then marches to its place at
+// the order's pace, and its units keep their places round the centre. On an attack-move a block that's fighting halts,
+// and the blocks behind it wait; its units go only for foes near them, and come back to their places.
+
+// A free block (or a new one).
+def block_new() -> int:
+    let free = find(fb_state) s: s == 0
+    if free >= 0: return free
+    for([ fb_state, fb_x, fb_y, fb_tx, fb_ty, fb_wx, fb_wy, fb_dx, fb_dy, fb_pace, fb_key, fb_r, fb_owner, fb_t, fb_held ]) col: col.push(0)
+    return fb_state.length - 1
+
+// Every unit's block, its place in it and its slot at the end into slot_block, slot_bx, slot_by, slot_x, slot_y.
+def block_formation(idx:[int], x:int, y:int, cx:int, cy:int, ux:int, uy:int, pace:int):
+    for(idx) i:
+        f_ahead[i] = (u_x[i] - cx) * ux + (u_y[i] - cy) * uy
+        f_side[i] = (u_y[i] - cy) * ux - (u_x[i] - cx) * uy
+    // the blocks, by band (flankers last), then type, then slot
+    let keys = map(idx) i: (t_role[u_kind[i]] * (1 << 12) + u_kind[i]) * (1 << KEY_BITS) + i
+    sort_ints(keys)
+    let chunks = []::[int]
+    var kind = -1
+    for(keys) key:
+        let i = key & ((1 << KEY_BITS) - 1)
+        if u_kind[i] != kind or chunks[chunks.length - 1].length == BLOCK_MAX:
+            kind = u_kind[i]
+            chunks.push([]::int)
+        chunks[chunks.length - 1].push(i)
+    def wide(c:[int]) -> int: return (min(isqrt(2 * c.length), c.length) - 1) * form_space(c) + 2 * form_rmax(c)
+    def deep(c:[int]) -> int: return ((c.length + isqrt(2 * c.length) - 1) / isqrt(2 * c.length) - 1) * form_space(c) + 2 * form_rmax(c)
+    // the rows: a row is as wide as the army is big, a band starts a new one
+    var area = 0
+    for(chunks) c: area += (wide(c) / 100 + 1) * (deep(c) / 100 + 1)
+    let row_max = isqrt(area) * 200
+    let rows = []::[[int]]
+    var band = -1
+    var used = 0
+    let flank = []::[int]
+    for(chunks) c:
+        let role = t_role[u_kind[c[0]]]
+        if role == 3 and band >= 0:
+            flank.push(c)
+            continue
+        if role != band or used + wide(c) > row_max:
+            rows.push([]::[int])
+            used = 0
+            band = role
+        rows[rows.length - 1].push(c)
+        used += wide(c) + BLOCK_GAP
+    var total = 0
+    for(rows) r:
+        var h = 0
+        for(r) c: h = max(h, deep(c))
+        total += h + BLOCK_GAP
+    def place(c:[int], along:int, across:int):
+        let bx = (ux * along - uy * across) / ONE
+        let by = (uy * along + ux * across) / ONE
+        let b = block_new()
+        let tx, ty = snap(x + bx, y + by, lane(c[0]))
+        fb_state[b] = BLOCK_FORMING
+        fb_x[b] = cx + bx
+        fb_y[b] = cy + by
+        fb_tx[b] = tx
+        fb_ty[b] = ty
+        fb_wx[b] = tx
+        fb_wy[b] = ty
+        fb_dx[b] = ux
+        fb_dy[b] = uy
+        fb_pace[b] = pace
+        fb_key[b] = cell_field(cell_of(tx, ty), false, lane(c[0]))
+        fb_r[b] = deep(c) / 2
+        fb_owner[b] = u_owner[c[0]]
+        fb_t[b] = 0
+        fb_held[b] = 0
+        let cols = max(isqrt(2 * c.length), 1)
+        let sp = form_space(c)
+        let part = by_ahead(c)
+        var first = 0
+        var top = deep(c) / 2 - form_rmax(c)
+        while first < part.length:
+            let line = by_side(part.slice(first, min(cols, part.length - first)))
+            for(line) i, k:
+                let across_k = (2 * k - (line.length - 1)) * sp / 2
+                slot_block[i] = b + 1
+                slot_bx[i] = (ux * top - uy * across_k) / ONE
+                slot_by[i] = (uy * top + ux * across_k) / ONE
+                let qx, qy = slot_ok(i, tx + slot_bx[i], ty + slot_by[i], x, y)
+                slot_x[i] = qx
+                slot_y[i] = qy
+            top -= sp
+            first += cols
+    var along = total / 2
+    var front_half = 0
+    for(rows) r, k:
+        var h = 0
+        var width = -BLOCK_GAP
+        for(r) c:
+            h = max(h, deep(c))
+            width += wide(c) + BLOCK_GAP
+        if k == 0: front_half = width / 2
+        var across = -width / 2
+        for(r) c:
+            place(c, along - h / 2, across + wide(c) / 2)
+            across += wide(c) + BLOCK_GAP
+        along -= h + BLOCK_GAP
+    var left = -front_half - BLOCK_GAP
+    var right = front_half + BLOCK_GAP
+    for(flank) c, k:
+        if k % 2 == 0:
+            place(c, total / 2 - deep(c) / 2, left - wide(c) / 2)
+            left -= wide(c) + BLOCK_GAP
+        else:
+            place(c, total / 2 - deep(c) / 2, right + wide(c) / 2)
+            right += wide(c) + BLOCK_GAP
+
+// A block's centre, one tick: forming, then marching, unless it or a block just ahead is fighting.
+def blocks_tick():
+    if not fb_state.length: return
+    let alive = map(fb_state.length): 0
+    let placed = map(fb_state.length): 0
+    let fighting = map(fb_state.length): 0
+    for(u_x.length) i:
+        let b = u_block[i] - 1
+        if b >= 0:
+            alive[b]++
+            if u_foe[i] != 0: fighting[b]++
+            elif dist2(u_x[i], u_y[i], fb_x[b] + u_bx[i], fb_y[b] + u_by[i]) <= 250000: placed[b]++
+    for(fb_state) state, b:
+        if state != 0:
+            if alive[b] == 0: fb_state[b] = 0
+            else: fb_held[b] = if fighting[b] * 100 >= alive[b] * 30: 1 else: 0
+    for(fb_state) state, b:
+        if state == BLOCK_FORMING:
+            fb_t[b]++
+            if placed[b] * 100 >= alive[b] * 70 or fb_t[b] >= BLOCK_FORM_TICKS: fb_state[b] = BLOCK_MARCHING
+        elif state == BLOCK_MARCHING and fb_held[b] == 0:
+            var wait = false
+            for(fb_state) other, o:
+                if other != 0 and o != b and fb_held[o] == 1 and fb_owner[o] == fb_owner[b]:
+                    let ox = fb_x[o] - fb_x[b]
+                    let oy = fb_y[o] - fb_y[b]
+                    let reach = fb_r[o] + fb_r[b] + BLOCK_GAP * 2
+                    if dist2(0, 0, ox, oy) <= reach * reach and ox * fb_dx[b] + oy * fb_dy[b] > 0: wait = true
+            if not wait: block_march(b)
+
+def block_march(b:int):
+    let x = fb_x[b]
+    let y = fb_y[b]
+    let togo = isqrt(dist2(x, y, fb_tx[b], fb_ty[b]))
+    if togo <= fb_pace[b]:
+        fb_x[b] = fb_tx[b]
+        fb_y[b] = fb_ty[b]
+        fb_state[b] = BLOCK_THERE
+        return
+    if (tick + b) % REPLAN_EVERY == 0 or dist2(x, y, fb_wx[b], fb_wy[b]) <= fb_pace[b] * fb_pace[b]:
+        fb_wx[b] = fb_tx[b]
+        fb_wy[b] = fb_ty[b]
+        let f = field_for(fb_key[b])
+        let ln = fb_key[b] % LANES
+        if f and x >= 0 and y >= 0 and x / TILE < W and y / TILE < H and not clear_path(x, y, fb_tx[b], fb_ty[b], 100, ln):
+            let cell = cell_of(x, y)
+            if f.dist[cell] < INF:
+                let best = ahead(f, cell, x, y, LOOKAHEAD, 100, ln)
+                if best >= 0:
+                    let wx, wy = centre(best)
+                    fb_wx[b] = wx
+                    fb_wy[b] = wy
+    let dx = fb_wx[b] - x
+    let dy = fb_wy[b] - y
+    let d = isqrt(dx * dx + dy * dy)
+    if d > 0:
+        fb_dx[b] = dx * ONE / d
+        fb_dy[b] = dy * ONE / d
+        fb_x[b] = x + dx * min(fb_pace[b], d) / d
+        fb_y[b] = y + dy * min(fb_pace[b], d) / d
+
 // A group move's formation (World._formation): every unit's slot into slot_x / slot_y.
 // Returns the group, its centre (fx, fy) and pace.
 def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
@@ -127,6 +304,9 @@ def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
     if d > 0:
         ux = dx * ONE / d
         uy = dy * ONE / d
+    if n >= BLOCK_FROM:
+        block_formation(idx, x, y, cx, cy, ux, uy, pace)
+        return group, x, y, pace
     let bands = [ []::int, []::int, []::int ]
     var flank = []::int
     for(idx) i:
@@ -277,6 +457,14 @@ def resume_attack_move(i:int):
         cx, cy = centre(u_amc[i])
     order_move(i, u_amx[i], u_amy[i], SLOT_ARRIVE, 0, cx, cy, 0)
 
+// Its formation's block, if it has one: its place there. (It walks at its own speed: the centre sets the pace.)
+def block_join(i:int):
+    u_block[i] = slot_block[i]
+    u_bx[i] = slot_bx[i]
+    u_by[i] = slot_by[i]
+    if u_block[i] > 0: u_pace[i] = 0
+    slot_block[i] = 0
+
 // A MOVE command (World._run, after the formation: for each of the player's units its job and fight
 // forgotten (Economy.clear_task, Combat.clear) and order_move to its slot).
 def run_move(player:int, ids:[int], group:int, fx:int, fy:int, pace:int):
@@ -286,6 +474,7 @@ def run_move(player:int, ids:[int], group:int, fx:int, fy:int, pace:int):
             clear_task(i)
             combat_clear(i)
             order_move(i, slot_x[i], slot_y[i], SLOT_ARRIVE, group, fx, fy, pace)
+            block_join(i)
 
 // An ATTACK_MOVE command (Combat.cmd_attack_move, after the formation).
 def run_attack_move(player:int, ids:[int], group:int, fx:int, fy:int, pace:int):
@@ -300,6 +489,7 @@ def run_attack_move(player:int, ids:[int], group:int, fx:int, fy:int, pace:int):
             combat_clear(i)
             clear_task(i)
             order_move(i, slot_x[i], slot_y[i], SLOT_ARRIVE, group, fx, fy, pace)
+            block_join(i)
             continue
         clear_task(i)
         u_foe[i] = 0
@@ -309,6 +499,7 @@ def run_attack_move(player:int, ids:[int], group:int, fx:int, fy:int, pace:int):
         u_amy[i] = slot_y[i]
         u_amc[i] = centre_cell
         order_move(i, slot_x[i], slot_y[i], SLOT_ARRIVE, group, fx, fy, pace)
+        block_join(i)
 
 // A STANCE command (Combat.cmd_stance).
 def run_stance(player:int, ids:[int], posture:int):
