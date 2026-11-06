@@ -59,6 +59,7 @@ import .gen.generator
 import .gen.setup
 import .gen.modes
 import .gen.start
+import .view.facing
 import .view.node
 import .view.art
 import .view.bake_cache
@@ -193,7 +194,6 @@ def team_col(p:int) -> float4:
 
 // ------------------------------------------------------------------ iso (Iso.to_screen * 1.5: art px)
 
-def iso(x:float, y:float) -> float2: return float2 { (x - y) * 0.048, (x + y) * 0.024 }
 def iso_inv(p:float2) -> float2:
     let a = p.x / 0.048
     let b = p.y / 0.024
@@ -288,18 +288,6 @@ let last_owner = dictionary<int, int>(1024)
 def prev_pos(i:int) -> int, int:
     let found, at = binary_search(p_id, u_id[i])
     return if found: p_x[at] else: u_x[i], if found: p_y[at] else: u_y[i]
-
-def dir_of(v:float2) -> int:
-    if v.x == 0.0 and v.y == 0.0: return -1
-    let a = atan2(normalize(v))
-    return (int(floor(a / 45.0 + 0.5)) % 8 + 8) % 8
-
-// Facing d, now heading along v: d kept until v is clearly past the next direction's edge (so a heading along an edge doesn't flip).
-def dir_settled(d:int, v:float2) -> int:
-    let nd = dir_of(v)
-    if nd < 0 or nd == d: return nd
-    let off = abs((atan2(normalize(v)) - float(d) * 45.0 + 540.0) % 360.0 - 180.0)
-    return if off > 32.0: nd else: d
 
 // Is this milli-tile spot on screen (with a margin)? Sounds only play for what you can see.
 def on_screen(x:int, y:int) -> bool:
@@ -529,12 +517,9 @@ def collect_units(alpha:float):
         let y = py + (u_y[i] - py) * alpha
         let mine = teams[u_owner[i]] == teams[ME]
         if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and vx_drawn(u_kind[i]):
-            // (walking by its own order: the crowd's pushes move a unit too, a tick at a time and every way: no walk or turn for those)
-            let moving = u_moving[i] == 1 and (px != u_x[i] or py != u_y[i])
-            var d = unit_dir.get(u_id[i], 2)
-            if moving:  // it faces where it's making for, not this tick's step
-                let nd = dir_settled(d, iso(float(u_wx[i] - u_x[i]), float(u_wy[i] - u_y[i])))
-                if nd >= 0: d = nd
+            let moving, walking_d = unit_walk(i, unit_dir.get(u_id[i], 2), px, py)
+            var d = walking_d
+            if moving: pass()
             elif u_foe[i] != 0:
                 let j = index_of(u_foe[i])
                 var tx = -1.0
@@ -2596,7 +2581,7 @@ def play_match():
             p_y = copy(u_y)
             let t0 = seconds_elapsed()
             for(bots) bot, p:
-                if (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):
+                if not skirmish and (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):  // (a skirmish: the armies' orders alone)
                     ai_level_for(p)
                     full_bot_think(bot)  // (watch: your own bot plays your side)
             let t1 = seconds_elapsed()
