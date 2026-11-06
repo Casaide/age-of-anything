@@ -374,6 +374,7 @@ class vx_body_spec:
     parts:[vx_part_spec] = []  // pieces that turn on their own (a turret): this body is the whole figure (a portrait, a fall)
     hull:string = ""           // with parts: the body without them
     piece:bool = false         // a hull or a part: on the ground as the whole body is, not under its own lowest point
+    death:string = ""          // how it dies: "knocked_out", or falling over
     track:vx_track? = nil
     wheels:[vx_wheel] = []
     style_cols:[float3] = []
@@ -503,6 +504,7 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
     if has(o, "tracks"): b.track = vx_parse_track(at(o, "tracks"))
     let tr = b.track
     b.wheels = map(glist(o, "wheels")) w: vx_parse_wheel(w, if tr: tr.pitch else: 0.0)
+    b.death = gstr(o, "death", "")
     vx_parse_parts(b, glist(o, "parts"))
     return b
 
@@ -1201,6 +1203,23 @@ def vx_flies(u:vx_unit_def) -> bool: return vx_body_of(u.body).flies > 0.0 or (u
 
 // Is the unit's ground its body's z 0 (a flier's: not under its lowest point; an engine's or a war beast's: under its
 // wheels and feet, not its crew's)? A fall lies on the ground (not a flier's).
+// A vehicle knocked out (a body's "death": "knocked_out", #186): it stays where it stood, burnt, its parts knocked askew.
+def vx_knocked_out(u:vx_unit_def, b:vx_body_spec) -> [vx_prim]:
+    let out = []::vx_prim
+    let team, burnt, rust = vx_mat("team"), vx_mat("wreck"), vx_mat("wreck_rust")
+    def burn(p:vx_prim, n:int) -> vx_prim:
+        return vx_prim { p.a, p.b, p.ra, p.rb, if n % 7 == 0 or p.mat == team: rust else: burnt, p.hard, p.disc, p.box }
+    def body_of(id:string) -> vx_unit_def: return vx_unit_def { u.label, id, u.skin, u.pale, u.mark, [], "", false, u.coat, u.mane, u.coat_mark, nil }
+    for(vx_unit_prims(body_of(if b.hull != "": b.hull else: b.id), 0.0)) p, n: out.push(burn(p, n))
+    for(b.parts) part, k:
+        let yaw = 24.0 + 13.0 * float(k)
+        def turned(v:float3) -> float3:
+            return float3 { v.x * cos(yaw) - v.y * sin(yaw) + part.pivot.x, v.x * sin(yaw) + v.y * cos(yaw) + part.pivot.y, v.z - 0.6 }
+        for(vx_unit_prims(body_of(part.body), 0.0)) p, n:
+            let q = burn(p, n)
+            out.push(vx_prim { turned(q.a), turned(q.b), q.ra, q.rb, q.mat, q.hard, q.disc, q.box })
+    return out
+
 def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and not falling) or u.crew != nil or vx_body_of(u.body).piece
 
 // The unit's size: its body's (a mount is scaled to it).
