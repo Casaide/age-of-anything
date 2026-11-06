@@ -3,7 +3,7 @@
 // ask for `fullscreen`. Cmd or Alt + Enter switches while playing.
 
 let WINDOW_TOOLS = [ "windowed", "mute", "selftest", "padtest", "labtest", "prebake", "vbcheck", "propframes", "loadershot", "wheelshot", "savegame", "tillend", "lobbyloop", "lobbytree" ]
-let WINDOW_TOOL_KEYS = [ "shot", "perf", "reload", "record", "lookframes", "meshes", "dump", "treehover" ]
+let WINDOW_TOOL_KEYS = [ "record", "shot", "perf", "reload", "record", "lookframes", "meshes", "dump", "treehover" ]
 
 def starts_fullscreen(args:[string], setting_windowed:bool) -> bool:
     if (exists(args) a: a == "fullscreen"): return true
