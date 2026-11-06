@@ -7,6 +7,9 @@
 #   jobs: performance cores - 1 by default. Each process has a 30-minute timeout.
 cd "$(dirname "$0")" || exit 1
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
+. ./machine_lock.sh
+lock_on_exit
+lock_take full "shards.sh $*"   # (as many processes as there are performance cores, less one: one such run at a time, #242)
 tool="$1"
 shift
 n=$(( $(sysctl -n hw.perflevel0.physicalcpu 2>/dev/null || echo 4) - 1 ))
