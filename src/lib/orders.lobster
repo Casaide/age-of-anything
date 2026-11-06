@@ -97,7 +97,6 @@ def form_space(part:[int]) -> int:
     for(part) i: g = max(g, t_gap[u_kind[i]])
     return 2 * form_rmax(part) + max(FORM_GAP + g, 0)
 
-let STUB_SNAP = false
 // ---- marching blocks (#171)
 // A big order is several formations: a block a unit type (BLOCK_MAX at most), in rows by band, foot in front, flankers at
 // the ends of the front row. Each block has a centre that forms up where the army stands, then marches to its place at
@@ -142,13 +141,17 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     let paces = map(chunks) c: block_speed(c)
     sort_ints(paces)
     let army_pace = paces[paces.length / 2] * 4 / 5  // (a little under their walk: whoever falls behind can catch up)
+    // flankers go on the wings of an army that has a middle; an army mostly of them forms in rows like any other
+    var flankers = 0
+    for(idx) i: if t_role[u_kind[i]] == 3: flankers++
+    let wings = flankers * 3 <= idx.length
     let rows = []::[[int]]
     var band = -1
     var used = 0
     let flank = []::[int]
     for(chunks) c:
         let role = t_role[u_kind[c[0]]]
-        if role == 3 and band >= 0:
+        if role == 3 and wings and band >= 0:
             flank.push(c)
             continue
         if role != band or used + wide(c) > row_max:
@@ -198,12 +201,15 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     if flank.length: half_w = max(-wing[0], wing[1]) + wing_wide
     // where the army forms up: from where it stands, on along the way to the first ground that holds it all
     let ln0 = lane(idx[0])
+    var samples = 0
     def blocked(ax:int, ay:int) -> int:  // (ground it can't stand on, sampled two tiles apart)
         var n = 0
+        samples = 0
         var al = -total / 2 - TILE
         while al <= total / 2 + TILE:
             var ac = -half_w - TILE
             while ac <= half_w + TILE:
+                samples++
                 if not walkable(ax + (ux * al - uy * ac) / ONE, ay + (uy * al + ux * ac) / ONE, ln0): n++
                 ac += 2 * TILE
             al += 2 * TILE
@@ -213,7 +219,7 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     var least = blocked(cx, cy)
     let way = isqrt(dist2(cx, cy, x, y))
     var on_way = 2 * TILE
-    while on_way <= way and least > 0:
+    while on_way <= way / 2 and least > 0:  // (not as far as the enemy's door)
         let ax = cx + ux * on_way / ONE
         let ay = cy + uy * on_way / ONE
         let n = blocked(ax, ay)
@@ -276,7 +282,7 @@ def blocks_snap():
         if b >= 0:
             let x = fb_x[b] + u_bx[i]
             let y = fb_y[b] + u_by[i]
-            if STUB_SNAP and walkable(x, y, lane(i)):
+            if walkable(x, y, lane(i)):
                 u_x[i] = x
                 u_y[i] = y
                 u_wx[i] = x
@@ -297,7 +303,7 @@ def blocks_tick():
                 let px = fb_x[b] + u_bx[i]
                 let py = fb_y[b] + u_by[i]
                 let open = walkable(px, py, lane_base[u_owner[i]] + u_mclass[i])
-                if not open or dist2(u_x[i], u_y[i], px, py) <= 250000: placed[b]++
+                if not open or dist2(u_x[i], u_y[i], px, py) <= 40000: placed[b]++
     for(fb_state) state, b:
         if state != 0:
             if alive[b] == 0: fb_state[b] = 0

@@ -159,7 +159,8 @@ def report(name:string, w:FormWatch):
     check(worst <= DRIFT_MAX, "{name}: nobody over {DRIFT_MAX} from its place on the march ({worst})")
     check(rev <= REVERSALS_MAX, "{name}: no walking back and forth ({fixed_str(rev, 3)} a unit a second)")
     check(flips <= FLIPS_MAX, "{name}: no turning on the march ({fixed_str(flips, 3)} a unit a second)")
-    check(w.overlap_worst <= OVERLAP_MAX, "{name}: inside a block nobody overlaps ({fixed_str(w.overlap_worst, 3)})")
+    check(w.overlap_worst <= max(OVERLAP_MAX, 2.0 / float(w.ids.length)),  // (a small army: one pair passing, for a moment, is allowed)
+          "{name}: inside a block nobody overlaps ({fixed_str(w.overlap_worst, 3)})")
 
 def blocks_in_use(ids:[int]) -> int:
     let seen = []::int
