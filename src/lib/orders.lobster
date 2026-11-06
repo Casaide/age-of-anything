@@ -107,7 +107,7 @@ def form_space(part:[int]) -> int:
 def block_new() -> int:
     let free = find(fb_state) s: s == 0
     if free >= 0: return free
-    for([ fb_state, fb_x, fb_y, fb_tx, fb_ty, fb_wx, fb_wy, fb_dx, fb_dy, fb_pace, fb_key, fb_r, fb_owner, fb_army, fb_t, fb_held ]) col: col.push(0)
+    for([ fb_state, fb_x, fb_y, fb_tx, fb_ty, fb_wx, fb_wy, fb_dx, fb_dy, fb_pace, fb_key, fb_r, fb_owner, fb_army, fb_t, fb_held, fb_gx, fb_gy ]) col: col.push(0)
     return fb_state.length - 1
 
 def block_speed(c:[int]) -> int:
@@ -241,6 +241,8 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
         fb_r[b] = deep(c) / 2
         fb_owner[b] = u_owner[c[0]]
         fb_army[b] = army
+        fb_gx[b] = x
+        fb_gy[b] = y
         var farthest = 0
         fb_held[b] = 0
         let cols = max(isqrt(2 * c.length), 1)
@@ -518,6 +520,12 @@ def resume_attack_move(i:int):
     if u_amc[i] >= 0:
         cx, cy = centre(u_amc[i])
     order_move(i, u_amx[i], u_amy[i], SLOT_ARRIVE, 0, cx, cy, 0)
+
+// Is unit i marching on that order already (a bot gives the same one again and again: it mustn't stop to form up each time)?
+def block_same_order(i:int, attack:bool, x:int, y:int) -> bool:
+    let b = u_block[i] - 1
+    if b < 0 or fb_state[b] == 0 or attack != (u_stance[i] == ATTACK_MOVE): return false
+    return dist2(fb_gx[b], fb_gy[b], x, y) <= 25 * TILE * TILE
 
 // Its formation's block, if it has one: its place there. (It walks at its own speed: the centre sets the pace.)
 def block_join(i:int):

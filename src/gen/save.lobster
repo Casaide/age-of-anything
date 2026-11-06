@@ -305,6 +305,8 @@ class WorldSave:
     fb_state:[int]
     fb_x:[int]
     fb_y:[int]
+    fb_gx:[int]
+    fb_gy:[int]
     fb_tx:[int]
     fb_ty:[int]
     fb_wx:[int]
@@ -788,6 +790,8 @@ def world_bytes(bots:[Bot]) -> string:
         fb_state,
         fb_x,
         fb_y,
+        fb_gx,
+        fb_gy,
         fb_tx,
         fb_ty,
         fb_wx,
@@ -1281,6 +1285,8 @@ def load_world_bytes(data:string) -> [Bot]:
     fb_state = s.fb_state
     fb_x = s.fb_x
     fb_y = s.fb_y
+    fb_gx = s.fb_gx
+    fb_gy = s.fb_gy
     fb_tx = s.fb_tx
     fb_ty = s.fb_ty
     fb_wx = s.fb_wx
