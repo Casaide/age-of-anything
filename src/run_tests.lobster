@@ -69,6 +69,8 @@ import gen.setup
 import gen.modes
 import gen.start
 import gen.reset
+import view.facing
+import game.relief
 
 let DATA = "../data"
 let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings",
@@ -868,9 +870,64 @@ def g_mods():
     mods_use([])
     expect(rstr(generate("future soldiers", load_rules("anything"), 0), "key") == plain_key, "mods: off again, the race is as before")
 
+// Order lines lie on the ground (#221): over a hill between two points, every point of a drawn leg is at the ground's
+// height there, nothing is drawn where the hill hides the ground, and a leg up it ends on top, where its flag stands.
+def g_ground_path():
+    let keep_w = W
+    let keep_h = H
+    let keep_level = level
+    let keep_ramp = ramp
+    W = 20
+    H = 20
+    level = map(W * H): 0
+    ramp = map(W * H): 0
+    for(H) y:
+        for(W) x:
+            if x >= 8 and x < 12 and y >= 6 and y < 14: level[y * W + x] = 2
+    corner_heights()
+    expect(lift_at(10000.0, 10000.0) == 40.0, "ground_path: the hill stands in the way")
+    let ground_y = fn(m:float2): iso(m.x, m.y).y - lift_at(m.x, m.y) * 1.5
+    let legs = [ [ float2 { 4500.0, 10300.0 }, float2 { 15700.0, 10300.0 } ], [ float2 { 4200.0, 4700.0 }, float2 { 15900.0, 15300.0 } ], [ float2 { 15700.0, 10300.0 }, float2 { 10000.0, 10000.0 } ] ]
+    for(legs) leg, n:
+        let a = leg[0]
+        let b = leg[1]
+        let start = iso(a.x, a.y)
+        let end_at = iso(b.x, b.y)
+        let sim_at = fn(p:float2): a + (b - a) * ((p.x - start.x) / (end_at.x - start.x))
+        let runs = ground_path(a, b)
+        var points = 0
+        var at_points = 0.0
+        var between = 0.0
+        var hidden = 0
+        for(runs) pts:
+            points += pts.length
+            for(pts) p, k:
+                let m = sim_at(p)
+                at_points = max(at_points, abs(p.y - ground_y(m)))
+                if ground_hidden(m): hidden++
+                if k + 1 < pts.length:
+                    let m1 = sim_at(pts[k + 1])
+                    if abs(lift_at(m.x, m.y) - lift_at(m1.x, m1.y)) < 15.0:  // (a step up a cliff face can't follow it: the ground jumps there)
+                        for(8) s:
+                            let q = p + (pts[k + 1] - p) * (float(s) / 8.0)
+                            between = max(between, abs(q.y - ground_y(sim_at(q))))
+        print "ground_path: leg {n}: {runs.length} runs, {points} points, off the ground by {at_points} px at them, {between} px between, {hidden} hidden"
+        expect(at_points < 0.01, "ground_path: leg {n}: its points are on the ground, off by {at_points} px")
+        expect(between < 4.0, "ground_path: leg {n} follows the ground between them, off by {between} px")
+        expect(hidden == 0, "ground_path: leg {n} draws nothing behind the hill, {hidden} points are")
+    expect(ground_hidden(float2 { 7700.0, 10000.0 }), "ground_path: low ground just behind the hill is hidden")
+    expect(not ground_hidden(float2 { 9000.0, 10000.0 }), "ground_path: the hill top is not")
+    expect(not ground_hidden(float2 { 12500.0, 10000.0 }), "ground_path: low ground in front of the hill is not")
+    expect(ground_path(float2 { 4500.0, 10300.0 }, float2 { 15700.0, 10300.0 }).length == 2, "ground_path: a leg over the hill goes behind it, then comes out on top")
+    W = keep_w
+    H = keep_h
+    level = keep_level
+    ramp = keep_ramp
+    relief = []
+
 // ------------------------------------------------------------------ the run
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods" ]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path" ]
 
 def run_group(name:string):
     switch name:
@@ -888,6 +945,7 @@ def run_group(name:string):
         case "identity": g_identity()
         case "heroes": g_heroes()
         case "mods": g_mods()
+        case "ground_path": g_ground_path()
         default: assert false
 
 var shard = 0
