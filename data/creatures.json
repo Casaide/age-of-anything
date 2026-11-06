@@ -636,6 +636,7 @@
   "head": "head.bear",
   "playable": true,
   "mount": true,
+  "war_beast": "elephant",
   "giant_ok": true,
   "skins": [
    "bear_brown",
@@ -705,6 +706,7 @@
   "head": "head.bear_black",
   "playable": true,
   "mount": true,
+  "war_beast": "elephant",
   "giant_ok": true,
   "skins": [
    "bear_black"
@@ -772,6 +774,7 @@
   "head": "head.bear_polar",
   "playable": true,
   "mount": true,
+  "war_beast": "elephant",
   "giant_ok": true,
   "skins": [
    "bear_polar"

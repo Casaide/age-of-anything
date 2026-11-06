@@ -11,7 +11,8 @@
     },
     "frog": {
       "size": 0.885,
-      "h": 28
+      "h": 28,
+      "crew_k": 1.35
     },
     "spider": {
       "size": 1.0,
@@ -23,7 +24,9 @@
     },
     "bear": {
       "size": 1.25,
-      "h": 81
+      "h": 81,
+      "crew_k": 0.8,
+      "crew_seats": 1
     },
     "deer": {
       "size": 0.7,
@@ -67,15 +70,19 @@
     },
     "siege.beast.elephant": {
       "size": 1.12,
-      "h": 129
+      "h": 129,
+      "deck": [
+        9.5,
+        9.5
+      ]
     },
     "siege.beast.boar": {
       "size": 2.0,
-      "h": 77
+      "h": 83
     },
     "siege.beast.heron": {
-      "size": 1.0,
-      "h": 92
+      "size": 0.8,
+      "h": 73
     },
     "siege.beast.mantis": {
       "size": 1.35,

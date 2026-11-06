@@ -377,6 +377,9 @@ class vx_body_spec:
     death:string = ""          // how it dies: "knocked_out", or falling over
     h:float = 0.0              // sizes.json: its height, bare and standing, in voxels (a rider's mount is sized from it)
     ride:float = 0.0           // sizes.json: a mount: its size under a rider of the human's height
+    deck:float2 = float2_0     // sizes.json: a war beast: the half sizes of the deck its crew sit on, body units
+    crew_k:float = 1.0         // sizes.json: how much bigger or smaller this body sits as a crew member
+    crew_seats:int = 0         // sizes.json: 1: it takes a howdah to itself, in the middle
     track:vx_track? = nil
     wheels:[vx_wheel] = []
     style_cols:[float3] = []
@@ -676,6 +679,10 @@ def vx_load_sizes(o:JV):
         let b = vx_body_of(id)
         b.size = gfloat(bs.a[k], "size", b.size)
         b.h = gfloat(bs.a[k], "h", 0.0)
+        b.crew_k = gfloat(bs.a[k], "crew_k", 1.0)
+        b.crew_seats = int(gfloat(bs.a[k], "crew_seats", 0.0))
+        let dk = glist(bs.a[k], "deck")
+        if dk.length == 2: b.deck = float2 { as_float(dk[0]), as_float(dk[1]) }
     let ms = gobj(o, "mounts")
     for(ms.keys) id, k: vx_body_of(id).ride = gfloat(ms.a[k], "ride", 0.0)
 
@@ -1141,9 +1148,11 @@ def vx_crew_prims(out:[vx_prim], u:vx_unit_def, c:vx_unit_def, ph0:float):
         for(ps) q: out.push(vx_prim { q.a * ms + at, q.b * ms + at, q.ra * ms, q.rb * ms, q.mat, q.hard, q.disc, q.box * ms })
         while ps.length: ps.pop()
     vx_seated = true
-    for(b.seats) at:
+    let sat = ms * cb.crew_k
+    let seats = if cb.crew_seats == 1 and b.seats.length > 1: [ fold(b.seats, float3_0) s, x: s + x / float(b.seats.length) ] else: b.seats
+    for(seats) at:
         vx_whole_body(ps, c, cb, vx_body_points(cb, 0.0, float3 { 0.0, 0.0, -cb.seat_z }), 0.0, t, vx_flags_of(c))
-        for(ps) q: out.push(vx_prim { q.a * ms + at, q.b * ms + at, q.ra * ms, q.rb * ms, q.mat, q.hard, q.disc, q.box * ms })
+        for(ps) q: out.push(vx_prim { q.a * sat + at, q.b * sat + at, q.ra * sat, q.rb * sat, q.mat, q.hard, q.disc, q.box * sat })
         while ps.length: ps.pop()
     vx_seated = false
 
