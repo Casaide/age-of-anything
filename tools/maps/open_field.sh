@@ -6,6 +6,9 @@ awk 'BEGIN {
   n = 160
   print "{\n \"schema\": \"aow.map/2\",\n \"id\": \"open_field\",\n \"name\": \"Open Field\",\n \"width\": " n ",\n \"height\": " n ","
   print " \"legend\": {\n  \".\": \"grass\",\n  \"T\": \"tree\",\n  \"#\": \"rock\",\n  \"r\": \"rubble\",\n  \"R\": \"river\",\n  \"D\": \"deep_river\",\n  \"v\": \"reeds\",\n  \"s\": \"stone\",\n  \"g\": \"gold\",\n  \"b\": \"bugbush\"\n },"
+  # the groves: scattered, of all sizes
+  srand(2026); groves = 90
+  for (g = 0; g < groves; g++) { gcx[g] = int(rand() * n); gcy[g] = int(rand() * n); gr[g] = 6 + int(rand() * 40) }
   for (y = 0; y < n; y++) {
     line = ""; hill = ""
     for (x = 0; x < n; x++) {
@@ -23,9 +26,11 @@ awk 'BEGIN {
       else if (u <= -74 + w) h = "a"
       if (u < -110 + w && noise < 7) c = "T"
       # groves along both flanks, rocks among them
-      gx = int(x / 12); gy = int(y / 12)
-      seed = (gx * 31 + gy * 17) % 7
-      if (c == "." && (u > 58 || u < -58) && seed < 3 && (x % 12 - 6) * (x % 12 - 6) + (y % 12 - 6) * (y % 12 - 6) < 20 + noise) c = (seed == 0 && noise < 6) ? "#" : "T"
+      if (c == "." && (u > 58 || u < -58)) {
+        for (g = 0; g < groves; g++) {
+          if ((x - gcx[g]) * (x - gcx[g]) + (y - gcy[g]) * (y - gcy[g]) < gr[g] + noise) c = (g % 5 == 0 && noise < 6) ? "#" : "T"
+        }
+      }
       # and behind each start the forest closes it off
       if (c == "." && (v < 46 + noise || v > 272 - noise)) c = "T"
       # a ruin on the near flank
