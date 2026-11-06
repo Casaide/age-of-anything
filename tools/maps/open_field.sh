@@ -1,5 +1,5 @@
 #!/bin/sh
-# Writes data/maps/open_field.json, the big-battle and trailer field: a wide clear middle between the starts, framed by a
+# Writes mods/big_battle/data/maps/open_field.json, the big-battle and trailer field: a wide clear middle between the starts, framed by a
 # river on one flank, a hill with slopes on the other, groves, rocks and a ruin. (A map is data; this draws its rows.)
 cd "$(dirname "$0")/../.." || exit 1
 awk 'BEGIN {
@@ -32,13 +32,13 @@ awk 'BEGIN {
         }
       }
       # and behind each start the forest closes it off
-      if (c == "." && (v < 46 + noise || v > 272 - noise)) c = "T"
+      if (c == "." && (v < 26 + noise || v > 292 - noise)) c = "T"
       # a ruin on the near flank
       if (u >= 54 && u < 64 && v >= 150 && v < 172 && (noise < 5 || u == 54 || v == 150)) c = "r"
       # stone, gold and berries behind each start
-      if ((x >= 32 && x < 36 && y >= 42 && y < 46) || (x >= 124 && x < 128 && y >= 114 && y < 118)) c = "s"
-      if ((x >= 42 && x < 46 && y >= 32 && y < 36) || (x >= 114 && x < 118 && y >= 124 && y < 128)) c = "g"
-      if ((x >= 36 && x < 39 && y >= 36 && y < 39) || (x >= 121 && x < 124 && y >= 121 && y < 124)) c = "b"
+      if ((x >= 14 && x < 18 && y >= 24 && y < 28) || (x >= 142 && x < 146 && y >= 132 && y < 136)) c = "s"
+      if ((x >= 24 && x < 28 && y >= 14 && y < 18) || (x >= 132 && x < 136 && y >= 142 && y < 146)) c = "g"
+      if ((x >= 18 && x < 21 && y >= 18 && y < 21) || (x >= 139 && x < 142 && y >= 139 && y < 142)) c = "b"
       line = line c
       hill = hill h
     }
@@ -48,5 +48,5 @@ awk 'BEGIN {
   for (y = 0; y < n; y++) printf "  \"%s\"%s\n", rows[y], (y < n - 1 ? "," : "")
   print " ],\n \"heights\": ["
   for (y = 0; y < n; y++) printf "  \"%s\"%s\n", hills[y], (y < n - 1 ? "," : "")
-  print " ],\n \"starts\": [\n  [\n   48,\n   48\n  ],\n  [\n   111,\n   111\n  ]\n ]\n}"
-}' > data/maps/open_field.json
+  print " ],\n \"starts\": [\n  [\n   30,\n   30\n  ],\n  [\n   129,\n   129\n  ]\n ]\n}"
+}' > mods/big_battle/data/maps/open_field.json

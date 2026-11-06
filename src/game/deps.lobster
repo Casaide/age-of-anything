@@ -53,6 +53,7 @@ import gen.race_to_types
 import gen.modes
 import gen.start
 import view.facing
+import view.shot_look
 import view.node
 import view.art
 import view.bake_cache
