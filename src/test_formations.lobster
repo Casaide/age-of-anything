@@ -104,8 +104,8 @@ class FormWatch:
     overlap_worst:float = 0.0
 
 def begin(w:FormWatch):
-    w.last_x = map(w.ids) id: u_x[index_of(id)]
-    w.last_y = map(w.ids) id: u_y[index_of(id)]
+    w.last_x = map(w.ids) id: if index_of(id) >= 0: u_x[index_of(id)] else: 0
+    w.last_y = map(w.ids) id: if index_of(id) >= 0: u_y[index_of(id)] else: 0
     w.step_x = map(w.ids): 0
     w.step_y = map(w.ids): 0
     w.face = map(w.ids): 2
@@ -269,7 +269,7 @@ def scene_map():
     let len2 = max(1, lx * lx + ly * ly)
     for(rows) row, y:
         for(w) x:
-            let name = as_str(at(legend, string([ row[x] ])))
+            let name = as_str(at(legend, unicode_to_string([ row[x] ])))
             counts.set(name, counts.get(name, 0) + 1)
             let along = (x - ax) * lx + (y - ay) * ly
             let across = ((x - ax) * ly - (y - ay) * lx) * 1000 / isqrt(len2)
