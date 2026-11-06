@@ -476,16 +476,16 @@ can be a total conversion, through the same data and hooks a game uses. A game i
 launches, owns the menu and branding, can be the only option, and may customise the engine, since it ships as its own program.
 Mods can't touch the engine: they're downloaded into other people's lobbies, so they stay data plus checked, deterministic
 hooks. General engine work goes into Creel itself, whoever needs it first. A unit is data first, hooks when data runs out.
-Proposed order, for Dominic's review; #205 has the gap list and the hooks:
+Order, agreed by Dominic (2026-11-06); #205 has the gap list and the hooks:
 
 1. The unit table (step 5).
 2. Vehicles as engine features (#176 to #186, #211): aim, weapon mounts, body and parts looks, running gear, shots, air.
-3. Looks for table units, in the vehicle work's format. Needs 1 and #178.
+3. Looks from packs, for units and buildings, in the vehicle work's format. Needs 1 and #178.
 4. Factions as data, with bots by unit role, so no view code reads a race. Needs 1 and 3.
 5. Economy as data: resources by role, movement classes and terrain open to packs (with #128). Needs 1.
-6. Hooks (step 6, widened: per-unit tick, orders, hit, spawn and death, targeting, AI, view looks and effects). Needs 1.
+6. Hooks (step 6, widened). First `unit_tick`, `on_order`, `on_hit`, `on_death` and `ai_train_score`; then the rest as something needs each. Needs 1.
 7. A pack can replace the front end. Needs 4.
-8. The proof: WW2 as a total conversion, as a pack, with zero engine edits. Needs 2 to 7.
+8. Later, the proof: WW2 expanded to a total conversion, as a pack, with zero engine edits. For now it's just tanks and planes, for the video demo. Needs 2 to 7.
 9. A second kind of unit, such as a ship, with zero engine edits. Needs 3 to 6.
 10. The folders and the test pack (steps 7 and 8). Then a game can be a root pack plus its own build.
 
