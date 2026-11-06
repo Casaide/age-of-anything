@@ -4336,6 +4336,18 @@ def air_scene() -> int:
     let h = state_hash()
     return h
 
+// A weapon's pace is its own, whatever else it's tagged: a tank gun in the bolt thrower line flies at the shell's pace (#265).
+def test_shot_pace():
+    let was = shot_speeds
+    shot_speeds = map(4): 0
+    shot_speeds[1] = 220  // (the line's)
+    shot_speeds[3] = 900  // (the weapon's)
+    check(shot_speed_of([ 1, 3 ]) == 900, "a shell in a bolt thrower line flies at 900: {shot_speed_of([ 1, 3 ])}")
+    check(shot_speed_of([ 3, 1 ]) == 900, "whatever order the tags are in: {shot_speed_of([ 3, 1 ])}")
+    check(shot_speed_of([ 1 ]) == 220, "a bolt thrower alone flies at its own: {shot_speed_of([ 1 ])}")
+    check(shot_speed_of([ 0, 2 ]) == r_shot_speed, "no tag with a pace: the rule speed: {shot_speed_of([ 0, 2 ])}")
+    shot_speeds = was
+
 def test_air():
     let h1 = air_scene()
     check(h1 == air_scene(), "the same on a second run")
@@ -4431,7 +4443,7 @@ def test_save_load():
 
 // ------------------------------------------------------------------ the parts
 
-let PARTS = [ "fixed", "turret", "air", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
+let PARTS = [ "fixed", "turret", "air", "shot_pace", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
@@ -4489,6 +4501,7 @@ def run_part(name:string):
     elif name == "wonder": test_wonder()
     elif name == "turret": test_turret()
     elif name == "air": test_air()
+    elif name == "shot_pace": test_shot_pace()
     elif name == "save_load": test_save_load()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()
