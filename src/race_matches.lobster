@@ -53,6 +53,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -82,7 +83,7 @@ def play_match(map_id:string, pa:string, pb:string) -> Played:
     let sides = [ full_side(0), full_side(1) ]
     let webs_n = [ 0, 0 ]
     let own = [ []::string, []::string ]
-    let mine = map(2) p: gstrs(su_idents[p], "research")
+    let mine = map(2) p: gstrs(su_sides[p], "research")
     let wt = new_watch()
     while tick < LIMIT and winner < 0:
         think_all(sides)

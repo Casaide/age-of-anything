@@ -42,6 +42,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.scenario_out
@@ -62,7 +63,7 @@ id_load("../data")
 let rules = load_rules("default")
 set(rules, "animals", jbool(true))
 let races = map([ "sewer rats with cheese hammers", "frogs with spears" ]) p: generate(p, rules, 0)
-setup_world(20261010, map_id, races, rules, [])
+setup_match(20261010, map_id, races, rules, [])
 events_on = true
 var bots = map(num_players) p: new_bot(p)
 def play(n:int) -> [int]:
