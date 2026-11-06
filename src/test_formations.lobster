@@ -9,6 +9,7 @@ import gen.identity
 import gen.pricing
 import gen.heroes
 import gen.generator
+import gen.mods
 import lib.consts
 import lib.fixed
 import lib.tokens
@@ -56,6 +57,7 @@ import view.facing
 
 let SEED = 2026
 let MAP = "open_field"
+let MOD = "big_battle"
 let PROMPTS = [ "norse frogs", "centaurs" ]
 let DRIFT_P99 = 1000      // milli-tiles from its place on the march, 99% of units
 let DRIFT_MAX = 4000      // and the worst
@@ -296,7 +298,11 @@ def scene_reissue(rules:JV, races:[JV], n:int):
 // The trailer's field: a wide clear middle along the line between the starts, framed by hills, a river on one side,
 // groves, rocks and a ruin; nothing in the way of 2,000 units.
 def scene_map():
-    let d = load_json("../data/maps/" + MAP + ".json")
+    let launch = mods_launch_args([ MOD ])
+    print "the mod starts with: {launch}"
+    for([ "map:open_field", "skirmish", "reveal", "watch", "army:107", "zoom:1", "races:norse frogs|centaurs" ]) want:
+        check(has_s(launch, want), "the mod starts with {want}")
+    let d = load_json("../mods/" + MOD + "/data/maps/" + MAP + ".json")
     let w = gint(d, "width", 0)
     let h = gint(d, "height", 0)
     check(w >= 150 and h >= 150, "the map is big enough for 2,000 ({w} by {h})")
