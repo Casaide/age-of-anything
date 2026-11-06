@@ -252,7 +252,7 @@ elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull faci
     assert parts_faults(args[2], out_path) == 0
 elif args.length > 1 and args[1] == "aim":  // `aim`: every rifle on every body that carries it: the gun stays up through the firing cycle, kicks, and comes back (#261)
     var bad = 0
-    let crew = unit("rifleman", "crew_1944", ROMAN, ROMAN2, [ "ww2_rifle" ], "", float3_0)
+    let crew = unit("rifleman", "gi_1944", ROMAN, ROMAN2, [ "ww2_rifle" ], "", float3_0)
     vx_set_look(crew, 0)
     vx_act = "attack"
     vx_stand = true

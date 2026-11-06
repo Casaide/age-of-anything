@@ -1,0 +1,683 @@
+{
+  "_doc": "A German infantryman, 1942-44, from TM-E 30-451 plate I (public domain): the Stahlhelm with its flared skirt, low at the back, field-grey tunic with a dark collar and four pockets, breeches into black jackboots, black leather belt and Y-straps, ammunition pouches, the fluted gas mask can, Kar98k (43.5 in). Team colour: neck scarf and shoulder patches.",
+  "skin": "#dba880",
+  "pale": "#ebbf99",
+  "size": 0.69,
+  "fur": 0.0,
+  "skin_scale": 1.3,
+  "reach": 6.4,
+  "gait": {
+    "_doc": "A real walk at real proportions: planted feet, a heel up as a foot leaves, opposite arm and leg, a little lean, shift and turn in the trunk; blows from a split stance with the body behind them (#142).",
+    "heel": 28.0,
+    "toe": 14.0,
+    "toes": 2.3,
+    "arm": 0.26,
+    "held": 0.05,
+    "twist": 0.6,
+    "front": 2.4,
+    "back": 2.4,
+    "dip": 0.5,
+    "turn": 1.0
+  },
+  "points": {
+    "hip": {
+      "at": [
+        0,
+        0,
+        21.0
+      ],
+      "sway": 0.45,
+      "drive": 0.5
+    },
+    "chest": {
+      "at": [
+        0,
+        0.3,
+        29.6
+      ],
+      "sway": 0.25,
+      "lean": 0.5,
+      "drive": 1.5
+    },
+    "head": {
+      "at": [
+        0,
+        0.7,
+        37.1
+      ],
+      "sway": 0.15,
+      "lean": 0.9,
+      "drive": 1.8
+    }
+  },
+  "legs": [
+    {
+      "hip": [
+        "hip",
+        1.75,
+        0,
+        0
+      ],
+      "foot": [
+        1.9,
+        0,
+        1.9
+      ],
+      "stride": 6.4,
+      "lift": 2.8,
+      "bones": [
+        9.58,
+        9.58
+      ],
+      "pole": [
+        0,
+        1,
+        0
+      ],
+      "r": [
+        2.2,
+        1.5,
+        1.55,
+        1.15
+      ],
+      "mats": [
+        "ww2_feldgrau",
+        "ww2_boot_black"
+      ],
+      "shapes": [
+        {
+          "cap": [
+            "ankle",
+            0,
+            -0.1,
+            1.4
+          ],
+          "to": [
+            "ankle",
+            0,
+            0,
+            -0.6
+          ],
+          "r": [
+            1.0,
+            0.95
+          ],
+          "mat": "ww2_boot_black",
+          "hard": true
+        },
+        {
+          "cap": [
+            "ankle",
+            0,
+            -0.4,
+            -0.8
+          ],
+          "to": [
+            "ankle",
+            0,
+            2.3,
+            -1
+          ],
+          "r": [
+            0.95,
+            0.8
+          ],
+          "mat": "ww2_boot_black",
+          "hard": true
+        }
+      ]
+    }
+  ],
+  "arms": {
+    "shoulder": [
+      "chest",
+      4.3,
+      -0.2,
+      1.2
+    ],
+    "bone": 6.7,
+    "thick": 1.4,
+    "sleeve": "ww2_feldgrau",
+    "hand": "skin"
+  },
+  "seat": {
+    "z": 21.5,
+    "astride": [
+      "ww2_feldgrau",
+      "ww2_boot_black",
+      "ww2_boot_black"
+    ]
+  },
+  "looks": [
+    {
+      "skin": 1.0,
+      "hair": "#1f1714"
+    },
+    {
+      "skin": 0.78,
+      "hair": "#8c8780"
+    },
+    {
+      "skin": 1.22,
+      "hair": "#6b2b17"
+    }
+  ],
+  "shapes": [
+    {
+      "cap": [
+        "chest",
+        0,
+        0,
+        2.2
+      ],
+      "to": [
+        "head",
+        0,
+        -0.3,
+        -2.2
+      ],
+      "r": [
+        1.15,
+        1.0
+      ],
+      "mat": "skin"
+    },
+    {
+      "ball": [
+        "head",
+        0,
+        -0.15,
+        0.35
+      ],
+      "r": 2.55,
+      "mat": "skin"
+    },
+    {
+      "cap": [
+        "head",
+        0,
+        0.35,
+        -0.5
+      ],
+      "to": [
+        "head",
+        0,
+        1.05,
+        -2
+      ],
+      "r": [
+        2.0,
+        1.25
+      ],
+      "mat": "skin"
+    },
+    {
+      "cap": [
+        "head",
+        0,
+        2.3,
+        0.3
+      ],
+      "to": [
+        "head",
+        0,
+        2.75,
+        -0.6
+      ],
+      "r": [
+        0.55,
+        0.5
+      ],
+      "mat": "skin"
+    },
+    {
+      "ball": [
+        "head",
+        2.5,
+        -0.2,
+        0.0
+      ],
+      "r": 0.7,
+      "mat": "skin",
+      "mirror": true
+    },
+    {
+      "cap": [
+        "chest",
+        -1.1,
+        0.3,
+        2.4
+      ],
+      "to": [
+        "chest",
+        1.1,
+        0.3,
+        2.4
+      ],
+      "r": [
+        1.25,
+        1.25
+      ],
+      "mat": "team",
+      "_doc": "neck scarf: the team colour, with the shoulder patches"
+    },
+    {
+      "cap": [
+        "chest",
+        -1.25,
+        0,
+        1.2
+      ],
+      "to": [
+        "chest",
+        -1,
+        0.1,
+        -3.2
+      ],
+      "r": [
+        2.15,
+        1.85
+      ],
+      "mat": "ww2_feldgrau"
+    },
+    {
+      "cap": [
+        "chest",
+        1.25,
+        0,
+        1.2
+      ],
+      "to": [
+        "chest",
+        1.0,
+        0.1,
+        -3.2
+      ],
+      "r": [
+        2.15,
+        1.85
+      ],
+      "mat": "ww2_feldgrau"
+    },
+    {
+      "cap": [
+        "hip",
+        -1,
+        0,
+        3.6
+      ],
+      "to": [
+        "hip",
+        -1.25,
+        0,
+        0.6
+      ],
+      "r": [
+        1.75,
+        1.95
+      ],
+      "mat": "ww2_feldgrau"
+    },
+    {
+      "cap": [
+        "hip",
+        1.0,
+        0,
+        3.6
+      ],
+      "to": [
+        "hip",
+        1.25,
+        0,
+        0.6
+      ],
+      "r": [
+        1.75,
+        1.95
+      ],
+      "mat": "ww2_feldgrau"
+    },
+    {
+      "cap": [
+        "hip",
+        -1.2,
+        0.1,
+        0.6
+      ],
+      "to": [
+        "hip",
+        -1.3,
+        0.15,
+        -3
+      ],
+      "r": [
+        2.0,
+        2.1
+      ],
+      "mat": "ww2_feldgrau"
+    },
+    {
+      "cap": [
+        "hip",
+        1.2,
+        0.1,
+        0.6
+      ],
+      "to": [
+        "hip",
+        1.3,
+        0.15,
+        -3
+      ],
+      "r": [
+        2.0,
+        2.1
+      ],
+      "mat": "ww2_feldgrau"
+    },
+    {
+      "cap": [
+        "hip",
+        -1.1,
+        0,
+        -0.4
+      ],
+      "to": [
+        "hip",
+        -1.5,
+        0,
+        -2.6
+      ],
+      "r": [
+        2.0,
+        2.0
+      ],
+      "mat": "ww2_feldgrau"
+    },
+    {
+      "cap": [
+        "hip",
+        1.1,
+        0,
+        -0.4
+      ],
+      "to": [
+        "hip",
+        1.5,
+        0,
+        -2.6
+      ],
+      "r": [
+        2.0,
+        2.0
+      ],
+      "mat": "ww2_feldgrau"
+    },
+    {
+      "cap": [
+        "chest",
+        -3.6,
+        -0.2,
+        1.9
+      ],
+      "to": [
+        "chest",
+        3.6,
+        -0.2,
+        1.9
+      ],
+      "r": [
+        1.3,
+        1.3
+      ],
+      "mat": "ww2_feldgrau"
+    },
+    {
+      "bead": [
+        "chest",
+        4.6,
+        -0.2,
+        0.2
+      ],
+      "r": 1.25,
+      "mat": "team",
+      "mirror": true,
+      "_doc": "armband: team colour"
+    },
+    {
+      "bead": [
+        "head",
+        0,
+        -0.15,
+        0.8
+      ],
+      "r": 2.8,
+      "mat": "ww2_stahl",
+      "_doc": "Stahlhelm: the dome"
+    },
+    {
+      "disc": [
+        "head",
+        0,
+        -0.5,
+        -0.6
+      ],
+      "n": [
+        0,
+        0.42,
+        0.9
+      ],
+      "r": [
+        3.3,
+        0.28
+      ],
+      "mat": "ww2_stahl",
+      "_doc": "its flared skirt, low at the back and over the ears, its signature"
+    },
+    {
+      "bead": [
+        "head",
+        0,
+        1.6,
+        0.05
+      ],
+      "r": 1.7,
+      "mat": "ww2_stahl",
+      "_doc": "the short peak"
+    },
+    {
+      "cap": [
+        "chest",
+        -1.5,
+        1.2,
+        2.4
+      ],
+      "to": [
+        "chest",
+        1.5,
+        1.2,
+        2.4
+      ],
+      "r": [
+        0.7,
+        0.7
+      ],
+      "mat": "ww2_collar",
+      "_doc": "dark collar"
+    },
+    {
+      "box": [
+        "hip",
+        0,
+        0.1,
+        1.7
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.25,
+        2.35,
+        0.45
+      ],
+      "round": 0.15,
+      "mat": "ww2_boot_black",
+      "_doc": "black belt"
+    },
+    {
+      "box": [
+        "hip",
+        -1.7,
+        2.4,
+        1.7
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        0.95,
+        0.45,
+        0.75
+      ],
+      "round": 0.15,
+      "mat": "ww2_boot_black",
+      "_doc": "ammunition pouches"
+    },
+    {
+      "box": [
+        "hip",
+        1.7,
+        2.4,
+        1.7
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        0.95,
+        0.45,
+        0.75
+      ],
+      "round": 0.15,
+      "mat": "ww2_boot_black"
+    },
+    {
+      "cap": [
+        "chest",
+        -1.5,
+        1.85,
+        1.9
+      ],
+      "to": [
+        "hip",
+        -1.7,
+        2.5,
+        2.2
+      ],
+      "r": [
+        0.22,
+        0.22
+      ],
+      "mat": "ww2_boot_black",
+      "hard": true,
+      "_doc": "Y-straps"
+    },
+    {
+      "cap": [
+        "chest",
+        1.5,
+        1.85,
+        1.9
+      ],
+      "to": [
+        "hip",
+        1.7,
+        2.5,
+        2.2
+      ],
+      "r": [
+        0.22,
+        0.22
+      ],
+      "mat": "ww2_boot_black",
+      "hard": true
+    },
+    {
+      "box": [
+        "chest",
+        -1.5,
+        2.15,
+        -0.6
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        0.75,
+        0.2,
+        0.75
+      ],
+      "round": 0.15,
+      "mat": "ww2_collar",
+      "_doc": "breast pocket"
+    },
+    {
+      "box": [
+        "chest",
+        1.5,
+        2.15,
+        -0.6
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        0.75,
+        0.2,
+        0.75
+      ],
+      "round": 0.15,
+      "mat": "ww2_collar"
+    },
+    {
+      "cap": [
+        "hip",
+        -2.6,
+        -1.6,
+        1.4
+      ],
+      "to": [
+        "hip",
+        -2.6,
+        -1.6,
+        -2.2
+      ],
+      "r": [
+        1.0,
+        1.0
+      ],
+      "mat": "ww2_stahl",
+      "hard": true,
+      "_doc": "gas mask can"
+    }
+  ],
+  "check": {
+    "knees": 15,
+    "shows": 0.2,
+    "_doc": "shows: a human in plate is mostly its clothes"
+  },
+  "tools": {
+    "ww2_rifle": "ww2_kar98k"
+  },
+  "bare": true
+}
