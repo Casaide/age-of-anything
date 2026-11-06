@@ -17,9 +17,11 @@ for a in "$@"; do
 		only=*) only="${a#only=}" ;;
 	esac
 done
-logs="${TMPDIR:-/tmp}/aoa_batch"
-rm -rf "$logs"
-mkdir -p "$logs"
+# Each run has a folder of its own (#229), and its jobs' temporary files go there too. Runs over two days old go.
+find "${TMPDIR:-/tmp}/" -maxdepth 1 -name 'aoa_batch.*' -mtime +2 -exec rm -rf {} + 2>/dev/null
+logs="$(mktemp -d "${TMPDIR:-/tmp}/aoa_batch.XXXXXX")"
+mkdir "$logs/tmp"
+export TMPDIR="$logs/tmp"
 list="$logs/jobs.txt"
 : > "$list"
 add() {   # add <name> <command...>
@@ -31,6 +33,7 @@ add() {   # add <name> <command...>
 L="$LOBSTER"
 add run_tests "$L" run_tests.lobster
 add lint ./lint.sh   # lobsterfmt leaves every file as it is, every program compiles with no warnings
+add runner ./batch_test.sh   # this runner's own tests: a run keeps its own results, a job with none is a failure (#229)
 add test_heroes "$L" test_heroes.lobster
 add race_identity "$L" test_race_identity.lobster
 add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand in their shadows as drawn (the voxels option)
@@ -61,6 +64,10 @@ else
 	add perf timeout 240 ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20
 	add perf_big timeout 300 ../play.sh lobby mods:big_battle mute perf:90
 fi
+if [ ! -s "$list" ]; then
+	echo "batch: no tests to run (only=$only)"
+	exit 1
+fi
 
 # Run them, at most $jobs at once (xargs keeps the pool full); each line of jobs.txt: name|command. The slow suites go
 # first so the quick ones fill in round them.
@@ -81,13 +88,19 @@ printf '%-16s %-6s %6s  %s\n' suite result secs summary
 for name in $(cut -d'|' -f1 "$list" | sed 's/\.[0-9]*$//' | uniq); do
 	code=0
 	secs=0
-	for r in "$logs/$name".result "$logs/$name".[0-9]*.result; do
-		[ -f "$r" ] || continue
-		set -- $(cat "$r")
+	missing=0
+	for job in $(cut -d'|' -f1 "$list" | grep "^$name\(\.[0-9]*\)\{0,1\}$"); do   # (every job asked for: one with no result is a failure, #229)
+		if [ ! -f "$logs/$job.result" ]; then
+			code=1
+			missing=$((missing + 1))
+			continue
+		fi
+		set -- $(cat "$logs/$job.result")
 		[ "$2" != 0 ] && code=$2
 		[ "$3" -gt "$secs" ] && secs=$3
 	done
 	summary=$(cat "$logs/$name".log "$logs/$name".[0-9]*.log 2>/dev/null | grep -v -i "warning\|extra references\|leaks\|^  \|^$" | tail -1 | cut -c1-70)
+	[ "$missing" = 0 ] || summary="no result from $missing of its jobs (killed?)"
 	if [ "$code" = 0 ]; then result=ok; else result=FAIL; fail=1; fi
 	printf '%-16s %-6s %6s  %s\n' "$name" "$result" "$secs" "$summary"
 done
