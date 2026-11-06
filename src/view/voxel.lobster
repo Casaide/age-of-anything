@@ -427,10 +427,10 @@ def vx_spec_moved(s:vx_spec, by:float3) -> vx_spec:
 // Where a part's pivot falls on the hull's picture in that facing, voxels from the hull's ground point (x right, y down).
 def vx_pivot_px(b:vx_body_spec, p:vx_part_spec, facing:int) -> float2:
     let yaw = float(facing) * 45.0
-    let px = p.pivot.x * cos(yaw) - p.pivot.y * sin(yaw)
-    let py = p.pivot.x * sin(yaw) + p.pivot.y * cos(yaw)
+    let across = p.pivot.x * cos(yaw) + p.pivot.y * sin(yaw)  // (as vx_cell: the body turned against the camera)
+    let along = p.pivot.y * cos(yaw) - p.pivot.x * sin(yaw)
     let s = vx_RES * b.size
-    return float2 { px * s, -py * sin(vx_ELEV) * s }
+    return float2 { across * s, -along * sin(vx_ELEV) * s }
 
 def gfloat(o:JV, k:string, fallback:float) -> float: return if has(o, k): as_float(at(o, k)) else: fallback
 
