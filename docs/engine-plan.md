@@ -215,8 +215,7 @@ needs the engine without our content, or the engine going public under a differe
 
 ### Packs: one format for the game and for mods
 
-A pack is a folder (in development) or a zip (to share), with a manifest. Today's `mod.json` grows into it; the loader
-accepts both names for a while.
+A pack is a folder (in development) or a zip (to share), with a manifest. The game and every mod have one, `pack.json`; there is no other name (Dominic, 2026-11-05: no users, no shims).
 
 ```json
 {
@@ -447,11 +446,11 @@ help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 wai
    `ai`, `audio` and the rest; entries can be removed or disabled; a mod brings its own `audio/` WAVs; the bots read
    what exists. Done: the sci-fi mod as Dominic described it (infantry only, a short tree, lasers, its own sounds)
    plays a bot match to the end; without mods the golden files are unchanged.
-3. **Our content as the base pack (2-3 days).** `data/` loads through the pack loader as the game pack
-   (`pack.json` beside it), not as a special case in `gen/datalib`; `mod.json` is read as `pack.json`. Done: the game
+3. **Our content as the base pack (2-3 days).** *Done 2026-11-05 (#145, #156, D-216, D-217).* `data/` loads through the pack loader as the game pack
+   (`pack.json` beside it), not as a special case in `gen/datalib`; mods use `pack.json` too (`mod.json` is gone). Done: the game
    plays, the batch passes, and either race keys are unchanged (the base pack's signature left out of them) or they
    change once with a decision entry and `golden.sh update` read through.
-4. **Packs match in multiplayer and saves (1-2 days).** The pack list with signatures goes in the LAN answer, the
+4. **Packs match in multiplayer and saves (1-2 days).** *Done 2026-11-06 (#132, D-218): the LAN answer doesn't carry the list, as nothing reads it yet.* The pack list with signatures goes in the LAN answer, the
    lockstep handshake and saves; a mismatch is refused with the pack's name. Done: `net_check` refuses a mismatched
    pack and passes a matched one; `save_check` passes; a save from before this loads (D-141).
 5. **The unit type seam (2-3 days).** Split `gen/setup.lobster`: the engine builds the sim from a plain unit type

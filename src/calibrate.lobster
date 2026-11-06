@@ -110,7 +110,7 @@ lib_load("../data")
 id_load("../data")
 let mod_id = if args0.length > 1 and args0[0] == "mod": args0[1] else: ""
 if mod_id != "": assert mods_use([ mod_id ]).length == 1
-let rules = load_rules(if mod_id != "": gstr(gobj(mods_active[0].manifest, "check"), "rules", "default") else: "default")
+let rules = load_rules(if mod_id != "": gstr(gobj(pack_mods()[0].manifest, "check"), "rules", "default") else: "default")
 let bare = bare_rules(rules)
 
 // ---- prompts: the lobby's dice (fe_random_words), from a seed
@@ -551,11 +551,11 @@ def run_fit(samples:[Sample], ids:[string], lambda:float, normalize:bool) -> JV:
 // then only its parts fitted, every base price held (mod_check.sh). Prints what each of its parts' price_points
 // should be; prices.json is not touched.
 def run_mod(id:string):
-    let own = map(load_json(mods_active[0].dir + "/" + gstr(mods_active[0].manifest, "data", "data") + "/parts.json").a) p: as_str(at(p, "id"))
+    let own = map(load_json(pack_mods()[0].dir + "/" + gstr(pack_mods()[0].manifest, "data", "data") + "/parts.json").a) p: as_str(at(p, "id"))
     let samples = []::Sample
     for([ 2, 3 ]) age:
         let panel_races, panel = panel_of(age)
-        for(gstrs(gobj(mods_active[0].manifest, "check"), "prompts")) prompt:
+        for(gstrs(gobj(pack_mods()[0].manifest, "check"), "prompts")) prompt:
             let races = copy(panel_races)
             races.push(generate(prompt, rules, 0))
             for(rr_units(races, age)) u:
