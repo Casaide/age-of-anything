@@ -500,18 +500,70 @@ def town(busy:bool) -> [float]:
         mix_into(out, mul(hinge, env(m, 0.05, 0.2, 0.7, 0.2)), seconds(j(2.0, dur - 2.0)), 0.12, true)
     return reverb(out, 0.7, 0.3)
 
+// ------------------------------------------------------------------ vehicles (#182): loops and the tank's gun
+
+// A loop: its tail faded over its head, so it comes round without a click.
+def looped(buf:[float], over:int) -> [float]:
+    let n = buf.length - over
+    return map(n) i: if i < over: buf[i] * (float(i) / float(over)) + buf[n + i] * (1.0 - float(i) / float(over)) else: buf[i]
+
+// An engine standing: a slow, low thud of cylinders and a rumble under it.
+def engine_idle() -> [float]:
+    let n = seconds(4.5)
+    let beat = lowpass(pulsec(curve(n) t: 29.0 + 1.2 * rsin(TAU * 0.5 * t), 0.3), 240.0)
+    return soft_clip(looped(add([ gain(beat, 0.7), gain(lowpass(noise(n), 130.0), 1.6) ]), seconds(0.5)), 1.4)
+
+// An engine working, and the tracks: a harder, higher note, links clattering over the sprocket and a thin squeal.
+def engine_move() -> [float]:
+    let n = seconds(4.5)
+    let beat = lowpass(pulsec(curve(n) t: 58.0 + 2.5 * rsin(TAU * 0.5 * t) + 1.0 * rsin(TAU * 1.5 * t), 0.35), 620.0)
+    let out = add([ gain(beat, 0.6), gain(lowpass(noise(n), 420.0), 0.9), gain(bandpass(noise(n), 2300.0, 7.0), 0.1) ])
+    for(int(4.5 * 13.0)) k:
+        let m = seconds(0.03)
+        mix_into(out, mul(bandpass(noise(m), j(900.0, 1500.0), 3.0), env(m, 0.002, 0.024)), seconds(max(0.0, float(k) / 13.0 + j(-0.008, 0.008))), 0.5, true)
+    return soft_clip(looped(out, seconds(0.5)), 1.3)
+
+// A turret traversing: a small electric whine.
+def turret_servo() -> [float]:
+    let n = seconds(2.3)
+    let whine = add([ sine(n, 420.0), gain(sine(n, 840.0), 0.35), gain(sine(n, 1265.0), 0.12) ])
+    return looped(gain(add([ whine, gain(bandpass(noise(n), 700.0, 3.0), 0.4) ]), 0.6), seconds(0.3))
+
+// A cart or an engine on wooden wheels: a low rumble, and the bumps of the road.
+def cart_roll() -> [float]:
+    let n = seconds(4.5)
+    let out = gain(lowpass(noise(n), 260.0), 1.4)
+    for(int(4.5 * 5.0)) k:
+        let m = seconds(0.07)
+        mix_into(out, mul(bandpass(noise(m), j(160.0, 380.0), 2.0), env(m, 0.004, 0.06)), seconds(max(0.0, float(k) / 5.0 + j(-0.05, 0.05))), 0.9, true)
+    return soft_clip(looped(out, seconds(0.5)), 1.2)
+
+// A tank's gun: a hard crack, a heavy boom, the echo rolling off.
+def shell_boom() -> [float]:
+    let crack = burst(0.05, 1500.0, 0.5, 90.0, 1.5)
+    let boom = thump(0.55, 110.0, 34.0, 8.0, 1.5)
+    let roll = lowpass(burst(1.1, 300.0, 0.4, 3.2, 0.6), 700.0)
+    return soft_clip(add([ crack, boom, delay_start(roll, 0.04) ]), 2.2)
+
+// A shell coming down: the bang and the metal or dirt thrown up.
+def shell_hit() -> [float]:
+    let bang = burst(0.08, 900.0, 0.4, 40.0, 1.4)
+    let boom = thump(0.4, 90.0, 40.0, 11.0, 1.2)
+    let bits = burst(0.5, 2600.0, 1.2, 7.0, 0.3)
+    return soft_clip(add([ bang, boom, delay_start(bits, 0.03) ]), 2.0)
+
 // name -> takes, peak dB. Stings and ambience are one take.
 let sfx_names = [ "hit_blade", "hit_blunt", "hit_pierce", "arrow_land", "shoot_arrow", "shoot_bolt", "shoot_javelin",
                   "shoot_stone", "shoot_dart", "shoot_ball", "ram_hit", "catapult_release", "catapult_impact",
                   "bolt_release", "sling_release", "blast", "trade_paid", "fall", "building_fall", "chop", "mine",
                   "build", "forage", "farm_done", "ui_click", "ui_tip", "ui_hover", "ui_start", "ui_nope", "dice_roll",
                   "trained", "built", "research", "heal", "age", "won", "lost", "alarm", "town_bell", "town_bell_clear",
-                  "hero_up", "hero_fell", "meadow", "town_quiet", "town_busy" ]
+                  "hero_up", "hero_fell", "meadow", "town_quiet", "town_busy", "engine_idle", "engine_move", "turret_servo", "cart_roll", "shell_boom", "shell_hit" ]
 let sfx_takes = [ 4, 4, 4, 3, 3, 2, 2, 2, 2, 2, 3, 2, 3, 2, 2, 2, 2, 3, 2, 4, 4, 4, 4, 2, 3, 1, 2, 1, 1, 3, 1, 1, 1, 2,
-                  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3 ]
 let sfx_peaks = [ -4.0, -2.0, -2.0, -4.0, -3.0, -2.0, -3.0, -3.0, -6.0, -1.0, -1.5, -2.0, -1.5, -2.0, -2.0, -1.0, -10.0,
                   -3.0, -1.0, -3.0, -3.0, -3.0, -6.0, -5.0, -6.0, -8.0, -14.0, -2.0, -5.0, -6.0, -4.0, -3.0, -5.0, -12.0,
-                  -1.0, -1.0, -1.0, -1.0, -1.5, -4.0, -2.0, -2.0, -14.0, -12.0, -10.0 ]
+                  -1.0, -1.0, -1.0, -1.0, -1.5, -4.0, -2.0, -2.0, -14.0, -12.0, -10.0, -10.0, -8.0, -14.0, -10.0, -1.0, -2.0 ]
 
 def sfx_take(name:string) -> [float]:
     return switch name:
@@ -558,5 +610,11 @@ def sfx_take(name:string) -> [float]:
         case "hero_up": hero_up()
         case "hero_fell": hero_fell()
         case "meadow": meadow()
+        case "engine_idle": engine_idle()
+        case "engine_move": engine_move()
+        case "turret_servo": turret_servo()
+        case "cart_roll": cart_roll()
+        case "shell_boom": shell_boom()
+        case "shell_hit": shell_hit()
         case "town_quiet": town(false)
         default: town(true)
