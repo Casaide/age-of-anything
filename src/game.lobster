@@ -112,6 +112,8 @@ var rec_dir = ""  // record:<dir>: from:<seconds> of play on, for:<seconds>, one
 var rec_from = 0.0
 var rec_for = 10.0
 var rec_n = 0
+var rec_fps = 30.0         // fps:<n>: frames a second of play
+var rec_clean = false      // clean: no HUD, panel or health bars (a clip for showing)
 var rec_type = []::string  // typein:A|B: (filming the lobby)
 var rec_side = 0
 var rec_char = 0
@@ -157,6 +159,8 @@ for(args) a, k:
         if key == "typein": rec_type = tokenize(val, "|", " ")
         if key == "from": rec_from = string_to_float(val)
         if key == "for": rec_for = string_to_float(val)
+        if key == "fps": rec_fps = string_to_float(val)
+        if a == "clean": rec_clean = true
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
         if a == "reveal": reveal = true
@@ -1702,7 +1706,7 @@ def draw_rings(alpha:float, raised:bool):
 
 def draw_marks(alpha:float):
     gl.set_shader("color")
-    draw_bars(alpha)
+    if not rec_clean: draw_bars(alpha)
     for(selected_units()) id:
         let i = index_of(id)
         let px, py = prev_pos(i)
@@ -2896,9 +2900,9 @@ def play_match():
             cam += shake
             draw_world(acc / 0.05)
             cam -= shake
-            ui_batch(): draw_panel()
+            if not rec_clean: ui_batch(): draw_panel()
             perf_lap(6)
-            draw_hud(paused, speed)
+            if not rec_clean: draw_hud(paused, speed)
             perf_lap(7)
             draw_groups()
             perf_lap(8)
@@ -2947,11 +2951,11 @@ def play_match():
             return
         if rec_dir != "" and clock_s >= rec_from:
             if rec_n == 0:
-                gl.set_fixed_delta_time(1.0 / 30.0, 0.0)
+                gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
                 speed = start_speed
             gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
             rec_n++
-            if float(rec_n) >= rec_for * 30.0:
+            if float(rec_n) >= rec_for * rec_fps:
                 quit_app = true
                 return
         if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
