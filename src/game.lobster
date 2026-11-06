@@ -280,6 +280,7 @@ var p_id = []::int  // the last tick's positions, for drawing between ticks
 var p_x = []::int
 var p_y = []::int
 let unit_dir = dictionary<int, int>(1024)
+let unit_kick = dictionary<int, float2>(64)  // a gun just fired: how far it kicks back, canvas px, and when (view only)
 let attack_t0 = dictionary<int, float>(1024)
 var corpses = []::Corpse
 let hit_t0 = dictionary<int, float>(1024)       // when a unit was last hit (the flash)
@@ -473,6 +474,7 @@ def fx_events():
                 let to = if j >= 0: ground_at(u_x[j], u_y[j]) - float2 { 0.0, 10.0 } else: ground_at(e.x, e.y) - float2 { 0.0, 20.0 }
                 if not t_ranged[u_kind[i]]: fx_spark(to, e.c >= 8)
                 elif look.sparks > 0: fx_hit(to, look)
+                if t_ranged[u_kind[i]]: fx_impact(shot_style(unit_shotk.get(u_kind[i], "arrow")), to, false)
         elif e.kind == EV_MISS:
             if seen_at(e.x, e.y):
                 let i = index_of(e.a)
@@ -480,6 +482,7 @@ def fx_events():
                 if i >= 0:
                     let look = shot_style(unit_shotk.get(u_kind[i], "arrow")).hit
                     if look.sparks > 0: fx_hit(ground_at(e.x, e.y), look)
+                    fx_impact(shot_style(unit_shotk.get(u_kind[i], "arrow")), ground_at(e.x, e.y), true)
         elif e.kind == EV_HEAL:
             if index_of(e.b) >= 0: fx_heal(e.b)
         elif e.kind == EV_SPLASH:
@@ -535,6 +538,13 @@ def muzzle_of(by:int, mount:int) -> float2:
         if found: return o * VX_DRAW_K / 1.5
     return float2 { 0.0, -12.0 }
 
+// How far a part is kicked back from a shot just fired, drawn px along its facing.
+def kick_of(id:int, b:vx_body_spec, f:int) -> float2:
+    let k = unit_kick.get(id, float2_0)
+    let age = clock_s - k.y
+    if k.x <= 0.0 or age >= 0.25: return float2_0
+    return -normalize(vx_spot_px(b, float3 { 0.0, 1.0, 0.0 }, f)) * k.x * 1.5 * (1.0 - age / 0.25)
+
 // A unit's parts on its hull (a turret, at its gun's aim; anything else over the hull), each sorted just above it. The
 // offset is whole pixels from the hull's own, so the two never shimmer apart as it moves.
 def add_parts(i:int, hull_f:int, x:float, y:float, sort_y:float, col:float4):
@@ -546,7 +556,8 @@ def add_parts(i:int, hull_f:int, x:float, y:float, sort_y:float, col:float4):
     for(pieces) plk, n:
         let pf = vx_piece_frame(plk, part_facing(i, b.parts[n].name, hull_f))
         let o = vx_pivot_px(b, b.parts[n], hull_f) * VX_DRAW_K
-        let px, py = floor(x) + floor(o.x + 0.5), floor(y) + floor(o.y + 0.5)
+        let kick = kick_of(u_id[i], b, f)
+        let px, py = floor(x) + floor(o.x + kick.x + 0.5), floor(y) + floor(o.y + kick.y + 0.5)
         add(pf, px, py, sort_y + 0.01 * float(n + 1), col)
         if pf >= 0:
             let sf = vx_shadow_for(pf)
@@ -1042,8 +1053,7 @@ def race_facts(races:[JV]):
         unit_blow.set(k, if has_s(tags, "ram"): "ram_hit" elif has_s(tags, "blade"): "hit_blade" elif has_s(tags, "blunt"): "hit_blunt" else: "hit_pierce")
         let kind = shot_kind_of(tags)
         unit_shotk.set(k, kind)
-        let own_sound = gstr(gobj(mod_shots, kind), "sound", "")
-        unit_shot.set(k, if own_sound != "": own_sound elif kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
+        unit_shot.set(k, gstr(get(lib_data("shots.json"), kind) or jobj(), "sound", "shoot_arrow"))
 
 // ------------------------------------------------------------------ becoming another race mid-match (gen/swap.lobster)
 // N: type a race; Enter: your people become it at its own prices (no fights, D-195), line by line,
@@ -1557,6 +1567,9 @@ def draw_shots(alpha:float):
             let st = shot_style(if own != "": own elif src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
             let a = ground_at(sx, sy) + shot_mouth.get(key, float2 { 0.0, -12.0 })
             let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
+            if firstseen and seen_at(sx, sy):  // (a gun firing out of the fog shows only its shell)
+                fx_muzzle(st, a, ground_at(sx, sy))
+                if st.muzzle.recoil > 0.0: unit_kick.set(shots[o + SHOT_BY], float2 { st.muzzle.recoil, clock_s })
             if st.plain():
                 if t >= 0.0: draw_bolt(st, a, b, t, 1.0)  // (launched late: it looks faster, and lands on the sim's tick)
             elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
@@ -2784,7 +2797,10 @@ def play_match():
         if drawing():  // (minimised: the sim plays on, nothing is drawn)
             gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
             gl.blend(1)
+            let shake = fx_shake_off()
+            cam += shake
             draw_world(acc / 0.05)
+            cam -= shake
             ui_batch(): draw_panel()
             perf_lap(6)
             draw_hud(paused, speed)
@@ -2851,6 +2867,7 @@ def new_match_reset():
     busts.clear()
     hud_culture = "?"
     unit_dir.clear()
+    unit_kick.clear()
     last_kind.clear()
     last_owner.clear()
     critters = []

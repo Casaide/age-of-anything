@@ -158,7 +158,7 @@ it:
 
 | Files | Lines | Read by | Class |
 |---|---|---|---|
-| `terrain`, `resources`, `maps/`, `audio`, `ui`, `bridges`, `siege_shots`, `animals`, `modes`, `tips` | ~600, maps 1,426 | the sim and view | engine schema, game content |
+| `terrain`, `resources`, `maps/`, `audio`, `ui`, `bridges`, `animals`, `modes`, `tips` | ~600, maps 1,426 | the sim and view | engine schema, game content |
 | `buildings`, `tech`, `ai`, `rules/` | ~3,800 | the sim and bots | engine schema, game content; not yet moddable (#18) |
 | `voxel/` | 6,646 | the voxel builder | engine schema, game content |
 | `parts`, `creatures`, `families`, `palettes`, `lexicon`, `cost_curves`, `groups`, `uniques`, `heroes`, `creature_kit` | ~17,000 | the generator | game: the parts kit is Age of Anything's idea, not the engine's |

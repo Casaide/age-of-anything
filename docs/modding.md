@@ -123,7 +123,7 @@ roster has, a new building without `extends` (it uses that one's model; new mode
 real buildings, research at a building that isn't there, a sound without `takes`.
 
 Sounds: `<mod>/audio/sfx/<name>_<take>.wav` (also `voice/`, `music/`), used before the game's file of that name. A new sound
-goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. A shot look is knobs that mix freely (`arc`, `form`, `pulses`, `scatter`, `wobble`, `jag`, `fade`, `hit` and more; `data/shots.json` says what each
+goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. A shot look is knobs that mix freely (`arc`, `form`, `pulses`, `scatter`, `wobble`, `jag`, `fade`, `hit`, `trail`, `muzzle`, `impact` and more; `data/shots.json` says what each
 does, and `"extends": "arrow"` starts from one of the game's). They only change what's drawn: the sim fires one shot and decides one hit. `audio.json` and WAVs stay out of the mod's
 signature, so a sound never changes a race key.
 
