@@ -22,7 +22,7 @@ let report = args.length and args[0] == "report"
 let creatures = parse_json(assert read_file("../data/creatures.json"))
 let families = parse_json(assert read_file("../data/families.json"))
 let palettes = at(parse_json(assert read_file("../data/palettes.json")), "skins")
-let MIN_VISIBLE = 0.5
+let MIN_VISIBLE = 0.55
 let MAX_SHARED = 0.2
 let CREW_BEAST = float2 { 0.35, 0.7 }  // a crew member's height against its beast's
 let MIN_RIM = 6
