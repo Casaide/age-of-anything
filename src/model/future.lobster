@@ -1,0 +1,112 @@
+// ------------------------------------------------------------------ the future's buildings (#214)
+// The `future` architecture (the space mod's spacefarers): plated metal, dark glass, glowing strips, team bands. Its
+// town centre, barracks and houses have their own models; the rest are stone's until they get theirs (buildings2 building).
+
+// The future's plating, its dark trim, glass, and the glow of its lights.
+def fut_plate() -> MMat: return bflat(html("#b8bec6"), 0.45, 0.55)
+def fut_dark() -> MMat: return bflat(html("#3a3f48"), 0.5, 0.6)
+def fut_glass() -> MMat: return bflat(html("#1e3846"), 0.15, 0.7)
+def fut_glow() -> MMat: return bglow(html("#56e6ff"), 2.2)
+
+// A command hub: an eight-sided plated drum under a dark glass dome on a stepped deck, a ring of glowing windows, a
+// team band, two side pods, a landing pad with a glowing ring, and a mast with a beacon.
+def future_town_center(team:float3) -> BSpec:
+    let body = mnode()
+    let plate = fut_plate()
+    let dark = fut_dark()
+    let glow = fut_glow()
+    add_child(body, bcyl(1.6, 1.7, 0.14, dark, bv(0.0, 0.07, 0.0), bv(0.0, 22.5, 0.0), 8))  // the deck
+    add_child(body, bcyl(1.4, 1.5, 0.12, plate, bv(0.0, 0.2, 0.0), bv(0.0, 22.5, 0.0), 8))
+    let base = 0.26
+    let h = 0.85
+    add_child(body, bcyl(1.0, 1.12, h, plate, bv(0.0, base + h / 2.0, 0.0), bv(0.0, 22.5, 0.0), 8))              // the drum
+    add_child(body, bcyl(1.05, 1.05, 0.12, bcloth(team), bv(0.0, base + h - 0.08, 0.0), bv(0.0, 22.5, 0.0), 8))  // its team band
+    let lights = []::float3
+    for(8) k:  // a glowing window on each face
+        let a = float(k) * 45.0
+        let r = 1.07
+        let at = bv(sin(a) * r, base + h * 0.45, cos(a) * r)
+        if k != 0:
+            add_child(body, bbox(bv(0.34, 0.12, 0.03), glow, at, bv(0.0, a, 0.0)))
+            lights.push(at)
+    add_child(body, bdome(0.92, fut_glass(), bv(0.0, base + h, 0.0), bv(1.0, 0.62, 1.0)))  // the dome
+    add_child(body, bring(0.05, 0.94, dark, bv(0.0, base + h + 0.02, 0.0), bv(90.0, 0.0, 0.0)))
+    add_child(body, bball(0.14, glow, bv(0.0, base + h + 0.6, 0.0)))  // the dome's crown light
+    for([ -1.0, 1.0 ]) side:                                          // the side pods
+        let pod = bv(side * 1.25, base, -0.35)
+        add_child(body, bbox(bv(0.55, 0.55, 0.8), plate, pod + bv(0.0, 0.275, 0.0)))
+        add_child(body, bbox(bv(0.6, 0.08, 0.85), dark, pod + bv(0.0, 0.58, 0.0)))
+        add_child(body, bbox(bv(0.03, 0.08, 0.5), glow, pod + bv(side * 0.29, 0.32, 0.0)))
+    add_child(body, bbox(bv(0.5, 0.55, 0.2), dark, bv(0.0, base + 0.275, 1.08)))  // the door
+    add_child(body, bbox(bv(0.38, 0.44, 0.02), bflat(html("#14181e"), 0.3, 0.4), bv(0.0, base + 0.24, 1.19)))
+    add_child(body, bbox(bv(0.42, 0.04, 0.03), glow, bv(0.0, base + 0.5, 1.2)))
+    let pad = bv(1.25, 0.26, 1.0)  // the landing pad
+    add_child(body, bcyl(0.48, 0.5, 0.05, dark, pad + bv(0.0, 0.0, 0.0), float3_0, 16))
+    add_child(body, bring(0.02, 0.4, bglow(html("#56e6ff"), 0.8), pad + bv(0.0, 0.035, 0.0), bv(90.0, 0.0, 0.0)))
+    add_child(body, bbox(bv(0.3, 0.012, 0.06), bcloth(team), pad + bv(0.0, 0.03, 0.0)))
+    let mast = bv(-1.25, base, 0.75)  // the mast and its beacon
+    add_child(body, bcyl(0.04, 0.06, 1.9, dark, mast + bv(0.0, 0.95, 0.0), float3_0, 8))
+    for([ 0.7, 1.3 ]) y: add_child(body, bcyl(0.16, 0.16, 0.03, plate, mast + bv(0.0, y, 0.0), float3_0, 8))
+    let top = mast + bv(0.0, 1.95, 0.0)
+    add_child(body, bball(0.09, bglow(html("#ff5a3a"), 2.5), top))
+    lights.push(top)
+    let sp = bspec(body)
+    blights(sp, lights)
+    return bdoorway(sp, bld_doorway(bv(0.0, base, 1.2), 0.38, 0.44))
+
+// A drop barracks: a long plated hangar, half a drum on its side, on a deck; a wide door striped with light at the
+// front, ribs over the roof, a team band, two pylons, and a drop pod standing ready in the yard.
+def future_barracks(team:float3) -> BSpec:
+    let body = mnode()
+    let plate = fut_plate()
+    let dark = fut_dark()
+    let glow = fut_glow()
+    let w = 2.3
+    let r = 0.75
+    let zc = -0.45
+    add_child(body, bbox(bv(w + 0.3, 0.12, 1.9), dark, bv(0.0, 0.06, zc + 0.15)))     // the deck
+    add_child(body, bbox(bv(w, 0.3, 2.0 * r), plate, bv(0.0, 0.27, zc)))              // the hangar's walls
+    add_child(body, bcyl(r, r, w, plate, bv(0.0, 0.42, zc), bv(0.0, 0.0, 90.0), 16))  // its roof: half a drum
+    for([ -0.8, -0.27, 0.27, 0.8 ]) x:                                                // ribs over it
+        add_child(body, bring(0.04, r + 0.01, dark, bv(x, 0.42, zc), bv(0.0, 90.0, 0.0)))
+    add_child(body, bcyl(r + 0.02, r + 0.02, 0.14, bcloth(team), bv(0.0, 0.42, zc), bv(0.0, 0.0, 90.0), 16))  // the team band
+    let front = zc + r
+    add_child(body, bbox(bv(1.1, 0.75, 0.06), dark, bv(0.0, 0.5, front + 0.02)))  // the door
+    let lights = []::float3
+    for([ 0.3, 0.52, 0.74 ]) y:
+        add_child(body, bbox(bv(0.9, 0.035, 0.02), glow, bv(0.0, y, front + 0.06)))
+    lights.push(bv(0.0, 0.52, front + 0.08))
+    for([ -1.0, 1.0 ]) side:  // the pylons at the hangar's ends
+        let at = bv(side * (w / 2.0 + 0.05), 0.12, zc + r * 0.6)
+        add_child(body, bbox(bv(0.18, 1.0, 0.18), dark, at + bv(0.0, 0.5, 0.0)))
+        add_child(body, bbox(bv(0.2, 0.06, 0.2), glow, at + bv(0.0, 1.02, 0.0)))
+        lights.push(at + bv(0.0, 1.02, 0.0))
+    let pod = bv(0.85, 0.12, 0.95)  // a drop pod in the yard, its fins on the ground
+    add_child(body, bcyl(0.12, 0.24, 0.55, plate, pod + bv(0.0, 0.32, 0.0), float3_0, 8))
+    add_child(body, bball(0.24, plate, pod + bv(0.0, 0.08, 0.0), bv(1.0, 0.5, 1.0)))
+    add_child(body, bcyl(0.13, 0.13, 0.08, bcloth(team), pod + bv(0.0, 0.42, 0.0), float3_0, 8))
+    for(3) k:
+        let a = float(k) * 120.0
+        add_child(body, bbox(bv(0.04, 0.26, 0.2), dark, pod + bv(sin(a) * 0.22, 0.13, cos(a) * 0.22), bv(0.0, a, 0.0)))
+    add_child(body, bbox(bv(0.05, 0.1, 0.03), glow, pod + bv(0.0, 0.38, 0.2)))
+    for(5) k:  // the yard's edge lights
+        let x = -1.2 + float(k) * 0.6
+        add_child(body, bbox(bv(0.06, 0.04, 0.06), glow, bv(x, 0.14, 1.3)))
+    let sp = bspec(body)
+    blights(sp, lights)
+    return bdoorway(sp, bld_doorway(bv(0.0, 0.12, front + 0.06), 0.9, 0.7))
+
+// A habitat pod: a small plated drum under a glass cap, a glowing window, a team stripe.
+def future_house(team:float3) -> BSpec:
+    let body = mnode()
+    let plate = fut_plate()
+    add_child(body, bcyl(0.55, 0.6, 0.08, fut_dark(), bv(0.0, 0.04, 0.0), bv(0.0, 22.5, 0.0), 8))
+    add_child(body, bcyl(0.45, 0.5, 0.45, plate, bv(0.0, 0.3, 0.0), bv(0.0, 22.5, 0.0), 8))
+    add_child(body, bcyl(0.47, 0.47, 0.07, bcloth(team), bv(0.0, 0.47, 0.0), bv(0.0, 22.5, 0.0), 8))
+    add_child(body, bdome(0.42, fut_glass(), bv(0.0, 0.52, 0.0), bv(1.0, 0.55, 1.0)))
+    let at = bv(0.0, 0.3, 0.49)
+    add_child(body, bbox(bv(0.22, 0.1, 0.03), fut_glow(), at))
+    let sp = bspec(body)
+    blights(sp, [ at ])
+    bpt(sp, "door", bv(0.0, 0.0, 1.0))
+    return bdoorway(sp, bld_doorway(bv(0.3, 0.08, 0.4), 0.16, 0.3))

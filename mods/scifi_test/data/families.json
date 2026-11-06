@@ -1,0 +1,22 @@
+{
+ "spacefarers": {
+  "cloth": ["#3c4658", "#25272c"],
+  "mounts": ["pony"],
+  "adjective": "Stellar",
+  "bonuses": [{"text": "Drones build 15% faster", "effects": [{"tag": "worker", "stat": "build_speed", "pct": 15}], "alt": {"text": "Drones carry +2", "effects": [{"tag": "worker", "stat": "carry", "add": 2}]}}, {"text": "Laser cutters: wood comes in 10% faster", "effects": [{"gather": "wood", "pct": 10}], "alt": {"text": "Buildings +10% hit points (plating)", "effects": [{"building": "all", "stat": "hp", "pct": 10}]}}],
+  "research": ["woodsmen"],
+  "hero_kin": ["royal", "imperial"],
+  "lacks": [],
+  "prefixes": ["Star", "Void", "Nova", "Orbital"],
+  "suffixes": [" Legion", " Fleet", " Directorate", " Vanguard"],
+  "paths": {"style": "cobble", "width": 0.42},
+  "architecture": "future",
+  "ranks": ["Veteran", "Elite"],
+  "ui": {"frame": "iron", "frame_colour": "#4a5260", "panel": "iron", "colour": "#20262e", "button": "iron", "button_colour": "#34404c", "primary": "iron", "primary_colour": "#2a9ab0", "accent": "#56e6ff", "metal": "#9aa4b0", "ornament": "rivets", "banner": "notched"},
+  "siege": "timber",
+  "war_beast": "elephant",
+  "pour": "superheated plasma",
+  "unique": "sworn_knight",
+  "_doc": "The space mod's culture (#214): plated domes and hangars (architecture future, model/future.lobster). Words for the future pick it."
+ }
+}
