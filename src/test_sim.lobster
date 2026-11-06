@@ -3165,7 +3165,7 @@ def test_pen():
     for(pen_animals(pb, false)) i:
         let x, y = pen_inside(pb, i, u_x[i], u_y[i])
         if x == u_x[i] and y == u_y[i]: fenced++
-    check(fenced == pen_animals(pb, false).length, "pen: an overfull pen's sheep all stand clear of its fence ({fenced} of {pen_animals(pb, false).length})")
+    check(fenced == pen_animals(pb, false).length, "pen: an overfull pen\'s sheep all stand clear of its fence ({fenced} of {pen_animals(pb, false).length})")
     t0 = tick
     before = stock[food][0]
     steps(food_ticks)
