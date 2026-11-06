@@ -1,0 +1,273 @@
+{
+  "_doc": "A match with no generator: two sides written by hand, in the table the sim is built from. Each unit is its stats, slot, age and radius; line is its ages, the first its own (a look is the view's, and this match isn't drawn). The first side has the stronger line, and the second has no swordsmen, so a mirror does not stalemate.",
+  "sides": [
+    {
+      "units": [
+        {
+          "slot": "worker",
+          "age": 1,
+          "radius": 300,
+          "hp": 28,
+          "attack": 1,
+          "damage": "melee",
+          "armour": {
+            "melee": 0,
+            "pierce": 0
+          },
+          "bonus": {},
+          "range": 1,
+          "speed": 10,
+          "pop": 1,
+          "cost": {
+            "food": 50
+          },
+          "train_time": 13,
+          "tags": [
+            "gather",
+            "infantry",
+            "worker"
+          ],
+          "line": [
+            {
+              "age": 1,
+              "hp": 28,
+              "attack": 1,
+              "damage": "melee",
+              "armour": {
+                "melee": 0,
+                "pierce": 0
+              },
+              "bonus": {},
+              "range": 1,
+              "speed": 10,
+              "pop": 1,
+              "cost": {
+                "food": 50
+              },
+              "train_time": 13,
+              "tags": [
+                "gather",
+                "infantry",
+                "worker"
+              ]
+            }
+          ]
+        },
+        {
+          "slot": "spear",
+          "age": 1,
+          "radius": 300,
+          "hp": 45,
+          "attack": 4,
+          "damage": "melee",
+          "armour": {
+            "melee": 1,
+            "pierce": 0
+          },
+          "bonus": {
+            "mounted": 8
+          },
+          "range": 1,
+          "speed": 10,
+          "pop": 1,
+          "cost": {
+            "food": 35,
+            "wood": 25
+          },
+          "train_time": 20,
+          "tags": [
+            "infantry",
+            "spear"
+          ],
+          "line": [
+            {
+              "age": 1,
+              "hp": 45,
+              "attack": 4,
+              "damage": "melee",
+              "armour": {
+                "melee": 1,
+                "pierce": 0
+              },
+              "bonus": {
+                "mounted": 8
+              },
+              "range": 1,
+              "speed": 10,
+              "pop": 1,
+              "cost": {
+                "food": 35,
+                "wood": 25
+              },
+              "train_time": 20,
+              "tags": [
+                "infantry",
+                "spear"
+              ]
+            }
+          ]
+        },
+        {
+          "slot": "infantry",
+          "age": 1,
+          "radius": 300,
+          "hp": 90,
+          "attack": 14,
+          "damage": "melee",
+          "armour": {
+            "melee": 2,
+            "pierce": 1
+          },
+          "bonus": {
+            "spear": 4
+          },
+          "range": 1,
+          "speed": 10,
+          "pop": 1,
+          "cost": {
+            "food": 60,
+            "gold": 20
+          },
+          "train_time": 25,
+          "tags": [
+            "infantry"
+          ],
+          "line": [
+            {
+              "age": 1,
+              "hp": 90,
+              "attack": 14,
+              "damage": "melee",
+              "armour": {
+                "melee": 2,
+                "pierce": 1
+              },
+              "bonus": {
+                "spear": 4
+              },
+              "range": 1,
+              "speed": 10,
+              "pop": 1,
+              "cost": {
+                "food": 60,
+                "gold": 20
+              },
+              "train_time": 25,
+              "tags": [
+                "infantry"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "units": [
+        {
+          "slot": "worker",
+          "age": 1,
+          "radius": 300,
+          "hp": 28,
+          "attack": 1,
+          "damage": "melee",
+          "armour": {
+            "melee": 0,
+            "pierce": 0
+          },
+          "bonus": {},
+          "range": 1,
+          "speed": 10,
+          "pop": 1,
+          "cost": {
+            "food": 50
+          },
+          "train_time": 13,
+          "tags": [
+            "gather",
+            "infantry",
+            "worker"
+          ],
+          "line": [
+            {
+              "age": 1,
+              "hp": 28,
+              "attack": 1,
+              "damage": "melee",
+              "armour": {
+                "melee": 0,
+                "pierce": 0
+              },
+              "bonus": {},
+              "range": 1,
+              "speed": 10,
+              "pop": 1,
+              "cost": {
+                "food": 50
+              },
+              "train_time": 13,
+              "tags": [
+                "gather",
+                "infantry",
+                "worker"
+              ]
+            }
+          ]
+        },
+        {
+          "slot": "spear",
+          "age": 1,
+          "radius": 300,
+          "hp": 45,
+          "attack": 4,
+          "damage": "melee",
+          "armour": {
+            "melee": 1,
+            "pierce": 0
+          },
+          "bonus": {
+            "mounted": 8
+          },
+          "range": 1,
+          "speed": 10,
+          "pop": 1,
+          "cost": {
+            "food": 35,
+            "wood": 25
+          },
+          "train_time": 20,
+          "tags": [
+            "infantry",
+            "spear"
+          ],
+          "line": [
+            {
+              "age": 1,
+              "hp": 45,
+              "attack": 4,
+              "damage": "melee",
+              "armour": {
+                "melee": 1,
+                "pierce": 0
+              },
+              "bonus": {
+                "mounted": 8
+              },
+              "range": 1,
+              "speed": 10,
+              "pop": 1,
+              "cost": {
+                "food": 35,
+                "wood": 25
+              },
+              "train_time": 20,
+              "tags": [
+                "infantry",
+                "spear"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
