@@ -546,26 +546,10 @@ def collect_units(alpha:float):
         let y = py + (u_y[i] - py) * alpha
         let mine = teams[u_owner[i]] == teams[ME]
         if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and vx_drawn(u_kind[i]):
-<<<<<<< HEAD
             let moving, walking_d = unit_walk(i, unit_dir.get(u_id[i], 2), px, py)
             var d = walking_d
             if moving: pass()
-            elif u_foe[i] != 0 and t_turn[u_kind[i]] == 0:  // (a turret's hull doesn't turn to its foe: its gun does)
-||||||| parent of e8d843bc (Each turret part at its own mount's aim (#178, #211))
-            let moving = px != u_x[i] or py != u_y[i]
-            var d = unit_dir.get(u_id[i], 2)
-            if moving:
-                let nd = dir_of(iso(float(u_x[i] - px), float(u_y[i] - py)))
-                if nd >= 0 and (abs(u_x[i] - px) + abs(u_y[i] - py)) > 4: d = nd
-            elif u_foe[i] != 0 and t_turn[u_kind[i]] == 0:  // (a turret's hull doesn't turn to its foe: its gun does)
-=======
-            let moving = px != u_x[i] or py != u_y[i]
-            var d = unit_dir.get(u_id[i], 2)
-            if moving:
-                let nd = dir_of(iso(float(u_x[i] - px), float(u_y[i] - py)))
-                if nd >= 0 and (abs(u_x[i] - px) + abs(u_y[i] - py)) > 4: d = nd
             elif u_foe[i] != 0 and not t_mounts[u_kind[i]].length:  // (a mounted hull doesn't turn to its foe: its guns do)
->>>>>>> e8d843bc (Each turret part at its own mount's aim (#178, #211))
                 let j = index_of(u_foe[i])
                 var tx = -1.0
                 var ty = -1.0
