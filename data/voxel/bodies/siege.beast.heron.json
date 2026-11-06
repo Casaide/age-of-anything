@@ -428,6 +428,10 @@
    "hard": true,
    "mirror": true,
    "_doc": "team cloths"
-  }
+  },
+  {"box":["o",3.5,-1.0,35.9],"n":[1,0,0],"half":[4.0,0.35,0.6],"round":0.2,"mat":"frame2","_doc":"howdah rim"},
+  {"box":["o",-3.5,-1.0,35.9],"n":[1,0,0],"half":[4.0,0.35,0.6],"round":0.2,"mat":"frame2","_doc":"howdah rim"},
+  {"box":["o",0,3,35.9],"n":[0,1,0],"half":[3.5,0.35,0.6],"round":0.2,"mat":"frame2","_doc":"howdah rim"},
+  {"box":["o",0,-5,35.9],"n":[0,1,0],"half":[3.5,0.35,0.6],"round":0.2,"mat":"frame2","_doc":"howdah rim"}
  ]
 }
