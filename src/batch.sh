@@ -43,6 +43,7 @@ else
 	for i in 0 1 2 3; do add test_ai.$i "$L" test_ai.lobster -- shard:$i/4; done
 	add test_2v2 "$L" test_2v2.lobster
 	add test_mod_match "$L" test_mod_match.lobster
+	add test_units_plain "$L" test_units_plain.lobster
 	add golden ./golden.sh
 	add vbcheck "$L" game.lobster -- none - vbcheck mute   # every building look as voxels: no specks (a window, but quick)
 	add prices "$L" calibrate.lobster -- measure expect check:42   # held-out round robins against the counter chain (D-199): 32% off now

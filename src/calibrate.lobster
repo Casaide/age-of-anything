@@ -75,6 +75,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -217,7 +218,7 @@ def unit_eval(races:[JV], u:RRUnit, age:int) -> JV: return at(step_of(races[u.ra
 
 // a has a counter's edge over b: one of its attack bonuses is for a class b has (its tags: type_vectors).
 def edge(a:JV, b:JV) -> bool:
-    let tags = eval_tags(b)
+    let tags = unit_tags(b)
     let bonus = at(a, "bonus")
     for(bonus.keys) k, n:
         if as_int(bonus.a[n]) > 0 and has_s(tags, k): return true
@@ -241,7 +242,7 @@ def panel_score(races:[JV], age:int, unit:RRUnit, panel:[RRUnit], pct:int) -> in
 // a counters b by the chain (gen/counters.lobster): its line and b's are a pair, and b has the pair's tag.
 def chain(a:RRUnit, b:RRUnit, eb:JV) -> bool:
     for(RR_COUNTERS) pair:
-        if a.slot == pair[0] and b.slot == pair[1] and has_s(eval_tags(eb), pair[2]): return true
+        if a.slot == pair[0] and b.slot == pair[1] and has_s(unit_tags(eb), pair[2]): return true
     return false
 
 // What a fight with b should give a (D-199, D-200): the chain's counter wins, whatever bonuses the other carries (horse
@@ -364,7 +365,7 @@ def run_lines(age:int):
                     var sum = 0
                     for(parts) id: sum += price_of(part(id))
                     let points = as_int(at(e, "points"))
-                    let tags = eval_tags(e)
+                    let tags = unit_tags(e)
                     let size = if has_s(tags, "giant"): "giant" elif has_s(tags, "tiny"): "tiny" else: "-"
                     print "@@ {age} {u.slot} {fair_from(results, kinds)} {points} {points - sum} {concat_string(parts, ",")} {unspaced(u.label)} {size} {concat_string(results, "/")} {concat_string(map(kinds) m: string(m), ",")}"
                 k++
@@ -566,7 +567,7 @@ def run_mod(id:string):
                         let e = at(step, "eval")
                         var sum = 0
                         for(parts) pid: sum += price_of(part(pid))
-                        let tags = eval_tags(e)
+                        let tags = unit_tags(e)
                         let size = if has_s(tags, "giant"): "giant" elif has_s(tags, "tiny"): "tiny" else: "-"
                         let pct = fair_pct(races, age, u, panel)
                         print "  age {age}: {u.label}: fair at {pct}% of its price"
@@ -595,7 +596,7 @@ def run_pairs(age:int, plain:bool):
         for(races.length) n:
             let c = filter(units) u: u.race == n and u.slot == pair[0]
             let d = filter(units) u: u.race == n and u.slot == pair[1]
-            if c.length and d.length and has_s(eval_tags(unit_eval(races, d[0], age)), pair[2]):
+            if c.length and d.length and has_s(unit_tags(unit_eval(races, d[0], age)), pair[2]):
                 fights += 2
                 var losses = 0
                 if rr_fight(races, bare, age, c[0], d[0]) > 0: wins++ else: losses++
@@ -615,7 +616,7 @@ def reaches_any(r:JV, tags:[string]) -> bool:
 
 def open_to(race:JV, id:string) -> bool:
     reset_world()
-    setup_world(1, "flat_test", [ race, race ], bare, [])
+    setup_match(1, "flat_test", [ race, race ], bare, [])
     for(research) r:
         if r.id == id: return r.open[0] == 1
     return false
@@ -647,7 +648,7 @@ def run_upgrades(castle:bool):
                     races.push(race)
                     let mine = filter(rr_units(races, age)) u: u.race == races.length - 1
                     for(mine) u:
-                        let tags = eval_tags(unit_eval(races, u, age))
+                        let tags = unit_tags(unit_eval(races, u, age))
                         if reaches_any(r, tags):
                             rr_skip = id
                             let without = panel_score(races, age, u, panel, 100)
@@ -657,7 +658,7 @@ def run_upgrades(castle:bool):
                             let flips = []::string
                             for(RR_COUNTERS) pair:
                                 let c = filter(mine) m: m.slot == pair[0]
-                                if pair[1] == u.slot and has_s(tags, pair[2]) and c.length and not reaches_any(r, eval_tags(unit_eval(races, c[0], age))):
+                                if pair[1] == u.slot and has_s(tags, pair[2]) and c.length and not reaches_any(r, unit_tags(unit_eval(races, c[0], age))):
                                     var before = 0
                                     var after = 0
                                     if rr_fight(races, bare, age, c[0], u) > 0: before++

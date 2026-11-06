@@ -54,6 +54,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -78,7 +79,7 @@ set(base_rules, "animals", jbool(false))
 def new_world(prompts:[string], r:JV):
     let races = map(prompts) pr: generate(pr, base_rules, 0)
     reset_world()
-    setup_world(SEED, "flat_test", races, r, [])
+    setup_match(SEED, "flat_test", races, r, [])
 
 def bare() -> JV:
     let r = deep_copy(base_rules)
@@ -105,10 +106,10 @@ def hero_types_of(p:int) -> [int]: return filter(hero_types) k: t_player[k] == p
 
 def hero_type_named(p:int, sid:string) -> int:
     for(hero_types_of(p)) k:
-        if rstr(su_type_recipe[k], "hero") == sid: return k
+        if rstr(su_units[k], "hero") == sid: return k
     return -1
 
-def hero_sid(k:int) -> string: return rstr(su_type_recipe[k], "hero")
+def hero_sid(k:int) -> string: return rstr(su_units[k], "hero")
 def out_id(k:int) -> int: return hero_id[hero_slot(k)]
 
 def heroes_out(p:int) -> int:

@@ -84,7 +84,7 @@ var id_kind = []::int
 // A fresh world (World.new): the old one's globals reset first; the bots read events.
 def new_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[int]):
     reset_world()
-    setup_world(seed_value, map_id, races, rules, team_ids)
+    setup_match(seed_value, map_id, races, rules, team_ids)
     events_on = true
     spawns = []
     id_owner = []
@@ -139,8 +139,8 @@ def unit_name(k:int) -> string:
     var at_step = 0
     for(lines[k]) l, n:
         if n > 0 and l.up >= 0 and researched[t_player[k]][l.up] != 0: at_step = n
-    let steps = su_type_line[k]
-    return if at_step < steps.length: rstr(at(steps[at_step], "recipe"), "name") else: rstr(su_type_recipe[k], "name")
+    let steps = glist(su_units[k], "line")
+    return if at_step < steps.length: rstr(at(steps[at_step], "look"), "name") else: rstr(at(su_units[k], "look"), "name")
 
 class LevelCfg:
     wave_at:[int]
