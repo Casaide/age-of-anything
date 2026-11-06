@@ -319,3 +319,9 @@ def all_architectures() -> [string]:
             let a = gstr(at(table, k), "architecture", "")
             if a != "" and not has_s(out, a): out.push(a)
     return sorted_strs(out)
+
+// How loud a unit's loop is with this many units making it, 0 to 1: the first is clearly heard, more add less and less,
+// and past a dozen they add nothing (#182).
+def loop_share(count:int) -> float:
+    if count <= 0: return 0.0
+    return sqrt(float(min(count, 12))) / sqrt(12.0)
