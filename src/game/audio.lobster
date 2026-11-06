@@ -177,9 +177,17 @@ class UnitLoop:
 let unit_loops = dictionary<string, UnitLoop>(8)
 let UNIT_LOOP_FADE = 1.6  // how fast a loop comes and goes, volume a second
 
-// The sound a body makes in that state, or "".
-def unit_sound(body:string, state:string) -> string:
-    return gstr(gobj(gobj(lib_data("audio.json"), "units"), body), state, "")
+// The sound a body makes in that state, or "". Called for every unit every frame, and lib_data reads the files: each body
+// once a match.
+let UNIT_SOUND_STATES = [ "idle", "move", "turret" ]
+let unit_sound_of = dictionary<string, [string]>(16)
+def unit_sound(body:string, state:int) -> string:
+    var s = unit_sound_of.get(body)
+    if not s:
+        let u = gobj(gobj(lib_data("audio.json"), "units"), body)
+        s = map(UNIT_SOUND_STATES) n: gstr(u, n, "")
+        unit_sound_of.set(body, s)
+    return s[state]
 
 // A sound heard from units this frame: the loudest of it so far.
 def unit_loop_hear(name:string, count:int):
