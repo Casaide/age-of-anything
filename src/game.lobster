@@ -60,6 +60,7 @@ import .gen.setup
 import .gen.modes
 import .gen.start
 import .view.facing
+import .view.shot_look
 import .view.node
 import .view.art
 import .view.bake_cache
@@ -107,6 +108,7 @@ var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks thr
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
 var army_n = 0                   // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+var army_snap = false            // a skirmish's armies start in their blocks, once the first order has made them
 let ARMY_GAP = 600               // milli-tiles between them, in ranks
 var zoom_arg = 0.0               // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
 var reveal = false               // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
@@ -124,6 +126,10 @@ var join_ip = ""                 // join:<ip>: play the second side of the match
 var reload_at = -1.0             // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
 var touch_play = false  // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
+// A mod can say how it starts (its manifest's `launch`): those options, as if typed after the rest.
+for(copy(args)) a:
+    if starts_with(a, "mods:"):
+        for(mods_launch_args(tokenize(a.substring(5, a.length - 5), ",", ""))) option: args.push(option)
 for(args) a, k:
     if k >= 2:
         if a == "watch": watch = true
@@ -1495,7 +1501,7 @@ def draw_shots(alpha:float):
         if firstseen:
             t_from = tick - 1
             shot_from.set(key, t_from)
-        let t = clamp((float(tick - t_from) + alpha) / float(max(1, land - t_from)), 0.0, 1.0)
+        let t = shot_drawn_u((float(tick - t_from) + alpha) / 20.0, float(max(1, land - t_from)) / 20.0)
         let ax = shots[o + SHOT_X]
         let ay = shots[o + SHOT_Y]
         let sx = shots[o + SHOT_X0]
@@ -1505,7 +1511,8 @@ def draw_shots(alpha:float):
             let st = shot_style(if src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
             let a = ground_at(sx, sy) - float2 { 0.0, 12.0 }
             let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
-            if st.plain(): draw_bolt(st, a, b, t, 1.0)
+            if st.plain():
+                if t >= 0.0: draw_bolt(st, a, b, t, 1.0)  // (launched late: it looks faster, and lands on the sim's tick)
             elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
     draw_tracers()
     if tick % 200 == 0: shot_from = dictionary<int, int>(1024)  // (forget the landed ones now and then)
@@ -2344,6 +2351,7 @@ def make_match() -> bool:
                 if skirmish:
                     let foe = (p + 1) % num_players
                     issue_cmd(p, CMD_ATTACK_MOVE, ids, start_x[foe], start_y[foe], 0, 0)
+                    army_snap = true
         update_pop()
         if fort_gate.x >= 0 and has_s(args, "in_gate"):  // (captures: soldiers standing through the gate's arch, before, in it, past it)
             let gk = find(t_slot.length) j: t_player[j] == ME and t_slot[j] == "infantry"
@@ -2689,6 +2697,9 @@ def play_match():
             let t1 = seconds_elapsed()
             step()
             if net_on: ls_after_step(lockstep)
+            if army_snap and (find(fb_state) s: s != 0) >= 0:
+                blocks_snap()
+                army_snap = false
             step_time += seconds_elapsed() - t0
             perf_tick(t1 - t0, seconds_elapsed() - t1)
             steps++
