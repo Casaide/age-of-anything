@@ -207,8 +207,10 @@ class vx_gait:
 
 class vx_part_spec:
     name:string
-    pivot:float3  // where it turns, in the body's frame
-    body:string   // its own body: its shapes round the pivot, standing at their own height
+    pivot:float3          // where it turns, in the body's frame
+    body:string           // its own body: its shapes round the pivot, standing at their own height
+    point_names:[string]  // named points on it (a muzzle), in the body's frame
+    point_at:[float3]
 
 class vx_body_spec:
     id:string
@@ -414,7 +416,8 @@ def vx_parse_parts(b:vx_body_spec, parts:[JV]):
         piece.parts = []
         piece.shapes = map(shapes) s: vx_spec_moved(s, float3 { -pivot.x, -pivot.y, 0.0 })
         vx_bodies.set(piece.id, piece)
-        b.parts.push(vx_part_spec { name, pivot, piece.id })
+        let pts = gobj(o, "points")
+        b.parts.push(vx_part_spec { name, pivot, piece.id, pts.keys, map(pts.a) v: vx_v3(v) })
         b.shapes = b.shapes.append(shapes)
 
 def vx_spec_moved(s:vx_spec, by:float3) -> vx_spec:
@@ -424,13 +427,31 @@ def vx_spec_moved(s:vx_spec, by:float3) -> vx_spec:
     c.offs = map(s.offs) o: o + by
     return c
 
-// Where a part's pivot falls on the hull's picture in that facing, voxels from the hull's ground point (x right, y down).
-def vx_pivot_px(b:vx_body_spec, p:vx_part_spec, facing:int) -> float2:
+// Where a spot in a body's frame falls on its picture in that facing, voxels from the ground point (x right, y down).
+def vx_spot_px(b:vx_body_spec, v:float3, facing:int) -> float2:
     let yaw = float(facing) * 45.0
-    let across = p.pivot.x * cos(yaw) + p.pivot.y * sin(yaw)  // (as vx_cell: the body turned against the camera)
-    let along = p.pivot.y * cos(yaw) - p.pivot.x * sin(yaw)
+    let across = v.x * cos(yaw) + v.y * sin(yaw)  // (as vx_cell: the body turned against the camera)
+    let along = v.y * cos(yaw) - v.x * sin(yaw)
     let s = vx_RES * b.size
-    return float2 { across * s, -along * sin(vx_ELEV) * s }
+    return float2 { across * s, -(along * sin(vx_ELEV) + v.z * cos(vx_ELEV)) * s }
+
+// Where a part's pivot falls on the hull's picture in that facing (its height is in the part's own picture).
+def vx_pivot_px(b:vx_body_spec, p:vx_part_spec, facing:int) -> float2:
+    return vx_spot_px(b, float3 { p.pivot.x, p.pivot.y, 0.0 }, facing)
+
+// A named point on a part, on that part's own picture in its facing.
+def vx_part_point_px(b:vx_body_spec, p:vx_part_spec, k:int, part_f:int) -> float2:
+    return vx_spot_px(b, p.point_at[k] - float3 { p.pivot.x, p.pivot.y, 0.0 }, part_f)
+
+// A named point on a part (or, with no part, the body or any part that has it), on the stacked figure with the hull and
+// that part in these facings, or false if it has none.
+def vx_point_px(b:vx_body_spec, name:string, part:string, hull_f:int, part_f:int) -> float2, bool:
+    for(b.parts) p:
+        let k = if part == "" or part == p.name: find(p.point_names) n: n == name else: -1
+        if k >= 0: return vx_pivot_px(b, p, hull_f) + vx_part_point_px(b, p, k, part_f), true
+    let k = find(b.pnames) n: n == name
+    if k >= 0: return vx_spot_px(b, b.pat[k], hull_f), true
+    return float2_0, false
 
 def gfloat(o:JV, k:string, fallback:float) -> float: return if has(o, k): as_float(at(o, k)) else: fallback
 

@@ -1500,6 +1500,11 @@ def save_upgrade(s:WorldSave):
     if s.save_format < 2:  // (weapon mounts, #177, #211: no unit type had one)
         for(s.t_slot):
             s.t_mounts.push([]::Mount)
+        let old_shots = s.shots  // (a shot says which mount fired it, #179)
+        s.shots = []::int
+        for(old_shots) v, n:
+            s.shots.push(v)
+            if n % 11 == 10: s.shots.push(0)
 
 // Why this save file can't load here, or "".
 def save_refusal_of(path:string) -> string:

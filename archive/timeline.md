@@ -203,3 +203,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: The OS draws the cursor, the game starts fullscreen, and on the Mac it runs from an app bundle marked as a game (D-222 to D-224; #222, #223, #224).
 - 2026-11-06: Guns got an aim in the sim: weapon mounts, as many as a unit likes, each turning on its own and firing on the move, the first piece of vehicles (D-219, #177, #211).
 - 2026-11-06: A body can have parts: a turret turns on its hull in all 8 x 8 facings, baked apart and stacked when drawn (D-220, #178).
+- 2026-11-06: Shells leave from the muzzle: bodies and parts can name points, and shots start from theirs (D-221, #179).

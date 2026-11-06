@@ -282,8 +282,9 @@ var p_y = []::int
 let unit_dir = dictionary<int, int>(1024)
 let attack_t0 = dictionary<int, float>(1024)
 var corpses = []::Corpse
-let hit_t0 = dictionary<int, float>(1024)   // when a unit was last hit (the flash)
-var shot_from = dictionary<int, int>(1024)  // a shot (its by * 65536 + landing tick) -> the tick it was first seen
+let hit_t0 = dictionary<int, float>(1024)       // when a unit was last hit (the flash)
+var shot_from = dictionary<int, int>(1024)      // a shot (its by * 65536 + landing tick) -> the tick it was first seen
+var shot_mouth = dictionary<int, float2>(1024)  // the same: where it left its shooter, canvas px from the shot's start (fixed once fired)
 let last_kind = dictionary<int, int>(1024)
 let last_owner = dictionary<int, int>(1024)
 
@@ -520,6 +521,19 @@ def part_facing(i:int, name:string, hull_f:int) -> int:
             let d = dir_of(iso(cos(aim), sin(aim)))
             return if d >= 0: (d + 2) % 8 else: hull_f
     return hull_f
+
+// Where a shot leaves a unit: canvas px up from its ground point to its body's muzzle, as it stands now; else a little up
+// from its feet.
+def muzzle_of(by:int, mount:int) -> float2:
+    let i = index_of(by)
+    if i >= 0 and vx_drawn(u_kind[i]):
+        let b = vx_body_of(vx_lks[vx_cur[u_kind[i]]].u.body)
+        let hull_f = (unit_dir.get(by, 2) + 2) % 8
+        let ms = t_mounts[u_kind[i]]
+        let part = if mount < ms.length: ms[mount].part else: ""
+        let o, found = vx_point_px(b, "muzzle", part, hull_f, part_facing(i, part, hull_f))
+        if found: return o * VX_DRAW_K / 1.5
+    return float2 { 0.0, -12.0 }
 
 // A unit's parts on its hull (a turret, at its gun's aim; anything else over the hull), each sorted just above it. The
 // offset is whole pixels from the hull's own, so the two never shimmer apart as it moves.
@@ -1524,12 +1538,14 @@ def draw_shots(alpha:float):
     for(n) k:
         let o = k * SHOT_STRIDE
         let land = shots[o + SHOT_LAND]
-        let key = shots[o + SHOT_BY] * 65536 + land % 65536
+        let mount = shots[o + SHOT_MOUNT]
+        let key = (shots[o + SHOT_BY] * 65536 + land % 65536) * 8 + mount  // (two guns can fire together)
         var t_from = shot_from.get(key, -1)
         let firstseen = t_from < 0
         if firstseen:
             t_from = tick - 1
             shot_from.set(key, t_from)
+            shot_mouth.set(key, muzzle_of(shots[o + SHOT_BY], mount))
         let t = shot_drawn_u((float(tick - t_from) + alpha) / 20.0, float(max(1, land - t_from)) / 20.0)
         let ax = shots[o + SHOT_X]
         let ay = shots[o + SHOT_Y]
@@ -1537,13 +1553,15 @@ def draw_shots(alpha:float):
         let sy = shots[o + SHOT_Y0]
         if seen_at(ax, ay) or seen_at(sx, sy):
             let src = shots[o + SHOT_SRC]
-            let st = shot_style(if src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
-            let a = ground_at(sx, sy) - float2 { 0.0, 12.0 }
+            let own = if src >= 0 and mount < t_mounts[src].length: t_mounts[src][mount].shot else: ""
+            let st = shot_style(if own != "": own elif src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
+            let a = ground_at(sx, sy) + shot_mouth.get(key, float2 { 0.0, -12.0 })
             let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
             if st.plain():
                 if t >= 0.0: draw_bolt(st, a, b, t, 1.0)  // (launched late: it looks faster, and lands on the sim's tick)
             elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
     draw_tracers()
+    if tick % 200 == 0: shot_mouth = dictionary<int, float2>(1024)
     if tick % 200 == 0: shot_from = dictionary<int, int>(1024)  // (forget the landed ones now and then)
 
 // Health bars over hurt units you can see, and over the selected.
@@ -2435,6 +2453,7 @@ def view_reset():
     hit_t0.clear()
     attack_t0.clear()
     shot_from.clear()
+    shot_mouth.clear()
     town_last.clear()
     town_idle_since.clear()
     chores.clear()
