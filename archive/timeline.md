@@ -196,3 +196,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-05: The game became a pack: data/pack.json, and mod.json is gone (D-216).
 - 2026-11-05: One load path: the game and mods go through the same code (D-217).
 - 2026-11-06: Packs must match in network matches and saves; saves have a format and an upgrade hook (D-218).
+- 2026-11-06: The sim builds from a table of unit types; a match runs with no generator in the program (D-219).
