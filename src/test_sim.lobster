@@ -3155,12 +3155,17 @@ def test_pen():
         let cx, cy = b_centre(pb)
         let s = add_unit(u_owner[parent], u_kind[parent], cx, cy)
         u_posture[s] = 0
-        let px, py = herd_slot(cx, cy, s)
+        let px, py = herd_slot(cx, cy, s, pb)
         order_move(s, px, py, 200, 0, -1, -1, 0)
     grow_scratch()
     steps(600)
     pb = b_index_of(pen_id)
     let inside = pen_animals(pb, true).length
+    var fenced = 0  // (#160) none stands in the fence: each is its radius and the fence's width inside
+    for(pen_animals(pb, false)) i:
+        let x, y = pen_inside(pb, i, u_x[i], u_y[i])
+        if x == u_x[i] and y == u_y[i]: fenced++
+    check(fenced == pen_animals(pb, false).length, "pen: an overfull pen's sheep all stand clear of its fence ({fenced} of {pen_animals(pb, false).length})")
     t0 = tick
     before = stock[food][0]
     steps(food_ticks)
