@@ -25,7 +25,7 @@ def vx_dist(p:float3, s:vx_prim) -> float:
     let ba = s.b - s.a
     if s.box.x > 0.0:
         let n = normalize(ba)
-        let x = normalize(cross(n, float3 { 0.0, 0.0, 1.0 }))
+        let x = if abs(n.z) > 0.999: float3 { 1.0, 0.0, 0.0 } else: normalize(cross(n, float3 { 0.0, 0.0, 1.0 }))  // (facing straight up: it still has an across)
         let z = cross(x, n)
         let q = p - s.a
         let d = abs(float3 { dot(q, x), dot(q, n), dot(q, z) }) - s.box
@@ -528,6 +528,8 @@ def vx_parse_parts(b:vx_body_spec, parts:[JV]):
     for(parts) o:
         let name = gstr(o, "name", "")
         assert name != ""
+        if not has(o, "pivot"): print "body {b.id}: part {name} has no pivot"
+        assert has(o, "pivot")
         let pivot = vx_v3(at(o, "pivot"))
         let shapes = vx_parse_shapes(glist(o, "shapes"))
         let piece = copy(b)
@@ -1275,6 +1277,15 @@ class vx_filling:
     field:[float]  // the distance where it was measured (air elsewhere, -1 deep inside), for normals
     next:int       // the next block to fill
 
+// How low a shape really goes (vx_bounds is generous, for finding what's near).
+def vx_lowest(p:vx_prim) -> float:
+    if p.box.x > 0.0 or p.disc:
+        let n = normalize(p.b - p.a)
+        let flat = sqrt(max(0.0, 1.0 - n.z * n.z))
+        if p.disc: return p.a.z - p.ra * flat - abs(n.z) * p.rb
+        return p.a.z - abs(n.z) * p.box.y - flat * p.box.z - p.ra
+    return min(p.a.z - p.ra, p.b.z - p.rb)
+
 def vx_fill_begin(parts:[vx_prim], unit_size:float, flies:bool) -> vx_filling:
     let s = unit_size * vx_RES
     var low = if flies: 0.0 else: 1000.0  // (a flier's ground is the builder's z 0, not under its lowest point)  // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
@@ -1282,6 +1293,8 @@ def vx_fill_begin(parts:[vx_prim], unit_size:float, flies:bool) -> vx_filling:
         if not p.hard and not flies:
             let a = vx_bounds(p)  // (its low corner; the high one isn't needed)
             low = min(low, a.z)
+    if low == 1000.0:  // (nothing soft: the ground goes under what there is)
+        for(parts) p: low = min(low, vx_lowest(p))
     let ps = map(parts) p: vx_scaled(p, s, -low)
     let k = vx_BLEND * s
     var a = float3_1 * 1000.0
