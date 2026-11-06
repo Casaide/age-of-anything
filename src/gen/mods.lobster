@@ -118,13 +118,27 @@ def mod_read(rec:Pack) -> string:
 def mods_missing(race:JV) -> [string]: return filter(gstrs(race, "mods")) s: not has_s(lib_mods, s)
 
 // What's wrong with a shot look's knobs (see data/shots.json), or "".
+// What's wrong with a shot's muzzle or impact knobs, or "".
+def mod_check_shot_look(k:string, name:string, o:JV, known:[string]) -> string:
+    if o.kind != J_OBJ: return "shots.json {k}: \'{name}\' needs knobs"
+    for(o.keys) key, n:
+        if not has_s(known, key): return "shots.json {k}: {name} has no knob \'{key}\' (knobs: {concat_string(known, ", ")})"
+        if key != "col" and (o.a[n].kind != J_INT and o.a[n].kind != J_FLOAT or as_float(o.a[n]) < 0.0): return "shots.json {k}: {name} \'{key}\' must be a number, 0 or more"
+    return ""
+
 def mod_check_shot(k:string, m:JV) -> string:
-    let known = [ "_doc", "extends", "tag", "speed", "sound", "sticks", "arc", "form", "len", "w", "hold", "pulses", "scatter", "wobble", "jag", "col", "glow", "fade", "hit" ]
+    let known = [ "_doc", "extends", "tag", "speed", "sound", "sticks", "arc", "form", "len", "w", "hold", "pulses", "scatter", "wobble", "jag", "col", "glow", "fade", "hit", "trail", "muzzle", "impact" ]
     for(m.keys) key:
         if not has_s(known, key): return "shots.json {k}: no knob \'{key}\' (knobs: {concat_string(known, ", ")})"
-    for([ "arc", "len", "w", "hold", "wobble", "jag", "fade" ]) key:
+    for([ "arc", "len", "w", "hold", "wobble", "jag", "fade", "trail" ]) key:
         if has(m, key) and (at(m, key).kind != J_INT and at(m, key).kind != J_FLOAT or as_float(at(m, key)) < 0.0): return "shots.json {k}: \'{key}\' must be a number, 0 or more"
     if has(m, "fade") and as_float(at(m, "fade")) > 1.0: return "shots.json {k}: \'fade\' is a share of its life, 0 to 1"
+    if has(m, "muzzle"):
+        let e = mod_check_shot_look(k, "muzzle", at(m, "muzzle"), [ "flash", "col", "smoke", "ring", "dust", "recoil" ])
+        if e != "": return e
+    if has(m, "impact"):
+        let e = mod_check_shot_look(k, "impact", at(m, "impact"), [ "blast", "col", "smoke", "scorch", "debris", "shake" ])
+        if e != "": return e
     let form = gstr(m, "form", "bolt")
     if form != "bolt" and form != "beam": return "shots.json {k}: form \'{form}\' isn\'t bolt or beam"
     if form != "beam":

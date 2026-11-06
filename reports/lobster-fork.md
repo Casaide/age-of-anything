@@ -35,6 +35,7 @@ Goal: one clean fork branch, every change committed, each one proven needed by t
 | 12 | SDL3 Android template | `android-gles-touch-sdl3`, game's own `android/sdl` | Android | #469 | Lobster's | Runs `dragtest` on the emulator |
 | 13 | `gl.text_list` | `text-batching` | No | #471 | Not needed if #1 lands | 200 texts: 1.0 ms with the pool alone |
 | 14 | Formatter | `lobsterfmt-parser` | Tooling | None yet | Tooling, shouldn't be in the game's build | See `lobster-prs.md` item 10 |
+| 15 | `gl.cursor_image`, `gl.cursor_set`, `gl.cursor_set_default`, `gl.cursor_visible` | `game` | `game/cursors.lobster` | None yet | Missing feature (only `gl.cursor`, with relative mode) | #222: every cursor made and set in a real window (`cursor_check.lobster`) |
 
 ## How each change gets decided
 
