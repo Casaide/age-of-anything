@@ -33,13 +33,19 @@ def is_target(id:int, p:int) -> bool:
     if b < 0: return bridge_target(id)  // a map bridge: anyone may break it
     return is_enemy(b_owner[b], p)
 
+// Can a unit of type k touch that unit? Only a weapon that can hit air touches an aircraft.
+def can_hit(k:int, j:int) -> bool: return t_air[u_kind[j]] == 0 or t_hits_air[k] != 0
+def can_hit_id(k:int, id:int) -> bool:
+    let j = index_of(id)
+    return j < 0 or can_hit(k, j)
+
 def cmd_attack(p:int, ids:[int], target:int):
     if not is_target(target, p): return
     for(ids) uid:
         let i = index_of(uid)
         if i >= 0 and u_owner[i] == p:
             let k = u_kind[i]
-            if not t_healer[k] and not t_harmless[k] and not (t_buildings_only[k] and index_of(target) >= 0):
+            if not t_healer[k] and not t_harmless[k] and not (t_buildings_only[k] and index_of(target) >= 0) and can_hit_id(k, target):
                 clear_task(i)
                 u_foe[i] = target
                 u_stance[i] = ORDERED
@@ -198,6 +204,7 @@ def nearest_foe(i:int, sight:int, buildings_too:bool, spread:int, use_inbound:bo
                     let j = sp_items[k]
                     k++
                     if not is_foe(u_owner[j], me) or t_animal[u_kind[j]] != 0: continue  // a rival's sheep is stolen, not killed
+                    if not can_hit(u_kind[i], j): continue
                     if lvl >= 0 and (if u_perch[j] != 0: 1 else: 0) != lvl: continue
                     if use_inbound and c_inbound[j] >= u_hp[j]: continue
                     let d2 = dist2(xi, yi, u_x[j], u_y[j])
@@ -282,7 +289,7 @@ def stray(owner:int, x:int, y:int, slack:int) -> int:
             while q < sp_end[cell]:
                 let k = sp_items[q]
                 q++
-                if not is_foe(u_owner[k], owner) or t_animal[u_kind[k]] != 0: continue
+                if not is_foe(u_owner[k], owner) or t_animal[u_kind[k]] != 0 or t_air[u_kind[k]] != 0: continue
                 let r = u_radius[k] + slack
                 let d = dist2(x, y, u_x[k], u_y[k])
                 if d <= r * r and (d < best_d or (d == best_d and k < best)):
@@ -334,7 +341,7 @@ def land():
         else:
             if j >= 0:
                 let r = u_radius[j] + slack
-                if dist2(ax, ay, u_x[j], u_y[j]) > r * r: j = -1
+                if t_air[u_kind[j]] == 0 and dist2(ax, ay, u_x[j], u_y[j]) > r * r: j = -1  // (a shot at an aircraft follows it: it never stops)
             if j < 0 and r_shot_strays == 1:
                 j = stray(recs[o + SHOT_OWNER], ax, ay, slack)
                 if j >= 0: d = shot_damage(recs[o + SHOT_SRC], recs[o + SHOT_UP], j)
@@ -511,7 +518,7 @@ def apply_hits(n:int):
             u_hp[j] -= c_hurt[j]
             let k = u_kind[j]
             if t_animal[k] != 0: animal_hurt(j, c_hurt_by[j])  // a deer bolts, a sheep stands for the knife
-            if u_foe[j] == 0 and (u_stance[j] == NONE or u_stance[j] == RETURN) and u_task[j] == T_NONE and not t_worker[k] and not (t_mounts[k].length and u_moving[j] != 0) and
+            if u_foe[j] == 0 and (u_stance[j] == NONE or u_stance[j] == RETURN) and u_task[j] == T_NONE and not t_worker[k] and not (t_mounts[k].length and u_moving[j] != 0) and can_hit_id(k, c_hurt_by[j]) and
                     not t_harmless[k] and not t_healer[k] and not t_buildings_only[k] and u_posture[j] != PASSIVE:
                 engage(j, c_hurt_by[j])
     // Bounties (Combat._bounties): a killer with kill_gold earns it for each enemy unit (not animals)
@@ -556,6 +563,7 @@ let MOUNT_AIM = 0
 let MOUNT_TARGET = 1
 let MOUNT_COOLDOWN = 2
 let HULL_STEP = 200                                                                                                                                                                 // milli-tiles a hull moves before its heading is worked out again
+let AIR_ORBIT_STEP = 28                                                                                                                                                             // of 256 round a circle, an aircraft's next point
 let ATAN_TENTHS = [ 0, 18, 36, 54, 71, 89, 106, 123, 140, 157, 174, 190, 206, 221, 236, 251, 266, 280, 294, 307, 320, 333, 345, 357, 369, 380, 391, 402, 412, 422, 432, 441, 450 ]  // atan(k / 32) in tenths of a degree
 
 // The direction of a vector, tenths of a degree from +x towards +y, 0 to 3599 (integers only: the sim).
@@ -613,6 +621,7 @@ def mount_can_shoot(i:int, k:int, m:Mount, g:int) -> bool:
     let x, y, real = gun_spot(g)
     if not real: return false
     let j = index_of(g)
+    if j >= 0 and not can_hit(k, j): return false
     let b = if j >= 0: -1 else: b_index_of(g)
     let d = gap_to(i, j, b)
     return d >= t_min_range[k] and d <= mount_reach(k, m) + height_step(i, j, b) * r_high_reach and mount_covers(i, m, x, y)
@@ -647,6 +656,14 @@ def mount_pick(i:int, k:int, m:Mount) -> int:
             xx++
         yy++
     return best
+
+// An aircraft doesn't hover to fire: it flies round what it's shooting at, on to a point a little further round each
+// time it gets near the last.
+def air_orbit(i:int, k:int, x:int, y:int):
+    if u_moving[i] != 0 and dist2(u_x[i], u_y[i], u_tx[i], u_ty[i]) > TILE * TILE: return
+    let next = angle_of(u_x[i] - x, u_y[i] - y) * 256 / 3600 + AIR_ORBIT_STEP
+    let r = t_reach[k] * 3 / 4
+    order_direct(i, clamp(x + cos_a(next) * r / ONE, 0, W * TILE - 1), clamp(y + sin_a(next) * r / ONE, 0, H * TILE - 1))
 
 // A unit's mounts for a tick: the hull's heading from how it moved, then each mount in turn: on the unit's foe if it
 // can shoot it, else on what it's on, else on the nearest it can; turning towards that, or back to its rest; firing once
@@ -772,6 +789,9 @@ def combat_tick():
             else:
                 lost_foe(i)
             continue
+        if j >= 0 and not can_hit(k, j):
+            lost_foe(i)  // it can't touch an aircraft
+            continue
         if j >= 0 and not t_ranged[k] and (u_perch[i] != 0) != (u_perch[j] != 0):
             lost_foe(i)  // melee can't reach up onto a wall, nor down off one
             continue
@@ -781,7 +801,11 @@ def combat_tick():
             too_close(i, j, b)  // an engine can't hit what's under its nose
             continue
         if g <= t_reach[k] + up * r_high_reach + (if (t_ranged[k] or b >= 0) and u_moving[i] == 0: HOLD else: 0):
-            u_moving[i] = 0
+            if t_air[k] != 0:
+                let ox, oy, there = gun_spot(u_foe[i])
+                if there: air_orbit(i, k, ox, oy)
+            else:
+                u_moving[i] = 0
             if b >= 0: hitters[b].push(i)
             if t_unpack[k] > 0 and u_ready[i] < t_unpack[k]: continue  // still unpacking: it throws once it's set up
             if u_cooldown[i] == 0 and j >= 0 and t_ranged[k] and c_inbound[j] >= u_hp[j] and u_stance[i] != ORDERED:

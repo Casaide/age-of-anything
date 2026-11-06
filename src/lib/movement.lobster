@@ -539,7 +539,7 @@ def separate():
                 while k < e:
                     let v = sp_items[k]
                     k++
-                    if (q == 0 and v <= u) or u_perch[v] != 0: continue
+                    if (q == 0 and v <= u) or u_perch[v] != 0 or t_air[u_kind[u]] != t_air[u_kind[v]]: continue  // (aircraft pass over)
                     let rr = ru + rs[v]
                     var dx = xs[v] - xu
                     var dy = ys[v] - yu

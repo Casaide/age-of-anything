@@ -41,6 +41,8 @@ change it. What matters:
   `points` is also what the generator spends from a race's budget; the price can differ: `price_points`
   (the game's are calibrated by fights, D-195). `mod_check.sh` ends by fighting the lines that wear your
   parts against a fixed panel and prints the `price_points` each part should have; set them.
+- `stats.air` on a body makes an aircraft (give it the `flying` tag too, for its movement): only a weapon that can hit air touches it. Ranged
+  weapons can, melee and engines can't; a weapon's `stats.hits_air` of 1 or -1 says otherwise, and `stats.bonus` on the `air` tag makes it anti-air.
 - `stats.mounts` on a body or weapon gives a unit guns that turn on their own, as many as it likes (a turret front and back, broadsides). Each is
   `{"part": "turret", "rest": 0, "arc": 360, "turn": 60, "tolerance": 5}`: the voxel part it turns, its rest facing off the hull, how wide it can go round that,
   degrees a second, and how far off its target it can fire. Its weapon falls back on the unit's where it says nothing: `range` (tiles), `reload` (ticks),
