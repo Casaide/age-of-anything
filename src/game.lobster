@@ -59,6 +59,7 @@ import .gen.generator
 import .gen.setup
 import .gen.modes
 import .gen.start
+import .view.facing
 import .view.node
 import .view.art
 import .view.bake_cache
@@ -106,6 +107,9 @@ var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks thr
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
 var army_n = 0                   // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+let ARMY_GAP = 600               // milli-tiles between them, in ranks
+var zoom_arg = 0.0               // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
+var reveal = false               // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
 var page_arg = ""                // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
@@ -130,7 +134,10 @@ for(args) a, k:
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
-        if a == "oldtext": text_off = true                 // (measuring: text drawn as before game/text_cache.lobster)
+        if key == "zoom": zoom_arg = string_to_float(val)
+        if a == "reveal": reveal = true
+        if a == "perflive": perf_live = true
+        if a == "oldtext": text_off = true  // (measuring: text drawn as before game/text_cache.lobster)
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
         if a == "follow": follow = true
@@ -187,7 +194,6 @@ def team_col(p:int) -> float4:
 
 // ------------------------------------------------------------------ iso (Iso.to_screen * 1.5: art px)
 
-def iso(x:float, y:float) -> float2: return float2 { (x - y) * 0.048, (x + y) * 0.024 }
 def iso_inv(p:float2) -> float2:
     let a = p.x / 0.048
     let b = p.y / 0.024
@@ -282,11 +288,6 @@ let last_owner = dictionary<int, int>(1024)
 def prev_pos(i:int) -> int, int:
     let found, at = binary_search(p_id, u_id[i])
     return if found: p_x[at] else: u_x[i], if found: p_y[at] else: u_y[i]
-
-def dir_of(v:float2) -> int:
-    if v.x == 0.0 and v.y == 0.0: return -1
-    let a = atan2(normalize(v))
-    return (int(floor(a / 45.0 + 0.5)) % 8 + 8) % 8
 
 // Is this milli-tile spot on screen (with a margin)? Sounds only play for what you can see.
 def on_screen(x:int, y:int) -> bool:
@@ -454,7 +455,7 @@ import .game.town  // (here: it uses the views)
 // Where something stands on the canvas (Iso.to_ground: raised ground lifts it).
 def ground_at(x:int, y:int) -> float2: return canvas(float(x), float(y)) - float2 { 0.0, lift_at(float(x), float(y)) }
 
-def seen_at(x:int, y:int) -> bool: return fog[ME][cell_of(x, y)] == 2
+def seen_at(x:int, y:int) -> bool: return reveal or fog[ME][cell_of(x, y)] == 2
 
 // Combat's effects: a spark where a blow lands, a miss standing in the ground, a healed unit's glow, a stone's
 // splash, a fallen building's dust (game/fx.lobster).
@@ -497,7 +498,7 @@ def unit_state(i:int, moving:bool) -> string, int:
     if u_task[i] == BUILD and t_worker[k]: return "work_build", phase % 8
     return "idle", phase / 6  // (a slow shift of weight, each unit in its own time)
 
-def visible_to_me(c:int) -> bool: return fog[ME][c] == 2
+def visible_to_me(c:int) -> bool: return reveal or fog[ME][c] == 2
 
 // Where an effect on unit id rises from (a heal's motes, which have their own heights): its feet on the ground
 // (canvas units); far off when it's gone or unseen.
@@ -509,17 +510,16 @@ def unit_anchor(id:int) -> float2:
     return canvas(x, y) - float2 { 0.0, lift_at(x, y) }
 
 def collect_units(alpha:float):
+    perf_unseen = 0
     for(u_x.length) i:
         let px, py = prev_pos(i)
         let x = px + (u_x[i] - px) * alpha
         let y = py + (u_y[i] - py) * alpha
         let mine = teams[u_owner[i]] == teams[ME]
         if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and vx_drawn(u_kind[i]):
-            let moving = px != u_x[i] or py != u_y[i]
-            var d = unit_dir.get(u_id[i], 2)
-            if moving:
-                let nd = dir_of(iso(float(u_x[i] - px), float(u_y[i] - py)))
-                if nd >= 0 and (abs(u_x[i] - px) + abs(u_y[i] - py)) > 4: d = nd
+            let moving, walking_d = unit_walk(i, unit_dir.get(u_id[i], 2), px, py)
+            var d = walking_d
+            if moving: pass()
             elif u_foe[i] != 0:
                 let j = index_of(u_foe[i])
                 var tx = -1.0
@@ -555,6 +555,7 @@ def collect_units(alpha:float):
             // (voxel units step by the ground they cover, so the planted foot doesn't slide)
             let n = if state == "walk" or find_string(state, "carry") == 0: vx_walk_step(u_id[i], u_kind[i], x, y) else: n0
             let f = vx_frame_for(u_id[i], u_kind[i], state, d, n)
+            if f < 0: perf_unseen++
             let p = iso(x, y)
             let tc = team_col(u_owner[i])
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
@@ -865,7 +866,7 @@ def draw_world(alpha:float):
     gl.translate(ws / 2.0):
         gl.scale(zoom):
             gl.translate(-float2 { floor(cam.x), floor(cam.y) }):
-                draw_fog()
+                if not reveal: draw_fog()
                 perf_lap(1)
                 set_view_rect()
                 draws = []::Drawable
@@ -1967,6 +1968,7 @@ for(args) a:  // cache:<folder>: the parts kept there instead of bake_cache/ ("c
 zoom = 2.0 * floor(ui() + 0.5)  // two screen points an art pixel, as the game's camera
 // Desktops start one zoom step further out; Steam Deck-sized screens (800 px tall or less) and touch keep the closer view
 if not touch_play and gl.framebuffer_size().y > 800: zoom = max(1.0, zoom - 1.0)
+if zoom_arg > 0.0: zoom = zoom_arg
 // The tables come from data (game/pack_data.lobster); units are voxel bodies (game/voxel_units.lobster); buildings and
 // props are baked once (src/baked/) or at the start. (A Godot art pack, args[0], is gone with Godot: D-184.)
 pack_library = true
@@ -2231,9 +2233,14 @@ def make_match() -> bool:
                 for(t_slot.length) k:
                     if t_player[k] == p and not t_worker[k] and t_animal[k] == 0 and t_trader[k] == 0 and t_healer[k] == 0: push_new(slots, t_slot[k])
                 let ids = []::int
+                let side = int(ceiling(sqrt(float(slots.length * army_n))))  // (in ranks, not all on one spot)
                 for(slots) slot:
-                    for(army_n):
-                        let i = mode_put(p, type_of_slot(p, slot), start_x[p] + 4000, start_y[p] + 4000)
+                    let kind = type_of_slot(p, slot)
+                    for(if has(su_type_recipe[kind], "crew"): max(1, army_n / 8) else: army_n):  // (engines: a few, not as many as soldiers)
+                        let at = ids.length
+                        let x = clamp(start_x[p] + 4000 + (at % side - side / 2) * ARMY_GAP, TILE, (W - 1) * TILE)
+                        let y = clamp(start_y[p] + 4000 + (at / side - side / 2) * ARMY_GAP, TILE, (H - 1) * TILE)
+                        let i = mode_put(p, kind, x, y)
                         ids.push(u_id[i])
                 if skirmish:
                     let foe = (p + 1) % num_players
@@ -2516,8 +2523,8 @@ def play_match():
         let dt = gl.delta_time()
         frame_dt = dt
         fx_tick(dt)
-        vx_tick(0.006)   // (the voxel units' later bakes)
-        akb_wall_tick()  // (a wall tile with joins not seen before: one a frame)
+        vx_tick(0.006, u_x.length < 300 and gl.time() - last_battle >= 6.0)  // (the voxel units' later bakes, not in a fight)
+        akb_wall_tick()                                                      // (a wall tile with joins not seen before: one a frame)
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
@@ -2575,12 +2582,14 @@ def play_match():
             p_y = copy(u_y)
             let t0 = seconds_elapsed()
             for(bots) bot, p:
-                if (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):
+                if not skirmish and (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):  // (a skirmish: the armies' orders alone)
                     ai_level_for(p)
                     full_bot_think(bot)  // (watch: your own bot plays your side)
+            let t1 = seconds_elapsed()
             step()
             if net_on: ls_after_step(lockstep)
             step_time += seconds_elapsed() - t0
+            perf_tick(t1 - t0, seconds_elapsed() - t1)
             steps++
             clock_s += 0.05
             after_step()
@@ -2658,7 +2667,7 @@ def play_match():
             print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
             quit_app = true
             return
-        if perf_for > 0.0 and perf_end(clock_s):
+        if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return
 
