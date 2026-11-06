@@ -126,6 +126,10 @@ var join_ip = ""                 // join:<ip>: play the second side of the match
 var reload_at = -1.0             // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
 var touch_play = false  // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
+// A mod can say how it starts (its manifest's `launch`): those options, as if typed after the rest.
+for(copy(args)) a:
+    if starts_with(a, "mods:"):
+        for(mods_launch_args(tokenize(a.substring(5, a.length - 5), ",", ""))) option: args.push(option)
 for(args) a, k:
     if k >= 2:
         if a == "watch": watch = true

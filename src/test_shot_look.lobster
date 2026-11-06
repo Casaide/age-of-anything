@@ -9,6 +9,7 @@ import gen.identity
 import gen.pricing
 import gen.heroes
 import gen.generator
+import gen.mods
 import lib.consts
 import lib.fixed
 import lib.tokens
@@ -65,6 +66,7 @@ def archers(p:int, n:int, x:int, y:int) -> [int]:
 
 lib_load("../data")
 id_load("../data")
+mods_use([ "big_battle" ])
 let rules = load_rules("default")
 let races = map([ "norse frogs", "centaurs" ]) p: generate(p, rules, 0)
 new_world(SEED, MAP, races, rules, [])
