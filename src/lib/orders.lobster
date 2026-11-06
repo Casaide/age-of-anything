@@ -97,6 +97,7 @@ def form_space(part:[int]) -> int:
     for(part) i: g = max(g, t_gap[u_kind[i]])
     return 2 * form_rmax(part) + max(FORM_GAP + g, 0)
 
+let STUB_SNAP = false
 // ---- marching blocks (#171)
 // A big order is several formations: a block a unit type (BLOCK_MAX at most), in rows by band, foot in front, flankers at
 // the ends of the front row. Each block has a centre that forms up where the army stands, then marches to its place at
@@ -267,6 +268,19 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     for(spot_c) c, k: place(c, spot_al[k], spot_ac[k])
     for(fb_state) state, b:  // (twice the farthest walk: then they go without the rest)
         if state != 0 and fb_army[b] == army: fb_t[b] = BLOCK_FORM_TICKS - min(BLOCK_FORM_TICKS, 2 * army_farthest + 100)
+
+// Every block's units put straight in their places (a battle set up for filming starts formed).
+def blocks_snap():
+    for(u_x.length) i:
+        let b = u_block[i] - 1
+        if b >= 0:
+            let x = fb_x[b] + u_bx[i]
+            let y = fb_y[b] + u_by[i]
+            if STUB_SNAP and walkable(x, y, lane(i)):
+                u_x[i] = x
+                u_y[i] = y
+                u_wx[i] = x
+                u_wy[i] = y
 
 // A block's centre, one tick: forming, then marching, unless it or a block just ahead is fighting.
 def blocks_tick():
