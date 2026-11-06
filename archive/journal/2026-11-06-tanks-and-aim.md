@@ -4,7 +4,7 @@
 
 Playing it showed what a tank needs that the game doesn't have: shots came from its middle, the turret couldn't aim, the tracks didn't run. Dominic asked for it done properly, in the engine, so #176 splits vehicles into pieces (#177 to #186) and aim in the sim came first.
 
-**Decisions.** D-216.
+**Decisions.** D-219.
 
 **Direction changes.** Vehicles became an engine feature instead of a mod's tricks. Planes will be real air units with anti-air counters, not a skin.
 

@@ -2,9 +2,8 @@
  "id": "needs_other",
  "name": "needs_other",
  "version": "0.1.0",
- "game_version": "0.21",
  "description": "A refusal fixture (tests/run_tests.gd _test_mods): this mod must be refused.",
  "depends": [
-  "not_a_mod"
+  "age_of_anything@0.21", "not_a_mod"
  ]
 }
