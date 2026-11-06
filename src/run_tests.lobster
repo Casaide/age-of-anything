@@ -66,6 +66,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -151,7 +152,7 @@ def fresh_lib():
 // A world to read the sim's loaders from (World.new): one match set up on flat_test.
 def fresh_world(races:[JV], rules:JV):
     reset_world()
-    setup_world(20261013, "flat_test", races, rules, [])
+    setup_match(20261013, "flat_test", races, rules, [])
 
 // ---- colours (the skins against the team colours)
 

@@ -8,7 +8,6 @@
 
 let TICK_HZ = 20
 let SPEED_SCALE = 5
-let MOUNTED_RADIUS = 420
 let MAX_RADIUS = 500
 let CLASS_NAMES = [ "ground", "amphibious", "flying" ]
 let BASE_CLASSES = [ "melee", "pierce", "building" ]
@@ -19,17 +18,14 @@ let BUILDING_PCT = [ "hp", "food", "research_time", "cost", "research_cost", "ag
 let EVAL_ADD = [ "attack", "hp", "range", "speed" ]
 
 // What the setup keeps that the sim's arrays don't (the views and the lobby read some of it).
-var su_races = []::JV
+var su_sides = []::JV  // per player: its units and what it lacks and has (the table a match is built from); a mode lifts lacks
 var su_rules = jobj()
-var su_idents = []::JV  // per player: Identity.of, its lacks lifted by a mode
 var su_classes = []::string
 var su_btypes = []::JV  // buildings.json entries, sorted by id (planned left out)
 var su_btype_ids = []::string
 var su_research = []::JV  // tech.json research + line upgrades, as Tech.load_tech
 var su_ages = []::JV
-var su_type_eval = []::JV    // per unit type: its eval (the first step's)
-var su_type_line = []::[JV]  // per unit type: its line [{age, recipe, eval}]
-var su_type_recipe = []::JV
+var su_units = []::JV  // per unit type: its row of the table (stats, slot, age, radius, line, look)
 var su_type_animal = []::string
 var su_map = jobj()
 var su_bridge_rects = []::[int]
@@ -69,7 +65,7 @@ def type_of_slot(p:int, slot:string) -> int:
 
 def ident_lacks(p:int, id:string) -> bool:
     if gbool(su_rules, "full_tech_tree", false): return false
-    let ident = su_idents[p]
+    let ident = su_sides[p]
     return has_str(glist(ident, "lacks"), id) or has_str(glist(ident, "lacks_slots"), id)
 
 // ---- the map (SimMap.load_id)
@@ -171,20 +167,17 @@ def load_heights(rows:[string]):
 
 // ---- unit types (World._make_type, Combat.type_vectors)
 
-def eval_tags(e:JV) -> [string]: return gstrs(e, "tags")
+def unit_tags(e:JV) -> [string]: return gstrs(e, "tags")
 
-def add_type(player:int, recipe:JV, e:JV, line:[JV]) -> int:
+def add_type(player:int, e:JV) -> int:
     let k = t_slot.length
-    var radius = BASE_RADIUS * as_int(at(recipe, "scale")) / 100
-    if has(recipe, "mount"): radius = max(radius, MOUNTED_RADIUS)
-    if gint(e, "radius", 0) > 0: radius = as_int(at(e, "radius"))
-    let tags = eval_tags(e)
+    let tags = unit_tags(e)
     let heal = gint(e, "heal", 0)
     let trader = has_s(tags, "trade")
     t_player.push(player)
-    t_slot.push(rstr(recipe, "slot"))
+    t_slot.push(rstr(e, "slot"))
     t_speed.push(as_int(at(e, "speed")) * SPEED_SCALE)
-    t_radius.push(min(radius, MAX_RADIUS))
+    t_radius.push(min(as_int(at(e, "radius")), MAX_RADIUS))
     t_hp.push(as_int(at(e, "hp")))
     t_pop.push(as_int(at(e, "pop")))
     t_cost.push(cost_vec(at(e, "cost")))
@@ -205,22 +198,20 @@ def add_type(player:int, recipe:JV, e:JV, line:[JV]) -> int:
     t_carry_add.push(0)
     t_build_pct.push(0)
     t_gap.push(0)
-    t_hero.push(if has(recipe, "hero"): 1 else: 0)
-    t_age.push(as_int(at(line[0], "age")))
+    t_hero.push(if has(e, "hero"): 1 else: 0)
+    t_age.push(as_int(at(e, "age")))
     t_min_damage.push(0)
     t_animal.push(0)
     t_behave.push(0)
     t_flee.push(0)
     t_food.push(0)
-    su_type_eval.push(e)
-    su_type_line.push(line)
-    su_type_recipe.push(recipe)
+    su_units.push(e)
     su_type_animal.push("")
     return k
 
 // The numbers Combat.type_vectors gives a type from its eval (the players' are redone by retype).
 def type_vectors(k:int):
-    let e = su_type_eval[k]
+    let e = su_units[k]
     let C = su_classes.length
     let atk = map(C): 0
     atk[class_index(rstr(e, "damage"))] = as_int(at(e, "attack"))
@@ -232,7 +223,7 @@ def type_vectors(k:int):
     let cls = map(C): 0
     cls[0] = 1
     cls[1] = 1
-    for(eval_tags(e)) tg: cls[class_index(tg)] = 1
+    for(unit_tags(e)) tg: cls[class_index(tg)] = 1
     t_cls.push(cls)
     let range = as_int(at(e, "range"))
     let ranged = range > 1
@@ -242,7 +233,7 @@ def type_vectors(k:int):
     var ss = r_shot_speed
     let speeds = gobj(at(su_rules, "combat"), "shot_speeds")
     var found = false
-    for(eval_tags(e)) tg:
+    for(unit_tags(e)) tg:
         if not found and has(speeds, tg):
             ss = as_int(at(speeds, tg))
             found = true
@@ -250,10 +241,10 @@ def type_vectors(k:int):
     if gint(e, "reload", 0) > 0: reload = as_int(at(e, "reload"))
     t_reload.push(reload)
     let no_heal = gstrs(at(su_rules, "combat"), "heal_not")
-    t_no_heal.push(if any_in(eval_tags(e), no_heal): 1 else: 0)
+    t_no_heal.push(if any_in(unit_tags(e), no_heal): 1 else: 0)
     t_sight.push(gint(e, "sight", 0))
     let combat = at(su_rules, "combat")
-    t_role.push(if t_healer[k] or t_harmless[k] or has_s(eval_tags(e), rstr(combat, "band_machine")): 2 elif has_s(eval_tags(e), rstr(combat, "band_mounted")): 3 elif ranged: 1 else: 0)
+    t_role.push(if t_healer[k] or t_harmless[k] or has_s(unit_tags(e), rstr(combat, "band_machine")): 2 elif has_s(unit_tags(e), rstr(combat, "band_mounted")): 3 elif ranged: 1 else: 0)
 
 // Animal types (Animals.add_types), owned by gaia, after the players'.
 def add_animal_types(d:JV):
@@ -274,8 +265,13 @@ def add_animal_types(d:JV):
         set(e, "cost", jobj())
         set(e, "train_time", jint(1))
         set(e, "pop", jint(0))
-        let r = at(a, "recipe")
-        let k = add_type(gaia, r, e, [ line_step(as_int(at(r, "tier")), r, e) ])
+        let look = at(a, "look")
+        set(e, "slot", at(look, "slot"))
+        set(e, "age", at(look, "tier"))
+        set(e, "radius", jint(BASE_RADIUS * as_int(at(look, "scale")) / 100))
+        set(e, "look", look)
+        set(e, "line", jarr([ shallow_copy(e) ]))
+        let k = add_type(gaia, e)
         su_type_animal[k] = id
         t_animal[k] = 1
         t_food[k] = as_int(at(a, "food"))
@@ -392,7 +388,7 @@ def encode_effect(fx:JV) -> Effect:
 
 // A line step's eval as the sim's LineStep (export.gd _write_tech).
 def line_step_of(slot:string, l:JV) -> LineStep:
-    let e = at(l, "eval")
+    let e = l
     let age = as_int(at(l, "age"))
     let bonus = map(su_classes.length): 0
     let be = at(e, "bonus")
@@ -402,7 +398,7 @@ def line_step_of(slot:string, l:JV) -> LineStep:
     for(ae.keys) key, n: arm[class_index(key)] = as_int(ae.a[n])
     return LineStep { age, research_index("line." + slot + "." + string(age)), as_int(at(e, "speed")), as_int(at(e, "hp")),
                       as_int(at(e, "pop")), as_int(at(e, "train_time")), cost_vec(at(e, "cost")),
-                      class_index(rstr(e, "damage")), as_int(at(e, "attack")), bonus, arm, map(eval_tags(e)) t: class_index(t),
+                      class_index(rstr(e, "damage")), as_int(at(e, "attack")), bonus, arm, map(unit_tags(e)) t: class_index(t),
                       as_int(at(e, "range")), gint(e, "reload", 0), gint(e, "min_range", 0), gint(e, "splash", 0), gint(e, "pass", 0),
                       if gstr(e, "targets", "") == "buildings": 1 else: 0, gint(e, "unpack", 0), gint(e, "pack", 0),
                       gint(e, "blast", 0), gint(e, "blast_line_pct", 0), gint(e, "heal", 0), gint(e, "sight", 0) }
@@ -411,10 +407,8 @@ def line_step_of(slot:string, l:JV) -> LineStep:
 def line_has_kit(p:int, slot:string, age:int) -> bool:
     let k = type_of_slot(p, slot)
     if k < 0: return false
-    let line = su_type_line[k]
-    for(line) l, n:
-        if n > 0 and as_int(at(l, "age")) == age:
-            return not jequal(at(at(line[n], "recipe"), "parts"), at(at(line[n - 1], "recipe"), "parts"))
+    for(glist(su_units[k], "line")) l, n:
+        if n > 0 and as_int(at(l, "age")) == age: return gbool(l, "new_kit", false)
     return false
 
 def line_before_of(p:int, item:JV) -> int:

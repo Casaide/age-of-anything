@@ -55,6 +55,7 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -80,11 +81,11 @@ def races_of(prompts:[string]) -> [JV]: return map(prompts) pr: generate(pr, bas
 
 def new_world(prompts:[string], r:JV):
     reset_world()
-    setup_world(SEED, "flat_test", races_of(prompts), r, [])
+    setup_match(SEED, "flat_test", races_of(prompts), r, [])
 
 def new_world_2v2(prompts:[string]):
     reset_world()
-    setup_world(SEED, "reed_meadow_2v2", races_of(prompts), base_rules, [ 0, 0, 1, 1 ])
+    setup_match(SEED, "reed_meadow_2v2", races_of(prompts), base_rules, [ 0, 0, 1, 1 ])
 
 def bare() -> JV:
     let r = deep_copy(base_rules)
@@ -190,7 +191,7 @@ def g_units():
     expect(t_carry_add[cw] == r_carry * 60 / 100, "centaurs: workers carry 60% more (+{t_carry_add[cw]})")
     let bs = type_of_slot(1, "spear")
     expect(t_sight_add[bs] == 2, "spooky: units +2 sight ({t_sight_add[bs]})")
-    let bp = as_int(at(at(su_type_eval[bs], "armour"), "pierce"))
+    let bp = as_int(at(at(su_units[bs], "armour"), "pierce"))
     expect(bp >= 1, "beetles: +1 pierce armour on the spear\'s eval ({bp})")
     new_world([ "swamp humans", "swamp frogs" ], base_rules)
     expect(t_wade[type_of_slot(0, "spear")] == 1, "swamp folk: no slowdown in the swamp or fords")
@@ -352,9 +353,9 @@ def web_run() -> [int]:
 def g_web():
     let df = walk_without_web()
     new_world([ "forest spiders", "forest humans" ], bare())
-    let ab = gobj(su_idents[0], "ability")
+    let ab = gobj(su_sides[0], "ability")
     expect(gstr(ab, "kind", "") == "web", "spiders: their ability is the web")
-    expect(gobj(su_idents[1], "ability").keys.length == 0, "humans: no ability (their culture\'s, later)")
+    expect(gobj(su_sides[1], "ability").keys.length == 0, "humans: no ability (their culture\'s, later)")
     let sp = type_of_slot(0, "spear")
     expect(t_ability[sp] == 1 and t_ability[type_of_slot(0, "worker")] == 0, "web: spider soldiers throw it, workers not")
     let caster = spawn(0, "spear", 10000, 20000, 1)[0]

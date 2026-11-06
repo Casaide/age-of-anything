@@ -49,6 +49,7 @@ import gen.pricing
 import gen.heroes
 import gen.generator
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import view.node
