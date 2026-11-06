@@ -220,7 +220,6 @@ A pack is a folder (in development) or a zip (to share), with a manifest. The ga
 ```json
 {
   "id": "age_of_anything",
-  "kind": "game",
   "name": "Age of Anything",
   "version": "0.22.0",
   "engine": "0.1",
@@ -233,7 +232,7 @@ A pack is a folder (in development) or a zip (to share), with a manifest. The ga
 }
 ```
 
-- `kind`: `game` (one per match; it brings the front end and the defaults) or `mod` (depends on a game or other mods).
+- What launches is the game: nothing in the manifest says so. A mod names what it builds on in `depends`.
 - `depends`: ids with a version (`"age_of_anything@0.22"`); a missing or wrong one refuses the pack with the reason,
   as the mod loader refuses today.
 - Merging: as `gen/mods.lobster` does for parts now, over every data file (buildings, tech, ai, audio too), in load

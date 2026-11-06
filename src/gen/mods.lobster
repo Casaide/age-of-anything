@@ -76,7 +76,6 @@ def mod_check_manifest(id:string, m:JV) -> string:
     for([ "id", "name", "version" ]) key:
         if not has(m, key): return "pack.json has no \'{key}\'"
     if gstr(m, "id", "") != id: return "pack.json\'s id \'{gstr(m, "id", "")}\' isn\'t the folder\'s"
-    if gstr(m, "kind", "mod") != "mod": return "kind \'{gstr(m, "kind", "")}\': a match has one game, and a mod is kind mod"
     let game = gstr(lib_pack, "id", "")
     let have = gstr(lib_pack, "version", "")
     for(gstrs(m, "depends")) dep:

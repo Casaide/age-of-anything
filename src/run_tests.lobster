@@ -831,7 +831,7 @@ def g_merge():
 
 def g_mods():
     g_merge()
-    expect(lib_packs[0].id == "age_of_anything" and gstr(lib_packs[0].manifest, "kind", "") == "game", "packs: the game is the first pack read")
+    expect(lib_packs[0].id == "age_of_anything", "packs: the game is the first pack read")
     expect(has(lib_parts, "weapon.spear.wood"), "packs: its parts came through pack_apply")
     let looks = lib_data("shots.json")
     for(looks.keys) k:
@@ -857,7 +857,7 @@ def g_mods():
     let tags = gstrs(at(sk, "eval"), "tags")
     let shot = gobj(mod_shots, "pulse")
     expect(has_s(tags, gstr(shot, "tag", "-")), "mods: the pulse rifle\'s tags call the mod\'s shot (pulse: {gstr(shot, "tag", "none")})")
-    let bad = [ "bad_era", "needs_other", "future_game", "no_game", "kind_game", "bad_file", "clash", "no_hub", "bad_trains", "bad_research", "bad_extends", "bad_age", "new_building", "no_takes", "bad_draw", "bad_knob", "bad_pulses", "bolt_hold", "bad_hit", "bad_hit_sound" ]
+    let bad = [ "bad_era", "needs_other", "future_game", "no_game", "bad_file", "clash", "no_hub", "bad_trains", "bad_research", "bad_extends", "bad_age", "new_building", "no_takes", "bad_draw", "bad_knob", "bad_pulses", "bolt_hold", "bad_hit", "bad_hit_sound" ]
     fresh_lib()
     expect(strs_eq(mods_use(append(bad, [ "scifi_test" ]), append(mod_roots, [ "../tests/mods" ])), [ "scifi_test" ]), "mods: broken mods refused, a good one beside them still loads")
     for(bad) id:
