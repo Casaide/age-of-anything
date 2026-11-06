@@ -184,6 +184,7 @@ def run(c0:Cmd):
             if i >= 0:
                 slot_x[i] = c.sx
                 slot_y[i] = c.sy
+                slot_block[i] = 0
     switch c.code:
         case CMD_MOVE: run_move(p, ids, c.group, c.fx, c.fy, c.pace)
         case CMD_ATTACK_MOVE: run_attack_move(p, ids, c.group, c.fx, c.fy, c.pace)
