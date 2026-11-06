@@ -228,7 +228,7 @@ def flight(x0:int, y0:int, x1:int, y1:int, speed:int) -> int:
     return max(1, (isqrt(dist2(x0, y0, x1, y1)) + speed - 1) / speed)
 
 // Loose a shot from (sx, sy) at unit j (or building b): it flies at the spot its target stands on.
-def loose(by:int, owner:int, sx:int, sy:int, j:int, b:int, d:int, src:int, up:int, speed:int):
+def loose(by:int, owner:int, sx:int, sy:int, j:int, b:int, d:int, src:int, up:int, speed:int, mount = 0):
     var to = 0
     var ax = 0
     var ay = 0
@@ -250,7 +250,7 @@ def loose(by:int, owner:int, sx:int, sy:int, j:int, b:int, d:int, src:int, up:in
         ax = b_cx[b] * TILE + b_sx[b] * TILE / 2
         ay = b_cy[b] * TILE + b_sy[b] * TILE / 2
     let f = flight(sx, sy, ax, ay, speed)
-    for([ tick + f, to, by, owner, d, src, up, ax, ay, sx, sy ]) v: shots.push(v)
+    for([ tick + f, to, by, owner, d, src, up, ax, ay, sx, sy, mount ]) v: shots.push(v)
     if events_on: events.push(Event { EV_SHOT, by, to, 0, ax, ay })
 
 def take_shots(t:int) -> [int]:
@@ -688,13 +688,13 @@ def mount_fire(i:int, k:int, m:Mount, n:int, g:int):
         let up = height_step(i, j, -1)
         let d = hit_with(i, k, atk, j, up)
         c_inbound[j] += d
-        loose(u_id[i], u_owner[i], u_x[i], u_y[i], j, -1, d, k, up, t_shot_speed[k])
+        loose(u_id[i], u_owner[i], u_x[i], u_y[i], j, -1, d, k, up, t_shot_speed[k], n)
     else:
         let b = b_index_of(g)
         let up = height_step(i, -1, b)
         var d = boost(i, -1, t_damage[k], damage(atk, bm_arm[b_owner[b]][b_kind[b]], building_cls(), r_min_damage), r_min_damage)
         if up < 0: d = uphill(d)
-        loose(u_id[i], u_owner[i], u_x[i], u_y[i], -1, b, d, k, up, t_shot_speed[k])
+        loose(u_id[i], u_owner[i], u_x[i], u_y[i], -1, b, d, k, up, t_shot_speed[k], n)
 
 def combat_tick():
     let brhurt = map(br_id.length): 0  // this tick's damage to each map bridge
