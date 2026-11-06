@@ -36,7 +36,8 @@ so are bugs (`bug`). Commit messages name the issue (`#12`), and close it when i
 **Commit.** Commit each tested piece straight away, by file name, so nothing sits uncommitted: `git status` is clean at the end of
 every task. Run `src/lint.sh` and the piece's tests first. Scratch goes in `.gitignore`d places, never left lying around.
 
-**Push.** Push `main` once its quick batch passes, at the end of each piece of work. Never force push (one exception: rebasing
+**Push.** Lint and the quick batch gate every push and merge (`./tests/batch.sh --quick`, lint is in it), at the end of each piece of work. The whole batch runs
+once on `main` after a merge, not before each push. A change that could cost frame time also runs `./tests/batch.sh only=perf,perf_big` first. Never force push (one exception: rebasing
 the Lobster fork's `master` onto upstream, below). The fork's `master` is pushed with every commit to it, since the game can't be
 rebuilt without it.
 
@@ -179,7 +180,7 @@ compiles with no warnings. `./lint.sh` checks both (`--fix` formats; in the quic
 
 **Testing rhythm** (Dominic: iteration must stay fast, and the machine quiet). While working: `run_tests` after every
 change to `data/` or `src/`, the piece you're touching (`test_sim -- part:<name>`, `test_ai -- piece:<name>`,
-`voxel_check`), or `./tests/batch.sh --quick`. After a set of changes, the whole batch once, in the
+`voxel_check`), or `./tests/batch.sh --quick`. After a merge to `main`, the whole batch once, in the
 background. The batch runs 4 processes at once by default (`jobs=N` or `AOA_JOBS`), not every core. One heavy run at a time on this
 machine, across every worktree and session (`src/machine_lock.sh`): a whole batch or `shards.sh` waits for the `full` lane, saying who holds it; `--quick` and
 `only=` take the `quick` lane, so checking a change never waits for a whole batch, and only the perf stage holds both. Each run
