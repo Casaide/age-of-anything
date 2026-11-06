@@ -1005,6 +1005,7 @@ def load_world_bytes(data:string) -> [Bot]:
     if not s: return []
     save_refused = save_refusal(s.save_format, s.save_packs)
     if save_refused != "": return []
+    save_upgrade(s)
     ab_kind = s.ab_kind
     ab_range = s.ab_range
     ab_radius = s.ab_radius
