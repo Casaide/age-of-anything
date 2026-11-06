@@ -459,22 +459,26 @@ help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 wai
 8. **The engine's own test pack (3-5 days).** `engine/packs/test/`: a flat map, a worker, a spear, a hub, a farm,
    drawn with plain voxels. The engine tests run on it alone. Done: `engine/tests` pass with no game content present.
 
-### Toward a second game (#205)
+### Toward new unit types and a second game (#205)
 
-Goal: a different game, such as a standalone WW2 game, runs on Creel with little or no engine work. A mod adds to a game;
-a game changes the rules through its own pack (front end, factions, economy, rules). Proposed order, for Dominic's review:
+The goal: a game adds new unit types (tanks, mechs, ships, fliers) with zero Creel changes, and can define new behaviour in
+its own pack. A unit is data first, combining general capabilities, and hooks when data runs out, inside the lockstep rules.
+A mod adds to a game; a game changes the rules through its own pack (front end, factions, economy, rules). The tank stack is
+engine work once, buying general capabilities. Proposed order, for Dominic's review; #205 has the gap list and the hooks:
 
 1. The unit table (step 5).
-2. Vehicles as engine features (#176 to #186): turret aim, body and parts looks, running gear, shots, ground and air layers.
+2. Vehicles as engine features (#176 to #186): aim, body and parts looks, running gear, shots, air.
 3. Looks for table units, in the vehicle work's format. Needs 1 and #178.
-4. Factions as data: a side's name, colours and building look in `units.json`, so no view code reads a race. Needs 1 and 3.
-5. Economy as data: resources by role, not by name, and packs can replace them (with #128). Needs 1.
-6. Game packs own their front end: a pack's `main.lobster`. Needs 4.
-7. The WW2 game as a game pack, as the proof: whatever engine code it still forces is an engine bug. Needs 2 to 6.
-8. Steps 6 to 8 above: hooks, the folders, the test pack.
+4. Factions as data, with bots by unit role, so no view code reads a race. Needs 1 and 3.
+5. Economy as data: resources by role, movement classes and terrain open to packs (with #128). Needs 1.
+6. Hooks (step 6, widened: per-unit tick, orders, hit, spawn and death, targeting, AI, view looks and effects). Needs 1.
+7. Game packs own their front end: a pack's `main.lobster`. Needs 4.
+8. The WW2 game as a game pack, as the proof: whatever engine code it still forces is an engine bug. Needs 2 to 7.
+9. A second kind of unit, such as a ship, with zero engine edits, as the test of the goal. Needs 3 to 6.
+10. The folders and the test pack (steps 7 and 8).
 
-The video's "same engine, different game" needs only 1, 2 (enough to look right) and 3, with enough of 4 to draw it,
-started from the command line. Real footage only, and no implying a finished second game or a downloadable engine.
+The video's "same engine, different game" needs only 1, 2 (enough to look right) and 3, with enough of 4 to draw it, started
+from the command line. Real footage only, and no implying a finished second game or a downloadable engine.
 
 Then, after Dominic picks: the name in the boot screen and credits, licence files, `engine/README.md`, and
 `docs/modding.md` split into the engine's pack format and the game's parts kit (about 1 day).
