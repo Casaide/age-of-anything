@@ -314,6 +314,7 @@ var stashed_fb_pace = []::int
 var stashed_fb_key = []::int
 var stashed_fb_r = []::int
 var stashed_fb_owner = []::int
+var stashed_fb_army = []::int
 var stashed_fb_t = []::int
 var stashed_fb_held = []::int
 var stashed_slot_y = []::int
@@ -805,6 +806,7 @@ def reset_world():
     fb_key = []::int
     fb_r = []::int
     fb_owner = []::int
+    fb_army = []::int
     fb_t = []::int
     fb_held = []::int
     slot_y = []::int
@@ -1285,6 +1287,7 @@ def stash_world():
     stashed_fb_key = fb_key
     stashed_fb_r = fb_r
     stashed_fb_owner = fb_owner
+    stashed_fb_army = fb_army
     stashed_fb_t = fb_t
     stashed_fb_held = fb_held
     stashed_slot_y = slot_y
@@ -1759,6 +1762,7 @@ def unstash_world():
     fb_key = stashed_fb_key
     fb_r = stashed_fb_r
     fb_owner = stashed_fb_owner
+    fb_army = stashed_fb_army
     fb_t = stashed_fb_t
     fb_held = stashed_fb_held
     slot_y = stashed_slot_y
