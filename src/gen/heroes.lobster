@@ -15,7 +15,10 @@ def signatures_for(cid:string, fid:string) -> [string]:
 def roster_for(cid:string, fid:string) -> [string]:
     let out = signatures_for(cid, fid)
     let min_heroes = as_int(at(at(lib_heroes, "rules"), "min_heroes"))
-    for(gstrs(at(lib_heroes, "kin"), fid)) kin:
+    let kins = gstrs(at(lib_heroes, "kin"), fid)
+    if has(lib_families, fid):
+        for(gstrs(family(fid), "hero_kin")) k: kins.push(k)  // (a mod's culture names its own: heroes.json is the game's)
+    for(kins) kin:
         for(signatures_for("", kin)) sid:
             if out.length < min_heroes and not has_s(out, sid): out.push(sid)
     return out

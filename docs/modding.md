@@ -58,9 +58,12 @@ takes the game's rule for its tags (a `helmet` a cap, a `bow` a bow...). For a l
 own `data/voxel/` (the same files as the game's; same ids replace the game's, its rules go first):
 
 - `gear.json` `gear`: held gear (`hand`, `hold`, `dir`, `shapes` in the hold's frame) or worn gear (`fits` per body id,
-  `*` for any other: `helm` on the body's helmet spot, `fit` over its armour spot, or shapes on its points), and
-  `parts`: `{"part": "<your part id>", "gear": "<your gear>"}`.
+  `*` for any other: `helm` on the body's helmet spot, `fit` over its armour spot, or shapes on its points; and `legs`
+  and `arms`, shapes on each leg's `hip`, `knee`, `ankle` and arm's `shoulder`, `elbow`, `hand`, given for the right and
+  mirrored: power armour's greaves and gauntlets), and `parts`: `{"part": "<your part id>", "gear": "<your gear>"}`.
+  A held shape with `"if": ["firing"]` shows only at the blow's moment (a laser cutter's beam, a muzzle flash).
 - `bodies/<id>.json`: a body for a new creature (points, legs, arms, shapes; copy a game body of the same build).
+  `tools` swaps the kit's gear for its own (`{"axe": "sc_cutter"}`: a robot cuts wood with a laser), `bare` drops worn gear.
 - `materials.json`: new colours (and `team`: put some team colour on every unit: a stripe, a crest, a band).
 
 Draw it: `cd src && lobster voxel_proto.lobster -- /tmp/s.ppm legs <body> <gear>,<gear>` (standing, walking and
@@ -111,7 +114,8 @@ A mod can bring `data/buildings.json`, `tech.json`, `ai.json` and `audio.json`. 
 player in a match using the mod: the same id changes that entry (objects merge), `"remove": true` takes it out,
 `"extends": "<id>"` copies a sibling, `"+key"` adds to a list and `"-key"` takes items out. A list with ids (`research`, or
 `ages` by their `age`) merges item by item; any other list, such as `build_order`, is replaced whole. In a rule, `"-roster":
-["large"]` takes lines out by slot.
+["large"]` takes lines out by slot, and `"role_body": {"worker": {"body": "body.robot", "only_if": ["scifi"]}}` gives a role
+its own body (a part in the mod's `parts.json`) in races with one of those tags.
 
 Taking a building out takes its research with it, an age stops asking for it, and the bots skip what
 asked for it. The rest is refused at load with the reason: no `hub` or `housing` building left, `trains` naming a line no

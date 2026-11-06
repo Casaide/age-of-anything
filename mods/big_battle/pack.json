@@ -1,0 +1,13 @@
+{
+ "id": "big_battle",
+ "name": "Big battle",
+ "version": "0.1.0",
+ "authors": ["Claude (for Dominic)"],
+ "description": "2,000 units in formation on an open field, framed by a river, groves and a ruin: two armies march on each other, zoomed out, nothing hidden.",
+ "license": "Same as the game",
+ "load_order": 120,
+ "depends": ["age_of_anything@0.21"],
+ "eras": [],
+ "data": "data",
+ "launch": ["map:open_field", "skirmish", "reveal", "watch", "army:107", "zoom:1", "races:norse frogs|centaurs"]
+}
