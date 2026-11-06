@@ -517,14 +517,21 @@ def air_lift(k:int) -> float:
     let b = vx_body_of(vx_lks[vx_cur[k]].u.body)
     return b.flies * cos(vx_ELEV) * vx_RES * b.size * VX_DRAW_K
 
-// A click on an aircraft where it's drawn must take it, and one on the ground under it must not.
+// A click on an aircraft where it's drawn must take it, and one on the ground under it must not. (One standing clear:
+// an army starts packed, and a click can fairly land on a neighbour.)
 def air_test() -> bool:
     if tick < 40: return false
-    let i = find(u_x.length) n: u_owner[n] == ME and t_air[u_kind[n]] != 0
+    let planes = filter(u_x.length) n: u_owner[n] == ME and t_air[u_kind[n]] != 0
+    assert planes.length
+    var i = -1
+    for(planes) p:
+        let at = iso(float(u_x[p]), float(u_y[p]))
+        if unit_at_screen(to_screen(at - float2 { 0.0, air_lift(u_kind[p]) + 14.0 }), true) == p and unit_at_screen(to_screen(at), true) != p: i = p
+    if i < 0: print "airtest: no plane of {planes.length} takes the click"
     assert i >= 0
     let ground = iso(float(u_x[i]), float(u_y[i]))
     let lift = air_lift(u_kind[i])
-    let drawn = unit_at_screen(to_screen(ground - float2 { 0.0, lift }), true)
+    let drawn = unit_at_screen(to_screen(ground - float2 { 0.0, lift + 14.0 }), true)
     let under = unit_at_screen(to_screen(ground), true)
     print "airtest: lift {lift} px; a click on the plane takes {drawn} (the plane is {i}), a click under it takes {under}"
     assert drawn == i
