@@ -75,6 +75,21 @@ var t_shot_speed = []::int
 var t_min_damage = []::int
 var t_sight = []::int  // the line's own sight plus research
 var t_mclass = []::int
+// A gun on a unit that turns on its own (a part's stats.mounts): tenths of a degree, ticks, milli-tiles. Its weapon falls
+// back on the unit's where it says nothing.
+class Mount:
+    part:string             // the voxel part it turns, or "" for a gun fixed to the hull
+    rest:int                // its rest facing, off the hull
+    arc:int                 // how far it goes either side of that (1800: all the way round)
+    turn:int                // a tick
+    tolerance:int           // how far off its target it can fire
+    range:int               // 0: the unit's
+    reload:int              // 0: the unit's
+    attack:int              // -1: the unit's
+    damage:int              // its attack's class
+    shot:string             // its look in shots.json, or "" for the unit's
+    atk:[int]               // the attack by class, with the unit's bonuses; empty: the unit's
+var t_mounts = []::[Mount]  // per unit type: its mounts; none: the body is its one weapon
 var t_atk = []::[int]
 var t_arm = []::[int]
 var t_cls = []::[int]
@@ -131,11 +146,10 @@ var u_wgoal = []::int    // on a wall: the cell it walks to + 1; climbing: where
 var u_wnext = []::int    // on a wall: the next cell on its way + 1
 var u_wexit = []::int    // on a wall: the way down it is leaving by (a building or siege tower id), or 0
 var u_wtime = []::int    // on a wall: ticks left climbing down, or 0
-var u_aim = []::int      // a turret: where its gun points (tenths of a degree, 0 along +x, 900 along +y)
 var u_hull = []::int     // a turret: the way its hull last moved (tenths of a degree)
 var u_lx = []::int       // a turret: where the hull was when that was worked out
 var u_ly = []::int
-var u_gun = []::int       // a turret: what its gun is on, a unit or building id, or 0 (it can differ from u_foe)
+var u_mount = []::[int]   // per unit: its mounts' aim, target and cooldown, in threes (combat.lobster)
 var u_orders = []::[Cmd]  // per unit: shift-queued orders, oldest first (units.orders)
 
 // The columns in unit_fields order (the hash, the scenario file), then the rest.
@@ -143,10 +157,10 @@ def unit_columns() -> [[int]]:
     return [ u_id, u_x, u_y, u_tx, u_ty, u_moving, u_arrive, u_wx, u_wy, u_group, u_stuck, u_prog, u_fkey, u_pace,
              u_hp, u_foe, u_cooldown, u_stance, u_posture, u_gx, u_gy, u_amx, u_amy, u_amc,
              u_task, u_target, u_home, u_gspot, u_carry_kind, u_carry, u_work, u_reach, u_rx0, u_ry0, u_rx1, u_ry1, u_patient,
-             u_route, u_ready, u_perch, u_wgoal, u_wnext, u_wexit, u_wtime, u_aim, u_hull, u_lx, u_ly, u_gun,
+             u_route, u_ready, u_perch, u_wgoal, u_wnext, u_wexit, u_wtime, u_hull, u_lx, u_ly,
              u_owner, u_kind, u_speed, u_radius, u_mclass ]
 
-let UNIT_HASHED = 49    // the columns hashed (unit_fields)
+let UNIT_HASHED = 47    // the columns hashed (unit_fields)
 var t_tags = []::[int]  // per unit type: its eval's tags (class indexes), as its line stands
 var t_damage = []::int  // per unit type: its attack's class (0 melee, 1 pierce, ...)
 
@@ -210,6 +224,7 @@ var b_inside = []::[int]  // units sheltering inside (garrison.gd): REC_SIZE int
 // empty (flexbuffers give a missing field its empty value), so it's padded here with 0 for every unit and building.
 // Anything else whose empty value is wrong mid-match needs its own fix after loading.
 def pad_saved_columns():
+    while u_mount.length < u_id.length: u_mount.push([])
     for(unit_columns()) col:
         while col.length < u_id.length: col.push(0)
     for(building_columns()) col:
@@ -321,6 +336,7 @@ def remove_unit(i:int):
     unit_changes++
     for(unit_columns()) col: col.remove(i)
     u_orders.remove(i)
+    u_mount.remove(i)
 
 var tick = 0
 var next_group = 1
@@ -376,11 +392,12 @@ def insert_unit(uid:int, owner:int, k:int, x:int, y:int, speed:int, radius:int, 
     let v = [ uid, x, y, x, y, 0, 0, x, y, 0, 0, -1, -1, 0,
               hp, 0, 0, 0, 0, x, y, 0, 0, -1,
               0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0, 0, 0, x, y, 0,
+              0, 0, 0, 0, 0, 0, 0, 0, x, y,
               owner, k, speed, radius, 0 ]
     unit_changes++
     for(unit_columns()) col, n: col.insert(at, v[n])
     u_orders.insert(at, [])
+    u_mount.insert(at, [])
     return at
 
 var t_hero = []::int         // per unit type: 1 for a hero
