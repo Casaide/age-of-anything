@@ -119,8 +119,8 @@ var rec_side = 0
 var rec_char = 0
 var rec_wait = 30
 var rec_push = 1.0                    // push:<k>: a record:'s camera closes in, its zoom k times by the end (1.15 is a slow push)
-var rec_pan = float2_0                // pan:<x>,<y>: a record:'s camera drifts that many tiles by the end
-var window_arg = int2 { 1600, 1000 }  // window:<w>,<h>: the window's size in points (filming: 1600,900 is 16:9)
+var rec_pan = float2_0                // pan:<x>,<y>: a record:'s camera drifts that many tiles by the end (no follow then)
+var window_arg = int2 { 1600, 1000 }  // window:<w>,<h>: the window's size in points (filming: 1280,720 is 16:9, 2560x1440 frames on a Mac)
 var fort_gate = int2 { -1, -1 }       // place:fort's gate (captures: army: walks through it)
 var place_arg = ""                    // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false                  // the lobby's Skirmish: both armies on the map at once, marching on each other
@@ -2963,6 +2963,7 @@ def play_match():
             if rec_n == 0:
                 gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
                 speed = start_speed
+                if rec_pan != float2_0: follow = false  // (a pan is the take's own camera move; the follow would pull against it)
             gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
             rec_n++
             let take_frames = rec_for * rec_fps
