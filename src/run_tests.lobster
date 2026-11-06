@@ -70,6 +70,12 @@ import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
+import view.facing
+import game.relief
+import vec
+import game.cursor_images
+import gl
+import game.window_mode
 
 let DATA = "../data"
 let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings",
@@ -830,7 +836,14 @@ def g_merge():
     let two = data_merge(data_merge(base, parse_json("\{\"b\":\{\"hp\":7\}\}")), parse_json("\{\"b\":\{\"hp\":8\}\}"))
     expect(as_int(at(at(two, "b"), "hp")) == 8, "merge: the later mod wins")
 
+def g_loop_share():
+    expect(loop_share(0) == 0.0, "a loop nobody makes is silent")
+    expect(loop_share(1) > 0.2, "one unit is heard")
+    expect(loop_share(4) > loop_share(1) and loop_share(12) > loop_share(4), "more units are louder")
+    expect(loop_share(12) == 1.0 and loop_share(40) == 1.0, "and a crowd adds nothing past the cap")
+
 def g_mods():
+    g_loop_share()
     g_merge()
     expect(lib_packs[0].id == "age_of_anything" and gstr(lib_packs[0].manifest, "kind", "") == "game", "packs: the game is the first pack read")
     expect(has(lib_parts, "weapon.spear.wood"), "packs: its parts came through pack_apply")
@@ -859,7 +872,7 @@ def g_mods():
     let tags = gstrs(at(sk, "eval"), "tags")
     let shot = gobj(mod_shots, "pulse")
     expect(has_s(tags, gstr(shot, "tag", "-")), "mods: the pulse rifle\'s tags call the mod\'s shot (pulse: {gstr(shot, "tag", "none")})")
-    let bad = [ "bad_era", "needs_other", "future_game", "no_game", "kind_game", "bad_file", "clash", "no_hub", "bad_trains", "bad_research", "bad_extends", "bad_age", "new_building", "no_takes", "bad_draw", "bad_knob", "bad_pulses", "bolt_hold", "bad_hit", "bad_hit_sound" ]
+    let bad = [ "bad_muzzle", "bad_era", "needs_other", "future_game", "no_game", "kind_game", "bad_file", "clash", "no_hub", "bad_trains", "bad_research", "bad_extends", "bad_age", "new_building", "no_takes", "bad_draw", "bad_knob", "bad_pulses", "bolt_hold", "bad_hit", "bad_hit_sound" ]
     fresh_lib()
     expect(strs_eq(mods_use(append(bad, [ "scifi_test" ]), append(mod_roots, [ "../tests/mods" ])), [ "scifi_test" ]), "mods: broken mods refused, a good one beside them still loads")
     for(bad) id:
@@ -869,9 +882,108 @@ def g_mods():
     mods_use([])
     expect(rstr(generate("future soldiers", load_rules("anything"), 0), "key") == plain_key, "mods: off again, the race is as before")
 
+// Order lines lie on the ground (#221): over a hill between two points, every point of a drawn leg is at the ground's
+// height there, nothing is drawn where the hill hides the ground, and a leg up it ends on top, where its flag stands.
+def g_ground_path():
+    let keep_w = W
+    let keep_h = H
+    let keep_level = level
+    let keep_ramp = ramp
+    W = 20
+    H = 20
+    level = map(W * H): 0
+    ramp = map(W * H): 0
+    for(H) y:
+        for(W) x:
+            if x >= 8 and x < 12 and y >= 6 and y < 14: level[y * W + x] = 2
+    corner_heights()
+    expect(lift_at(10000.0, 10000.0) == 40.0, "ground_path: the hill stands in the way")
+    let ground_y = fn(m:float2): iso(m.x, m.y).y - lift_at(m.x, m.y) * 1.5
+    let legs = [ [ float2 { 4500.0, 10300.0 }, float2 { 15700.0, 10300.0 } ], [ float2 { 4200.0, 4700.0 }, float2 { 15900.0, 15300.0 } ], [ float2 { 15700.0, 10300.0 }, float2 { 10000.0, 10000.0 } ] ]
+    for(legs) leg, n:
+        let a = leg[0]
+        let b = leg[1]
+        let start = iso(a.x, a.y)
+        let end_at = iso(b.x, b.y)
+        let sim_at = fn(p:float2): a + (b - a) * ((p.x - start.x) / (end_at.x - start.x))
+        let runs = ground_path(a, b)
+        var points = 0
+        var at_points = 0.0
+        var between = 0.0
+        var hidden = 0
+        for(runs) pts:
+            points += pts.length
+            for(pts) p, k:
+                let m = sim_at(p)
+                at_points = max(at_points, abs(p.y - ground_y(m)))
+                if ground_hidden(m): hidden++
+                if k + 1 < pts.length:
+                    let m1 = sim_at(pts[k + 1])
+                    if abs(lift_at(m.x, m.y) - lift_at(m1.x, m1.y)) < 15.0:  // (a step up a cliff face can't follow it: the ground jumps there)
+                        for(8) s:
+                            let q = p + (pts[k + 1] - p) * (float(s) / 8.0)
+                            between = max(between, abs(q.y - ground_y(sim_at(q))))
+        print "ground_path: leg {n}: {runs.length} runs, {points} points, off the ground by {at_points} px at them, {between} px between, {hidden} hidden"
+        expect(at_points < 0.01, "ground_path: leg {n}: its points are on the ground, off by {at_points} px")
+        expect(between < 4.0, "ground_path: leg {n} follows the ground between them, off by {between} px")
+        expect(hidden == 0, "ground_path: leg {n} draws nothing behind the hill, {hidden} points are")
+    expect(ground_hidden(float2 { 7700.0, 10000.0 }), "ground_path: low ground just behind the hill is hidden")
+    expect(not ground_hidden(float2 { 9000.0, 10000.0 }), "ground_path: the hill top is not")
+    expect(not ground_hidden(float2 { 12500.0, 10000.0 }), "ground_path: low ground in front of the hill is not")
+    expect(ground_path(float2 { 4500.0, 10300.0 }, float2 { 15700.0, 10300.0 }).length == 2, "ground_path: a leg over the hill goes behind it, then comes out on top")
+    W = keep_w
+    H = keep_h
+    level = keep_level
+    ramp = keep_ramp
+    relief = []
+// ------------------------------------------------------------------ the mouse cursor (#222)
+
+// A PNG's size, from its header.
+def png_size(path:string) -> int2:
+    let d = read_file(path, true)
+    if not d: return int2_0
+    def be(at:int) -> int: return (d[at] << 24) | (d[at + 1] << 16) | (d[at + 2] << 8) | d[at + 3]
+    return int2 { be(16), be(20) }
+
+def g_cursors():
+    expect(CURSOR_KINDS.length == 8, "cursors: every order has its kind")
+    for([ "pointer", "move", "attack", "wall", "chop", "mine", "forage", "build" ]) kind:
+        expect((find(CURSOR_KINDS) k: k == kind) >= 0, "cursors: {kind} is a kind")
+    for(CURSOR_KINDS) kind:
+        let one = png_size(cursor_image(kind, 1))
+        let two = png_size(cursor_image(kind, 2))
+        expect(one.x > 0 and one == one.y * int2_1, "cursors: {kind} has a square image ({cursor_image(kind, 1)}: {one})")
+        expect(two == one * 2, "cursors: {kind} has its Retina image at twice the size ({two})")
+        let hot = cursor_hot(kind)
+        expect(hot.x >= 0 and hot.y >= 0 and hot.x < 4 and hot.y < 4, "cursors: {kind}\'s hot spot is its tip, at the top left ({hot})")
+    expect(cursor_hot("attack") == int2 { 2, 2 } and cursor_hot("move") == int2 { 2, 1 } and cursor_hot("chop") == int2 { 1, 1 }, "cursors: the hot spots are the art\'s, at the size it was drawn")
+    // The OS draws it now: no virtual cursor adding up mouse deltas, nothing relative.
+    for([ "game.lobster", "game/cursors.lobster", "game/pad.lobster" ]) f:
+        let src = read_file(f)
+        expect(src and find_string(src, "vc_") < 0, "cursors: {f} has no virtual cursor")
+        expect(src and find_string(src, "gl.cursor(") < 0, "cursors: {f} doesn\'t use relative mode")
+        expect(src and find_string(src, "draw_cursor") < 0, "cursors: {f} doesn\'t draw one")
+    let game = read_file("game.lobster")
+    expect(game and find_string(game, "def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))") >= 0, "cursors: mouse_px reads the OS\'s mouse")
+// ------------------------------------------------------------------ fullscreen (#223)
+
+def g_window():
+    expect(starts_fullscreen([ "game.lobster", "none", "lobby" ], false), "window: the game starts fullscreen")
+    expect(starts_fullscreen([ "none", "lobby", "races:a|b", "watch" ], false), "window: a match from the command line too")
+    expect(not starts_fullscreen([ "none", "lobby", "windowed" ], false), "window: the windowed option keeps the window")
+    expect(not starts_fullscreen([ "none", "lobby" ], true), "window: so does the setting")
+    expect(starts_fullscreen([ "none", "lobby", "fullscreen" ], true), "window: the fullscreen option beats the setting")
+    for([ "mute", "selftest", "padtest", "labtest", "prebake", "vbcheck", "propframes", "shot:/tmp/s.png", "perf:20", "reload:5", "record:/tmp/r", "lookframes:a,b" ]) tool:
+        expect(not starts_fullscreen([ "none", "lobby", tool ], false), "window: {tool} is a tool: windowed")
+    expect(starts_fullscreen([ "none", "lobby", "shot:/tmp/s.png", "fullscreen" ], false), "window: a capture may ask for fullscreen")
+    expect(window_flags(false, false) == 0, "window: plain window flags")
+    expect(window_flags(true, true) == (gl.window_init_no_vsync | gl.window_init_fullscreen), "window: the flags add up")
+    let game = read_file("game.lobster")
+    expect(game and find_string(game, "window_flags(no_vsync, window_fullscreen)") >= 0, "window: the game opens with those flags")
+
 // ------------------------------------------------------------------ the run
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods" ]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window" ]
 
 def run_group(name:string):
     switch name:
@@ -889,6 +1001,9 @@ def run_group(name:string):
         case "identity": g_identity()
         case "heroes": g_heroes()
         case "mods": g_mods()
+        case "ground_path": g_ground_path()
+        case "cursors": g_cursors()
+        case "window": g_window()
         default: assert false
 
 var shard = 0

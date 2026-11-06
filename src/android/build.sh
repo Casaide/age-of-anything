@@ -103,8 +103,8 @@ grep -q "apk_scan(d" "$stage/view/voxel.lobster"
 sed -i '' 's#fe_field = if go == "setup": 0 elif go == "lab": 10 else: -1#fe_field = -1#' "$stage/game/lobby.lobster"
 grep -q '            fe_field = -1$' "$stage/game/lobby.lobster"
 # Fullscreen: in a window the phone's status bar covers the top bar.
-sed -i '' 's#^fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, \(.*\) else: 0))$#fatal(gl.window("Age of Anything", 1600, 1000, \1 else: gl.window_init_fullscreen))#' "$stage/game.lobster"
-grep -q 'gl.window_init_fullscreen))$' "$stage/game.lobster"
+sed -i '' 's#^fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, window_flags(no_vsync, window_fullscreen)))$#fatal(gl.window("Age of Anything", 1600, 1000, window_flags(no_vsync, true)))#' "$stage/game.lobster"
+grep -q 'window_flags(no_vsync, true)))$' "$stage/game.lobster"
 rm -f "$generated"
 (cd "$LOBSTER_SRC" && bin/lobster --cpp $LOBSTER_FLAGS "$stage/game.lobster" | grep -v warning || true)
 # (SDL3 on Android runs SDL_main from the game's library: the generated main exported under that name)
