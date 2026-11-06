@@ -50,6 +50,7 @@ else
 	add network ./net_check.sh 2000
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
 	add perf timeout 240 ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20
+	add perf_big timeout 400 ../play.sh lobby "\"races:norse frogs|centaurs\"" watch mute skirmish army:31 perf:20
 fi
 
 # Run them, at most $jobs at once (xargs keeps the pool full); each line of jobs.txt: name|command. The slow suites go

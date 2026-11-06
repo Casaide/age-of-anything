@@ -19,8 +19,17 @@ let PERF_BUSY_MAX = 0.22      // the main thread's share of the wall clock spent
 let PERF_FPS_MAX = 66.0       // frames a second (the cap is 60: a 120 Hz display uncapped draws twice as often)
 let PERF_BUFFERS_P95 = 0      // GPU buffers made a frame, the 95th percentile (pooled: none once the pool is full)
 let PERF_TEXT_MAX = 0.0001    // seconds of text a frame (game/text_cache.lobster: labels from atlas pages)
+// A big battle (army:) has budgets of its own: 2026-11-06 on the MacBook, about 950 units, 4.7 ms median and 7.8 ms 95th.
+let PERF_BIG_MEDIAN = 0.008
+let PERF_BIG_P95 = 0.016
+let PERF_BIG_BUSY = 0.6
+let PERF_BIG_BUFFERS = 8  // (a batch past the pool's biggest buffer)
 
-var perf_for = 0.0  // perf:<seconds> (0: off)
+var perf_for = 0.0       // perf:<seconds> (0: off)
+var perf_live = false    // perflive: the bakes run as they do in play, nothing baked ahead (what a player sees with a new race)
+var perf_units_max = 0   // the most units alive in a frame
+var perf_unseen_max = 0  // the most units in view of the fog with no frame to draw (a health bar over nothing)
+var perf_unseen = 0      // this frame's
 let perf_work = []::float
 let perf_made = []::int
 var perf_t = -1.0  // the frame's start (after gl.frame)
@@ -31,6 +40,14 @@ var perf_text0 = 0.0   // text_time then
 let PERF_PHASES = [ "input and sim", "ground", "collect", "sort", "sprites", "over the world", "panel", "hud", "groups", "rest" ]
 let perf_phase = map(PERF_PHASES): 0.0
 var perf_last = 0.0
+
+let perf_think = []::float  // each tick: the bots, the sim (seconds)
+let perf_step = []::float
+
+def perf_tick(think:float, step:float):
+    if perf_for <= 0.0 or perf_wall0 < 0.0: return
+    perf_think.push(think)
+    perf_step.push(step)
 
 def perf_sorted_at(xs, q:float):
     let s = copy(xs)
@@ -51,12 +68,14 @@ def perf_lap(k:int):
     perf_last = t
 
 // At the end of a frame (clock: seconds of play): its work kept; true once the measure is done (then quit).
-def perf_end(clock:float) -> bool:
+def perf_end(clock:float, big:bool) -> bool:
     if clock < PERF_WARM or perf_t < 0.0: return false
     if perf_wall0 < 0.0:
         perf_wall0 = perf_t
         perf_text0 = text_time
     perf_work.push(seconds_elapsed() - perf_t)
+    perf_units_max = max(perf_units_max, u_x.length)
+    perf_unseen_max = max(perf_unseen_max, perf_unseen)
     perf_made.push(gl.buffers_made() - perf_b)
     if clock < PERF_WARM + perf_for: return false
     let wall = seconds_elapsed() - perf_wall0
@@ -70,15 +89,22 @@ def perf_end(clock:float) -> bool:
     def tenths(x:float): return float(int(x * 10.0 + 0.5)) / 10.0
     let stats = "{tenths(fps)} fps, work {tenths(med * 1000.0)} ms median, {tenths(p95 * 1000.0)} ms 95th, buffers {bmed} / {b95}, busy {int(busy * 100.0)}%, text {tenths(text * 10000.0) / 10.0} ms; {perf_work.length} frames, {sum(perf_made)} buffers in all"
     let bad = []::string
-    if med > PERF_WORK_MEDIAN: bad.push("work median over {PERF_WORK_MEDIAN * 1000.0} ms")
-    if p95 > PERF_WORK_P95: bad.push("work 95th over {PERF_WORK_P95 * 1000.0} ms")
-    if busy > PERF_BUSY_MAX: bad.push("the main thread busy {int(busy * 100.0)}%, over {int(PERF_BUSY_MAX * 100.0)}%")
+    let budget_med = if big: PERF_BIG_MEDIAN else: PERF_WORK_MEDIAN
+    let budget_p95 = if big: PERF_BIG_P95 else: PERF_WORK_P95
+    let budget_busy = if big: PERF_BIG_BUSY else: PERF_BUSY_MAX
+    let budget_buffers = if big: PERF_BIG_BUFFERS else: PERF_BUFFERS_P95
+    if med > budget_med: bad.push("work median over {budget_med * 1000.0} ms")
+    if p95 > budget_p95: bad.push("work 95th over {budget_p95 * 1000.0} ms")
+    if busy > budget_busy: bad.push("the main thread busy {int(busy * 100.0)}%, over {int(budget_busy * 100.0)}%")
     if fps > PERF_FPS_MAX: bad.push("{fps} frames a second, over {PERF_FPS_MAX} (the frame cap?)")
     if text > PERF_TEXT_MAX: bad.push("text {text * 1000.0} ms a frame, over {PERF_TEXT_MAX * 1000.0} ms")
-    if b95 > PERF_BUFFERS_P95: bad.push("{b95} GPU buffers a frame (95th), over {PERF_BUFFERS_P95}")
+    if perf_unseen_max > 0: bad.push("{perf_unseen_max} units with nothing to draw (#170)")
+    if b95 > budget_buffers: bad.push("{b95} GPU buffers a frame (95th), over {budget_buffers}")
     if bad.length:
         print "perf FAIL: {concat_string(bad, "; ")}"
         set_exit_code(1)
     print "perf: {stats}"
+    print "perf units: {perf_units_max} at most, {perf_unseen_max} with nothing to draw at most"
+    if perf_step.length: print "perf ticks: {tenths(float(perf_step.length) / wall)} a second (20 keeps time), sim {tenths(perf_sorted_at(perf_step, 0.5) * 1000.0)} ms median, {tenths(perf_sorted_at(perf_step, 0.95) * 1000.0)} ms 95th, bots {tenths(perf_sorted_at(perf_think, 0.5) * 1000.0)} ms median, {tenths(perf_sorted_at(perf_think, 0.95) * 1000.0)} ms 95th"
     print "perf phases (ms a frame): {concat_string(map(PERF_PHASES) n, k: "{n} {tenths(perf_phase[k] * 1000.0 / float(perf_work.length) * 10.0) / 10.0}", ", ")}"
     return true
