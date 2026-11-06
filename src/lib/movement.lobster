@@ -380,7 +380,9 @@ def move():
                 ys[i] = ny
             elif on(nx, y): xs[i] = nx  // (a place on a tree or past the edge: along it, until the place is clear)
             elif on(x, ny): ys[i] = ny
-            if dd > s and on(bx, by) and dist2(xs[i], ys[i], bx, by) >= there - s * dd: st[i]++  // (not getting nearer a clear place: by the flow field for a while)
+            if (tick + u_id[i]) % PROGRESS_EVERY == 0:  // not getting nearer its place: by the flow field for a while
+                if dd > 2 * TILE and u_prog[i] >= 0 and dd >= u_prog[i]: st[i] = 6
+                u_prog[i] = dd
             continue
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:
             let px, py = progress(i, x, y)
