@@ -307,6 +307,19 @@ def scene_map():
             if heights.length:
                 if heights[y][x] >= '1' and heights[y][x] <= '3': uphill++
                 if heights[y][x] >= 'a' and heights[y][x] <= 'c': slopes++
+    // groves on a 12-tile lattice read as a pattern: the flanks' trees within 5 tiles of a lattice square's middle (spread evenly: about 0.55)
+    var on_lattice = 0
+    var flank_trees = 0
+    for(rows) row, y:
+        for(w) x:
+            if row[x] == 'T' and abs(x - y) > 58 and abs(x - y) < 74:
+                flank_trees++
+                let dx = x % 12 - 6
+                let dy = y % 12 - 6
+                if dx * dx + dy * dy < 25: on_lattice++
+    let lattice = float(on_lattice) / float(max(1, flank_trees))
+    print "the map: groves repeat {fixed_str(lattice, 3)}"
+    check(lattice <= 0.75, "the groves don\'t sit on a lattice ({fixed_str(lattice, 3)})")
     print "the map: {w} by {h}, {counts.get("tree", 0)} trees, {counts.get("rock", 0)} rock, {counts.get("rubble", 0)} rubble, river {rivers_a}/{rivers_b}, {uphill} high, {slopes} slope, {in_middle} in the middle"
     check(in_middle == 0, "the middle is clear ({in_middle} cells in the way)")
     check(rivers_a + rivers_b >= 100 and min(rivers_a, rivers_b) == 0 and river_near == 0, "a river on one side, off the field ({rivers_a}/{rivers_b}, {river_near} near)")
