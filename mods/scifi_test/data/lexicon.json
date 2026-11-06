@@ -1,10 +1,10 @@
 {
  "_doc": "Words that ask for the future (era scifi: where the host's rules allow it; elsewhere the note and a substitute), and two for soldiers.",
  "words": {
-  "future": {"era": "scifi", "tags": {"scifi": 5}, "substitute": {"heavy": 1, "helmet": 1}, "note": "The future hasn't happened yet here. Issued polished helmets and a hopeful look."},
-  "futuristic": {"era": "scifi", "tags": {"scifi": 5}, "substitute": {"heavy": 1, "helmet": 1}, "note": "The future hasn't happened yet here. Issued polished helmets and a hopeful look."},
-  "space": {"era": "scifi", "tags": {"scifi": 5}, "substitute": {"heavy": 1, "helmet": 1}, "note": "Space is closed under these rules. They got very shiny helmets instead."},
-  "scifi": {"era": "scifi", "tags": {"scifi": 5}, "substitute": {"heavy": 1, "helmet": 1}, "note": "The future hasn't happened yet here. Issued polished helmets and a hopeful look."},
+  "future": {"era": "scifi", "tags": {"scifi": 5}, "substitute": {"heavy": 1, "helmet": 1}, "note": "The future hasn't happened yet here. Issued polished helmets and a hopeful look.", "family": "spacefarers"},
+  "futuristic": {"era": "scifi", "tags": {"scifi": 5}, "substitute": {"heavy": 1, "helmet": 1}, "note": "The future hasn't happened yet here. Issued polished helmets and a hopeful look.", "family": "spacefarers"},
+  "space": {"era": "scifi", "tags": {"scifi": 5}, "substitute": {"heavy": 1, "helmet": 1}, "note": "Space is closed under these rules. They got very shiny helmets instead.", "family": "spacefarers"},
+  "scifi": {"era": "scifi", "tags": {"scifi": 5}, "substitute": {"heavy": 1, "helmet": 1}, "note": "The future hasn't happened yet here. Issued polished helmets and a hopeful look.", "family": "spacefarers"},
   "laser": {"era": "scifi", "tags": {"scifi": 3, "energy": 3}, "substitute": {"sling": 3}, "note": "No lasers in this era. A sling and a mirror will have to do."},
   "lasers": {"era": "scifi", "tags": {"scifi": 3, "energy": 3}, "substitute": {"sling": 3}, "note": "No lasers in this era. A sling and a mirror will have to do."},
   "marine": {"default_creature": "human", "tags": {"heavy": 2, "armour": 2}},
