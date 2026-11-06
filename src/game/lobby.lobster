@@ -785,7 +785,7 @@ def fe_settings_card() -> string:
     let lk = ui_look_of("")
     ui_use(lk)
     ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.5 })
-    let size = D(560.0, 26.0 + 66.0 + 14.0 + 3.0 * 58.0 + 40.0 + 50.0 + 30.0)
+    let size = D(560.0, 26.0 + 66.0 + 14.0 + 3.0 * 58.0 + 58.0 + 40.0 + 50.0 + 30.0)
     let at = (ws - size) / 2.0
     fe_panel(at, size, lk, true)
     var y = at.y + 26.0 * fe_k
@@ -810,7 +810,9 @@ def fe_settings_card() -> string:
             else: hud_size = nv
             volume_save()
         y += 58.0 * fe_k
-    ui_text_c(ws.x / 2.0, y + 4.0 * fe_k, "In a match, Ctrl/Cmd + and - change the UI scale too.", fz(16.0), lk.dim, 0, 0.0)
+    if ui_button(float2 { at.x + 40.0 * fe_k, y }, float2 { w, 48.0 * fe_k }, if window_fullscreen: "Fullscreen: on" else: "Fullscreen: off", false): window_toggle()
+    y += 58.0 * fe_k
+    ui_text_c(ws.x / 2.0, y + 4.0 * fe_k, "In a match, Ctrl/Cmd + and - change the UI scale too. Cmd or Alt + Enter: fullscreen.", fz(16.0), lk.dim, 0, 0.0)
     y += 40.0 * fe_k
     var go = ""
     if ui_button(float2 { at.x + 40.0 * fe_k, y }, float2 { w, 50.0 * fe_k }, "Back", false): go = "back"
@@ -1303,6 +1305,7 @@ def run_front(page0:string, typed:[string]) -> string:
     pace(PACE_MENU)
     while gl.frame():
         ui_click_tick()
+        window_tick()
         if bake_quit: return ""
         let dt = gl.delta_time()
         fe_fit()

@@ -71,6 +71,10 @@ import gen.start
 import gen.reset
 import view.facing
 import game.relief
+import vec
+import game.cursor_images
+import gl
+import game.window_mode
 
 let DATA = "../data"
 let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings",
@@ -924,10 +928,54 @@ def g_ground_path():
     level = keep_level
     ramp = keep_ramp
     relief = []
+// ------------------------------------------------------------------ the mouse cursor (#222)
+
+// A PNG's size, from its header.
+def png_size(path:string) -> int2:
+    let d = read_file(path, true)
+    if not d: return int2_0
+    def be(at:int) -> int: return (d[at] << 24) | (d[at + 1] << 16) | (d[at + 2] << 8) | d[at + 3]
+    return int2 { be(16), be(20) }
+
+def g_cursors():
+    expect(CURSOR_KINDS.length == 8, "cursors: every order has its kind")
+    for([ "pointer", "move", "attack", "wall", "chop", "mine", "forage", "build" ]) kind:
+        expect((find(CURSOR_KINDS) k: k == kind) >= 0, "cursors: {kind} is a kind")
+    for(CURSOR_KINDS) kind:
+        let one = png_size(cursor_image(kind, 1))
+        let two = png_size(cursor_image(kind, 2))
+        expect(one.x > 0 and one == one.y * int2_1, "cursors: {kind} has a square image ({cursor_image(kind, 1)}: {one})")
+        expect(two == one * 2, "cursors: {kind} has its Retina image at twice the size ({two})")
+        let hot = cursor_hot(kind)
+        expect(hot.x >= 0 and hot.y >= 0 and hot.x < 4 and hot.y < 4, "cursors: {kind}\'s hot spot is its tip, at the top left ({hot})")
+    expect(cursor_hot("attack") == int2 { 2, 2 } and cursor_hot("move") == int2 { 2, 1 } and cursor_hot("chop") == int2 { 1, 1 }, "cursors: the hot spots are the art\'s, at the size it was drawn")
+    // The OS draws it now: no virtual cursor adding up mouse deltas, nothing relative.
+    for([ "game.lobster", "game/cursors.lobster", "game/pad.lobster" ]) f:
+        let src = read_file(f)
+        expect(src and find_string(src, "vc_") < 0, "cursors: {f} has no virtual cursor")
+        expect(src and find_string(src, "gl.cursor(") < 0, "cursors: {f} doesn\'t use relative mode")
+        expect(src and find_string(src, "draw_cursor") < 0, "cursors: {f} doesn\'t draw one")
+    let game = read_file("game.lobster")
+    expect(game and find_string(game, "def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))") >= 0, "cursors: mouse_px reads the OS\'s mouse")
+// ------------------------------------------------------------------ fullscreen (#223)
+
+def g_window():
+    expect(starts_fullscreen([ "game.lobster", "none", "lobby" ], false), "window: the game starts fullscreen")
+    expect(starts_fullscreen([ "none", "lobby", "races:a|b", "watch" ], false), "window: a match from the command line too")
+    expect(not starts_fullscreen([ "none", "lobby", "windowed" ], false), "window: the windowed option keeps the window")
+    expect(not starts_fullscreen([ "none", "lobby" ], true), "window: so does the setting")
+    expect(starts_fullscreen([ "none", "lobby", "fullscreen" ], true), "window: the fullscreen option beats the setting")
+    for([ "mute", "selftest", "padtest", "labtest", "prebake", "vbcheck", "propframes", "shot:/tmp/s.png", "perf:20", "reload:5", "record:/tmp/r", "lookframes:a,b" ]) tool:
+        expect(not starts_fullscreen([ "none", "lobby", tool ], false), "window: {tool} is a tool: windowed")
+    expect(starts_fullscreen([ "none", "lobby", "shot:/tmp/s.png", "fullscreen" ], false), "window: a capture may ask for fullscreen")
+    expect(window_flags(false, false) == 0, "window: plain window flags")
+    expect(window_flags(true, true) == (gl.window_init_no_vsync | gl.window_init_fullscreen), "window: the flags add up")
+    let game = read_file("game.lobster")
+    expect(game and find_string(game, "window_flags(no_vsync, window_fullscreen)") >= 0, "window: the game opens with those flags")
 
 // ------------------------------------------------------------------ the run
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path" ]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window" ]
 
 def run_group(name:string):
     switch name:
@@ -946,6 +994,8 @@ def run_group(name:string):
         case "heroes": g_heroes()
         case "mods": g_mods()
         case "ground_path": g_ground_path()
+        case "cursors": g_cursors()
+        case "window": g_window()
         default: assert false
 
 var shard = 0
