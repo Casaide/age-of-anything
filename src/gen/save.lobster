@@ -152,6 +152,9 @@ class WorldSave:
     u_radius:[int]
     u_mclass:[int]
     u_pace:[int]
+    u_block:[int]
+    u_bx:[int]
+    u_by:[int]
     u_hp:[int]
     u_foe:[int]
     u_cooldown:[int]
@@ -301,6 +304,27 @@ class WorldSave:
     sp_cursor:[int]
     sp_used:[int]
     slot_x:[int]
+    slot_block:[int]
+    slot_bx:[int]
+    slot_by:[int]
+    fb_state:[int]
+    fb_x:[int]
+    fb_y:[int]
+    fb_gx:[int]
+    fb_gy:[int]
+    fb_tx:[int]
+    fb_ty:[int]
+    fb_wx:[int]
+    fb_wy:[int]
+    fb_dx:[int]
+    fb_dy:[int]
+    fb_pace:[int]
+    fb_key:[int]
+    fb_r:[int]
+    fb_owner:[int]
+    fb_army:[int]
+    fb_t:[int]
+    fb_held:[int]
     slot_y:[int]
     f_ahead:[int]
     f_side:[int]
@@ -620,6 +644,9 @@ def world_bytes(bots:[Bot]) -> string:
         u_radius,
         u_mclass,
         u_pace,
+        u_block,
+        u_bx,
+        u_by,
         u_hp,
         u_foe,
         u_cooldown,
@@ -769,6 +796,27 @@ def world_bytes(bots:[Bot]) -> string:
         sp_cursor,
         sp_used,
         slot_x,
+        slot_block,
+        slot_bx,
+        slot_by,
+        fb_state,
+        fb_x,
+        fb_y,
+        fb_gx,
+        fb_gy,
+        fb_tx,
+        fb_ty,
+        fb_wx,
+        fb_wy,
+        fb_dx,
+        fb_dy,
+        fb_pace,
+        fb_key,
+        fb_r,
+        fb_owner,
+        fb_army,
+        fb_t,
+        fb_held,
         slot_y,
         f_ahead,
         f_side,
@@ -1101,6 +1149,9 @@ def load_world_bytes(data:string) -> [Bot]:
     u_radius = s.u_radius
     u_mclass = s.u_mclass
     u_pace = s.u_pace
+    u_block = s.u_block
+    u_bx = s.u_bx
+    u_by = s.u_by
     u_hp = s.u_hp
     u_foe = s.u_foe
     u_cooldown = s.u_cooldown
@@ -1250,6 +1301,27 @@ def load_world_bytes(data:string) -> [Bot]:
     sp_cursor = s.sp_cursor
     sp_used = s.sp_used
     slot_x = s.slot_x
+    slot_block = s.slot_block
+    slot_bx = s.slot_bx
+    slot_by = s.slot_by
+    fb_state = s.fb_state
+    fb_x = s.fb_x
+    fb_y = s.fb_y
+    fb_gx = s.fb_gx
+    fb_gy = s.fb_gy
+    fb_tx = s.fb_tx
+    fb_ty = s.fb_ty
+    fb_wx = s.fb_wx
+    fb_wy = s.fb_wy
+    fb_dx = s.fb_dx
+    fb_dy = s.fb_dy
+    fb_pace = s.fb_pace
+    fb_key = s.fb_key
+    fb_r = s.fb_r
+    fb_owner = s.fb_owner
+    fb_army = s.fb_army
+    fb_t = s.fb_t
+    fb_held = s.fb_held
     slot_y = s.slot_y
     f_ahead = s.f_ahead
     f_side = s.f_side
