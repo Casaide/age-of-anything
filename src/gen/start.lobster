@@ -117,6 +117,7 @@ def setup_world(seed_value:int, map_id:string, sides:[JV], rules:JV, team_ids:[i
     fresh_was = []
     load_ai_config()
     next_seq = map(np): 0
+    hook_declare()
 
 // The attack and armour classes (Combat.setup): the base three, then every other name sorted.
 def setup_classes():
