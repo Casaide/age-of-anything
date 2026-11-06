@@ -496,7 +496,7 @@ def unit_state(i:int, moving:bool) -> string, int:
         let job = if res == "wood": "chop" elif res == "stone" or res == "gold": "mine" else: "forage"
         return "work_" + job, phase % 8
     if u_task[i] == BUILD and t_worker[k]: return "work_build", phase % 8
-    return "idle", 0
+    return "idle", phase / 6  // (a slow shift of weight, each unit in its own time)
 
 def visible_to_me(c:int) -> bool: return reveal or fog[ME][c] == 2
 
@@ -2031,7 +2031,8 @@ def net_wait_frame(msg:string) -> bool:
     gl.blend(1)
     let u = ui()
     gl.set_font_size(int(22.0 * u))
-    lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } - float2 { 260.0 * u, 0.0 }, msg, float4 { 0.95, 0.85, 0.6, 1.0 })
+    let half = float(gl.text_size(msg).x) * 0.5  // (a refusal can be long: centred, so it stays on screen)
+    lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } - float2 { half, 0.0 }, msg, float4 { 0.95, 0.85, 0.6, 1.0 })
     return false
 
 var link = Link {}
@@ -2323,7 +2324,7 @@ def load_from(path:string):
     let t0 = seconds_elapsed()
     let loaded = load_world(path)
     if not loaded.length:
-        banner = "No save to load"
+        banner = if save_refused != "": save_refused else: "No save to load"
         banner_t = gl.time()
         return
     bots = loaded
