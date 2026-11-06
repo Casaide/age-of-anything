@@ -444,7 +444,7 @@ help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 wai
 4. **Packs match in multiplayer and saves (1-2 days).** *Done 2026-11-06 (#132, D-218): the LAN answer doesn't carry the list, as nothing reads it yet.* The pack list with signatures goes in the LAN answer, the
    lockstep handshake and saves; a mismatch is refused with the pack's name. Done: `net_check` refuses a mismatched
    pack and passes a matched one; `save_check` passes; a save from before this loads (D-141).
-5. **The unit type seam (2-3 days).** Split `gen/setup.lobster`: the engine builds the sim from a plain unit type
+5. **The unit type seam (2-3 days).** *Done 2026-11-06 (#195, D-219).* Split `gen/setup.lobster`: the engine builds the sim from a plain unit type
    table; the game's `race_to_types` fills it from races. Done: golden starts unchanged; a test builds a match from a
    unit type table in data with no generator.
 6. **Hooks, first set (5-8 days).** `mods_gen.lobster` writes `hooks_active.lobster`; the web, the Wonder clock and
