@@ -34,6 +34,7 @@ add lint ./lint.sh   # lobsterfmt leaves every file as it is, every program comp
 add test_heroes "$L" test_heroes.lobster
 add race_identity "$L" test_race_identity.lobster
 add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand in their shadows as drawn (the voxels option)
+add test_formations "$L" test_formations.lobster  # big armies in formation, headless: drift, jitter, facing, overlap, the framed map
 add voxel_check "$L" voxel_check.lobster                # the voxel units' art: straight standing knees, skins that never clip or grey, kit that keeps the creature's shape, no look-alikes, no specks
 for i in 0 1 2 3; do add test_sim.$i "$L" test_sim.lobster -- shard:$i/4; done
 for a in 2 3; do add counters.$a "$L" calibrate.lobster -- pairs $a; done   # the counter chain, each pair in ages 2 and 3 (D-200)
@@ -52,6 +53,7 @@ else
 	add network_packs ./net_check_packs.sh
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
 	add perf timeout 240 ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20
+	add perf_big timeout 300 ../play.sh lobby "\"races:norse frogs|centaurs\"" map:open_field watch mute skirmish reveal army:107 zoom:1 perf:90
 fi
 
 # Run them, at most $jobs at once (xargs keeps the pool full); each line of jobs.txt: name|command. The slow suites go

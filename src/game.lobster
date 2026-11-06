@@ -60,6 +60,7 @@ import .gen.setup
 import .gen.race_to_types
 import .gen.modes
 import .gen.start
+import .view.facing
 import .view.node
 import .view.art
 import .view.bake_cache
@@ -107,6 +108,9 @@ var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks thr
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
 var army_n = 0                   // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+let ARMY_GAP = 600               // milli-tiles between them, in ranks
+var zoom_arg = 0.0               // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
+var reveal = false               // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
 var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
 var page_arg = ""                // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
@@ -131,7 +135,10 @@ for(args) a, k:
         if key == "shot": shot = val
         if key == "at": shot_at = string_to_float(val)
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
-        if a == "oldtext": text_off = true                 // (measuring: text drawn as before game/text_cache.lobster)
+        if key == "zoom": zoom_arg = string_to_float(val)
+        if a == "reveal": reveal = true
+        if a == "perflive": perf_live = true
+        if a == "oldtext": text_off = true  // (measuring: text drawn as before game/text_cache.lobster)
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
         if a == "follow": follow = true
@@ -188,7 +195,6 @@ def team_col(p:int) -> float4:
 
 // ------------------------------------------------------------------ iso (Iso.to_screen * 1.5: art px)
 
-def iso(x:float, y:float) -> float2: return float2 { (x - y) * 0.048, (x + y) * 0.024 }
 def iso_inv(p:float2) -> float2:
     let a = p.x / 0.048
     let b = p.y / 0.024
@@ -283,11 +289,6 @@ let last_owner = dictionary<int, int>(1024)
 def prev_pos(i:int) -> int, int:
     let found, at = binary_search(p_id, u_id[i])
     return if found: p_x[at] else: u_x[i], if found: p_y[at] else: u_y[i]
-
-def dir_of(v:float2) -> int:
-    if v.x == 0.0 and v.y == 0.0: return -1
-    let a = atan2(normalize(v))
-    return (int(floor(a / 45.0 + 0.5)) % 8 + 8) % 8
 
 // Is this milli-tile spot on screen (with a margin)? Sounds only play for what you can see.
 def on_screen(x:int, y:int) -> bool:
@@ -455,7 +456,7 @@ import .game.town  // (here: it uses the views)
 // Where something stands on the canvas (Iso.to_ground: raised ground lifts it).
 def ground_at(x:int, y:int) -> float2: return canvas(float(x), float(y)) - float2 { 0.0, lift_at(float(x), float(y)) }
 
-def seen_at(x:int, y:int) -> bool: return fog[ME][cell_of(x, y)] == 2
+def seen_at(x:int, y:int) -> bool: return reveal or fog[ME][cell_of(x, y)] == 2
 
 // Combat's effects: a spark where a blow lands, a miss standing in the ground, a healed unit's glow, a stone's
 // splash, a fallen building's dust (game/fx.lobster).
@@ -498,7 +499,7 @@ def unit_state(i:int, moving:bool) -> string, int:
     if u_task[i] == BUILD and t_worker[k]: return "work_build", phase % 8
     return "idle", phase / 6  // (a slow shift of weight, each unit in its own time)
 
-def visible_to_me(c:int) -> bool: return fog[ME][c] == 2
+def visible_to_me(c:int) -> bool: return reveal or fog[ME][c] == 2
 
 // Where an effect on unit id rises from (a heal's motes, which have their own heights): its feet on the ground
 // (canvas units); far off when it's gone or unseen.
@@ -510,17 +511,16 @@ def unit_anchor(id:int) -> float2:
     return canvas(x, y) - float2 { 0.0, lift_at(x, y) }
 
 def collect_units(alpha:float):
+    perf_unseen = 0
     for(u_x.length) i:
         let px, py = prev_pos(i)
         let x = px + (u_x[i] - px) * alpha
         let y = py + (u_y[i] - py) * alpha
         let mine = teams[u_owner[i]] == teams[ME]
         if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and vx_drawn(u_kind[i]):
-            let moving = px != u_x[i] or py != u_y[i]
-            var d = unit_dir.get(u_id[i], 2)
-            if moving:
-                let nd = dir_of(iso(float(u_x[i] - px), float(u_y[i] - py)))
-                if nd >= 0 and (abs(u_x[i] - px) + abs(u_y[i] - py)) > 4: d = nd
+            let moving, walking_d = unit_walk(i, unit_dir.get(u_id[i], 2), px, py)
+            var d = walking_d
+            if moving: pass()
             elif u_foe[i] != 0:
                 let j = index_of(u_foe[i])
                 var tx = -1.0
@@ -556,6 +556,7 @@ def collect_units(alpha:float):
             // (voxel units step by the ground they cover, so the planted foot doesn't slide)
             let n = if state == "walk" or find_string(state, "carry") == 0: vx_walk_step(u_id[i], u_kind[i], x, y) else: n0
             let f = vx_frame_for(u_id[i], u_kind[i], state, d, n)
+            if f < 0: perf_unseen++
             let p = iso(x, y)
             let tc = team_col(u_owner[i])
             let since = clock_s - hit_t0.get(u_id[i], -10.0)
@@ -866,7 +867,7 @@ def draw_world(alpha:float):
     gl.translate(ws / 2.0):
         gl.scale(zoom):
             gl.translate(-float2 { floor(cam.x), floor(cam.y) }):
-                draw_fog()
+                if not reveal: draw_fog()
                 perf_lap(1)
                 set_view_rect()
                 draws = []::Drawable
@@ -1052,6 +1053,8 @@ let groups = dictionary<int, [int]>(10)  // control group (0 for key 1) -> unit 
 var last_group = -1
 var last_group_at = -10.0
 var sel_building = 0  // building id
+var sel_foreign = 0   // a unit that isn't mine, shown in the panel: view-only, so never in selected
+var panel_hp = -1     // the HP the panel last drew (the self-test reads it)
 var drag_from = float2_0
 var dragging = false
 var build_menu = false
@@ -1073,15 +1076,23 @@ def unit_at_screen(m:float2, mine:bool) -> int:
                 best = i
     return best
 
-// My building drawn under the mouse (the frontmost), else -1.
-def my_building_drawn_at(m:float2) -> int:
+// Can I see building b now? (Remembered in the fog isn't enough: its HP would be live.)
+def building_seen(b:int) -> bool:
+    if teams[b_owner[b]] == teams[ME]: return true
+    for(b_sy[b]) y:
+        for(b_sx[b]) x:
+            if visible_to_me((b_cy[b] + y) * W + b_cx[b] + x): return true
+    return false
+
+// The building drawn under the mouse (the frontmost), mine or one I can see that isn't, else -1.
+def building_drawn_at(m:float2, mine:bool) -> int:
     let p = from_screen(m)
     var best = -1
     var best_y = -1000000000.0
     for(bld_hits) h:
         if p.x >= h.lo.x and p.y >= h.lo.y and p.x <= h.hi.x and p.y <= h.hi.y and h.sort_y > best_y:
             let b = b_index_of(h.id)
-            if b >= 0 and b_owner[b] == ME:
+            if b >= 0 and (if mine: b_owner[b] == ME else: b_owner[b] != ME and building_seen(b)):
                 best = b
                 best_y = h.sort_y
     return best
@@ -1131,6 +1142,7 @@ def select_kind_on_screen(kind:int, add:bool):
 def click_select(m:float2):
     let add = shift_held() and sel_building == 0
     sel_building = 0
+    sel_foreign = 0
     let i = unit_at_screen(m, true)
     if i >= 0 and u_owner[i] == ME:
         let dbl = u_kind[i] == last_click_kind and gl.time() - last_click_at < 0.4 and magnitude(m - last_click_at_m) < 12.0
@@ -1145,15 +1157,31 @@ def click_select(m:float2):
         return
     if add: return
     selected = []::int
-    var b = my_building_drawn_at(m)  // (the frontmost drawn there: a tower's top, over the ground behind it)
-    if b < 0: b = building_at(order_milli(m))
-    if b >= 0 and b_owner[b] == ME: sel_building = b_id[b]
+    let ground = building_at(order_milli(m))
+    var b = building_drawn_at(m, true)  // (the frontmost drawn there: a tower's top, over the ground behind it)
+    if b < 0 and ground >= 0 and b_owner[ground] == ME: b = ground
+    if b < 0:  // nothing of mine: what isn't mine, to look at
+        let f = if i >= 0: i else: unit_at_screen(m, false)
+        if f >= 0:
+            sel_foreign = u_id[f]
+            return
+        b = building_drawn_at(m, false)
+        if b < 0 and ground >= 0 and building_seen(ground): b = ground
+    if b >= 0: sel_building = b_id[b]
+
+// What's shown goes when it dies or is back in the fog; a foreign unit also when I select something of mine.
+def drop_lost_selection():
+    let b = b_index_of(sel_building)
+    if b < 0 or not building_seen(b): sel_building = 0
+    let i = index_of(sel_foreign)
+    if i < 0 or selected.length or sel_building != 0 or not (teams[u_owner[i]] == teams[ME] or visible_to_me(cell_of(u_x[i], u_y[i]))): sel_foreign = 0
 
 def box_select(a:float2, b:float2):
     let lo = float2 { min(a.x, b.x), min(a.y, b.y) }
     let hi = float2 { max(a.x, b.x), max(a.y, b.y) }
     if not shift_held() or sel_building != 0: selected = []::int  // (shift adds to the selection)
     sel_building = 0
+    sel_foreign = 0
     for(u_x.length) i:
         if u_owner[i] == ME:
             let s = to_screen(iso(float(u_x[i]), float(u_y[i])))
@@ -1193,7 +1221,8 @@ def order(m:float2, attack_move:bool = false):
     let y = int(mm.y)
     if x < 0 or y < 0 or x >= W * TILE or y >= H * TILE: return
     let q = if gl.button("left shift") >= 1 or pad_lb_held: 1 else: 0  // (shift, or LB held on a pad: queued)
-    if sel_building != 0 and not selected.length:
+    let rallying = b_index_of(sel_building)
+    if rallying >= 0 and b_owner[rallying] == ME and not selected.length:
         issue_cmd(ME, CMD_RALLY, []::int, sel_building, x, y, 0)
         return
     let all = selected_units()
@@ -1345,7 +1374,8 @@ def keys():
         if hit and ctrl:
             store_group(n)
             return
-        if hit and not build_menu and b_index_of(sel_building) < 0:
+        let shown = b_index_of(sel_building)
+        if hit and not build_menu and (shown < 0 or b_owner[shown] != ME):
             recall_group(n)
             return
     if gl.button("b") == 1 and selected_workers().length: build_menu = not build_menu
@@ -1492,6 +1522,8 @@ def draw_bars(alpha:float):
             ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
             ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
 
+def ring_of(owner:int) -> float4: return if is_foe(owner, ME): float4 { 0.9, 0.22, 0.16, 1.0 } else: float4 { 0.95, 0.91, 0.79, 1.0 }
+
 // The selection rings, on the ground under the selected units and building (drawn in the sorted world, before
 // anything standing: a unit stands in its ring, and what's in front of it covers it).
 def draw_rings(alpha:float):
@@ -1500,10 +1532,14 @@ def draw_rings(alpha:float):
         let i = index_of(id)
         let px, py = prev_pos(i)
         draw_ring(iso(px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha), float(u_radius[i]) * 0.068 + 3.0, float4 { 0.95, 0.91, 0.79, 1.0 })
+    let f = index_of(sel_foreign)
+    if f >= 0:
+        let px, py = prev_pos(f)
+        draw_ring(iso(px + (u_x[f] - px) * alpha, py + (u_y[f] - py) * alpha), float(u_radius[f]) * 0.068 + 3.0, ring_of(u_owner[f]))
     let b = b_index_of(sel_building)
     if b >= 0:
         let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
-        draw_ring(at, float(b_sx[b]) * 68.0 * 0.75, float4 { 0.95, 0.91, 0.79, 1.0 })
+        draw_ring(at, float(b_sx[b]) * 68.0 * 0.75, ring_of(b_owner[b]))
 
 def draw_marks(alpha:float):
     gl.set_shader("color")
@@ -1667,6 +1703,7 @@ def draw_hud(paused:bool, speed:float):
 
 var test_step = 0
 var test_log = ""
+var test_foe = 0  // the enemy unit the self-test looks at
 
 def screen_of_cell(c:int) -> float2: return to_screen(iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500)))
 
@@ -1745,6 +1782,69 @@ def self_test() -> bool:
         test_step++
     elif test_step == 6 and clock_s >= 10.0:
         expect_ok(b_inside[tc].length == 0, "Ungarrison brings them out")
+        let foe = town_center(1 - ME)
+        cam = iso(float(b_cx[foe] * 1000 + b_sx[foe] * 500), float(b_cy[foe] * 1000 + b_sy[foe] * 500))
+        test_step++
+    elif test_step == 7 and clock_s >= 10.5:
+        let foe = town_center(1 - ME)
+        click_select(screen_of_cell(b_cy[foe] * W + b_cx[foe]))
+        expect_ok(sel_building == 0, "a click on an enemy building in the fog selects nothing")
+        reveal = true
+        // (a cell of it with no unit in the way)
+        let clear = find(b_sx[foe] * b_sy[foe]) n: unit_at_screen(screen_of_cell((b_cy[foe] + n / b_sx[foe]) * W + b_cx[foe] + n % b_sx[foe]), false) < 0
+        fake_mouse = screen_of_cell((b_cy[foe] + clear / b_sx[foe]) * W + b_cx[foe] + clear % b_sx[foe])
+        click_select(fake_mouse)
+        expect_ok(sel_building == b_id[foe], "a click on a visible enemy building selects it")
+        test_step++
+    elif test_step == 8 and clock_s >= 11.0:
+        let foe = town_center(1 - ME)
+        expect_ok(panel_hp == b_hp[foe], "the panel shows the enemy building\'s HP ({panel_hp} of {b_hp[foe]})")
+        let before = pending.length
+        expect_ok(not panel_buttons().length, "an enemy building has no buttons")
+        train_slot(0)
+        order(fake_mouse)
+        expect_ok(pending.length == before, "no orders for an enemy building ({pending.length - before} issued)")
+        reveal = false
+        test_step++
+    elif test_step == 9 and clock_s >= 11.5:
+        expect_ok(sel_building == 0, "an enemy building back in the fog lets go of the selection")
+        reveal = true
+        let foes = filter(u_id.length) i: is_foe(u_owner[i], ME) and t_animal[u_kind[i]] == 0
+        let u = foes[0]
+        cam = iso(float(u_x[u]), float(u_y[u]))
+        test_foe = u_id[u]
+        test_step++
+    elif test_step == 10 and clock_s >= 12.0:
+        let u = index_of(test_foe)
+        fake_mouse = to_screen(iso(float(u_x[u]), float(u_y[u])) - float2 { 0.0, 14.0 })
+        click_select(fake_mouse)
+        expect_ok(sel_foreign == test_foe and not selected.length, "a click on a visible enemy unit shows it, and doesn\'t select it")
+        test_step++
+    elif test_step == 11 and clock_s >= 12.5:
+        let u = index_of(test_foe)
+        expect_ok(panel_hp == u_hp[u], "the panel shows the enemy unit\'s HP ({panel_hp} of {u_hp[u]})")
+        let before = pending.length
+        expect_ok(not panel_buttons().length, "an enemy unit has no buttons")
+        order(fake_mouse)
+        expect_ok(pending.length == before, "no orders for an enemy unit ({pending.length - before} issued)")
+        reveal = false
+        test_step++
+    elif test_step == 12 and clock_s >= 13.0:
+        expect_ok(sel_foreign == 0, "an enemy unit back in the fog lets go of the selection")
+        reveal = true
+        let wild = filter(u_id.length) i: u_owner[i] == gaia
+        let u = wild[wild.length - 1]
+        cam = iso(float(u_x[u]), float(u_y[u]))
+        test_foe = u_id[u]
+        test_step++
+    elif test_step == 13 and clock_s >= 13.5:
+        let u = index_of(test_foe)
+        fake_mouse = to_screen(iso(float(u_x[u]), float(u_y[u])) - float2 { 0.0, 14.0 })
+        click_select(fake_mouse)
+        expect_ok(sel_foreign == test_foe and not selected.length, "a click on a wild animal shows it, and doesn\'t select it")
+        test_step++
+    elif test_step == 14 and clock_s >= 14.0:
+        expect_ok(panel_hp == u_hp[index_of(test_foe)], "the panel shows the wild animal\'s HP ({panel_hp})")
         print test_log
         return true
     return false
@@ -1968,6 +2068,7 @@ for(args) a:  // cache:<folder>: the parts kept there instead of bake_cache/ ("c
 zoom = 2.0 * floor(ui() + 0.5)  // two screen points an art pixel, as the game's camera
 // Desktops start one zoom step further out; Steam Deck-sized screens (800 px tall or less) and touch keep the closer view
 if not touch_play and gl.framebuffer_size().y > 800: zoom = max(1.0, zoom - 1.0)
+if zoom_arg > 0.0: zoom = zoom_arg
 // The tables come from data (game/pack_data.lobster); units are voxel bodies (game/voxel_units.lobster); buildings and
 // props are baked once (src/baked/) or at the start. (A Godot art pack, args[0], is gone with Godot: D-184.)
 pack_library = true
@@ -2228,9 +2329,14 @@ def make_match() -> bool:
                 for(t_slot.length) k:
                     if t_player[k] == p and not t_worker[k] and t_animal[k] == 0 and t_trader[k] == 0 and t_healer[k] == 0: push_new(slots, t_slot[k])
                 let ids = []::int
+                let side = int(ceiling(sqrt(float(slots.length * army_n))))  // (in ranks, not all on one spot)
                 for(slots) slot:
-                    for(army_n):
-                        let i = mode_put(p, type_of_slot(p, slot), start_x[p] + 4000, start_y[p] + 4000)
+                    let kind = type_of_slot(p, slot)
+                    for(if has(gobj(su_units[kind], "look"), "crew"): max(1, army_n / 8) else: army_n):  // (engines: a few, not as many as soldiers)
+                        let at = ids.length
+                        let x = clamp(start_x[p] + 4000 + (at % side - side / 2) * ARMY_GAP, TILE, (W - 1) * TILE)
+                        let y = clamp(start_y[p] + 4000 + (at / side - side / 2) * ARMY_GAP, TILE, (H - 1) * TILE)
+                        let i = mode_put(p, kind, x, y)
                         ids.push(u_id[i])
                 if skirmish:
                     let foe = (p + 1) % num_players
@@ -2305,6 +2411,7 @@ def view_reset():
     mask_tick = -1000
     selected = []
     sel_building = 0
+    sel_foreign = 0
     groups.clear()
     placing = -1
 
@@ -2490,6 +2597,7 @@ def play_match():
             perf_begin()
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
         vc_tick()
+        drop_lost_selection()
         if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
         if gl.button("controller_start") == 1 and not typing_race and not tree_open: menu_open = not menu_open
         if has_s(args, "menu") and frame_no == 2: menu_open = true  // (captures)
@@ -2513,8 +2621,8 @@ def play_match():
         let dt = gl.delta_time()
         frame_dt = dt
         fx_tick(dt)
-        vx_tick(0.006)   // (the voxel units' later bakes)
-        akb_wall_tick()  // (a wall tile with joins not seen before: one a frame)
+        vx_tick(0.006, u_x.length < 300 and gl.time() - last_battle >= 6.0)  // (the voxel units' later bakes, not in a fight)
+        akb_wall_tick()                                                      // (a wall tile with joins not seen before: one a frame)
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
@@ -2572,12 +2680,14 @@ def play_match():
             p_y = copy(u_y)
             let t0 = seconds_elapsed()
             for(bots) bot, p:
-                if (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):
+                if not skirmish and (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):  // (a skirmish: the armies' orders alone)
                     ai_level_for(p)
                     full_bot_think(bot)  // (watch: your own bot plays your side)
+            let t1 = seconds_elapsed()
             step()
             if net_on: ls_after_step(lockstep)
             step_time += seconds_elapsed() - t0
+            perf_tick(t1 - t0, seconds_elapsed() - t1)
             steps++
             clock_s += 0.05
             after_step()
@@ -2655,7 +2765,7 @@ def play_match():
             print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
             quit_app = true
             return
-        if perf_for > 0.0 and perf_end(clock_s):
+        if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return
 
