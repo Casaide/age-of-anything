@@ -70,9 +70,10 @@ def touch_back():
         placing = -1
         wall_from = int2 { -1, -1 }
     elif build_menu: build_menu = false
-    elif selected.length or sel_building != 0:
+    elif selected.length or sel_building != 0 or sel_foreign != 0:
         selected = []
         sel_building = 0
+        sel_foreign = 0
     else: touch_wants_menu = true  // (game.lobster opens the pause menu)
 
 // One frame of touch. True: it took the input (the mouse's way is skipped); false: a touch on the panel, top bar or
