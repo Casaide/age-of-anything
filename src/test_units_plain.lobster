@@ -39,7 +39,6 @@ import lib.bot
 import lib.walls_ai
 import lib.world
 import gen.setup
-import gen.race_to_types
 import gen.modes
 import gen.start
 
