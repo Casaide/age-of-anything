@@ -211,3 +211,13 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: Silent traps in bodies now work or say why, and every pack's bodies are checked (D-226, #184).
 - 2026-11-06: Shermans, Panzers, fighters and flak gunners in a match, all data on the new schema (D-227, #185).
 - 2026-11-06: Tanks are knocked out where they stand, burning then smoking, not tipped over (D-228, #186).
+- 2026-11-06: Guns got an aim in the sim: weapon mounts, as many as a unit likes, each turning on its own and firing on the move, the first piece of vehicles (D-221, #177, #211).
+- 2026-11-06: A body can have parts: a turret turns on its hull in all 8 x 8 facings, baked apart and stacked when drawn (D-222, #178).
+- 2026-11-06: Shells leave from the muzzle: bodies and parts can name points, and shots start from theirs (D-223, #179).
+- 2026-11-06: A shot became all data: thin tracers, muzzle flash and smoke, recoil, blast and shake, and siege_shots.json is gone (D-224, #180).
+- 2026-11-06: Tracks run: a belt and wheels are data, turning by the ground covered, with no seam (D-225, #181).
+- 2026-11-06: Engines, tracks and turrets got sound: loops by state, one channel a sound, capped by how many are on screen (D-226, #182).
+- 2026-11-06: Aircraft are real in the sim: only what can hit air touches them, and they fly round what they fire at (D-227, #183).
+- 2026-11-06: Silent traps in bodies now work or say why, and every pack's bodies are checked (D-228, #184).
+- 2026-11-06: Shermans, Panzers, fighters and flak gunners in a match, all data on the new schema (D-229, #185).
+- 2026-11-06: Tanks are knocked out where they stand, burning then smoking, not tipped over (D-230, #186).
