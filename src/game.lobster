@@ -82,6 +82,8 @@ import .game.text_cache
 import .game.levels
 import .game.perf
 import .game.pace
+import .game.window_mode
+import .game.window_switch
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -139,6 +141,8 @@ for(args) a, k:
             ui_touch = true
         let key, val = split_string(a, ":")
         if key == "shot": shot = val
+        if key == "fsat": window_toggles = map(tokenize(val, ",", " ")) t: string_to_float(t)
+        if a == "fsreport": window_report = true
         if key == "at": shot_at = string_to_float(val)
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
@@ -1025,7 +1029,7 @@ def typing_tick():
         typing_race = false
         gl.end_text_input()
         return
-    if gl.button("return") == 1:
+    if gl.button("return") == 1 and not window_combo():
         typing_race = false
         gl.end_text_input()
         if text != "": become(text)
@@ -2041,7 +2045,9 @@ note("start")
 // (a capture runs without vsync: with the display asleep or the screen locked, vsync never lets a frame through;
 // novsync: the same for a measure, the frame cap still pacing it)
 let no_vsync = shot != "" or selftest or padtest or has_s(args, "novsync")
-fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if no_vsync: gl.window_init_no_vsync else: 0))
+volume_load()
+window_fullscreen = starts_fullscreen(args, windowed_setting)
+fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, window_flags(no_vsync, window_fullscreen)))
 pace(PACE_MATCH)                           // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon_mac.png")  // (the Dock's icon on the Mac)
 note("window")
@@ -2077,7 +2083,6 @@ if zoom_arg > 0.0: zoom = zoom_arg
 // props are baked once (src/baked/) or at the start. (A Godot art pack, args[0], is gone with Godot: D-184.)
 pack_library = true
 startup_frame("Loading the sounds...", 0.2)
-volume_load()
 startup_frame("Loading the data...", 0.5)
 lib_load("../data")
 pack_teams()
@@ -2603,6 +2608,7 @@ def play_match():
     pace(PACE_MATCH)
     while gl.frame() and not quit_game and not bake_quit:
         ui_click_tick()
+        window_tick()
         if perf_for > 0.0:  // (the Town Center selected: its panel and queue drawn, the HUD full)
             perf_begin()
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
