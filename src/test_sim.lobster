@@ -4140,6 +4140,242 @@ def test_wonder():
 // (Lobster's saves are a flexbuffer of the sim's globals and the bots, for this build only: the
 // GDScript checks of saves from other builds, migrated or refused, have nothing to check here. The
 // bot plays at the normal level: the hard level isn't ported.)
+// Weapon mounts (#177, #211): each gun turns at its own rate, fires only along its aim and only inside its arc, on the
+// move, and comes back to its rest; a unit without mounts never touches them.
+def test_mount(rest:int, arc:int) -> Mount: return Mount { "", rest, arc, 30, 50, 0, 0, -1, 0, "", []::int }
+
+def mount_scene() -> int, int, int, int, bool, bool, bool:
+    new_world("flat_test", races0, bare0, [])
+    let k, kf = type_of_slot(0, "archer"), type_of_slot(1, "archer")
+    t_mounts[k] = [ test_mount(0, 1800) ]  // (60 degrees a second, all the way round)
+    let x0, y0 = start_x[0] + 6000, start_y[0] + 6000
+    let me = u_id[add_unit(0, k, x0, y0)]
+    let foe = u_id[add_unit(1, kf, x0, y0 + t_reach[k] / 2)]
+    u_hp[index_of(me)] = 100000
+    u_hp[index_of(foe)] = 100000
+    let t0 = tick
+    def cool() -> int:
+        let s = u_mount[index_of(me)]
+        return if s.length: s[MOUNT_COOLDOWN] else: 0
+    while cool() == 0 and tick < t0 + 200: tick_on()
+    let i = index_of(me)
+    let first_shot = tick - t0
+    let aim_at_first = u_mount[i][MOUNT_AIM]
+    // The foe stays north of it while it drives east: it keeps moving, and shoots across its hull.
+    issue_cmd(0, CMD_MOVE, [ me ], x0 + 2500, y0, 0, 0)
+    var shots_moving = 0
+    var last = cool()
+    var off_hull = 0
+    var kept_moving = true
+    for(40):
+        tick_on()
+        let n = index_of(me)
+        if cool() > last:
+            if u_moving[n] != 0: shots_moving++
+            else: kept_moving = false
+            off_hull = max(off_hull, abs(angle_gap(u_mount[n][MOUNT_AIM], u_hull[n])))
+        last = cool()
+    // With nothing to shoot at, the gun goes back to its rest.
+    remove_unit(index_of(foe))
+    for(60): tick_on()
+    let n = index_of(me)
+    let back = abs(angle_gap(u_mount[n][MOUNT_AIM], u_hull[n])) <= 30
+    let f2 = add_unit(1, kf, x0 + 12000, y0 + 12000)
+    tick_on()
+    let others_clean = u_mount[index_of(u_id[f2])].length == 0
+    return first_shot, aim_at_first, shots_moving, off_hull, kept_moving, back, others_clean
+
+// Two guns, front and back, each a quarter circle wide: each shoots its own target, and neither one on the flank.
+def twin_scene() -> [int], [int], int:
+    new_world("flat_test", races0, bare0, [])
+    let k, kf = type_of_slot(0, "archer"), type_of_slot(1, "archer")
+    t_mounts[k] = [ test_mount(0, 450), test_mount(1800, 450) ]
+    let x0, y0 = start_x[0] + 8000, start_y[0] + 8000
+    let reach = t_reach[k] / 2
+    let me = u_id[add_unit(0, k, x0, y0)]
+    let ahead = u_id[add_unit(1, kf, x0 + reach, y0)]
+    let behind = u_id[add_unit(1, kf, x0 - reach, y0)]
+    let flank = u_id[add_unit(1, kf, x0, y0 + reach)]
+    for([ me, ahead, behind, flank ]) id: u_hp[index_of(id)] = 1000000
+    u_posture[index_of(ahead)] = PASSIVE
+    u_posture[index_of(behind)] = PASSIVE
+    u_posture[index_of(flank)] = PASSIVE
+    var hurt_flank = 0
+    let targets = [ 0, 0 ]
+    let hp0 = map([ ahead, behind, flank ]) id: u_hp[index_of(id)]
+    for(300):
+        tick_on()
+        let s = u_mount[index_of(me)]
+        if s.length == 2 * MOUNT_STRIDE:
+            for(2) n:
+                let t = s[n * MOUNT_STRIDE + MOUNT_TARGET]
+                if t != 0: targets[n] = t
+    let s = u_mount[index_of(me)]
+    check(abs(angle_gap(s[MOUNT_AIM], 0)) <= 450 and abs(angle_gap(s[MOUNT_STRIDE + MOUNT_AIM], 1800)) <= 450, "each gun stays in its arc: {s[MOUNT_AIM]}, {s[MOUNT_STRIDE + MOUNT_AIM]}")
+    let hurt = [ ahead, behind, hp0[0] - u_hp[index_of(ahead)], hp0[1] - u_hp[index_of(behind)] ]
+    // With only the flank left, in reach but outside both arcs, neither gun takes it.
+    remove_unit(index_of(ahead))
+    remove_unit(index_of(behind))
+    for(200): tick_on()
+    hurt_flank = hp0[2] - u_hp[index_of(flank)]
+    return targets, hurt, hurt_flank
+
+def test_turret():
+    for([ [ 1, 0, 0 ], [ 1, 1, 450 ], [ 0, 1, 900 ], [ -1, 1, 1350 ], [ -1, 0, 1800 ], [ -1, -1, 2250 ], [ 0, -1, 2700 ], [ 1, -1, 3150 ], [ 1000, 577, 300 ] ]) c:
+        check(abs(angle_of(c[0], c[1]) - c[2]) <= 1, "angle_of({c[0]}, {c[1]}) is about {c[2]}: {angle_of(c[0], c[1])}")
+    check(angle_gap(3590, 10) == 20 and angle_gap(10, 3590) == -20, "the short way round through 0")
+    let first, aim, moving, off, kept, back, clean = mount_scene()
+    check(first >= (900 - 50) / 30, "it holds its fire until its gun has turned: first shot at tick {first}")
+    check(abs(angle_gap(aim, 900)) <= 50, "its first shot is within its tolerance: aim {aim}")
+    check(moving > 0 and kept, "it fires without stopping: {moving} shots while moving")
+    check(off > 300, "and across its hull: {off / 10} degrees off it")
+    check(back, "with nothing to shoot at, the gun goes back to its rest")
+    check(clean, "a unit without mounts has none")
+    let h1 = state_hash()
+    mount_scene()
+    check(h1 == state_hash(), "the same on a second run")
+    // Two guns at once.
+    let targets, front_back, flank_hurt = twin_scene()
+    check(targets[0] == front_back[0] and targets[1] == front_back[1], "the front gun takes what\'s ahead and the back gun what\'s behind: {targets}")
+    check(front_back[2] > 0 and front_back[3] > 0, "and both hit: {front_back[2]}, {front_back[3]}")
+    check(flank_hurt == 0, "and nothing outside their arcs is shot: {flank_hurt}")
+    let h2 = state_hash()
+    twin_scene()
+    check(h2 == state_hash(), "two guns are the same on a second run")
+    // Saved in mid-turn, it carries on exactly the same.
+    new_world("flat_test", races0, bare0, [])
+    let ks, kfs = type_of_slot(0, "archer"), type_of_slot(1, "archer")
+    t_mounts[ks] = [ Mount { "", 0, 1800, 10, 50, 0, 0, -1, 0, "", []::int } ]
+    let sx, sy = start_x[0] + 6000, start_y[0] + 6000
+    let mid = u_id[add_unit(0, ks, sx, sy)]
+    u_hp[add_unit(1, kfs, sx, sy + t_reach[ks] / 2)] = 100000
+    def aim_now() -> int:
+        let s = u_mount[index_of(mid)]
+        return if s.length: s[MOUNT_AIM] else: 0
+    while aim_now() < 300: tick_on()
+    let saved = world_bytes([]::Bot)
+    for(100): tick_on()
+    let straight = state_hash()
+    load_world_bytes(saved)
+    check(aim_now() >= 300 and aim_now() < 900 and t_mounts[ks].length == 1, "a save keeps a gun in mid-turn: {aim_now()}")
+    for(100): tick_on()
+    check(straight == state_hash(), "and it carries on the same")
+    // A building: the gun turns to it (buildings are in tiles, units in milli-tiles) and fires.
+    new_world("flat_test", races0, rules0, [])
+    let kt = type_of_slot(0, "archer")
+    t_mounts[kt] = [ test_mount(0, 1800) ]
+    let hall = find(b_id.length) bi: b_owner[bi] == 1
+    let hall_x, hall_y = b_cx[hall] * TILE + b_sx[hall] * TILE / 2, b_cy[hall] * TILE + b_sy[hall] * TILE / 2
+    let side = u_id[add_unit(0, kt, hall_x, hall_y + b_sy[hall] * TILE + 2000)]
+    u_hp[index_of(side)] = 100000
+    issue_cmd(0, CMD_ATTACK, [ side ], b_id[hall], 0, 0, 0)
+    var shot_at = -1
+    for(200):
+        tick_on()
+        let s = u_mount[index_of(side)]
+        if shot_at < 0 and s.length and s[MOUNT_COOLDOWN] > 0: shot_at = s[MOUNT_AIM]
+    check(shot_at >= 0, "a mount fires at a building")
+    let to = angle_of(hall_x - u_x[index_of(side)], hall_y - u_y[index_of(side)])
+    check(shot_at >= 0 and abs(angle_gap(shot_at, to)) <= 50, "with its gun on it: aim {shot_at}, the building at {to}")
+    // From the data: a part's mounts, in degrees and tiles, reach the sim; no other line has them.
+    let bolt = part("engine.bolt")
+    let plain = at(bolt, "stats")
+    let gun = deep_copy(plain)
+    set(gun, "mounts", parse_json("[\{\"part\":\"front\",\"rest\":180,\"arc\":90,\"turn\":60,\"range\":7,\"reload\":30,\"attack\":25,\"damage\":\"pierce\"\},\{\"part\":\"back\"\}]"))
+    set(bolt, "stats", gun)
+    let race = gen_race(PROMPTS[0])
+    new_world("flat_test", [ race, race ], rules0, [])
+    set(bolt, "stats", plain)
+    let kb = type_of_slot(0, "bolt_thrower")
+    let ms = t_mounts[kb]
+    check(ms.length == 2 and ms[0].part == "front" and ms[0].rest == 1800 and ms[0].arc == 450 and ms[0].turn == 30 and ms[0].range == 7000 and ms[0].reload == 30, "mounts from a part reach the sim")
+    check(ms[0].atk.length and ms[0].atk[1] >= 25 and ms[1].arc == 1800 and ms[1].atk.length == 0, "the first with its own attack, the second with the unit\'s and all the way round")
+    check(t_reach[kb] >= 7000, "the unit comes as close as its longest gun needs")
+    check(t_mounts[type_of_slot(0, "archer")].length == 0, "and only on that line")
+
+// Aircraft (#183): only a weapon that can hit air touches one, what they fire at they fly round, they pass over the
+// crowd, and a stone's splash below doesn't reach them.
+def air_scene() -> int:
+    new_world("flat_test", races0, bare0, [])
+    let arch, spear, foe_arch = type_of_slot(0, "archer"), type_of_slot(0, "spear"), type_of_slot(1, "archer")
+    let plane = type_of_slot(1, "spear")
+    t_air[plane] = 1
+    t_mclass[plane] = FLYING
+    t_ranged[plane] = 1
+    t_reach[plane] = 5000
+    t_hits_air[plane] = 1
+    let x0, y0 = start_x[0] + 6000, start_y[0] + 6000
+    let a = u_id[add_unit(1, plane, x0, y0)]
+    u_hp[index_of(a)] = 100000
+    let sp = u_id[add_unit(0, spear, x0 + 800, y0)]
+    u_hp[index_of(sp)] = 100000
+    let ar = u_id[add_unit(0, arch, x0 + 2500, y0)]
+    u_hp[index_of(ar)] = 100000
+    issue_cmd(0, CMD_ATTACK, [ sp ], a, 0, 0, 0)
+    for(30): tick_on()
+    check(u_foe[index_of(sp)] != a, "a spear can\'t be ordered at an aircraft")
+    let start_hp = u_hp[index_of(a)]
+    var spear_on = false
+    var kept_moving = 0
+    var seen = 0
+    var far = 0
+    for(400):
+        tick_on()
+        if u_foe[index_of(sp)] == a: spear_on = true
+        if u_foe[index_of(a)] != 0:
+            seen++
+            if u_moving[index_of(a)] != 0: kept_moving++
+        far = max(far, isqrt(dist2(u_x[index_of(a)], u_y[index_of(a)], x0, y0)))
+    check(not spear_on, "nor does a spear pick one")
+    check(u_foe[index_of(ar)] == a and u_hp[index_of(a)] < start_hp, "an archer does, and hits it: {start_hp - u_hp[index_of(a)]}")
+    check(seen > 0 and kept_moving * 10 >= seen * 9, "the aircraft flies round what it fires at: moving {kept_moving} of {seen} ticks")
+    check(can_hit(foe_arch, index_of(sp)), "everyone can hit the ground")
+    let ram = type_of_slot(0, "catapult")
+    check(t_hits_air[ram] == 0, "an engine can\'t hit air")
+    check(t_hits_air[spear] == 0 and t_hits_air[arch] == 1, "melee can\'t, a bow can")
+    let h = state_hash()
+    return h
+
+def test_air():
+    let h1 = air_scene()
+    check(h1 == air_scene(), "the same on a second run")
+    // Two bots with aircraft for their heavy line: they play on, and it comes out the same twice.
+    def bots_with_air() -> int, int:
+        let rules = load_rules("default")
+        let races = map(PROMPTS.slice(0, 2)) p: generate(p, rules, 0)
+        new_world("reed_meadow", races, rules, [])
+        for(t_slot) slot, k:
+            if slot == "large":
+                t_air[k] = 1
+                t_mclass[k] = FLYING
+        let bots = map(2) p: new_bot(p)
+        var built = 0
+        while tick < 4800:
+            if tick == 2400:  // (a bot takes far longer to train its own: put some over each base)
+                for(2) p:
+                    for(6) n: add_unit(p, type_of_slot(p, "large"), start_x[1 - p] + n * 600, start_y[1 - p] + 3000)
+            for(bots) bot: full_bot_think(bot)
+            tick_on()
+            built = max(built, (filter(u_id.length) i: t_air[u_kind[i]] != 0).length)
+        return built, state_hash()
+    let n1, b1 = bots_with_air()
+    let n2, b2 = bots_with_air()
+    check(n1 == 12 and n2 == 12, "bots play on with aircraft over their bases: {n1}")
+    check(b1 == b2, "and it comes out the same twice")
+
+    // From the data: air on a body and hits_air on a weapon reach the sim; nobody else changes.
+    let bolt = part("siege.bolt.timber")
+    let plain = at(bolt, "stats")
+    let st = deep_copy(plain)
+    set(st, "air", jint(1))
+    set(bolt, "stats", st)
+    let race = gen_race(PROMPTS[1])
+    new_world("flat_test", [ race, race ], rules0, [])
+    let kb = type_of_slot(0, "bolt_thrower")
+    check(t_air[kb] == (if rstr(su_type_recipe[kb], "body") == "siege.bolt.timber": 1 else: 0), "air on a part reaches the sim")
+    check(t_air[type_of_slot(0, "archer")] == 0, "and only on that line")
+    set(bolt, "stats", plain)
+
 def test_save_load():
     let at_t = 4800
     let to_t = 8400
@@ -4195,7 +4431,7 @@ def test_save_load():
 
 // ------------------------------------------------------------------ the parts
 
-let PARTS = [ "fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
+let PARTS = [ "fixed", "turret", "air", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
@@ -4251,6 +4487,8 @@ def run_part(name:string):
     elif name == "tech": test_tech()
     elif name == "queue": test_queue()
     elif name == "wonder": test_wonder()
+    elif name == "turret": test_turret()
+    elif name == "air": test_air()
     elif name == "save_load": test_save_load()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()

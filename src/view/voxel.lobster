@@ -25,7 +25,7 @@ def vx_dist(p:float3, s:vx_prim) -> float:
     let ba = s.b - s.a
     if s.box.x > 0.0:
         let n = normalize(ba)
-        let x = normalize(cross(n, float3 { 0.0, 0.0, 1.0 }))
+        let x = if abs(n.z) > 0.999: float3 { 1.0, 0.0, 0.0 } else: normalize(cross(n, float3 { 0.0, 0.0, 1.0 }))  // (facing straight up: it still has an across)
         let z = cross(x, n)
         let q = p - s.a
         let d = abs(float3 { dot(q, x), dot(q, n), dot(q, z) }) - s.box
@@ -205,6 +205,124 @@ class vx_gait:
     dip:float    // the body's drop into a blow
     turn:float   // the shoulders' turn into a blow, in units
 
+// ---- Running gear: a belt that runs and wheels that turn, by the walk's phase, which goes by the ground covered
+// (vx_walk_step). A cycle is one link's pitch, and the belt lies the same a pitch on, so the loop has no seam.
+
+class vx_track:
+    x:float      // the belt's middle, either side of the hull
+    half:float   // half its width
+    thick:float  // a link's half thickness
+    bar:float    // the raised bar on each link, half its height (0: none)
+    mat:int
+    bar_mat:int
+    ys:[float]  // the belt's middle line, round the outline of its circles
+    zs:[float]
+    runs:[float]  // how far round the belt each sample is
+    total:float
+    links:int
+    pitch:float  // the length of a link, so that a whole number go round
+
+class vx_wheel:
+    at:float3  // mirrored across the hull unless it's on the middle
+    axis:float3
+    r:float
+    thick:float
+    mat:int
+    face_r:float  // an inset face, in its own colour (0: none)
+    face:int
+    hub_r:float
+    hub:int
+    blades:int  // a prop or rotor: this many blades, turning a blade's angle a cycle
+    marks:int   // bolts round its face, turning one bolt's angle a cycle (so the rim goes a pitch)
+
+let VX_BELT_SAMPLES = 720
+
+// The belt's line: the outline round circles [y, z, r], walked from the front, up and over.
+def vx_parse_track(o:JV) -> vx_track:
+    let circles = map(glist(o, "round")) c: float3 { as_float(c.a[0]), as_float(c.a[1]), as_float(c.a[2]) }
+    let ys = []::float
+    let zs = []::float
+    for(VX_BELT_SAMPLES) i:
+        let a = 360.0 * float(i) / float(VX_BELT_SAMPLES)
+        var best = -1000000.0
+        var y, z = 0.0, 0.0
+        for(circles) c:
+            let v = c.x * cos(a) + c.y * sin(a) + c.z
+            if v > best:
+                best = v
+                y = c.x + c.z * cos(a)
+                z = c.y + c.z * sin(a)
+        ys.push(y)
+        zs.push(z)
+    let runs = []::float
+    var total = 0.0
+    for(VX_BELT_SAMPLES) i:
+        runs.push(total)
+        let n = (i + 1) % VX_BELT_SAMPLES
+        total += magnitude(float2 { ys[n] - ys[i], zs[n] - zs[i] })
+    let want = as_float(at(o, "pitch"))
+    let links = max(4, int(total / want + 0.5))
+    return vx_track { as_float(at(o, "x")), as_float(at(o, "half")), gfloat(o, "thick", 0.42), gfloat(o, "bar", 0.26), vx_mat(gstr(o, "mat", "pale")),
+                      vx_mat(gstr(o, "bar_mat", "frame2")), ys, zs, runs, total, links, total / float(links) }
+
+def vx_parse_wheel(o:JV, pitch:float) -> vx_wheel:
+    let r = as_float(at(o, "r"))
+    let marks = if has(o, "blades"): 0 elif pitch > 0.0: max(1, int(2.0 * 3.14159265 * r / pitch + 0.5)) else: 0
+    return vx_wheel { vx_v3(at(o, "at")), if has(o, "axis"): normalize(vx_v3(at(o, "axis"))) else: float3 { 1.0, 0.0, 0.0 }, r, gfloat(o, "thick", 0.9), vx_mat(gstr(o, "mat", "pale")),
+                      gfloat(o, "face_r", 0.0), vx_mat(gstr(o, "face", "mark")), gfloat(o, "hub_r", 0.0), vx_mat(gstr(o, "hub", "frame2")), gint(o, "blades", 0), marks }
+
+// The belt on both sides, at phase ph (degrees; 360 is a pitch on).
+def vx_track_prims(out:[vx_prim], t:vx_track, ph:float):
+    let shift = t.pitch * ph / 360.0
+    for(t.links) l:
+        // (going forward the top run goes forward over the hull: against the way the line is walked)
+        var s = float(l) * t.pitch - shift
+        while s < 0.0: s += t.total
+        while s >= t.total: s -= t.total
+        var i = 0
+        while i + 1 < VX_BELT_SAMPLES and t.runs[i + 1] <= s: i++
+        let n = (i + 1) % VX_BELT_SAMPLES
+        let seg = max(0.0001, (if n: t.runs[n] else: t.total) - t.runs[i])
+        let f = (s - t.runs[i]) / seg
+        let y = t.ys[i] + (t.ys[n] - t.ys[i]) * f
+        let z = t.zs[i] + (t.zs[n] - t.zs[i]) * f
+        let i0, i1 = (i + VX_BELT_SAMPLES - 3) % VX_BELT_SAMPLES, (i + 4) % VX_BELT_SAMPLES
+        var dir = normalize(float2 { t.ys[i1] - t.ys[i0], t.zs[i1] - t.zs[i0] })
+        if abs(dir.x) < 0.05: dir = normalize(float2 { if dir.x < 0.0: -0.05 else: 0.05, dir.y })  // (a box can't face straight up)
+        let out_y, out_z = dir.y, -dir.x
+        for([ t.x, -t.x ]) x:
+            let tang = float3 { 0.0, dir.x, dir.y }
+            out.push(vx_box(float3 { x, y, z }, tang, float3 { t.half, t.pitch * 0.56, t.thick }, 0.05, t.mat))
+            if t.bar > 0.0:
+                out.push(vx_box(float3 { x, y + out_y * t.thick, z + out_z * t.thick }, tang, float3 { t.half, 0.4, t.bar }, 0.03, t.bar_mat))
+
+// The wheels, props and rotors, at phase ph.
+def vx_wheel_prims(out:[vx_prim], ws:[vx_wheel], ph:float):
+    for(ws) w:
+        let u = if abs(w.axis.z) > 0.9: float3 { 1.0, 0.0, 0.0 } else: normalize(cross(w.axis, float3 { 0.0, 0.0, 1.0 }))
+        let v = cross(w.axis, u)
+        for(if w.at.x == 0.0: [ 1.0 ] else: [ 1.0, -1.0 ]) side:
+            let c = float3 { w.at.x * side, w.at.y, w.at.z }
+            let face_at = c + w.axis * side * (w.thick + 0.25)
+            if w.blades > 0:
+                for(w.blades) k:
+                    let a = 360.0 * float(k) / float(w.blades) - ph / float(w.blades)
+                    out.push(vx_hard(c, c + (u * cos(a) + v * sin(a)) * w.r, w.thick, w.thick * 0.5, w.mat))
+            else:
+                out.push(vx_disc(c, w.axis, w.r, w.thick, w.mat))
+                if w.face_r > 0.0: out.push(vx_disc(face_at, w.axis, w.face_r, 0.28, w.face))
+                if w.hub_r > 0.0: out.push(vx_disc(face_at + w.axis * side * 0.3, w.axis, w.hub_r, 0.22, w.hub))
+                for(w.marks) k:
+                    let a = 360.0 * float(k) / float(w.marks) - ph / float(w.marks)
+                    out.push(vx_bead(face_at + w.axis * side * 0.3 + (u * cos(a) + v * sin(a)) * w.face_r * 0.8, 0.28, w.hub))
+
+class vx_part_spec:
+    name:string
+    pivot:float3          // where it turns, in the body's frame
+    body:string           // its own body: its shapes round the pivot, standing at their own height
+    point_names:[string]  // named points on it (a muzzle), in the body's frame
+    point_at:[float3]
+
 class vx_body_spec:
     id:string
     size:float
@@ -253,11 +371,20 @@ class vx_body_spec:
     crew:[float3] = []         // an engine: where its crew stand (on their own legs, walking as it moves)
     seats:[float3] = []        // a war beast: where its crew sit (a howdah), at their seat height
     style_names:[string] = []  // an engine in each culture's style (siege.<kind>.<style>): its skin, pale, mark
+    parts:[vx_part_spec] = []  // pieces that turn on their own (a turret): this body is the whole figure (a portrait, a fall)
+    hull:string = ""           // with parts: the body without them
+    piece:bool = false         // a hull or a part: on the ground as the whole body is, not under its own lowest point
+    death:string = ""          // how it dies: "knocked_out", or falling over
+    track:vx_track? = nil
+    wheels:[vx_wheel] = []
     style_cols:[float3] = []
     plean:[float] = []   // per point, with a gait: how far forward it leans walking
     psway:[float] = []   // how far it shifts over the planted foot
     pdrive:[float] = []  // how far a blow carries it forward
     gait:vx_gait? = nil
+    tool_jobs:[string] = []  // gear it uses in place of the kit's (a robot's laser cutter for the axe and the pick)
+    tool_gear:[string] = []
+    bare:bool = false  // it wears nothing (a robot: no caps or armour on it)
 
 class vx_hold_spec:
     rest:float3
@@ -291,6 +418,8 @@ class vx_gear_spec:
     fit_ids:[string]
     fits:[[vx_spec]]
     flags:[string]
+    legs:[vx_spec]  // worn gear's shapes on each leg (hip, knee, ankle) and arm (shoulder, elbow, hand), the right one
+    arms:[vx_spec]  // given, mirrored on the left: power armour's greaves and gauntlets
 
 class vx_rule:
     part:string
@@ -368,7 +497,88 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
     for(so.keys) name, k:
         b.style_names.push(name)
         for([ "skin", "pale", "mark" ]) c: b.style_cols.push(vx_hex(gstr(so.a[k], c, "#808080")))
+    let to = gobj(o, "tools")
+    b.tool_jobs = copy(to.keys)
+    b.tool_gear = map(to.a) t: as_str(t)
+    b.bare = gbool(o, "bare", false)
+    if has(o, "tracks"): b.track = vx_parse_track(at(o, "tracks"))
+    let tr = b.track
+    b.wheels = map(glist(o, "wheels")) w: vx_parse_wheel(w, if tr: tr.pitch else: 0.0)
+    b.death = gstr(o, "death", "")
+    vx_parse_parts(b, glist(o, "parts"))
     return b
+
+// The gear body b uses for gear g (its own in its place, or g).
+def vx_tool_for(b:vx_body_spec, tool:string) -> string:
+    let k = find(b.tool_jobs) j: j == tool
+    return if k >= 0: b.tool_gear[k] else: tool
+
+// How far a body goes in one walk cycle, body units, for one with a belt: a link's pitch; else 0.
+def vx_track_cycle(b:vx_body_spec) -> float:
+    let t = b.track
+    return if t: t.pitch else: 0.0
+
+// A body's `parts` (a turret): `pivot` and `shapes`. Each becomes a body of its own, baked per facing; so does the hull
+// without them; the body itself keeps all of it.
+def vx_parse_parts(b:vx_body_spec, parts:[JV]):
+    if not parts.length: return
+    let hull = copy(b)
+    hull.id = b.id + "#hull"
+    hull.piece = true
+    vx_bodies.set(hull.id, hull)
+    b.hull = hull.id
+    for(parts) o:
+        let name = gstr(o, "name", "")
+        assert name != ""
+        if not has(o, "pivot"): print "body {b.id}: part {name} has no pivot"
+        assert has(o, "pivot")
+        let pivot = vx_v3(at(o, "pivot"))
+        let shapes = vx_parse_shapes(glist(o, "shapes"))
+        let piece = copy(b)
+        piece.id = b.id + "#" + name
+        piece.piece = true
+        piece.hull = ""
+        piece.parts = []
+        piece.track = nil
+        piece.wheels = []
+        piece.shapes = map(shapes) s: vx_spec_moved(s, float3 { -pivot.x, -pivot.y, 0.0 })
+        vx_bodies.set(piece.id, piece)
+        let pts = gobj(o, "points")
+        b.parts.push(vx_part_spec { name, pivot, piece.id, pts.keys, map(pts.a) v: vx_v3(v) })
+        b.shapes = b.shapes.append(shapes)
+
+def vx_spec_moved(s:vx_spec, by:float3) -> vx_spec:
+    let c = copy(s)
+    c.a = s.a + by
+    c.b = s.b + by
+    c.offs = map(s.offs) o: o + by
+    return c
+
+// Where a spot in a body's frame falls on its picture in that facing, voxels from the ground point (x right, y down).
+def vx_spot_px(b:vx_body_spec, v:float3, facing:int) -> float2:
+    let yaw = float(facing) * 45.0
+    let across = v.x * cos(yaw) + v.y * sin(yaw)  // (as vx_cell: the body turned against the camera)
+    let along = v.y * cos(yaw) - v.x * sin(yaw)
+    let s = vx_RES * b.size
+    return float2 { across * s, -(along * sin(vx_ELEV) + v.z * cos(vx_ELEV)) * s }
+
+// Where a part's pivot falls on the hull's picture in that facing (its height is in the part's own picture).
+def vx_pivot_px(b:vx_body_spec, p:vx_part_spec, facing:int) -> float2:
+    return vx_spot_px(b, float3 { p.pivot.x, p.pivot.y, 0.0 }, facing)
+
+// A named point on a part, on that part's own picture in its facing.
+def vx_part_point_px(b:vx_body_spec, p:vx_part_spec, k:int, part_f:int) -> float2:
+    return vx_spot_px(b, p.point_at[k] - float3 { p.pivot.x, p.pivot.y, 0.0 }, part_f)
+
+// A named point on a part (or, with no part, the body or any part that has it), on the stacked figure with the hull and
+// that part in these facings, or false if it has none.
+def vx_point_px(b:vx_body_spec, name:string, part:string, hull_f:int, part_f:int) -> float2, bool:
+    for(b.parts) p:
+        let k = if part == "" or part == p.name: find(p.point_names) n: n == name else: -1
+        if k >= 0: return vx_pivot_px(b, p, hull_f) + vx_part_point_px(b, p, k, part_f), true
+    let k = find(b.pnames) n: n == name
+    if k >= 0: return vx_spot_px(b, b.pat[k], hull_f), true
+    return float2_0, false
 
 def gfloat(o:JV, k:string, fallback:float) -> float: return if has(o, k): as_float(at(o, k)) else: fallback
 
@@ -440,7 +650,8 @@ def vx_load(dirs:[string]):
                 vx_gears.set(name, vx_gear_spec { name, if hand == "right": 1 elif hand == "left": -1 else: 0, gstr(g, "hold", ""),
                                                   vx_v3_or(g, "dir"), normalize(if has(g, "face"): vx_v3(at(g, "face")) else: float3 { 0.0, 1.0, 0.0 }),
                                                   vx_parse_gear_shapes(glist(g, "shapes")), copy(fits.keys), map(fits.a) l: vx_parse_gear_shapes(l.a),
-                                                  gstrs(g, "flags") })
+                                                  gstrs(g, "flags"), vx_parse_gear_shapes(glist(g, "legs")),
+                                                  vx_parse_gear_shapes(glist(g, "arms")) })
         if has(go, "parts"):  // a mod's rules go first: they're more particular
             let rs = map(glist(go, "parts")) r: vx_rule { gstr(r, "part", ""), gstr(r, "tag", ""), gstr(r, "slot", ""), gstr(r, "gear", "") }
             for(vx_rules) r: rs.push(r)
@@ -707,7 +918,7 @@ def vx_body_points(b:vx_body_spec, ph:float, lift:float3) -> vx_points:
 
 // The legs, walking at ph: each foot planted where it rests, moved along by sin(ph + its phase) * stride, lifted as
 // it swings forward; the knee (or a front leg's elbow) bent towards the pole.
-def vx_legs(out:[vx_prim], b:vx_body_spec, p:vx_points, ph:float, flags:[string]):
+def vx_legs(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:float, flags:[string]):
     for(b.legs) l:
         for([ 1.0, -1.0 ]) side:
             let m = float3 { side, 1.0, 1.0 }
@@ -723,6 +934,16 @@ def vx_legs(out:[vx_prim], b:vx_body_spec, p:vx_points, ph:float, flags:[string]
                 let s2 = s  // (the left one mirrored: its offsets' x turned)
                 if side > 0.0: vx_emit(out, s2, lp, vx_X, fy, fz, flags, nil)
                 else: vx_emit(out, vx_mirrored(s2), lp, vx_X, fy, fz, flags, nil)
+            vx_limb_gear(out, u, true, side, lp, fy, fz, flags)
+
+// Worn gear's shapes on a leg or an arm at its points lp (in the frame x, fy, fz), the left side's mirrored.
+def vx_limb_gear(out:[vx_prim], u:vx_unit_def, leg:bool, side:float, lp:vx_points, fy:float3, fz:float3, flags:[string]):
+    for(u.gear) g:
+        let gs = vx_gears.get(g)
+        if gs and gs.hand == 0:
+            for(if leg: gs.legs else: gs.arms) s:
+                if side > 0.0: vx_emit(out, s, lp, vx_X, fy, fz, flags, nil)
+                else: vx_emit(out, vx_mirrored(s), lp, vx_X, fy, fz, flags, nil)
 
 def vx_mirrored(s:vx_spec) -> vx_spec:
     let m = float3 { -1.0, 1.0, 1.0 }
@@ -793,6 +1014,7 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         out.push(vx_cap(sh, elbow, b.thick, b.thick * 0.8, b.sleeve))
         out.push(vx_cap(elbow, hand, b.thick * 0.75, b.thick * 0.6, b.hand))
         out.push(vx_ball(hand, b.thick * 0.8, b.hand))
+        vx_limb_gear(out, u, false, side, vx_points { [ "shoulder", "elbow", "hand" ], [ sh, elbow, hand ] }, vx_Y, vx_Z, flags)
         if side > 0.0: hr = hand
         else: hl = hand
     if pushed != "":
@@ -802,7 +1024,9 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         let d = normalize(dr)
         let o = cross(vx_X, d)
         let gp = vx_points { [ "hand", "draw" ], [ hr, hr ] }
-        for(right.shapes) s: vx_emit(out, s, gp, d, o, vx_X, flags, nil)
+        let f = copy(flags)
+        if attack and k > 0.35: f.push("firing")  // (the blow's moment: a beam, a muzzle's flash)
+        for(right.shapes) s: vx_emit(out, s, gp, d, o, vx_X, f, nil)
     if left:  // up, out of its face, to the side
         let o = left.face
         let sd = normalize(cross(o, vx_Z))
@@ -874,8 +1098,11 @@ def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:
         let picks = vx_picking(u)
         let s = if picks: vx_raise(t) - vx_blow(t) else: vx_strike(t)
         p.at = map(p.at) a, k: a + float3 { 0.0, b.pdrive[k] * s, -g.dip * max(0.0, s) }
-    if not vx_seated: vx_legs(out, b, p, ph, flags)
+    if not vx_seated: vx_legs(out, u, b, p, ph, flags)
     for(b.shapes) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
+    let track = b.track
+    if track: vx_track_prims(out, track, ph)
+    vx_wheel_prims(out, b.wheels, ph)
     vx_worn(out, u, b, p, flags)
     if b.arms: vx_arms(out, u, b, p, if vx_seated or vx_stand: 0.0 else: sin(ph), t, flags)
     elif b.harness: vx_harness(out, u, b, p, t, flags)
@@ -976,7 +1203,24 @@ def vx_flies(u:vx_unit_def) -> bool: return vx_body_of(u.body).flies > 0.0 or (u
 
 // Is the unit's ground its body's z 0 (a flier's: not under its lowest point; an engine's or a war beast's: under its
 // wheels and feet, not its crew's)? A fall lies on the ground (not a flier's).
-def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and not falling) or u.crew != nil
+// A vehicle knocked out (a body's "death": "knocked_out", #186): it stays where it stood, burnt, its parts knocked askew.
+def vx_knocked_out(u:vx_unit_def, b:vx_body_spec) -> [vx_prim]:
+    let out = []::vx_prim
+    let team, burnt, rust = vx_mat("team"), vx_mat("wreck"), vx_mat("wreck_rust")
+    def burn(p:vx_prim, n:int) -> vx_prim:
+        return vx_prim { p.a, p.b, p.ra, p.rb, if n % 7 == 0 or p.mat == team: rust else: burnt, p.hard, p.disc, p.box }
+    def body_of(id:string) -> vx_unit_def: return vx_unit_def { u.label, id, u.skin, u.pale, u.mark, [], "", false, u.coat, u.mane, u.coat_mark, nil }
+    for(vx_unit_prims(body_of(if b.hull != "": b.hull else: b.id), 0.0)) p, n: out.push(burn(p, n))
+    for(b.parts) part, k:
+        let yaw = 24.0 + 13.0 * float(k)
+        def turned(v:float3) -> float3:
+            return float3 { v.x * cos(yaw) - v.y * sin(yaw) + part.pivot.x, v.x * sin(yaw) + v.y * cos(yaw) + part.pivot.y, v.z - 0.6 }
+        for(vx_unit_prims(body_of(part.body), 0.0)) p, n:
+            let q = burn(p, n)
+            out.push(vx_prim { turned(q.a), turned(q.b), q.ra, q.rb, q.mat, q.hard, q.disc, q.box })
+    return out
+
+def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and not falling) or u.crew != nil or vx_body_of(u.body).piece
 
 // The unit's size: its body's (a mount is scaled to it).
 def vx_size_of(u:vx_unit_def) -> float: return vx_body_of(u.body).size
@@ -1052,6 +1296,15 @@ class vx_filling:
     field:[float]  // the distance where it was measured (air elsewhere, -1 deep inside), for normals
     next:int       // the next block to fill
 
+// How low a shape really goes (vx_bounds is generous, for finding what's near).
+def vx_lowest(p:vx_prim) -> float:
+    if p.box.x > 0.0 or p.disc:
+        let n = normalize(p.b - p.a)
+        let flat = sqrt(max(0.0, 1.0 - n.z * n.z))
+        if p.disc: return p.a.z - p.ra * flat - abs(n.z) * p.rb
+        return p.a.z - abs(n.z) * p.box.y - flat * p.box.z - p.ra
+    return min(p.a.z - p.ra, p.b.z - p.rb)
+
 def vx_fill_begin(parts:[vx_prim], unit_size:float, flies:bool) -> vx_filling:
     let s = unit_size * vx_RES
     var low = if flies: 0.0 else: 1000.0  // (a flier's ground is the builder's z 0, not under its lowest point)  // the ground: under the body's lowest point (gear reaching lower, a spear's butt, is cut off
@@ -1059,6 +1312,8 @@ def vx_fill_begin(parts:[vx_prim], unit_size:float, flies:bool) -> vx_filling:
         if not p.hard and not flies:
             let a = vx_bounds(p)  // (its low corner; the high one isn't needed)
             low = min(low, a.z)
+    if low == 1000.0:  // (nothing soft: the ground goes under what there is)
+        for(parts) p: low = min(low, vx_lowest(p))
     let ps = map(parts) p: vx_scaled(p, s, -low)
     let k = vx_BLEND * s
     var a = float3_1 * 1000.0

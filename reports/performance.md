@@ -107,3 +107,38 @@ Check whether the conclusions follow from the numbers, whether anything measured
 missing here, and what's the cheapest next measurement. Sources: `archive/journal/2026-10-31-the-perf-check.md`,
 `2026-11-03-the-laptop-still-ran-hot.md`, `2026-11-04-ground-cache.md`; D-188, D-194, D-197, D-209; `reports/lobster-prs.md` items
 2, 3, 8, 9, 12; `reports/playtest-check/heat-notes.md`; `src/game/perf.lobster`.
+
+## Big battles (2026-11-06, #169)
+
+Zoomed out (`zoom:1`), `reveal`, everything baked, two-sided on `open_field`, MacBook. Before formations and with them:
+
+| Units | Work median / 95th | Sim a tick (median) | Busy | FPS |
+|---|---|---|---|---|
+| 258, no formations | 2.4 / 4.2 ms | 0.4 ms | 17% | 59.5 |
+| 998, no formations | 5.2 / 9.3 ms | 1.5 ms | 34% | 59.1 |
+| 2000, no formations | 12.0 / 22.3 ms | 3.3 ms | 71% | 55.2 |
+| 2000, formations | 7.3 / 11.6 ms | 2.2 ms | 47% | 58.4 |
+
+Formations made it cheaper: fewer shoves between units, and a tighter crowd to resolve. The march and a whole battle are in the last row (120 s).
+
+**The lag Dominic saw was baking, not units.** With bakes on, a frame's "input and sim" was 9.8 ms against 0.2 ms: a PNG save 114 ms on average (181 ms at worst), a cell 8.5 ms (up to 20 ms), a fill's end 12 ms (up to 38 ms). Bakes now keep out of a fight and of a match of 300+ units, unless a unit is waiting on the look.
+
+**The layout is already data-oriented.** Units are parallel flat int arrays (`u_x`, `u_y`, ...), no per-unit objects in the sim, and separation is on a grid. A DOTS-style rewrite has nothing to win there. What's left is per-sprite work in Lobster, not memory layout:
+
+| What | Cost at 2,000 units | Idea |
+|---|---|---|
+| Sprites: 18 pushes a quad, 4,000 quads (shadows are half) | 2.5 ms (up to 6.5 ms in a crush) | Prebuilt index list; cheaper shadows zoomed out |
+| Collect: a class per drawable, four dictionary calls a unit | 2.2 ms | A pool of drawables; unit columns instead of dictionaries |
+| Sim tick | 2.2 ms median, one frame in three | Not the limit |
+
+Tried and dropped: sorting sprites into depth bands by sheet to batch them. No gain on the main thread (6.9 ms against 6.5 ms): draw calls aren't the cost. GPU load wasn't measured (`perf:` can't see it).
+
+**Still open:** a first match with a new race bakes on the main thread outside fights, about 22 ms at the 95th percentile at 250 units. Moving bakes to a worker or a separate process is the real fix.
+
+To film: `./play.sh lobby mods:big_battle` (first run of a new race pair: about 45 s on the loader).
+
+**Measure on a quiet machine.** 2026-11-06, the big run with the filming setup (everyone alive, in view, marching): 8.4 / 17.2 ms and 12.0 / 24.2 ms a minute apart with other sessions at load 8; the fixed-cost text timing doubled (0.05 to 0.12 ms) in the slow runs. Frames with a sim tick sit near the 16.6 ms budget. The earlier 7.3 / 12.4 ms averaged in the later battle with fewer units.
+To film: `./play.sh lobby "races:norse frogs|centaurs" map:open_field watch skirmish reveal army:107 zoom:1` (first run of a new race pair: about 45 s on the loader).
+## Parts that turn on their own (#178, 2026-11-06)
+
+Measured on the Sherman and Panzer, 6 a side, one turret each: a part is one atlas of 16 cells (8 facings and their shadows), 24 to 32 KB as a PNG, against 96 cells for a body's standing and walking job alone. `perf:20` in that match: 59.9 fps, work 1.0 ms median, 1.3 ms 95th, no buffers made. Baking every hull with every turret facing instead would have multiplied the hull's cells by 8.

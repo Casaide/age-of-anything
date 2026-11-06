@@ -72,6 +72,27 @@ A mod adds its own `data/voxel/` (the same files; a body or gear of the same id 
 go first).
 
 
+### Parts that turn on their own
+
+A body can list `parts`: `{"name": "turret", "pivot": [x, y, z], "shapes": [...]}`, its shapes in the body's frame. Each becomes a
+body of its own (`<id>#<name>`, round its pivot, at its own height), baked once per facing; the hull (`<id>#hull`) is baked without
+them, in every mode. The composer (`add_parts`, `game.lobster`) draws the hull, then each part over it in list order, at the pivot
+for the hull's facing. A part named by a mount (`stats.mounts`) faces that mount's aim; any other part faces with the hull. A body can have several, as `tests/voxel/parts/bodies/test.twin.json` does. The body itself
+keeps everything, for falls and portraits. A part's `points` (`{"muzzle": [x, y, z]}`, in the body's frame) are found on the stacked figure by
+`vx_point_px`; a shot starts from its mount's `muzzle`, or 12 px up from the shooter's feet if there's none.
+ `voxel_proto -- <out.ppm or -> parts <body> [voxels:<dir>]` draws every pair of facings and
+checks that each pivot lands on the hull; the batch runs it on `tests/voxel/parts`.
+
+### Running gear
+
+A body can say `tracks` (`x`, `half`, `pitch`, `mat`, `bar_mat`, and `round`: the circles `[y, z, r]` the belt goes round) and `wheels` (`at`, `r`,
+`mat`, `face`, `face_r`, `hub`, `hub_r`, mirrored across the hull; `axis` and `blades` for a prop or rotor). They are made per walk step: one cycle
+moves the belt one link, the cycle's length comes from the pitch, and `voxel_proto ... parts` checks that a cycle on is the same picture.
+
+### How a vehicle dies
+
+A body's `"death": "knocked_out"` keeps it upright when it dies: burnt (`wreck`, `wreck_rust`), its parts knocked askew (`vx_knocked_out`), burning then smoking, then fading (`collect_wreck`). `voxel_proto -- - bodies` checks that it keeps its outline.
+
 ## Mods
 
 A mod's parts (milestone 21, `docs/modding.md`) need no models: their looks are the voxel kit's, by
@@ -201,6 +222,7 @@ before it is committed.
 
 ## Siege shots
 
-What engines throw is drawn by `src/game/fx.lobster` (`shot_style`): `data/siege_shots.json` describes each look (its
-shape and colour, its spin, its ground shadow, its impact: bounce, break, stick; chunks in its colour); an engine's
-body part names its look (parts.json `shot`); a mod's looks come from its `shots.json`.
+What any weapon fires is drawn by `src/game/fx.lobster` (`shot_style`) from `data/shots.json`, a mod's `shots.json` merging over it. A
+look is knobs: its flight (`arc`, `form`, `len`, `w`, `trail`...), what it does at the gun (`muzzle`: flash, smoke, ring, dust, recoil on the
+turret), what it does where it lands (`hit`: sparks and a sound; `impact`: blast, smoke, scorch, debris, shake), and its sounds (`sound`, `hit.sound`). It
+is all view only: the sim fires one shot and decides one hit.

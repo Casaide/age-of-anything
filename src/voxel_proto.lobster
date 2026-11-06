@@ -2,6 +2,7 @@
 // voxel a baked pixel (the game draws them at 0.55 world px a pixel).
 //   lobster voxel_proto.lobster -- <out.ppm>   (then: magick out.ppm -filter box -resize 55% out.png)
 //   lobster voxel_proto.lobster -- <out.ppm> solo <body> [gear,...]   (one body alone at 3x: make it from scratch)
+//   lobster voxel_proto.lobster -- <out.ppm or -> parts <body> [voxels:<dir>]   (hull facing by part facing, 8 x 8; checks the part sits on the hull)
 import std
 import vec
 import dictionary
@@ -19,7 +20,13 @@ class row:
     shade:bool   // shadows (on the body and the ground)
     look:int     // a human's look (vx_set_look)
 
-vx_load([ "../data/voxel" ])
+let PARTS_OFF_PCT = 1.5     // (the outlines where a part meets its hull differ a little)
+let FLIER_LIFT_SHARE = 0.5  // how much of its flying height a flier's lowest pixel must be off the ground (its wings hang below its middle)
+let WRECK_KEEPS_PCT = 90    // how much of its standing outline a knocked-out vehicle covers (its turret is knocked askew)
+let vx_dirs = [ "../data/voxel" ]
+for(command_line_arguments()) a:
+    if starts_with(a, "voxels:"): vx_dirs.push(a.substring(7, a.length - 7))  // (more data, a mod's)
+vx_load(vx_dirs)
 let ROMAN = float3 { 0.48, 0.29, 0.16 }  // (human_dark, as the romans)
 let ROMAN2 = float3 { 0.35, 0.20, 0.13 }
 let RAT = float3 { 0.48, 0.35, 0.25 }  // (rat_brown)
@@ -115,6 +122,100 @@ if args.length > 1 and args[1] == "looks":
     for([ units[5], units[6], units[11], units[12] ]) u: for(vx_looks_of(u)) v: rows.push(row { u, "stand", "scarf", true, v })
 let step = vx_CELL.x * 3 / 2  // a column (room for the shadows)
 // `check`: every unit in every facing, standing and in each walk step, stands in its shadow (vx_contact_gap); exit 1 if not
+// What's wrong with a body's parts and running gear: the number of faults. out: a sheet of every pair of facings, or "-".
+def parts_faults(id:string, out:string) -> int:
+    let b = vx_body_of(id)
+    assert b.parts.length
+    let u = unit(id, id, float3_0, float3_0, [], "", float3_0)
+    vx_set_look(u, 0)
+    vx_team_wear = "scarf"
+    vx_shadows = true
+    vx_act = ""
+    vx_stand = true
+    let hull = vx_fill(vx_unit_prims(unit(b.hull, b.hull, float3_0, float3_0, [], "", float3_0), 0.0), b.size, true)
+    let pieces = map(b.parts) p: vx_fill(vx_unit_prims(unit(p.body, p.body, float3_0, float3_0, [], "", float3_0), 0.0), b.size, true)
+    var bad = 0
+    for(8) f:
+        let cell = copy(vx_cell(hull, f))
+        for(b.parts) p:
+            let o = vx_pivot_px(b, p, f)
+            let at = (vx_ANCHOR.y + int(floor(o.y + 0.5))) * vx_CELL.x + vx_ANCHOR.x + int(floor(o.x + 0.5))
+            if cell[at].w <= 0.0:
+                print "parts: the pivot of {p.name} is off the hull in facing {f}"
+                bad++
+    // A belt or wheels: a cycle on is the same picture (no seam), and half a cycle on isn't (they do move).
+    if b.track or b.wheels.length:
+        let hu = unit(b.hull, b.hull, float3_0, float3_0, [], "", float3_0)
+        def colours(ph:float) -> [float4]: return copy(vx_cell(vx_fill(vx_unit_prims(hu, ph), b.size, true), 2))
+        let at0, at360, at180 = colours(0.0), colours(360.0), colours(180.0)
+        var seam, moved = 0, 0
+        for(at0) c, j:
+            if magnitude(c - at360[j]) > 0.02: seam++
+            if magnitude(c - at180[j]) > 0.02: moved++
+        print "parts: running gear: {seam} pixels differ a cycle on, {moved} half a cycle on"
+        if seam > 0 or moved == 0:
+            print "parts: the running gear does not loop"
+            bad++
+    // With every part facing as the hull does, the stack must be the whole figure: right place, nothing lost.
+    let whole = vx_fill(vx_unit_prims(u, 0.0), b.size, true)
+    var worst = 0.0
+    for(8) f:
+        let want = copy(vx_cell(whole, f))
+        let got = map(copy(vx_cell(hull, f))) c: c.w > 0.0
+        for(pieces) sh, n:
+            let o = vx_pivot_px(b, b.parts[n], f)
+            let dx, dy = int(floor(o.x + 0.5)), int(floor(o.y + 0.5))
+            let pc = vx_cell(sh, f)
+            for(vx_CELL.y) y: for(vx_CELL.x) x:
+                if pc[y * vx_CELL.x + x].w > 0.0 and y + dy >= 0 and y + dy < vx_CELL.y and x + dx >= 0 and x + dx < vx_CELL.x:
+                    got[(y + dy) * vx_CELL.x + x + dx] = true
+        var area, off = 0, 0
+        for(want) c, j:
+            if c.w > 0.0: area++
+            if (c.w > 0.0) != got[j]: off++
+        let pct = float(off) * 100.0 / float(max(1, area))
+        worst = max(worst, pct)
+        if pct > PARTS_OFF_PCT:
+            print "parts: stacked in facing {f}, {pct}% of the figure is off the whole one"
+            bad++
+    for(pieces) sh, n: for(8) f:
+        vx_cell(sh, f)
+        if vx_box.z < vx_box.x:
+            print "parts: {b.parts[n].name} is empty in facing {f}"
+            bad++
+    // A part's named points are on what's drawn of it, in every facing.
+    for(pieces) sh, n: for(b.parts[n].point_names) name, k: for(8) f:
+        let c = vx_cell(sh, f)
+        let at = vx_part_point_px(b, b.parts[n], k, f)
+        let cx, cy = vx_ANCHOR.x + int(floor(at.x + 0.5)), vx_ANCHOR.y + int(floor(at.y + 0.5))
+        var on = false
+        for(5) dy: for(5) dx:
+            if c[(cy + dy - 2) * vx_CELL.x + cx + dx - 2].w > 0.0: on = true
+        if not on:
+            print "parts: {name} on {b.parts[n].name} is off the picture in facing {f}"
+            bad++
+    if out != "-":
+        let ih = vx_CELL.y * 3 / 4
+        let iw = step * 8
+        let bg = float3 { 86.0, 120.0, 46.0 } / 255.0
+        let img = map(iw * ih * 8): bg
+        for(8) hf: for(8) pf:
+            vx_draw(hull, hf, img, iw, pf * step, hf * ih - vx_CELL.y / 4)
+            for(pieces) sh, n:
+                let o = vx_pivot_px(b, b.parts[n], hf)
+                vx_draw(sh, pf, img, iw, pf * step + int(floor(o.x + 0.5)), hf * ih - vx_CELL.y / 4 + int(floor(o.y + 0.5)))
+            let at, found = vx_point_px(b, "muzzle", "", hf, pf)
+            if found:  // (marked in white, to look at)
+                let mx, my = pf * step + vx_ANCHOR.x + int(floor(at.x + 0.5)), hf * ih - vx_CELL.y / 4 + vx_ANCHOR.y + int(floor(at.y + 0.5))
+                for(3) dy: for(3) dx:
+                    let j = (my + dy - 1) * iw + mx + dx - 1
+                    if j >= 0 and j < img.length: img[j] = float3_1
+        let bytes = []::int
+        for(img) c: for(3) ch: bytes.push(clamp(int(c[ch] * 255.0), 0, 255))
+        write_file(out, "P6\n{iw} {ih * 8}\n255\n" + vector_to_buffer(bytes, 1), 0, 1)
+    print "parts: {id}: {64 * b.parts.length} stacked, at worst {worst}% off the whole figure, {bad} faults"
+    return bad
+
 if args.length > 1 and args[1] == "check":
     var bad = 0
     var n = 0
@@ -143,8 +244,60 @@ if args.length > 1 and args[1] == "check":
                     print "FLOATS: {u.label}, step {st}, facing {f}: no shadow showing under its feet as the game draws it"
     print "contact: {n} frames, {bad} float"
     if bad: set_exit_code(1)
+elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull facing (rows) with every part facing (columns)
+    assert parts_faults(args[2], out_path) == 0
+elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (the game's, and any voxels: dirs), fliers too
+    var bad = 0
+    var n = 0
+    assert vx_dist(float3 { 5.0, 0.0, 0.0 }, vx_box(float3_0, float3 { 0.0, 0.0, 1.0 }, float3 { 1.0, 1.0, 0.1 }, 0.0, 0)) > 0.0  // (a box facing straight up has edges)
+    for(sorted_strs(vx_bodies.get_keys())) id:
+        if find_string(id, "#") < 0:
+            n++
+            let b = vx_body_of(id)
+            let u = unit(id, id, float3_0, float3_0, [], "", float3_0)
+            vx_set_look(u, 0)
+            vx_act = ""
+            vx_stand = true
+            let g = vx_fill(vx_unit_prims(u, 0.0), b.size, vx_on_zero(u, false))
+            for(8) f:
+                vx_cell(g, f)
+                if vx_box.z < vx_box.x:
+                    print "bodies: {id} draws nothing in facing {f}"
+                    bad++
+            if b.flies > 0.0:  // (built the way the game builds it, an engine with its crew if it has styles)
+                let worker = unit("crew", "human", ROMAN, ROMAN2, [ "axe" ], "", float3_0)
+                let fu = if b.style_names.length: engine(id, worker) else: u
+                vx_set_look(fu, 0)
+                let fg = vx_fill(vx_unit_prims(fu, 0.0), b.size, vx_on_zero(fu, false))
+                let want = int(b.flies * cos(vx_ELEV) * vx_RES * b.size * FLIER_LIFT_SHARE)
+                var least = 1000000
+                for(8) f:
+                    vx_cell(fg, f)
+                    least = min(least, vx_ANCHOR.y - vx_box.w)
+                print "bodies: {id} flies at {b.flies}: lowest pixel {least} above its ground point, at least {want} wanted"
+                if least < want:
+                    print "bodies: {id} is drawn on the ground"
+                    bad++
+            if b.death == "knocked_out":  // (it stays where it stood: nearly the same outline as standing, and the old fall isn't)
+                let up = map(copy(vx_cell(g, 2))) c: c.w > 0.0
+                let wreck = vx_fill(vx_knocked_out(u, b), b.size, vx_on_zero(u, true))
+                let fell = vx_fill(vx_fallen(vx_unit_prims(u, 0.0), 1.0), b.size, vx_on_zero(u, true))
+                def kept(sh:vx_shape) -> int:
+                    var hit, all = 0, 0
+                    for(vx_cell(sh, 2)) c, j:
+                        if up[j]: all++
+                        if up[j] and c.w > 0.0: hit++
+                    return hit * 100 / max(1, all)
+                let as_wreck, as_fallen = kept(wreck), kept(fell)
+                print "bodies: {id} knocked out keeps {as_wreck}% of its outline (the old fall keeps {as_fallen}%), {WRECK_KEEPS_PCT}% wanted"
+                if as_wreck < WRECK_KEEPS_PCT:
+                    print "bodies: {id} does not stay where it stood"
+                    bad++
+            if b.parts.length: bad += parts_faults(id, "-")
+    print "bodies: {n} bodies, {bad} faults"
+    assert bad == 0
 elif args.length > 2 and args[1] == "solo":  // `solo <body> [gear,...]`: one body alone, 3x, four facings standing then four walk steps (for making it from scratch)
-    let kit = if args.length > 3: tokenize(args[3], ",", "") else: []
+    let kit = if args.length > 3 and not starts_with(args[3], "voxels:"): tokenize(args[3], ",", "") else: []
     let u = unit(args[2], args[2], float3_0, float3_0, kit, "", float3_0)
     vx_set_look(u, 0)
     vx_team_wear = "scarf"
