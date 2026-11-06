@@ -2,7 +2,7 @@
 // View only (#175): a shot is drawn over part of its flight, launched late, and lands on the sim's tick. When it lands, and
 // so dodging and balance, is the sim's alone: the sim never reads this.
 
-let SHOT_DRAWN_SHARE = 1.0  // of its flight a shot is seen flying
+let SHOT_DRAWN_SHARE = 0.5  // of its flight a shot is seen flying
 let SHOT_DRAWN_MIN = 0.2    // seconds, at least (a short shot isn't a flicker)
 
 // Seconds a flight of that many seconds is seen for.
