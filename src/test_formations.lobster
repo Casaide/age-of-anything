@@ -112,7 +112,7 @@ def begin(w:FormWatch):
 
 def overlap(ids:[int]) -> float:
     var close = 0
-    let xs = map(ids) id: index_of(id)
+    let xs = filter(map(ids) id: index_of(id)) i: i >= 0
     for(xs) i, a:
         var near = false
         for(xs) j, b:
