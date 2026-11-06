@@ -519,9 +519,12 @@ def unit_loops_tick(dt:float):
         if vx_drawn(k) and on_screen(u_x[i], u_y[i]) and visible_to_me(cell_of(u_x[i], u_y[i])):
             let body = vx_lks[vx_cur[k]].u.body
             hear(unit_sound(body, if u_moving[i] != 0: "move" else: "idle"))
-            if t_turn[k] > 0:
-                if last_aim.get(u_id[i], u_aim[i]) != u_aim[i]: aim_moved.set(u_id[i], clock_s)  // (it changes by the tick; this runs by the frame)
-                last_aim.set(u_id[i], u_aim[i])
+            if t_mounts[k].length:
+                var aims = 0  // (any gun turning)
+                for(u_mount[i]) v, n:
+                    if n % MOUNT_STRIDE == MOUNT_AIM: aims = aims * 3601 + v
+                if last_aim.get(u_id[i], aims) != aims: aim_moved.set(u_id[i], clock_s)  // (it changes by the tick; this runs by the frame)
+                last_aim.set(u_id[i], aims)
                 if clock_s - aim_moved.get(u_id[i], -10.0) < 0.2: hear(unit_sound(body, "turret"))
     for(counts.get_keys()) name: unit_loop_hear(name, counts.get(name, 0))
     unit_loops_fade(dt)
