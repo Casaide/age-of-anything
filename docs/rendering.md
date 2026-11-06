@@ -51,6 +51,7 @@ Coordinates are body units: z up, y forward, x right, the ground at z 0. A body 
   - `holds`: how a hand holds (`rest`, `dir`, and for a blow `wind`, `wind_dir`, `hit`, `hit_dir`; a bow's `raise` and `draw`).
   - `gear`: held items (`hand`, `hold`, `dir`, a left item's `face`, `shapes` in the hold's frame: `[hand, along,
     out, side]`; `draw` is the drawing hand) and worn ones (`fits` per body, `*` for any other, `flags`).
+  - `loads`: what a worker takes home, per body id or `*`, per resource: `gear` (held), or `push` (`barrow`, `cart`) and `heap` (a material).
   - `parts`: rules mapping a recipe's parts to gear: `part` (an id or prefix), `tag` (parts.json's), `slot`; the first
     that matches wins.
 
