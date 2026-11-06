@@ -5,6 +5,7 @@
 //   ratio     a crew member's height against its beast's (a frog lost on a heron, a bear crushing a mantis)
 //   rim       of 8 directions from a seat, how many meet the howdah's wall (a body rising from a solid crate looks stuck in it)
 //   fit       how much of the crew hangs outside the deck the table gives (a bear on a howdah)
+//   contrast  every skin a crew comes in against the deck under it (a brown rat on a brown crate)
 //   lobster rider_check.lobster -- [report]   (report: the numbers only, no failing)
 import std
 import vec
@@ -27,6 +28,7 @@ let MAX_SHARED = 0.2
 let CREW_BEAST = float2 { 0.35, 0.7 }  // a crew member's height against its beast's
 let MIN_RIM = 6
 let MAX_OVER = 0.1
+let MIN_CONTRAST = 0.14
 var fails = 0
 
 def fail(what:string):
@@ -144,6 +146,13 @@ def crewed(name:string, beast:string, cbody:string):
         if v < MIN_VISIBLE: fail("{name} on {beast}: only {int(v * 100.0)}% of the crew shows (at least {int(MIN_VISIBLE * 100.0)}%)")
         if shared > MAX_SHARED: fail("{name} on {beast}: two crew {int(shared * 100.0)}% inside each other (at most {int(MAX_SHARED * 100.0)}%)")
 
+def contrast(name:string, beast:string, c:JV):
+    let deck = vx_body_of(beast).style_cols[0]
+    for(gstrs(c, "skins")) s:
+        let d = magnitude(vx_hex(gstrs(palettes, s)[0]) - deck)
+        if report: print "contrast {s} on {beast}: {d}"
+        if not report and d < MIN_CONTRAST: fail("{name} ({s}) on {beast}: colour {int(d * 100.0)} from its deck (at least {int(MIN_CONTRAST * 100.0)})")
+
 // Every pair a race can field: any mount a prompt can ask for, less those that won't carry it; its war beast.
 for(creatures.keys) name, k:
     let c = creatures.a[k]
@@ -157,6 +166,7 @@ for(creatures.keys) name, k:
                     mounted(name, rb, if has(mc, "mount_body"): substring(gstr(mc, "mount_body", ""), 5, gstr(mc, "mount_body", "").length - 5) else: m)
         let beasts = if has(c, "war_beast"): [ gstr(c, "war_beast", "") ] else: map(gstrs(c, "families")) f: gstr(at(families, f), "war_beast", "")
         for(beasts) w: crewed(name, "siege.beast." + w, if has(c, "fused_mount"): "human" else: rb)
+        for(beasts) w: contrast(name, "siege.beast." + w, c)
 
 if not report and fails == 0: print "riders hold"
 if not report: assert fails == 0
