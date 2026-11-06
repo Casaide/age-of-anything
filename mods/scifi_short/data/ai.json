@@ -1,0 +1,50 @@
+{
+ "_doc": "The bots in one age (scifi_short): they keep training drones (there's no next age to save for) and build the whole town in age 1.",
+ "economy": {
+  "age_workers": 30
+ },
+ "build_order": [
+  {
+   "building": "lumber_camp",
+   "workers": 9,
+   "near": "wood"
+  },
+  {
+   "building": "barracks",
+   "workers": 11
+  },
+  {
+   "building": "mining_camp",
+   "near": "gold",
+   "workers": 14
+  },
+  {
+   "building": "mill",
+   "near": "food",
+   "workers": 16
+  },
+  {
+   "building": "armoury",
+   "workers": 18
+  },
+  {
+   "building": "mining_camp",
+   "near": "stone",
+   "workers": 20
+  },
+  {
+   "building": "watchtower",
+   "near": "gold",
+   "workers": 22
+  },
+  {
+   "building": "barracks",
+   "workers": 24
+  },
+  {
+   "building": "watchtower",
+   "workers": 26,
+   "guard": 1
+  }
+ ]
+}
