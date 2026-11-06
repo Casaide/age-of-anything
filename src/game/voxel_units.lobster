@@ -125,7 +125,9 @@ def vx_look_of(u:vx_unit_def, worker:bool) -> int:
     // a cycle of 8 steps is a stride (the body moves its foot's reach twice each half cycle, the planted foot fixed),
     // so its length is four times that reach; a body unit is about 1/62 of a tile along the ground
     let lk = vx_lks.length
-    vx_lks.push(vx_lk { key, u, worker, 4.0 * vx_reach(u) * 1000.0 / 62.0, false, [] })
+    let pitch = vx_track_cycle(vx_body_of(u.body))  // (a belt goes by its links, so it doesn't slide on the ground)
+    let cycle = if pitch > 0.0: pitch * vx_size_of(u) * 1000.0 / 62.0 else: 4.0 * vx_reach(u) * 1000.0 / 62.0
+    vx_lks.push(vx_lk { key, u, worker, cycle, false, [] })
     vx_lk_ids.set(key, lk)
     for(vx_body_of(u.body).parts) p:
         let pu = copy(u)

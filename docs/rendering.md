@@ -83,6 +83,12 @@ keeps everything, for falls and portraits. A part's `points` (`{"muzzle": [x, y,
  `voxel_proto -- <out.ppm or -> parts <body> [voxels:<dir>]` draws every pair of facings and
 checks that each pivot lands on the hull; the batch runs it on `tests/voxel/parts`.
 
+### Running gear
+
+A body can say `tracks` (`x`, `half`, `pitch`, `mat`, `bar_mat`, and `round`: the circles `[y, z, r]` the belt goes round) and `wheels` (`at`, `r`,
+`mat`, `face`, `face_r`, `hub`, `hub_r`, mirrored across the hull; `axis` and `blades` for a prop or rotor). They are made per walk step: one cycle
+moves the belt one link, the cycle's length comes from the pitch, and `voxel_proto ... parts` checks that a cycle on is the same picture.
+
 ## Mods
 
 A mod's parts (milestone 21, `docs/modding.md`) need no models: their looks are the voxel kit's, by

@@ -205,3 +205,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: A body can have parts: a turret turns on its hull in all 8 x 8 facings, baked apart and stacked when drawn (D-220, #178).
 - 2026-11-06: Shells leave from the muzzle: bodies and parts can name points, and shots start from theirs (D-221, #179).
 - 2026-11-06: A shot became all data: thin tracers, muzzle flash and smoke, recoil, blast and shake, and siege_shots.json is gone (D-222, #180).
+- 2026-11-06: Tracks run: a belt and wheels are data, turning by the ground covered, with no seam (D-223, #181).
