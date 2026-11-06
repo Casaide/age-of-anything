@@ -68,6 +68,104 @@ check "and says so" has "$work/c.out" '^test_2v2  *FAIL.*no result'
 batch locks_d only=no_such_suite > "$work/d.out" 2>&1
 check "no jobs at all fails the batch" [ "$?" != 0 ]
 
+# ---- the lock across worktrees (machine_lock.sh, #242)
+unset AOA_LOCKS_HELD   # (run inside a batch, which holds its own, elsewhere)
+export AOA_LOCK_DIR="$work/locks"
+export AOA_LOCK_POLL=0.1
+
+# Holds <lane> for the seconds given, marking the time inside; two inside at once is an overlap.
+cat > "$work/hold.sh" <<EOF
+. "$here/machine_lock.sh"
+lock_on_exit
+lock_take "\$1" "the test"
+mkdir "$work/inside" 2>/dev/null || echo overlap >> "$work/overlaps"
+echo in >> "$work/entered"
+sleep "\$2"
+rmdir "$work/inside"
+EOF
+hold() { exec sh "$work/hold.sh" "$@"; }
+
+pids=""
+for i in 1 2 3 4 5 6 7 8; do
+	(hold contended 0.1 2> /dev/null) &
+	pids="$pids $!"
+done
+wait $pids
+check "eight at once all get in" [ "$(wc -l < "$work/entered" | tr -d ' ')" = 8 ]
+check "one at a time" [ ! -f "$work/overlaps" ]
+check "and the lane is free after" [ ! -L "$AOA_LOCK_DIR/contended" ]
+
+# A waiter says it's queued and who holds the lane.
+(hold named 2 2> /dev/null) &
+held=$!
+sleep 0.5
+(hold named 0 2> "$work/queued.out")
+wait $held
+check "a waiter says it's queued" has "$work/queued.out" 'queued for the named lane'
+check "and who holds it" has "$work/queued.out" "held by PID $held in .*(the test)"
+
+# A holder killed outright: taken over, once, by waiters that all arrive together.
+(hold killed 20 2> /dev/null) &
+victim=$!
+sleep 0.5
+kill -9 $victim
+wait $victim 2> /dev/null
+rmdir "$work/inside"
+rm -f "$work/entered"
+: > "$work/over.out"
+pids=""
+for i in 1 2 3 4 5 6; do
+	(hold killed 0.2 2>> "$work/over.out") &
+	pids="$pids $!"
+done
+wait $pids
+check "a dead holder's lock is taken over" [ "$(wc -l < "$work/entered" | tr -d ' ')" = 6 ]
+check "exactly once" [ "$(grep -c 'taking over' "$work/over.out")" = 1 ]
+check "with no overlap" [ ! -f "$work/overlaps" ]
+
+# A PID that's alive but isn't the holder any more (the system reused it).
+ln -s "$$|Thu Jan  1 00:00:00 1970|/elsewhere|the old holder|0" "$AOA_LOCK_DIR/reused"
+(hold reused 0 2> "$work/reused.out")
+check "a reused PID doesn't hold it for ever" has "$work/reused.out" 'taking over'
+
+# A holder that exits on a signal lets go.
+cat > "$work/signalled.sh" <<EOF
+. "$here/machine_lock.sh"
+lock_on_exit
+lock_take signalled "the test"
+sleep 20 &
+wait
+EOF
+sh "$work/signalled.sh" 2> /dev/null &
+victim=$!
+sleep 0.5
+kill -TERM $victim
+wait $victim 2> /dev/null
+check "a holder stopped by a signal lets go" [ ! -L "$AOA_LOCK_DIR/signalled" ]
+
+# The batch's lanes: only= and --quick run beside a full batch, one of them at a time; a full batch waits for another.
+(hold full 5 2> /dev/null) &
+held=$!
+sleep 0.5
+"$here/batch.sh" only=test_heroes > "$work/beside.out" 2>&1
+check "only= doesn't wait for a full batch" has_not "$work/beside.out" 'queued'
+check "and runs" has "$work/beside.out" '^test_heroes  *ok'
+"$here/batch.sh" > "$work/full.out" 2>&1 &
+full=$!
+sleep 1
+check "a full batch waits for another" has "$work/full.out" 'queued for the full lane'
+kill -TERM $full
+wait $full 2> /dev/null
+wait $held
+"$here/batch.sh" only=run_tests > "$work/q1.out" 2>&1 &
+first=$!
+sleep 1
+"$here/batch.sh" only=test_heroes > "$work/q2.out" 2>&1
+wait $first
+check "two only= runs take turns" has "$work/q2.out" 'queued for the quick lane'
+check "and both report" has "$work/q1.out" '^run_tests  *ok'
+check "and let go" [ ! -L "$AOA_LOCK_DIR/quick" ]
+
 echo
 echo "$passed passed, $failed failed"
 [ "$failed" = 0 ]

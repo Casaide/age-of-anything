@@ -178,8 +178,10 @@ compiles with no warnings. `./lint.sh` checks both (`--fix` formats; in the quic
 **Testing rhythm** (Dominic: iteration must stay fast, and the machine quiet). While working: `run_tests` after every
 change to `data/` or `src/`, the piece you're touching (`test_sim -- part:<name>`, `test_ai -- piece:<name>`,
 `voxel_check`), or `./tests/batch.sh --quick`. After a set of changes, the whole batch once, in the
-background. The batch runs 4 processes at once by default (`jobs=N` or `AOA_JOBS`), not every core: one heavy run at a
-time. Each shard is its own seeded world, so results match a serial run. The tick-time check measures wall time:
+background. The batch runs 4 processes at once by default (`jobs=N` or `AOA_JOBS`), not every core. One heavy run at a time on this
+machine, across every worktree and session (`src/machine_lock.sh`): a whole batch or `shards.sh` waits for the `full` lane, saying who holds it; `--quick` and
+`only=` take the `quick` lane, so checking a change never waits for a whole batch, and only the perf stage holds both. Each run
+keeps its results in its own folder, and a job with no result fails the table. Each shard is its own seeded world, so results match a serial run. The tick-time check measures wall time:
 on a busy machine it can fail. Raise `BAKE_VERSION` (`view/bake_cache.lobster`: buildings and props) once for a batch of bake changes, not
 per tweak: every raise rebakes everything. Tests are silent (`mute`, and every capture option mutes). Look at a
 screenshot after visual changes. After a change to `src/audio/`, re-render and commit `assets/audio/` with it.
