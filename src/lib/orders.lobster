@@ -107,11 +107,16 @@ def form_space(part:[int]) -> int:
 def block_new() -> int:
     let free = find(fb_state) s: s == 0
     if free >= 0: return free
-    for([ fb_state, fb_x, fb_y, fb_tx, fb_ty, fb_wx, fb_wy, fb_dx, fb_dy, fb_pace, fb_key, fb_r, fb_owner, fb_t, fb_held ]) col: col.push(0)
+    for([ fb_state, fb_x, fb_y, fb_tx, fb_ty, fb_wx, fb_wy, fb_dx, fb_dy, fb_pace, fb_key, fb_r, fb_owner, fb_army, fb_t, fb_held ]) col: col.push(0)
     return fb_state.length - 1
 
+def block_speed(c:[int]) -> int:
+    var s = 1 << 30
+    for(c) i: s = min(s, u_speed[i])
+    return s
+
 // Every unit's block, its place in it and its slot at the end into slot_block, slot_bx, slot_by, slot_x, slot_y.
-def block_formation(idx:[int], x:int, y:int, cx:int, cy:int, ux:int, uy:int, pace:int):
+def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, uy:int):
     for(idx) i:
         f_ahead[i] = (u_x[i] - cx) * ux + (u_y[i] - cy) * uy
         f_side[i] = (u_y[i] - cy) * ux - (u_x[i] - cx) * uy
@@ -131,7 +136,11 @@ def block_formation(idx:[int], x:int, y:int, cx:int, cy:int, ux:int, uy:int, pac
     // the rows: a row is as wide as the army is big, a band starts a new one
     var area = 0
     for(chunks) c: area += (wide(c) / 100 + 1) * (deep(c) / 100 + 1)
-    let row_max = isqrt(area) * 200
+    let row_max = isqrt(area) * 150
+    // the march's pace: the middling block's, so the slowest engines fall behind instead of holding everyone up
+    let paces = map(chunks) c: block_speed(c)
+    sort_ints(paces)
+    let army_pace = paces[paces.length / 2] * 4 / 5  // (a little under their walk: whoever falls behind can catch up)
     let rows = []::[[int]]
     var band = -1
     var used = 0
@@ -152,24 +161,47 @@ def block_formation(idx:[int], x:int, y:int, cx:int, cy:int, ux:int, uy:int, pac
         var h = 0
         for(r) c: h = max(h, deep(c))
         total += h + BLOCK_GAP
+    // where the army forms up: from where it stands, on along the way to the first ground that holds it all
+    let ln0 = lane(idx[0])
+    var half_w = 0
+    for(rows) r:
+        var width = -BLOCK_GAP
+        for(r) c: width += wide(c) + BLOCK_GAP
+        half_w = max(half_w, width / 2)
+    def fits(ax:int, ay:int) -> bool:
+        for(5) p:
+            for(5) q:
+                let al = (p - 2) * (total / 2 + TILE) / 2
+                let ac = (q - 2) * (half_w + TILE) / 2
+                if not walkable(ax + (ux * al - uy * ac) / ONE, ay + (uy * al + ux * ac) / ONE, ln0): return false
+        return true
+    var form_x = cx
+    var form_y = cy
+    let way = isqrt(dist2(cx, cy, x, y))
+    var on_way = 0
+    while on_way <= way and not fits(cx + ux * on_way / ONE, cy + uy * on_way / ONE): on_way += 2 * TILE
+    if on_way <= way:
+        form_x = cx + ux * on_way / ONE
+        form_y = cy + uy * on_way / ONE
     def place(c:[int], along:int, across:int):
         let bx = (ux * along - uy * across) / ONE
         let by = (uy * along + ux * across) / ONE
         let b = block_new()
         let tx, ty = snap(x + bx, y + by, lane(c[0]))
         fb_state[b] = BLOCK_FORMING
-        fb_x[b] = cx + bx
-        fb_y[b] = cy + by
+        fb_x[b] = form_x + bx
+        fb_y[b] = form_y + by
         fb_tx[b] = tx
         fb_ty[b] = ty
         fb_wx[b] = tx
         fb_wy[b] = ty
         fb_dx[b] = ux
         fb_dy[b] = uy
-        fb_pace[b] = pace
+        fb_pace[b] = min(army_pace, block_speed(c) * 4 / 5)
         fb_key[b] = cell_field(cell_of(tx, ty), false, lane(c[0]))
         fb_r[b] = deep(c) / 2
         fb_owner[b] = u_owner[c[0]]
+        fb_army[b] = army
         fb_t[b] = 0
         fb_held[b] = 0
         let cols = max(isqrt(2 * c.length), 1)
@@ -224,7 +256,11 @@ def blocks_tick():
         if b >= 0:
             alive[b]++
             if u_foe[i] != 0: fighting[b]++
-            elif dist2(u_x[i], u_y[i], fb_x[b] + u_bx[i], fb_y[b] + u_by[i]) <= 250000: placed[b]++
+            else:
+                let px = fb_x[b] + u_bx[i]
+                let py = fb_y[b] + u_by[i]
+                let open = walkable(px, py, lane_base[u_owner[i]] + u_mclass[i])
+                if not open or dist2(u_x[i], u_y[i], px, py) <= 250000: placed[b]++
     for(fb_state) state, b:
         if state != 0:
             if alive[b] == 0: fb_state[b] = 0
@@ -232,7 +268,12 @@ def blocks_tick():
     for(fb_state) state, b:
         if state == BLOCK_FORMING:
             fb_t[b]++
-            if placed[b] * 100 >= alive[b] * 70 or fb_t[b] >= BLOCK_FORM_TICKS: fb_state[b] = BLOCK_MARCHING
+            var ready = fb_t[b] >= BLOCK_FORM_TICKS
+            if not ready:
+                ready = true
+                for(fb_state) other, o:
+                    if other == BLOCK_FORMING and fb_army[o] == fb_army[b] and placed[o] * 100 < alive[o] * 98: ready = false
+            if ready: fb_state[b] = BLOCK_MARCHING
         elif state == BLOCK_MARCHING and fb_held[b] == 0:
             var wait = false
             for(fb_state) other, o:
@@ -305,7 +346,7 @@ def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
         ux = dx * ONE / d
         uy = dy * ONE / d
     if n >= BLOCK_FROM:
-        block_formation(idx, x, y, cx, cy, ux, uy, pace)
+        block_formation(group, idx, x, y, cx, cy, ux, uy)
         return group, x, y, pace
     let bands = [ []::int, []::int, []::int ]
     var flank = []::int

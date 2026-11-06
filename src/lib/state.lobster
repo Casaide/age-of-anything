@@ -367,6 +367,7 @@ var fb_pace = []::int
 var fb_key = []::int  // the flow field it follows
 var fb_r = []::int    // half its depth
 var fb_owner = []::int
+var fb_army = []::int  // the order it's of: an army's blocks march together, once all are formed
 var fb_t = []::int     // ticks forming
 var fb_held = []::int  // 1: it's fighting, the blocks behind wait
 var slot_y = []::int

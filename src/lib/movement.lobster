@@ -366,24 +366,22 @@ def move():
             let b = u_block[i] - 1
             let bx = fb_x[b] + u_bx[i]
             let by = fb_y[b] + u_by[i]
-            if bx >= 0 and by >= 0 and bx / TILE < mw and by / TILE < mh and walks[mc][by / TILE * mw + bx / TILE] == 1:
-                let there = dist2(x, y, bx, by)
-                if there <= 400:  // (in its place: no pushing about, no stuck count)
-                    wxs[i] = bx
-                    wys[i] = by
-                    continue
-                wxs[i] = bx
-                wys[i] = by
-                let dd = isqrt(there)
-                let nx = x + (bx - x) * min(s, dd) / dd
-                let ny = y + (by - y) * min(s, dd) / dd
-                let wk = walks[mc]
-                if nx >= 0 and ny >= 0 and nx / TILE < mw and ny / TILE < mh and wk[ny / TILE * mw + nx / TILE] == 1:
-                    xs[i] = nx
-                    ys[i] = ny
-                else:
-                    st[i]++
-                continue
+            wxs[i] = bx
+            wys[i] = by
+            let there = dist2(x, y, bx, by)
+            if there <= 400: continue  // (in its place: stands, no stuck count)
+            let dd = isqrt(there)
+            let nx = x + (bx - x) * min(s, dd) / dd
+            let ny = y + (by - y) * min(s, dd) / dd
+            let wk = walks[mc]
+            def on(cx:int, cy:int) -> bool: return cx >= 0 and cy >= 0 and cx / TILE < mw and cy / TILE < mh and wk[cy / TILE * mw + cx / TILE] == 1
+            if on(nx, ny):
+                xs[i] = nx
+                ys[i] = ny
+            elif on(nx, y): xs[i] = nx  // (a place on a tree or past the edge: along it, until the place is clear)
+            elif on(x, ny): ys[i] = ny
+            if dd > s and on(bx, by) and dist2(xs[i], ys[i], bx, by) >= there - s * dd: st[i]++  // (not getting nearer a clear place: by the flow field for a while)
+            continue
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:
             let px, py = progress(i, x, y)
             if u_prog[i] >= 0 and px > u_prog[i] - py and u_group[i] > 0 and u_reach[i] == 0 and (queued(i, x, y) or passed(i, x, y)):
@@ -577,7 +575,7 @@ def separate():
                     if hi and hj: continue
                     // One of the side's own at work and a gatherer making for its spot: the walker slips past.
                     if owners[i] == owners[j] and ((s_planted[i] == 1 and s_role[j] == 3) or (s_planted[j] == 1 and s_role[i] == 3)): continue
-                    if u_block[i] > 0 and u_block[i] == u_block[j] and mv[i] == 1 and mv[j] == 1 and d > rr / 2: continue  // (a block's neighbours walk together: their places keep them apart)
+                    if u_block[i] > 0 and u_block[j] > 0 and grp[i] == grp[j] and d > rr / 4: continue  // (an army's blocks: their places keep them apart, and a unit crossing to its place isn't shoved back)
                     let push = (rr - d) / SEPARATION_DIV + 1
                     let px = ux * push / ONE
                     let py = uy * push / ONE

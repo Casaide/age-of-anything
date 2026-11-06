@@ -116,7 +116,7 @@ def overlap(ids:[int]) -> float:
     for(xs) i, a:
         var near = false
         for(xs) j, b:
-            if a != b and u_block[i] > 0 and u_block[i] == u_block[j]:
+            if a != b and u_block[i] > 0 and u_block[i] == u_block[j] and fb_state[u_block[i] - 1] == BLOCK_MARCHING:
                 let rr = (u_radius[i] + u_radius[j]) / 2
                 if dist2(u_x[i], u_y[i], u_x[j], u_y[j]) < rr * rr: near = true
         if near: close++
@@ -186,15 +186,16 @@ def scene_move(rules:JV, races:[JV], n:int):
     while tick < 6000 and arrived_at < 0:
         wstep()
         watch_march(w)
-        if (find(ids) id: u_moving[index_of(id)] == 1) < 0: arrived_at = tick
+        if (find(ids) id: index_of(id) >= 0 and u_moving[index_of(id)] == 1) < 0: arrived_at = tick
     report(name, w)
     check(arrived_at >= 0, "{name}: everyone gets there (tick {tick})")
     for(40): wstep()
-    let was = map(ids) id: u_x[index_of(id)] * (1 << 20) + u_y[index_of(id)]
+    let left = filter(ids) id: index_of(id) >= 0
+    let was = map(left) id: u_x[index_of(id)] * (1 << 20) + u_y[index_of(id)]
     for(40): wstep()
     var moved = 0
     var off = []::int
-    for(ids) id, a:
+    for(left) id, a:
         let i = index_of(id)
         if u_x[i] * (1 << 20) + u_y[i] != was[a] or u_moving[i] == 1: moved++
         off.push(isqrt(dist2(u_x[i], u_y[i], u_tx[i], u_ty[i])))
@@ -241,11 +242,60 @@ def scene_attack(rules:JV, races:[JV], n:int):
     check(strayed * 20 <= left.length, "{name}: they stay in their blocks through a fight ({strayed} out)")
     check(p99(off) <= DRIFT_P99 * 2, "{name}: back in their places after the fight ({p99(off)})")
 
+// The trailer's field: a wide clear middle along the line between the starts, framed by hills, a river on one side,
+// groves, rocks and a ruin; nothing in the way of 2,000 units.
+def scene_map():
+    let d = load_json("../data/maps/" + MAP + ".json")
+    let w = gint(d, "width", 0)
+    let h = gint(d, "height", 0)
+    check(w >= 150 and h >= 150, "the map is big enough for 2,000 ({w} by {h})")
+    let legend = gobj(d, "legend")
+    let rows = gstrs(d, "rows")
+    let heights = gstrs(d, "heights")
+    let counts = dictionary<string, int>(32)
+    var in_middle = 0
+    var rivers_a = 0
+    var rivers_b = 0
+    var river_near = 0
+    var uphill = 0
+    var slopes = 0
+    let starts = glist(d, "starts")
+    let ax = as_int(starts[0].a[0])
+    let ay = as_int(starts[0].a[1])
+    let bx = as_int(starts[1].a[0])
+    let by = as_int(starts[1].a[1])
+    let lx = bx - ax
+    let ly = by - ay
+    let len2 = max(1, lx * lx + ly * ly)
+    for(rows) row, y:
+        for(w) x:
+            let name = as_str(at(legend, string([ row[x] ])))
+            counts.set(name, counts.get(name, 0) + 1)
+            let along = (x - ax) * lx + (y - ay) * ly
+            let across = ((x - ax) * ly - (y - ay) * lx) * 1000 / isqrt(len2)
+            let river = name == "river" or name == "deep_river" or name == "water"
+            if along >= 0 and along <= len2 and abs(across) <= 35000 and name != "grass": in_middle++
+            if river:
+                if across > 0: rivers_a++
+                else: rivers_b++
+                if abs(across) < 50000: river_near++
+            if heights.length:
+                if heights[y][x] >= '1' and heights[y][x] <= '3': uphill++
+                if heights[y][x] >= 'a' and heights[y][x] <= 'c': slopes++
+    print "the map: {w} by {h}, {counts.get("tree", 0)} trees, {counts.get("rock", 0)} rock, {counts.get("rubble", 0)} rubble, river {rivers_a}/{rivers_b}, {uphill} high, {slopes} slope, {in_middle} in the middle"
+    check(in_middle == 0, "the middle is clear ({in_middle} cells in the way)")
+    check(rivers_a + rivers_b >= 100 and min(rivers_a, rivers_b) == 0 and river_near == 0, "a river on one side, off the field ({rivers_a}/{rivers_b}, {river_near} near)")
+    check(counts.get("tree", 0) >= 400, "groves frame it ({counts.get("tree", 0)} trees)")
+    check(counts.get("rock", 0) >= 40, "rocks on the edges ({counts.get("rock", 0)})")
+    check(counts.get("rubble", 0) >= 12, "a ruin by the edge ({counts.get("rubble", 0)})")
+    check(uphill >= 300 and slopes >= 40, "hills on the flank that can be crested ({uphill} high, {slopes} slope)")
+
 let args = plain_args(command_line_arguments())
 lib_load("../data")
 id_load("../data")
 let rules = load_rules("default")
 let races = map(PROMPTS) p: generate(p, rules, 0)
+scene_map()
 for(if args.length: map(args) a: string_to_int(a) else: [ 125, 1000 ]) n:
     scene_move(rules, races, n)
     scene_attack(rules, races, n)
