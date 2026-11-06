@@ -570,9 +570,10 @@ def separate():
                     if grp[i] == grp[j] and ((s_stood[i] == 1 and mv[j] == 1) or (s_stood[j] == 1 and mv[i] == 1)): continue
                     if s_stood[i] == 1 and s_stood[j] == 1: continue
                     if owners[i] == owners[j] and grp[i] != grp[j] and ((s_stood[i] == 1 and s_yields[j] == 1 and mv[j] == 1) or (s_stood[j] == 1 and s_yields[i] == 1 and mv[i] == 1)): continue
-                    let hi = s_planted[i] == 1 or (s_role[i] >= 2 and s_role[j] == 1) or
+                    // (a marching block doesn't give way to a sheep)
+                    let hi = s_planted[i] == 1 or (u_block[i] > 0 and t_animal[u_kind[j]] != 0) or (s_role[i] >= 2 and s_role[j] == 1) or
                         (s_yields[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
-                    let hj = s_planted[j] == 1 or (s_role[j] >= 2 and s_role[i] == 1) or
+                    let hj = s_planted[j] == 1 or (u_block[j] > 0 and t_animal[u_kind[i]] != 0) or (s_role[j] >= 2 and s_role[i] == 1) or
                         (s_yields[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
                     if hi and hj: continue
                     // One of the side's own at work and a gatherer making for its spot: the walker slips past.

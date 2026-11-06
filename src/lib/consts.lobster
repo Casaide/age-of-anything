@@ -35,6 +35,7 @@ let BLOCK_MARCHING = 2
 let BLOCK_THERE = 3
 let BLOCK_FORM_TICKS = 3000  // they march after this long at most, formed or not
 let BLOCK_LEASH = 2000       // milli-tiles past its reach a block's unit goes for a foe
+let BLOCK_FOE_NEAR = 40000   // milli-tiles: an enemy this near, and a big order is one formation, no blocks
 let SLOT_SLACK = 400
 let QUEUE_GAP = 300
 let RETURN_YIELD = 2000
