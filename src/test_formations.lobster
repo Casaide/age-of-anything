@@ -270,6 +270,65 @@ def scene_film(rules:JV, races:[JV], n:int):
     check(contact >= 400, "{name}: a march to film before they meet ({contact / 20} s)")
     check(p99(off) <= DRIFT_P99, "{name}: formed when they meet ({p99(off)})")
 
+// The drawn facing against the real movement through a battle (#252): a unit that walks somewhere must look that way, on the
+// march, at its foe, or going back to its place. Movement over a second, so a shove in a crowd doesn't count as walking; nor
+// does being carried back against the way it's making for (a push, #174: printed, not checked).
+let FACE_WINDOW = 20   // ticks
+let FACE_WALKED = 400  // milli-tiles in that window: it's really walking
+let FACE_OFF = 45.0    // degrees on screen, more than this is sideways
+let FACE_OFF_MAX = 10  // percent of a type's walking
+
+def scene_facing(rules:JV, races:[JV], n:int):
+    new_world(SEED, MAP, races, rules, [])
+    let one = army(0, n, start_x[0] + 4000, start_y[0] + 4000)
+    let two = army(1, n, start_x[1] + 4000, start_y[1] + 4000)
+    issue_cmd(0, CMD_ATTACK_MOVE, one, start_x[1], start_y[1], 0, 0)
+    issue_cmd(1, CMD_ATTACK_MOVE, two, start_x[0], start_y[0], 0, 0)
+    while tick < 200 and (find(fb_state) s: s != 0) < 0: wstep()
+    blocks_snap()
+    let everyone = one.append(two)
+    let hist_x = map(everyone): map(FACE_WINDOW): -1
+    let hist_y = map(everyone): map(FACE_WINDOW): -1
+    let face = map(everyone): 2
+    let walked = map(2): map(t_slot.length): 0  // on the march, then from first contact (the march is most of a battle: it would hide the fight)
+    let off_by = map(2): map(t_slot.length): 0
+    var met = 0
+    var shoved = 0
+    let name = "facing {n}"
+    while tick < 3000:
+        let was_x = map(everyone) id: if index_of(id) >= 0: u_x[index_of(id)] else: 0
+        let was_y = map(everyone) id: if index_of(id) >= 0: u_y[index_of(id)] else: 0
+        wstep()
+        if met == 0 and (find(everyone) id: index_of(id) >= 0 and u_foe[index_of(id)] != 0) >= 0: met = 1
+        for(everyone) id, a:
+            let i = index_of(id)
+            if i >= 0:
+                let h = tick % FACE_WINDOW
+                let ox = hist_x[a][h]
+                let oy = hist_y[a][h]
+                hist_x[a][h] = u_x[i]
+                hist_y[a][h] = u_y[i]
+                let walking, nd = unit_walk(i, face[a], was_x[a], was_y[a])
+                if walking:
+                    face[a] = nd
+                    if ox >= 0 and dist2(ox, oy, u_x[i], u_y[i]) >= FACE_WALKED * FACE_WALKED:
+                        let mx = u_x[i] - ox
+                        let my = u_y[i] - oy
+                        if mx * (u_wx[i] - u_x[i]) + my * (u_wy[i] - u_y[i]) < 0 and not with_block(i): shoved++
+                        else:
+                            let way = atan2(normalize(iso(float(mx), float(my))))
+                            walked[met][u_kind[i]]++
+                            if abs((way - float(nd) * 45.0 + 540.0) % 360.0 - 180.0) > FACE_OFF: off_by[met][u_kind[i]]++
+    print "{name}: {shoved} samples carried back against their way"
+    for(2) phase:
+        for(t_slot.length) k:
+            let n_walked = walked[phase][k]
+            let share = off_by[phase][k] * 100 / max(1, n_walked)
+            let what = "{name}: p{t_player[k]} {t_slot[k]} {if phase == 0: "on the march" else: "in the fight"}"
+            if n_walked > 0:
+                print "{what}: {share}% of {n_walked} walking off by over {int(FACE_OFF)} degrees"
+                check(share <= FACE_OFF_MAX, "{what} faces the way it walks ({share}% off)")
+
 // A bot gives its army the same order again and again: that mustn't stop the march to form up each time.
 def scene_reissue(rules:JV, races:[JV], n:int):
     new_world(SEED, MAP, races, rules, [])
@@ -373,5 +432,6 @@ for(if args.length: map(args) a: string_to_int(a) else: [ 125, 1000 ]) n:
     scene_attack(rules, races, n)
     scene_reissue(rules, races, n)
     scene_film(rules, races, n)
+    scene_facing(rules, races, n)
 print "\n{checks - failures} passed, {failures} failed"
 if failures > 0: set_exit_code(1)
