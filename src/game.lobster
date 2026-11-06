@@ -57,6 +57,7 @@ import .gen.pricing
 import .gen.heroes
 import .gen.generator
 import .gen.setup
+import .gen.race_to_types
 import .gen.modes
 import .gen.start
 import .view.node
@@ -986,9 +987,9 @@ def race_facts(races:[JV]):
     voice_of = map(races) r: rstr(creature(rstr(r, "creature")), "voice")
     arch_of = map(races) r: architecture(r)
     for(t_slot.length) k:
-        let r = su_type_recipe[k]
+        let r = at(su_units[k], "look")
         unit_names.set(k, gstr(r, "name", t_slot[k]))
-        let tags = eval_tags(su_type_eval[k])
+        let tags = unit_tags(su_units[k])
         unit_blow.set(k, if has_s(tags, "ram"): "ram_hit" elif has_s(tags, "blade"): "hit_blade" elif has_s(tags, "blunt"): "hit_blunt" else: "hit_pierce")
         let kind = shot_kind_of(tags)
         unit_shotk.set(k, kind)
@@ -1375,7 +1376,7 @@ def selected_soldiers() -> [int]: return filter(selected_units()) id: t_worker[u
 
 // Our race's ability (data: its name, desc, hotkey...), or nil; and the selected units that may use it.
 def my_ability() -> JV?:
-    let ab = get(su_idents[ME], "ability")
+    let ab = get(su_sides[ME], "ability")
     return if ab and ab.kind == J_OBJ and gstr(ab, "kind", "") != "": ab else: nil
 def ability_hotkey() -> string:
     let ab = my_ability()
@@ -2131,7 +2132,7 @@ def make_match() -> bool:
         let picked = args[1] == "lobby" and lobby_teams.length == races.length and races.length > 2  // (a team game picked in the lobby: its map and teams)
         let four = races.length > 2 and not picked                                                   // (host:<n> with more people: the 2v2 map)
         let real_map = if four: "reed_meadow_2v2" else: map_id
-        setup_world(20261010, real_map, races, rules, if picked: lobby_teams elif four: map(races.length) k: k % 2 else: [])
+        setup_match(20261010, real_map, races, rules, if picked: lobby_teams elif four: map(races.length) k: k % 2 else: [])
         load_species(real_map)
         map_name_now = real_map
         if pack_library: race_facts(races)
@@ -2140,18 +2141,14 @@ def make_match() -> bool:
         // a scenario has no recipes: set its races up (as export.gd did) for the units' looks, then load it over a clean world
         let rules = load_rules(rules_id())
         let races = map(if pack_prompts.length >= 2: pack_prompts else: [ "sewer rats with cheese hammers", "angry swamp frogs with reed spears" ]) pr: generate(pr, rules, 0)
-        setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
-        let keep_recipe = su_type_recipe
-        let keep_line = su_type_line
-        let keep_eval = su_type_eval
+        setup_match(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
+        let keep_units = su_units
         let keep_btypes = su_btypes
         let keep_races = su_races
         let keep_rules = su_rules
         reset_world()
         start_world(args[1])
-        su_type_recipe = keep_recipe
-        su_type_line = keep_line
-        su_type_eval = keep_eval
+        su_units = keep_units
         su_btypes = keep_btypes
         su_races = keep_races
         su_rules = keep_rules
