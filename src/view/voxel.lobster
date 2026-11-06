@@ -688,8 +688,9 @@ def vx_foot(b:vx_body_spec, l:vx_leg_spec, side:float, ph:float) -> float3, floa
 def vx_body_points(b:vx_body_spec, ph:float, lift:float3) -> vx_points:
     let bob = abs(sin(ph * 2.0))
     let flap = sin(ph * 4.0)
-    let wk = if b.gait and not vx_stand and not vx_seated: 1.0 else: 0.0  // (leaning and shifting only walking)
-    let p = vx_points { copy(b.pnames), map(b.pat) a, k: a + float3 { -b.psway[k] * cos(ph) * wk, b.plean[k] * wk, b.pbob[k] * bob + b.pflap[k] * flap } + lift }
+    let wk = if b.gait and not vx_stand and not vx_seated: 1.0 else: 0.0                            // (leaning and shifting only walking)
+    let shift = if b.gait and vx_stand and not vx_seated and vx_act == "": sin(ph * 2.0) else: 0.0  // (standing: its weight, slowly side to side)
+    let p = vx_points { copy(b.pnames), map(b.pat) a, k: a + float3 { b.psway[k] * (shift - cos(ph) * wk), b.plean[k] * wk, b.pbob[k] * bob + b.pflap[k] * flap } + lift }
     if vx_seated: return p  // (a rider's legs are its seat's)
     var drop = 0.0
     for(b.legs) l:
@@ -876,7 +877,7 @@ def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:
     if not vx_seated: vx_legs(out, b, p, ph, flags)
     for(b.shapes) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
     vx_worn(out, u, b, p, flags)
-    if b.arms: vx_arms(out, u, b, p, if vx_seated: 0.0 else: sin(ph), t, flags)
+    if b.arms: vx_arms(out, u, b, p, if vx_seated or vx_stand: 0.0 else: sin(ph), t, flags)
     elif b.harness: vx_harness(out, u, b, p, t, flags)
 
 // A whole unit's parts, walking at phase ph0 (degrees) or, when acting, at ph0 / 360 through the act.
