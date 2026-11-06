@@ -295,6 +295,10 @@ def new_recipe(sd:JV, role:string) -> JV:
     set(r, "family", jstr(g_family))
     set(r, "skin", jstr(g_skin))
     set(r, "body", at(c, "body"))
+    let rb = gobj(gobj(g_rules, "role_body"), role)  // the rules' own body for a role (the future's robot workers)
+    if has(rb, "body"):
+        let ok = exists(gstrs(rb, "only_if")) t: tget(g_tags, t) > 0
+        if ok: set(r, "body", at(rb, "body"))
     set(r, "head", at(c, "head"))
     set(r, "parts", jobj())
     set(r, "scale", jint(100))
@@ -309,8 +313,8 @@ def make_unit(sd:JV) -> JV?:
     let tier = as_int(at(sd, "tier"))
     let budget = as_int(at(at(g_rules, "budget"), string(max(tier, g_age))))
     let c = creature(g_creature)
-    let body = part(rstr(c, "body"))
     let recipe = new_recipe(sd, role)
+    let body = part(rstr(recipe, "body"))
     var spent = pts(body)
     let giant_ok = gbool(c, "giant_ok", true) or brief.body_size == "giant"
     var heavy = false
