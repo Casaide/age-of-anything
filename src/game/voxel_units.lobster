@@ -32,6 +32,7 @@ class vx_lk:
     worker:bool
     cycle:float              // milli-tiles a walk cycle (the walk steps by the ground covered)
     planned:bool             // its bakes are queued (or loaded)
+    pieces:[int]             // its parts' looks, in the body's order (the composer draws them on its hull)
     waited_for:bool = false  // a unit was drawn with it before it was baked: its first bakes go on through a fight
 
 let vx_lks = []::vx_lk
@@ -115,17 +116,22 @@ def vx_reach(u:vx_unit_def) -> float:
     return vx_body_of(u.body).reach
 
 // The look a recipe is drawn in (made the first time it's asked for; not baked until planned).
-def vx_look_for(r:JV) -> int:
-    let u = vx_def_of(r)
-    let worker = gstr(r, "role", "") == "worker"
+def vx_look_for(r:JV) -> int: return vx_look_of(vx_def_of(r), gstr(r, "role", "") == "worker")
+
+def vx_look_of(u:vx_unit_def, worker:bool) -> int:
     let key = vx_key_of(u) + " {worker}"
     let have = vx_lk_ids.get(key, -1)
     if have >= 0: return have
     // a cycle of 8 steps is a stride (the body moves its foot's reach twice each half cycle, the planted foot fixed),
     // so its length is four times that reach; a body unit is about 1/62 of a tile along the ground
-    vx_lks.push(vx_lk { key, u, worker, 4.0 * vx_reach(u) * 1000.0 / 62.0, false })
-    vx_lk_ids.set(key, vx_lks.length - 1)
-    return vx_lks.length - 1
+    let lk = vx_lks.length
+    vx_lks.push(vx_lk { key, u, worker, 4.0 * vx_reach(u) * 1000.0 / 62.0, false, [] })
+    vx_lk_ids.set(key, lk)
+    for(vx_body_of(u.body).parts) p:
+        let pu = copy(u)
+        pu.body = p.body
+        vx_lks[lk].pieces.push(vx_look_of(pu, false))
+    return lk
 
 // ---- the bakes: a job is one look's poses in some modes, into an atlas of its own (its cells cropped to what's
 // drawn, packed in rows VX_ATLAS wide), baked a pose at a time: filled (in slices), then drawn in 8 facings
@@ -247,6 +253,10 @@ def vx_job_step(j:vx_job, until:float) -> bool:
                 let tools = if tool != "": [ tool ] else: []::string
                 for(u.gear) g: if vx_worn_gear(g): tools.push(g)
                 wu = vx_unit_def { u.label, u.body, u.skin, u.pale, u.mark, tools, u.mount, u.fused, u.coat, u.mane, u.coat_mark, u.crew }
+            let hull = vx_body_of(wu.body).hull
+            if hull != "" and m != VX_DIE:  // (its parts are baked apart and stacked on it; it falls whole)
+                wu = copy(wu)
+                wu.body = hull
             var parts = vx_unit_prims(wu, if m == VX_DIE: 0.0 else: float(pose.y) * 45.0)
             if m == VX_DIE: parts = vx_fallen(parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
             vx_act = ""
@@ -282,14 +292,19 @@ def vx_save(j:vx_job):
 // ---- what to bake, and when
 
 // The modes a look's first bake has (what its units do from the start), and the rest.
-def vx_first_modes(lk:int) -> [int]: return if vx_lks[lk].worker: [ VX_IDLE, VX_WALK, VX_WORK ] else: [ VX_IDLE, VX_WALK ]
+def vx_piece(lk:int) -> bool: return vx_body_of(vx_lks[lk].u.body).piece and vx_body_of(vx_lks[lk].u.body).hull == ""  // (a part: only its turning)
+def vx_first_modes(lk:int) -> [int]:
+    if vx_piece(lk): return [ VX_IDLE ]
+    return if vx_lks[lk].worker: [ VX_IDLE, VX_WALK, VX_WORK ] else: [ VX_IDLE, VX_WALK ]
 def vx_moving_modes(lk:int) -> [int]: return if vx_lks[lk].worker: [ VX_WALK, VX_WORK ] else: [ VX_WALK ]
 def vx_later_modes(lk:int) -> [[int]]:  // (a job a mode: small atlases, short saves; a worker's jobs first)
+    if vx_piece(lk): return []
     let ms = [ [ VX_ATTACK ], [ VX_DIE ] ]
     if vx_lks[lk].worker:  // (a job a mode: a mounted worker's jobs together overflow an atlas)
         for([ VX_BUILD, VX_MINE, VX_FORAGE, VX_CARRY, VX_CARRY + 1, VX_CARRY + 2, VX_CARRY + 3 ]) m, at: ms.insert(at, [ m ])
     return ms
 def vx_all_modes(lk:int) -> [[int]]:
+    if vx_piece(lk): return [ [ VX_IDLE ] ]
     let ms = [ [ VX_IDLE, VX_WALK ], [ VX_ATTACK ], [ VX_DIE ] ]
     if vx_lks[lk].worker:
         for([ VX_WORK, VX_BUILD, VX_MINE, VX_FORAGE, VX_CARRY, VX_CARRY + 1, VX_CARRY + 2, VX_CARRY + 3 ]) m, at: ms.insert(at + 1, [ m ])
@@ -303,9 +318,13 @@ def vx_queue_job(j:vx_job, front:bool):
 
 // A look wanted now (a figure on a page, a step aged into): standing first, at the front (one pose: it shows in a
 // moment), then walking (and working) and the rest at the back.
-def vx_plan(lk:int, front:bool):
+def vx_plan(lk:int, front:bool) -> void:
     if vx_lks[lk].planned: return
     vx_lks[lk].planned = true
+    for(vx_lks[lk].pieces) plk: vx_plan(plk, front)
+    if vx_piece(lk):
+        vx_queue_job(vx_new_job(lk, 0, [ VX_IDLE ]), front)
+        return
     vx_queue_job(vx_new_job(lk, 0, vx_moving_modes(lk)), front)
     vx_queue_job(vx_new_job(lk, 0, [ VX_IDLE ]), front)  // (in front of its walk)
     for(vx_later_modes(lk)) ms: vx_queue_job(vx_new_job(lk, 0, ms), false)
@@ -354,7 +373,8 @@ def vx_init():
 // A look's first bakes (standing, walking, working) taken out of the queue (and the one being baked), to be finished
 // now.
 def vx_first_job(j:vx_job) -> bool: return j.v == 0 and (j.modes[0] == VX_IDLE or j.modes[0] == VX_WALK)
-def vx_take_first(lk:int, out:[vx_job]):
+def vx_take_first(lk:int, out:[vx_job]) -> void:
+    for(vx_lks[lk].pieces) plk: vx_take_first(plk, out)
     let d = vx_doing
     if d and d.lk == lk and vx_first_job(d):
         vx_doing = nil
@@ -382,6 +402,8 @@ def vx_start():
             let ahead = if army_n > 0 and s == type_step(k): 0 else: max(0, age - (if t_player[k] >= 0 and t_player[k] < ages.length: ages[t_player[k]] else: 1))  // (army: they're all on the field)
             while by_age.length <= ahead: by_age.push([])
             if (find(by_age[ahead]) x: x == lk) < 0: by_age[ahead].push(lk)
+            for(vx_lks[lk].pieces) plk:
+                if (find(by_age[ahead]) x: x == plk) < 0: by_age[ahead].push(plk)
         vx_type_lks.push(lks)
         vx_cur.push(lks[0])
     let now = []::vx_job
@@ -503,6 +525,12 @@ def vx_frame_for(id:int, k:int, state:string, d:int, n:int) -> int:
     if fr >= 0: return fr
     vx_stand_now(lk)  // (drawn before it's baked: a unit of a later age put down)
     return vx_frame(lk, 0, VX_IDLE, f, 0)
+
+// A part's frame in facing f (asked for if it isn't baked yet), or -1.
+def vx_piece_frame(plk:int, f:int) -> int:
+    let fr = vx_frames.get(vx_fkey(plk, 0, VX_IDLE, f, 0), -1)
+    if fr < 0: vx_want(plk)
+    return fr
 
 // A dead unit's frame, t seconds after it fell: its fall, then lying.
 def vx_dead_frame(id:int, k:int, d:int, t:float) -> int:
