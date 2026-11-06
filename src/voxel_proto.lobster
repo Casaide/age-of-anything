@@ -20,6 +20,7 @@ class row:
     shade:bool   // shadows (on the body and the ground)
     look:int     // a human's look (vx_set_look)
 
+let PARTS_OFF_PCT = 1.5  // (the outlines where a part meets its hull differ a little)
 let vx_dirs = [ "../data/voxel" ]
 for(command_line_arguments()) a:
     if starts_with(a, "voxels:"): vx_dirs.push(a.substring(7, a.length - 7))  // (more data, a mod's)
@@ -167,6 +168,28 @@ elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull faci
             if cell[at].w <= 0.0:
                 print "parts: the pivot of {p.name} is off the hull in facing {f}"
                 bad++
+    // With every part facing as the hull does, the stack must be the whole figure: right place, nothing lost.
+    let whole = vx_fill(vx_unit_prims(u, 0.0), b.size, true)
+    var worst = 0.0
+    for(8) f:
+        let want = copy(vx_cell(whole, f))
+        let got = map(copy(vx_cell(hull, f))) c: c.w > 0.0
+        for(pieces) sh, n:
+            let o = vx_pivot_px(b, b.parts[n], f)
+            let dx, dy = int(floor(o.x + 0.5)), int(floor(o.y + 0.5))
+            let pc = vx_cell(sh, f)
+            for(vx_CELL.y) y: for(vx_CELL.x) x:
+                if pc[y * vx_CELL.x + x].w > 0.0 and y + dy >= 0 and y + dy < vx_CELL.y and x + dx >= 0 and x + dx < vx_CELL.x:
+                    got[(y + dy) * vx_CELL.x + x + dx] = true
+        var area, off = 0, 0
+        for(want) c, j:
+            if c.w > 0.0: area++
+            if (c.w > 0.0) != got[j]: off++
+        let pct = float(off) * 100.0 / float(max(1, area))
+        worst = max(worst, pct)
+        if pct > PARTS_OFF_PCT:
+            print "parts: stacked in facing {f}, {pct}% of the figure is off the whole one"
+            bad++
     for(pieces) sh, n: for(8) f:
         vx_cell(sh, f)
         if vx_box.z < vx_box.x:
@@ -185,7 +208,7 @@ elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull faci
         let bytes = []::int
         for(img) c: for(3) ch: bytes.push(clamp(int(c[ch] * 255.0), 0, 255))
         write_file(out_path, "P6\n{iw} {ih * 8}\n255\n" + vector_to_buffer(bytes, 1), 0, 1)
-    print "parts: {args[2]}: {64 * b.parts.length} stacked, {bad} faults"
+    print "parts: {args[2]}: {64 * b.parts.length} stacked, at worst {worst}% off the whole figure, {bad} faults"
     assert bad == 0
 elif args.length > 2 and args[1] == "solo":  // `solo <body> [gear,...]`: one body alone, 3x, four facings standing then four walk steps (for making it from scratch)
     let kit = if args.length > 3: tokenize(args[3], ",", "") else: []
