@@ -29,7 +29,7 @@
     },
     "ww2_rifle": {
       "hand": "right",
-      "hold": "thrust",
+      "hold": "rifle",
       "shapes": [
         {
           "cap": [
@@ -87,5 +87,32 @@
       "part": "armour.ww2_tunic",
       "gear": "ww2_tunic"
     }
-  ]
+  ],
+  "holds": {
+    "rifle": {
+      "_doc": "a rifle in both hands: across the chest at the ready, brought up to the shoulder and held there to fire, kicking back at the shot (#261)",
+      "rest": [
+        -0.05,
+        0.5,
+        -0.45
+      ],
+      "dir": [
+        -0.35,
+        0.45,
+        0.8
+      ],
+      "aim": [
+        0.0,
+        0.62,
+        0.02
+      ],
+      "aim_dir": [
+        0,
+        1,
+        0.02
+      ],
+      "kick": 0.09,
+      "support": 6.5
+    }
+  }
 }
