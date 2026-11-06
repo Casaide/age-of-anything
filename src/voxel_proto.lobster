@@ -20,7 +20,8 @@ class row:
     shade:bool   // shadows (on the body and the ground)
     look:int     // a human's look (vx_set_look)
 
-let PARTS_OFF_PCT = 1.5  // (the outlines where a part meets its hull differ a little)
+let PARTS_OFF_PCT = 1.5     // (the outlines where a part meets its hull differ a little)
+let FLIER_LIFT_SHARE = 0.5  // how much of its flying height a flier's lowest pixel must be off the ground (its wings hang below its middle)
 let vx_dirs = [ "../data/voxel" ]
 for(command_line_arguments()) a:
     if starts_with(a, "voxels:"): vx_dirs.push(a.substring(7, a.length - 7))  // (more data, a mod's)
@@ -261,6 +262,20 @@ elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (t
                 vx_cell(g, f)
                 if vx_box.z < vx_box.x:
                     print "bodies: {id} draws nothing in facing {f}"
+                    bad++
+            if b.flies > 0.0:  // (built the way the game builds it, an engine with its crew if it has styles)
+                let worker = unit("crew", "human", ROMAN, ROMAN2, [ "axe" ], "", float3_0)
+                let fu = if b.style_names.length: engine(id, worker) else: u
+                vx_set_look(fu, 0)
+                let fg = vx_fill(vx_unit_prims(fu, 0.0), b.size, vx_on_zero(fu, false))
+                let want = int(b.flies * cos(vx_ELEV) * vx_RES * b.size * FLIER_LIFT_SHARE)
+                var least = 1000000
+                for(8) f:
+                    vx_cell(fg, f)
+                    least = min(least, vx_ANCHOR.y - vx_box.w)
+                print "bodies: {id} flies at {b.flies}: lowest pixel {least} above its ground point, at least {want} wanted"
+                if least < want:
+                    print "bodies: {id} is drawn on the ground"
                     bad++
             if b.parts.length: bad += parts_faults(id, "-")
     print "bodies: {n} bodies, {bad} faults"

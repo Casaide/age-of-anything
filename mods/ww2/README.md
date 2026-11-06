@@ -1,13 +1,22 @@
-# 1944
+# 1944 (`ww2`)
 
-A Sherman side against a Panzer side, all data, no code. Each side has its own tank, a fighter plane and flak gunners. The word
-`sherman` or `panzer` picks the crew; `tank` and `plane` ask for the era too.
+A Sherman side against a Panzer side, all data, no code. Not part of the game: it loads only when asked for, and builds leave
+`mods/` out. Play it by hand, with your own army by your town (the enemy starts as a normal base, without tanks):
 
-    ./play.sh lobby mods:ww2 rules:ww2_duel "races:sherman|panzer" skirmish army:4 watch
+    ./play.sh lobby mods:ww2 rules:ww2_duel "races:sherman|panzer" army:6
 
-- **Tanks** (`data/voxel/bodies/siege.bolt.*`): a turret on a mount (`stats.mounts`, `parts`), a `muzzle` point, `tracks` and `wheels`.
-- **Fighter** (`siege.beast.fighter`): a real aircraft (`stats.air`, the `flying` tag) with a propeller (`wheels` with `blades`). Only what can hit air touches it.
-- **Flak gunners** (`weapon.flak`): the counter to aircraft, by a `bonus` on the `air` tag.
-- **Shots** (`data/shots.json`): the 75 mm shell and the machine gun. **Sounds** (`data/audio.json`): engines, tracks, turret.
+Or watch both sides' tanks fight:
 
-`data/rules/ww2_duel.json` leaves workers, gunners, tanks and fighters. Tanks and fighters are tier 3 lines, so in a normal match they come in the third age.
+    ./play.sh lobby mods:ww2 rules:ww2_duel "races:sherman|panzer" skirmish army:6 watch
+
+- The `ww2` era, opened under Anything goes and `ww2_duel` (`data/rules/`). `ww2_duel` leaves workers, gunners, tanks and fighters.
+  Tanks and fighters are tier 3 lines, so without `army:` or `skirmish` they come in the third age.
+- Words: sherman(s) and panzer(s) pick the crew, tank(s) and plane(s) ask for the era (elsewhere a note and a substitute).
+- **Tanks** (`data/voxel/bodies/siege.bolt.*`): the bolt thrower line, a crew's own (`families.json` `siege`). A turret on a mount
+  (`engine.tank_gun`'s `stats.mounts`, the body's `parts`), a `muzzle` point, `tracks` and `wheels`. The same gun at the same price:
+  the Sherman is quicker, the Panzer tougher.
+- **Fighter** (`siege.beast.fighter`): the war beast line, a real aircraft (`stats.air`, the `flying` tag) with a propeller (`wheels` with
+  `blades`). Only what can hit air touches it. Its `flies` is a promise, not a lift: its points are set at that height.
+- **Flak gunners** (`weapon.flak`): the archer line, the counter to aircraft by a `bonus` on the `air` tag.
+- **People** (`crew_1944`): the game's human at 60%, a body of its own, so a person doesn't stand taller than a tank.
+- **Shots** (`data/shots.json`): the 75 mm shell, the machine gun, the flak. **Sounds** (`data/audio.json`): engines, tracks, turret.
