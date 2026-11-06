@@ -404,7 +404,7 @@ class vx_hold_spec:
     aim:float3  // a gun: brought up here to fire, along aim_dir, for the whole cycle
     aim_dir:float3
     aims:bool
-    kick:float  // how far the shot throws it back, in arms
+    kick:float     // how far the shot throws it back, in arms
     support:float  // how far along it the other hand holds it, body units (0: it doesn't)
 
 // What a worker takes home: gear held, or a cart pushed (barrow or cart) under a heap of its material.

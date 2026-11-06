@@ -23,10 +23,10 @@ class row:
 let PARTS_OFF_PCT = 1.5     // (the outlines where a part meets its hull differ a little)
 let FLIER_LIFT_SHARE = 0.5  // how much of its flying height a flier's lowest pixel must be off the ground (its wings hang below its middle)
 let AIM_STEPS = 8
-let AIM_DROP = 0.5    // body units its muzzle may rise or fall through the firing cycle
+let AIM_DROP = 0.5      // body units its muzzle may rise or fall through the firing cycle
 let AIM_KICK_MIN = 0.5  // body units the recoil throws it back
 let AIM_KICK_MAX = 2.5
-let WRECK_KEEPS_PCT = 90    // how much of its standing outline a knocked-out vehicle covers (its turret is knocked askew)
+let WRECK_KEEPS_PCT = 90  // how much of its standing outline a knocked-out vehicle covers (its turret is knocked askew)
 let vx_dirs = [ "../data/voxel" ]
 for(command_line_arguments()) a:
     if starts_with(a, "voxels:"): vx_dirs.push(a.substring(7, a.length - 7))  // (more data, a mod's)
