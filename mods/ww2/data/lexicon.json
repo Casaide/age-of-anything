@@ -1,0 +1,13 @@
+{
+ "_doc": "The words that ask for each side, and for the era. Where a host keeps the era out: a note and a substitute.",
+ "words": {
+  "sherman": {"era": "ww2", "tags": {"ww2": 5}, "family": "sherman_crews", "default_creature": "crew_1944", "substitute": {"heavy": 1, "helmet": 1}, "note": "Tanks haven't been invented here. Issued a very large helmet and told to roll."},
+  "shermans": {"era": "ww2", "tags": {"ww2": 5}, "family": "sherman_crews", "default_creature": "crew_1944", "substitute": {"heavy": 1, "helmet": 1}, "note": "Tanks haven't been invented here. Issued a very large helmet and told to roll."},
+  "panzer": {"era": "ww2", "tags": {"ww2": 5}, "family": "panzer_crews", "default_creature": "crew_1944", "substitute": {"heavy": 1, "helmet": 1}, "note": "Tanks haven't been invented here. Issued a very large helmet and told to roll."},
+  "panzers": {"era": "ww2", "tags": {"ww2": 5}, "family": "panzer_crews", "default_creature": "crew_1944", "substitute": {"heavy": 1, "helmet": 1}, "note": "Tanks haven't been invented here. Issued a very large helmet and told to roll."},
+  "tank": {"era": "ww2", "tags": {"ww2": 5}, "family": "sherman_crews", "default_creature": "crew_1944", "substitute": {"heavy": 1, "helmet": 1}, "note": "Tanks haven't been invented here. Issued a very large helmet and told to roll."},
+  "tanks": {"era": "ww2", "tags": {"ww2": 5}, "family": "sherman_crews", "default_creature": "crew_1944", "substitute": {"heavy": 1, "helmet": 1}, "note": "Tanks haven't been invented here. Issued a very large helmet and told to roll."},
+  "plane": {"era": "ww2", "tags": {"ww2": 5}, "default_creature": "crew_1944", "substitute": {"heavy": 1}, "note": "Nobody has flown yet. Someone did jump off a barn, though, and is resting."},
+  "planes": {"era": "ww2", "tags": {"ww2": 5}, "default_creature": "crew_1944", "substitute": {"heavy": 1}, "note": "Nobody has flown yet. Someone did jump off a barn, though, and is resting."}
+ }
+}
