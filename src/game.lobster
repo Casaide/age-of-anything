@@ -118,29 +118,29 @@ var rec_type = []::string  // typein:A|B: (filming the lobby)
 var rec_side = 0
 var rec_char = 0
 var rec_wait = 30
-var rec_push = 1.0      // push:<k>: a record:'s camera closes in, its zoom k times by the end (1.15 is a slow push)
-var rec_pan = float2_0  // pan:<x>,<y>: a record:'s camera drifts that many tiles by the end
+var rec_push = 1.0                    // push:<k>: a record:'s camera closes in, its zoom k times by the end (1.15 is a slow push)
+var rec_pan = float2_0                // pan:<x>,<y>: a record:'s camera drifts that many tiles by the end
 var window_arg = int2 { 1600, 1000 }  // window:<w>,<h>: the window's size in points (filming: 1600,900 is 16:9)
-var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks through it)
-var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
-var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
-var army_n = 0                   // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
-var army_snap = false            // a skirmish's armies start in their blocks, once the first order has made them
-let ARMY_GAP = 600               // milli-tiles between them, in ranks
-var zoom_arg = 0.0               // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
-var reveal = false               // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
-var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
-var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
-var page_arg = ""                // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
-var lab_arg = false              // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
-var tree_arg = false             // tree: the tech tree page open from the start (captures)
-var tree_hover_arg = ""          // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
-var padtest = false              // padtest: a fake pad plays a few seconds, then quit
-var net_people = 2               // people in a network match (host:<n>)
-var net_others = []::Link        // a host's joiners after the first
-var hosting = false              // host: a network match, waiting for a player to join (net/lockstep.lobster)
-var join_ip = ""                 // join:<ip>: play the second side of the match a host there sets up
-var reload_at = -1.0             // reload:<seconds>: save then, load 5 s later (tests and captures)
+var fort_gate = int2 { -1, -1 }       // place:fort's gate (captures: army: walks through it)
+var place_arg = ""                    // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
+var skirmish = false                  // the lobby's Skirmish: both armies on the map at once, marching on each other
+var army_n = 0                        // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+var army_snap = false                 // a skirmish's armies start in their blocks, once the first order has made them
+let ARMY_GAP = 600                    // milli-tiles between them, in ranks
+var zoom_arg = 0.0                    // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
+var reveal = false                    // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
+var hurt_pct = -1                     // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
+var raze_at = -1.0                    // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
+var page_arg = ""                     // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
+var lab_arg = false                   // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
+var tree_arg = false                  // tree: the tech tree page open from the start (captures)
+var tree_hover_arg = ""               // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
+var padtest = false                   // padtest: a fake pad plays a few seconds, then quit
+var net_people = 2                    // people in a network match (host:<n>)
+var net_others = []::Link             // a host's joiners after the first
+var hosting = false                   // host: a network match, waiting for a player to join (net/lockstep.lobster)
+var join_ip = ""                      // join:<ip>: play the second side of the match a host there sets up
+var reload_at = -1.0                  // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
 var touch_play = false  // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
 // A mod can say how it starts (its manifest's `launch`): those options, as if typed after the rest.
@@ -2965,13 +2965,13 @@ def play_match():
                 speed = start_speed
             gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
             rec_n++
-            let frames = rec_for * rec_fps
-            if float(rec_n) >= frames:
+            let take_frames = rec_for * rec_fps
+            if float(rec_n) >= take_frames:
                 quit_app = true
                 return
             // the camera's move over the take, a frame of it at a time: the push in and the drift (iso: tiles are 1000 art units)
-            zoom *= pow(rec_push, 1.0 / frames)
-            cam += (iso(rec_pan.x * 1000.0, rec_pan.y * 1000.0) - iso(0.0, 0.0)) / frames
+            zoom *= pow(rec_push, 1.0 / take_frames)
+            cam += (iso(rec_pan.x * 1000.0, rec_pan.y * 1000.0) - iso(0.0, 0.0)) / take_frames
         if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return
