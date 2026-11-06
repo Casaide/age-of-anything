@@ -93,7 +93,7 @@ def is_selected_here(m:float2) -> bool:
     let i = unit_at_screen(m, true)
     if i >= 0: return contains(selected, u_id[i])
     let b = building_at(mouse_milli())
-    return b >= 0 and sel_building != 0 and b_id[b] == sel_building
+    return b >= 0 and b_owner[b] == ME and sel_building != 0 and b_id[b] == sel_building
 
 def go_to(i:int):
     selected = [ u_id[i] ]
@@ -195,6 +195,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
         else:
             selected = []
             sel_building = 0
+            sel_foreign = 0
     if released("leftshoulder") and not pad_lb_used and pad_held_t.get("leftshoulder", 0.0) < 0.4 and placing < 0: cycle_kinds()
     if pressed("rightshoulder"):
         selected = soldiers_on_screen()

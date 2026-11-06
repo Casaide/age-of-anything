@@ -141,13 +141,17 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     let paces = map(chunks) c: block_speed(c)
     sort_ints(paces)
     let army_pace = paces[paces.length / 2] * 4 / 5  // (a little under their walk: whoever falls behind can catch up)
+    // flankers go on the wings of an army that has a middle; an army mostly of them forms in rows like any other
+    var flankers = 0
+    for(idx) i: if t_role[u_kind[i]] == 3: flankers++
+    let wings = flankers * 3 <= idx.length
     let rows = []::[[int]]
     var band = -1
     var used = 0
     let flank = []::[int]
     for(chunks) c:
         let role = t_role[u_kind[c[0]]]
-        if role == 3 and band >= 0:
+        if role == 3 and wings and band >= 0:
             flank.push(c)
             continue
         if role != band or used + wide(c) > row_max:
@@ -197,12 +201,15 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     if flank.length: half_w = max(-wing[0], wing[1]) + wing_wide
     // where the army forms up: from where it stands, on along the way to the first ground that holds it all
     let ln0 = lane(idx[0])
+    var samples = 0
     def blocked(ax:int, ay:int) -> int:  // (ground it can't stand on, sampled two tiles apart)
         var n = 0
+        samples = 0
         var al = -total / 2 - TILE
         while al <= total / 2 + TILE:
             var ac = -half_w - TILE
             while ac <= half_w + TILE:
+                samples++
                 if not walkable(ax + (ux * al - uy * ac) / ONE, ay + (uy * al + ux * ac) / ONE, ln0): n++
                 ac += 2 * TILE
             al += 2 * TILE
@@ -212,7 +219,7 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     var least = blocked(cx, cy)
     let way = isqrt(dist2(cx, cy, x, y))
     var on_way = 2 * TILE
-    while on_way <= way and least > 0:
+    while on_way <= way / 2 and least > 0:  // (not as far as the enemy's door)
         let ax = cx + ux * on_way / ONE
         let ay = cy + uy * on_way / ONE
         let n = blocked(ax, ay)
@@ -268,6 +275,19 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     for(fb_state) state, b:  // (twice the farthest walk: then they go without the rest)
         if state != 0 and fb_army[b] == army: fb_t[b] = BLOCK_FORM_TICKS - min(BLOCK_FORM_TICKS, 2 * army_farthest + 100)
 
+// Every block's units put straight in their places (a battle set up for filming starts formed).
+def blocks_snap():
+    for(u_x.length) i:
+        let b = u_block[i] - 1
+        if b >= 0:
+            let x = fb_x[b] + u_bx[i]
+            let y = fb_y[b] + u_by[i]
+            if walkable(x, y, lane(i)):
+                u_x[i] = x
+                u_y[i] = y
+                u_wx[i] = x
+                u_wy[i] = y
+
 // A block's centre, one tick: forming, then marching, unless it or a block just ahead is fighting.
 def blocks_tick():
     if not fb_state.length: return
@@ -283,7 +303,7 @@ def blocks_tick():
                 let px = fb_x[b] + u_bx[i]
                 let py = fb_y[b] + u_by[i]
                 let open = walkable(px, py, lane_base[u_owner[i]] + u_mclass[i])
-                if not open or dist2(u_x[i], u_y[i], px, py) <= 250000: placed[b]++
+                if not open or dist2(u_x[i], u_y[i], px, py) <= 40000: placed[b]++
     for(fb_state) state, b:
         if state != 0:
             if alive[b] == 0: fb_state[b] = 0
@@ -338,6 +358,12 @@ def block_march(b:int):
         fb_x[b] = x + dx * min(fb_pace[b], d) / d
         fb_y[b] = y + dy * min(fb_pace[b], d) / d
 
+// An enemy close by: no marching in blocks, there's no time to form up (and a close fight stays as it was priced).
+def foe_near(player:int, x:int, y:int) -> bool:
+    for(u_x.length) i:
+        if u_owner[i] < num_players and is_enemy(player, u_owner[i]) and dist2(u_x[i], u_y[i], x, y) <= BLOCK_FOE_NEAR * BLOCK_FOE_NEAR: return true
+    return false
+
 // A group move's formation (World._formation): every unit's slot into slot_x / slot_y.
 // Returns the group, its centre (fx, fy) and pace.
 def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
@@ -368,7 +394,7 @@ def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
     if d > 0:
         ux = dx * ONE / d
         uy = dy * ONE / d
-    if n >= BLOCK_FROM:
+    if n >= BLOCK_FROM and not foe_near(player, cx, cy):
         block_formation(group, idx, x, y, cx, cy, ux, uy)
         return group, x, y, pace
     let bands = [ []::int, []::int, []::int ]
