@@ -1387,6 +1387,25 @@ def run_front(page0:string, typed:[string]) -> string:
             go = "start"
         // captures: the page once its armies stand
         if shot != "" and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and (not fe_looks_waiting() or fe_frames > 900) and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
+        if rec_dir != "" and rec_type.length > 0:  // (filming: the prompts typed in, side by side, each given time to muster)
+            if rec_n == 0: gl.set_fixed_delta_time(1.0 / 30.0, 0.0)
+            if fe_page == "setup":
+                let rs = rec_side
+                if rs < rec_type.length:
+                    if rec_wait > 0: rec_wait--
+                    else:
+                        if rec_char == 0: fe_focus(rs, "")
+                        rec_char++
+                        gl.set_text_input(rec_type[rs].substring(0, min(rec_char, rec_type[rs].length)))
+                        if rec_char >= rec_type[rs].length:
+                            rec_side++
+                            rec_char = 0
+                            rec_wait = 75
+                        else: rec_wait = 2
+                gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
+                rec_n++
+                if rec_side >= rec_type.length and rec_wait == 0:
+                    return ""
         if shot != "" and fe_frames == shot_frame:
             gl.screenshot(shot)
             if fe_page == "setup" and has_s(args, "loadershot"):
