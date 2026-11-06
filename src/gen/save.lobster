@@ -1431,6 +1431,10 @@ def load_world_bytes(data:string) -> [Bot]:
 // Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first. Format 1 needs none.
 def save_upgrade(s:WorldSave):
     assert s.save_format <= SAVE_FORMAT
+    if s.save_format < 2:  // (turrets, #177: no unit type had one)
+        for(s.t_slot):
+            s.t_turn.push(0)
+            s.t_arc.push(0)
 
 // Why this save file can't load here, or "".
 def save_refusal_of(path:string) -> string:
