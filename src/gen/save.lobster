@@ -185,6 +185,11 @@ class WorldSave:
     u_wexit:[int]
     u_wtime:[int]
     u_orders:[[Cmd]]
+    hook_unit_names:[string]
+    hook_unit_cols:[[int]]
+    hook_player_names:[string]
+    hook_player_cols:[[int]]
+    hook_tick_types:[int]
     t_tags:[[int]]
     t_damage:[int]
     events:[Event]
@@ -674,6 +679,11 @@ def world_bytes(bots:[Bot]) -> string:
         u_wexit,
         u_wtime,
         u_orders,
+        hook_unit_names,
+        hook_unit_cols,
+        hook_player_names,
+        hook_player_cols,
+        hook_tick_types,
         t_tags,
         t_damage,
         events,
@@ -1175,6 +1185,11 @@ def load_world_bytes(data:string) -> [Bot]:
     u_wexit = s.u_wexit
     u_wtime = s.u_wtime
     u_orders = s.u_orders
+    hook_unit_names = s.hook_unit_names
+    hook_unit_cols = s.hook_unit_cols
+    hook_player_names = s.hook_player_names
+    hook_player_cols = s.hook_player_cols
+    hook_tick_types = s.hook_tick_types
     t_tags = s.t_tags
     t_damage = s.t_damage
     events = s.events

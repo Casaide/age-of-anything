@@ -38,6 +38,8 @@ import lib.expand
 import lib.bot
 import lib.walls_ai
 import lib.world
+import hooks.active
+import hooks.rules
 import gen.setup
 import gen.modes
 import gen.start
