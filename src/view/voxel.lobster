@@ -205,6 +205,11 @@ class vx_gait:
     dip:float    // the body's drop into a blow
     turn:float   // the shoulders' turn into a blow, in units
 
+class vx_part_spec:
+    name:string
+    pivot:float3  // where it turns, in the body's frame
+    body:string   // its own body: its shapes round the pivot, standing at their own height
+
 class vx_body_spec:
     id:string
     size:float
@@ -253,6 +258,9 @@ class vx_body_spec:
     crew:[float3] = []         // an engine: where its crew stand (on their own legs, walking as it moves)
     seats:[float3] = []        // a war beast: where its crew sit (a howdah), at their seat height
     style_names:[string] = []  // an engine in each culture's style (siege.<kind>.<style>): its skin, pale, mark
+    parts:[vx_part_spec] = []  // pieces that turn on their own (a turret): this body is the whole figure (a portrait, a fall)
+    hull:string = ""           // with parts: the body without them
+    piece:bool = false         // a hull or a part: on the ground as the whole body is, not under its own lowest point
     style_cols:[float3] = []
     plean:[float] = []   // per point, with a gait: how far forward it leans walking
     psway:[float] = []   // how far it shifts over the planted foot
@@ -377,12 +385,52 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
     b.tool_jobs = copy(to.keys)
     b.tool_gear = map(to.a) t: as_str(t)
     b.bare = gbool(o, "bare", false)
+    vx_parse_parts(b, glist(o, "parts"))
     return b
 
 // The gear body b uses for gear g (its own in its place, or g).
 def vx_tool_for(b:vx_body_spec, tool:string) -> string:
     let k = find(b.tool_jobs) j: j == tool
     return if k >= 0: b.tool_gear[k] else: tool
+
+// A body's `parts` (a turret): `pivot` and `shapes`. Each becomes a body of its own, baked per facing; so does the hull
+// without them; the body itself keeps all of it.
+def vx_parse_parts(b:vx_body_spec, parts:[JV]):
+    if not parts.length: return
+    let hull = copy(b)
+    hull.id = b.id + "#hull"
+    hull.piece = true
+    vx_bodies.set(hull.id, hull)
+    b.hull = hull.id
+    for(parts) o:
+        let name = gstr(o, "name", "")
+        assert name != ""
+        let pivot = vx_v3(at(o, "pivot"))
+        let shapes = vx_parse_shapes(glist(o, "shapes"))
+        let piece = copy(b)
+        piece.id = b.id + "#" + name
+        piece.piece = true
+        piece.hull = ""
+        piece.parts = []
+        piece.shapes = map(shapes) s: vx_spec_moved(s, float3 { -pivot.x, -pivot.y, 0.0 })
+        vx_bodies.set(piece.id, piece)
+        b.parts.push(vx_part_spec { name, pivot, piece.id })
+        b.shapes = b.shapes.append(shapes)
+
+def vx_spec_moved(s:vx_spec, by:float3) -> vx_spec:
+    let c = copy(s)
+    c.a = s.a + by
+    c.b = s.b + by
+    c.offs = map(s.offs) o: o + by
+    return c
+
+// Where a part's pivot falls on the hull's picture in that facing, voxels from the hull's ground point (x right, y down).
+def vx_pivot_px(b:vx_body_spec, p:vx_part_spec, facing:int) -> float2:
+    let yaw = float(facing) * 45.0
+    let px = p.pivot.x * cos(yaw) - p.pivot.y * sin(yaw)
+    let py = p.pivot.x * sin(yaw) + p.pivot.y * cos(yaw)
+    let s = vx_RES * b.size
+    return float2 { px * s, -py * sin(vx_ELEV) * s }
 
 def gfloat(o:JV, k:string, fallback:float) -> float: return if has(o, k): as_float(at(o, k)) else: fallback
 
@@ -1004,7 +1052,7 @@ def vx_flies(u:vx_unit_def) -> bool: return vx_body_of(u.body).flies > 0.0 or (u
 
 // Is the unit's ground its body's z 0 (a flier's: not under its lowest point; an engine's or a war beast's: under its
 // wheels and feet, not its crew's)? A fall lies on the ground (not a flier's).
-def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and not falling) or u.crew != nil
+def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and not falling) or u.crew != nil or vx_body_of(u.body).piece
 
 // The unit's size: its body's (a mount is scaled to it).
 def vx_size_of(u:vx_unit_def) -> float: return vx_body_of(u.body).size

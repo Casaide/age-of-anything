@@ -4,7 +4,9 @@
 
 Playing it showed what a tank needs that the game doesn't have: shots came from its middle, the turret couldn't aim, the tracks didn't run. Dominic asked for it done properly, in the engine, so #176 splits vehicles into pieces (#177 to #186) and aim in the sim came first.
 
-**Decisions.** D-219.
+**Decisions.** D-219, D-220.
+
+**Pictures.** `archive/images/2026-11-06/05-turret-hull-by-aim-sheet.png` (every hull facing by every turret facing), `06-sherman-panzer-turrets-turned.png` (the first match with turrets turned, the shells still leaving from the middle: #179).
 
 **Direction changes.** Vehicles became an engine feature instead of a mod's tricks. Planes will be real air units with anti-air counters, not a skin.
 

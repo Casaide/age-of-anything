@@ -2,6 +2,7 @@
 // voxel a baked pixel (the game draws them at 0.55 world px a pixel).
 //   lobster voxel_proto.lobster -- <out.ppm>   (then: magick out.ppm -filter box -resize 55% out.png)
 //   lobster voxel_proto.lobster -- <out.ppm> solo <body> [gear,...]   (one body alone at 3x: make it from scratch)
+//   lobster voxel_proto.lobster -- <out.ppm or -> parts <body> [voxels:<dir>]   (hull facing by part facing, 8 x 8; checks the part sits on the hull)
 import std
 import vec
 import dictionary
@@ -19,7 +20,10 @@ class row:
     shade:bool   // shadows (on the body and the ground)
     look:int     // a human's look (vx_set_look)
 
-vx_load([ "../data/voxel" ])
+let vx_dirs = [ "../data/voxel" ]
+for(command_line_arguments()) a:
+    if starts_with(a, "voxels:"): vx_dirs.push(a.substring(7, a.length - 7))  // (more data, a mod's)
+vx_load(vx_dirs)
 let ROMAN = float3 { 0.48, 0.29, 0.16 }  // (human_dark, as the romans)
 let ROMAN2 = float3 { 0.35, 0.20, 0.13 }
 let RAT = float3 { 0.48, 0.35, 0.25 }  // (rat_brown)
@@ -143,6 +147,46 @@ if args.length > 1 and args[1] == "check":
                     print "FLOATS: {u.label}, step {st}, facing {f}: no shadow showing under its feet as the game draws it"
     print "contact: {n} frames, {bad} float"
     if bad: set_exit_code(1)
+elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull facing (rows) with every part facing (columns)
+    let b = vx_body_of(args[2])
+    assert b.parts.length
+    let u = unit(args[2], args[2], float3_0, float3_0, [], "", float3_0)
+    vx_set_look(u, 0)
+    vx_team_wear = "scarf"
+    vx_shadows = true
+    vx_act = ""
+    vx_stand = true
+    let hull = vx_fill(vx_unit_prims(unit(b.hull, b.hull, float3_0, float3_0, [], "", float3_0), 0.0), b.size, true)
+    let pieces = map(b.parts) p: vx_fill(vx_unit_prims(unit(p.body, p.body, float3_0, float3_0, [], "", float3_0), 0.0), b.size, true)
+    var bad = 0
+    for(8) f:
+        let cell = copy(vx_cell(hull, f))
+        for(b.parts) p:
+            let o = vx_pivot_px(b, p, f)
+            let at = (vx_ANCHOR.y + int(floor(o.y + 0.5))) * vx_CELL.x + vx_ANCHOR.x + int(floor(o.x + 0.5))
+            if cell[at].w <= 0.0:
+                print "parts: the pivot of {p.name} is off the hull in facing {f}"
+                bad++
+    for(pieces) sh, n: for(8) f:
+        vx_cell(sh, f)
+        if vx_box.z < vx_box.x:
+            print "parts: {b.parts[n].name} is empty in facing {f}"
+            bad++
+    if out_path != "-":
+        let ih = vx_CELL.y * 3 / 4
+        let iw = step * 8
+        let bg = float3 { 86.0, 120.0, 46.0 } / 255.0
+        let img = map(iw * ih * 8): bg
+        for(8) hf: for(8) pf:
+            vx_draw(hull, hf, img, iw, pf * step, hf * ih - vx_CELL.y / 4)
+            for(pieces) sh, n:
+                let o = vx_pivot_px(b, b.parts[n], hf)
+                vx_draw(sh, pf, img, iw, pf * step + int(floor(o.x + 0.5)), hf * ih - vx_CELL.y / 4 + int(floor(o.y + 0.5)))
+        let bytes = []::int
+        for(img) c: for(3) ch: bytes.push(clamp(int(c[ch] * 255.0), 0, 255))
+        write_file(out_path, "P6\n{iw} {ih * 8}\n255\n" + vector_to_buffer(bytes, 1), 0, 1)
+    print "parts: {args[2]}: {64 * b.parts.length} stacked, {bad} faults"
+    assert bad == 0
 elif args.length > 2 and args[1] == "solo":  // `solo <body> [gear,...]`: one body alone, 3x, four facings standing then four walk steps (for making it from scratch)
     let kit = if args.length > 3: tokenize(args[3], ",", "") else: []
     let u = unit(args[2], args[2], float3_0, float3_0, kit, "", float3_0)
