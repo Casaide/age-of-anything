@@ -315,6 +315,7 @@ class WorldSave:
     fb_key:[int]
     fb_r:[int]
     fb_owner:[int]
+    fb_army:[int]
     fb_t:[int]
     fb_held:[int]
     slot_y:[int]
@@ -797,6 +798,7 @@ def world_bytes(bots:[Bot]) -> string:
         fb_key,
         fb_r,
         fb_owner,
+        fb_army,
         fb_t,
         fb_held,
         slot_y,
@@ -1289,6 +1291,7 @@ def load_world_bytes(data:string) -> [Bot]:
     fb_key = s.fb_key
     fb_r = s.fb_r
     fb_owner = s.fb_owner
+    fb_army = s.fb_army
     fb_t = s.fb_t
     fb_held = s.fb_held
     slot_y = s.slot_y
