@@ -703,7 +703,7 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
     // the dice, then the prompt
     let ph = (if compact: 48.0 else: 68.0) * fe_k
     if fe_dice(float2 { x, y }, ph): fe_roll(i)
-    fe_box(i, float2 { x + ph + 10.0 * fe_k, y }, float2 { w - ph - 10.0 * fe_k, ph }, s.typed, "...or describe your race", fz(if compact: 20.0 else: 25.0), true)
+    fe_box(i, float2 { x + ph + 10.0 * fe_k, y }, float2 { w - ph - 10.0 * fe_k, ph }, s.typed, "...or describe your race", fz(if compact: 20.0 else: 25.0), false)
     y += ph + 9.0 * fe_k
     fe_roster_text(s.race, float2 { x, y }, w, if compact: 1 else: 2, fz(if compact: 15.0 else: 17.0))
     if not compact: fe_traits(s, float2 { x, y + 57.0 * fe_k }, w, 26.0 * fe_k, fz(13.0))
