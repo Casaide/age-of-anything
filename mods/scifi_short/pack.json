@@ -2,12 +2,11 @@
  "id": "scifi_short",
  "name": "Future skirmish (test)",
  "version": "0.1.0",
- "game_version": "0.21",
  "authors": ["Claude (for Dominic)"],
  "description": "A trimmed game on top of scifi_test: one unit (the power-armoured pulse trooper) and robot workers with laser cutters, two ages, a short tree, pulse rifles with their own sound. The test case for what a mod can take out of the game. Play it with mods:scifi_test,scifi_short rules:short.",
  "license": "Same as the game",
  "load_order": 110,
- "depends": ["scifi_test"],
+ "depends": ["age_of_anything@0.21", "scifi_test"],
  "eras": [],
  "data": "data"
 }

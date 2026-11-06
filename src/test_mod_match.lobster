@@ -116,12 +116,37 @@ check(equal(want, got), "1000 ticks after a load match")
 let rifle = audio_file("sfx/shoot_pulse_1.wav")
 check(rifle == "../mods/scifi_short/audio/sfx/shoot_pulse_1.wav", "the rifle sound comes from the mod ({rifle})")
 check(audio_file("sfx/shoot_arrow_1.wav") == AUDIO_DIR + "/sfx/shoot_arrow_1.wav", "the rest from the game")
+
+// A save names its mods: without them it's refused by name, and nothing is touched; with them it loads.
+new_world(2026, map_id, races, rules, [])
+bots = map(num_players) p: new_bot(p)
+run_ticks(20)
+check(save_world(save_path, bots), "a save with the mods")
+mods_use([])
+let refused_why = save_refusal_of(save_path)
+check(find_string(refused_why, "scifi_test") >= 0, "without the mods it says which ({refused_why})")
+let units_before = u_id.length
+check(not load_world(save_path).length and save_refused != "" and u_id.length == units_before, "and refuses, touching nothing")
+mods_use([ "scifi_test", "scifi_short" ])
+reset_world()
+check(load_world(save_path).length > 0, "with the mods it loads")
+delete_file(save_path)
 mods_use([])
 
+// A save from before save formats: the base game (D-141).
+reset_world()
+let old_bots = load_world("../tests/saves/before_formats.sav")
+check(old_bots.length == 2 and tick > 0, "a save from before formats loads (tick {tick}; {save_refused})")
+bots = old_bots
+run_ticks(20)
+check(tick > 0, "and plays on")
+check(save_refusal(SAVE_FORMAT + 1, []::string) != "", "a save from a newer build is refused")
 // One building at a time: the bots play on without it.
 for(SINGLES) id:
     let gone = parse_json("\{\"buildings\":\{\"{id}\":\{\"remove\":true\}\}\}")
-    lib_mod_data = [ jobj_with("buildings.json", gone) ]
+    let trial = pack_open("trial", "", jobj())
+    set(trial.data, "buildings.json", gone)
+    lib_packs = [ lib_packs[0], trial ]
     id_load(lib_root)
     let r2 = load_rules("default")
     let rc = map([ "centaur romans", "sewer rats" ]) p: generate(p, r2, 0)
@@ -131,7 +156,7 @@ for(SINGLES) id:
         if u_owner[i] < 2 and t_animal[k] == 0 and not t_worker[k]: army++
     print "  without {id}: {clock(tick)}, winner {winner}, army {army}, ages {ages[0]} {ages[1]}, lost {lost[0]} {lost[1]}"
     check(lost[0] + lost[1] > 0 or winner >= 0, "without {id} the bots still fight")
-lib_mod_data = []
+lib_packs = [ lib_packs[0] ]
 id_load(lib_root)
 print "\n{checks - failures} passed, {failures} failed"
 if failures > 0: set_exit_code(1)

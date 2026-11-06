@@ -1359,7 +1359,10 @@ def run_front(page0:string, typed:[string]) -> string:
             elif fe_page == "saves":
                 let picked = fe_saves_card(fe_note)
                 if picked == "back": go = "back"
-                elif picked != "": go = "load:" + picked
+                elif picked != "":
+                    let why = save_refusal_of(picked)
+                    if why != "": fe_note = why
+                    else: go = "load:" + picked
             elif fe_page == "net": go = fe_net_page()
             elif fe_page == "settings": go = fe_settings_card()
         if fe_page == "setup" or fe_page == "lab" or fe_page == "title":

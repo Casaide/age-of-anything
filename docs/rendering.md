@@ -30,7 +30,8 @@ Coordinates are body units: z up, y forward, x right, the ground at z 0. A body 
   the sprite shader's key.
 - `bodies/<creature>.json` (the id is the generator's creature): `size`, `fur` (flecks), `skin`/`pale` (when the race
   gives none), `skin_scale`, `reach` (a foot's swing: the walk steps by ground covered with it), and:
-  - `points`: named points, `{at, bob}` (bob: how far it rises in the walk).
+  - `points`: named points, `{at, bob}` (bob: how far it rises in the walk); with a `gait`, also `lean`, `sway`, `drive` (how far it goes forward walking, over the planted foot, into a blow).
+  - `gait` (optional; without it a foot's sine and an arm's reach): `heel`, `toe`, `toes` (the foot's roll), `arm`, `held` (hands' swing against the leg), `twist` (shoulders walking), `front`, `back`, `dip`, `turn` (a blow's stance and body).
   - `legs`: a pair each (the right one given, mirrored): `hip` (a point and offset), `foot` (where it stands),
     `stride`, `lift`, `phase` (degrees: a back pair 180), `bones` (two lengths), `pole` (where the middle joint
     bends: a knee forward, a beast's front elbow back), `r` (thigh and shin radii), `mats`, and `shapes` on `hip`,
@@ -50,6 +51,7 @@ Coordinates are body units: z up, y forward, x right, the ground at z 0. A body 
   - `holds`: how a hand holds (`rest`, `dir`, and for a blow `wind`, `wind_dir`, `hit`, `hit_dir`; a bow's `raise` and `draw`).
   - `gear`: held items (`hand`, `hold`, `dir`, a left item's `face`, `shapes` in the hold's frame: `[hand, along,
     out, side]`; `draw` is the drawing hand) and worn ones (`fits` per body, `*` for any other, `flags`).
+  - `loads`: what a worker takes home, per body id or `*`, per resource: `gear` (held), or `push` (`barrow`, `cart`) and `heap` (a material).
   - `parts`: rules mapping a recipe's parts to gear: `part` (an id or prefix), `tag` (parts.json's), `slot`; the first
     that matches wins.
 
