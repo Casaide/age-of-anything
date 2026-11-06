@@ -167,6 +167,13 @@ def run(c0:Cmd):
         c = a
     var formed = false
     if (c.code == CMD_MOVE or c.code == CMD_ATTACK_MOVE) and c.slotted == 0:
+        if c.queue == 0:
+            let attack = c.code == CMD_ATTACK_MOVE
+            let others = filter(c.ids) uid:
+                let i = index_of(uid)
+                i < 0 or u_owner[i] != p or not block_same_order(i, attack, c.a, c.b)
+            if not others.length: return
+            c = copy_cmd(c, others)
         c = copy_cmd(c, c.ids)
         let group, fx, fy, pace = formation(p, c.ids, c.a, c.b)
         c.group = group
@@ -184,6 +191,7 @@ def run(c0:Cmd):
             if i >= 0:
                 slot_x[i] = c.sx
                 slot_y[i] = c.sy
+                slot_block[i] = 0
     switch c.code:
         case CMD_MOVE: run_move(p, ids, c.group, c.fx, c.fy, c.pace)
         case CMD_ATTACK_MOVE: run_attack_move(p, ids, c.group, c.fx, c.fy, c.pace)
