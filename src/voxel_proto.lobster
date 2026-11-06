@@ -195,6 +195,17 @@ elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull faci
         if vx_box.z < vx_box.x:
             print "parts: {b.parts[n].name} is empty in facing {f}"
             bad++
+    // A part's named points are on what's drawn of it, in every facing.
+    for(pieces) sh, n: for(b.parts[n].point_names) name, k: for(8) f:
+        let c = vx_cell(sh, f)
+        let at = vx_part_point_px(b, b.parts[n], k, f)
+        let cx, cy = vx_ANCHOR.x + int(floor(at.x + 0.5)), vx_ANCHOR.y + int(floor(at.y + 0.5))
+        var on = false
+        for(5) dy: for(5) dx:
+            if c[(cy + dy - 2) * vx_CELL.x + cx + dx - 2].w > 0.0: on = true
+        if not on:
+            print "parts: {name} on {b.parts[n].name} is off the picture in facing {f}"
+            bad++
     if out_path != "-":
         let ih = vx_CELL.y * 3 / 4
         let iw = step * 8
@@ -205,6 +216,12 @@ elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull faci
             for(pieces) sh, n:
                 let o = vx_pivot_px(b, b.parts[n], hf)
                 vx_draw(sh, pf, img, iw, pf * step + int(floor(o.x + 0.5)), hf * ih - vx_CELL.y / 4 + int(floor(o.y + 0.5)))
+            let at, found = vx_point_px(b, "muzzle", "", hf, pf)
+            if found:  // (marked in white, to look at)
+                let mx, my = pf * step + vx_ANCHOR.x + int(floor(at.x + 0.5)), hf * ih - vx_CELL.y / 4 + vx_ANCHOR.y + int(floor(at.y + 0.5))
+                for(3) dy: for(3) dx:
+                    let j = (my + dy - 1) * iw + mx + dx - 1
+                    if j >= 0 and j < img.length: img[j] = float3_1
         let bytes = []::int
         for(img) c: for(3) ch: bytes.push(clamp(int(c[ch] * 255.0), 0, 255))
         write_file(out_path, "P6\n{iw} {ih * 8}\n255\n" + vector_to_buffer(bytes, 1), 0, 1)
