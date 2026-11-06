@@ -92,6 +92,7 @@ var watch = false
 var follow = false        // the camera follows the fighting (captures)
 var look_at_army = false  // a skirmish you play: the camera starts on your army and stays yours
 var selftest = false      // play a few orders through the controls, check the sim took them, quit
+var airtest = false       // does a click on an aircraft, where it's drawn, take it? Then quit (#185)
 var shot = ""
 var shot_at = 0.0
 var start_speed = 1.0
@@ -151,6 +152,7 @@ for(args) a, k:
         if a == "oldtext": text_off = true  // (measuring: text drawn as before game/text_cache.lobster)
         if key == "speed": start_speed = string_to_float(val)
         if a == "selftest": selftest = true
+        if a == "airtest": airtest = true
         if a == "follow": follow = true
         if key == "races": races_arg = val
         if key == "map": map_arg = val
@@ -188,7 +190,7 @@ for(args) a, k:
             look_y = string_to_int(ly)
 
 // Tests and captures are silent (Dominic: no sound from testing); `mute` silences a game too.
-if has_s(args, "mute") or shot != "" or selftest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
+if has_s(args, "mute") or shot != "" or selftest or airtest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
     sound_on = false
     pace_background = false  // (tests and captures keep their pace with the window in the background, game/pace.lobster)
 
@@ -280,10 +282,14 @@ var p_id = []::int  // the last tick's positions, for drawing between ticks
 var p_x = []::int
 var p_y = []::int
 let unit_dir = dictionary<int, int>(1024)
+let last_aim = dictionary<int, int>(64)      // a turret's aim last frame (is it turning? for its sound)
+let aim_moved = dictionary<int, float>(64)   // when a turret's aim last changed
+let unit_kick = dictionary<int, float2>(64)  // a mount just fired (unit id * 16 + mount): how far it kicks back, canvas px, and when (view only)
 let attack_t0 = dictionary<int, float>(1024)
 var corpses = []::Corpse
-let hit_t0 = dictionary<int, float>(1024)   // when a unit was last hit (the flash)
-var shot_from = dictionary<int, int>(1024)  // a shot (its by * 65536 + landing tick) -> the tick it was first seen
+let hit_t0 = dictionary<int, float>(1024)       // when a unit was last hit (the flash)
+var shot_from = dictionary<int, int>(1024)      // a shot (its by * 65536 + landing tick) -> the tick it was first seen
+var shot_mouth = dictionary<int, float2>(1024)  // the same: where it left its shooter, canvas px from the shot's start (fixed once fired)
 let last_kind = dictionary<int, int>(1024)
 let last_owner = dictionary<int, int>(1024)
 
@@ -469,9 +475,10 @@ def fx_events():
             if i >= 0:
                 let look = shot_style(unit_shotk.get(u_kind[i], "arrow")).hit
                 let j = index_of(e.b)
-                let to = if j >= 0: ground_at(u_x[j], u_y[j]) - float2 { 0.0, 10.0 } else: ground_at(e.x, e.y) - float2 { 0.0, 20.0 }
+                let to = if j >= 0: ground_at(u_x[j], u_y[j]) - float2 { 0.0, 10.0 + air_lift(u_kind[j]) / 1.5 } else: ground_at(e.x, e.y) - float2 { 0.0, 20.0 }
                 if not t_ranged[u_kind[i]]: fx_spark(to, e.c >= 8)
                 elif look.sparks > 0: fx_hit(to, look)
+                if t_ranged[u_kind[i]]: fx_impact(shot_style(unit_shotk.get(u_kind[i], "arrow")), to, false)
         elif e.kind == EV_MISS:
             if seen_at(e.x, e.y):
                 let i = index_of(e.a)
@@ -479,6 +486,7 @@ def fx_events():
                 if i >= 0:
                     let look = shot_style(unit_shotk.get(u_kind[i], "arrow")).hit
                     if look.sparks > 0: fx_hit(ground_at(e.x, e.y), look)
+                    fx_impact(shot_style(unit_shotk.get(u_kind[i], "arrow")), ground_at(e.x, e.y), true)
         elif e.kind == EV_HEAL:
             if index_of(e.b) >= 0: fx_heal(e.b)
         elif e.kind == EV_SPLASH:
@@ -489,7 +497,7 @@ def fx_events():
 def unit_state(i:int, moving:bool) -> string, int:
     let k = u_kind[i]
     let t0 = attack_t0.get(u_id[i], -10.0)
-    if clock_s - t0 < 0.5: return "attack", int((clock_s - t0) * 16.0)
+    if clock_s - t0 < 0.5 and not (t_mounts[k].length and moving): return "attack", int((clock_s - t0) * 16.0)  // (a turret fires as it drives: its tracks run on)
     let res = if u_carry_kind[i] > 0: resource_names[u_carry_kind[i] - 1] else: ""
     let phase = int(clock_s * 8.0) + u_id[i]
     if moving:
@@ -503,6 +511,54 @@ def unit_state(i:int, moving:bool) -> string, int:
 
 def visible_to_me(c:int) -> bool: return reveal or fog[ME][c] == 2
 
+// How far up a unit type is drawn off the ground, world px: an aircraft's flying height; else 0.
+def air_lift(k:int) -> float:
+    if t_air[k] == 0 or not vx_drawn(k): return 0.0
+    let b = vx_body_of(vx_lks[vx_cur[k]].u.body)
+    return b.flies * cos(vx_ELEV) * vx_RES * b.size * VX_DRAW_K
+
+// A click on an aircraft where it's drawn must take it, and one on the ground under it must not. (One standing clear:
+// an army starts packed, and a click can fairly land on a neighbour.)
+def air_test() -> bool:
+    if tick < 40: return false
+    let planes = filter(u_x.length) n: u_owner[n] == ME and t_air[u_kind[n]] != 0
+    assert planes.length
+    var i = -1
+    for(planes) p:
+        let at = iso(float(u_x[p]), float(u_y[p]))
+        if unit_at_screen(to_screen(at - float2 { 0.0, air_lift(u_kind[p]) + 14.0 }), true) == p and unit_at_screen(to_screen(at), true) != p: i = p
+    if i < 0: print "airtest: no plane of {planes.length} takes the click"
+    assert i >= 0
+    let ground = iso(float(u_x[i]), float(u_y[i]))
+    let lift = air_lift(u_kind[i])
+    let drawn = unit_at_screen(to_screen(ground - float2 { 0.0, lift + 14.0 }), true)
+    let under = unit_at_screen(to_screen(ground), true)
+    print "airtest: lift {lift} px; a click on the plane takes {drawn} (the plane is {i}), a click under it takes {under}"
+    assert drawn == i
+    assert under != i
+    print "airtest: ok"
+    return true
+
+// What the units on screen sound like this frame (game/audio.lobster): a count for each sound.
+def unit_loops_tick(dt:float):
+    let counts = dictionary<string, int>(8)
+    def hear(name:string):
+        if name != "": counts.set(name, counts.get(name, 0) + 1)
+    for(u_x.length) i:
+        let k = u_kind[i]
+        if vx_drawn(k) and on_screen(u_x[i], u_y[i]) and visible_to_me(cell_of(u_x[i], u_y[i])):
+            let body = vx_lks[vx_cur[k]].u.body
+            hear(unit_sound(body, if u_moving[i] != 0: 1 else: 0))
+            if t_mounts[k].length:
+                var aims = 0  // (any gun turning)
+                for(u_mount[i]) v, n:
+                    if n % MOUNT_STRIDE == MOUNT_AIM: aims = aims * 3601 + v
+                if last_aim.get(u_id[i], aims) != aims: aim_moved.set(u_id[i], clock_s)  // (it changes by the tick; this runs by the frame)
+                last_aim.set(u_id[i], aims)
+                if clock_s - aim_moved.get(u_id[i], -10.0) < 0.2: hear(unit_sound(body, 2))
+    for(counts.get_keys()) name: unit_loop_hear(name, counts.get(name, 0))
+    unit_loops_fade(dt)
+
 // Where an effect on unit id rises from (a heal's motes, which have their own heights): its feet on the ground
 // (canvas units); far off when it's gone or unseen.
 def unit_anchor(id:int) -> float2:
@@ -511,6 +567,55 @@ def unit_anchor(id:int) -> float2:
     let x = float(u_x[i])
     let y = float(u_y[i])
     return canvas(x, y) - float2 { 0.0, lift_at(x, y) }
+
+// The facing of a unit's part: a mount's turret its own aim, anything else the hull's.
+def part_facing(i:int, name:string, hull_f:int) -> int:
+    for(t_mounts[u_kind[i]]) m, n:
+        if m.part == name and u_mount[i].length > n * MOUNT_STRIDE:
+            let aim = float(u_mount[i][n * MOUNT_STRIDE + MOUNT_AIM]) / 10.0
+            let d = dir_of(iso(cos(aim), sin(aim)))
+            return if d >= 0: (d + 2) % 8 else: hull_f
+    return hull_f
+
+// Where a shot leaves a unit: canvas px up from its ground point to its body's muzzle, as it stands now; else a little up
+// from its feet.
+def muzzle_of(by:int, mount:int) -> float2:
+    let i = index_of(by)
+    if i >= 0 and vx_drawn(u_kind[i]):
+        let b = vx_body_of(vx_lks[vx_cur[u_kind[i]]].u.body)
+        let hull_f = (unit_dir.get(by, 2) + 2) % 8
+        let ms = t_mounts[u_kind[i]]
+        let part = if mount < ms.length: ms[mount].part else: ""
+        let o, found = vx_point_px(b, "muzzle", part, hull_f, part_facing(i, part, hull_f))
+        if found: return o * VX_DRAW_K / 1.5
+    return float2 { 0.0, -12.0 }
+
+// How far a part is kicked back from a shot just fired, drawn px along its facing.
+def kick_of(key:int, b:vx_body_spec, f:int) -> float2:
+    let k = unit_kick.get(key, float2_0)
+    let age = clock_s - k.y
+    if k.x <= 0.0 or age >= 0.25: return float2_0
+    return -normalize(vx_spot_px(b, float3 { 0.0, 1.0, 0.0 }, f)) * k.x * 1.5 * (1.0 - age / 0.25)
+
+// A unit's parts on its hull (a turret, at its gun's aim; anything else over the hull), each sorted just above it. The
+// offset is whole pixels from the hull's own, so the two never shimmer apart as it moves.
+def add_parts(i:int, hull_f:int, x:float, y:float, sort_y:float, col:float4):
+    let k = u_kind[i]
+    let lk = vx_cur[k]
+    let pieces = vx_lks[lk].pieces
+    if not pieces.length: return
+    let b = vx_body_of(vx_lks[lk].u.body)
+    for(pieces) plk, n:
+        let f = part_facing(i, b.parts[n].name, hull_f)
+        let pf = vx_piece_frame(plk, f)
+        let o = vx_pivot_px(b, b.parts[n], hull_f) * VX_DRAW_K
+        let mount = find(t_mounts[k]) m: m.part == b.parts[n].name
+        let kick = if mount >= 0: kick_of(u_id[i] * 16 + mount, b, f) else: float2_0
+        let px, py = floor(x) + floor(o.x + kick.x + 0.5), floor(y) + floor(o.y + kick.y + 0.5)
+        add(pf, px, py, sort_y + 0.01 * float(n + 1), col)
+        if pf >= 0:
+            let sf = vx_shadow_for(pf)
+            if sf >= 0: add(sf, px, py, sort_y - 0.5, float4 { 1.0, 1.0, 1.0, 1.0 })
 
 def collect_units(alpha:float):
     perf_unseen = 0
@@ -523,7 +628,7 @@ def collect_units(alpha:float):
             let moving, walking_d = unit_walk(i, unit_dir.get(u_id[i], 2), px, py)
             var d = walking_d
             if moving: pass()
-            elif u_foe[i] != 0:
+            elif u_foe[i] != 0 and not t_mounts[u_kind[i]].length:  // (a mounted hull doesn't turn to its foe: its guns do)
                 let j = index_of(u_foe[i])
                 var tx = -1.0
                 var ty = -1.0
@@ -568,10 +673,35 @@ def collect_units(alpha:float):
             if f >= 0:                     // its shadow on the ground, sorted just under it: in the ground layer a hill's
                 let sf = vx_shadow_for(f)  // near edge (draw_occluder) was painted over it under the feet, and it floated
                 if sf >= 0: add(sf, p.x, p.y - up, p.y - 0.5, float4 { 1.0, 1.0, 1.0, 1.0 })
+                add_parts(i, (d + 2) % 8, p.x, p.y - up, p.y, float4 { tc.x, tc.y, tc.z, flash })
+
+// Is this the wreck of a vehicle that stays where it stood (a body's "death": "knocked_out")?
+def is_wreck(c:Corpse) -> bool: return c.kind >= 0 and vx_drawn(c.kind) and vx_body_of(vx_lks[vx_cur[c.kind]].u.body).death == "knocked_out"
+
+let WRECK_BURNS = 5.0   // a wreck burns this long...
+let WRECK_STAYS = 16.0  // ...lies there this long in all...
+let WRECK_FADE = 4.0    // ...and fades away
+
+// A wreck: where it stood, burning then smoking, then fading.
+def collect_wreck(c:Corpse):
+    let t = clock_s - c.t0
+    let p = iso(c.x, c.y)
+    let up = lift_at(c.x, c.y) * 1.5
+    let fade = clamp(1.0 - (t - WRECK_STAYS) / WRECK_FADE, 0.0, 1.0)
+    let f = vx_dead_frame(c.id, c.kind, c.dir, t)
+    let tc = team_col(c.owner)
+    add(f, p.x, p.y - up, p.y - 2.0, float4 { tc.x, tc.y, tc.z, fade })
+    if f >= 0: add(vx_shadow_for(f), p.x, p.y - up, p.y - 2.5, float4 { 1.0, 1.0, 1.0, fade })
+    let at = canvas(c.x, c.y) - float2 { 0.0, lift_at(c.x, c.y) + 18.0 }
+    if t < WRECK_BURNS and rnd_float() < 0.2: fx_flame(at)
+    if t < WRECK_STAYS and rnd_float() < (if t < WRECK_BURNS: 0.18 else: 0.06): fx_smoke(at, 1, 3.0)
 
 def collect_corpses():
-    corpses = filter(corpses) c: clock_s - c.t0 < 4.0
+    corpses = filter(corpses) c: clock_s - c.t0 < (if is_wreck(c): WRECK_STAYS + WRECK_FADE else: 4.0)
     for(corpses) c:
+        if is_wreck(c):
+            collect_wreck(c)
+            continue
         if c.kind >= 0 and vx_drawn(c.kind):  // (a unit falls, lies, goes in a puff of dust and fades)
             let t = clock_s - c.t0
             let f = vx_dead_frame(c.id, c.kind, c.dir, t)
@@ -1001,8 +1131,7 @@ def race_facts(races:[JV]):
         unit_blow.set(k, if has_s(tags, "ram"): "ram_hit" elif has_s(tags, "blade"): "hit_blade" elif has_s(tags, "blunt"): "hit_blunt" else: "hit_pierce")
         let kind = shot_kind_of(tags)
         unit_shotk.set(k, kind)
-        let own_sound = gstr(gobj(mod_shots, kind), "sound", "")
-        unit_shot.set(k, if own_sound != "": own_sound elif kind == "boulder": "catapult_release" elif kind == "siege_bolt": "bolt_release" elif kind == "sling_stone": "sling_release" else: "shoot_" + kind)
+        unit_shot.set(k, gstr(get(lib_data("shots.json"), kind) or jobj(), "sound", "shoot_arrow"))
 
 // ------------------------------------------------------------------ becoming another race mid-match (gen/swap.lobster)
 // N: type a race; Enter: your people become it at its own prices (no fights, D-195), line by line,
@@ -1076,7 +1205,7 @@ def unit_at_screen(m:float2, mine:bool) -> int:
     var best_d = 24.0 * zoom
     for(u_x.length) i:
         if (teams[u_owner[i]] == teams[ME]) == mine and (mine or visible_to_me(cell_of(u_x[i], u_y[i]))):
-            let s = to_screen(iso(float(u_x[i]), float(u_y[i])) - float2 { 0.0, 14.0 })
+            let s = to_screen(iso(float(u_x[i]), float(u_y[i])) - float2 { 0.0, 14.0 + air_lift(u_kind[i]) })
             let d = magnitude(s - m)
             if d < best_d:
                 best_d = d
@@ -1497,12 +1626,14 @@ def draw_shots(alpha:float):
     for(n) k:
         let o = k * SHOT_STRIDE
         let land = shots[o + SHOT_LAND]
-        let key = shots[o + SHOT_BY] * 65536 + land % 65536
+        let mount = shots[o + SHOT_MOUNT]
+        let key = (shots[o + SHOT_BY] * 65536 + land % 65536) * 8 + mount  // (two guns can fire together)
         var t_from = shot_from.get(key, -1)
         let firstseen = t_from < 0
         if firstseen:
             t_from = tick - 1
             shot_from.set(key, t_from)
+            shot_mouth.set(key, muzzle_of(shots[o + SHOT_BY], mount))
         let t = shot_drawn_u((float(tick - t_from) + alpha) / 20.0, float(max(1, land - t_from)) / 20.0)
         let ax = shots[o + SHOT_X]
         let ay = shots[o + SHOT_Y]
@@ -1510,13 +1641,19 @@ def draw_shots(alpha:float):
         let sy = shots[o + SHOT_Y0]
         if seen_at(ax, ay) or seen_at(sx, sy):
             let src = shots[o + SHOT_SRC]
-            let st = shot_style(if src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
-            let a = ground_at(sx, sy) - float2 { 0.0, 12.0 }
-            let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
+            let own = if src >= 0 and mount < t_mounts[src].length: t_mounts[src][mount].shot else: ""
+            let st = shot_style(if own != "": own elif src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
+            let a = ground_at(sx, sy) + shot_mouth.get(key, float2 { 0.0, -12.0 })
+            let to_j = index_of(shots[o + SHOT_TO])
+            let b = ground_at(ax, ay) - float2 { 0.0, 10.0 + (if to_j >= 0: air_lift(u_kind[to_j]) / 1.5 else: 0.0) }
+            if firstseen and seen_at(sx, sy):  // (a gun firing out of the fog shows only its shell)
+                fx_muzzle(st, a, ground_at(sx, sy))
+                if st.muzzle.recoil > 0.0: unit_kick.set(shots[o + SHOT_BY] * 16 + mount, float2 { st.muzzle.recoil, clock_s })
             if st.plain():
                 if t >= 0.0: draw_bolt(st, a, b, t, 1.0)  // (launched late: it looks faster, and lands on the sim's tick)
             elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
     draw_tracers()
+    if tick % 200 == 0: shot_mouth = dictionary<int, float2>(1024)
     if tick % 200 == 0: shot_from = dictionary<int, int>(1024)  // (forget the landed ones now and then)
 
 // Health bars over hurt units you can see, and over the selected.
@@ -1527,8 +1664,8 @@ def draw_bars(alpha:float):
             let px, py = prev_pos(i)
             let p = iso(px + (u_x[i] - px) * alpha, py + (u_y[i] - py) * alpha)
             let hpk = float(u_hp[i]) / float(max(1, t_hp[k]))
-            ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
-            ui_fill(p + float2 { -9.0, -38.0 }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
+            ui_fill(p + float2 { -9.0, -38.0 - air_lift(k) }, float2 { 18.0, 3.0 }, float4 { 0.0, 0.0, 0.0, 0.6 })
+            ui_fill(p + float2 { -9.0, -38.0 - air_lift(k) }, float2 { 18.0 * hpk, 3.0 }, float4 { 1.0 - hpk, 0.3 + 0.6 * hpk, 0.15, 1.0 })
 
 def ring_of(owner:int) -> float4: return if is_foe(owner, ME): float4 { 0.9, 0.22, 0.16, 1.0 } else: float4 { 0.95, 0.91, 0.79, 1.0 }
 
@@ -2408,6 +2545,7 @@ def view_reset():
     hit_t0.clear()
     attack_t0.clear()
     shot_from.clear()
+    shot_mouth.clear()
     town_last.clear()
     town_idle_since.clear()
     chores.clear()
@@ -2641,6 +2779,7 @@ def play_match():
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
+        unit_loops_tick(dt)
         frame_no++
         if frame_no == 1:                                                            // (inside a frame: a bake outside one leaves the window drawing nothing)
             if bake_live and fe_sides.length == num_players and front_choice != "":  // (the match loader shows the bake's progress)
@@ -2738,7 +2877,10 @@ def play_match():
         if drawing():  // (minimised: the sim plays on, nothing is drawn)
             gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
             gl.blend(1)
+            let shake = fx_shake_off()
+            cam += shake
             draw_world(acc / 0.05)
+            cam -= shake
             ui_batch(): draw_panel()
             perf_lap(6)
             draw_hud(paused, speed)
@@ -2764,6 +2906,7 @@ def play_match():
             loop_round++
             back_to_lobby = true
             quit_game = true
+        if airtest and air_test(): break
         if selftest and self_test():
             if shot != "": gl.screenshot(shot)
             quit_app = true
@@ -2805,6 +2948,10 @@ def new_match_reset():
     busts.clear()
     hud_culture = "?"
     unit_dir.clear()
+    last_aim.clear()
+    unit_sound_of.clear()
+    aim_moved.clear()
+    unit_kick.clear()
     last_kind.clear()
     last_owner.clear()
     critters = []

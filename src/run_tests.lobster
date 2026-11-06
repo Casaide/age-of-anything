@@ -835,7 +835,14 @@ def g_merge():
     let two = data_merge(data_merge(base, parse_json("\{\"b\":\{\"hp\":7\}\}")), parse_json("\{\"b\":\{\"hp\":8\}\}"))
     expect(as_int(at(at(two, "b"), "hp")) == 8, "merge: the later mod wins")
 
+def g_loop_share():
+    expect(loop_share(0) == 0.0, "a loop nobody makes is silent")
+    expect(loop_share(1) > 0.2, "one unit is heard")
+    expect(loop_share(4) > loop_share(1) and loop_share(12) > loop_share(4), "more units are louder")
+    expect(loop_share(12) == 1.0 and loop_share(40) == 1.0, "and a crowd adds nothing past the cap")
+
 def g_mods():
+    g_loop_share()
     g_merge()
     expect(lib_packs[0].id == "age_of_anything" and gstr(lib_packs[0].manifest, "kind", "") == "game", "packs: the game is the first pack read")
     expect(has(lib_parts, "weapon.spear.wood"), "packs: its parts came through pack_apply")
@@ -864,7 +871,7 @@ def g_mods():
     let tags = gstrs(at(sk, "eval"), "tags")
     let shot = gobj(mod_shots, "pulse")
     expect(has_s(tags, gstr(shot, "tag", "-")), "mods: the pulse rifle\'s tags call the mod\'s shot (pulse: {gstr(shot, "tag", "none")})")
-    let bad = [ "bad_era", "needs_other", "future_game", "no_game", "kind_game", "bad_file", "clash", "no_hub", "bad_trains", "bad_research", "bad_extends", "bad_age", "new_building", "no_takes", "bad_draw", "bad_knob", "bad_pulses", "bolt_hold", "bad_hit", "bad_hit_sound" ]
+    let bad = [ "bad_muzzle", "bad_era", "needs_other", "future_game", "no_game", "kind_game", "bad_file", "clash", "no_hub", "bad_trains", "bad_research", "bad_extends", "bad_age", "new_building", "no_takes", "bad_draw", "bad_knob", "bad_pulses", "bolt_hold", "bad_hit", "bad_hit_sound" ]
     fresh_lib()
     expect(strs_eq(mods_use(append(bad, [ "scifi_test" ]), append(mod_roots, [ "../tests/mods" ])), [ "scifi_test" ]), "mods: broken mods refused, a good one beside them still loads")
     for(bad) id:
