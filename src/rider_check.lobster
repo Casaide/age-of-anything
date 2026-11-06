@@ -6,6 +6,7 @@
 //   rim       of 8 directions from a seat, how many meet the howdah's wall (a body rising from a solid crate looks stuck in it)
 //   fit       how much of the crew hangs outside the deck the table gives (a bear on a howdah)
 //   contrast  every skin a crew comes in against the deck under it (a brown rat on a brown crate)
+//   bulk      a rider against its mount, in pixels drawn (a frog bigger than its newt)
 //   lobster rider_check.lobster -- [report]   (report: the numbers only, no failing)
 import std
 import vec
@@ -29,6 +30,7 @@ let CREW_BEAST = float2 { 0.35, 0.7 }  // a crew member's height against its bea
 let MIN_RIM = 6
 let MAX_OVER = 0.1
 let MIN_CONTRAST = 0.14
+let MAX_BULK = 0.85
 var fails = 0
 
 def fail(what:string):
@@ -59,6 +61,12 @@ def visible(whole:vx_shape, rider:vx_shape) -> float:
         if n > 0: worst = min(worst, float(seen) / float(n))
     return worst
 
+// Its pixels, summed over the facings.
+def pixels(g:vx_shape) -> float:
+    var n = 0
+    for(8) f: for(vx_cell(g, f)) c: if c.w > 0.0: n++
+    return float(n)
+
 def mounted(name:string, rb:string, mb:string):
     still()
     let u = plain(rb, mb)
@@ -70,7 +78,9 @@ def mounted(name:string, rb:string, mb:string):
     vx_whole_body(m, mu, vx_body_of(mb), vx_body_points(vx_body_of(mb), 0.0, float3_0), 0.0, 0.0, [])
     let rider = all.slice(m.length, all.length - m.length)
     let v = visible(vx_fill(all, b.size, true), vx_fill(rider, b.size, true))
-    if report: print "ride {name} on {mb}: visible {v}"
+    let bulk = pixels(vx_fill(rider, b.size, true)) / pixels(vx_fill(all.slice(0, m.length), b.size, true))
+    if report: print "ride {name} on {mb}: visible {v} bulk {bulk}"
+    if not report and bulk > MAX_BULK: fail("{name} on {mb}: the rider is {int(bulk * 100.0)}% of its mount, drawn (at most {int(MAX_BULK * 100.0)}%; a rat on a capybara is 55%)")
     if not report and v < MIN_VISIBLE: fail("{name} on {mb}: only {int(v * 100.0)}% of the rider shows (at least {int(MIN_VISIBLE * 100.0)}%)")
 
 def solid(g:vx_shape, x:int, y:int, z:int) -> bool:
