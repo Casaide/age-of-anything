@@ -242,6 +242,31 @@ def scene_attack(rules:JV, races:[JV], n:int):
     check(strayed * 20 <= left.length, "{name}: they stay in their blocks through a fight ({strayed} out)")
     check(p99(off) <= DRIFT_P99 * 2, "{name}: back in their places after the fight ({p99(off)})")
 
+// The filming setup: each army ordered at the other's base, put straight in its blocks. They must meet still formed.
+def scene_film(rules:JV, races:[JV], n:int):
+    new_world(SEED, MAP, races, rules, [])
+    let one = army(0, n, start_x[0] + 4000, start_y[0] + 4000)
+    let two = army(1, n, start_x[1] + 4000, start_y[1] + 4000)
+    issue_cmd(0, CMD_ATTACK_MOVE, one, start_x[1], start_y[1], 0, 0)
+    issue_cmd(1, CMD_ATTACK_MOVE, two, start_x[0], start_y[0], 0, 0)
+    while tick < 200 and (find(fb_state) s: s != 0) < 0: wstep()
+    blocks_snap()
+    let name = "film {n}"
+    var contact = -1
+    let everyone = one.append(two)
+    while tick < 6000 and contact < 0:
+        wstep()
+        if (find(everyone) id: index_of(id) >= 0 and u_foe[index_of(id)] != 0) >= 0: contact = tick
+    let off = []::int
+    for(everyone) id:
+        let i = index_of(id)
+        if i >= 0 and u_block[i] > 0 and u_foe[i] == 0:
+            let b = u_block[i] - 1
+            off.push(isqrt(dist2(u_x[i], u_y[i], fb_x[b] + u_bx[i], fb_y[b] + u_by[i])))
+    print "{name}: first contact at tick {contact} ({contact / 20} s), p99 {p99(off)} from their places"
+    check(contact >= 400, "{name}: a march to film before they meet ({contact / 20} s)")
+    check(p99(off) <= DRIFT_P99, "{name}: formed when they meet ({p99(off)})")
+
 // A bot gives its army the same order again and again: that mustn't stop the march to form up each time.
 def scene_reissue(rules:JV, races:[JV], n:int):
     new_world(SEED, MAP, races, rules, [])
@@ -338,5 +363,6 @@ for(if args.length: map(args) a: string_to_int(a) else: [ 125, 1000 ]) n:
     scene_move(rules, races, n)
     scene_attack(rules, races, n)
     scene_reissue(rules, races, n)
+    scene_film(rules, races, n)
 print "\n{checks - failures} passed, {failures} failed"
 if failures > 0: set_exit_code(1)
