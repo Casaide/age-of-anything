@@ -60,6 +60,18 @@ def knee_bend(b:vx_body_spec) -> float:
             worst = max(worst, 180.0 - inner)
     return worst
 
+// ---- a walk with a gait: a planted foot keeps still on the ground, which passes at the walk's cycle (#142)
+def skate(b:vx_body_spec) -> float:
+    vx_stand = false
+    var worst = 0.0
+    for(b.legs) l:
+        for(4) i:
+            let w0, w1 = 90.0 + 45.0 * float(i), 135.0 + 45.0 * float(i)  // (the right foot, its stance)
+            let a = vx_foot(b, l, 1.0, w0)
+            let z = vx_foot(b, l, 1.0, w1)
+            worst = max(worst, abs(a.y - z.y - b.reach * 0.5))
+    return worst
+
 // ---- silhouettes: a facing's drawn pixels
 def mask(u:vx_unit_def, f:int) -> [bool]:
     vx_set_look(u, 0)
@@ -146,6 +158,7 @@ for(bodies) id, bi:
     let most = vx_check_limit(id, "knees", if biped: 12.0 else: 40.0)
     print "{id}: knees {int(bend)} degrees standing (at most {int(most)})"
     if bend > most and not report: fail("{id}: a standing knee bends {int(bend)} degrees, more than {int(most)}")
+    if b.gait and skate(b) > 0.5: fail("{id}: a planted foot slides {skate(b)} units a step")
     // skin: each palette, each look
     for(body_skins[bi]) pid:
         if has(palettes, pid):
