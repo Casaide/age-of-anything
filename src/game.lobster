@@ -112,14 +112,14 @@ var rec_dir = ""  // record:<dir>: from:<seconds> of play on, for:<seconds>, one
 var rec_from = 0.0
 var rec_for = 10.0
 var rec_n = 0
+var rec_fps = 30.0         // fps:<n>: frames a second of play
+var rec_clean = false      // clean: nothing over the world: no top bar, panel, minimap, groups, health bars or banner (a clip for showing)
 var rec_type = []::string  // typein:A|B: (filming the lobby)
 var rec_side = 0
 var rec_char = 0
 var rec_wait = 30
-var rec_fps = 30.0      // fps:<n>: a record:'s frames a second (60 for the website's video)
 var rec_push = 1.0      // push:<k>: a record:'s camera closes in, its zoom k times by the end (1.15 is a slow push)
 var rec_pan = float2_0  // pan:<x>,<y>: a record:'s camera drifts that many tiles by the end
-var hud_off = false     // nohud: nothing over the world: no top bar, panel, minimap, groups, health bars or banner (filming)
 var window_arg = int2 { 1600, 1000 }  // window:<w>,<h>: the window's size in points (filming: 1600,900 is 16:9)
 var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks through it)
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
@@ -170,7 +170,7 @@ for(args) a, k:
         if key == "window":
             let wx, wy = split_string(val, ",")
             window_arg = int2 { string_to_int(wx), string_to_int(wy) }
-        if a == "nohud": hud_off = true
+        if a == "clean": rec_clean = true
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
         if a == "reveal": reveal = true
@@ -1068,7 +1068,7 @@ def draw_world(alpha:float):
                     draw_town()
                     draw_shots(alpha)
                     fx_draw() id: unit_anchor(id)
-                if not hud_off: draw_marks(alpha)
+                if not rec_clean: draw_marks(alpha)
                 perf_lap(5)
 
 // ------------------------------------------------------------------ the lobby (type your races; Lobster makes and sets them up)
@@ -1716,7 +1716,7 @@ def draw_rings(alpha:float, raised:bool):
 
 def draw_marks(alpha:float):
     gl.set_shader("color")
-    draw_bars(alpha)
+    if not rec_clean: draw_bars(alpha)
     for(selected_units()) id:
         let i = index_of(id)
         let px, py = prev_pos(i)
@@ -2910,12 +2910,11 @@ def play_match():
             cam += shake
             draw_world(acc / 0.05)
             cam -= shake
-            if not hud_off:
-                ui_batch(): draw_panel()
+            if not rec_clean: ui_batch(): draw_panel()
             perf_lap(6)
-            if not hud_off: draw_hud(paused, speed)
+            if not rec_clean: draw_hud(paused, speed)
             perf_lap(7)
-            if not hud_off: draw_groups()
+            if not rec_clean: draw_groups()
             perf_lap(8)
             pad_draw()
             if touch_play: build_button()
@@ -2924,7 +2923,7 @@ def play_match():
             tree_tick()
             if menu_open: pause_menu()
             elif end_screen_up(): end_screen()
-            if not hud_off: draw_banner()
+            if not rec_clean: draw_banner()
             if typing_race: typing_tick()
             os_cursor_tick()
         perf_lap(9)
