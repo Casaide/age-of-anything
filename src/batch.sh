@@ -5,6 +5,8 @@
 # --quick: the checks to run after a change (unit tests, the sim, the counter chain, the AI's quick checks, the voxel
 # units' checks); the whole batch adds every AI piece, the 2v2 match, the golden files, the prices' round robins, saves and network play.
 # jobs: processes at once (AOA_JOBS; default 4, so a run doesn't take every core: Dominic's fans).
+# One batch at a time on this machine (machine_lock.sh, #242): a whole batch takes the full lane, and waits for another
+# whole batch, in any worktree; --quick and only= take the quick lane, so they don't wait a whole batch to check one change.
 cd "$(dirname "$0")"
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 quick=0
@@ -17,6 +19,10 @@ for a in "$@"; do
 		only=*) only="${a#only=}" ;;
 	esac
 done
+. ./machine_lock.sh
+lock_on_exit
+if [ $quick = 1 ] || [ -n "$only" ]; then lane=quick; else lane=full; fi
+lock_take $lane "batch.sh $*"
 # Each run has a folder of its own (#229), and its jobs' temporary files go there too. Runs over two days old go.
 find "${TMPDIR:-/tmp}/" -maxdepth 1 -name 'aoa_batch.*' -mtime +2 -exec rm -rf {} + 2>/dev/null
 logs="$(mktemp -d "${TMPDIR:-/tmp}/aoa_batch.XXXXXX")"
@@ -33,7 +39,7 @@ add() {   # add <name> <command...>
 L="$LOBSTER"
 add run_tests "$L" run_tests.lobster
 add lint ./lint.sh   # lobsterfmt leaves every file as it is, every program compiles with no warnings
-add runner ./batch_test.sh   # this runner's own tests: a run keeps its own results, a job with none is a failure (#229)
+add runner ./batch_test.sh   # this runner's own tests: a run keeps its own results, a job with none is a failure (#229), the lock across worktrees (#242)
 add test_heroes "$L" test_heroes.lobster
 add race_identity "$L" test_race_identity.lobster
 add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand in their shadows as drawn (the voxels option)
@@ -75,7 +81,8 @@ t0=$(date +%s)
 { grep '^test_ai\.\|^test_2v2\|^golden' "$list"; grep -v '^test_ai\.\|^test_2v2\|^golden\|^perf' "$list"; } | tr '\n' '\0' |
 	xargs -0 -P "$jobs" -n 1 sh -c 'line="$0"; name="${line%%|*}"; cmd="${line#*|}"; start=$(date +%s); sh -c "$cmd" > "'"$logs"'/$name.log" 2>&1; echo "$name $? $(( $(date +%s) - start ))" > "'"$logs"'/$name.result"'
 
-# The ones that measure wall time, alone once the pool is done.
+# The ones that measure wall time, alone once the pool is done, and with no quick batch beside them.
+if grep -q '^perf' "$list"; then lock_take quick "batch.sh perf"; fi
 grep '^perf' "$list" | while IFS='|' read -r name cmd; do
 	start=$(date +%s)
 	sh -c "$cmd" > "$logs/$name.log" 2>&1
