@@ -512,6 +512,28 @@ def unit_anchor(id:int) -> float2:
     let y = float(u_y[i])
     return canvas(x, y) - float2 { 0.0, lift_at(x, y) }
 
+// A unit's parts on its hull (a turret, at its gun's aim; anything else over the hull), each sorted just above it. The
+// offset is whole pixels from the hull's own, so the two never shimmer apart as it moves.
+def add_parts(i:int, hull_f:int, x:float, y:float, sort_y:float, col:float4):
+    let k = u_kind[i]
+    let lk = vx_cur[k]
+    let pieces = vx_lks[lk].pieces
+    if not pieces.length: return
+    let b = vx_body_of(vx_lks[lk].u.body)
+    var f = hull_f
+    if t_turn[k] > 0:
+        let aim = float(u_aim[i]) / 10.0
+        let d = dir_of(iso(cos(aim), sin(aim)))
+        if d >= 0: f = (d + 2) % 8
+    for(pieces) plk, n:
+        let pf = vx_piece_frame(plk, f)
+        let o = vx_pivot_px(b, b.parts[n], hull_f) * VX_DRAW_K
+        let px, py = floor(x) + floor(o.x + 0.5), floor(y) + floor(o.y + 0.5)
+        add(pf, px, py, sort_y + 0.01 * float(n + 1), col)
+        if pf >= 0:
+            let sf = vx_shadow_for(pf)
+            if sf >= 0: add(sf, px, py, sort_y - 0.5, float4 { 1.0, 1.0, 1.0, 1.0 })
+
 def collect_units(alpha:float):
     perf_unseen = 0
     for(u_x.length) i:
@@ -523,7 +545,7 @@ def collect_units(alpha:float):
             let moving, walking_d = unit_walk(i, unit_dir.get(u_id[i], 2), px, py)
             var d = walking_d
             if moving: pass()
-            elif u_foe[i] != 0:
+            elif u_foe[i] != 0 and t_turn[u_kind[i]] == 0:  // (a turret's hull doesn't turn to its foe: its gun does)
                 let j = index_of(u_foe[i])
                 var tx = -1.0
                 var ty = -1.0
@@ -568,6 +590,7 @@ def collect_units(alpha:float):
             if f >= 0:                     // its shadow on the ground, sorted just under it: in the ground layer a hill's
                 let sf = vx_shadow_for(f)  // near edge (draw_occluder) was painted over it under the feet, and it floated
                 if sf >= 0: add(sf, p.x, p.y - up, p.y - 0.5, float4 { 1.0, 1.0, 1.0, 1.0 })
+                add_parts(i, (d + 2) % 8, p.x, p.y - up, p.y, float4 { tc.x, tc.y, tc.z, flash })
 
 def collect_corpses():
     corpses = filter(corpses) c: clock_s - c.t0 < 4.0
