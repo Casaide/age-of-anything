@@ -131,6 +131,7 @@ Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `game` branch 
 ./play.sh                                                          # the game: the title screen (Battle the AI, network, saves, Race Lab)
 ./play.sh lobby "races:sewer rats|romans" watch mute               # straight into a match, the bot playing you too, silent
 ./play.sh lobby page:setup mute shot:/tmp/s.png at:2               # a capture (page:title|setup|lab|saves|net|boot; shot: after at: seconds)
+./play.sh lobby windowed                                            # in a window (the game starts fullscreen; Cmd/Alt+Enter switches, #223)
 ./tests/batch.sh --quick                                           # unit tests, the sim, the AI's quick checks, the voxel units' checks (~30 s)
 ./tests/batch.sh                                                   # the whole batch side by side (adds every AI piece, 2v2, golden, prices, saves, network, perf)
 ./play.sh lobby "races:sewer rats|romans" watch mute perf:20        # the drawing's cost in the real window (vsync on), fails over budget (game/perf.lobster; in the batch, alone)
@@ -155,6 +156,7 @@ src/deck/build.sh                                                  # the Deck bu
 src/android/build.sh                                               # the Android APK (build/android/age-of-anything.apk; adb install -r it)
 src/prebake.sh                                                     # every building and prop baked once into src/baked/ (the builds ship it, D-185)
 ./render_audio.sh [sfx|voices|music|<name>...]                     # re-render the sounds into assets/audio
+tools/mac/make_app.sh                                              # build/mac/Age of Anything.app, marked as a game so Game Mode turns on (play.sh runs it; #224)
 tools/mods/new_mod.sh <id> [--era <tag>] [--private]       # scaffold a mod (docs/modding.md); tools/mods/pack.sh <id> zips it
 ```
 
