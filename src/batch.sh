@@ -48,6 +48,7 @@ else
 	add prices "$L" calibrate.lobster -- measure expect check:42   # held-out round robins against the counter chain (D-199): 32% off now
 	add saves "$L" save_check.lobster
 	add network ./net_check.sh 2000
+	add network_packs ./net_check_packs.sh
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
 	add perf timeout 240 ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20
 fi

@@ -84,8 +84,9 @@ let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
 var watch = false
-var follow = false    // the camera follows the fighting (captures)
-var selftest = false  // play a few orders through the controls, check the sim took them, quit
+var follow = false        // the camera follows the fighting (captures)
+var look_at_army = false  // a skirmish you play: the camera starts on your army and stays yours
+var selftest = false      // play a few orders through the controls, check the sim took them, quit
 var shot = ""
 var shot_at = 0.0
 var start_speed = 1.0
@@ -501,7 +502,7 @@ def unit_state(i:int, moving:bool) -> string, int:
         let job = if res == "wood": "chop" elif res == "stone" or res == "gold": "mine" else: "forage"
         return "work_" + job, phase % 8
     if u_task[i] == BUILD and t_worker[k]: return "work_build", phase % 8
-    return "idle", 0
+    return "idle", phase / 6  // (a slow shift of weight, each unit in its own time)
 
 def visible_to_me(c:int) -> bool: return fog[ME][c] == 2
 
@@ -2035,7 +2036,8 @@ def net_wait_frame(msg:string) -> bool:
     gl.blend(1)
     let u = ui()
     gl.set_font_size(int(22.0 * u))
-    lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } - float2 { 260.0 * u, 0.0 }, msg, float4 { 0.95, 0.85, 0.6, 1.0 })
+    let half = float(gl.text_size(msg).x) * 0.5  // (a refusal can be long: centred, so it stays on screen)
+    lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } - float2 { half, 0.0 }, msg, float4 { 0.95, 0.85, 0.6, 1.0 })
     return false
 
 var link = Link {}
@@ -2254,10 +2256,12 @@ def make_match() -> bool:
             let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0
             issue_cmd(ME, CMD_MOVE, map(mine) i: u_id[i], fort_gate.x * 1000 + 500, (fort_gate.y + 4) * 1000, 0, 0, 0)
         if skirmish:
-            let mid_x = (start_x[0] + start_x[1]) / 2
-            let mid_y = (start_y[0] + start_y[1]) / 2
-            cam = iso(float(mid_x), float(mid_y))
-            follow = true  // (the camera goes where they fight)
+            if watch:
+                let mid_x = (start_x[0] + start_x[1]) / 2
+                let mid_y = (start_y[0] + start_y[1]) / 2
+                cam = iso(float(mid_x), float(mid_y))
+                follow = true  // (watching: the camera goes where they fight)
+            else: look_at_army = true
     if hurt_pct >= 0:
         for(b_id.length) b:
             if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
@@ -2320,7 +2324,7 @@ def load_from(path:string):
     let t0 = seconds_elapsed()
     let loaded = load_world(path)
     if not loaded.length:
-        banner = "No save to load"
+        banner = if save_refused != "": save_refused else: "No save to load"
         banner_t = gl.time()
         return
     bots = loaded
@@ -2472,6 +2476,9 @@ import .game.cursors
 def play_match():
     tc0 = town_center(ME)
     if tc0 >= 0: cam = iso(float(b_cx[tc0] * 1000 + 1500), float(b_cy[tc0] * 1000 + 1500))
+    if look_at_army:
+        let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
+        if mine.length: cam = iso(float(fold(mine, 0) a, i: a + u_x[i]) / float(mine.length), float(fold(mine, 0) a, i: a + u_y[i]) / float(mine.length))
     if look_x >= 0: cam = iso(float(look_x * 1000 + 500), float(look_y * 1000 + 500))
     acc = 0.0
     paused = false
@@ -2724,6 +2731,7 @@ def new_match_reset():
     skirmish = false
     army_n = 0
     follow = false
+    look_at_army = false
     ai_levels = []
     back_to_lobby = false
     ui_setup("")

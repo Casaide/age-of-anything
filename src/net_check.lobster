@@ -47,6 +47,7 @@ import gen.start
 import gen.scenario_out
 import gen.reset
 import gen.save
+import gen.mods
 import net.lockstep
 import net.lan
 
@@ -59,6 +60,11 @@ let args = command_line_arguments()
 let role = args[0]
 let ticks = string_to_int(args[1])
 var people = 2  // players:<n>: that many people (a 2v2 on four: teams 1 and 2)
+
+// mods:a,b: these packs in use on this side. refused: this joiner expects the host to turn it away.
+def use_mods():
+    for(args) a:
+        if starts_with(a, "mods:"): mods_use(tokenize(a.substring(5, a.length - 5), ",", " "))
 for(args) a:
     if starts_with(a, "players:"): people = string_to_int(a.substring(8, a.length - 8))
 var me = 0
@@ -68,6 +74,7 @@ let others = []::Link  // the host's other joiners
 let t_wait = seconds_elapsed()
 if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' becomes the match)
     lib_load("../data")
+    use_mods()
     let door = door_open(NET_PORT, "net_check", "reed_meadow")
     let joined = []::Link
     while joined.length < people - 1:
@@ -82,6 +89,7 @@ if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' bec
     for(joined.slice(1, -1)) l: others.push(l)
 else:
     lib_load("../data")
+    use_mods()
     let found = if has_s(args, "noscan"): []::LanHost else: lan_scan(1.5)
     let names = map(found) h: h.name + "@" + h.ip
     print "join: found {found.length} host(s): {names}"
@@ -95,6 +103,7 @@ else:
 if role == "host":
     lib_load("../data")
     id_load("../data")
+    use_mods()
     let rules = load_rules("default")
     set(rules, "animals", jbool(true))
     let prompts = [ "sewer rats with cheese hammers", "frogs with spears", "moonbears", "tiny vikings" ]
@@ -110,6 +119,10 @@ else:
         let later = []::[string]
         for(net_poll(link)) f:
             if f[0] == "W": me = string_to_int(f[1])
+            elif f[0] == "X":
+                print "join: refused: {f[1]}"
+                if has_s(args, "refused"): return from program
+                assert false
             elif f[0] == "S": bots = load_world_bytes(f[1])
             elif bots.length: later.push(f)  // (a turn that came with the match: kept for the lockstep)
         net_unread(link, later)
