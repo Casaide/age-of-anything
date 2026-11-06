@@ -1,6 +1,6 @@
 # The demo video, shot by shot (tools/film/cut.sh reads this). Fields split by |, blank and # lines skipped.
 # kind|name|beats|options|text
-#   shot: takes/<name>.mp4 from in=<s>, for that many beats of the music (92 to the minute); xfade=<s> into the next; text: a mod's name on the corner ribbon
+#   shot: takes/<name>.mp4 from in=<s>, for that many beats of the music (92 to the minute); crop=<w>:<h>:<x>:<y> of the take; xfade=<s> into the next; text: a mod's name on the corner ribbon
 #   card: a line or two over the first frame of takes/<bg>.mp4, darkened; end: the end card over it
 shot|cold|5|in=0|
 card|type|4|bg=make|Type an army. Play it.
