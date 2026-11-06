@@ -168,6 +168,19 @@ elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull faci
             if cell[at].w <= 0.0:
                 print "parts: the pivot of {p.name} is off the hull in facing {f}"
                 bad++
+    // A belt or wheels: a cycle on is the same picture (no seam), and half a cycle on isn't (they do move).
+    if b.track or b.wheels.length:
+        let hu = unit(b.hull, b.hull, float3_0, float3_0, [], "", float3_0)
+        def colours(ph:float) -> [float4]: return copy(vx_cell(vx_fill(vx_unit_prims(hu, ph), b.size, true), 2))
+        let at0, at360, at180 = colours(0.0), colours(360.0), colours(180.0)
+        var seam, moved = 0, 0
+        for(at0) c, j:
+            if magnitude(c - at360[j]) > 0.02: seam++
+            if magnitude(c - at180[j]) > 0.02: moved++
+        print "parts: running gear: {seam} pixels differ a cycle on, {moved} half a cycle on"
+        if seam > 0 or moved == 0:
+            print "parts: the running gear does not loop"
+            bad++
     // With every part facing as the hull does, the stack must be the whole figure: right place, nothing lost.
     let whole = vx_fill(vx_unit_prims(u, 0.0), b.size, true)
     var worst = 0.0
@@ -228,7 +241,7 @@ elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull faci
     print "parts: {args[2]}: {64 * b.parts.length} stacked, at worst {worst}% off the whole figure, {bad} faults"
     assert bad == 0
 elif args.length > 2 and args[1] == "solo":  // `solo <body> [gear,...]`: one body alone, 3x, four facings standing then four walk steps (for making it from scratch)
-    let kit = if args.length > 3: tokenize(args[3], ",", "") else: []
+    let kit = if args.length > 3 and not starts_with(args[3], "voxels:"): tokenize(args[3], ",", "") else: []
     let u = unit(args[2], args[2], float3_0, float3_0, kit, "", float3_0)
     vx_set_look(u, 0)
     vx_team_wear = "scarf"
