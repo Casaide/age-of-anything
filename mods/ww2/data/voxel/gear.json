@@ -1,0 +1,91 @@
+{
+  "_doc": "The gunners: a steel helmet, a tunic, a long gun held like a spear.",
+  "gear": {
+    "ww2_helmet": {
+      "flags": [
+        "helm"
+      ],
+      "fits": {
+        "*": [
+          {
+            "helm": 0.0,
+            "mat": "ww2_olive"
+          }
+        ]
+      }
+    },
+    "ww2_tunic": {
+      "flags": [
+        "armour"
+      ],
+      "fits": {
+        "*": [
+          {
+            "fit": 0.0,
+            "mat": "ww2_olive_worn"
+          }
+        ]
+      }
+    },
+    "ww2_rifle": {
+      "hand": "right",
+      "hold": "thrust",
+      "shapes": [
+        {
+          "cap": [
+            "hand",
+            -6,
+            0,
+            0
+          ],
+          "to": [
+            "hand",
+            16,
+            0,
+            0
+          ],
+          "r": [
+            0.5,
+            0.32
+          ],
+          "mat": "ww2_rubber",
+          "hard": true
+        },
+        {
+          "cap": [
+            "hand",
+            -6,
+            0,
+            0
+          ],
+          "to": [
+            "hand",
+            1,
+            0,
+            0
+          ],
+          "r": [
+            0.75,
+            0.6
+          ],
+          "mat": "wood",
+          "hard": true
+        }
+      ]
+    }
+  },
+  "parts": [
+    {
+      "part": "weapon.flak",
+      "gear": "ww2_rifle"
+    },
+    {
+      "part": "helm.ww2",
+      "gear": "ww2_helmet"
+    },
+    {
+      "part": "armour.ww2_tunic",
+      "gear": "ww2_tunic"
+    }
+  ]
+}

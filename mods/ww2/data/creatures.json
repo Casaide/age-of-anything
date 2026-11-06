@@ -1,0 +1,4 @@
+{
+ "_doc": "A crew: people at the tanks' scale, who fly fighters rather than ride elephants.",
+ "crew_1944": {"extends": "human", "body": "body.crew_1944", "war_beast": "fighter"}
+}

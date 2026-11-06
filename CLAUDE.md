@@ -36,18 +36,25 @@ so are bugs (`bug`). Commit messages name the issue (`#12`), and close it when i
 **Commit.** Commit each tested piece straight away, by file name, so nothing sits uncommitted: `git status` is clean at the end of
 every task. Run `src/lint.sh` and the piece's tests first. Scratch goes in `.gitignore`d places, never left lying around.
 
-**Push.** Push `main` once its quick batch passes, at the end of each piece of work. Never force push. The Lobster fork's `game`
-branch is pushed with every commit to it, since the game can't be rebuilt without it.
+**Push.** Push `main` once its quick batch passes, at the end of each piece of work. Never force push (one exception: rebasing
+the Lobster fork's `master` onto upstream, below). The fork's `master` is pushed with every commit to it, since the game can't be
+rebuilt without it.
 
-**Lobster.** The game builds only against the `game` branch of `Drache93/lobster`, checked out in `~/Dev/lobster`:
+**Lobster.** The game builds only against the `master` branch of `Drache93/lobster` (the fork), checked out in `~/Dev/lobster`
+and tracking `fork/master` (Dominic, 2026-11-06, #256; the old `game` branch is retired):
+- **Before any Lobster change**, `git fetch origin fork` and check both: `git status -sb` reads `## master...fork/master` with
+  nothing ahead or behind (all our work is pushed), and `git log --oneline master..origin/master` is empty (we have all of
+  upstream). If upstream moved, rebase `master` onto `origin/master` first, rebuild `bin/lobster`, run the quick batch, and push
+  with `--force-with-lease` (the one allowed force push). Stop and report if anything is unpushed or uncommitted.
 - It's upstream master plus one commit per fix, however big, with a message detailed enough to split it into several commits or PRs
   later. `bin/lobster` is always built from a clean checkout of it. No stashes, no uncommitted changes, no patching the engine in a game build.
-- Every change to Lobster has an `upstream-lobster` issue here, opened first: what it does, whether it's Lobster's bug or ours, the
-  evidence, and its PR if any. `reports/lobster-fork.md` is the overview.
+- Every change to Lobster has its own `upstream-lobster` issue here, opened first and separate from the game issue that needed
+  it: what it does, whether it's Lobster's bug or ours, the evidence, and the plan to take it upstream (its PR once open).
+  `reports/lobster-fork.md` gets a row for it in the same piece of work. The game issue and PR link to it.
 - Before changing Lobster, prove the fault is Lobster's and not our code. Reproduce it without the game if you can, measure with and
   without the change, and keep it only if removing it breaks something. A workaround in the game may be the right fix.
-- Only what's validated stays on `game` (Dominic, 2026-11-04): if we aren't sure it's needed, it comes off until we are.
-- A PR upstream only for what's committed on `game` and tested with our game (Dominic, 2026-11-04): no loose files, nothing that
+- Only what's validated stays on `master` (Dominic, 2026-11-04): if we aren't sure it's needed, it comes off until we are.
+- A PR upstream only for what's committed on the fork's `master` and tested with our game (Dominic, 2026-11-04): no loose files, nothing that
   has only been tried on its own. Each PR is then made on its own branch from upstream master, one change only.
 
 ## Status
@@ -127,12 +134,13 @@ tools/           mods/ (new_mod.sh, pack.sh), perf/, deck/pull_lobster.sh
 
 ## Commands
 
-Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `game` branch (alias it as `lobster`). Run programs from `src/`. No Python: tools are Lobster programs or shell (#114).
+Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `master` branch (alias it as `lobster`). Run programs from `src/`. No Python: tools are Lobster programs or shell (#114).
 
 ```sh
 ./play.sh                                                          # the game: the title screen (Battle the AI, network, saves, Race Lab)
 ./play.sh lobby "races:sewer rats|romans" watch mute               # straight into a match, the bot playing you too, silent
 ./play.sh lobby page:setup mute shot:/tmp/s.png at:2               # a capture (page:title|setup|lab|saves|net|boot; shot: after at: seconds)
+./play.sh lobby windowed                                            # in a window (the game starts fullscreen; Cmd/Alt+Enter switches, #223)
 ./tests/batch.sh --quick                                           # unit tests, the sim, the AI's quick checks, the voxel units' checks (~30 s)
 ./tests/batch.sh                                                   # the whole batch side by side (adds every AI piece, 2v2, golden, prices, saves, network, perf)
 ./play.sh lobby "races:sewer rats|romans" watch mute perf:20        # the drawing's cost in the real window (vsync on), fails over budget (game/perf.lobster; in the batch, alone)
@@ -157,6 +165,7 @@ src/deck/build.sh                                                  # the Deck bu
 src/android/build.sh                                               # the Android APK (build/android/age-of-anything.apk; adb install -r it)
 src/prebake.sh                                                     # every building and prop baked once into src/baked/ (the builds ship it, D-185)
 ./render_audio.sh [sfx|voices|music|<name>...]                     # re-render the sounds into assets/audio
+tools/mac/make_app.sh                                              # build/mac/Age of Anything.app, marked as a game so Game Mode turns on (play.sh runs it; #224)
 tools/mods/new_mod.sh <id> [--era <tag>] [--private]       # scaffold a mod (docs/modding.md); tools/mods/pack.sh <id> zips it
 ```
 

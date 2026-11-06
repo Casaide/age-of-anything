@@ -103,9 +103,15 @@ def army_floor(bot:Bot, army:[int], count:int):
     bot.eco.hold = false
     if not has_cfg("military.army_floor.pct") or count < cfg("military.army_floor.from") or pop_ * 100 >= count * cfg("military.army_floor.pct"): return
     for(b_id.length) b:
-        if b_owner[b] == bot.player and b_done[b] == 1 and bm_trains[bot.player][b_kind[b]].length and not trains_workers(bot.player, b_kind[b]):
+        if b_owner[b] == bot.player and b_done[b] == 1 and trains_soldiers_now(bot.player, b_kind[b]):
             bot.eco.hold = true
             return
+
+// Does building type k train a soldier p can train in its age now? (A short roster's barracks may train only a
+// line that opens in age 2: holding the economy for it in age 1 would hold it for good.)
+def trains_soldiers_now(p:int, k:int) -> bool:
+    if trains_workers(p, k): return false
+    return exists(bm_trains[p][k]) t: ages[p] >= t_age[t]
 
 def trains_workers(p:int, k:int) -> bool:
     for(bm_trains[p][k]) t:

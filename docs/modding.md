@@ -41,6 +41,12 @@ change it. What matters:
   `points` is also what the generator spends from a race's budget; the price can differ: `price_points`
   (the game's are calibrated by fights, D-195). `mod_check.sh` ends by fighting the lines that wear your
   parts against a fixed panel and prints the `price_points` each part should have; set them.
+- `stats.air` on a body makes an aircraft (give it the `flying` tag too, for its movement): only a weapon that can hit air touches it. Ranged
+  weapons can, melee and engines can't; a weapon's `stats.hits_air` of 1 or -1 says otherwise, and `stats.bonus` on the `air` tag makes it anti-air.
+- `stats.mounts` on a body or weapon gives a unit guns that turn on their own, as many as it likes (a turret front and back, broadsides). Each is
+  `{"part": "turret", "rest": 0, "arc": 360, "turn": 60, "tolerance": 5}`: the voxel part it turns, its rest facing off the hull, how wide it can go round that,
+  degrees a second, and how far off its target it can fire. Its weapon falls back on the unit's where it says nothing: `range` (tiles), `reload` (ticks),
+  `attack`, `damage`, `shot`. Each mount picks its own target inside its arc, and fires on the move. Without mounts a unit fires as soon as it's in reach.
 - `tier`: 1-3, the age it can first appear. Add a tier-3 version to give the line an age-3 step.
 - `face`: on head gear, `"covered"` for a face guard with eye openings, `"sealed"` for a closed helmet.
 - `shapes`: a rough 2D outline (the data contract's reference): copy one from a similar game part.
@@ -119,7 +125,7 @@ roster has, a new building without `extends` (it uses that one's model; new mode
 real buildings, research at a building that isn't there, a sound without `takes`.
 
 Sounds: `<mod>/audio/sfx/<name>_<take>.wav` (also `voice/`, `music/`), used before the game's file of that name. A new sound
-goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. A shot look is knobs that mix freely (`arc`, `form`, `pulses`, `scatter`, `wobble`, `jag`, `fade`, `hit` and more; `data/shots.json` says what each
+goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. A shot look is knobs that mix freely (`arc`, `form`, `pulses`, `scatter`, `wobble`, `jag`, `fade`, `hit`, `trail`, `muzzle`, `impact` and more; `data/shots.json` says what each
 does, and `"extends": "arrow"` starts from one of the game's). They only change what's drawn: the sim fires one shot and decides one hit. `audio.json` and WAVs stay out of the mod's
 signature, so a sound never changes a race key.
 
