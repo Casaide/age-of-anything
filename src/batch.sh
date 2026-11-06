@@ -37,6 +37,7 @@ add() {   # add <name> <command...>
 	echo "$name|$*" >> "$list"
 }
 L="$LOBSTER"
+bakes=cache:../build/bake_store   # (the same path everywhere: a bake's record names its own files by it)
 add run_tests "$L" run_tests.lobster
 add lint ./lint.sh   # lobsterfmt leaves every file as it is, every program compiles with no warnings
 add runner ./batch_test.sh   # this runner's own tests: a run keeps its own results, a job with none is a failure (#229), the lock across worktrees (#242)
@@ -57,9 +58,9 @@ else
 	for i in 0 1 2 3; do add test_ai.$i "$L" test_ai.lobster -- shard:$i/4; done
 	add test_2v2 "$L" test_2v2.lobster
 	add test_mod_match "$L" test_mod_match.lobster
-	add air_click ./air_check.sh   # a click takes an aircraft where it's drawn
+	add air_click ./air_check.sh "$bakes"   # a click takes an aircraft where it's drawn
 	add golden ./golden.sh
-	add vbcheck "$L" game.lobster -- none - vbcheck mute   # every building look as voxels: no specks (a window, but quick)
+	for i in 0 1 2 3; do add vbcheck.$i "$L" --background game.lobster -- none - vbcheck mute shard:$i/4; done   # every building look as voxels: no specks (a window each, behind the others)
 	add cursor_check "$L" cursor_check.lobster   # the OS cursors in a real window (#222)
 	if [ "$(uname)" = Darwin ]; then add mac_app ../tests/mac_app_check.sh; fi   # the Mac app bundle: games category, name, icon, the binary inside (#224)
 	add prices "$L" calibrate.lobster -- measure expect check:42   # held-out round robins against the counter chain (D-199): 32% off now
@@ -67,18 +68,34 @@ else
 	add network ./net_check.sh 2000
 	add network_packs ./net_check_packs.sh
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
-	add perf timeout 240 ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20
-	add perf_big timeout 300 ../play.sh lobby mods:big_battle mute perf:90
+	# (Their timeouts allow for baking from nothing, which isn't a hang: minutes, once a bake version.)
+	add perf timeout 900 ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20 "$bakes"
+	add perf_big timeout 900 ../play.sh lobby mods:big_battle mute perf:90 "$bakes"
 fi
 if [ ! -s "$list" ]; then
 	echo "batch: no tests to run (only=$only)"
 	exit 1
 fi
+# The art the windowed jobs bake is kept for every worktree (#245): a fresh worktree needn't bake it all again. Old
+# versions go after three days, and a version past 4 GB starts again, so it stays small (whole folders: a look's files go
+# together). They reach it through a link, as the game takes a relative path. Only a run with such a job touches any of it.
+if grep -q "$bakes" "$list"; then
+	store="${XDG_CACHE_HOME:-$HOME/.cache}/aoa-bakes"
+	version="$(sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' view/bake_cache.lobster)"
+	mkdir -p "$store/$version" ../build
+	find "$store" -mindepth 1 -maxdepth 1 ! -name "$version" -mtime +3 -exec rm -rf {} +
+	if [ "$(du -sk "$store/$version" | cut -f1)" -gt 4000000 ]; then
+		rm -rf "$store/$version"
+		mkdir "$store/$version"
+	fi
+	ln -sfn "$store/$version" ../build/bake_store
+fi
 
-# Run them, at most $jobs at once (xargs keeps the pool full); each line of jobs.txt: name|command. The slow suites go
-# first so the quick ones fill in round them.
+# Run them, at most $jobs at once (xargs keeps the pool full); each line of jobs.txt: name|command. The slowest go first,
+# as measured, so the quick ones fill in round them and nothing long starts late.
+slowest='^vbcheck\.\|^voxel_contact\|^test_mod_match\|^test_ai\|^test_formations\|^prices\|^air_click\|^test_2v2\|^test_sim\|^golden'
 t0=$(date +%s)
-{ grep '^test_ai\.\|^test_2v2\|^golden' "$list"; grep -v '^test_ai\.\|^test_2v2\|^golden\|^perf' "$list"; } | tr '\n' '\0' |
+{ grep "$slowest" "$list"; grep -v "$slowest\\|^perf" "$list"; } | tr '\n' '\0' |
 	xargs -0 -P "$jobs" -n 1 sh -c 'line="$0"; name="${line%%|*}"; cmd="${line#*|}"; start=$(date +%s); sh -c "$cmd" > "'"$logs"'/$name.log" 2>&1; echo "$name $? $(( $(date +%s) - start ))" > "'"$logs"'/$name.result"'
 
 # The ones that measure wall time, alone once the pool is done, and with no quick batch beside them.

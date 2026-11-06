@@ -5,6 +5,8 @@ here="$(cd "$(dirname "$0")" && pwd)"
 work="$(mktemp -d "${TMPDIR:-/tmp}/aoa_batch_test.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 export TMPDIR="$work"
+export XDG_CACHE_HOME="$work/cache"   # (the batch's shared bakes: not the real ones)
+link_before="$(readlink "$here/../build/bake_store" 2> /dev/null)"
 passed=0
 failed=0
 check() {   # check <what> <command...>
@@ -63,6 +65,9 @@ batch locks_c only=test_2v2 > "$work/c.out" 2>&1
 c_code=$?
 check "a job with no result fails the batch" [ "$c_code" != 0 ]
 check "and says so" has "$work/c.out" '^test_2v2  *FAIL.*no result'
+
+# A run with no windowed job leaves the shared bakes alone: this test runs inside a real batch, whose jobs read them through that link.
+check "a run without windowed jobs doesn't touch the bakes' link" [ "$(readlink "$here/../build/bake_store" 2> /dev/null)" = "$link_before" ]
 
 # Asking for tests that don't exist isn't a pass.
 batch locks_d only=no_such_suite > "$work/d.out" 2>&1
