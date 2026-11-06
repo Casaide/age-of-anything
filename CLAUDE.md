@@ -136,7 +136,7 @@ Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `game` branch 
 ./tests/batch.sh --quick                                           # unit tests, the sim, the AI's quick checks, the voxel units' checks (~30 s)
 ./tests/batch.sh                                                   # the whole batch side by side (adds every AI piece, 2v2, golden, prices, saves, network, perf)
 ./play.sh lobby "races:sewer rats|romans" watch mute perf:20        # the drawing's cost in the real window (vsync on), fails over budget (game/perf.lobster; in the batch, alone)
-./play.sh lobby "races:norse frogs|centaurs" map:open_field watch skirmish reveal army:107 zoom:1   # 2,000 units on the framed field: filming (perf: to measure; perflive with the bakes on)
+./play.sh lobby mods:big_battle                                    # 2,000 units on the framed field: filming (mute perf:90 to measure; perflive with the bakes on)
 lobster run_tests.lobster                                          # the unit tests (~3 s; part:i/n)
 lobster test_sim.lobster -- [part:a,b] [shard:i/n]                 # the sim: determinism, tick time, every system (~30 s serial)
 lobster test_ai.lobster -- [map] [quick|piece:<name>|levels] [shard:i/n]   # the AI: scenario checks and whole bot matches

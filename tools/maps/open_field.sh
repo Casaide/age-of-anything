@@ -1,5 +1,5 @@
 #!/bin/sh
-# Writes data/maps/open_field.json, the big-battle and trailer field: a wide clear middle between the starts, framed by a
+# Writes mods/big_battle/data/maps/open_field.json, the big-battle and trailer field: a wide clear middle between the starts, framed by a
 # river on one flank, a hill with slopes on the other, groves, rocks and a ruin. (A map is data; this draws its rows.)
 cd "$(dirname "$0")/../.." || exit 1
 awk 'BEGIN {
@@ -49,4 +49,4 @@ awk 'BEGIN {
   print " ],\n \"heights\": ["
   for (y = 0; y < n; y++) printf "  \"%s\"%s\n", hills[y], (y < n - 1 ? "," : "")
   print " ],\n \"starts\": [\n  [\n   30,\n   30\n  ],\n  [\n   129,\n   129\n  ]\n ]\n}"
-}' > data/maps/open_field.json
+}' > mods/big_battle/data/maps/open_field.json

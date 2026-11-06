@@ -363,6 +363,8 @@ def scene_map():
 let args = plain_args(command_line_arguments())
 lib_load("../data")
 id_load("../data")
+let used = mods_use([ MOD ])
+check(used.length == 1, "the mod loads ({used})")
 let rules = load_rules("default")
 let races = map(PROMPTS) p: generate(p, rules, 0)
 scene_map()
