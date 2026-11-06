@@ -242,6 +242,31 @@ def scene_attack(rules:JV, races:[JV], n:int):
     check(strayed * 20 <= left.length, "{name}: they stay in their blocks through a fight ({strayed} out)")
     check(p99(off) <= DRIFT_P99 * 2, "{name}: back in their places after the fight ({p99(off)})")
 
+// A bot gives its army the same order again and again: that mustn't stop the march to form up each time.
+def scene_reissue(rules:JV, races:[JV], n:int):
+    new_world(SEED, MAP, races, rules, [])
+    let mid_x = (start_x[0] + start_x[1]) / 2
+    let mid_y = (start_y[0] + start_y[1]) / 2
+    let ids = army(0, n, start_x[0], start_y[0])
+    issue_cmd(0, CMD_ATTACK_MOVE, ids, mid_x, mid_y, 0, 0)
+    def arrive(again:int) -> int:
+        while tick < 6000:
+            if again > 0 and tick % again == 0: issue_cmd(0, CMD_ATTACK_MOVE, filter(ids) id: index_of(id) >= 0, mid_x, mid_y, 0, 0)
+            wstep()
+            if tick > 100 and (find(ids) id: index_of(id) >= 0 and u_moving[index_of(id)] == 1) < 0: return tick
+        return tick
+    let once = arrive(0)
+    new_world(SEED, MAP, races, rules, [])
+    let ids2 = army(0, n, start_x[0], start_y[0])
+    issue_cmd(0, CMD_ATTACK_MOVE, ids2, mid_x, mid_y, 0, 0)
+    var at = 0
+    while tick < 6000 and at == 0:
+        if tick % 200 == 0: issue_cmd(0, CMD_ATTACK_MOVE, filter(ids2) id: index_of(id) >= 0, mid_x, mid_y, 0, 0)
+        wstep()
+        if tick > 100 and (find(ids2) id: index_of(id) >= 0 and u_moving[index_of(id)] == 1) < 0: at = tick
+    print "reissue {n}: there at tick {once} with one order, {at} told every 10 s"
+    check(at > 0 and at <= once + once / 5, "reissue {n}: the same order again does not hold them up ({at} against {once})")
+
 // The trailer's field: a wide clear middle along the line between the starts, framed by hills, a river on one side,
 // groves, rocks and a ruin; nothing in the way of 2,000 units.
 def scene_map():
@@ -299,5 +324,6 @@ scene_map()
 for(if args.length: map(args) a: string_to_int(a) else: [ 125, 1000 ]) n:
     scene_move(rules, races, n)
     scene_attack(rules, races, n)
+    scene_reissue(rules, races, n)
 print "\n{checks - failures} passed, {failures} failed"
 if failures > 0: set_exit_code(1)

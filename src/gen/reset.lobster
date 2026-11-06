@@ -304,6 +304,8 @@ var stashed_slot_by = []::int
 var stashed_fb_state = []::int
 var stashed_fb_x = []::int
 var stashed_fb_y = []::int
+var stashed_fb_gx = []::int
+var stashed_fb_gy = []::int
 var stashed_fb_tx = []::int
 var stashed_fb_ty = []::int
 var stashed_fb_wx = []::int
@@ -796,6 +798,8 @@ def reset_world():
     fb_state = []::int
     fb_x = []::int
     fb_y = []::int
+    fb_gx = []::int
+    fb_gy = []::int
     fb_tx = []::int
     fb_ty = []::int
     fb_wx = []::int
@@ -1277,6 +1281,8 @@ def stash_world():
     stashed_fb_state = fb_state
     stashed_fb_x = fb_x
     stashed_fb_y = fb_y
+    stashed_fb_gx = fb_gx
+    stashed_fb_gy = fb_gy
     stashed_fb_tx = fb_tx
     stashed_fb_ty = fb_ty
     stashed_fb_wx = fb_wx
@@ -1752,6 +1758,8 @@ def unstash_world():
     fb_state = stashed_fb_state
     fb_x = stashed_fb_x
     fb_y = stashed_fb_y
+    fb_gx = stashed_fb_gx
+    fb_gy = stashed_fb_gy
     fb_tx = stashed_fb_tx
     fb_ty = stashed_fb_ty
     fb_wx = stashed_fb_wx
