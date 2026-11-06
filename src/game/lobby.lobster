@@ -449,7 +449,7 @@ def fe_random_words() -> string:
     return concat_string(words, " ")
 
 // The clock the army waits on: a recording's frames take far longer than they play for.
-def fe_clock() -> float: return if rec_dir != "": float(rec_n) / 30.0 else: seconds_elapsed()
+def fe_clock() -> float: return if rec_dir != "": float(rec_n) / rec_fps else: seconds_elapsed()
 
 // A prompt changed: the name, roster and traits at once (generation is instant), the army once typing stops.
 def fe_regen(i:int):
@@ -1394,7 +1394,7 @@ def run_front(page0:string, typed:[string]) -> string:
         // captures: the page once its armies stand
         if shot != "" and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and (not fe_looks_waiting() or fe_frames > 900) and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
         if rec_dir != "" and rec_type.length > 0:  // (filming: the prompts typed in, side by side, each given time to muster)
-            if rec_n == 0: gl.set_fixed_delta_time(1.0 / 30.0, 0.0)
+            if rec_n == 0: gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
             if fe_page == "setup":
                 let rs = rec_side
                 if rec_wait > 0: rec_wait--
