@@ -596,3 +596,8 @@ def separate():
                 ys[i] = min(cy * t + r, ys[i] + CORRECT_MAX)
             elif (cy + 1) * t - ys[i] < r and (cy + 1 >= mh or wk[c + mw] == 0):
                 ys[i] = max((cy + 1) * t - r, ys[i] - CORRECT_MAX)
+            let pen = pen_holding(i)  // (a pen is walked over: its fence is only here)
+            if pen >= 0:
+                let hx, hy = pen_inside(pen, i, xs[i], ys[i])
+                xs[i] += clamp(hx - xs[i], -CORRECT_MAX, CORRECT_MAX)
+                ys[i] += clamp(hy - ys[i], -CORRECT_MAX, CORRECT_MAX)
