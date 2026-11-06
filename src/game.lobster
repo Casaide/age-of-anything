@@ -495,7 +495,7 @@ def unit_state(i:int, moving:bool) -> string, int:
         let job = if res == "wood": "chop" elif res == "stone" or res == "gold": "mine" else: "forage"
         return "work_" + job, phase % 8
     if u_task[i] == BUILD and t_worker[k]: return "work_build", phase % 8
-    return "idle", 0
+    return "idle", phase / 6  // (a slow shift of weight, each unit in its own time)
 
 def visible_to_me(c:int) -> bool: return fog[ME][c] == 2
 
