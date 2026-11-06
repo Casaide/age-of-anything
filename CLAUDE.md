@@ -134,10 +134,12 @@ Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `game` branch 
 ./tests/batch.sh --quick                                           # unit tests, the sim, the AI's quick checks, the voxel units' checks (~30 s)
 ./tests/batch.sh                                                   # the whole batch side by side (adds every AI piece, 2v2, golden, prices, saves, network, perf)
 ./play.sh lobby "races:sewer rats|romans" watch mute perf:20        # the drawing's cost in the real window (vsync on), fails over budget (game/perf.lobster; in the batch, alone)
+./play.sh lobby mods:big_battle                                    # 2,000 units on the framed field: filming (mute perf:90 to measure; perflive with the bakes on)
 lobster run_tests.lobster                                          # the unit tests (~3 s; part:i/n)
 lobster test_sim.lobster -- [part:a,b] [shard:i/n]                 # the sim: determinism, tick time, every system (~30 s serial)
 lobster test_ai.lobster -- [map] [quick|piece:<name>|levels] [shard:i/n]   # the AI: scenario checks and whole bot matches
 lobster test_2v2.lobster                                           # four bots, a 2v2 match
+lobster test_formations.lobster                                    # big armies in formation, headless: drift, jitter, facing, overlap, the framed map
 lobster test_heroes.lobster; lobster test_race_identity.lobster
 lobster voxel_check.lobster -- [report]                            # the voxel units' art: knees, skins, kit, look-alikes, specks; must pass before a unit change is shown
 lobster voxel_proto.lobster -- <out.ppm> [creatures|legs <body> [gear,..]|skins|deaths|animals|engines|check]   # sheets of voxel units; check: feet on their shadow
