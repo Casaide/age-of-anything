@@ -115,6 +115,10 @@ def resource_stage(kind:string, left:int, full:int) -> int:
 // Quads gathered into one mesh a sheet change; the sprite shader recolours the team key with the
 // vertex colour's rgb and darkens by its alpha (sprite_faded: one fading out).
 
+// A sprite's colour goes to the GPU in bytes with no clamp, so its light (the shader's multiplier, up to 2.8 in a hit's flash)
+// travels as light * 91 / 255, which keeps 1.0 exact (the shader multiplies by 255 / 91).
+let SPRITE_LIGHT = 91.0 / 255.0
+
 let SPRITE_SHADERS = """
 SHADER sprite
     VERTEX
@@ -131,7 +135,7 @@ SHADER sprite
         if (t.a < 0.02) discard;
         vec3 rgb = t.rgb;
         if (min(t.r, t.b) - t.g > 0.22 && abs(t.r - t.b) < 0.3) rgb = icolor.rgb * max(t.r, t.b) * 1.08;
-        frag_color = vec4(rgb * icolor.a, t.a * (1.0 - gone));
+        frag_color = vec4(rgb * icolor.a * 2.8021978, t.a * (1.0 - gone));
 SHADER sprite_copy
     VERTEX
         INPUTS apos:4 atc:2
@@ -348,7 +352,7 @@ def sprite(f:int, x:float, y:float, col:float4):
     b_tc.push(float2 { u1, v0 })
     b_tc.push(float2 { u1, v1 })
     b_tc.push(float2 { u0, v1 })
-    for(4): b_col.push(col)
+    for(4): b_col.push(float4 { col.x, col.y, col.z, col.w * SPRITE_LIGHT })
     b_idx.push(n)
     b_idx.push(n + 2)
     b_idx.push(n + 1)
@@ -382,5 +386,5 @@ def sprite_xf(f:int, xf:[float], col:float4):
     b_tc.push((at + float2 { float(fr.w), 0.0 }) / s)
     b_tc.push((at + float2 { float(fr.w), float(fr.h) }) / s)
     b_tc.push((at + float2 { 0.0, float(fr.h) }) / s)
-    for(4): b_col.push(col)
+    for(4): b_col.push(float4 { col.x, col.y, col.z, col.w * SPRITE_LIGHT })
     for([ n, n + 2, n + 1, n, n + 3, n + 2 ]) k: b_idx.push(k)
