@@ -1,0 +1,31 @@
+{
+ "_doc": "The future soldier's materials: dark ceramite armour with brighter edges, gunmetal, and glowing energy (visors, coils, blades, hard light).",
+ "ceramite": {
+  "rgb": "#3c4658",
+  "shine": 0.55
+ },
+ "ceramite_hi": {
+  "rgb": "#7c889c",
+  "shine": 0.8
+ },
+ "gunmetal": {
+  "rgb": "#25272c",
+  "shine": 0.85
+ },
+ "energy": {
+  "rgb": "#56e6ff",
+  "glow": true
+ },
+ "visor": {
+  "rgb": "#ffb030",
+  "glow": true
+ },
+ "robot": {
+  "rgb": "#d6a23a",
+  "shine": 0.45
+ },
+ "robot_dark": {
+  "rgb": "#34363c",
+  "shine": 0.6
+ }
+}

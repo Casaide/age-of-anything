@@ -846,6 +846,7 @@ def g_mods():
     expect(has_s(gstrs(anything, "era"), "scifi") and not has_s(gstrs(load_rules("bronze"), "era"), "scifi"), "mods: the rules overlay opens the scifi era where it says")
     let race = generate("future soldiers", anything, 0)
     let sk = (filter(units_of(race)) u: slot_of(u) == "skirmisher")[0]
+    expect(architecture(race) == "future", "mods: the future builds its own way (spacefarers: {architecture(race)})")
     expect(part_at(recipe_of(sk), "hand_r") == "weapon.pulse_rifle", "mods: future soldiers carry the pulse rifle ({part_at(recipe_of(sk), "hand_r")})")
     expect(has_s([ "", "helm.visor_sealed" ], part_at(at(last_step(sk), "recipe"), "head_gear")), "mods: an era pack\'s helmet only gives way to its own (upgrade_within)")
     expect(strs_eq(gstrs(race, "mods"), lib_mods) and rstr(race, "key") != plain_key, "mods: the race key holds the mod set")

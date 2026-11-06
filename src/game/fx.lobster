@@ -101,13 +101,14 @@ class Tracer:
 var fx_tracers = []::Tracer
 
 def fx_fire(st:ShotStyle, a:float2, b:float2, flight:float, sound:string):
+    let seen_for = shot_drawn_time(flight)  // (launched late: it looks faster, and lands when the sim says)
     for(st.pulses) p:
         for(st.scatter) s:
             let angle = rnd_range(0.0, 360.0)
             let r = if st.scatter > 1: st.spread * sqrt(rnd_float()) else: 0.0
             let to = b + float2 { cos(angle) * r, sin(angle) * r * 0.5 }
             let again = if p > 0 and s == 0: sound else: ""  // (the sim's shot sounds the first)
-            fx_tracers.push(Tracer { a, to, -float(p) * st.gap, if st.beam: st.hold else: flight, st, rnd_range(0.0, 360.0), again })
+            fx_tracers.push(Tracer { a, to, -float(p) * st.gap - (if st.beam: 0.0 else: flight - seen_for), if st.beam: st.hold else: seen_for, st, rnd_range(0.0, 360.0), again })
 
 def tracers_tick(dt:float):
     for(fx_tracers) t:
