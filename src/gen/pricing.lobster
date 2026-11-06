@@ -3,6 +3,7 @@
 
 let GIANT_POINTS = 6
 let WEAPON_KEYS = [ "reload", "min_range", "splash", "pass", "targets", "unpack", "pack", "blast", "blast_line_pct" ]
+let AIR_KEYS = [ "air", "hits_air" ]  // (an aircraft's: only a part that has them says so)
 
 // Small int maps in insertion order (armour, bonus, mixes), as JV objects of ints.
 def iget(o:JV, k:string) -> int: return gint(o, k, 0)
@@ -55,6 +56,9 @@ def evaluate(recipe:JV, rules:JV, age:int) -> JV:
     let mix = jobj()
     add_mix(mix, body, 50, 50)
     for(gstrs(body, "tags")) t: tag_add(tags, t)
+    if has(bstats, "mounts"): set(weapon, "mounts", at(bstats, "mounts"))
+    for(AIR_KEYS) k:
+        if has(bstats, k): set(weapon, k, jint(as_int(at(bstats, k))))
     for(gear) p:
         let s = at(p, "stats")
         hp += gint(s, "hp", 0)
@@ -66,6 +70,9 @@ def evaluate(recipe:JV, rules:JV, age:int) -> JV:
         if has(s, "damage"): damage = as_str(at(s, "damage"))
         for(WEAPON_KEYS) k:
             if has(s, k): set(weapon, k, if k == "targets": at(s, k) else: jint(as_int(at(s, k))))
+        if has(s, "mounts"): set(weapon, "mounts", at(s, "mounts"))
+        for(AIR_KEYS) k:
+            if has(s, k): set(weapon, k, jint(as_int(at(s, k))))
         add_classes(bonus, gobj(s, "bonus"))
         for(gstrs(p, "tags")) t: tag_add(tags, t)
         points += price_of(p)

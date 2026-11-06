@@ -402,7 +402,13 @@ def line_step_of(slot:string, l:JV) -> LineStep:
                       class_index(rstr(e, "damage")), as_int(at(e, "attack")), bonus, arm, map(unit_tags(e)) t: class_index(t),
                       as_int(at(e, "range")), gint(e, "reload", 0), gint(e, "min_range", 0), gint(e, "splash", 0), gint(e, "pass", 0),
                       if gstr(e, "targets", "") == "buildings": 1 else: 0, gint(e, "unpack", 0), gint(e, "pack", 0),
-                      gint(e, "blast", 0), gint(e, "blast_line_pct", 0), gint(e, "heal", 0), gint(e, "sight", 0) }
+                      gint(e, "blast", 0), gint(e, "blast_line_pct", 0), map(glist(e, "mounts")) m: parse_mount(m), gint(e, "air", 0), gint(e, "hits_air", 0), gint(e, "heal", 0), gint(e, "sight", 0) }
+
+// A mount from data (a part's stats.mounts): degrees, tiles and ticks, into the sim's tenths and milli-tiles.
+def parse_mount(o:JV) -> Mount:
+    return Mount { gstr(o, "part", ""), gint(o, "rest", 0) * 10, gint(o, "arc", 360) * 5, max(1, gint(o, "turn", 60) / 2), gint(o, "tolerance", 5) * 10,
+                   gint(o, "range", 0) * TILE, gint(o, "reload", 0), gint(o, "attack", -1),
+                   if has(o, "damage"): class_index(rstr(o, "damage")) else: 0, gstr(o, "shot", ""), []::int }
 
 // Does this player's line have a step after its first at that age, with new kit (Tech._line_has)?
 def line_has_kit(p:int, slot:string, age:int) -> bool:
