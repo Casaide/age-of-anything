@@ -58,12 +58,13 @@ while IFS='|' read -r kind name beats opts text; do
         shot)
             take=$takes/$name.mp4
             if [[ ! -f $take ]]; then print "no take $name.mp4: skipped"; continue; fi
-            in=$(opt "$opts" in 0)
+            in=$(opt "$opts" in 0) cr=$(opt "$opts" crop "")
+            vf=$V; [[ -n $cr ]] && vf="crop=$cr,$V"   # (crop=w:h:x:y of the take, e.g. into the lobby's prompt box)
             if [[ -n $text ]]; then  # (a mod's name on the ribbon)
                 ribbon "$text" $o.png
-                ff -ss $in -t $len -i $take -loop 1 -framerate $FPS -t $len -i $o.png -filter_complex "[0:v]${V}[a];[1:v]fade=in:st=0.3:d=0.4:alpha=1[r];[a][r]overlay=x=$((W - 373)):y=$((H - 373))" $enc $o
+                ff -ss $in -t $len -i $take -loop 1 -framerate $FPS -t $len -i $o.png -filter_complex "[0:v]${vf}[a];[1:v]fade=in:st=0.3:d=0.4:alpha=1[r];[a][r]overlay=x=$((W - 373)):y=$((H - 373))" $enc $o
             else
-                ff -ss $in -t $len -i $take -vf $V $enc $o
+                ff -ss $in -t $len -i $take -vf $vf $enc $o
             fi
             xf=$(opt "$opts" xfade $XFADE) ;;
         card)
