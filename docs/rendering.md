@@ -89,6 +89,10 @@ A body can say `tracks` (`x`, `half`, `pitch`, `mat`, `bar_mat`, and `round`: th
 `mat`, `face`, `face_r`, `hub`, `hub_r`, mirrored across the hull; `axis` and `blades` for a prop or rotor). They are made per walk step: one cycle
 moves the belt one link, the cycle's length comes from the pitch, and `voxel_proto ... parts` checks that a cycle on is the same picture.
 
+### How a vehicle dies
+
+A body's `"death": "knocked_out"` keeps it upright when it dies: burnt (`wreck`, `wreck_rust`), its parts knocked askew (`vx_knocked_out`), burning then smoking, then fading (`collect_wreck`). `voxel_proto -- - bodies` checks that it keeps its outline.
+
 ## Mods
 
 A mod's parts (milestone 21, `docs/modding.md`) need no models: their looks are the voxel kit's, by
