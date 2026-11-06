@@ -30,8 +30,9 @@ class vx_lk:
     key:string
     u:vx_unit_def
     worker:bool
-    cycle:float   // milli-tiles a walk cycle (the walk steps by the ground covered)
-    planned:bool  // its bakes are queued (or loaded)
+    cycle:float              // milli-tiles a walk cycle (the walk steps by the ground covered)
+    planned:bool             // its bakes are queued (or loaded)
+    waited_for:bool = false  // a unit was drawn with it before it was baked: its first bakes go on through a fight
 
 let vx_lks = []::vx_lk
 let vx_lk_ids = dictionary<string, int>(256)
@@ -256,7 +257,7 @@ def vx_job_step(j:vx_job, until:float) -> bool:
 
 // A job done: its atlas made a sheet and its frames published; kept in the cache by vx_save (in play, a frame of its
 // own: writing the PNG is most of a frame's time).
-var vx_unsaved:vx_job? = nil
+let vx_unsaved = []::vx_job
 
 def vx_finish(j:vx_job):
     let h = j.rows.length
@@ -285,11 +286,13 @@ def vx_first_modes(lk:int) -> [int]: return if vx_lks[lk].worker: [ VX_IDLE, VX_
 def vx_moving_modes(lk:int) -> [int]: return if vx_lks[lk].worker: [ VX_WALK, VX_WORK ] else: [ VX_WALK ]
 def vx_later_modes(lk:int) -> [[int]]:  // (a job a mode: small atlases, short saves; a worker's jobs first)
     let ms = [ [ VX_ATTACK ], [ VX_DIE ] ]
-    if vx_lks[lk].worker: ms.insert(0, [ VX_BUILD, VX_MINE, VX_FORAGE, VX_CARRY, VX_CARRY + 1, VX_CARRY + 2, VX_CARRY + 3 ])
+    if vx_lks[lk].worker:  // (a job a mode: a mounted worker's jobs together overflow an atlas)
+        for([ VX_BUILD, VX_MINE, VX_FORAGE, VX_CARRY, VX_CARRY + 1, VX_CARRY + 2, VX_CARRY + 3 ]) m, at: ms.insert(at, [ m ])
     return ms
 def vx_all_modes(lk:int) -> [[int]]:
     let ms = [ [ VX_IDLE, VX_WALK ], [ VX_ATTACK ], [ VX_DIE ] ]
-    if vx_lks[lk].worker: ms.insert(1, [ VX_WORK, VX_BUILD, VX_MINE, VX_FORAGE, VX_CARRY, VX_CARRY + 1, VX_CARRY + 2, VX_CARRY + 3 ])
+    if vx_lks[lk].worker:
+        for([ VX_WORK, VX_BUILD, VX_MINE, VX_FORAGE, VX_CARRY, VX_CARRY + 1, VX_CARRY + 2, VX_CARRY + 3 ]) m, at: ms.insert(at + 1, [ m ])
     return ms
 
 // A job loaded from the cache, or else queued (at the front, or the back).
@@ -312,6 +315,7 @@ def vx_ready(lk:int) -> bool: return vx_frames.get(vx_fkey(lk, 0, VX_IDLE, 0, 0)
 
 // A look wanted now: its first bake to the front of the queue.
 def vx_want(lk:int):
+    vx_lks[lk].waited_for = true
     if not vx_lks[lk].planned:
         vx_plan(lk, true)
         return
@@ -322,6 +326,19 @@ def vx_want(lk:int):
         let j = vx_queue[i]
         vx_queue.remove(i)
         vx_queue.insert(0, j)
+
+// A unit on the field and its look has no frame at all: standing, baked now (a tenth of a second, once a look), the walk
+// to the front of the queue. A moment's hitch beats a health bar over nothing (#170).
+def vx_stand_now(lk:int):
+    vx_want(lk)
+    let first = []::vx_job
+    vx_take_first(lk, first)
+    let stand = vx_new_job(lk, 0, [ VX_IDLE ])
+    for(first) j: if j.modes[0] != VX_IDLE or j.at > 0: vx_queue.insert(0, j)  // (one already under way goes on in turn)
+    if (find(first) j: j.modes[0] == VX_IDLE and j.modes.length > 1 and j.at == 0) >= 0: vx_queue.insert(0, vx_new_job(lk, 0, vx_moving_modes(lk)))
+    if vx_load_job(stand): return
+    while not vx_job_step(stand, seconds_elapsed() + 1.0): pass()
+    vx_unsaved.push(stand)
 
 // Every type's looks, at the start (and again when a race changes mid-match): what each player fields in the age
 // it's in, baked now in their first look (counted on the match loader); then queued: their attacks and falls,
@@ -362,7 +379,7 @@ def vx_start():
             let lk = vx_look_for(r)
             lks.push(lk)
             let age = if line.length: as_int(at(line[s], "age")) else: t_age[k]
-            let ahead = max(0, age - (if t_player[k] >= 0 and t_player[k] < ages.length: ages[t_player[k]] else: 1))
+            let ahead = if army_n > 0 and s == type_step(k): 0 else: max(0, age - (if t_player[k] >= 0 and t_player[k] < ages.length: ages[t_player[k]] else: 1))  // (army: they're all on the field)
             while by_age.length <= ahead: by_age.push([])
             if (find(by_age[ahead]) x: x == lk) < 0: by_age[ahead].push(lk)
         vx_type_lks.push(lks)
@@ -377,6 +394,12 @@ def vx_start():
                 if not vx_load_job(first): (if a == 0: now else: vx_queue).push(first)
                 for(vx_later_modes(lk)) ms: vx_queue_job(vx_new_job(lk, 0, ms), false)
         for(lks) lk: for(vx_looks_of(vx_lks[lk].u) - 1) v: for(vx_all_modes(lk)) ms: vx_queue_job(vx_new_job(lk, v + 1, ms), false)
+    if (perf_for > 0.0 and not perf_live) or army_n > 0:  // (perf: measures the drawing, not a new race's one-off bakes; an army: the
+        // fight comes at once: the start's first looks in every mode now, the rest left queued)
+        let start = if by_age.length: by_age[0] else: []::int
+        def ahead_now(j:vx_job) -> bool: return j.v == 0 and (find(start) lk: lk == j.lk) >= 0  // (first looks: the others draw as them)
+        for(filter(vx_queue) j: ahead_now(j)) j: now.push(j)
+        vx_queue = filter(vx_queue) j: not ahead_now(j)
     bake_total = now.length
     bake_count = 0
     for(now) j:
@@ -385,14 +408,6 @@ def vx_start():
         bake_count++
         bake_breath()
     bake_total = 0
-    if perf_for > 0.0:  // (perf: measures the drawing, not a new race's one-off bakes: the start's first looks in every
-        // mode now, the rest left queued and not baked while it measures, vx_bake_tick)
-        let start = if by_age.length: by_age[0] else: []::int
-        def now(j:vx_job) -> bool: return j.v == 0 and (find(start) lk: lk == j.lk) >= 0  // (first looks: the others draw as them)
-        for(filter(vx_queue) j: now(j)) j:
-            while not vx_job_step(j, seconds_elapsed() + 0.2): bake_breath()
-            vx_save(j)
-        vx_queue = filter(vx_queue) j: not now(j)
     vx_refresh()
     print "voxel units: {vx_lks.length} looks, {now.length} baked now, {vx_queue.length} queued, in {int((seconds_elapsed() - t0) * 1000.0)} ms"
 
@@ -415,29 +430,29 @@ def vx_refresh():
             else: vx_want(lk)
 
 // In play: each type's look, then the queue baked on for up to `budget` seconds of this frame.
-def vx_tick(budget:float):
+def vx_tick(budget:float, calm:bool):
     vx_refresh()
-    vx_bake_tick(budget)
+    vx_bake_tick(budget, calm)
 
-// The queue baked on for up to `budget` seconds of this frame (in play, and on the lobby's pages).
-def vx_bake_tick(budget:float):
-    if perf_for > 0.0: return  // (a perf run measures the drawing alone)
-    let us = vx_unsaved
-    if us:
-        vx_save(us)
-        vx_unsaved = nil
+// The queue baked on for up to `budget` seconds of this frame (in play, and on the lobby's pages). Not calm (a fight, a
+// huge match): only a look a unit is waiting for, and no saves: a cell runs to 20 ms, a PNG to 180 ms, and they'd be seen.
+def vx_bake_tick(budget:float, calm:bool = true):
+    if perf_for > 0.0 and not perf_live: return  // (a perf run measures the drawing alone; perflive, the bakes too)
+    if calm and vx_unsaved.length:
+        vx_save(vx_unsaved.pop())
         return
     let until = seconds_elapsed() + budget
     while seconds_elapsed() < until:
         var d = vx_doing
         if not d:
             if not vx_queue.length: return
+            if not calm and not vx_lks[vx_queue[0].lk].waited_for: return
             d = vx_queue[0]
             vx_queue.remove(0)
             vx_doing = d
         if vx_job_step(d, until):
             vx_doing = nil
-            vx_unsaved = d
+            vx_unsaved.push(d)
             return
 
 // ---- drawing
@@ -485,8 +500,9 @@ def vx_frame_for(id:int, k:int, state:string, d:int, n:int) -> int:
     let m = vx_mode_of(state)
     let st = if m == VX_IDLE: n % 4 elif m == VX_ATTACK: min(n, 7) else: n % 8
     let fr = vx_frame(lk, vx_look_v(id, lk), m, f, st)
-    if fr < 0: vx_want(lk)  // (drawn before it's baked: a unit of a later age put down, asked for first)
-    return fr
+    if fr >= 0: return fr
+    vx_stand_now(lk)  // (drawn before it's baked: a unit of a later age put down)
+    return vx_frame(lk, 0, VX_IDLE, f, 0)
 
 // A dead unit's frame, t seconds after it fell: its fall, then lying.
 def vx_dead_frame(id:int, k:int, d:int, t:float) -> int:
