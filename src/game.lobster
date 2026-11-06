@@ -280,7 +280,7 @@ var p_id = []::int  // the last tick's positions, for drawing between ticks
 var p_x = []::int
 var p_y = []::int
 let unit_dir = dictionary<int, int>(1024)
-let unit_kick = dictionary<int, float2>(64)  // a gun just fired: how far it kicks back, canvas px, and when (view only)
+let unit_kick = dictionary<int, float2>(64)  // a mount just fired (unit id * 16 + mount): how far it kicks back, canvas px, and when (view only)
 let attack_t0 = dictionary<int, float>(1024)
 var corpses = []::Corpse
 let hit_t0 = dictionary<int, float>(1024)       // when a unit was last hit (the flash)
@@ -539,8 +539,8 @@ def muzzle_of(by:int, mount:int) -> float2:
     return float2 { 0.0, -12.0 }
 
 // How far a part is kicked back from a shot just fired, drawn px along its facing.
-def kick_of(id:int, b:vx_body_spec, f:int) -> float2:
-    let k = unit_kick.get(id, float2_0)
+def kick_of(key:int, b:vx_body_spec, f:int) -> float2:
+    let k = unit_kick.get(key, float2_0)
     let age = clock_s - k.y
     if k.x <= 0.0 or age >= 0.25: return float2_0
     return -normalize(vx_spot_px(b, float3 { 0.0, 1.0, 0.0 }, f)) * k.x * 1.5 * (1.0 - age / 0.25)
@@ -554,9 +554,11 @@ def add_parts(i:int, hull_f:int, x:float, y:float, sort_y:float, col:float4):
     if not pieces.length: return
     let b = vx_body_of(vx_lks[lk].u.body)
     for(pieces) plk, n:
-        let pf = vx_piece_frame(plk, part_facing(i, b.parts[n].name, hull_f))
+        let f = part_facing(i, b.parts[n].name, hull_f)
+        let pf = vx_piece_frame(plk, f)
         let o = vx_pivot_px(b, b.parts[n], hull_f) * VX_DRAW_K
-        let kick = kick_of(u_id[i], b, f)
+        let mount = find(t_mounts[k]) m: m.part == b.parts[n].name
+        let kick = if mount >= 0: kick_of(u_id[i] * 16 + mount, b, f) else: float2_0
         let px, py = floor(x) + floor(o.x + kick.x + 0.5), floor(y) + floor(o.y + kick.y + 0.5)
         add(pf, px, py, sort_y + 0.01 * float(n + 1), col)
         if pf >= 0:
@@ -1569,7 +1571,7 @@ def draw_shots(alpha:float):
             let b = ground_at(ax, ay) - float2 { 0.0, 10.0 }
             if firstseen and seen_at(sx, sy):  // (a gun firing out of the fog shows only its shell)
                 fx_muzzle(st, a, ground_at(sx, sy))
-                if st.muzzle.recoil > 0.0: unit_kick.set(shots[o + SHOT_BY], float2 { st.muzzle.recoil, clock_s })
+                if st.muzzle.recoil > 0.0: unit_kick.set(shots[o + SHOT_BY] * 16 + mount, float2 { st.muzzle.recoil, clock_s })
             if st.plain():
                 if t >= 0.0: draw_bolt(st, a, b, t, 1.0)  // (launched late: it looks faster, and lands on the sim's tick)
             elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
