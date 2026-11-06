@@ -192,9 +192,10 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-05: Engine plan step 1 done: the lib reads no building names, staple resources and formation bands are data (D-212).
 - 2026-11-05: Mods can take the game apart: mods/scifi_short plays a bot match to the end with infantry only, two ages and its own rifle sound (D-213).
 - 2026-11-05: Shot looks became combinable knobs: bursts, scatter and jagged beams from one set, the game's arrows as presets (D-214).
+- 2026-11-06: big battles: bakes out of fights, no invisible units, marching blocks, a framed 160-tile field; 2,000 units at 58 fps (#169, #170, #171, #172, #174).
 - 2026-11-05: Humans got a real walk (planted feet, opposite arm and leg), blows with the body behind them, a standing sway; workers pick fruit and carry each resource its own way (#142, #143, #151).
 - 2026-11-05: The game became a pack: data/pack.json, and mod.json is gone (D-216).
 - 2026-11-05: One load path: the game and mods go through the same code (D-217).
 - 2026-11-06: Packs must match in network matches and saves; saves have a format and an upgrade hook (D-218).
+- 2026-11-06: A left click shows enemy buildings and units, view-only, with their HP (#218).
 - 2026-11-06: Guns got an aim in the sim: weapon mounts, as many as a unit likes, each turning on its own and firing on the move, the first piece of vehicles (D-219, #177, #211).
-||||||| 37303a88
