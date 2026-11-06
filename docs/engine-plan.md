@@ -158,7 +158,7 @@ it:
 
 | Files | Lines | Read by | Class |
 |---|---|---|---|
-| `terrain`, `resources`, `maps/`, `audio`, `ui`, `bridges`, `siege_shots`, `animals`, `modes`, `tips` | ~600, maps 1,426 | the sim and view | engine schema, game content |
+| `terrain`, `resources`, `maps/`, `audio`, `ui`, `bridges`, `animals`, `modes`, `tips` | ~600, maps 1,426 | the sim and view | engine schema, game content |
 | `buildings`, `tech`, `ai`, `rules/` | ~3,800 | the sim and bots | engine schema, game content; not yet moddable (#18) |
 | `voxel/` | 6,646 | the voxel builder | engine schema, game content |
 | `parts`, `creatures`, `families`, `palettes`, `lexicon`, `cost_curves`, `groups`, `uniques`, `heroes`, `creature_kit` | ~17,000 | the generator | game: the parts kit is Age of Anything's idea, not the engine's |
@@ -219,7 +219,6 @@ A pack is a folder (in development) or a zip (to share), with a manifest. The ga
 ```json
 {
   "id": "age_of_anything",
-  "kind": "game",
   "name": "Age of Anything",
   "version": "0.22.0",
   "engine": "0.1",
@@ -232,7 +231,7 @@ A pack is a folder (in development) or a zip (to share), with a manifest. The ga
 }
 ```
 
-- `kind`: `game` (one per match; it brings the front end and the defaults) or `mod` (depends on a game or other mods).
+- What launches is the game: nothing in the manifest says so. A mod names what it builds on in `depends`.
 - `depends`: ids with a version (`"age_of_anything@0.22"`); a missing or wrong one refuses the pack with the reason,
   as the mod loader refuses today.
 - Merging: as `gen/mods.lobster` does for parts now, over every data file (buildings, tech, ai, audio too), in load
@@ -444,10 +443,10 @@ help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 wai
 4. **Packs match in multiplayer and saves (1-2 days).** *Done 2026-11-06 (#132, D-218): the LAN answer doesn't carry the list, as nothing reads it yet.* The pack list with signatures goes in the LAN answer, the
    lockstep handshake and saves; a mismatch is refused with the pack's name. Done: `net_check` refuses a mismatched
    pack and passes a matched one; `save_check` passes; a save from before this loads (D-141).
-5. **The unit type seam (2-3 days).** *Done 2026-11-06 (#195, D-222).* Split `gen/setup.lobster`: the engine builds the sim from a plain unit type
+5. **The unit type seam (2-3 days).** *Done 2026-11-06 (#195, D-235).* Split `gen/setup.lobster`: the engine builds the sim from a plain unit type
    table; the game's `race_to_types` fills it from races. Done: golden starts unchanged; a test builds a match from a
    unit type table in data with no generator.
-6. **Hooks, first set (5-8 days).** *First hook points done 2026-11-06 (#231, D-223), as compiled game rules; hook mods run in Lua (#234). The web, the Wonder and the modes still to move.* `mods_gen.lobster` writes `hooks_active.lobster`; the web, the Wonder clock and
+6. **Hooks, first set (5-8 days).** *First hook points done 2026-11-06 (#231, D-236), as compiled game rules; hook mods run in Lua (#234). The web, the Wonder and the modes still to move.* `mods_gen.lobster` writes `hooks_active.lobster`; the web, the Wonder clock and
    victory, Fortress and Siege move out of `lib/` and `gen/modes` into the base pack's hooks; hook state is declared
    and saved; `mod_check` gets the builtin refusal and the lint; living towns become the first UI hook. Done: every
    match tick for tick as before (`test_sim`, `test_ai`, golden starts); a test pack with a clock call or a float in
@@ -458,6 +457,30 @@ help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 wai
    `CLAUDE.md`'s layout and commands updated.
 8. **The engine's own test pack (3-5 days).** `engine/packs/test/`: a flat map, a worker, a spear, a hub, a farm,
    drawn with plain voxels. The engine tests run on it alone. Done: `engine/tests` pass with no game content present.
+
+### Toward new unit types and total conversions (#205)
+
+The goal: anyone can add new unit types (tanks, mechs, ships, fliers) and new behaviour with zero Creel changes, as far as a
+total conversion, as easily as a mod. Avoid needing new games (Dominic, 2026-11-06). One pack format with equal power: a mod
+can be a total conversion, through the same data and hooks a game uses. A game is the root pack plus its own build: it's what
+launches, owns the menu and branding, can be the only option, and may customise the engine, since it ships as its own program.
+Mods can't touch the engine: they're downloaded into other people's lobbies, so they stay data plus checked, deterministic
+hooks. General engine work goes into Creel itself, whoever needs it first. A unit is data first, hooks when data runs out.
+Order, agreed by Dominic (2026-11-06); #205 has the gap list and the hooks:
+
+1. The unit table (step 5).
+2. Vehicles as engine features (#176 to #186, #211): aim, weapon mounts, body and parts looks, running gear, shots, air.
+3. Looks from packs, for units and buildings, in the vehicle work's format. Needs 1 and #178.
+4. Factions as data, with bots by unit role, so no view code reads a race. Needs 1 and 3.
+5. Economy as data: resources by role, movement classes and terrain open to packs (with #128). Needs 1.
+6. Hooks (step 6, widened). First `unit_tick`, `on_order`, `on_hit`, `on_death` and `ai_train_score`; then the rest as something needs each. Needs 1.
+7. A pack can replace the front end. Needs 4.
+8. Later, the proof: WW2 expanded to a total conversion, as a pack, with zero engine edits. For now it's just tanks and planes, for the video demo. Needs 2 to 7.
+9. A second kind of unit, such as a ship, with zero engine edits. Needs 3 to 6.
+10. The folders and the test pack (steps 7 and 8). Then a game can be a root pack plus its own build.
+
+The video's "same engine, different game" needs only 1, 2 (enough to look right) and 3, with enough of 4 to draw it, started
+from the command line. Real footage only, and no implying a finished second game or a downloadable engine.
 
 Then, after Dominic picks: the name in the boot screen and credits, licence files, `engine/README.md`, and
 `docs/modding.md` split into the engine's pack format and the game's parts kit (about 1 day).

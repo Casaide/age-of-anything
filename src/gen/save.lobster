@@ -127,6 +127,9 @@ class WorldSave:
     t_min_damage:[int]
     t_sight:[int]
     t_mclass:[int]
+    t_air:[int]
+    t_hits_air:[int]
+    t_mounts:[[Mount]]
     t_atk:[[int]]
     t_arm:[[int]]
     t_cls:[[int]]
@@ -184,6 +187,10 @@ class WorldSave:
     u_wnext:[int]
     u_wexit:[int]
     u_wtime:[int]
+    u_hull:[int]
+    u_lx:[int]
+    u_ly:[int]
+    u_mount:[[int]]
     u_orders:[[Cmd]]
     hook_unit_names:[string]
     hook_unit_cols:[[int]]
@@ -621,6 +628,9 @@ def world_bytes(bots:[Bot]) -> string:
         t_min_damage,
         t_sight,
         t_mclass,
+        t_air,
+        t_hits_air,
+        t_mounts,
         t_atk,
         t_arm,
         t_cls,
@@ -678,6 +688,10 @@ def world_bytes(bots:[Bot]) -> string:
         u_wnext,
         u_wexit,
         u_wtime,
+        u_hull,
+        u_lx,
+        u_ly,
+        u_mount,
         u_orders,
         hook_unit_names,
         hook_unit_cols,
@@ -1001,6 +1015,7 @@ def load_world_bytes(data:string) -> [Bot]:
     if not s: return []
     save_refused = save_refusal(s.save_format, s.save_packs)
     if save_refused != "": return []
+    save_upgrade(s)
     ab_kind = s.ab_kind
     ab_range = s.ab_range
     ab_radius = s.ab_radius
@@ -1127,6 +1142,9 @@ def load_world_bytes(data:string) -> [Bot]:
     t_min_damage = s.t_min_damage
     t_sight = s.t_sight
     t_mclass = s.t_mclass
+    t_air = s.t_air
+    t_hits_air = s.t_hits_air
+    t_mounts = s.t_mounts
     t_atk = s.t_atk
     t_arm = s.t_arm
     t_cls = s.t_cls
@@ -1184,6 +1202,10 @@ def load_world_bytes(data:string) -> [Bot]:
     u_wnext = s.u_wnext
     u_wexit = s.u_wexit
     u_wtime = s.u_wtime
+    u_hull = s.u_hull
+    u_lx = s.u_lx
+    u_ly = s.u_ly
+    u_mount = s.u_mount
     u_orders = s.u_orders
     hook_unit_names = s.hook_unit_names
     hook_unit_cols = s.hook_unit_cols
@@ -1489,20 +1511,30 @@ def load_world_bytes(data:string) -> [Bot]:
     s.sight_cache.forkv() k, v: sight_cache.set(k, v)
     s.ray_offs.forkv() k, v: ray_offs.set(k, v)
     s.ray_par.forkv() k, v: ray_par.set(k, v)
-    save_upgrade(s)
     pad_saved_columns()  // (a save from an older build: its missing per-unit and per-building columns, D-141)
     roles_from_data()    // (... and its building types' roles, D-192)
     staples_from_data()  // (... and its staple resources)
     spatial_clear()      // (... and its spatial buckets, which an older build filled over the whole map)
     return s.bots
 
-// Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first.
-// Format 2: the sim's table replaced races, so build it from what a save before that kept.
+// Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first. Format 1 needs none.
 def save_upgrade(s:WorldSave):
     assert s.save_format <= SAVE_FORMAT
-    if s.save_format < 2:
-        su_units = map(s.su_type_eval) e, k: race_unit(s.su_type_recipe[k], e, s.su_type_line[k])
-        su_sides = map(su_races) race, p:
+    if s.save_format < 2:  // (weapon mounts, #177, #211: no unit type had one)
+        for(s.t_slot):
+            s.t_mounts.push([]::Mount)
+        let old_shots = s.shots  // (a shot says which mount fired it, #179)
+        s.shots = []::int
+        for(old_shots) v, n:
+            s.shots.push(v)
+            if n % 11 == 10: s.shots.push(0)
+    if s.save_format < 3:  // (aircraft, #183: no unit type was one)
+        for(s.t_slot):
+            s.t_air.push(0)
+            s.t_hits_air.push(0)
+    if s.save_format < 4:  // (the table replaced races, #195)
+        s.su_units = map(s.su_type_eval) e, k: race_unit(s.su_type_recipe[k], e, s.su_type_line[k])
+        s.su_sides = map(s.su_races) race, p:
             let side = race_to_side(race)
             set(side, "lacks", at(s.su_idents[p], "lacks"))  // (a mode may have lifted some)
             side

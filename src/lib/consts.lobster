@@ -96,7 +96,8 @@ let SHOT_X = 7
 let SHOT_Y = 8
 let SHOT_X0 = 9
 let SHOT_Y0 = 10
-let SHOT_STRIDE = 11
+let SHOT_MOUNT = 11  // which of its mounts fired it
+let SHOT_STRIDE = 12
 
 // fog.gd
 let UNSEEN = 0

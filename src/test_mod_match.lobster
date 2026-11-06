@@ -90,10 +90,17 @@ let allowed = [ "worker", "spear", "infantry", "skirmisher" ]
 let h1 = play(races, rules, LIMIT, allowed)
 print "scifi_short on {map_id}: winner {winner} at {clock(tick)}, ages {ages[0]} and {ages[1]}, {bt_name.length} building types, lost {lost[0]} and {lost[1]}"
 check(winner >= 0, "the match ends with a winner")
-check(lost[0] + lost[1] > 0, "the sides fight")
+check(lost[0] + lost[1] > 20, "the sides fight")
 check(not has_s(bt_name, "stable") and not has_s(bt_name, "wonder") and has_s(bt_name, "barracks"), "the buildings taken out are gone")
-check(ages_list.length == 2, "two ages")
-check(ages[0] <= 2 and ages[1] <= 2 and (ages[0] == 2 or ages[1] == 2), "someone reaches age 2")
+check(ages_list.length == 1 and ages[0] == 1 and ages[1] == 1, "one age (Dominic, 2026-11-06)")
+// Each side builds its town up in that age (the bot once held its economy for a trooper that opened in age 2, and
+// never built past its first buildings: #235).
+for(2) p:
+    let built = []::string
+    for(b_id.length) b:
+        if b_owner[b] == p and b_done[b] == 1: push_new(built, bt_name[b_kind[b]])
+    print "  P{p} built: {built}"
+    check(has_s(built, "mill") and has_s(built, "mining_camp") and has_s(built, "armoury") and has_s(built, "barracks"), "P{p} builds up its town ({built})")
 var rifles = 0
 for(t_slot) s, k: if s == "skirmisher" and t_player[k] < 2: rifles++
 check(rifles == 2, "each side has its rifles")
