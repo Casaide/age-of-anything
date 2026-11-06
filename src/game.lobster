@@ -116,6 +116,11 @@ var rec_type = []::string  // typein:A|B: (filming the lobby)
 var rec_side = 0
 var rec_char = 0
 var rec_wait = 30
+var rec_fps = 30.0      // fps:<n>: a record:'s frames a second (60 for the website's video)
+var rec_push = 1.0      // push:<k>: a record:'s camera closes in, its zoom k times by the end (1.15 is a slow push)
+var rec_pan = float2_0  // pan:<x>,<y>: a record:'s camera drifts that many tiles by the end
+var hud_off = false     // nohud: nothing over the world: no top bar, panel, minimap, groups, health bars or banner (filming)
+var window_arg = int2 { 1600, 1000 }  // window:<w>,<h>: the window's size in points (filming: 1600,900 is 16:9)
 var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks through it)
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
@@ -157,6 +162,15 @@ for(args) a, k:
         if key == "typein": rec_type = tokenize(val, "|", " ")
         if key == "from": rec_from = string_to_float(val)
         if key == "for": rec_for = string_to_float(val)
+        if key == "fps": rec_fps = string_to_float(val)
+        if key == "push": rec_push = string_to_float(val)
+        if key == "pan":
+            let px, py = split_string(val, ",")
+            rec_pan = float2 { string_to_float(px), string_to_float(py) }
+        if key == "window":
+            let wx, wy = split_string(val, ",")
+            window_arg = int2 { string_to_int(wx), string_to_int(wy) }
+        if a == "nohud": hud_off = true
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
         if a == "reveal": reveal = true
@@ -1054,7 +1068,7 @@ def draw_world(alpha:float):
                     draw_town()
                     draw_shots(alpha)
                     fx_draw() id: unit_anchor(id)
-                draw_marks(alpha)
+                if not hud_off: draw_marks(alpha)
                 perf_lap(5)
 
 // ------------------------------------------------------------------ the lobby (type your races; Lobster makes and sets them up)
@@ -2196,7 +2210,7 @@ note("start")
 let no_vsync = shot != "" or rec_dir != "" or selftest or padtest or has_s(args, "novsync")
 volume_load()
 window_fullscreen = starts_fullscreen(args, windowed_setting)
-fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, window_flags(no_vsync, window_fullscreen)))
+fatal(gl.window("Age of Anything (Lobster)", window_arg.x, window_arg.y, window_flags(no_vsync, window_fullscreen)))
 pace(PACE_MATCH)                           // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon_mac.png")  // (the Dock's icon on the Mac)
 note("window")
@@ -2896,11 +2910,12 @@ def play_match():
             cam += shake
             draw_world(acc / 0.05)
             cam -= shake
-            ui_batch(): draw_panel()
+            if not hud_off:
+                ui_batch(): draw_panel()
             perf_lap(6)
-            draw_hud(paused, speed)
+            if not hud_off: draw_hud(paused, speed)
             perf_lap(7)
-            draw_groups()
+            if not hud_off: draw_groups()
             perf_lap(8)
             pad_draw()
             if touch_play: build_button()
@@ -2909,7 +2924,7 @@ def play_match():
             tree_tick()
             if menu_open: pause_menu()
             elif end_screen_up(): end_screen()
-            draw_banner()
+            if not hud_off: draw_banner()
             if typing_race: typing_tick()
             os_cursor_tick()
         perf_lap(9)
@@ -2947,13 +2962,17 @@ def play_match():
             return
         if rec_dir != "" and clock_s >= rec_from:
             if rec_n == 0:
-                gl.set_fixed_delta_time(1.0 / 30.0, 0.0)
+                gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
                 speed = start_speed
             gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
             rec_n++
-            if float(rec_n) >= rec_for * 30.0:
+            let frames = rec_for * rec_fps
+            if float(rec_n) >= frames:
                 quit_app = true
                 return
+            // the camera's move over the take, a frame of it at a time: the push in and the drift (iso: tiles are 1000 art units)
+            zoom *= pow(rec_push, 1.0 / frames)
+            cam += (iso(rec_pan.x * 1000.0, rec_pan.y * 1000.0) - iso(0.0, 0.0)) / frames
         if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return
