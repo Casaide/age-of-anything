@@ -34,6 +34,8 @@
   "rgb": "#33241a",
   "fur": true
  },
+ "wreck": {"rgb": "#2c2925"},
+ "wreck_rust": {"rgb": "#54402e"},
  "team": {
   "rgb": "#cc2921"
  },

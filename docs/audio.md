@@ -161,3 +161,7 @@ sim's events) plays:
 - Volume sliders in a settings screen; the buses are already there.
 - The `vorbis` encoder in this ffmpeg is the built-in one (no `libvorbis`); it is fine at
   160 kb/s but a libvorbis build would be smaller for the same sound.
+
+## Units' loops
+
+`data/audio.json` `units` gives a body its loops by state: `idle`, `move`, and `turret` while its gun turns (a mod's `audio.json` merges over it). Each sound is one looping channel, however many units make it; its volume is `loop_share(count)`, the square root of how many are on screen, capped at a dozen, and it fades in and out (`unit_loops_tick`). There's no pitch control, so a rising engine is a crossfade from its idle loop to its move loop. The loops are rendered like any sound (`engine_idle`, `engine_move`, `turret_servo`, `cart_roll` in `src/audio/sfx.lobster`).

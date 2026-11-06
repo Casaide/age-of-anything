@@ -27,6 +27,15 @@ let SOLVE_BUDGET = 1500
 let LANES = 32
 let FORM_GAP = 160
 let SLOT_ARRIVE = 60
+let BLOCK_FROM = 40   // an order for this many units marches in blocks
+let BLOCK_MAX = 49    // units a block at most
+let BLOCK_GAP = 1200  // milli-tiles between blocks
+let BLOCK_FORMING = 1
+let BLOCK_MARCHING = 2
+let BLOCK_THERE = 3
+let BLOCK_FORM_TICKS = 3000  // they march after this long at most, formed or not
+let BLOCK_LEASH = 2000       // milli-tiles past its reach a block's unit goes for a foe
+let BLOCK_FOE_NEAR = 40000   // milli-tiles: an enemy this near, and a big order is one formation, no blocks
 let SLOT_SLACK = 400
 let QUEUE_GAP = 300
 let RETURN_YIELD = 2000
@@ -87,7 +96,8 @@ let SHOT_X = 7
 let SHOT_Y = 8
 let SHOT_X0 = 9
 let SHOT_Y0 = 10
-let SHOT_STRIDE = 11
+let SHOT_MOUNT = 11  // which of its mounts fired it
+let SHOT_STRIDE = 12
 
 // fog.gd
 let UNSEEN = 0

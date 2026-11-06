@@ -41,6 +41,12 @@ change it. What matters:
   `points` is also what the generator spends from a race's budget; the price can differ: `price_points`
   (the game's are calibrated by fights, D-195). `mod_check.sh` ends by fighting the lines that wear your
   parts against a fixed panel and prints the `price_points` each part should have; set them.
+- `stats.air` on a body makes an aircraft (give it the `flying` tag too, for its movement): only a weapon that can hit air touches it. Ranged
+  weapons can, melee and engines can't; a weapon's `stats.hits_air` of 1 or -1 says otherwise, and `stats.bonus` on the `air` tag makes it anti-air.
+- `stats.mounts` on a body or weapon gives a unit guns that turn on their own, as many as it likes (a turret front and back, broadsides). Each is
+  `{"part": "turret", "rest": 0, "arc": 360, "turn": 60, "tolerance": 5}`: the voxel part it turns, its rest facing off the hull, how wide it can go round that,
+  degrees a second, and how far off its target it can fire. Its weapon falls back on the unit's where it says nothing: `range` (tiles), `reload` (ticks),
+  `attack`, `damage`, `shot`. Each mount picks its own target inside its arc, and fires on the move. Without mounts a unit fires as soon as it's in reach.
 - `tier`: 1-3, the age it can first appear. Add a tier-3 version to give the line an age-3 step.
 - `face`: on head gear, `"covered"` for a face guard with eye openings, `"sealed"` for a closed helmet.
 - `shapes`: a rough 2D outline (the data contract's reference): copy one from a similar game part.
@@ -54,9 +60,12 @@ takes the game's rule for its tags (a `helmet` a cap, a `bow` a bow...). For a l
 own `data/voxel/` (the same files as the game's; same ids replace the game's, its rules go first):
 
 - `gear.json` `gear`: held gear (`hand`, `hold`, `dir`, `shapes` in the hold's frame) or worn gear (`fits` per body id,
-  `*` for any other: `helm` on the body's helmet spot, `fit` over its armour spot, or shapes on its points), and
-  `parts`: `{"part": "<your part id>", "gear": "<your gear>"}`.
+  `*` for any other: `helm` on the body's helmet spot, `fit` over its armour spot, or shapes on its points; and `legs`
+  and `arms`, shapes on each leg's `hip`, `knee`, `ankle` and arm's `shoulder`, `elbow`, `hand`, given for the right and
+  mirrored: power armour's greaves and gauntlets), and `parts`: `{"part": "<your part id>", "gear": "<your gear>"}`.
+  A held shape with `"if": ["firing"]` shows only at the blow's moment (a laser cutter's beam, a muzzle flash).
 - `bodies/<id>.json`: a body for a new creature (points, legs, arms, shapes; copy a game body of the same build).
+  `tools` swaps the kit's gear for its own (`{"axe": "sc_cutter"}`: a robot cuts wood with a laser), `bare` drops worn gear.
 - `materials.json`: new colours (and `team`: put some team colour on every unit: a stripe, a crest, a band).
 
 Draw it: `cd src && lobster voxel_proto.lobster -- /tmp/s.ppm legs <body> <gear>,<gear>` (standing, walking and
@@ -107,7 +116,8 @@ A mod can bring `data/buildings.json`, `tech.json`, `ai.json` and `audio.json`. 
 player in a match using the mod: the same id changes that entry (objects merge), `"remove": true` takes it out,
 `"extends": "<id>"` copies a sibling, `"+key"` adds to a list and `"-key"` takes items out. A list with ids (`research`, or
 `ages` by their `age`) merges item by item; any other list, such as `build_order`, is replaced whole. In a rule, `"-roster":
-["large"]` takes lines out by slot.
+["large"]` takes lines out by slot, and `"role_body": {"worker": {"body": "body.robot", "only_if": ["scifi"]}}` gives a role
+its own body (a part in the mod's `parts.json`) in races with one of those tags.
 
 Taking a building out takes its research with it, an age stops asking for it, and the bots skip what
 asked for it. The rest is refused at load with the reason: no `hub` or `housing` building left, `trains` naming a line no
@@ -115,7 +125,7 @@ roster has, a new building without `extends` (it uses that one's model; new mode
 real buildings, research at a building that isn't there, a sound without `takes`.
 
 Sounds: `<mod>/audio/sfx/<name>_<take>.wav` (also `voice/`, `music/`), used before the game's file of that name. A new sound
-goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. A shot look is knobs that mix freely (`arc`, `form`, `pulses`, `scatter`, `wobble`, `jag`, `fade`, `hit` and more; `data/shots.json` says what each
+goes in `audio.json`; a shot look names its own with `"sound"` in `shots.json`. A shot look is knobs that mix freely (`arc`, `form`, `pulses`, `scatter`, `wobble`, `jag`, `fade`, `hit`, `trail`, `muzzle`, `impact` and more; `data/shots.json` says what each
 does, and `"extends": "arrow"` starts from one of the game's). They only change what's drawn: the sim fires one shot and decides one hit. `audio.json` and WAVs stay out of the mod's
 signature, so a sound never changes a race key.
 

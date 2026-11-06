@@ -1,5 +1,5 @@
 #!/bin/sh
-# Play the game: src/play.sh [lobby] [watch] [speed:<x>] [shot:<png> at:<seconds>]
+# Play the game: src/play.sh [lobby] [watch] [windowed] [speed:<x>] [shot:<png> at:<seconds>]
 # The game makes the races and the start itself (gen/); scenario:<file> plays a scenario file instead.
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 cd "$(dirname "$0")"

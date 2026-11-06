@@ -1,0 +1,5 @@
+{
+ "_doc": "Two crews: what makes a side's engine its own tank, and their names.",
+ "sherman_crews": {"extends": "imperial", "siege": "sherman", "prefixes": ["First", "Second", "Third", "Fourth"], "suffixes": [" Armored Division", " Armored Corps", " Tank Battalion"], "adjective": "Allied"},
+ "panzer_crews": {"extends": "imperial", "siege": "panzer", "prefixes": ["First", "Second", "Fifth", "Ninth"], "suffixes": [" Panzer Division", " Panzer Corps", " Panzer Regiment"], "adjective": "German"}
+}
