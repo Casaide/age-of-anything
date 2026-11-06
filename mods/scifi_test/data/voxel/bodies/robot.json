@@ -1,0 +1,458 @@
+{
+ "_doc": "A worker drone, from scratch. An industrial walker a head shorter than a man: a deep boxy trunk in worn yellow paint, a small head block with one glowing optic, a battery on its back, thin dark limbs on reverse knees (bent backwards like a bird's), wide flat foot pads. Team colour on the chest panel and the antenna tip. It works with a laser cutter (tools). It wears nothing (bare) and uses its cutter in place of an axe, pick or hammer (tools).",
+ "skin": "#d6a23a",
+ "pale": "#e8c070",
+ "size": 1.0,
+ "fur": 0.0,
+ "reach": 4.6,
+ "tools": {
+  "axe": "sc_cutter",
+  "pick": "sc_cutter",
+  "hammer": "sc_cutter"
+ },
+ "points": {
+  "hip": {
+   "at": [
+    0,
+    0,
+    15.0
+   ],
+   "bob": 0.4
+  },
+  "chest": {
+   "at": [
+    0,
+    0.2,
+    21.0
+   ],
+   "bob": 0.4
+  },
+  "head": {
+   "at": [
+    0,
+    1.0,
+    26.4
+   ]
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "hip",
+    2.3,
+    -0.2,
+    0
+   ],
+   "foot": [
+    2.5,
+    0,
+    1.0
+   ],
+   "stride": 4.2,
+   "lift": 1.8,
+   "bones": [
+    7.0,
+    7.0
+   ],
+   "pole": [
+    0,
+    -1,
+    0
+   ],
+   "r": [
+    1.5,
+    1.05,
+    1.0,
+    0.75
+   ],
+   "mats": [
+    "robot_dark",
+    "robot_dark"
+   ],
+   "shapes": [
+    {
+     "ball": [
+      "knee",
+      0,
+      -0.2,
+      0
+     ],
+     "r": 1.35,
+     "mat": "gunmetal",
+     "_doc": "knee joint"
+    },
+    {
+     "cap": [
+      "knee",
+      0,
+      -0.4,
+      -0.6
+     ],
+     "to": [
+      "knee",
+      0,
+      -0.2,
+      -3.6
+     ],
+     "r": [
+      1.25,
+      1.0
+     ],
+     "mat": "robot",
+     "_doc": "shin plate"
+    },
+    {
+     "mat": "gunmetal",
+     "hard": true,
+     "_doc": "flat foot pad, flat on the ground",
+     "cap": [
+      "ankle",
+      0,
+      -0.8,
+      -0.4
+     ],
+     "to": [
+      "ankle",
+      0,
+      2.2,
+      -0.5
+     ],
+     "r": [
+      0.85,
+      0.75
+     ]
+    },
+    {
+     "cap": [
+      "ankle",
+      0.9,
+      1.6,
+      -0.5
+     ],
+     "to": [
+      "ankle",
+      1.5,
+      2.6,
+      -0.6
+     ],
+     "r": [
+      0.5,
+      0.4
+     ],
+     "mat": "gunmetal",
+     "hard": true,
+     "_doc": "splayed toe"
+    },
+    {
+     "cap": [
+      "ankle",
+      -0.9,
+      1.6,
+      -0.5
+     ],
+     "to": [
+      "ankle",
+      -1.5,
+      2.6,
+      -0.6
+     ],
+     "r": [
+      0.5,
+      0.4
+     ],
+     "mat": "gunmetal",
+     "hard": true
+    }
+   ]
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "chest",
+   3.3,
+   -0.2,
+   1.0
+  ],
+  "bone": 5.0,
+  "thick": 0.95,
+  "sleeve": "robot_dark",
+  "hand": "gunmetal"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   0,
+   0.4
+  ],
+  "r": 2.0
+ },
+ "armour": {
+  "a": [
+   "hip",
+   0,
+   0,
+   1.0
+  ],
+  "b": [
+   "chest",
+   0,
+   0,
+   0.5
+  ],
+  "r": [
+   2.6,
+   3.0
+  ]
+ },
+ "shapes": [
+  {
+   "box": [
+    "chest",
+    0,
+    0,
+    -0.3
+   ],
+   "n": [
+    0,
+    1,
+    0
+   ],
+   "half": [
+    2.5,
+    2.1,
+    2.7
+   ],
+   "round": 0.9,
+   "mat": "robot",
+   "_doc": "trunk"
+  },
+  {
+   "box": [
+    "chest",
+    0,
+    2.4,
+    0.2
+   ],
+   "n": [
+    0,
+    1,
+    0
+   ],
+   "half": [
+    1.6,
+    0.4,
+    1.4
+   ],
+   "round": 0.3,
+   "mat": "team",
+   "_doc": "team chest panel"
+  },
+  {
+   "box": [
+    "chest",
+    2.0,
+    1.9,
+    -2.4
+   ],
+   "n": [
+    0,
+    1,
+    0
+   ],
+   "half": [
+    0.35,
+    0.3,
+    0.35
+   ],
+   "mat": "gunmetal",
+   "mirror": true,
+   "_doc": "bolts",
+   "round": 0.0
+  },
+  {
+   "ball": [
+    "chest",
+    3.1,
+    -0.2,
+    1.0
+   ],
+   "r": 1.3,
+   "mat": "gunmetal",
+   "mirror": true,
+   "_doc": "shoulder joints"
+  },
+  {
+   "box": [
+    "chest",
+    0,
+    -2.6,
+    -0.2
+   ],
+   "n": [
+    0,
+    -1,
+    0
+   ],
+   "half": [
+    2.0,
+    0.8,
+    2.0
+   ],
+   "round": 0.5,
+   "mat": "robot_dark",
+   "_doc": "battery"
+  },
+  {
+   "box": [
+    "chest",
+    0,
+    -3.5,
+    -0.2
+   ],
+   "n": [
+    0,
+    -1,
+    0
+   ],
+   "half": [
+    0.5,
+    0.15,
+    1.6
+   ],
+   "mat": "energy",
+   "_doc": "its charge strip",
+   "round": 0.0
+  },
+  {
+   "box": [
+    "hip",
+    0,
+    0,
+    0.4
+   ],
+   "n": [
+    0,
+    1,
+    0
+   ],
+   "half": [
+    2.2,
+    1.4,
+    1.0
+   ],
+   "round": 0.5,
+   "mat": "robot_dark",
+   "_doc": "hip block"
+  },
+  {
+   "cap": [
+    "chest",
+    0,
+    0.4,
+    2.6
+   ],
+   "to": [
+    "head",
+    0,
+    -0.6,
+    -1.4
+   ],
+   "r": [
+    0.9,
+    0.8
+   ],
+   "mat": "robot_dark",
+   "_doc": "neck"
+  },
+  {
+   "box": [
+    "head",
+    0,
+    0,
+    0
+   ],
+   "n": [
+    0,
+    1,
+    0
+   ],
+   "half": [
+    1.75,
+    1.7,
+    1.35
+   ],
+   "round": 0.6,
+   "mat": "robot",
+   "_doc": "head block"
+  },
+  {
+   "box": [
+    "head",
+    0,
+    1.4,
+    1.05
+   ],
+   "n": [
+    0,
+    1,
+    0.4
+   ],
+   "half": [
+    1.9,
+    0.5,
+    0.25
+   ],
+   "mat": "robot_dark",
+   "_doc": "brow visor",
+   "round": 0.0
+  },
+  {
+   "bead": [
+    "head",
+    0,
+    1.75,
+    0.0
+   ],
+   "r": 0.75,
+   "mat": "energy",
+   "_doc": "single optic"
+  },
+  {
+   "cap": [
+    "head",
+    1.2,
+    -0.9,
+    1.1
+   ],
+   "to": [
+    "head",
+    1.4,
+    -1.2,
+    4.4
+   ],
+   "r": [
+    0.22,
+    0.2
+   ],
+   "mat": "gunmetal",
+   "_doc": "antenna"
+  },
+  {
+   "bead": [
+    "head",
+    1.4,
+    -1.2,
+    4.6
+   ],
+   "r": 0.55,
+   "mat": "team"
+  }
+ ],
+ "check": {
+  "knees": 40,
+  "shows": 0.3,
+  "_doc": "knees: reverse knees bend on purpose"
+ },
+ "bare": true
+}
