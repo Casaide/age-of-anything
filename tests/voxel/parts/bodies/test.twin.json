@@ -1,0 +1,25 @@
+{
+ "_doc": "A fixture for several mounts (#211): a plain hull with a turret at each end, whose guns show which way they point. Not art.",
+ "skin": "#5a6234",
+ "pale": "#24231f",
+ "mark": "#b09c66",
+ "size": 1.2,
+ "points": {"o": {"at": [0, 0, 0]}},
+ "shapes": [
+  {"cap": ["o", -8, -18, 4], "to": ["o", -8, 18, 4], "r": [3, 3], "mat": "pale"},
+  {"cap": ["o", 8, -18, 4], "to": ["o", 8, 18, 4], "r": [3, 3], "mat": "pale"},
+  {"box": ["o", 0, 0, 9], "n": [0, 1, 0], "half": [9, 22, 4], "mat": "skin", "round": 0.5}
+ ],
+ "parts": [
+  {"name": "front", "pivot": [0, 11, 13],
+   "shapes": [
+    {"disc": ["o", 0, 11, 15], "n": [0, 0, 1], "r": [5.5, 2], "mat": "mark"},
+    {"cap": ["o", 0, 15, 15], "to": ["o", 0, 30, 15], "r": [0.9, 0.7], "mat": "pale", "hard": true}
+   ]},
+  {"name": "back", "pivot": [0, -11, 13],
+   "shapes": [
+    {"disc": ["o", 0, -11, 15], "n": [0, 0, 1], "r": [5.5, 2], "mat": "team"},
+    {"cap": ["o", 0, -15, 15], "to": ["o", 0, -30, 15], "r": [0.9, 0.7], "mat": "pale", "hard": true}
+   ]}
+ ]
+}

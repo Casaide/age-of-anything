@@ -127,6 +127,9 @@ class WorldSave:
     t_min_damage:[int]
     t_sight:[int]
     t_mclass:[int]
+    t_air:[int]
+    t_hits_air:[int]
+    t_mounts:[[Mount]]
     t_atk:[[int]]
     t_arm:[[int]]
     t_cls:[[int]]
@@ -184,6 +187,10 @@ class WorldSave:
     u_wnext:[int]
     u_wexit:[int]
     u_wtime:[int]
+    u_hull:[int]
+    u_lx:[int]
+    u_ly:[int]
+    u_mount:[[int]]
     u_orders:[[Cmd]]
     t_tags:[[int]]
     t_damage:[int]
@@ -614,6 +621,9 @@ def world_bytes(bots:[Bot]) -> string:
         t_min_damage,
         t_sight,
         t_mclass,
+        t_air,
+        t_hits_air,
+        t_mounts,
         t_atk,
         t_arm,
         t_cls,
@@ -671,6 +681,10 @@ def world_bytes(bots:[Bot]) -> string:
         u_wnext,
         u_wexit,
         u_wtime,
+        u_hull,
+        u_lx,
+        u_ly,
+        u_mount,
         u_orders,
         t_tags,
         t_damage,
@@ -1114,6 +1128,9 @@ def load_world_bytes(data:string) -> [Bot]:
     t_min_damage = s.t_min_damage
     t_sight = s.t_sight
     t_mclass = s.t_mclass
+    t_air = s.t_air
+    t_hits_air = s.t_hits_air
+    t_mounts = s.t_mounts
     t_atk = s.t_atk
     t_arm = s.t_arm
     t_cls = s.t_cls
@@ -1171,6 +1188,10 @@ def load_world_bytes(data:string) -> [Bot]:
     u_wnext = s.u_wnext
     u_wexit = s.u_wexit
     u_wtime = s.u_wtime
+    u_hull = s.u_hull
+    u_lx = s.u_lx
+    u_ly = s.u_ly
+    u_mount = s.u_mount
     u_orders = s.u_orders
     t_tags = s.t_tags
     t_damage = s.t_damage
@@ -1482,6 +1503,18 @@ def load_world_bytes(data:string) -> [Bot]:
 // Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first. Format 1 needs none.
 def save_upgrade(s:WorldSave):
     assert s.save_format <= SAVE_FORMAT
+    if s.save_format < 2:  // (weapon mounts, #177, #211: no unit type had one)
+        for(s.t_slot):
+            s.t_mounts.push([]::Mount)
+        let old_shots = s.shots  // (a shot says which mount fired it, #179)
+        s.shots = []::int
+        for(old_shots) v, n:
+            s.shots.push(v)
+            if n % 11 == 10: s.shots.push(0)
+    if s.save_format < 3:  // (aircraft, #183: no unit type was one)
+        for(s.t_slot):
+            s.t_air.push(0)
+            s.t_hits_air.push(0)
 
 // Why this save file can't load here, or "".
 def save_refusal_of(path:string) -> string:
