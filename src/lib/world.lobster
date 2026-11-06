@@ -113,6 +113,7 @@ def state_hash() -> int:
     for(n) i:
         for(UNIT_HASHED) k: h = mix(h, cols[k][i])
         h = mix(h, u_orders[i].length)
+        for(u_mount[i]) v: h = mix(h, v)
         for(u_orders[i]) o:
             for(order_ints(o)) v: h = mix(h, v)
     let bcols = building_columns()
@@ -326,6 +327,7 @@ def load(path:string):
         let f = read_ints(cols.length - 3)  // (a scenario has no marching blocks)
         for(cols) col, k: col.push(if k < f.length: f[k] else: 0)
         u_orders.push([]::Cmd)  // (no queued orders at the start: asserted)
+        u_mount.push([]::int)
     expect("BUILDINGS")
     let bcols = building_columns()
     for(next_int()):
@@ -550,7 +552,7 @@ def load_tech(nt:int):
             let tags = read_ints(next_int())
             let v = read_ints(12)
             steps.push(LineStep { age, up, speed, hp, pop_, train_time, cost, damage, attack, bonus, armour, tags,
-                                  v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11] })
+                                  v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], []::Mount, 0, 0, v[10], v[11] })
         lines.push(steps)
     expect("RESEARCHED")
     for(num_players):
@@ -560,10 +562,11 @@ def load_tech(nt:int):
         bm_arm.push(map(bt_size.length): []::int)
         for([ bm_research_time, bm_age_time, bm_research_cost, bm_range, bm_cost_pct, bm_trade_fee ]) col: col.push(map(bt_size.length): 0)
     for([ t_heal_pct, t_kill_gold, t_wade, t_slow_on_hit, t_min_range, t_splash, t_pass_len, t_buildings_only, t_unpack, t_pack,
-          t_blast, t_blast_line, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal ]) col:
+          t_blast, t_blast_line, t_air, t_hits_air, t_eval_sight, t_sight_add, t_machine, t_mounted, t_damage, t_heal ]) col:
         for(nt): col.push(0)
     for(nt):
         t_tags.push([]::int)
+        t_mounts.push([]::Mount)
         t_bonus.push([]::int)
         t_eval_attack.push(0)
     expect("HEROES")

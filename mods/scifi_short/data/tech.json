@@ -1,4 +1,4 @@
 {
- "_doc": "A short tree: two ages. The third asks for a stable or an archery range, and those are gone.",
- "ages": [{"age": 3, "remove": true}]
+ "_doc": "One age (Dominic, 2026-11-06: the ages had nothing to give here). The trooper trains from the start.",
+ "ages": [{"age": 2, "remove": true}, {"age": 3, "remove": true}]
 }

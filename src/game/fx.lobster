@@ -15,6 +15,23 @@ class HitLook:
     col:float4
     sound:string
 
+// What a shot does at the gun, and where it lands (shots.json "muzzle", "impact"). Nothing unless asked for.
+class MuzzleLook:
+    flash:float
+    col:float4
+    smoke:int
+    ring:float
+    dust:int
+    recoil:float
+
+class ImpactLook:
+    blast:float
+    col:float4
+    smoke:int
+    scorch:float
+    debris:int
+    shake:float
+
 class ShotStyle:
     arc:float
     len:float
@@ -31,6 +48,9 @@ class ShotStyle:
     wobble = 0.0
     jag = 1
     fade = 0.0
+    trail = 0.0  // a fading tail behind a bolt, canvas px
+    muzzle = MuzzleLook { 0.0, float4 { 1.0, 0.86, 0.56, 1.0 }, 0, 0.0, 0, 0.0 }
+    impact = ImpactLook { 0.0, float4 { 1.0, 0.68, 0.34, 1.0 }, 0, 0.0, 0, 0.0 }
     hit = HitLook { 0, 0.0, 0.0, 0.0, float4_0, "" }  // its own impact (shots.json "hit"); no sparks: the game's
 
     // One flying shot: the sim's own timing, no timers of the view's.
@@ -59,6 +79,15 @@ def shot_style_of(m:JV) -> ShotStyle:
     s.wobble = num("wobble", 0.0)
     s.jag = max(1, gint(m, "jag", 1))
     s.fade = num("fade", 0.0)
+    s.trail = num("trail", 0.0)
+    let mz = get(m, "muzzle")
+    if mz:
+        def mnum(k:string, f:float) -> float: return if has(mz, k): as_float(at(mz, k)) else: f
+        s.muzzle = MuzzleLook { mnum("flash", 0.0), if has(mz, "col"): hex_col(substring(rstr(mz, "col"), 1, 6)) else: s.muzzle.col, gint(mz, "smoke", 0), mnum("ring", 0.0), gint(mz, "dust", 0), mnum("recoil", 0.0) }
+    let im = get(m, "impact")
+    if im:
+        def inum(k:string, f:float) -> float: return if has(im, k): as_float(at(im, k)) else: f
+        s.impact = ImpactLook { inum("blast", 0.0), if has(im, "col"): hex_col(substring(rstr(im, "col"), 1, 6)) else: s.impact.col, gint(im, "smoke", 0), inum("scorch", 0.0), gint(im, "debris", 0), inum("shake", 0.0) }
     let h = get(m, "hit")
     if h:
         def hnum(k:string, f:float) -> float: return if has(h, k): as_float(at(h, k)) else: f
@@ -84,6 +113,12 @@ def draw_bolt(st:ShotStyle, a:float2, b:float2, u:float, alpha:float):
     let col = float4 { st.col.x, st.col.y, st.col.z, st.col.w * alpha }
     if st.glow.w > 0.0:  // a bolt of light: a soft halo under its core
         ui_line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2, float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 * alpha })
+    if st.trail > 0.0:  // a tail, thinning out behind it, no longer than it has flown
+        let tail = min(st.trail, magnitude(p - a))
+        for(3) k:
+            let t0 = st.len * 0.5 + tail * float(k) / 3.0
+            let t1 = st.len * 0.5 + tail * float(k + 1) / 3.0
+            ui_line(p - dir * t0, p - dir * t1, st.w * (1.0 - float(k) * 0.25), float4 { col.x, col.y, col.z, col.w * [ 0.6, 0.35, 0.15 ][k] })
     if st.len > 0.0: ui_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w, col)
     else: fx_circle(p, st.w, col)
     fx_circle(p + float2 { 0.0, lift + 1.0 }, 0.8, float4 { 0.0, 0.0, 0.0, 0.25 * alpha })
@@ -174,6 +209,33 @@ var fx_bursts = []::Burst
 var fx_dusts = []::Dust
 var fx_stuck = []::Stuck
 var fx_heals = []::Heal
+
+// A flash and a ring, short-lived, and the marks left on the ground, canvas units.
+class Flash:
+    pos:float2
+    t:float
+    r:float
+    life:float
+    col:float4
+    ring:bool
+
+class Smoke:
+    pos:float2
+    t:float
+    size:float
+    drift:float
+
+class Scorch:
+    pos:float2
+    t:float
+    r:float
+
+let SMOKE_TIME = 1.5
+let SCORCH_TIME = 9.0
+var fx_smokes = []::Smoke
+var fx_flashes = []::Flash
+var fx_scorches = []::Scorch
+var fx_shake = 0.0  // the screen's shake now, canvas px; it dies away
 
 def rnd_range(a:float, b:float) -> float: return a + rnd_float() * (b - a)
 
@@ -287,6 +349,39 @@ def draw_puffs():
                     gl.translate(at - half): gl.rect(half * 2.0 + float2_1 / FX_ART_PX)
     gl.set_shader("color")
 
+// Smoke: soft grey puffs, swelling as they rise and thin out.
+def fx_smoke(at:float2, n:int, r:float):
+    for(n): fx_smokes.push(Smoke { at + float2 { rnd_range(-r, r), rnd_range(-r, r) * 0.5 }, -rnd_float() * 0.1, rnd_range(1.6, 3.0), rnd_range(-5.0, 5.0) })
+
+// A lick of flame on a wreck.
+def fx_flame(at:float2):
+    fx_flashes.push(Flash { at + float2 { rnd_range(-5.0, 5.0), rnd_range(-3.0, 3.0) }, 0.0, rnd_range(2.5, 4.5), 0.2, float4 { 1.0, 0.56, 0.14, 0.95 }, false })
+
+// A shot leaves its gun: at the muzzle, with its shooter's feet below.
+def fx_muzzle(st:ShotStyle, at:float2, feet:float2):
+    let m = st.muzzle
+    if m.flash > 0.0: fx_flashes.push(Flash { at, 0.0, m.flash, 0.09, m.col, false })
+    if m.ring > 0.0: fx_flashes.push(Flash { at, 0.0, m.ring, 0.25, float4 { 0.92, 0.9, 0.84, 0.7 }, true })
+    fx_smoke(at, m.smoke, 1.5)
+    for(m.dust): fx_dusts.push(Dust { feet + float2 { rnd_range(-7.0, 7.0), rnd_range(-3.0, 3.0) }, 0.0, rnd_range(2.0, 3.5) })
+
+// A shot comes down, on something or on the ground (only the ground takes a scorch).
+def fx_impact(st:ShotStyle, at:float2, on_ground:bool):
+    let m = st.impact
+    if m.blast > 0.0:
+        fx_flashes.push(Flash { at, 0.0, m.blast, 0.14, m.col, false })
+        fx_flashes.push(Flash { at, 0.0, m.blast * 1.5, 0.3, float4 { 0.92, 0.9, 0.84, 0.6 }, true })
+    fx_smoke(at, m.smoke, m.blast * 0.4)
+    if m.scorch > 0.0 and on_ground: fx_scorches.push(Scorch { at, 0.0, m.scorch })
+    if m.debris > 0:
+        fx_hit(at, HitLook { m.debris, 3.0, m.blast * 2.0 + 8.0, 0.4, float4 { 0.3, 0.26, 0.2, 1.0 }, "" })
+    fx_shake = max(fx_shake, m.shake)
+
+// The screen's offset for its shake just now.
+def fx_shake_off() -> float2:
+    if fx_shake <= 0.05: return float2_0
+    return float2 { rnd_range(-1.0, 1.0), rnd_range(-1.0, 1.0) } * fx_shake
+
 def fx_puff(at:float2, tip:float):
     for(4): fx_dusts.push(Dust { at + float2 { tip * 8.0 + rnd_range(-5.0, 5.0), rnd_range(-3.0, 2.0) }, 0.0, rnd_range(3.0, 5.0) })
 
@@ -298,10 +393,21 @@ def fx_clear():
     fx_stuck = []
     fx_heals = []
     fx_puffs = []
+    fx_flashes = []
+    fx_scorches = []
+    fx_smokes = []
+    fx_shake = 0.0
     fx_ruins = []
 
 def fx_tick(dt:float):
     tracers_tick(dt)
+    for(fx_flashes) f: f.t += dt
+    fx_flashes = filter(fx_flashes) f: f.t < f.life
+    for(fx_smokes) s: s.t += dt
+    fx_smokes = filter(fx_smokes) s: s.t < SMOKE_TIME
+    for(fx_scorches) s: s.t += dt
+    fx_scorches = filter(fx_scorches) s: s.t < SCORCH_TIME
+    fx_shake = max(0.0, fx_shake - dt * 6.0)
     for(fx_sparks) s: s.t += dt
     fx_sparks = filter(fx_sparks) s: s.t < 0.25
     for(fx_bursts) b: b.t += dt
@@ -322,6 +428,11 @@ def fx_circle(at:float2, r:float, col:float4):
 // ground_of(id): a live unit's feet on the canvas, or float2 { -1000000000.0, 0 } when it's gone or unseen.
 def fx_draw(ground_of):
     gl.set_shader("color")
+    for(fx_scorches) s:
+        gl.color(float4 { 0.05, 0.04, 0.03, 0.5 * (1.0 - s.t / SCORCH_TIME) }):
+            gl.translate(s.pos):
+                gl.scale(float2 { 1.0, 0.5 }):
+                    gl.circle(s.r, 16)
     for(fx_stuck) s:  // half buried, leaning, fading at the end
         let st = shot_style(s.kind)
         let a = clamp((STUCK_TIME - s.t) / 0.6, 0.0, 1.0)
@@ -355,6 +466,21 @@ def fx_draw(ground_of):
         for(b.dirs) d:
             let p = b.pos + d * b.look.spread * f
             ui_line(p, p + d * b.look.size * (1.0 - f), 1.0, float4 { c.x, c.y, c.z, 1.0 - f })
+    for(fx_flashes) f:
+        let k = f.t / f.life
+        let c = float4 { f.col.x, f.col.y, f.col.z, f.col.w * (1.0 - k) }
+        if f.ring:
+            let r = f.r * (0.3 + 0.7 * k)
+            for(14) n:
+                let a0, a1 = 360.0 * float(n) / 14.0, 360.0 * float(n + 1) / 14.0
+                ui_line(f.pos + float2 { cos(a0) * r, sin(a0) * r * 0.5 }, f.pos + float2 { cos(a1) * r, sin(a1) * r * 0.5 }, 1.0, c)
+        else:
+            fx_circle(f.pos, f.r * (1.0 - k * 0.5) * 0.55, c)
+            fx_circle(f.pos, f.r * (1.0 - k * 0.5) * 0.28, float4 { 1.0, 1.0, 0.92, c.w })
+    for(fx_smokes) s:
+        if s.t >= 0.0:
+            let k = s.t / SMOKE_TIME
+            fx_circle(s.pos + float2 { s.drift * k, -16.0 * k }, s.size * (0.6 + 1.3 * k), float4 { 0.56, 0.55, 0.52, 0.5 * (1.0 - k) })
     draw_puffs()
     for(fx_dusts) d:
         if d.t >= 0.0:

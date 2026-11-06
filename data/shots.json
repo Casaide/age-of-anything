@@ -1,12 +1,12 @@
 {
- "_doc": "Shot looks, all view only: the sim fires one shot and decides one hit whatever is drawn. Knobs, freely mixed: arc (path height for its distance; 0 straight), form (bolt, or beam: a line from muzzle to target), len and w (a bolt's length, 0 an orb, and the width), hold (seconds a beam stays lit), pulses {count, gap in seconds}, scatter {count, spread in canvas pixels at the target}, wobble and jag (a beam's shake in pixels and its segments), col, glow, fade (the share of its life spent fading), sticks (false: a miss leaves nothing in the ground), sound. hit {sparks, size, spread, life, col, sound}: its own impact, in place of the game's. A mod's shots.json merges over this, and \"extends\": \"arrow\" starts from one of these; which units use a mod's look goes by its tag.",
- "arrow": {"arc": 0.22, "len": 7.0, "w": 1.0, "col": "#e8dcc0"},
- "bolt": {"arc": 0.08, "len": 6.0, "w": 1.4, "col": "#c8c0a8"},
- "javelin": {"arc": 0.3, "len": 11.0, "w": 1.3, "col": "#b08a5a"},
- "stone": {"arc": 0.18, "len": 0.0, "w": 2.4, "col": "#8a8a80"},
- "dart": {"arc": 0.04, "len": 4.0, "w": 0.8, "col": "#2a2a20"},
- "ball": {"arc": 0.02, "len": 0.0, "w": 1.8, "col": "#303030"},
- "boulder": {"arc": 0.42, "len": 0.0, "w": 4.2, "col": "#8f8a7c"},
- "siege_bolt": {"arc": 0.1, "len": 13.0, "w": 1.9, "col": "#a89a7c"},
- "sling_stone": {"arc": 0.5, "len": 0.0, "w": 5.0, "col": "#8f8a7c"}
+ "_doc": "Shot looks, all view only: the sim fires one shot and decides one hit whatever is drawn. Knobs, freely mixed: arc (path height for its distance; 0 straight), form (bolt, or beam: a line from muzzle to target), len and w (a bolt's length, 0 an orb, and the width), hold (seconds a beam stays lit), pulses {count, gap in seconds}, scatter {count, spread in canvas pixels at the target}, wobble and jag (a beam's shake in pixels and its segments), col, glow, fade (the share of its life spent fading), sticks (false: a miss leaves nothing in the ground), sound (firing). trail (a fading tail in canvas pixels, behind a bolt). muzzle {flash, col, smoke, ring, dust, recoil}: at the gun: a flash and a ring of that radius, puffs of smoke, puffs of dust at its feet, and the turret kicked back that many pixels. hit {sparks, size, spread, life, col, sound}: its own impact, in place of the game's. impact {blast, col, smoke, scorch, debris, shake}: where it lands: a blast of that radius, puffs of smoke, a scorch mark of that radius, thrown bits, and the screen shaken that many pixels. A mod's shots.json merges over this, and \"extends\": \"arrow\" starts from one of these; which units use a mod's look goes by its tag.",
+ "arrow": {"arc": 0.22, "len": 7.0, "w": 1.0, "col": "#e8dcc0", "sound": "shoot_arrow"},
+ "bolt": {"arc": 0.08, "len": 6.0, "w": 1.4, "col": "#c8c0a8", "sound": "shoot_bolt"},
+ "javelin": {"arc": 0.3, "len": 11.0, "w": 1.3, "col": "#b08a5a", "sound": "shoot_javelin"},
+ "stone": {"arc": 0.18, "len": 0.0, "w": 2.4, "col": "#8a8a80", "sound": "shoot_stone"},
+ "dart": {"arc": 0.04, "len": 4.0, "w": 0.8, "col": "#2a2a20", "sound": "shoot_dart"},
+ "ball": {"arc": 0.02, "len": 0.0, "w": 1.8, "col": "#303030", "sound": "shoot_ball", "muzzle": {"flash": 4.0, "smoke": 2}},
+ "boulder": {"arc": 0.42, "len": 0.0, "w": 4.2, "col": "#8f8a7c", "sound": "catapult_release", "impact": {"shake": 1.0}},
+ "siege_bolt": {"arc": 0.1, "len": 13.0, "w": 1.9, "col": "#a89a7c", "sound": "bolt_release"},
+ "sling_stone": {"arc": 0.5, "len": 0.0, "w": 5.0, "col": "#8f8a7c", "sound": "sling_release", "impact": {"shake": 1.5}}
 }
