@@ -161,28 +161,67 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
         var h = 0
         for(r) c: h = max(h, deep(c))
         total += h + BLOCK_GAP
-    // where the army forms up: from where it stands, on along the way to the first ground that holds it all
-    let ln0 = lane(idx[0])
+    // where each block goes: rows front to back, then the flankers in columns at the ends of the rows
+    let spot_al = []::int
+    let spot_ac = []::int
+    let spot_c = []::[int]
+    def spot(c:[int], along:int, across:int):
+        spot_c.push(c)
+        spot_al.push(along)
+        spot_ac.push(across)
+    var along0 = total / 2
     var half_w = 0
     for(rows) r:
+        var h = 0
         var width = -BLOCK_GAP
-        for(r) c: width += wide(c) + BLOCK_GAP
+        for(r) c:
+            h = max(h, deep(c))
+            width += wide(c) + BLOCK_GAP
+        var across = -width / 2
+        for(r) c:
+            spot(c, along0 - h / 2, across + wide(c) / 2)
+            across += wide(c) + BLOCK_GAP
         half_w = max(half_w, width / 2)
-    def fits(ax:int, ay:int) -> bool:
-        for(5) p:
-            for(5) q:
-                let al = (p - 2) * (total / 2 + TILE) / 2
-                let ac = (q - 2) * (half_w + TILE) / 2
-                if not walkable(ax + (ux * al - uy * ac) / ONE, ay + (uy * al + ux * ac) / ONE, ln0): return false
-        return true
+        along0 -= h + BLOCK_GAP
+    let wing = [ -half_w - BLOCK_GAP, half_w + BLOCK_GAP ]  // each wing's next column, and how far down it's filled
+    let wing_at = [ total / 2, total / 2 ]
+    var wing_wide = 0
+    for(flank) c: wing_wide = max(wing_wide, wide(c))
+    for(flank) c, k:
+        let s = k % 2
+        if wing_at[s] - deep(c) < -total / 2 and wing_at[s] < total / 2:
+            wing[s] += (if s == 0: -1 else: 1) * (wing_wide + BLOCK_GAP)
+            wing_at[s] = total / 2
+        spot(c, wing_at[s] - deep(c) / 2, wing[s] + (if s == 0: -1 else: 1) * wing_wide / 2)
+        wing_at[s] -= deep(c) + BLOCK_GAP
+    if flank.length: half_w = max(-wing[0], wing[1]) + wing_wide
+    // where the army forms up: from where it stands, on along the way to the first ground that holds it all
+    let ln0 = lane(idx[0])
+    def blocked(ax:int, ay:int) -> int:  // (ground it can't stand on, sampled two tiles apart)
+        var n = 0
+        var al = -total / 2 - TILE
+        while al <= total / 2 + TILE:
+            var ac = -half_w - TILE
+            while ac <= half_w + TILE:
+                if not walkable(ax + (ux * al - uy * ac) / ONE, ay + (uy * al + ux * ac) / ONE, ln0): n++
+                ac += 2 * TILE
+            al += 2 * TILE
+        return n
     var form_x = cx
     var form_y = cy
+    var least = blocked(cx, cy)
     let way = isqrt(dist2(cx, cy, x, y))
-    var on_way = 0
-    while on_way <= way and not fits(cx + ux * on_way / ONE, cy + uy * on_way / ONE): on_way += 2 * TILE
-    if on_way <= way:
-        form_x = cx + ux * on_way / ONE
-        form_y = cy + uy * on_way / ONE
+    var on_way = 2 * TILE
+    while on_way <= way and least > 0:
+        let ax = cx + ux * on_way / ONE
+        let ay = cy + uy * on_way / ONE
+        let n = blocked(ax, ay)
+        if n < least:
+            least = n
+            form_x = ax
+            form_y = ay
+        on_way += 2 * TILE
+    var army_farthest = 0
     def place(c:[int], along:int, across:int):
         let bx = (ux * along - uy * across) / ONE
         let by = (uy * along + ux * across) / ONE
@@ -202,7 +241,7 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
         fb_r[b] = deep(c) / 2
         fb_owner[b] = u_owner[c[0]]
         fb_army[b] = army
-        fb_t[b] = 0
+        var farthest = 0
         fb_held[b] = 0
         let cols = max(isqrt(2 * c.length), 1)
         let sp = form_space(c)
@@ -216,34 +255,16 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
                 slot_block[i] = b + 1
                 slot_bx[i] = (ux * top - uy * across_k) / ONE
                 slot_by[i] = (uy * top + ux * across_k) / ONE
+                farthest = max(farthest, isqrt(dist2(u_x[i], u_y[i], form_x + bx + slot_bx[i], form_y + by + slot_by[i])) / max(u_speed[i], 1))
                 let qx, qy = slot_ok(i, tx + slot_bx[i], ty + slot_by[i], x, y)
                 slot_x[i] = qx
                 slot_y[i] = qy
             top -= sp
             first += cols
-    var along = total / 2
-    var front_half = 0
-    for(rows) r, k:
-        var h = 0
-        var width = -BLOCK_GAP
-        for(r) c:
-            h = max(h, deep(c))
-            width += wide(c) + BLOCK_GAP
-        if k == 0: front_half = width / 2
-        var across = -width / 2
-        for(r) c:
-            place(c, along - h / 2, across + wide(c) / 2)
-            across += wide(c) + BLOCK_GAP
-        along -= h + BLOCK_GAP
-    var left = -front_half - BLOCK_GAP
-    var right = front_half + BLOCK_GAP
-    for(flank) c, k:
-        if k % 2 == 0:
-            place(c, total / 2 - deep(c) / 2, left - wide(c) / 2)
-            left -= wide(c) + BLOCK_GAP
-        else:
-            place(c, total / 2 - deep(c) / 2, right + wide(c) / 2)
-            right += wide(c) + BLOCK_GAP
+        army_farthest = max(army_farthest, farthest)
+    for(spot_c) c, k: place(c, spot_al[k], spot_ac[k])
+    for(fb_state) state, b:  // (twice the farthest walk: then they go without the rest)
+        if state != 0 and fb_army[b] == army: fb_t[b] = BLOCK_FORM_TICKS - min(BLOCK_FORM_TICKS, 2 * army_farthest + 100)
 
 // A block's centre, one tick: forming, then marching, unless it or a block just ahead is fighting.
 def blocks_tick():
@@ -272,7 +293,7 @@ def blocks_tick():
             if not ready:
                 ready = true
                 for(fb_state) other, o:
-                    if other == BLOCK_FORMING and fb_army[o] == fb_army[b] and placed[o] * 100 < alive[o] * 98: ready = false
+                    if other == BLOCK_FORMING and fb_army[o] == fb_army[b] and placed[o] < alive[o]: ready = false
             if ready: fb_state[b] = BLOCK_MARCHING
         elif state == BLOCK_MARCHING and fb_held[b] == 0:
             var wait = false
