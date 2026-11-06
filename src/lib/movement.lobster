@@ -310,6 +310,7 @@ def move():
     let n = u_x.length
     // World._move means these as the tick's start, but Godot's packed arrays are shared, not copied
     // on write: its _ox, _om, _ost, _owx are the live arrays. The port follows what GDScript does.
+    blocks_tick()
     o_x = u_x
     o_y = u_y
     o_moving = u_moving
@@ -361,6 +362,28 @@ def move():
             if found: pct = pct * slow_pcts[at] / 100  // in an enemy web, or hit by sticky silk
         if pct != 100: s = s * pct / 100
         if tr_speed_pct != 0 and mci != 2: s = s * trail_pct(here) / 100  // quicker on a worn trail (a rule, off by default)
+        if u_block[i] > 0 and u_foe[i] == 0 and st[i] < 6:                // in a marching block: its place round the centre
+            let b = u_block[i] - 1
+            let bx = fb_x[b] + u_bx[i]
+            let by = fb_y[b] + u_by[i]
+            wxs[i] = bx
+            wys[i] = by
+            let there = dist2(x, y, bx, by)
+            if there <= 400: continue  // (in its place: stands, no stuck count)
+            let dd = isqrt(there)
+            let nx = x + (bx - x) * min(s, dd) / dd
+            let ny = y + (by - y) * min(s, dd) / dd
+            let wk = walks[mc]
+            def on(cx:int, cy:int) -> bool: return cx >= 0 and cy >= 0 and cx / TILE < mw and cy / TILE < mh and wk[cy / TILE * mw + cx / TILE] == 1
+            if on(nx, ny):
+                xs[i] = nx
+                ys[i] = ny
+            elif on(nx, y): xs[i] = nx  // (a place on a tree or past the edge: along it, until the place is clear)
+            elif on(x, ny): ys[i] = ny
+            if (tick + u_id[i]) % PROGRESS_EVERY == 0:  // not getting nearer its place: by the flow field for a while
+                if dd > 2 * TILE and u_prog[i] >= 0 and dd >= u_prog[i]: st[i] = 6
+                u_prog[i] = dd
+            continue
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:
             let px, py = progress(i, x, y)
             if u_prog[i] >= 0 and px > u_prog[i] - py and u_group[i] > 0 and u_reach[i] == 0 and (queued(i, x, y) or passed(i, x, y)):
@@ -547,13 +570,15 @@ def separate():
                     if grp[i] == grp[j] and ((s_stood[i] == 1 and mv[j] == 1) or (s_stood[j] == 1 and mv[i] == 1)): continue
                     if s_stood[i] == 1 and s_stood[j] == 1: continue
                     if owners[i] == owners[j] and grp[i] != grp[j] and ((s_stood[i] == 1 and s_yields[j] == 1 and mv[j] == 1) or (s_stood[j] == 1 and s_yields[i] == 1 and mv[i] == 1)): continue
-                    let hi = s_planted[i] == 1 or (s_role[i] >= 2 and s_role[j] == 1) or
+                    // (a marching block doesn't give way to a sheep)
+                    let hi = s_planted[i] == 1 or (u_block[i] > 0 and t_animal[u_kind[j]] != 0) or (s_role[i] >= 2 and s_role[j] == 1) or
                         (s_yields[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
-                    let hj = s_planted[j] == 1 or (s_role[j] >= 2 and s_role[i] == 1) or
+                    let hj = s_planted[j] == 1 or (u_block[j] > 0 and t_animal[u_kind[i]] != 0) or (s_role[j] >= 2 and s_role[i] == 1) or
                         (s_yields[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
                     if hi and hj: continue
                     // One of the side's own at work and a gatherer making for its spot: the walker slips past.
                     if owners[i] == owners[j] and ((s_planted[i] == 1 and s_role[j] == 3) or (s_planted[j] == 1 and s_role[i] == 3)): continue
+                    if u_block[i] > 0 and u_block[j] > 0 and grp[i] == grp[j] and d > rr / 4: continue  // (an army's blocks: their places keep them apart, and a unit crossing to its place isn't shoved back)
                     let push = (rr - d) / SEPARATION_DIV + 1
                     let px = ux * push / ONE
                     let py = uy * push / ONE

@@ -1,0 +1,1250 @@
+{
+ "_doc": "The future soldier's voxel gear, made from scratch: heavy ceramite power armour that covers arms and legs, a sealed helmet with a glowing visor, a reactor pack, long boxy pulse rifles with glowing coils, a glowing arc blade and a hard-light buckler. Team colour on the pauldrons, the breastplate stripe and the helmet's crest.",
+ "holds": {
+  "aim": {
+   "rest": [
+    0.1,
+    0.8,
+    -0.45
+   ],
+   "dir": [
+    0,
+    1,
+    0.08
+   ],
+   "wind": [
+    0.1,
+    0.6,
+    -0.42
+   ],
+   "wind_dir": [
+    0,
+    1,
+    0.22
+   ],
+   "hit": [
+    0.1,
+    0.85,
+    -0.45
+   ],
+   "hit_dir": [
+    0,
+    1,
+    0.05
+   ],
+   "_doc": "a rifle levelled forward from the hip, kicking up as it fires"
+  },
+  "cut": {
+   "rest": [
+    0.1,
+    0.75,
+    -0.45
+   ],
+   "dir": [
+    0,
+    1,
+    -0.55
+   ],
+   "wind": [
+    0.1,
+    0.7,
+    -0.4
+   ],
+   "wind_dir": [
+    0,
+    1,
+    -0.45
+   ],
+   "hit": [
+    0.1,
+    0.8,
+    -0.5
+   ],
+   "hit_dir": [
+    0,
+    1,
+    -0.6
+   ],
+   "_doc": "a cutter pointed down at the work, a pulse on each blow"
+  }
+ },
+ "gear": {
+  "sc_armour": {
+   "flags": [
+    "armour"
+   ],
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "ceramite"
+     }
+    ],
+    "human": [
+     {
+      "cap": [
+       "hip",
+       1.3,
+       0.1,
+       3.0
+      ],
+      "to": [
+       "chest",
+       1.6,
+       0.1,
+       0.2
+      ],
+      "r": [
+       2.9,
+       3.5
+      ],
+      "mat": "ceramite",
+      "mirror": true,
+      "_doc": "the suit's oval trunk, broader than the man inside"
+     },
+     {
+      "cap": [
+       "chest",
+       1.5,
+       2.3,
+       0.6
+      ],
+      "to": [
+       "chest",
+       1.3,
+       2.2,
+       -1.6
+      ],
+      "r": [
+       2.0,
+       1.6
+      ],
+      "mat": "ceramite_hi",
+      "mirror": true,
+      "_doc": "sculpted chest plates"
+     },
+     {
+      "bead": [
+       "chest",
+       0,
+       3.6,
+       0.0
+      ],
+      "r": 1.1,
+      "mat": "team",
+      "_doc": "team emblem at the sternum"
+     },
+     {
+      "box": [
+       "hip",
+       0,
+       2.2,
+       4.2
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.2,
+       0.6,
+       0.7
+      ],
+      "round": 0.4,
+      "mat": "gunmetal",
+      "_doc": "armoured belly bands"
+     },
+     {
+      "box": [
+       "hip",
+       0,
+       2.1,
+       2.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.4,
+       0.6,
+       0.7
+      ],
+      "round": 0.4,
+      "mat": "gunmetal"
+     },
+     {
+      "disc": [
+       "chest",
+       0,
+       0.2,
+       3.6
+      ],
+      "n": [
+       0,
+       0,
+       1
+      ],
+      "r": [
+       2.6,
+       1.0
+      ],
+      "mat": "gunmetal",
+      "_doc": "high collar"
+     },
+     {
+      "ball": [
+       "chest",
+       5.3,
+       -0.3,
+       1.9
+      ],
+      "r": 2.9,
+      "mat": "team",
+      "mirror": true,
+      "_doc": "pauldron: a big team-coloured dome standing out past the arm"
+     },
+     {
+      "disc": [
+       "chest",
+       5.6,
+       -0.3,
+       0.5
+      ],
+      "n": [
+       0.25,
+       0,
+       1
+      ],
+      "r": [
+       3.2,
+       0.6
+      ],
+      "mat": "ceramite_hi",
+      "mirror": true,
+      "_doc": "pauldron rim"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       -3.0,
+       0.2
+      ],
+      "n": [
+       0,
+       -1,
+       0
+      ],
+      "half": [
+       3.2,
+       0.6,
+       3.0
+      ],
+      "round": 0.6,
+      "mat": "ceramite",
+      "_doc": "back plate"
+     },
+     {
+      "disc": [
+       "hip",
+       0,
+       0.1,
+       1.2
+      ],
+      "n": [
+       0,
+       0,
+       1
+      ],
+      "r": [
+       3.4,
+       0.8
+      ],
+      "mat": "gunmetal",
+      "_doc": "waist ring"
+     },
+     {
+      "box": [
+       "hip",
+       2.2,
+       3.0,
+       -2.0
+      ],
+      "n": [
+       0.3,
+       1,
+       0
+      ],
+      "half": [
+       1.5,
+       0.4,
+       2.1
+      ],
+      "round": 0.3,
+      "mat": "ceramite_hi",
+      "mirror": true,
+      "_doc": "tassets over the thighs"
+     },
+     {
+      "cap": [
+       "hip",
+       0,
+       0.3,
+       0.6
+      ],
+      "to": [
+       "hip",
+       0,
+       0.2,
+       -4.4
+      ],
+      "r": [
+       3.1,
+       3.4
+      ],
+      "mat": "ceramite",
+      "_doc": "armoured fauld over the hips, hiding the tunic"
+     }
+    ]
+   },
+   "legs": [
+    {
+     "cap": [
+      "hip",
+      0,
+      0,
+      -0.5
+     ],
+     "to": [
+      "knee",
+      0,
+      0,
+      0.6
+     ],
+     "r": [
+      2.6,
+      2.0
+     ],
+     "mat": "ceramite",
+     "_doc": "thigh plate"
+    },
+    {
+     "ball": [
+      "knee",
+      0,
+      0.9,
+      0.1
+     ],
+     "r": 1.7,
+     "mat": "ceramite_hi",
+     "_doc": "knee guard"
+    },
+    {
+     "cap": [
+      "knee",
+      0,
+      0.2,
+      -0.4
+     ],
+     "to": [
+      "ankle",
+      0,
+      0,
+      0.8
+     ],
+     "r": [
+      2.0,
+      1.6
+     ],
+     "mat": "ceramite",
+     "_doc": "greave, flaring at the calf"
+    },
+    {
+     "cap": [
+      "ankle",
+      0,
+      -0.6,
+      0.0
+     ],
+     "to": [
+      "ankle",
+      0,
+      2.5,
+      -0.7
+     ],
+     "r": [
+      1.55,
+      1.2
+     ],
+     "mat": "gunmetal",
+     "hard": true,
+     "_doc": "heavy boot"
+    }
+   ],
+   "arms": [
+    {
+     "cap": [
+      "shoulder",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "elbow",
+      0,
+      0,
+      0
+     ],
+     "r": [
+      1.9,
+      1.6
+     ],
+     "mat": "ceramite",
+     "_doc": "upper arm plate"
+    },
+    {
+     "ball": [
+      "elbow",
+      0,
+      0,
+      0
+     ],
+     "r": 1.5,
+     "mat": "gunmetal"
+    },
+    {
+     "cap": [
+      "elbow",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      0,
+      0,
+      0
+     ],
+     "r": [
+      1.6,
+      1.95
+     ],
+     "mat": "ceramite",
+     "_doc": "gauntlet, wider at the wrist"
+    },
+    {
+     "ball": [
+      "hand",
+      0,
+      0,
+      0
+     ],
+     "r": 1.45,
+     "mat": "gunmetal",
+     "_doc": "armoured fist"
+    }
+   ]
+  },
+  "sc_helm": {
+   "flags": [
+    "helm"
+   ],
+   "fits": {
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "ceramite"
+     }
+    ],
+    "human": [
+     {
+      "ball": [
+       "head",
+       0,
+       -0.1,
+       0.7
+      ],
+      "r": 3.0,
+      "mat": "ceramite",
+      "_doc": "the sealed helmet, a size over the skull"
+     },
+     {
+      "box": [
+       "head",
+       0,
+       1.9,
+       -1.1
+      ],
+      "n": [
+       0,
+       1,
+       -0.2
+      ],
+      "half": [
+       1.8,
+       0.7,
+       1.3
+      ],
+      "round": 0.6,
+      "mat": "ceramite",
+      "_doc": "armoured jaw and grille, jutting forward"
+     },
+     {
+      "box": [
+       "head",
+       0,
+       2.85,
+       0.9
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       1.25,
+       0.3,
+       0.3
+      ],
+      "mat": "visor",
+      "_doc": "glowing visor slit across the face",
+      "round": 0.0
+     },
+     {
+      "cap": [
+       "head",
+       0,
+       2.0,
+       3.1
+      ],
+      "to": [
+       "head",
+       0,
+       -2.7,
+       2.3
+      ],
+      "r": [
+       0.65,
+       0.5
+      ],
+      "mat": "team",
+      "_doc": "crest ridge front to back"
+     },
+     {
+      "ball": [
+       "head",
+       2.6,
+       0.0,
+       0.4
+      ],
+      "r": 0.9,
+      "mat": "gunmetal",
+      "mirror": true,
+      "_doc": "ear vents"
+     }
+    ]
+   }
+  },
+  "sc_pack": {
+   "flags": [
+    "back:pack"
+   ],
+   "fits": {
+    "*": [],
+    "human": [
+     {
+      "box": [
+       "chest",
+       0,
+       -4.3,
+       -0.6
+      ],
+      "n": [
+       0,
+       -1,
+       0
+      ],
+      "half": [
+       2.9,
+       1.5,
+       3.4
+      ],
+      "round": 0.7,
+      "mat": "gunmetal",
+      "_doc": "reactor pack"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       -5.85,
+       -0.8
+      ],
+      "n": [
+       0,
+       -1,
+       0
+      ],
+      "half": [
+       1.0,
+       0.2,
+       2.0
+      ],
+      "mat": "energy",
+      "_doc": "its glowing core",
+      "round": 0.0
+     },
+     {
+      "cap": [
+       "chest",
+       2.5,
+       -5.0,
+       1.5
+      ],
+      "to": [
+       "chest",
+       2.8,
+       -5.4,
+       7.8
+      ],
+      "r": [
+       1.2,
+       1.0
+      ],
+      "mat": "ceramite",
+      "mirror": true,
+      "_doc": "exhaust stacks over the shoulders"
+     },
+     {
+      "disc": [
+       "chest",
+       2.8,
+       -5.4,
+       7.9
+      ],
+      "n": [
+       0,
+       0,
+       1
+      ],
+      "r": [
+       0.85,
+       0.3
+      ],
+      "mat": "energy",
+      "mirror": true
+     },
+     {
+      "cap": [
+       "chest",
+       1.6,
+       -4.9,
+       -4.0
+      ],
+      "to": [
+       "chest",
+       1.8,
+       -5.3,
+       -5.4
+      ],
+      "r": [
+       0.9,
+       1.1
+      ],
+      "mat": "ceramite_hi",
+      "mirror": true,
+      "_doc": "thruster bells under it"
+     }
+    ]
+   }
+  },
+  "sc_rifle": {
+   "hand": "right",
+   "hold": "aim",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -6.5,
+      0.2,
+      0
+     ],
+     "to": [
+      "hand",
+      -2.5,
+      0.8,
+      0
+     ],
+     "r": [
+      0.9,
+      1.0
+     ],
+     "mat": "ceramite",
+     "_doc": "stock"
+    },
+    {
+     "box": [
+      "hand",
+      1.2,
+      0.9,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      1.1,
+      1.3,
+      4.2
+     ],
+     "round": 0.3,
+     "mat": "gunmetal",
+     "_doc": "boxy receiver (half: across, up, along)"
+    },
+    {
+     "cap": [
+      "hand",
+      0.6,
+      -0.4,
+      0
+     ],
+     "to": [
+      "hand",
+      1.4,
+      -2.6,
+      0
+     ],
+     "r": [
+      0.7,
+      0.6
+     ],
+     "mat": "gunmetal",
+     "_doc": "magazine"
+    },
+    {
+     "cap": [
+      "hand",
+      5.4,
+      1.0,
+      0
+     ],
+     "to": [
+      "hand",
+      12.5,
+      1.0,
+      0
+     ],
+     "r": [
+      0.9,
+      0.8
+     ],
+     "mat": "ceramite_hi",
+     "_doc": "barrel shroud"
+    },
+    {
+     "disc": [
+      "hand",
+      12.6,
+      1.0,
+      0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      1.05,
+      0.6
+     ],
+     "mat": "gunmetal",
+     "_doc": "muzzle"
+    },
+    {
+     "bead": [
+      "hand",
+      6.6,
+      1.85,
+      0
+     ],
+     "r": 0.4,
+     "mat": "energy",
+     "_doc": "glowing coils on the shroud"
+    },
+    {
+     "bead": [
+      "hand",
+      8.2,
+      1.85,
+      0
+     ],
+     "r": 0.4,
+     "mat": "energy",
+     "_doc": "glowing coils on the shroud"
+    },
+    {
+     "bead": [
+      "hand",
+      9.8,
+      1.85,
+      0
+     ],
+     "r": 0.4,
+     "mat": "energy",
+     "_doc": "glowing coils on the shroud"
+    }
+   ]
+  },
+  "sc_rifle_heavy": {
+   "hand": "right",
+   "hold": "aim",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -6.5,
+      0.2,
+      0
+     ],
+     "to": [
+      "hand",
+      -2.5,
+      0.8,
+      0
+     ],
+     "r": [
+      0.9,
+      1.0
+     ],
+     "mat": "ceramite",
+     "_doc": "stock"
+    },
+    {
+     "box": [
+      "hand",
+      1.2,
+      0.9,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      1.4300000000000002,
+      1.6900000000000002,
+      4.2
+     ],
+     "round": 0.3,
+     "mat": "gunmetal",
+     "_doc": "boxy receiver (half: across, up, along)"
+    },
+    {
+     "cap": [
+      "hand",
+      0.6,
+      -0.4,
+      0
+     ],
+     "to": [
+      "hand",
+      1.4,
+      -2.6,
+      0
+     ],
+     "r": [
+      0.7,
+      0.6
+     ],
+     "mat": "gunmetal",
+     "_doc": "magazine"
+    },
+    {
+     "cap": [
+      "hand",
+      5.4,
+      1.0,
+      0
+     ],
+     "to": [
+      "hand",
+      12.8,
+      1.0,
+      0
+     ],
+     "r": [
+      1.1700000000000002,
+      1.04
+     ],
+     "mat": "ceramite_hi",
+     "_doc": "barrel shroud"
+    },
+    {
+     "disc": [
+      "hand",
+      12.9,
+      1.0,
+      0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      1.3650000000000002,
+      0.6
+     ],
+     "mat": "gunmetal",
+     "_doc": "muzzle"
+    },
+    {
+     "cap": [
+      "hand",
+      -1.0,
+      2.4,
+      0
+     ],
+     "to": [
+      "hand",
+      4.0,
+      2.4,
+      0
+     ],
+     "r": [
+      0.9,
+      0.9
+     ],
+     "mat": "ceramite",
+     "_doc": "power cell on top"
+    },
+    {
+     "cap": [
+      "hand",
+      5.4,
+      -0.4,
+      0
+     ],
+     "to": [
+      "hand",
+      12.0,
+      -0.4,
+      0
+     ],
+     "r": [
+      0.7,
+      0.6
+     ],
+     "mat": "gunmetal",
+     "_doc": "second barrel"
+    },
+    {
+     "bead": [
+      "hand",
+      6.6,
+      2.105,
+      0
+     ],
+     "r": 0.52,
+     "mat": "energy",
+     "_doc": "glowing coils on the shroud"
+    },
+    {
+     "bead": [
+      "hand",
+      8.2,
+      2.105,
+      0
+     ],
+     "r": 0.52,
+     "mat": "energy",
+     "_doc": "glowing coils on the shroud"
+    },
+    {
+     "bead": [
+      "hand",
+      9.8,
+      2.105,
+      0
+     ],
+     "r": 0.52,
+     "mat": "energy",
+     "_doc": "glowing coils on the shroud"
+    }
+   ]
+  },
+  "sc_blade": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "a long dark blade with a glowing edge on a heavy hilt",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -2.2,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      1.0,
+      0,
+      0
+     ],
+     "r": [
+      0.55,
+      0.55
+     ],
+     "mat": "gunmetal"
+    },
+    {
+     "disc": [
+      "hand",
+      1.2,
+      0,
+      0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      1.6,
+      0.5
+     ],
+     "mat": "ceramite_hi",
+     "_doc": "guard"
+    },
+    {
+     "cap": [
+      "hand",
+      1.6,
+      -0.1,
+      0
+     ],
+     "to": [
+      "hand",
+      12.5,
+      -0.1,
+      0
+     ],
+     "r": [
+      0.6,
+      0.3
+     ],
+     "mat": "gunmetal"
+    },
+    {
+     "cap": [
+      "hand",
+      1.8,
+      0.55,
+      0
+     ],
+     "to": [
+      "hand",
+      13.2,
+      0.4,
+      0
+     ],
+     "r": [
+      0.5,
+      0.25
+     ],
+     "mat": "energy",
+     "_doc": "glowing edge"
+    }
+   ]
+  },
+  "sc_buckler": {
+   "hand": "left",
+   "hold": "shield",
+   "face": [
+    -0.35,
+    1,
+    0
+   ],
+   "_doc": "a hard-light shield: a glowing panel in a gunmetal frame",
+   "shapes": [
+    {
+     "disc": [
+      "hand",
+      0,
+      0.8,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "r": [
+      4.2,
+      0.5
+     ],
+     "mat": "gunmetal"
+    },
+    {
+     "disc": [
+      "hand",
+      0,
+      1.15,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "r": [
+      3.5,
+      0.2
+     ],
+     "mat": "energy"
+    },
+    {
+     "bead": [
+      "hand",
+      0,
+      1.5,
+      0
+     ],
+     "r": 1.0,
+     "mat": "team"
+    }
+   ]
+  },
+  "sc_cutter": {
+   "hand": "right",
+   "hold": "cut",
+   "_doc": "a laser cutter: a squat emitter; on each blow (firing) a beam to the work and a spark where it hits",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      2.8,
+      0,
+      0
+     ],
+     "r": [
+      0.8,
+      0.9
+     ],
+     "mat": "gunmetal"
+    },
+    {
+     "disc": [
+      "hand",
+      2.9,
+      0,
+      0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      1.1,
+      0.4
+     ],
+     "mat": "ceramite_hi"
+    },
+    {
+     "bead": [
+      "hand",
+      3.2,
+      0,
+      0
+     ],
+     "r": 0.5,
+     "mat": "energy"
+    },
+    {
+     "cap": [
+      "hand",
+      3.4,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      11.0,
+      0,
+      0
+     ],
+     "r": [
+      0.35,
+      0.3
+     ],
+     "mat": "energy",
+     "if": [
+      "firing"
+     ],
+     "_doc": "the beam"
+    },
+    {
+     "ball": [
+      "hand",
+      11.0,
+      0,
+      0
+     ],
+     "r": 0.8,
+     "mat": "visor",
+     "if": [
+      "firing"
+     ],
+     "_doc": "the spark where it cuts"
+    }
+   ]
+  }
+ },
+ "parts": [
+  {
+   "part": "weapon.pulse_rifle.heavy",
+   "gear": "sc_rifle_heavy"
+  },
+  {
+   "part": "weapon.pulse_rifle",
+   "gear": "sc_rifle"
+  },
+  {
+   "part": "weapon.arc_blade",
+   "gear": "sc_blade"
+  },
+  {
+   "part": "helm.visor_sealed",
+   "gear": "sc_helm"
+  },
+  {
+   "part": "armour.plate_composite",
+   "gear": "sc_armour"
+  },
+  {
+   "part": "pack.power",
+   "gear": "sc_pack"
+  },
+  {
+   "part": "shield.arc_buckler",
+   "gear": "sc_buckler"
+  },
+  {
+   "tag": "gun",
+   "gear": "sc_rifle"
+  }
+ ]
+}

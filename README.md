@@ -13,6 +13,9 @@ Written in [Lobster](https://github.com/aardappel/lobster). With Lobster built a
 
 Mods are folders in `mods/` (how to make one: `docs/modding.md`). Each loads only when asked for:
 
+- **Big battle** (`big_battle`): 2,000 units in formation march on each other across an open field framed by a river,
+  groves and a ruin, zoomed out. The first run bakes for about 45 s.
+  `./play.sh lobby mods:big_battle`
 - **Space** (`scifi_test` + `scifi_short`): two future races, each with one unit, a power-armoured pulse trooper, plus
   robot workers that cut wood and stone with lasers, in domed command hubs and drop hangars.
   `./play.sh lobby mods:scifi_test,scifi_short rules:short "races:future soldiers|space marines"`
