@@ -82,6 +82,8 @@ import .game.text_cache
 import .game.levels
 import .game.perf
 import .game.pace
+import .game.window_mode
+import .game.window_switch
 
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
@@ -139,6 +141,8 @@ for(args) a, k:
             ui_touch = true
         let key, val = split_string(a, ":")
         if key == "shot": shot = val
+        if key == "fsat": window_toggles = map(tokenize(val, ",", " ")) t: string_to_float(t)
+        if key == "fsreport": window_report = val
         if key == "at": shot_at = string_to_float(val)
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
@@ -207,11 +211,7 @@ var zoom = 2.0      // screen px per art px
 def to_screen(p:float2) -> float2: return (p - cam) * zoom + float(gl.window_size()) / 2.0
 def from_screen(p:float2) -> float2: return (p - float(gl.window_size()) / 2.0) / zoom + cam
 var fake_mouse = float2 { -1.0, -1.0 }  // the self-test's mouse (screen px), when set
-var vc_on = false                       // the OS cursor hidden and a virtual one in its place (game/cursors.lobster)
-var vc_pos = float2_0                   // where it is (screen px)
-var vc_scale = 1.0                      // screen px a window point: what gl.mouse_delta moves in
-var vc_free = false                     // tests and captures leave the OS cursor alone
-def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse elif vc_on: vc_pos else: float(gl.mouse_pos(0))
+def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))
 def mouse_milli() -> float2: return pick_milli(from_screen(mouse_px()))  // (on raised ground: the hill under the mouse)
 
 // ------------------------------------------------------------------ the ground
@@ -1029,7 +1029,7 @@ def typing_tick():
         typing_race = false
         gl.end_text_input()
         return
-    if gl.button("return") == 1:
+    if gl.button("return") == 1 and not window_combo():
         typing_race = false
         gl.end_text_input()
         if text != "": become(text)
@@ -1467,7 +1467,7 @@ def scroll():
     if gl.button("up") >= 1 or gl.button("w") >= 1: d.y -= 1.0
     if gl.button("down") >= 1 or gl.button("s") >= 1: d.y += 1.0
     let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y  // (outside the window the mouse reads 0, 0)
-    if inside and shot == "":
+    if inside and shot == "" and gl.window_focused():                   // (the mouse is free now: not while it works in another app)
         if m.x <= 3.0: d.x -= 1.0
         if m.y <= 3.0: d.y -= 1.0
         if m.x >= ws.x - 4.0: d.x += 1.0
@@ -2045,12 +2045,12 @@ note("start")
 // (a capture runs without vsync: with the display asleep or the screen locked, vsync never lets a frame through;
 // novsync: the same for a measure, the frame cap still pacing it)
 let no_vsync = shot != "" or selftest or padtest or has_s(args, "novsync")
-fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, if no_vsync: gl.window_init_no_vsync else: 0))
+volume_load()
+window_fullscreen = starts_fullscreen(args, windowed_setting)
+fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, window_flags(no_vsync, window_fullscreen)))
 pace(PACE_MATCH)                           // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon_mac.png")  // (the Dock's icon on the Mac)
 note("window")
-vc_scale = max(1.0, round(float(gl.window_size().x) / 1600.0))  // (the window asked for 1600 points; a small screen trims it)
-vc_free = shot != "" or selftest or padtest or reload_at >= 0.0 or perf_for > 0.0
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
@@ -2083,7 +2083,6 @@ if zoom_arg > 0.0: zoom = zoom_arg
 // props are baked once (src/baked/) or at the start. (A Godot art pack, args[0], is gone with Godot: D-184.)
 pack_library = true
 startup_frame("Loading the sounds...", 0.2)
-volume_load()
 startup_frame("Loading the data...", 0.5)
 lib_load("../data")
 pack_teams()
@@ -2582,6 +2581,7 @@ def pause_menu():
             else: quit_game = true
     ui_flush()
 
+import .game.cursor_images
 import .game.cursors
 
 // A match from its start: the camera on your Town Center, the clock at 0, played until it's quit (or a capture's done).
@@ -2608,10 +2608,10 @@ def play_match():
     pace(PACE_MATCH)
     while gl.frame() and not quit_game and not bake_quit:
         ui_click_tick()
+        window_tick()
         if perf_for > 0.0:  // (the Town Center selected: its panel and queue drawn, the HUD full)
             perf_begin()
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
-        vc_tick()
         drop_lost_selection()
         if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
         if gl.button("controller_start") == 1 and not typing_race and not tree_open: menu_open = not menu_open
@@ -2754,7 +2754,7 @@ def play_match():
             elif end_screen_up(): end_screen()
             draw_banner()
             if typing_race: typing_tick()
-            draw_cursor()
+            os_cursor_tick()
         perf_lap(9)
         if has_s(args, "savegame") and clock_s >= 3.0:  // (tests: the pause menu's Save game, then quit)
             save_game()
@@ -2856,7 +2856,7 @@ while not quit_app and not bake_quit:
         if front_choice == "": break
     if not make_match(): break
     play_match()
-    vc_release()
+    os_cursor_release()
     if quit_app or bake_quit or not back_to_lobby: break
     new_match_reset()
     front_first = true

@@ -200,3 +200,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: The filming battle meets formed; shots look twice as fast and land when they did (#217, #175).
 - 2026-11-06: A left click shows enemy buildings and units, view-only, with their HP (#218).
 - 2026-11-06: order lines, flags and selection rings lie on the hills, and go behind them (#221).
+- 2026-11-06: The OS draws the cursor, the game starts fullscreen, and on the Mac it runs from an app bundle marked as a game (D-222 to D-224; #222, #223, #224).
