@@ -1009,7 +1009,9 @@ def bld_gate_tower(body:MNode, arch:string, cx:float, tl:float, ht:float, proud:
 
 // A building's model: its own function if it has one (barracks_reed...), else the type's builder in this
 // architecture (models.gd building). Also the outpost looks by name (outpost_pole...). nil: no such type.
-def building(type:string, arch:string, team:float3) -> BSpec?:
+def building(type:string, arch0:string, team:float3) -> BSpec?:
+    if arch0 == "future" and type == "barracks": return future_barracks(team)
+    let arch = if arch0 == "future": "stone" else: arch0  // (the future's other buildings: stone's, until they have their own)
     switch type:
         case "barracks": return bld_barracks(arch, team)
         case "stable": return bld_stable(arch, team)
@@ -1077,6 +1079,8 @@ def model_by_name(name:string, team:float3) -> BSpec?:
         case "reed_town_center": return reed_town_center(team)
         case "mound_house": return mound_house(team)
         case "mound_town_center": return mound_town_center(team)
+        case "future_town_center": return future_town_center(team)
+        case "future_house": return future_house(team)
         case "concept_junk_tc_small": return concept_junk_tc_small(team)
         case "concept_junk_tc_low": return concept_junk_tc_low(team)
         case "concept_junk_tc_berm": return concept_junk_tc_berm(team)
@@ -1104,6 +1108,7 @@ def building_model(arch:string, type:string) -> string:
                 case "tent": return "tent_town_center"
                 case "reed": return "reed_town_center"
                 case "mound": return "mound_town_center"
+                case "future": return "future_town_center"
                 default: return "town_center"
         case "house":
             switch arch:
@@ -1112,6 +1117,7 @@ def building_model(arch:string, type:string) -> string:
                 case "tent": return "tent_house"
                 case "reed": return "reed_house"
                 case "mound": return "mound_house"
+                case "future": return "future_house"
                 default: return "stilt_house"
         case "farm": return "farm_plot"
         default: return type + "_" + arch

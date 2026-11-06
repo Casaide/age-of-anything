@@ -11,3 +11,5 @@
 **Funny.** Up to 62 of every type meant a forest of siege towers wading through a river.
 
 **Parked.** Arrow speed (#175, Dominic's call). Bakes off the main thread.
+
+**Later the same day.** The first capture for Dominic's picture, on the merged code, showed a mess the test had missed: its armies were ordered to the midpoint, the filming setup orders them at each other's bases. A second failing test, then three fixes: mounted armies' wings ran 136 tiles wide, armies formed right by the enemy, and a sheep kept shoving soldiers out of rank. Arrows: drawn twice as fast, same landing tick, the sim's hash unchanged.
