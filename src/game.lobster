@@ -512,6 +512,15 @@ def unit_anchor(id:int) -> float2:
     let y = float(u_y[i])
     return canvas(x, y) - float2 { 0.0, lift_at(x, y) }
 
+// The facing of a unit's part: a mount's turret its own aim, anything else the hull's.
+def part_facing(i:int, name:string, hull_f:int) -> int:
+    for(t_mounts[u_kind[i]]) m, n:
+        if m.part == name and u_mount[i].length > n * MOUNT_STRIDE:
+            let aim = float(u_mount[i][n * MOUNT_STRIDE + MOUNT_AIM]) / 10.0
+            let d = dir_of(iso(cos(aim), sin(aim)))
+            return if d >= 0: (d + 2) % 8 else: hull_f
+    return hull_f
+
 // A unit's parts on its hull (a turret, at its gun's aim; anything else over the hull), each sorted just above it. The
 // offset is whole pixels from the hull's own, so the two never shimmer apart as it moves.
 def add_parts(i:int, hull_f:int, x:float, y:float, sort_y:float, col:float4):
@@ -520,13 +529,8 @@ def add_parts(i:int, hull_f:int, x:float, y:float, sort_y:float, col:float4):
     let pieces = vx_lks[lk].pieces
     if not pieces.length: return
     let b = vx_body_of(vx_lks[lk].u.body)
-    var f = hull_f
-    if t_turn[k] > 0:
-        let aim = float(u_aim[i]) / 10.0
-        let d = dir_of(iso(cos(aim), sin(aim)))
-        if d >= 0: f = (d + 2) % 8
     for(pieces) plk, n:
-        let pf = vx_piece_frame(plk, f)
+        let pf = vx_piece_frame(plk, part_facing(i, b.parts[n].name, hull_f))
         let o = vx_pivot_px(b, b.parts[n], hull_f) * VX_DRAW_K
         let px, py = floor(x) + floor(o.x + 0.5), floor(y) + floor(o.y + 0.5)
         add(pf, px, py, sort_y + 0.01 * float(n + 1), col)
@@ -542,10 +546,26 @@ def collect_units(alpha:float):
         let y = py + (u_y[i] - py) * alpha
         let mine = teams[u_owner[i]] == teams[ME]
         if (mine or visible_to_me(cell_of(u_x[i], u_y[i]))) and vx_drawn(u_kind[i]):
+<<<<<<< HEAD
             let moving, walking_d = unit_walk(i, unit_dir.get(u_id[i], 2), px, py)
             var d = walking_d
             if moving: pass()
             elif u_foe[i] != 0 and t_turn[u_kind[i]] == 0:  // (a turret's hull doesn't turn to its foe: its gun does)
+||||||| parent of e8d843bc (Each turret part at its own mount's aim (#178, #211))
+            let moving = px != u_x[i] or py != u_y[i]
+            var d = unit_dir.get(u_id[i], 2)
+            if moving:
+                let nd = dir_of(iso(float(u_x[i] - px), float(u_y[i] - py)))
+                if nd >= 0 and (abs(u_x[i] - px) + abs(u_y[i] - py)) > 4: d = nd
+            elif u_foe[i] != 0 and t_turn[u_kind[i]] == 0:  // (a turret's hull doesn't turn to its foe: its gun does)
+=======
+            let moving = px != u_x[i] or py != u_y[i]
+            var d = unit_dir.get(u_id[i], 2)
+            if moving:
+                let nd = dir_of(iso(float(u_x[i] - px), float(u_y[i] - py)))
+                if nd >= 0 and (abs(u_x[i] - px) + abs(u_y[i] - py)) > 4: d = nd
+            elif u_foe[i] != 0 and not t_mounts[u_kind[i]].length:  // (a mounted hull doesn't turn to its foe: its guns do)
+>>>>>>> e8d843bc (Each turret part at its own mount's aim (#178, #211))
                 let j = index_of(u_foe[i])
                 var tx = -1.0
                 var ty = -1.0
