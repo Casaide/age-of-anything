@@ -278,7 +278,7 @@ def fe_box(id:int, at:float2, size:float2, text:string, placeholder:string, fs:i
     fe_well(at, size)
     if fe_field == id: ui_outline(at + float2_1 * 2.0, size - float2_1 * 4.0, 2.0 * fe_k, float4 { ui_look.accent.x, ui_look.accent.y, ui_look.accent.z, 0.6 })
     if ui_clicked() and fe_over(at, size): fe_focus(id, text)
-    let caret = if fe_field == id and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""
+    let caret = if fe_field == id and (int(fe_clock() * 2.0) % 2) == 0: "|" else: ""
     let s = if text == "": placeholder else: text + caret  // (empty: the placeholder stays, the caret before it)
     let col = if text == "": ui_look.dim else: ui_look.text
     var f = fs
