@@ -212,6 +212,7 @@ before it is committed.
 
 ## Siege shots
 
-What engines throw is drawn by `src/game/fx.lobster` (`shot_style`): `data/siege_shots.json` describes each look (its
-shape and colour, its spin, its ground shadow, its impact: bounce, break, stick; chunks in its colour); an engine's
-body part names its look (parts.json `shot`); a mod's looks come from its `shots.json`.
+What any weapon fires is drawn by `src/game/fx.lobster` (`shot_style`) from `data/shots.json`, a mod's `shots.json` merging over it. A
+look is knobs: its flight (`arc`, `form`, `len`, `w`, `trail`...), what it does at the gun (`muzzle`: flash, smoke, ring, dust, recoil on the
+turret), what it does where it lands (`hit`: sparks and a sound; `impact`: blast, smoke, scorch, debris, shake), and its sounds (`sound`, `hit.sound`). It
+is all view only: the sim fires one shot and decides one hit.
