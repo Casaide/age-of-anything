@@ -4140,6 +4140,91 @@ def test_wonder():
 // (Lobster's saves are a flexbuffer of the sim's globals and the bots, for this build only: the
 // GDScript checks of saves from other builds, migrated or refused, have nothing to check here. The
 // bot plays at the normal level: the hard level isn't ported.)
+// A turret (#177): its gun turns at its own rate, fires only along its aim, on the move, and comes back over the hull;
+// a unit without one never touches these columns.
+def turret_scene() -> int, int, int, int, bool, bool, bool:
+    new_world("flat_test", races0, bare0, [])
+    let k, kf = type_of_slot(0, "archer"), type_of_slot(1, "archer")
+    t_turn[k] = 30  // (60 degrees a second)
+    t_arc[k] = 50
+    let x0, y0 = start_x[0] + 6000, start_y[0] + 6000
+    let me = u_id[add_unit(0, k, x0, y0)]
+    let foe = u_id[add_unit(1, kf, x0, y0 + t_reach[k] / 2)]
+    u_hp[index_of(me)] = 100000
+    u_hp[index_of(foe)] = 100000
+    let t0 = tick
+    while u_cooldown[index_of(me)] == 0 and tick < t0 + 200: tick_on()
+    let i = index_of(me)
+    let first_shot = tick - t0
+    let aim_at_first = u_aim[i]
+    // The foe stays north of it while it drives east: it keeps moving, and shoots across its hull.
+    let fired_before = u_cooldown[i]
+    issue_cmd(0, CMD_MOVE, [ me ], x0 + 2500, y0, 0, 0)
+    var shots_moving = 0
+    var last = fired_before
+    var off_hull = 0
+    var kept_moving = true
+    for(40):
+        tick_on()
+        let n = index_of(me)
+        if u_cooldown[n] > last:
+            if u_moving[n] != 0: shots_moving++
+            else: kept_moving = false
+            off_hull = max(off_hull, abs(angle_gap(u_aim[n], u_hull[n])))
+        last = u_cooldown[n]
+    // With nothing to shoot at, the gun goes back over the hull.
+    remove_unit(index_of(foe))
+    for(60): tick_on()
+    let n = index_of(me)
+    let back = abs(angle_gap(u_aim[n], u_hull[n])) <= t_turn[k]
+    let f2 = add_unit(1, kf, x0 + 12000, y0 + 12000)
+    let others_clean = u_aim[f2] == 0 and u_gun[f2] == 0
+    return first_shot, aim_at_first, shots_moving, off_hull, kept_moving, back, others_clean
+
+def test_turret():
+    for([ [ 1, 0, 0 ], [ 1, 1, 450 ], [ 0, 1, 900 ], [ -1, 1, 1350 ], [ -1, 0, 1800 ], [ -1, -1, 2250 ], [ 0, -1, 2700 ], [ 1, -1, 3150 ], [ 1000, 577, 300 ] ]) c:
+        check(abs(angle_of(c[0], c[1]) - c[2]) <= 1, "angle_of({c[0]}, {c[1]}) is about {c[2]}: {angle_of(c[0], c[1])}")
+    check(angle_gap(3590, 10) == 20 and angle_gap(10, 3590) == -20, "the short way round through 0")
+    let first, aim, moving, off, kept, back, clean = turret_scene()
+    check(first >= (900 - 50) / 30, "it holds its fire until its gun has turned: first shot at tick {first}")
+    check(abs(angle_gap(aim, 900)) <= 50, "its first shot is within its arc: aim {aim}")
+    check(moving > 0 and kept, "it fires without stopping: {moving} shots while moving")
+    check(off > 300, "and across its hull: {off / 10} degrees off it")
+    check(back, "with nothing to shoot at, the gun goes back over the hull")
+    check(clean, "a unit without a turret leaves its aim alone")
+    let h1 = state_hash()
+    turret_scene()
+    check(h1 == state_hash(), "the same on a second run")
+    // Saved in mid-turn, it carries on exactly the same.
+    new_world("flat_test", races0, bare0, [])
+    let ks, kfs = type_of_slot(0, "archer"), type_of_slot(1, "archer")
+    t_turn[ks] = 10
+    t_arc[ks] = 50
+    let sx, sy = start_x[0] + 6000, start_y[0] + 6000
+    let mid = u_id[add_unit(0, ks, sx, sy)]
+    u_hp[add_unit(1, kfs, sx, sy + t_reach[ks] / 2)] = 100000
+    while u_aim[index_of(mid)] < 300: tick_on()
+    let saved = world_bytes([]::Bot)
+    for(100): tick_on()
+    let straight = state_hash()
+    load_world_bytes(saved)
+    check(u_aim[index_of(mid)] >= 300 and u_aim[index_of(mid)] < 900 and t_turn[ks] == 10, "a save keeps a gun in mid-turn: {u_aim[index_of(mid)]}")
+    for(100): tick_on()
+    check(straight == state_hash(), "and it carries on the same")
+    // From the data: a part's turn and arc, degrees, reach the sim as tenths; no other line has them.
+    let bolt = part("engine.bolt")
+    let plain = at(bolt, "stats")
+    let gun = deep_copy(plain)
+    set(gun, "turn", jint(60))
+    set(gun, "arc", jint(5))
+    set(bolt, "stats", gun)
+    let race = gen_race(PROMPTS[0])
+    new_world("flat_test", [ race, race ], rules0, [])
+    let kb = type_of_slot(0, "bolt_thrower")
+    check(t_turn[kb] == 30 and t_arc[kb] == 50, "the turn and arc on a part reach the sim: {t_turn[kb]}, {t_arc[kb]}")
+    check(t_turn[type_of_slot(0, "archer")] == 0, "and only on that line")
+    set(bolt, "stats", plain)
+
 def test_save_load():
     let at_t = 4800
     let to_t = 8400
@@ -4195,7 +4280,7 @@ def test_save_load():
 
 // ------------------------------------------------------------------ the parts
 
-let PARTS = [ "fixed", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
+let PARTS = [ "fixed", "turret", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
@@ -4251,6 +4336,7 @@ def run_part(name:string):
     elif name == "tech": test_tech()
     elif name == "queue": test_queue()
     elif name == "wonder": test_wonder()
+    elif name == "turret": test_turret()
     elif name == "save_load": test_save_load()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()

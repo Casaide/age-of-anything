@@ -511,7 +511,7 @@ def apply_hits(n:int):
             u_hp[j] -= c_hurt[j]
             let k = u_kind[j]
             if t_animal[k] != 0: animal_hurt(j, c_hurt_by[j])  // a deer bolts, a sheep stands for the knife
-            if u_foe[j] == 0 and (u_stance[j] == NONE or u_stance[j] == RETURN) and u_task[j] == T_NONE and not t_worker[k] and
+            if u_foe[j] == 0 and (u_stance[j] == NONE or u_stance[j] == RETURN) and u_task[j] == T_NONE and not t_worker[k] and not (t_turn[k] > 0 and u_moving[j] != 0) and
                     not t_harmless[k] and not t_healer[k] and not t_buildings_only[k] and u_posture[j] != PASSIVE:
                 engage(j, c_hurt_by[j])
     // Bounties (Combat._bounties): a killer with kill_gold earns it for each enemy unit (not animals)
@@ -547,6 +547,89 @@ def apply_hits(n:int):
         b--
 
 // One tick of fighting (Combat.tick). The spatial buckets must be built from the current positions.
+// What a blow or a shot from unit i of type k does to unit j.
+def hit_on_unit(i:int, k:int, j:int, up:int) -> int:
+    let kj = u_kind[j]
+    let floor = max(r_min_damage, t_min_damage[kj])
+    let d = boost(i, j, t_damage[k], damage(t_atk[k], t_arm[kj], t_cls[kj], floor), floor)
+    return if up < 0: uphill(d) else: d
+
+// ---- A turret: a gun that turns on its own, fires on the move, and only along its aim. A unit without one (t_turn 0)
+// fires as soon as it's in reach and off cooldown, whichever way it's going.
+
+let HULL_STEP = 200                                                                                                                                                                 // milli-tiles a hull moves before its heading is worked out again
+let ATAN_TENTHS = [ 0, 18, 36, 54, 71, 89, 106, 123, 140, 157, 174, 190, 206, 221, 236, 251, 266, 280, 294, 307, 320, 333, 345, 357, 369, 380, 391, 402, 412, 422, 432, 441, 450 ]  // atan(k / 32) in tenths of a degree
+
+// The direction of a vector, tenths of a degree from +x towards +y, 0 to 3599 (integers only: the sim).
+def angle_of(dx:int, dy:int) -> int:
+    let big, small = max(abs(dx), abs(dy)), min(abs(dx), abs(dy))
+    if big == 0: return 0
+    let q = small * 32 / big
+    var a = ATAN_TENTHS[q]
+    if q < 32: a += (ATAN_TENTHS[q + 1] - a) * (small * 32 % big) / big
+    if abs(dy) > abs(dx): a = 900 - a
+    if dx < 0: a = 1800 - a
+    if dy < 0: a = 3600 - a
+    return a % 3600
+
+// The shortest way round from angle a to angle b: -1800 to 1799.
+def angle_gap(a:int, b:int) -> int: return (b - a + 5400) % 3600 - 1800
+
+// Where a gun's target (a unit or building id) is, and whether it's still there.
+def gun_spot(g:int) -> int, int, bool:
+    let j = index_of(g)
+    if j >= 0: return u_x[j], u_y[j], true
+    let b = b_index_of(g)
+    if b >= 0: return b_cx[b], b_cy[b], true
+    return 0, 0, false
+
+// Is the gun laid on its foe (a unit j or building b)?
+def foe_aimed(i:int, j:int, b:int) -> bool:
+    return if j >= 0: aimed_at(i, u_x[j], u_y[j]) else: aimed_at(i, b_cx[b], b_cy[b])
+
+// Is the gun laid on that spot, near enough to fire?
+def aimed_at(i:int, x:int, y:int) -> bool:
+    if x == u_x[i] and y == u_y[i]: return true
+    return abs(angle_gap(u_aim[i], angle_of(x - u_x[i], y - u_y[i]))) <= t_arc[u_kind[i]]
+
+// A shot at a unit: what it does, what it's owed, and on its way.
+def shoot_unit(i:int, k:int, j:int, up:int):
+    let d = hit_on_unit(i, k, j, up)
+    c_inbound[j] += d
+    loose(u_id[i], u_owner[i], u_x[i], u_y[i], j, -1, d, k, up, t_shot_speed[k])
+
+// Can the gun reach that (a unit or building id), and not too close to fire on?
+def gun_in_reach(i:int, k:int, g:int) -> bool:
+    let j = index_of(g)
+    let b = if j >= 0: -1 else: b_index_of(g)
+    if j < 0 and b < 0: return false
+    let d = gap_to(i, j, b)
+    return d >= t_min_range[k] and d <= t_reach[k] + height_step(i, j, b) * r_high_reach
+
+// A turret's tick: the hull's heading from how it moved; the gun on the foe if it's in reach, else on what it's on,
+// else on the nearest in reach; turning towards that, or back over the hull with nothing to shoot at; and firing at
+// what isn't its foe (the foe's shots are combat_tick's, once it's aimed), without stopping.
+def turret_tick(i:int, k:int):
+    let mx, my = u_x[i] - u_lx[i], u_y[i] - u_ly[i]
+    if mx * mx + my * my >= HULL_STEP * HULL_STEP:
+        u_hull[i] = angle_of(mx, my)
+        u_lx[i] = u_x[i]
+        u_ly[i] = u_y[i]
+    if u_foe[i] != 0 and gun_in_reach(i, k, u_foe[i]): u_gun[i] = u_foe[i]
+    elif u_gun[i] != 0 and not gun_in_reach(i, k, u_gun[i]): u_gun[i] = 0
+    if u_gun[i] == 0 and u_posture[i] != PASSIVE and (tick + u_id[i]) % r_acquire_every == 0:
+        let f = nearest_foe(i, t_reach[k] + u_radius[i] + TILE / 2, false, 0, false, near_of(i), not t_buildings_only[k])
+        if f != 0 and gun_in_reach(i, k, f): u_gun[i] = f
+    var want = u_hull[i]
+    let x, y, real = gun_spot(u_gun[i])
+    if real and (x != u_x[i] or y != u_y[i]): want = angle_of(x - u_x[i], y - u_y[i])
+    u_aim[i] = (u_aim[i] + clamp(angle_gap(u_aim[i], want), -t_turn[k], t_turn[k]) + 3600) % 3600
+    if real and u_gun[i] != u_foe[i] and u_cooldown[i] == 0 and aimed_at(i, x, y):
+        let j = index_of(u_gun[i])
+        if j >= 0:
+            u_cooldown[i] = t_reload[k]
+            shoot_unit(i, k, j, height_step(i, j, -1))
+
 def combat_tick():
     let brhurt = map(br_id.length): 0  // this tick's damage to each map bridge
     let n = u_x.length
@@ -572,6 +655,7 @@ def combat_tick():
         let k = u_kind[i]
         if u_stance[i] == RETURN and u_moving[i] == 0: u_stance[i] = NONE
         if t_healer[k] or t_harmless[k]: continue
+        if t_turn[k] > 0: turret_tick(i, k)
         let stance = u_stance[i]
         let posture = u_posture[i]
         if (tick + u_id[i]) % r_acquire_every == 0:
@@ -643,17 +727,13 @@ def combat_tick():
                 u_foe[i] = f
                 j = fj
                 up = height_step(i, j, -1)
-            if u_cooldown[i] == 0:
+            if u_cooldown[i] == 0 and (t_turn[k] == 0 or foe_aimed(i, j, b)):
                 u_cooldown[i] = t_reload[k]
                 if j >= 0:
-                    let kj = u_kind[j]
-                    let floor = max(r_min_damage, t_min_damage[kj])
-                    var d = boost(i, j, t_damage[k], damage(t_atk[k], t_arm[kj], t_cls[kj], floor), floor)
-                    if up < 0: d = uphill(d)
                     if t_ranged[k]:
-                        c_inbound[j] += d
-                        loose(u_id[i], u_owner[i], u_x[i], u_y[i], j, -1, d, k, up, t_shot_speed[k])
+                        shoot_unit(i, k, j, up)
                     else:
+                        let d = hit_on_unit(i, k, j, up)
                         c_hurt[j] += d
                         c_hurt_by[j] = u_id[i]
                         if events_on: events.push(Event { EV_HIT, u_id[i], u_id[j], d, u_x[j], u_y[j] })

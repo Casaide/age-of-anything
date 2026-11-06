@@ -405,7 +405,7 @@ def line_step_of(slot:string, l:JV) -> LineStep:
                       class_index(rstr(e, "damage")), as_int(at(e, "attack")), bonus, arm, map(eval_tags(e)) t: class_index(t),
                       as_int(at(e, "range")), gint(e, "reload", 0), gint(e, "min_range", 0), gint(e, "splash", 0), gint(e, "pass", 0),
                       if gstr(e, "targets", "") == "buildings": 1 else: 0, gint(e, "unpack", 0), gint(e, "pack", 0),
-                      gint(e, "blast", 0), gint(e, "blast_line_pct", 0), gint(e, "heal", 0), gint(e, "sight", 0) }
+                      gint(e, "blast", 0), gint(e, "blast_line_pct", 0), gint(e, "turn", 0), gint(e, "arc", 0), gint(e, "heal", 0), gint(e, "sight", 0) }
 
 // Does this player's line have a step after its first at that age, with new kit (Tech._line_has)?
 def line_has_kit(p:int, slot:string, age:int) -> bool:

@@ -181,6 +181,11 @@ class WorldSave:
     u_wnext:[int]
     u_wexit:[int]
     u_wtime:[int]
+    u_aim:[int]
+    u_hull:[int]
+    u_lx:[int]
+    u_ly:[int]
+    u_gun:[int]
     u_orders:[[Cmd]]
     t_tags:[[int]]
     t_damage:[int]
@@ -405,6 +410,8 @@ class WorldSave:
     t_kill_gold:[int]
     t_slow_on_hit:[int]
     t_min_range:[int]
+    t_turn:[int]
+    t_arc:[int]
     t_splash:[int]
     t_pass_len:[int]
     t_buildings_only:[int]
@@ -642,6 +649,11 @@ def world_bytes(bots:[Bot]) -> string:
         u_wnext,
         u_wexit,
         u_wtime,
+        u_aim,
+        u_hull,
+        u_lx,
+        u_ly,
+        u_gun,
         u_orders,
         t_tags,
         t_damage,
@@ -866,6 +878,8 @@ def world_bytes(bots:[Bot]) -> string:
         t_kill_gold,
         t_slow_on_hit,
         t_min_range,
+        t_turn,
+        t_arc,
         t_splash,
         t_pass_len,
         t_buildings_only,
@@ -1113,6 +1127,11 @@ def load_world_bytes(data:string) -> [Bot]:
     u_wnext = s.u_wnext
     u_wexit = s.u_wexit
     u_wtime = s.u_wtime
+    u_aim = s.u_aim
+    u_hull = s.u_hull
+    u_lx = s.u_lx
+    u_ly = s.u_ly
+    u_gun = s.u_gun
     u_orders = s.u_orders
     t_tags = s.t_tags
     t_damage = s.t_damage
@@ -1337,6 +1356,8 @@ def load_world_bytes(data:string) -> [Bot]:
     t_kill_gold = s.t_kill_gold
     t_slow_on_hit = s.t_slow_on_hit
     t_min_range = s.t_min_range
+    t_turn = s.t_turn
+    t_arc = s.t_arc
     t_splash = s.t_splash
     t_pass_len = s.t_pass_len
     t_buildings_only = s.t_buildings_only
