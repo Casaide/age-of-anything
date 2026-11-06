@@ -280,6 +280,8 @@ var p_id = []::int  // the last tick's positions, for drawing between ticks
 var p_x = []::int
 var p_y = []::int
 let unit_dir = dictionary<int, int>(1024)
+let last_aim = dictionary<int, int>(64)      // a turret's aim last frame (is it turning? for its sound)
+let aim_moved = dictionary<int, float>(64)   // when a turret's aim last changed
 let unit_kick = dictionary<int, float2>(64)  // a mount just fired (unit id * 16 + mount): how far it kicks back, canvas px, and when (view only)
 let attack_t0 = dictionary<int, float>(1024)
 var corpses = []::Corpse
@@ -506,6 +508,23 @@ def unit_state(i:int, moving:bool) -> string, int:
     return "idle", phase / 6  // (a slow shift of weight, each unit in its own time)
 
 def visible_to_me(c:int) -> bool: return reveal or fog[ME][c] == 2
+
+// What the units on screen sound like this frame (game/audio.lobster): a count for each sound.
+def unit_loops_tick(dt:float):
+    let counts = dictionary<string, int>(8)
+    def hear(name:string):
+        if name != "": counts.set(name, counts.get(name, 0) + 1)
+    for(u_x.length) i:
+        let k = u_kind[i]
+        if vx_drawn(k) and on_screen(u_x[i], u_y[i]) and visible_to_me(cell_of(u_x[i], u_y[i])):
+            let body = vx_lks[vx_cur[k]].u.body
+            hear(unit_sound(body, if u_moving[i] != 0: "move" else: "idle"))
+            if t_turn[k] > 0:
+                if last_aim.get(u_id[i], u_aim[i]) != u_aim[i]: aim_moved.set(u_id[i], clock_s)  // (it changes by the tick; this runs by the frame)
+                last_aim.set(u_id[i], u_aim[i])
+                if clock_s - aim_moved.get(u_id[i], -10.0) < 0.2: hear(unit_sound(body, "turret"))
+    for(counts.get_keys()) name: unit_loop_hear(name, counts.get(name, 0))
+    unit_loops_fade(dt)
 
 // Where an effect on unit id rises from (a heal's motes, which have their own heights): its feet on the ground
 // (canvas units); far off when it's gone or unseen.
@@ -2702,6 +2721,7 @@ def play_match():
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
+        unit_loops_tick(dt)
         frame_no++
         if frame_no == 1:                                                            // (inside a frame: a bake outside one leaves the window drawing nothing)
             if bake_live and fe_sides.length == num_players and front_choice != "":  // (the match loader shows the bake's progress)
@@ -2869,6 +2889,8 @@ def new_match_reset():
     busts.clear()
     hud_culture = "?"
     unit_dir.clear()
+    last_aim.clear()
+    aim_moved.clear()
     unit_kick.clear()
     last_kind.clear()
     last_owner.clear()

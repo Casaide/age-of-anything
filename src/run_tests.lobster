@@ -835,7 +835,14 @@ def g_merge():
     let two = data_merge(data_merge(base, parse_json("\{\"b\":\{\"hp\":7\}\}")), parse_json("\{\"b\":\{\"hp\":8\}\}"))
     expect(as_int(at(at(two, "b"), "hp")) == 8, "merge: the later mod wins")
 
+def g_loop_share():
+    expect(loop_share(0) == 0.0, "a loop nobody makes is silent")
+    expect(loop_share(1) > 0.2, "one unit is heard")
+    expect(loop_share(4) > loop_share(1) and loop_share(12) > loop_share(4), "more units are louder")
+    expect(loop_share(12) == 1.0 and loop_share(40) == 1.0, "and a crowd adds nothing past the cap")
+
 def g_mods():
+    g_loop_share()
     g_merge()
     expect(lib_packs[0].id == "age_of_anything" and gstr(lib_packs[0].manifest, "kind", "") == "game", "packs: the game is the first pack read")
     expect(has(lib_parts, "weapon.spear.wood"), "packs: its parts came through pack_apply")
