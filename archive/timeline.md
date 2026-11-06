@@ -199,4 +199,5 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: Packs must match in network matches and saves; saves have a format and an upgrade hook (D-218).
 - 2026-11-06: The filming battle meets formed; shots look twice as fast and land when they did (#217, #175).
 - 2026-11-06: A left click shows enemy buildings and units, view-only, with their HP (#218).
+- 2026-11-06: order lines, flags and selection rings lie on the hills, and go behind them (#221).
 - 2026-11-06: Guns got an aim in the sim: weapon mounts, as many as a unit likes, each turning on its own and firing on the move, the first piece of vehicles (D-219, #177, #211).
