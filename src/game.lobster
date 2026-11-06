@@ -2256,7 +2256,12 @@ for(args) a:
 if has_s(args, "vbcheck"):
     bake_live = false
     for(args) a: if starts_with(a, "dump:"): akb_check_dump = a.substring(5, a.length - 5)
-    if akb_check(all_architectures()) > 0: set_exit_code(1)
+    var checked = all_architectures()
+    for(args) a:  // shard:<i>/<n>: every n-th architecture from the i-th, for n processes side by side (batch.sh)
+        if starts_with(a, "shard:"):
+            let shard, shards = split_string(a.substring(6, a.length - 6), "/")
+            checked = filter(checked) _a, n: n % string_to_int(shards) == string_to_int(shard)
+    if akb_check(checked) > 0: set_exit_code(1)
     bake_quit = true
 // prebake: every prop and every architecture's buildings baked into the shipped folder (src/prebake.sh), then quit.
 if has_s(args, "prebake"):
