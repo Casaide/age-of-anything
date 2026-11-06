@@ -580,12 +580,12 @@ def gun_spot(g:int) -> int, int, bool:
     let j = index_of(g)
     if j >= 0: return u_x[j], u_y[j], true
     let b = b_index_of(g)
-    if b >= 0: return b_cx[b], b_cy[b], true
+    if b >= 0: return b_cx[b] * TILE + b_sx[b] * TILE / 2, b_cy[b] * TILE + b_sy[b] * TILE / 2, true
     return 0, 0, false
 
 // Is the gun laid on its foe (a unit j or building b)?
 def foe_aimed(i:int, j:int, b:int) -> bool:
-    return if j >= 0: aimed_at(i, u_x[j], u_y[j]) else: aimed_at(i, b_cx[b], b_cy[b])
+    return if j >= 0: aimed_at(i, u_x[j], u_y[j]) else: aimed_at(i, b_cx[b] * TILE + b_sx[b] * TILE / 2, b_cy[b] * TILE + b_sy[b] * TILE / 2)
 
 // Is the gun laid on that spot, near enough to fire?
 def aimed_at(i:int, x:int, y:int) -> bool:
