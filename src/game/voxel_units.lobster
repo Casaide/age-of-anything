@@ -361,6 +361,18 @@ def vx_stand_now(lk:int):
     while not vx_job_step(stand, seconds_elapsed() + 1.0): pass()
     vx_unsaved.push(stand)
 
+// A mount must name a part its body has, with a muzzle to fire from (a mount with no part is a gun on the hull).
+def vx_check_mounts(k:int, lk:int):
+    let b = vx_body_of(vx_lks[lk].u.body)
+    for(t_mounts[k]) m:
+        if m.part != "":
+            let p = find(b.parts) q: q.name == m.part
+            if p < 0: print "body {b.id}: a mount names part {m.part}, which it doesn\'t have"
+            assert p >= 0
+            let has_muzzle = has_s(b.parts[p].point_names, "muzzle")
+            if not has_muzzle: print "body {b.id}: part {m.part} has a gun and no muzzle point"
+            assert has_muzzle
+
 // Every type's looks, at the start (and again when a race changes mid-match): what each player fields in the age
 // it's in, baked now in their first look (counted on the match loader); then queued: their attacks and falls,
 // their other looks, and the later ages' steps, the next age first.
@@ -399,6 +411,7 @@ def vx_start():
                 lks.push(-1)
                 continue
             let lk = vx_look_for(r)
+            vx_check_mounts(k, lk)
             lks.push(lk)
             let age = if line.length: as_int(at(line[s], "age")) else: t_age[k]
             let ahead = if army_n > 0 and s == type_step(k): 0 else: max(0, age - (if t_player[k] >= 0 and t_player[k] < ages.length: ages[t_player[k]] else: 1))  // (army: they're all on the field)
