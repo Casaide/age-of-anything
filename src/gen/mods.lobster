@@ -45,7 +45,13 @@ def mod_files(dir:string, rel:string) -> [string]:
 
 // The options the mods in a mods: list start the game with (their manifests' `launch`: how a mod says what it is to play).
 def mods_launch_args(ids:[string]) -> [string]:
-    return []::string
+    let out = []::string
+    for(ids) id:
+        for(mod_roots) root:
+            let text = read_file(root + "/" + id + "/pack.json")
+            if text:
+                for(gstrs(parse_json(text), "launch")) a: out.push(a)
+    return out
 
 def mods_discover(roots:[string]) -> dictionary<string, Pack>:
     let out = dictionary<string, Pack>(8)
