@@ -116,6 +116,9 @@ var u_speed = []::int
 var u_radius = []::int
 var u_mclass = []::int
 var u_pace = []::int
+var u_block = []::int  // the marching block it keeps its place in (+1; 0: none), and that place from the block's centre
+var u_bx = []::int
+var u_by = []::int
 var u_hp = []::int
 var u_foe = []::int
 var u_cooldown = []::int
@@ -158,7 +161,7 @@ def unit_columns() -> [[int]]:
              u_hp, u_foe, u_cooldown, u_stance, u_posture, u_gx, u_gy, u_amx, u_amy, u_amc,
              u_task, u_target, u_home, u_gspot, u_carry_kind, u_carry, u_work, u_reach, u_rx0, u_ry0, u_rx1, u_ry1, u_patient,
              u_route, u_ready, u_perch, u_wgoal, u_wnext, u_wexit, u_wtime, u_hull, u_lx, u_ly,
-             u_owner, u_kind, u_speed, u_radius, u_mclass ]
+             u_owner, u_kind, u_speed, u_radius, u_mclass, u_block, u_bx, u_by ]
 
 let UNIT_HASHED = 47    // the columns hashed (unit_fields)
 var t_tags = []::[int]  // per unit type: its eval's tags (class indexes), as its line stands
@@ -367,6 +370,29 @@ var sp_used = []::int  // the cells that hold units since the last build (spatia
 
 // Formation scratch: each unit's slot, how far ahead / aside it stands.
 var slot_x = []::int
+var slot_block = []::int  // a formation's block for each unit (+1), and its place in it
+var slot_bx = []::int
+var slot_by = []::int
+
+// Marching blocks (lib/orders.lobster): a big order's blocks, each a moving centre its units keep their places round.
+var fb_state = []::int  // 0 free, then BLOCK_FORMING, BLOCK_MARCHING, BLOCK_THERE
+var fb_x = []::int      // the centre, milli-tiles
+var fb_y = []::int
+var fb_gx = []::int  // the order's target: told the same again, it marches on
+var fb_gy = []::int
+var fb_tx = []::int  // where it's making for
+var fb_ty = []::int
+var fb_wx = []::int  // its next waypoint
+var fb_wy = []::int
+var fb_dx = []::int  // its heading (the units face it)
+var fb_dy = []::int
+var fb_pace = []::int
+var fb_key = []::int  // the flow field it follows
+var fb_r = []::int    // half its depth
+var fb_owner = []::int
+var fb_army = []::int  // the order it's of: an army's blocks march together, once all are formed
+var fb_t = []::int     // ticks forming
+var fb_held = []::int  // 1: it's fighting, the blocks behind wait
 var slot_y = []::int
 var f_ahead = []::int
 var f_side = []::int
@@ -393,7 +419,7 @@ def insert_unit(uid:int, owner:int, k:int, x:int, y:int, speed:int, radius:int, 
               hp, 0, 0, 0, 0, x, y, 0, 0, -1,
               0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
               0, 0, 0, 0, 0, 0, 0, 0, x, y,
-              owner, k, speed, radius, 0 ]
+              owner, k, speed, radius, 0, 0, 0, 0 ]
     unit_changes++
     for(unit_columns()) col, n: col.insert(at, v[n])
     u_orders.insert(at, [])
