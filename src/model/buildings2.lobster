@@ -1010,7 +1010,15 @@ def bld_gate_tower(body:MNode, arch:string, cx:float, tl:float, ht:float, proud:
 // A building's model: its own function if it has one (barracks_reed...), else the type's builder in this
 // architecture (models.gd building). Also the outpost looks by name (outpost_pole...). nil: no such type.
 def building(type:string, arch0:string, team:float3) -> BSpec?:
-    if arch0 == "future" and type == "barracks": return future_barracks(team)
+    if arch0 == "future":
+        switch type:
+            case "barracks": return future_barracks(team)
+            case "watchtower": return future_tower(team)
+            case "mill": return future_mill(team)
+            case "mining_camp": return future_mining_camp(team)
+            case "lumber_camp": return future_lumber_camp(team)
+            case "armoury": return future_armoury(team)
+            default: pass()
     let arch = if arch0 == "future": "stone" else: arch0  // (the future's other buildings: stone's, until they have their own)
     switch type:
         case "barracks": return bld_barracks(arch, team)
