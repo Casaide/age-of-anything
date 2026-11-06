@@ -9,4 +9,4 @@ frames=$(mktemp -d)
 trap 'rm -rf $frames' EXIT
 "$root/play.sh" lobby mute watch record:$frames from:$from for:$len "$@" | grep -a 'record:'
 rm -f $frames/100000.png  # (the first frame is still on the fast-forward's HUD)
-ffmpeg -y -loglevel error -framerate 30 -start_number 100001 -i $frames/%d.png -c:v libx264 -crf 16 -pix_fmt yuv420p $out
+ffmpeg -y -loglevel error -framerate ${FPS:-30} -start_number 100001 -i $frames/%d.png -c:v libx264 -crf 16 -pix_fmt yuv420p $out
