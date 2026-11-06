@@ -493,7 +493,7 @@ def fx_events():
 def unit_state(i:int, moving:bool) -> string, int:
     let k = u_kind[i]
     let t0 = attack_t0.get(u_id[i], -10.0)
-    if clock_s - t0 < 0.5: return "attack", int((clock_s - t0) * 16.0)
+    if clock_s - t0 < 0.5 and not (t_turn[k] > 0 and moving): return "attack", int((clock_s - t0) * 16.0)  // (a turret fires as it drives: its tracks run on)
     let res = if u_carry_kind[i] > 0: resource_names[u_carry_kind[i] - 1] else: ""
     let phase = int(clock_s * 8.0) + u_id[i]
     if moving:
