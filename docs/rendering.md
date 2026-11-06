@@ -93,6 +93,8 @@ moves the belt one link, the cycle's length comes from the pitch, and `voxel_pro
 
 A body's `"death": "knocked_out"` keeps it upright when it dies: burnt (`wreck`, `wreck_rust`), its parts knocked askew (`vx_knocked_out`), burning then smoking, then fading (`collect_wreck`). `voxel_proto -- - bodies` checks that it keeps its outline.
 
+A flier's `"death": "crash"` comes down burning, nose down and in one piece, and lands level (`vx_crashed`). `voxel_proto -- - bodies` checks that a flier never grows as it dies and ends on the ground.
+
 ## Mods
 
 A mod's parts (milestone 21, `docs/modding.md`) need no models: their looks are the voxel kit's, by

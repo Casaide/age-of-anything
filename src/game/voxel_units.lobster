@@ -261,8 +261,7 @@ def vx_job_step(j:vx_job, until:float) -> bool:
                 wu.body = hull
             var parts = vx_unit_prims(wu, if m == VX_DIE: 0.0 else: float(pose.y) * 45.0)
             if m == VX_DIE:
-                let whole = vx_body_of(u.body)
-                parts = if whole.death == "knocked_out": vx_knocked_out(u, whole) else: vx_fallen(parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
+                parts = vx_dying(u, parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
             vx_act = ""
             vx_stand = false
             vx_carried = ""

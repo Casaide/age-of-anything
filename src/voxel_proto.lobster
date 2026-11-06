@@ -22,7 +22,9 @@ class row:
 
 let PARTS_OFF_PCT = 1.5     // (the outlines where a part meets its hull differ a little)
 let FLIER_LIFT_SHARE = 0.5  // how much of its flying height a flier's lowest pixel must be off the ground (its wings hang below its middle)
-let WRECK_KEEPS_PCT = 90    // how much of its standing outline a knocked-out vehicle covers (its turret is knocked askew)
+let FLIER_FALL_STEPS = 8
+let FLIER_WRECK_LOW = 8   // px above its ground point it may end, at most
+let WRECK_KEEPS_PCT = 90  // how much of its standing outline a knocked-out vehicle covers (its turret is knocked askew)
 let vx_dirs = [ "../data/voxel" ]
 for(command_line_arguments()) a:
     if starts_with(a, "voxels:"): vx_dirs.push(a.substring(7, a.length - 7))  // (more data, a mod's)
@@ -277,6 +279,25 @@ elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (t
                 print "bodies: {id} flies at {b.flies}: lowest pixel {least} above its ground point, at least {want} wanted"
                 if least < want:
                     print "bodies: {id} is drawn on the ground"
+                    bad++
+                // (dying it comes down in one piece: never taller than it flew, and it ends on the ground, #260)
+                var top = 0
+                for(8) f:
+                    vx_cell(fg, f)
+                    top = max(top, vx_ANCHOR.y - vx_box.y)
+                var dying_top, last_low = 0, 1000000
+                for(FLIER_FALL_STEPS) s:
+                    let dg = vx_fill(vx_dying(fu, vx_unit_prims(fu, 0.0), float(s + 1) / float(FLIER_FALL_STEPS)), b.size, vx_on_zero(fu, true))
+                    for(8) f:
+                        vx_cell(dg, f)
+                        dying_top = max(dying_top, vx_ANCHOR.y - vx_box.y)
+                        if s == FLIER_FALL_STEPS - 1: last_low = min(last_low, vx_ANCHOR.y - vx_box.w)
+                print "bodies: {id} flies with its top at {top} px; dying its top reaches {dying_top}; it ends with its lowest pixel at {last_low}"
+                if dying_top > top:
+                    print "bodies: {id} grows as it dies"
+                    bad++
+                if last_low > FLIER_WRECK_LOW:
+                    print "bodies: {id} ends in the air"
                     bad++
             if b.death == "knocked_out":  // (it stays where it stood: nearly the same outline as standing, and the old fall isn't)
                 let up = map(copy(vx_cell(g, 2))) c: c.w > 0.0
