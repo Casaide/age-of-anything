@@ -9,7 +9,7 @@
 # fan pieces that must not be shared). --era adds an era tag of the mod's own, so its parts only appear where a host's
 # rules allow it (the manifest's "eras"; the rules overlay opens it under Anything goes).
 set -e
-GAME_VERSION=0.21
+GAME_VERSION=$(sed -n 's/^ *"version": *"\([0-9]*\.[0-9]*\).*/\1/p' data/pack.json)
 usage() { sed -n '2,10s/^# \{0,1\}//p' "$0"; exit 1; }
 mod_id=
 name=
@@ -46,17 +46,16 @@ if [ -n "$era" ]; then eras="[
 private_line=
 if [ -n "$private" ]; then private_line=',
  "private": true'; fi
-cat > "$root/mod.json" <<EOF
+cat > "$root/pack.json" <<EOF
 {
  "id": "$mod_id",
  "name": "$name",
  "version": "0.1.0",
- "game_version": "$GAME_VERSION",
  "authors": [],
  "description": "",
  "license": "",
  "load_order": 100,
- "depends": [],
+ "depends": ["age_of_anything@$GAME_VERSION"],
  "eras": $eras,
  "data": "data",
  "check": {
