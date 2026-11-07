@@ -1,5 +1,5 @@
 {
  "_doc": "Crews: people at the tanks scale, who fly fighters rather than ride elephants. A US side and a German side (#264).",
  "gi_1944": {"extends": "human", "body": "body.gi_1944", "war_beast": "fighter"},
- "landser_1944": {"extends": "human", "body": "body.landser_1944", "war_beast": "fighter"}
+ "landser_1944": {"extends": "human", "body": "body.landser_1944", "war_beast": "none"}
 }

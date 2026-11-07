@@ -118,6 +118,46 @@ check(shot_drawn_u(long_shot, long_shot, true) == 1.0, "and lands on the same ti
 let short_shot = 0.1
 check(shot_drawn_time(short_shot) == short_shot, "a shot quicker than the least we show flies its whole way")
 
+// An arrow: a thin dark shaft, no ball on the end, small fletching; in flight a head that narrows to its point (#325).
+def hex_of_knob(o:JV, k:string) -> float4:
+    let h = gstr(o, k, "#ffffff")
+    def byte(i:int) -> float: return float(string_to_int(h.substring(i, 2), 16)) / 255.0
+    return float4 { byte(1), byte(3), byte(5), 1.0 }
+def lum(c:float4) -> float: return 0.3 * c.x + 0.6 * c.y + 0.1 * c.z
+let ARROW_W_MAX = 0.8     // canvas units, the widest line of its shaft
+let SHAFT_LUM_MAX = 0.35  // dark against the grass
+let shots_data = load_json("../data/shots.json")
+for([ "arrow", "bolt" ]) kind:
+    let m = at(shots_data, kind)
+    let w = as_float(at(m, "w"))
+    let parts = arrow_lines(float2_0, float2 { 0.0, -6.0 }, w, hex_of_knob(m, "shaft"), hex_of_knob(m, "head"), hex_of_knob(m, "fletch"), false)
+    let widest = parts[0].w  // (the shaft; the fletching has its own bound below)
+    var balls = 0
+    for(parts) l:
+        if l.ball: balls++
+    check(widest <= ARROW_W_MAX, "{kind} stuck in the ground: {widest} wide, at most {ARROW_W_MAX}")
+    check(balls == 0, "{kind} stuck in the ground: {balls} round ends, none wanted")
+    check(has(m, "shaft") and lum(hex_of_knob(m, "shaft")) <= SHAFT_LUM_MAX, "{kind} has a dark shaft (luminance {lum(hex_of_knob(m, "shaft"))}, at most {SHAFT_LUM_MAX})")
+    check(has(m, "fletch"), "{kind} has fletching")
+    let flying = arrow_lines(float2_0, float2 { 0.0, -6.0 }, w, hex_of_knob(m, "shaft"), hex_of_knob(m, "head"), hex_of_knob(m, "fletch"), true)
+    let tip = flying[flying.length - 1]
+    check(tip.w < flying[flying.length - 2].w and tip.a == float2_0, "{kind}\'s head narrows to its point ({tip.w} at the tip, {flying[flying.length - 2].w} behind)")
+    check(magnitude(flying[1].b - flying[1].a) <= 1.8, "{kind}\'s fletching is small")
+    check(flying[1].w <= 1.6, "{kind}\'s fletching is narrow ({flying[1].w})")
+
+// Whatever else stands in the ground (a javelin, a dart) is no peg either.
+let STUCK_W_MAX = 1.3
+for(shots_data.keys) kind, n:
+    let m = shots_data.a[n]
+    if kind != "_doc" and not has(m, "shaft") and has(m, "len") and as_float(at(m, "len")) > 0.0:
+        let plain = stuck_lines(float2_0, float2 { 0.0, -6.0 }, as_float(at(m, "w")), hex_of_knob(m, "col"), 1.0)
+        var plain_w = 0.0
+        var plain_balls = 0
+        for(plain) l:
+            plain_w = max(plain_w, l.w)
+            if l.ball: plain_balls++
+        check(plain_w <= STUCK_W_MAX and plain_balls == 0, "{kind} stuck in the ground: {plain_w} wide (at most {STUCK_W_MAX}), {plain_balls} round ends")
+
 // The game draws through it; the sim never reads it.
 let game = read_file("game.lobster") or ""
 let fx = read_file("game/fx.lobster") or ""
