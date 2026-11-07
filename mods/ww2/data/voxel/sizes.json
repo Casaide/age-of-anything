@@ -1,0 +1,13 @@
+{
+  "_doc": "The soldiers stand as tall as a human.",
+  "bodies": {
+    "gi_1944": {
+      "size": 0.79,
+      "h": 58
+    },
+    "landser_1944": {
+      "size": 0.79,
+      "h": 58
+    }
+  }
+}

@@ -18,3 +18,4 @@ reports/*.diff
 __pycache__/
 *.bak
 src/builtin_functions_names.txt
+reference/
