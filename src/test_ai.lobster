@@ -283,14 +283,15 @@ def test_races(pa:JV, pb:JV):
     match_stats(r)
 
 // Hard against normal (D-206): a whole bot match swings with any price set, so one match proves little. Mirror
-// matches of several races, each side's level the only difference, hard from each start in turn (the starts aren't
-// equal); hard has to win more of them than it loses.
+// matches of several races on several seeds, each side's level the only difference, hard from each start in turn (the
+// starts aren't equal).
+let HARD_SEEDS = [ SEED, 1, 2, 3 ]
 def test_hard():
     var hwon = 0
     var hlost = 0
-    for([ rats, frogs, generate("centaur romans", rules, 0), generate("greek hoplites", rules, 0) ]) race:
+    for(HARD_SEEDS) seed: for([ rats, frogs, generate("centaur romans", rules, 0), generate("greek hoplites", rules, 0) ]) race:
         for(2) h:
-            world([ race, race ], rules)
+            new_world(seed, map_id, [ race, race ], rules, [])
             let sides = map(2) p:
                 level_config(if p == h: "hard" else: "normal")
                 let s = full_side(p)
@@ -300,9 +301,10 @@ def test_hard():
             print "hard as player {h}, {rname(race)} each: winner {r.winner} at {clock(r.end_tick)}"
             if r.winner == h: hwon++
             if r.winner == 1 - h: hlost++
-    // Eight chaotic matches can't tell the levels apart: over 96 (12 seeds) hard goes 38-34-24, and a sim change that
-    // touches no bot can move one seed from 3-2 to 2-4 (#187). This only catches hard being clearly worse.
-    check(hwon * 2 >= hlost, "hard isn\'t clearly worse than normal over the mirrors ({hwon} won, {hlost} lost of 8)")
+    // Over 96 matches (12 seeds) hard is still a coin flip against normal, 36-43-17 (#192), and a sim change that touches no
+    // bot reshuffles them all (#187, #203): on one seed, two won to one lost failed 4 seeds of 12. Over these 32 matches
+    // one to three fails about one reshuffle in fifty, and still catches hard being clearly worse.
+    check(hwon * 3 >= hlost, "hard isn\'t clearly worse than normal over the mirrors ({hwon} won, {hlost} lost of {HARD_SEEDS.length * 8})")
 
 // The checks across pieces: the same match twice is the same; the bots' healers heal someone over their
 // matches; the match lengths (reported).
