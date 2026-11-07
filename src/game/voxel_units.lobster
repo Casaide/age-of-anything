@@ -545,6 +545,9 @@ def vx_frame_for(id:int, k:int, state:string, d:int, n:int) -> int:
     vx_stand_now(lk)  // (drawn before it's baked: a unit of a later age put down)
     return vx_frame(lk, 0, VX_IDLE, f, 0)
 
+// Does type k hold a gun up to aim? (Its look now.)
+def vx_kind_aims(k:int) -> bool: return vx_drawn(k) and vx_aiming(vx_lks[vx_cur[k]].u)
+
 // A part's frame in facing f (asked for if it isn't baked yet), or -1.
 def vx_piece_frame(plk:int, f:int) -> int:
     let fr = vx_frames.get(vx_fkey(plk, 0, VX_IDLE, f, 0), -1)
