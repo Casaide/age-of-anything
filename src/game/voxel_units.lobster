@@ -112,7 +112,7 @@ def vx_key_of(u:vx_unit_def) -> string:
 
 // How far a foot swings out from under the hip, body units (the body's, or its mount's).
 def vx_reach(u:vx_unit_def) -> float:
-    if u.mount != "": return vx_body_of(u.mount).reach * vx_body_of(u.mount).size / vx_size_of(u)
+    if u.mount != "": return vx_body_of(u.mount).reach * vx_mount_size(vx_body_of(u.body), vx_body_of(u.mount)) / vx_size_of(u)
     return vx_body_of(u.body).reach
 
 // The look a recipe is drawn in (made the first time it's asked for; not baked until planned).
