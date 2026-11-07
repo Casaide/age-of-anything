@@ -1,6 +1,5 @@
 {
  "_doc": "A great sling: an A-frame on skids, a long arm with a sling at its end and a heavy counterweight at the other. Its style: frame (skin), iron and weight (pale), sling (mark).",
- "size": 1.35,
  "styles": {"timber": {"skin": "#8c6133", "pale": "#4a4a50", "mark": "#9a7a50"}, "junk": {"skin": "#7a6a58", "pale": "#8a5a3a", "mark": "#8a9098"}, "frog": {"skin": "#8a8a40", "pale": "#4f5e2a", "mark": "#5e8a3a"}, "forest": {"skin": "#6b4a2a", "pale": "#3e4a2c", "mark": "#4a6a30"}, "spooky": {"skin": "#d8d0bc", "pale": "#3a3238", "mark": "#5a3a5a"}},
  "crew": [[-11.0,12.0,0.0],[11.0,12.0,0.0]],
  "points": {"o": {"at": [0, 0, 0]}},
