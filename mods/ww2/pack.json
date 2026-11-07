@@ -1,13 +1,29 @@
 {
- "id": "ww2",
- "name": "1944",
- "version": "0.2.0",
- "authors": ["Claude (for Dominic)"],
- "license": "Same as the game",
- "description": "A Sherman side and a Panzer side: tanks with turning turrets and running tracks, fighter planes, and flak gunners to shoot them down. All of it is data. The units only appear when the prompt asks for them (sherman, panzer, tank, plane) and the host's rules allow the ww2 era. rules:ww2_duel is the match this mod is for.",
- "load_order": 100,
- "depends": ["age_of_anything@0.21"],
- "eras": ["ww2"],
- "data": "data",
- "check": {"rules": "ww2_duel", "prompts": ["sherman", "panzer", "tanks and planes"]}
+  "id": "ww2",
+  "name": "1944",
+  "version": "0.2.0",
+  "authors": [
+    "Claude (for Dominic)"
+  ],
+  "license": "Same as the game",
+  "description": "A Sherman side and a Panzer side: tanks with turning turrets and running tracks, fighter planes, and flak gunners to shoot them down. All of it is data. The units only appear when the prompt asks for them (sherman, panzer, tank, plane) and the host's rules allow the ww2 era. rules:ww2_duel is the match this mod is for.",
+  "load_order": 100,
+  "depends": [
+    "age_of_anything@0.21"
+  ],
+  "eras": [
+    "ww2"
+  ],
+  "data": "data",
+  "check": {
+    "rules": "ww2_duel",
+    "prompts": [
+      "sherman",
+      "panzer",
+      "tanks and planes"
+    ]
+  },
+  "replaces": [
+    "quiver"
+  ]
 }

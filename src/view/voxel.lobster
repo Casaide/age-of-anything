@@ -407,6 +407,11 @@ class vx_hold_spec:
     pick:float3  // a basket: where the other hand picks from, and drops into it
     drop:float3
     picks:bool
+    aim:float3  // a gun: brought up here to fire, along aim_dir, for the whole cycle
+    aim_dir:float3
+    aims:bool
+    kick:float     // how far the shot throws it back, in arms
+    support:float  // how far along it the other hand holds it, body units (0: it doesn't)
 
 // What a worker takes home: gear held, or a cart pushed (barrow or cart) under a heap of its material.
 class vx_load_spec:
@@ -638,7 +643,8 @@ def vx_load(dirs:[string]):
                 vx_holds.set(name, vx_hold_spec { vx_v3(at(h, "rest")), vx_v3_or(h, "dir"), gfloat(h, "swing", 0.0), vx_v3_or(h, "wind"),
                                                   vx_v3_or(h, "wind_dir"), vx_v3_or(h, "hit"), vx_v3_or(h, "hit_dir"), has(h, "hit"),
                                                   vx_v3_or(h, "raise"), vx_v3_or(h, "draw"), has(h, "draw"),
-                                                  vx_v3_or(h, "pick"), vx_v3_or(h, "drop"), has(h, "pick") })
+                                                  vx_v3_or(h, "pick"), vx_v3_or(h, "drop"), has(h, "pick"),
+                                                  vx_v3_or(h, "aim"), vx_v3_or(h, "aim_dir"), has(h, "aim"), gfloat(h, "kick", 0.0), gfloat(h, "support", 0.0) })
         if has(go, "loads"):
             let lo = at(go, "loads")
             for(lo.keys) who, i:
@@ -803,6 +809,19 @@ def vx_blow(t:float) -> float:
 
 def vx_raise(t:float) -> float:  // raised through the wind-up, held, lowered
     return if t < 0.45: t / 0.45 elif t < 0.75: 1.0 else: 1.0 - (t - 0.75) / 0.25
+
+// A gun's kick, at t through the firing cycle: the shot at 0, back in place by 0.4 (a frame held after that shows no kick).
+def vx_kick(t:float) -> float: return max(0.0, 1.0 - t / 0.4)
+
+// Is its right hand's gear a gun brought up to aim?
+def vx_aiming(u:vx_unit_def) -> bool:
+    let right = vx_held(u, 1)
+    if not right: return false
+    let h = vx_holds.get(right.hold)
+    return h != nil and h.aims
+
+// What a fighter draws between shots, its gun aimed or not (`moving`: it walks); a blank: as anyone.
+def vx_between_shots(aims:bool, moving:bool) -> string: return if aims and not moving: "attack" else: ""
 
 // Where a body is in a blow: drawn back through the wind-up (below 0), thrown forward at the hit (1).
 def vx_strike(t:float) -> float: return vx_blow(t) - 0.4 * vx_raise(t) * (1.0 - vx_blow(t))
@@ -991,7 +1010,8 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
     let attack = vx_act == "attack"
     let g = b.gait
     // with a gait the shoulders turn against the walk (the right one back as the right foot goes forward), and into a blow
-    let turned = if not g: 0.0 elif attack: g.turn * vx_strike(t) else: -g.twist * swing
+    let aiming = attack and vx_aiming(u)
+    let turned = if not g: 0.0 elif aiming: -g.turn * 0.25 * vx_kick(t) elif attack: g.turn * vx_strike(t) else: -g.twist * swing
     let sh_r = vx_where(p, b.sh_pt) + b.sh + float3 { 0.0, turned, 0.0 }
     let sh_l = vx_where(p, b.sh_pt) + b.sh * float3 { -1.0, 1.0, 1.0 } - float3 { 0.0, turned, 0.0 }
     let hang = vx_holds.get("hang")
@@ -1015,6 +1035,11 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         if attack and h.act:
             hr = vx_mix(vx_mix(hr, sh_r + h.wind * L, up), sh_r + h.hit * L, k)
             dr = vx_mix(vx_mix(dr, h.wind_dir, up), h.hit_dir, k)
+        if aiming:
+            let aim_d = normalize(h.aim_dir)
+            hr = sh_r + (h.aim - aim_d * h.kick * vx_kick(t)) * L
+            dr = h.aim_dir
+        if h.support > 0.0: hl = hr + normalize(dr) * h.support + float3 { -0.4, 0.0, 0.0 }
     if left:
         let h = vx_holds.get(left.hold)
         assert h
@@ -1132,7 +1157,7 @@ def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:
     let g = b.gait
     if g and vx_act == "attack":  // the body behind the blow (or leaning in to pick)
         let picks = vx_picking(u)
-        let s = if picks: vx_raise(t) - vx_blow(t) else: vx_strike(t)
+        let s = if picks: vx_raise(t) - vx_blow(t) elif vx_aiming(u): -0.25 * vx_kick(t) else: vx_strike(t)
         p.at = map(p.at) a, k: a + float3 { 0.0, b.pdrive[k] * s, -g.dip * max(0.0, s) }
     if not vx_seated: vx_legs(out, u, b, p, ph, flags)
     for(b.shapes) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
