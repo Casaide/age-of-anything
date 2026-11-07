@@ -86,6 +86,7 @@ let races = map([ "future soldiers", "sewer rats from the future" ]) p: generate
 let allowed = [ "worker", "spear", "infantry", "skirmisher" ]
 let h1 = play(races, rules, LIMIT, allowed)
 print "scifi_short on {map_id}: winner {winner} at {clock(tick)}, ages {ages[0]} and {ages[1]}, {bt_name.length} building types, lost {lost[0]} and {lost[1]}"
+check(winner >= 0, "the match ends with a winner")
 check(lost[0] + lost[1] > 20, "the sides fight")
 check(not has_s(bt_name, "stable") and not has_s(bt_name, "wonder") and has_s(bt_name, "barracks"), "the buildings taken out are gone")
 check(ages_list.length == 1 and ages[0] == 1 and ages[1] == 1, "one age (Dominic, 2026-11-06)")
