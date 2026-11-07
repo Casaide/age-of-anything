@@ -60,7 +60,8 @@ import net.lan
 let args = command_line_arguments()
 let role = args[0]
 let ticks = string_to_int(args[1])
-var people = 2  // players:<n>: that many people (a 2v2 on four: teams 1 and 2)
+var people = 2       // players:<n>: that many people (a 2v2 on four: teams 1 and 2)
+var port = NET_PORT  // port:<n>: another port, so these can run beside another pair
 
 // mods:a,b: these packs in use on this side. refused: this joiner expects the host to turn it away.
 def use_mods():
@@ -68,6 +69,7 @@ def use_mods():
         if starts_with(a, "mods:"): mods_use(tokenize(a.substring(5, a.length - 5), ",", " "))
 for(args) a:
     if starts_with(a, "players:"): people = string_to_int(a.substring(8, a.length - 8))
+    if starts_with(a, "port:"): port = string_to_int(a.substring(5, a.length - 5))
 var me = 0
 var bots = []::Bot
 var link = Link {}
@@ -76,7 +78,7 @@ let t_wait = seconds_elapsed()
 if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' becomes the match)
     lib_load("../data")
     use_mods()
-    let door = door_open(NET_PORT, "net_check", "reed_meadow")
+    let door = door_open(port, "net_check", "reed_meadow")
     let joined = []::Link
     while joined.length < people - 1:
         assert door.error == ""
@@ -94,7 +96,7 @@ else:
     let found = if has_s(args, "noscan"): []::LanHost else: lan_scan(1.5)
     let names = map(found) h: h.name + "@" + h.ip
     print "join: found {found.length} host(s): {names}"
-    link = net_join("127.0.0.1", NET_PORT)
+    link = net_join("127.0.0.1", port)
     while not net_ready(link):
         if link.error != "": print "join: {link.error}"
         assert link.error == ""

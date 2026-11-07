@@ -80,6 +80,8 @@ import gen.reset
 import gen.save
 import gen.effect_words
 
+let HOLD_DRIFT = 300  // milli-tiles a soldier may be moved by a column walking through it
+
 let SEED = 20261010
 let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers" ]
 let TICKS = 12000      // 10 minutes at 20 Hz
@@ -1128,6 +1130,38 @@ def test_stances():
     check(r.far > 1500 and r.hits[0] > 0, "stand ground: an ordered attack walks to the target (went {r.far}, {r.hits[0]} hits)")
 
 // Shooters stand still while their target is in reach; one out of reach walks just into reach and stops.
+// Soldiers hold their ground when another unit walks through them: firing or idle, a column goes round (#262).
+def walk_through(firing:bool) -> int:
+    let race = gen_race("sewer rats with crossbows")
+    let y = 20500
+    bare_world([ race, race ])
+    let k = type_of_slot(0, "archer")
+    t_shot_speed[k] = GUN_SHOT_SPEED  // (riflemen: bows jostle as ever)
+    let foe = lone(1, "large", 15000, y + (if firing: t_reach[k] - 2500 else: t_reach[k] * 3), "passive")
+    u_hp[index_of(foe)] = 1 << 24
+    let squad = map(5) n: lone(0, "archer", 13000 + n * 1000, y, "stand_ground")
+    if firing: issue_cmd(0, CMD_ATTACK, squad, foe, 0, 0, 0)
+    steps(40)
+    let xs = map(squad) id: u_x[index_of(id)]
+    let ys = map(squad) id: u_y[index_of(id)]
+    let col = map(5) n: lone(0, "large", 10000 + n * 700, y + (n % 2) * 400, "passive")
+    issue_cmd(0, CMD_MOVE, col, 21000, y, 0, 0)
+    var far = 0
+    let col_x0 = u_x[index_of(col[0])]
+    for(240):
+        tick_on()
+        for(squad) id, n:
+            let i = index_of(id)
+            far = max(far, isqrt(dist2(u_x[i], u_y[i], xs[n], ys[n])))
+    check(u_x[index_of(col[0])] - col_x0 > 8000, "the column did walk through: {u_x[index_of(col[0])] - col_x0}")
+    return far
+
+def test_hold_ground():
+    let firing = walk_through(true)
+    check(firing <= HOLD_DRIFT, "a firing squad holds as a column walks through: moved {firing}, at most {HOLD_DRIFT}")
+    let idle = walk_through(false)
+    check(idle <= HOLD_DRIFT, "an idle squad holds as a column walks through: moved {idle}, at most {HOLD_DRIFT}")
+
 def test_ranged_holds():
     let race = gen_race("sewer rats with crossbows")
     let y = 20500
@@ -4432,7 +4466,7 @@ def test_save_load():
 
 // ------------------------------------------------------------------ the parts
 
-let PARTS = [ "fixed", "turret", "air", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
+let PARTS = [ "fixed", "turret", "air", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
@@ -4490,6 +4524,7 @@ def run_part(name:string):
     elif name == "wonder": test_wonder()
     elif name == "turret": test_turret()
     elif name == "air": test_air()
+    elif name == "hold_ground": test_hold_ground()
     elif name == "save_load": test_save_load()
     elif name == "match": test_match()
     elif name == "match_b": test_match_b()
