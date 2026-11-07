@@ -1,0 +1,9 @@
+{
+  "_doc": "A crew member stands as tall as a human.",
+  "bodies": {
+    "crew_1944": {
+      "size": 0.79,
+      "h": 58
+    }
+  }
+}
