@@ -22,7 +22,14 @@ class row:
 
 let PARTS_OFF_PCT = 1.5     // (the outlines where a part meets its hull differ a little)
 let FLIER_LIFT_SHARE = 0.5  // how much of its flying height a flier's lowest pixel must be off the ground (its wings hang below its middle)
-let WRECK_KEEPS_PCT = 90    // how much of its standing outline a knocked-out vehicle covers (its turret is knocked askew)
+let FLIER_FALL_STEPS = 8
+let FLIER_WRECK_LOW = 8  // px above its ground point it may end, at most
+let AIM_STEPS = 8
+let AIM_DROP = 0.5      // body units its muzzle may rise or fall through the firing cycle
+let AIM_KICK_MIN = 0.5  // body units the recoil throws it back
+let AIM_KICK_MAX = 2.5
+let CRUMPLE_SPAN = 0.8    // of its standing length a soldier halfway through falling may still be
+let WRECK_KEEPS_PCT = 90  // how much of its standing outline a knocked-out vehicle covers (its turret is knocked askew)
 let vx_dirs = [ "../data/voxel" ]
 for(command_line_arguments()) a:
     if starts_with(a, "voxels:"): vx_dirs.push(a.substring(7, a.length - 7))  // (more data, a mod's)
@@ -246,6 +253,59 @@ if args.length > 1 and args[1] == "check":
     if bad: set_exit_code(1)
 elif args.length > 2 and args[1] == "parts":  // `parts <body>`: every hull facing (rows) with every part facing (columns)
     assert parts_faults(args[2], out_path) == 0
+elif args.length > 1 and args[1] == "aim":  // `aim`: every rifle on every body that carries it: the gun stays up through the firing cycle, kicks, and comes back (#261)
+    var bad = 0
+    let crew = unit("rifleman", "gi_1944", ROMAN, ROMAN2, [ "ww2_rifle" ], "", float3_0)
+    vx_set_look(crew, 0)
+    vx_act = "attack"
+    vx_stand = true
+    def muzzle(ph:float) -> float3:
+        var best = float3 { 0.0, -1000.0, 0.0 }
+        for(vx_unit_prims(crew, ph)) p:
+            if p.hard and p.b.y > best.y: best = p.b
+        return best
+    let at0 = muzzle(0.0)
+    var lo, hi, back = at0.z, at0.z, at0.y
+    let steps = []::float3
+    for(AIM_STEPS) i:
+        let m = muzzle(float(i) * 360.0 / float(AIM_STEPS))
+        steps.push(m)
+        lo = min(lo, m.z)
+        hi = max(hi, m.z)
+        back = min(back, m.y)
+    let held = muzzle(float(AIM_STEPS - 1) * 360.0 / float(AIM_STEPS))
+    let kick = held.y - back
+    print "aim: muzzle height {lo} to {hi} through the cycle (moves {hi - lo}, at most {AIM_DROP} allowed); kick back {kick} (between {AIM_KICK_MIN} and {AIM_KICK_MAX})"
+    if hi - lo > AIM_DROP:
+        print "aim: the gun drops through the firing cycle"
+        bad++
+    if kick < AIM_KICK_MIN or kick > AIM_KICK_MAX:
+        print "aim: no kick from the gun"
+        bad++
+    print "aim: between shots a rifleman draws {vx_between_shots(true, false)}, a bowman {vx_between_shots(false, false)}"
+    if vx_between_shots(true, false) != "attack" or vx_between_shots(true, true) == "attack" or vx_between_shots(false, false) == "attack":
+        print "aim: a rifleman lowers the gun between shots"
+        bad++
+elif args.length > 1 and args[1] == "falls":  // `falls`: a soldier crumples as it dies, knees and hips going, not a stick tipping over (#263)
+    var bad = 0
+    def span(id:string, t:float) -> float:  // the longest straight line through the figure, body units: a rigid tip keeps it
+        let u = unit(id, id, ROMAN, ROMAN2, [], "", float3_0)
+        vx_set_look(u, 0)
+        vx_act = ""
+        vx_stand = true
+        let ps = vx_fallen_unit(u, t)
+        var longest = 0.0
+        for(ps) a: for(ps) b:
+            longest = max(longest, magnitude(a.a - b.a))
+        return longest
+    for([ "human", "gi_1944", "robot" ]) id:
+        let up = span(id, 0.0)
+        for([ 0.25, 0.5, 0.75 ]) t:
+            print "falls: {id} at {t}: its length is {span(id, t) / up} of standing"
+        if span(id, 0.5) > up * CRUMPLE_SPAN:
+            print "falls: {id} stays rigid as it falls (at most {CRUMPLE_SPAN} of its length wanted)"
+            bad++
+    assert bad == 0
 elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (the game's, and any voxels: dirs), fliers too
     var bad = 0
     var n = 0
@@ -278,10 +338,29 @@ elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (t
                 if least < want:
                     print "bodies: {id} is drawn on the ground"
                     bad++
+                // (dying it comes down in one piece: never taller than it flew, and it ends on the ground, #260)
+                var top = 0
+                for(8) f:
+                    vx_cell(fg, f)
+                    top = max(top, vx_ANCHOR.y - vx_box.y)
+                var dying_top, last_low = 0, 1000000
+                for(FLIER_FALL_STEPS) s:
+                    let dg = vx_fill(vx_dying(fu, vx_unit_prims(fu, 0.0), float(s + 1) / float(FLIER_FALL_STEPS)), b.size, vx_on_zero(fu, true))
+                    for(8) f:
+                        vx_cell(dg, f)
+                        dying_top = max(dying_top, vx_ANCHOR.y - vx_box.y)
+                        if s == FLIER_FALL_STEPS - 1: last_low = min(last_low, vx_ANCHOR.y - vx_box.w)
+                print "bodies: {id} flies with its top at {top} px; dying its top reaches {dying_top}; it ends with its lowest pixel at {last_low}"
+                if dying_top > top:
+                    print "bodies: {id} grows as it dies"
+                    bad++
+                if last_low > FLIER_WRECK_LOW:
+                    print "bodies: {id} ends in the air"
+                    bad++
             if b.death == "knocked_out":  // (it stays where it stood: nearly the same outline as standing, and the old fall isn't)
                 let up = map(copy(vx_cell(g, 2))) c: c.w > 0.0
                 let wreck = vx_fill(vx_knocked_out(u, b), b.size, vx_on_zero(u, true))
-                let fell = vx_fill(vx_fallen(vx_unit_prims(u, 0.0), 1.0), b.size, vx_on_zero(u, true))
+                let fell = vx_fill(vx_fallen_unit(u, 1.0), b.size, vx_on_zero(u, true))
                 def kept(sh:vx_shape) -> int:
                     var hit, all = 0, 0
                     for(vx_cell(sh, 2)) c, j:
@@ -292,6 +371,14 @@ elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (t
                 print "bodies: {id} knocked out keeps {as_wreck}% of its outline (the old fall keeps {as_fallen}%), {WRECK_KEEPS_PCT}% wanted"
                 if as_wreck < WRECK_KEEPS_PCT:
                     print "bodies: {id} does not stay where it stood"
+                    bad++
+            if b.track:  // (a vehicle's `skin` is its crew's skin colour: a tank painted in it comes out flesh coloured, #167)
+                let flesh = vx_mat("skin")
+                var painted = 0
+                for(b.shapes) s:
+                    if s.mat == flesh: painted++
+                if painted > 0:
+                    print "bodies: {id} has {painted} shapes painted in its crew\'s skin"
                     bad++
             if b.parts.length: bad += parts_faults(id, "-")
     print "bodies: {n} bodies, {bad} faults"
@@ -354,7 +441,7 @@ else:  // the sheet
         elif rw.mode == "die":                                                       // (as the game bakes it: 6 steps; the first four facing right, then lying in two more)
             for(8) k:
                 let st = min(k, 5)
-                let g = vx_fill(vx_fallen(vx_unit_prims(u, 0.0), float(st + 1) / 6.0), vx_size_of(u), false)
+                let g = vx_fill(vx_fallen_unit(u, float(st + 1) / 6.0), vx_size_of(u), false)
                 vx_draw(g, if k < 6: 2 else: (if k == 6: 0 else: 5), img, iw, k * step, r * vx_CELL.y)
         else:
             for(8) k: vx_draw(vx_fill(vx_unit_prims(u, float(k) * 45.0), vx_size_of(u), vx_on_zero(u, false)), 2, img, iw, k * step, r * vx_CELL.y)

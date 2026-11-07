@@ -482,6 +482,8 @@ def step_out(x:int, y:int, mc:int) -> int, int:
     if bx >= 0: return bx, by
     return centre(nearest_walkable(cy * W + cx, mc))
 
+let GUN_SHOT_SPEED = 800  // milli-tiles a tick: a shot this fast is a gun's
+
 // Push overlapping pairs apart (World._separate; nobody is at a job or fighting here).
 def separate():
     let n = u_x.length
@@ -522,6 +524,8 @@ def separate():
             // So is a unit hitting a building: the crowd round a wall walks round it.
             let b = b_index_of(u_foe[i])
             if b >= 0 and gap_b(i, b) <= t_reach[u_kind[i]] + HOLD: s_planted[i] = 1
+            // A gun standing to fire: its own side goes round it (#262). A foe still shoves it, and so do bows, whose crush is what's balanced.
+            if s_planted[i] == 0 and t_ranged[u_kind[i]] != 0 and t_shot_speed[u_kind[i]] >= GUN_SHOT_SPEED: s_planted[i] = 2
     for(n) u:
         if u_perch[u] == 0:  // units on walls stand apart from the crowd below
             let cx = sp_cell[u] % w
@@ -571,9 +575,13 @@ def separate():
                     if s_stood[i] == 1 and s_stood[j] == 1: continue
                     if owners[i] == owners[j] and grp[i] != grp[j] and ((s_stood[i] == 1 and s_yields[j] == 1 and mv[j] == 1) or (s_stood[j] == 1 and s_yields[i] == 1 and mv[i] == 1)): continue
                     // (a marching block doesn't give way to a sheep)
-                    let hi = s_planted[i] == 1 or (u_block[i] > 0 and t_animal[u_kind[j]] != 0) or (s_role[i] >= 2 and s_role[j] == 1) or
+                    // (a soldier standing idle holds its ground against its own side just walking through, #262)
+                    let own = owners[i] == owners[j]
+                    let idle_i = own and s_role[i] == 1 and mv[j] == 1 and s_role[j] < 2 and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
+                    let idle_j = own and s_role[j] == 1 and mv[i] == 1 and s_role[i] < 2 and t_worker[u_kind[j]] == 0 and t_animal[u_kind[j]] == 0
+                    let hi = s_planted[i] == 1 or (own and s_planted[i] == 2) or idle_i or (u_block[i] > 0 and t_animal[u_kind[j]] != 0) or (s_role[i] >= 2 and s_role[j] == 1) or
                         (s_yields[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
-                    let hj = s_planted[j] == 1 or (u_block[j] > 0 and t_animal[u_kind[i]] != 0) or (s_role[j] >= 2 and s_role[i] == 1) or
+                    let hj = s_planted[j] == 1 or (own and s_planted[j] == 2) or idle_j or (u_block[j] > 0 and t_animal[u_kind[i]] != 0) or (s_role[j] >= 2 and s_role[i] == 1) or
                         (s_yields[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
                     if hi and hj: continue
                     // One of the side's own at work and a gatherer making for its spot: the walker slips past.

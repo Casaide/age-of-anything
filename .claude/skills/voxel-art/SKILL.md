@@ -23,6 +23,27 @@ a rat about 20). Everything else comes from the subject itself, never from what'
 - `bodies/rat.json` is the one reference for *method*: few shapes, strong tapers, a natural pose. Use it for how to
   build, not for what to build.
 
+## Real subjects: trace them, don't guess
+A real thing (a Sherman, a Panzer IV) is one specific variant, carved from real drawings. Modelled by eye it comes out a
+mixture of things, however careful (Dominic, 2026-11-06, D-235). The Sherman, `mods/ww2/trace/m4a3_75w.json`, is the worked example.
+1. **Name the variant** and find square-on drawings of it. US War Department manuals are public domain and good: FM 30-40 has top,
+   side and front plates of many WW2 vehicles (M4A3 at PDF p55, Pz IV at p132). Check the plate shows your variant. Wikimedia's API
+   rate-limits; ibiblio's hyperwar and archive.org hold the manuals.
+2. **Never commit the references.** `tools/trace/refs.sh` fetches them into gitignored `reference/` and cuts out each view. Record
+   URLs and licences in the issue and the PR.
+3. **Find real dimensions** in a manual or spec sheet, and cite them. The spec says which pixels are the ends of each view and what
+   they measure, so each view scales to the published length, width and height.
+4. **Carve:** `lobster carve.lobster -- <spec> build` keeps a voxel only inside the side, top and front outlines, then writes the body. Don't edit
+   the body; change the spec. It's the same shapes everywhere, so a thin thing (a lock, an exhaust, a machine gun) extrudes across the
+   whole width unless the spec `erase`s it from the outline and adds it back as a detail at its traced position. Above the hull,
+   `turret_top` traces the turret's inner line, since the top silhouette can't see it.
+5. **Details at traced positions:** points are pixels on the drawings (`["o", x inches, side h, side v]`, `["t", top v, top h, side v]`), sizes are inches.
+   Running gear goes in `tracks` and `wheels`, sloped plates in `plates` (flat boxes, or they terrace). Hard shapes reach half a voxel past their size.
+6. **Check against the drawing:** `lobster carve.lobster -- <spec> check <dir>` writes side, top and front overlays (grey agree, red voxels only, blue drawing only), a
+   line per view of what's over a voxel out, and a table at the spec's `stations`. Aim for under a voxel; say honestly what isn't. The table goes in the PR.
+7. **Play it in a real match before showing it.** Renders aren't the game: an engine's `skin` is its crew's colour, so paint it with a material of its own.
+   Then `voxel_proto -- - bodies` and `parts`, and look at it at game size.
+
 ## Read only this
 This file, `blank_body.json`, `rat.json`, and the gear entries you touch. Don't read `view/voxel.lobster` or
 `docs/rendering.md`: the cheat sheet below is enough.
