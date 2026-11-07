@@ -497,10 +497,13 @@ def fx_events():
         elif e.kind == EV_DIE and e.b == 1:
             if fog[ME][cell_of(e.x, e.y)] != 0: building_fell(e)
 
+let AIM_HOLD_S = 1.0  // how long after its next shot was due a gun stays up
+
 def unit_state(i:int, moving:bool) -> string, int:
     let k = u_kind[i]
     let t0 = attack_t0.get(u_id[i], -10.0)
-    if clock_s - t0 < 0.5 and not (t_mounts[k].length and moving): return "attack", int((clock_s - t0) * 16.0)  // (a turret fires as it drives: its tracks run on)
+    if clock_s - t0 < 0.5 and not (t_mounts[k].length and moving): return "attack", int((clock_s - t0) * 16.0)                              // (a turret fires as it drives: its tracks run on)
+    if clock_s - t0 < float(t_reload[k]) / 20.0 + AIM_HOLD_S and vx_between_shots(vx_kind_aims(k), moving) == "attack": return "attack", 7  // (a gun stays up between shots, #261)
     let res = if u_carry_kind[i] > 0: resource_names[u_carry_kind[i] - 1] else: ""
     let phase = int(clock_s * 8.0) + u_id[i]
     if moving:
@@ -2259,7 +2262,12 @@ for(args) a:
 if has_s(args, "vbcheck"):
     bake_live = false
     for(args) a: if starts_with(a, "dump:"): akb_check_dump = a.substring(5, a.length - 5)
-    if akb_check(all_architectures()) > 0: set_exit_code(1)
+    var checked = all_architectures()
+    for(args) a:  // shard:<i>/<n>: every n-th architecture from the i-th, for n processes side by side (batch.sh)
+        if starts_with(a, "shard:"):
+            let shard, shards = split_string(a.substring(6, a.length - 6), "/")
+            checked = filter(checked) _a, n: n % string_to_int(shards) == string_to_int(shard)
+    if akb_check(checked) > 0: set_exit_code(1)
     bake_quit = true
 // prebake: every prop and every architecture's buildings baked into the shipped folder (src/prebake.sh), then quit.
 if has_s(args, "prebake"):
