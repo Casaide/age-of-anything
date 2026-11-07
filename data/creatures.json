@@ -380,6 +380,7 @@
   "_mount_body_doc": "beetle soldiers rear up (BG1); ridden beetles keep the horizontal body",
   "unique": "stag_colossus",
   "not_ridden_by": [
+   "spider",
    "bear",
    "bear_black",
    "bear_polar"
@@ -387,6 +388,7 @@
  },
  "pony": {
   "not_ridden_by": [
+   "spider",
    "beetle",
    "bear",
    "bear_black",
@@ -490,6 +492,7 @@
    "sewer"
   ],
   "not_ridden_by": [
+   "spider",
    "bear",
    "bear_black",
    "bear_polar"
@@ -518,6 +521,7 @@
    "sewer"
   ],
   "not_ridden_by": [
+   "spider",
    "bear",
    "bear_black",
    "bear_polar"
@@ -551,6 +555,7 @@
   ],
   "_voice_doc": "mounts don't speak in play (a unit speaks with its race's voice); a newt is a quiet frog",
   "not_ridden_by": [
+   "spider",
    "bear",
    "bear_black",
    "bear_polar"
@@ -636,6 +641,7 @@
   "head": "head.bear",
   "playable": true,
   "mount": true,
+  "war_beast": "elephant",
   "giant_ok": true,
   "skins": [
    "bear_brown",
@@ -654,6 +660,7 @@
   "pour": "boiling honey",
   "_doc": "bears (D-126, D-127, in play 2026-10-17): two legs as a race, armoured and dignified (the smarter counterpart to the rats); four legs as a mount for others (mount_body, mount_head); giant_ok: the large line is a giant bear. Too big to ride the small mounts (their not_ridden_by): bears walk, and their large line is a giant",
   "not_ridden_by": [
+   "spider",
    "bear",
    "bear_black",
    "bear_polar"
@@ -705,6 +712,7 @@
   "head": "head.bear_black",
   "playable": true,
   "mount": true,
+  "war_beast": "elephant",
   "giant_ok": true,
   "skins": [
    "bear_black"
@@ -721,6 +729,7 @@
   ],
   "pour": "boiling honey",
   "not_ridden_by": [
+   "spider",
    "bear",
    "bear_black",
    "bear_polar"
@@ -772,6 +781,7 @@
   "head": "head.bear_polar",
   "playable": true,
   "mount": true,
+  "war_beast": "elephant",
   "giant_ok": true,
   "skins": [
    "bear_polar"
@@ -788,6 +798,7 @@
   ],
   "pour": "boiling honey",
   "not_ridden_by": [
+   "spider",
    "bear",
    "bear_black",
    "bear_polar"
