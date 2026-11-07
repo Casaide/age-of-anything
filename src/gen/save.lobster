@@ -117,6 +117,7 @@ class WorldSave:
     t_radius:[int]
     t_role:[int]
     t_gap:[int]
+    t_form_r:[int]
     t_worker:[int]
     t_harmless:[int]
     t_healer:[int]
@@ -611,6 +612,7 @@ def world_bytes(bots:[Bot]) -> string:
         t_radius,
         t_role,
         t_gap,
+        t_form_r,
         t_worker,
         t_harmless,
         t_healer,
@@ -1118,6 +1120,7 @@ def load_world_bytes(data:string) -> [Bot]:
     t_radius = s.t_radius
     t_role = s.t_role
     t_gap = s.t_gap
+    t_form_r = s.t_form_r
     t_worker = s.t_worker
     t_harmless = s.t_harmless
     t_healer = s.t_healer

@@ -7,7 +7,7 @@
 
 let vx_ELEV = 30.0                                                      // the camera's elevation, degrees
 let vx_RES = 2.0                                                        // voxels a body unit (a body unit is about a world pixel; a voxel a baked pixel)
-let vx_CELL = int2 { int(100.0 * vx_RES), int(130.0 * vx_RES) }         // a sprite cell (room for a siege tower; each is cropped to what's drawn)
+let vx_CELL = int2 { int(100.0 * vx_RES), int(170.0 * vx_RES) }         // a sprite cell (room for a siege tower; each is cropped to what's drawn)
 let vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(40.0 * vx_RES) }  // the ground under the unit, in its cell (room in front: a cart's puller, a trunk)
 let vx_BLEND = 0.8                                                      // how far body parts melt into each other, body units (round 1's 2.2 made muscles)
 
@@ -374,7 +374,13 @@ class vx_body_spec:
     parts:[vx_part_spec] = []  // pieces that turn on their own (a turret): this body is the whole figure (a portrait, a fall)
     hull:string = ""           // with parts: the body without them
     piece:bool = false         // a hull or a part: on the ground as the whole body is, not under its own lowest point
-    death:string = ""          // how it dies: "knocked_out", or falling over
+    death:string = ""          // how it dies: "knocked_out", "crash", or falling over
+    h:float = 0.0              // sizes.json: its height, bare and standing, in voxels (a rider's mount is sized from it)
+    ride:float = 0.0           // sizes.json: a mount: its size under a rider of the human's height
+    deck:float2 = float2_0     // sizes.json: a war beast: the half sizes of the deck its crew sit on, body units
+    rides_as:float = 0.0       // sizes.json: a squat rider: the height to size its mount from, in voxels (its h if 0)
+    crew_k:float = 1.0         // sizes.json: how much bigger or smaller this body sits as a crew member
+    crew_seats:int = 0         // sizes.json: 1: it takes a howdah to itself, in the middle
     track:vx_track? = nil
     wheels:[vx_wheel] = []
     style_cols:[float3] = []
@@ -401,6 +407,11 @@ class vx_hold_spec:
     pick:float3  // a basket: where the other hand picks from, and drops into it
     drop:float3
     picks:bool
+    aim:float3  // a gun: brought up here to fire, along aim_dir, for the whole cycle
+    aim_dir:float3
+    aims:bool
+    kick:float     // how far the shot throws it back, in arms
+    support:float  // how far along it the other hand holds it, body units (0: it doesn't)
 
 // What a worker takes home: gear held, or a cart pushed (barrow or cart) under a heap of its material.
 class vx_load_spec:
@@ -632,7 +643,8 @@ def vx_load(dirs:[string]):
                 vx_holds.set(name, vx_hold_spec { vx_v3(at(h, "rest")), vx_v3_or(h, "dir"), gfloat(h, "swing", 0.0), vx_v3_or(h, "wind"),
                                                   vx_v3_or(h, "wind_dir"), vx_v3_or(h, "hit"), vx_v3_or(h, "hit_dir"), has(h, "hit"),
                                                   vx_v3_or(h, "raise"), vx_v3_or(h, "draw"), has(h, "draw"),
-                                                  vx_v3_or(h, "pick"), vx_v3_or(h, "drop"), has(h, "pick") })
+                                                  vx_v3_or(h, "pick"), vx_v3_or(h, "drop"), has(h, "pick"),
+                                                  vx_v3_or(h, "aim"), vx_v3_or(h, "aim_dir"), has(h, "aim"), gfloat(h, "kick", 0.0), gfloat(h, "support", 0.0) })
         if has(go, "loads"):
             let lo = at(go, "loads")
             for(lo.keys) who, i:
@@ -665,6 +677,22 @@ def vx_load(dirs:[string]):
                     let b = vx_parse_body(id, o)
                     vx_bodies.set(id, b)
                     for(gstrs(o, "also")) a: vx_bodies.set(a, b)  // (other body ids drawn the same, their palettes apart)
+        vx_load_sizes(parse_json(read_file(d + "/sizes.json") or "\{\}"))
+
+// The size table (docs/rendering.md, size_check.lobster): every body's size and height, and how big a mount is under its rider.
+def vx_load_sizes(o:JV):
+    let bs = gobj(o, "bodies")
+    for(bs.keys) id, k:
+        let b = vx_body_of(id)
+        b.size = gfloat(bs.a[k], "size", b.size)
+        b.h = gfloat(bs.a[k], "h", 0.0)
+        b.rides_as = gfloat(bs.a[k], "rides_as", 0.0)
+        b.crew_k = gfloat(bs.a[k], "crew_k", 1.0)
+        b.crew_seats = int(gfloat(bs.a[k], "crew_seats", 0.0))
+        let dk = glist(bs.a[k], "deck")
+        if dk.length == 2: b.deck = float2 { as_float(dk[0]), as_float(dk[1]) }
+    let ms = gobj(o, "mounts")
+    for(ms.keys) id, k: vx_body_of(id).ride = gfloat(ms.a[k], "ride", 0.0)
 
 // A body built on another (its `base`, in the same folder): the base's fields, this one's over them, and its
 // `add_shapes` after the base's shapes (a war boar: the boar, bigger, with a howdah and seats).
@@ -696,7 +724,7 @@ def vx_remap(v:JV, remap:JV) -> void:
 def vx_data_text() -> string:
     var t = ""
     for(vx_data_dirs) d:
-        t += (read_file(d + "/materials.json") or "") + (read_file(d + "/gear.json") or "")
+        t += (read_file(d + "/materials.json") or "") + (read_file(d + "/gear.json") or "") + (read_file(d + "/sizes.json") or "")
         let names = scan_folder(d + "/bodies", false)
         if names: for(sorted_strs(names)) n: t += read_file(d + "/bodies/" + n) or ""
     return t
@@ -735,6 +763,7 @@ var vx_variant = 0          // the look being built
 var vx_seated = false       // a rider being built: no legs of its own (shapes with `unless: seated` left off)
 var vx_team_wear = "scarf"  // where a creature without a tunic wears the team: scarf or vest (a concept option)
 var vx_act = ""             // the pose being drawn: "" (standing or walking) or "attack", at a step through it
+var vx_fall_t = 0.0         // how far through falling dead (0: not): the knees go, then the trunk
 var vx_carried = ""         // a worker's load carried home (a resource's name): what's pushed takes both hands
 var vx_stand = false        // standing (not walking): every foot planted where it rests (idle, a blow, at work)
 
@@ -780,6 +809,19 @@ def vx_blow(t:float) -> float:
 
 def vx_raise(t:float) -> float:  // raised through the wind-up, held, lowered
     return if t < 0.45: t / 0.45 elif t < 0.75: 1.0 else: 1.0 - (t - 0.75) / 0.25
+
+// A gun's kick, at t through the firing cycle: the shot at 0, back in place by 0.4 (a frame held after that shows no kick).
+def vx_kick(t:float) -> float: return max(0.0, 1.0 - t / 0.4)
+
+// Is its right hand's gear a gun brought up to aim?
+def vx_aiming(u:vx_unit_def) -> bool:
+    let right = vx_held(u, 1)
+    if not right: return false
+    let h = vx_holds.get(right.hold)
+    return h != nil and h.aims
+
+// What a fighter draws between shots, its gun aimed or not (`moving`: it walks); a blank: as anyone.
+def vx_between_shots(aims:bool, moving:bool) -> string: return if aims and not moving: "attack" else: ""
 
 // Where a body is in a blow: drawn back through the wind-up (below 0), thrown forward at the hit (1).
 def vx_strike(t:float) -> float: return vx_blow(t) - 0.4 * vx_raise(t) * (1.0 - vx_blow(t))
@@ -968,7 +1010,8 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
     let attack = vx_act == "attack"
     let g = b.gait
     // with a gait the shoulders turn against the walk (the right one back as the right foot goes forward), and into a blow
-    let turned = if not g: 0.0 elif attack: g.turn * vx_strike(t) else: -g.twist * swing
+    let aiming = attack and vx_aiming(u)
+    let turned = if not g: 0.0 elif aiming: -g.turn * 0.25 * vx_kick(t) elif attack: g.turn * vx_strike(t) else: -g.twist * swing
     let sh_r = vx_where(p, b.sh_pt) + b.sh + float3 { 0.0, turned, 0.0 }
     let sh_l = vx_where(p, b.sh_pt) + b.sh * float3 { -1.0, 1.0, 1.0 } - float3 { 0.0, turned, 0.0 }
     let hang = vx_holds.get("hang")
@@ -992,6 +1035,11 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         if attack and h.act:
             hr = vx_mix(vx_mix(hr, sh_r + h.wind * L, up), sh_r + h.hit * L, k)
             dr = vx_mix(vx_mix(dr, h.wind_dir, up), h.hit_dir, k)
+        if aiming:
+            let aim_d = normalize(h.aim_dir)
+            hr = sh_r + (h.aim - aim_d * h.kick * vx_kick(t)) * L
+            dr = h.aim_dir
+        if h.support > 0.0: hl = hr + normalize(dr) * h.support + float3 { -0.4, 0.0, 0.0 }
     if left:
         let h = vx_holds.get(left.hold)
         assert h
@@ -1091,12 +1139,25 @@ def vx_worn(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, flags:[st
             if k < 0: k = find(gs.fit_ids) i: i == "*"
             if k >= 0: for(gs.fits[k]) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
 
+// A body going down as it dies: its hips drop and its trunk folds forward over them, so its knees bend (its feet stay), #263.
+let vx_SLUMP_HIPS = 0.6
+let vx_SLUMP_LEAN = 0.6
+let vx_SLUMP_FOLD = 0.3
+def vx_slump(b:vx_body_spec, p:vx_points):
+    let k = clamp(vx_fall_t / 0.6, 0.0, 1.0)
+    let e = k * k * (3.0 - 2.0 * k)
+    let hip = vx_where(p, b.legs[0].pa)
+    p.at = map(p.at) a:
+        let up = max(0.0, a.z - hip.z)
+        a + float3 { 0.0, up * vx_SLUMP_LEAN * e, -hip.z * vx_SLUMP_HIPS * e - up * vx_SLUMP_FOLD * e }
+
 // A body with its worn gear and arms (when it has them) at points p.
 def vx_whole_body(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:float, t:float, flags:[string]):
+    if vx_fall_t > 0.0 and b.arms and b.legs.length and not vx_seated: vx_slump(b, p)
     let g = b.gait
     if g and vx_act == "attack":  // the body behind the blow (or leaning in to pick)
         let picks = vx_picking(u)
-        let s = if picks: vx_raise(t) - vx_blow(t) else: vx_strike(t)
+        let s = if picks: vx_raise(t) - vx_blow(t) elif vx_aiming(u): -0.25 * vx_kick(t) else: vx_strike(t)
         p.at = map(p.at) a, k: a + float3 { 0.0, b.pdrive[k] * s, -g.dip * max(0.0, s) }
     if not vx_seated: vx_legs(out, u, b, p, ph, flags)
     for(b.shapes) s: vx_emit(out, s, p, vx_X, vx_Y, vx_Z, flags, b)
@@ -1128,11 +1189,19 @@ def vx_crew_prims(out:[vx_prim], u:vx_unit_def, c:vx_unit_def, ph0:float):
         for(ps) q: out.push(vx_prim { q.a * ms + at, q.b * ms + at, q.ra * ms, q.rb * ms, q.mat, q.hard, q.disc, q.box * ms })
         while ps.length: ps.pop()
     vx_seated = true
-    for(b.seats) at:
+    let sat = ms * cb.crew_k
+    let seats = if cb.crew_seats == 1 and b.seats.length > 1: [ fold(b.seats, float3_0) s, x: s + x / float(b.seats.length) ] else: b.seats
+    for(seats) at:
         vx_whole_body(ps, c, cb, vx_body_points(cb, 0.0, float3 { 0.0, 0.0, -cb.seat_z }), 0.0, t, vx_flags_of(c))
-        for(ps) q: out.push(vx_prim { q.a * ms + at, q.b * ms + at, q.ra * ms, q.rb * ms, q.mat, q.hard, q.disc, q.box * ms })
+        for(ps) q: out.push(vx_prim { q.a * sat + at, q.b * sat + at, q.ra * sat, q.rb * sat, q.mat, q.hard, q.disc, q.box * sat })
         while ps.length: ps.pop()
     vx_seated = false
+
+// A mount's size under this rider: the table's, in proportion to the rider, so a rat on a beetle looks as a human on one does.
+def vx_mount_size(b:vx_body_spec, mb:vx_body_spec) -> float:
+    let human = vx_bodies.get("human")
+    if mb.ride > 0.0 and b.h > 0.0 and human and human.h > 0.0: return mb.ride * (if b.rides_as > 0.0: b.rides_as else: b.h) / human.h
+    return mb.size
 
 // A unit and its mount (without a crew).
 def vx_rider_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
@@ -1152,7 +1221,7 @@ def vx_rider_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     assert not fused or mb.fused_pt != ""
     let mp = vx_body_points(mb, ph, float3_0)
     vx_whole_body(mount, mu, mb, mp, ph, t, if fused: [ "fused" ] else: [])
-    let ms = mb.size / b.size
+    let ms = vx_mount_size(b, mb) / b.size
     let skin = vx_mat("skin")
     let pale = vx_mat("pale")
     let mark = vx_mat("mark")
@@ -1198,6 +1267,33 @@ def vx_fallen(parts:[vx_prim], t:float) -> [vx_prim]:
     def turn(q:float3) -> float3: return float3 { q.x * c + (q.z - mid) * s, q.y, -q.x * s + (q.z - mid) * c + mid }
     return map(parts) p: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, p.mat, p.hard, p.disc, p.box }
 
+// A flier shot down (a body's "death": "crash", #260), at t (0 flying .. 1 on the ground): burning, nose down, it comes down in one
+// piece and lands level. Only its pitch and height change, so its wings stay wings.
+let vx_CRASH_PITCH = 28.0
+def vx_crashed(parts:[vx_prim], t:float) -> [vx_prim]:
+    var low = 1000.0
+    for(parts) p: low = min(low, vx_lowest(p))
+    let a = vx_CRASH_PITCH * sin(180.0 * t) * t
+    let c, s = cos(a), sin(a)
+    let drop = low * t * t
+    let burnt, rust = vx_mat("wreck"), vx_mat("wreck_rust")
+    def turn(q:float3) -> float3:
+        let z = q.z - low
+        return float3 { q.x, q.y * c + z * s, z * c - q.y * s + low - drop }
+    return map(parts) p, n: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, if n % 7 == 0: rust else: burnt, p.hard, p.disc, p.box }
+
+// A unit dying, at t (0 alive .. 1 lying): what its body's `death` says, else it falls over.
+def vx_dying(u:vx_unit_def, parts:[vx_prim], t:float) -> [vx_prim]:
+    let b = vx_body_of(u.body)
+    return if b.death == "knocked_out": vx_knocked_out(u, b) elif b.death == "crash": vx_crashed(parts, t) else: vx_fallen(parts, t)
+
+// A unit's parts, falling dead at t.
+def vx_fallen_unit(u:vx_unit_def, t:float) -> [vx_prim]:
+    vx_fall_t = t
+    let parts = vx_unit_prims(u, 0.0)
+    vx_fall_t = 0.0
+    return vx_fallen(parts, t)
+
 // Does the unit fly (its body's, or its mount's)? Its ground isn't under its lowest point.
 def vx_flies(u:vx_unit_def) -> bool: return vx_body_of(u.body).flies > 0.0 or (u.mount != "" and vx_body_of(u.mount).flies > 0.0)
 
@@ -1220,7 +1316,7 @@ def vx_knocked_out(u:vx_unit_def, b:vx_body_spec) -> [vx_prim]:
             out.push(vx_prim { turned(q.a), turned(q.b), q.ra, q.rb, q.mat, q.hard, q.disc, q.box })
     return out
 
-def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and not falling) or u.crew != nil or vx_body_of(u.body).piece
+def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and (not falling or vx_body_of(u.body).death == "crash")) or u.crew != nil or vx_body_of(u.body).piece
 
 // The unit's size: its body's (a mount is scaled to it).
 def vx_size_of(u:vx_unit_def) -> float: return vx_body_of(u.body).size
