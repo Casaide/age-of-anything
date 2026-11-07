@@ -50,6 +50,7 @@ import gen.start
 import gen.reset
 import testkit.kit
 import view.facing
+import view.voxel
 
 // Big armies in formation, headless and seeded (#171): an army of several blocks on open ground, a plain move and an
 // attack-move. Fails when a unit drifts from its place, walks back and forth, turns on the march, overlaps its neighbours,
@@ -271,6 +272,188 @@ def scene_film(rules:JV, races:[JV], n:int):
     check(contact >= 400, "{name}: a march to film before they meet ({contact / 20} s)")
     check(p99(off) <= DRIFT_P99, "{name}: formed when they meet ({p99(off)})")
 
+// The drawn facing against the real movement through a battle (#252): a unit that walks somewhere must look that way, on the
+// march, at its foe, or going back to its place. Movement over a second, so a shove in a crowd doesn't count as walking; nor
+// does being carried back against the way it's making for (a push, #174: printed, not checked).
+let FACE_WINDOW = 20   // ticks
+let FACE_WALKED = 400  // milli-tiles in that window: it's really walking
+let FACE_OFF = 45.0    // degrees on screen, more than this is sideways
+let FACE_OFF_MAX = 10  // percent of a type's walking
+
+def scene_facing(rules:JV, races:[JV], n:int):
+    new_world(SEED, MAP, races, rules, [])
+    let one = army(0, n, start_x[0] + 4000, start_y[0] + 4000)
+    let two = army(1, n, start_x[1] + 4000, start_y[1] + 4000)
+    issue_cmd(0, CMD_ATTACK_MOVE, one, start_x[1], start_y[1], 0, 0)
+    issue_cmd(1, CMD_ATTACK_MOVE, two, start_x[0], start_y[0], 0, 0)
+    while tick < 200 and (find(fb_state) s: s != 0) < 0: wstep()
+    blocks_snap()
+    let everyone = one.append(two)
+    let hist_x = map(everyone): map(FACE_WINDOW): -1
+    let hist_y = map(everyone): map(FACE_WINDOW): -1
+    let face = map(everyone): 2
+    let walked = map(2): map(t_slot.length): 0  // on the march, then from first contact (the march is most of a battle: it would hide the fight)
+    let off_by = map(2): map(t_slot.length): 0
+    var met = 0
+    var shoved = 0
+    let name = "facing {n}"
+    while tick < 3000:
+        let was_x = map(everyone) id: if index_of(id) >= 0: u_x[index_of(id)] else: 0
+        let was_y = map(everyone) id: if index_of(id) >= 0: u_y[index_of(id)] else: 0
+        wstep()
+        if met == 0 and (find(everyone) id: index_of(id) >= 0 and u_foe[index_of(id)] != 0) >= 0: met = 1
+        for(everyone) id, a:
+            let i = index_of(id)
+            if i >= 0:
+                let h = tick % FACE_WINDOW
+                let ox = hist_x[a][h]
+                let oy = hist_y[a][h]
+                hist_x[a][h] = u_x[i]
+                hist_y[a][h] = u_y[i]
+                let walking, nd = unit_walk(i, face[a], was_x[a], was_y[a])
+                if walking:
+                    face[a] = nd
+                    if ox >= 0 and dist2(ox, oy, u_x[i], u_y[i]) >= FACE_WALKED * FACE_WALKED:
+                        let mx = u_x[i] - ox
+                        let my = u_y[i] - oy
+                        if mx * (u_wx[i] - u_x[i]) + my * (u_wy[i] - u_y[i]) < 0 and not with_block(i): shoved++
+                        else:
+                            let way = atan2(normalize(iso(float(mx), float(my))))
+                            walked[met][u_kind[i]]++
+                            if abs((way - float(nd) * 45.0 + 540.0) % 360.0 - 180.0) > FACE_OFF: off_by[met][u_kind[i]]++
+    print "{name}: {shoved} samples carried back against their way"
+    for(2) phase:
+        for(t_slot.length) k:
+            let n_walked = walked[phase][k]
+            let share = off_by[phase][k] * 100 / max(1, n_walked)
+            let what = "{name}: p{t_player[k]} {t_slot[k]} {if phase == 0: "on the march" else: "in the fight"}"
+            if n_walked > 0:
+                print "{what}: {share}% of {n_walked} walking off by over {int(FACE_OFF)} degrees"
+                check(share <= FACE_OFF_MAX, "{what} faces the way it walks ({share}% off)")
+
+// Engines and war beasts with their crews, on the ground in their slots (#253): no two footprints overlap, measured from the
+// voxels drawn. Rectangles in the block's frame, as they all march its way.
+let MT_A_VOXEL = 1.1 / 2.0 / (sqrt(2.0) * 0.048)  // milli-tiles of ground a voxel (VX_DRAW_K canvas px a voxel, a tile's width on screen)
+let FOOT_SLACK = 250                              // milli-tiles: form_radius may be this much over what it needs (its culture's styles differ)
+let WALKED_THROUGH_MAX = 2                        // percent of looks at an engine on the march finding it in another block
+let SHOWN_PCT = 60                                // how much of an engine's picture stays shown behind the one in front, marching up the screen
+let SCREEN_DEPTH = sqrt(2.0) * 0.024              // canvas px up the screen a milli-tile (iso)
+
+class Foot:
+    lo_ac:int
+    hi_ac:int
+    lo_al:int
+    hi_al:int
+    px_tall:int = 0  // canvas px its picture stands from the near edge of its ground to its top
+
+def vx_id_of(body_id:string) -> string:
+    if starts_with(body_id, "body."): return body_id.substring(5, body_id.length - 5)
+    if vx_bodies.get(body_id): return body_id
+    return body_id.substring(0, find_string_reverse(body_id, "."))
+
+def foot_of(k:int) -> Foot:
+    let r = gobj(su_units[k], "look")
+    if not has(r, "crew"): return Foot { -u_r_of(k), u_r_of(k), -u_r_of(k), u_r_of(k) }
+    let cr = at(r, "crew")
+    let plain = float3 { 0.5, 0.3, 0.2 }
+    var mount = ""
+    if has(cr, "mount"):
+        let c = creature(rstr(at(cr, "mount"), "creature"))
+        mount = vx_id_of(gstr(c, "mount_body", gstr(c, "body", "")))
+    let crew = vx_unit_def { "crew", vx_id_of(rstr(cr, "body")), plain, plain, float3_0, [], mount, has(cr, "mount") and gbool(at(cr, "mount"), "fused", false), plain, plain, float3_0, nil }
+    let id = vx_id_of(rstr(r, "body"))
+    let b = vx_body_of(id)
+    let u = vx_unit_def { id, id, b.style_cols[0], b.style_cols[1], b.style_cols[2], [], "", false, float3_0, float3_0, float3_0, crew }
+    let sh = vx_fill(vx_unit_prims(u, 0.0), b.size)
+    var f = Foot { 1 << 30, -(1 << 30), 1 << 30, -(1 << 30) }
+    for(sh.pos) v:
+        f.lo_ac = min(f.lo_ac, v.x)
+        f.hi_ac = max(f.hi_ac, v.x)
+        f.lo_al = min(f.lo_al, v.y)
+        f.hi_al = max(f.hi_al, v.y)
+    var top = 0.0
+    for(sh.pos) v: top = max(top, (float(v.z) * cos(30.0) + float(v.y - f.lo_al) * sin(30.0)) * 0.55)
+    return Foot { int(float(f.lo_ac) * MT_A_VOXEL), int(float(f.hi_ac) * MT_A_VOXEL), int(float(f.lo_al) * MT_A_VOXEL), int(float(f.hi_al) * MT_A_VOXEL), px_tall: int(top) }
+
+def u_r_of(k:int) -> int: return t_radius[k]
+
+// How far apart its slots must be: clear on the ground, and enough of its picture shown (the worst case, marching up the screen).
+def foot_need(f:Foot) -> int: return max(max(f.hi_ac - f.lo_ac, f.hi_al - f.lo_al), int(float(f.px_tall * SHOWN_PCT / 100) / SCREEN_DEPTH))
+
+def scene_footprints(rules:JV, races:[JV], n:int):
+    new_world(SEED, MAP, races, rules, [])
+    let one = army(0, n, start_x[0] + 4000, start_y[0] + 4000)
+    let two = army(1, n, start_x[1] + 4000, start_y[1] + 4000)
+    issue_cmd(0, CMD_ATTACK_MOVE, one, start_x[1], start_y[1], 0, 0)
+    issue_cmd(1, CMD_ATTACK_MOVE, two, start_x[0], start_y[0], 0, 0)
+    while tick < 200 and (find(fb_state) s: s != 0) < 0: wstep()
+    let name = "footprints {n}"
+    let feet = map(t_slot.length) k: foot_of(k)
+    for(t_slot.length) k:
+        if has(gobj(su_units[k], "look"), "crew"):
+            let f = feet[k]
+            print "{name}: p{t_player[k]} {t_slot[k]} {rstr(gobj(su_units[k], "look"), "body")}: {f.hi_ac - f.lo_ac} across, {f.hi_al - f.lo_al} along, {f.px_tall} px tall, form_radius {t_form_r[k]}"
+    let overlaps = map(t_slot.length): 0
+    let engines = map(t_slot.length): 0
+    for([ one, two ]) side:
+        let idx = filter(map(side) id: index_of(id)) i: i >= 0 and u_block[i] > 0
+        for(idx) i:
+            if has(gobj(su_units[u_kind[i]], "look"), "crew"):
+                engines[u_kind[i]]++
+                let bi = u_block[i] - 1
+                let px = fb_x[bi] + u_bx[i]
+                let py = fb_y[bi] + u_by[i]
+                let ux = fb_dx[bi]
+                let uy = fb_dy[bi]
+                let fi = feet[u_kind[i]]
+                var hit = false
+                for(idx) j:
+                    if j != i:
+                        let bj = u_block[j] - 1
+                        let gx = fb_x[bj] + u_bx[j] - px
+                        let gy = fb_y[bj] + u_by[j] - py
+                        let along = (gx * ux + gy * uy) / ONE
+                        let across = (gx * uy - gy * ux) / ONE
+                        let fj = feet[u_kind[j]]
+                        if across + fj.hi_ac > fi.lo_ac and across + fj.lo_ac < fi.hi_ac and along + fj.hi_al > fi.lo_al and along + fj.lo_al < fi.hi_al: hit = true
+                if hit: overlaps[u_kind[i]]++
+    for(t_slot.length) k:
+        if engines[k] > 0:
+            print "{name}: p{t_player[k]} {t_slot[k]}: {overlaps[k]} of {engines[k]} overlap a neighbour in their slots"
+            check(overlaps[k] == 0, "{name}: p{t_player[k]} {t_slot[k]} clear of its neighbours ({overlaps[k]} of {engines[k]} overlap)")
+            let f = feet[k]
+            let need = (foot_need(f) - FORM_GAP) / 2
+            let space = form_space(filter(u_x.length) i: u_kind[i] == k)
+            print "{name}: p{t_player[k]} {t_slot[k]}: slots {space} apart, needs {foot_need(f)}; the one in front hides {max(0, 100 - int(float(space) * SCREEN_DEPTH) * 100 / f.px_tall)}% of it"
+            check(space >= foot_need(f), "{name}: p{t_player[k]} {t_slot[k]} slots leave its picture shown ({space}, wants {foot_need(f)})")
+            check(t_form_r[k] <= need + FOOT_SLACK, "{name}: p{t_player[k]} {t_slot[k]} form_radius is not stale ({t_form_r[k]}, needs {need})")
+    // ...and on the march: a slower block in front is walked through by the faster ones behind it (real places, not slots)
+    blocks_snap()
+    let met = fn() -> bool: (find(one.append(two)) id: index_of(id) >= 0 and u_foe[index_of(id)] != 0) >= 0
+    var samples = 0
+    var through = 0
+    while tick < 3000 and not met():
+        for(20): wstep()
+        for([ one, two ]) side:
+            let idx = filter(map(side) id: index_of(id)) i: i >= 0 and u_block[i] > 0
+            for(idx) i:
+                if has(gobj(su_units[u_kind[i]], "look"), "crew"):
+                    samples++
+                    let b = u_block[i] - 1
+                    let fi = feet[u_kind[i]]
+                    var hit = false
+                    for(idx) j:
+                        if u_block[j] != u_block[i]:
+                            let gx = u_x[j] - u_x[i]
+                            let gy = u_y[j] - u_y[i]
+                            let along = (gx * fb_dx[b] + gy * fb_dy[b]) / ONE
+                            let across = (gx * fb_dy[b] - gy * fb_dx[b]) / ONE
+                            let fj = feet[u_kind[j]]
+                            if across + fj.hi_ac > fi.lo_ac and across + fj.lo_ac < fi.hi_ac and along + fj.hi_al > fi.lo_al and along + fj.lo_al < fi.hi_al: hit = true
+                    if hit: through++
+    print "{name}: on the march, {through} of {samples} looks at an engine find it among another block"
+    check(through * 100 <= samples * WALKED_THROUGH_MAX, "{name}: no block walks through an engine on the march ({through} of {samples})")
+
 // A bot gives its army the same order again and again: that mustn't stop the march to form up each time.
 def scene_reissue(rules:JV, races:[JV], n:int):
     new_world(SEED, MAP, races, rules, [])
@@ -362,6 +545,7 @@ def scene_map():
     check(uphill >= 300 and slopes >= 40, "hills on the flank that can be crested ({uphill} high, {slopes} slope)")
 
 let args = plain_args(command_line_arguments())
+vx_load([ "../data/voxel" ])
 lib_load("../data")
 id_load("../data")
 let used = mods_use([ MOD ])
@@ -374,5 +558,9 @@ for(if args.length: map(args) a: string_to_int(a) else: [ 125, 1000 ]) n:
     scene_attack(rules, races, n)
     scene_reissue(rules, races, n)
     scene_film(rules, races, n)
+    scene_facing(rules, races, n)
+    scene_footprints(rules, races, n)
+// the other cultures' engines and war beasts
+for([ [ "sewer rats", "giant spiders" ], [ "forest beetles", "romans" ] ]) prompts: scene_footprints(rules, map(prompts) p: generate(p, rules, 0), 125)
 print "\n{checks - failures} passed, {failures} failed"
 if failures > 0: set_exit_code(1)
