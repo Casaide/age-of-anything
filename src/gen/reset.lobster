@@ -116,6 +116,7 @@ var stashed_t_speed = []::int
 var stashed_t_radius = []::int
 var stashed_t_role = []::int
 var stashed_t_gap = []::int
+var stashed_t_form_r = []::int
 var stashed_t_worker = []::int
 var stashed_t_harmless = []::int
 var stashed_t_healer = []::int
@@ -617,6 +618,7 @@ def reset_world():
     t_radius = []::int
     t_role = []::int
     t_gap = []::int
+    t_form_r = []::int
     t_worker = []::int
     t_harmless = []::int
     t_healer = []::int
@@ -1107,6 +1109,7 @@ def stash_world():
     stashed_t_radius = t_radius
     stashed_t_role = t_role
     stashed_t_gap = t_gap
+    stashed_t_form_r = t_form_r
     stashed_t_worker = t_worker
     stashed_t_harmless = t_harmless
     stashed_t_healer = t_healer
@@ -1591,6 +1594,7 @@ def unstash_world():
     t_radius = stashed_t_radius
     t_role = stashed_t_role
     t_gap = stashed_t_gap
+    t_form_r = stashed_t_form_r
     t_worker = stashed_t_worker
     t_harmless = stashed_t_harmless
     t_healer = stashed_t_healer
