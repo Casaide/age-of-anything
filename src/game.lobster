@@ -2533,7 +2533,7 @@ def make_match() -> bool:
                 let mid_x = (start_x[0] + start_x[1]) / 2
                 let mid_y = (start_y[0] + start_y[1]) / 2
                 cam = iso(float(mid_x), float(mid_y))
-                follow = true  // (watching: the camera goes where they fight)
+                if look_x < 0: follow = true  // (watching: the camera goes where they fight, unless look: says where)
             else: look_at_army = true
     if hurt_pct >= 0:
         for(b_id.length) b:
