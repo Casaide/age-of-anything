@@ -254,7 +254,7 @@ def plate_box(p:float4) -> JV:
     let o = jobj()
     o.set("box", jarr([ jstr("o"), jint(0), jnum(units(cy)), jnum(units(cz)) ]))
     o.set("n", jarr([ jint(0), jnum(ay), jnum(az) ]))
-    o.set("half", jarr([ jnum(units(as_float(at(vt, "wide")) / 2.0 - 1.0)), jnum(units(t)), jnum(units(len / 2.0)) ]))
+    o.set("half", jarr([ jnum(units(as_float(at(spec, "plate_half_width")))), jnum(units(t)), jnum(units(len / 2.0)) ]))
     o.set("mat", at(spec, "paint"))
     o.set("round", jint(0))
     return o
