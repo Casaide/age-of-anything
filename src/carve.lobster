@@ -203,7 +203,7 @@ def boxes_of(carved) -> [JV]:
             o.set("box", jarr([ jstr("o"), jnum(u * float(x + x1 + 1 - w) / 2.0), jnum(u * float(y + y1 + 1 - d) / 2.0), jnum(u * float(z + z1 + 1) / 2.0) ]))
             o.set("n", jarr([ jint(0), jint(1), jint(0) ]))
             o.set("half", jarr([ jnum(u * (float(x1 - x) / 2.0 + 0.04)), jnum(u * (float(y1 - y) / 2.0 + 0.04)), jnum(u * (float(z1 - z) / 2.0 + 0.04)) ]))
-            o.set("mat", jstr("skin"))
+            o.set("mat", at(spec, "paint"))
             o.set("round", jint(0))
             boxes.push(o)
     return boxes
@@ -255,7 +255,7 @@ def plate_box(p:float4) -> JV:
     o.set("box", jarr([ jstr("o"), jint(0), jnum(units(cy)), jnum(units(cz)) ]))
     o.set("n", jarr([ jint(0), jnum(ay), jnum(az) ]))
     o.set("half", jarr([ jnum(units(as_float(at(vt, "wide")) / 2.0 - 1.0)), jnum(units(t)), jnum(units(len / 2.0)) ]))
-    o.set("mat", jstr("skin"))
+    o.set("mat", at(spec, "paint"))
     o.set("round", jint(0))
     return o
 
