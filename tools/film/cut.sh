@@ -32,13 +32,18 @@ ribbon() {  # <text> <out.png>
 
 # A card: text centred over the first frame of a take, darkened and softened, a short gold rule underneath.
 card() {  # <bg take> <in> <seconds> <text with \n> <out.mp4>
-    local bg=$1 in=$2 len=$3 text=$4 o=$5 lines
-    print -r -- "${text//\\n/
-}" > $o.txt
-    lines=$(wc -l < $o.txt)
-    local rule=$((H / 2 + 48 * lines + 30))
+    local bg=$1 in=$2 len=$3 text=$4 o=$5 lines draw="" i=1 y
+    lines=(${(s:\n:)text})   # (each line centred on its own)
+    local lh=96 top=$((H / 2 - 24 - lh * $#lines / 2))
+    for line in $lines; do
+        print -r -- $line > $o.$i.txt
+        y=$((top + lh * (i - 1)))
+        draw+="drawtext=fontfile=${font}:textfile=$o.$i.txt:fontsize=84:fontcolor=${PARCH}:x=(w-text_w)/2:y=${y},"
+        i=$((i + 1))
+    done
+    local rule=$((top + lh * $#lines + 20))
     ff -ss $in -i $bg -frames:v 1 -vf "$V,$dark" $o.png
-    ff -loop 1 -framerate $FPS -t $len -i $o.png -vf "drawtext=fontfile=${font}:textfile=$o.txt:fontsize=84:fontcolor=${PARCH}:line_spacing=12:x=(w-text_w)/2:y=(h-text_h)/2-24,drawbox=x=$((W / 2 - 60)):y=${rule}:w=120:h=2:color=${GOLD}:t=fill,format=yuv420p" $enc $o
+    ff -loop 1 -framerate $FPS -t $len -i $o.png -vf "${draw}drawbox=x=$((W / 2 - 60)):y=${rule}:w=120:h=2:color=${GOLD}:t=fill,format=yuv420p" $enc $o
 }
 
 # The end card: the title, the address, and what it's built on.
@@ -114,4 +119,4 @@ ff -i $seg/score.wav -af "loudnorm=I=-14:TP=-1:LRA=11:measured_I=$(j input_i):me
 ff -i $seg/picture.mp4 -i $seg/master.wav -map 0:v -map 1:a -c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -c:a aac -b:a 192k -movflags +faststart -shortest $out
 # (the website's copy: held to about 8 Mbit/s)
 ff -i $seg/picture.mp4 -i $seg/master.wav -map 0:v -map 1:a -c:v libx264 -preset slow -crf 20 -maxrate 8M -bufsize 16M -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart -shortest ${out%.mp4}-web.mp4
-ffprobe -v error -show_entries format=duration,bit_rate -of default=nw=1 $out ${out%.mp4}-web.mp4
+for f in $out ${out%.mp4}-web.mp4; do ffprobe -v error -show_entries format=duration,bit_rate -of default=nw=1 $f; done
