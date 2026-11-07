@@ -2060,5 +2060,6 @@
     ]
   ],
   "plate_half_inches": 1.5,
-  "paint": "ww2_olive"
+  "paint": "ww2_olive",
+  "plate_half_width": 51.5
 }
