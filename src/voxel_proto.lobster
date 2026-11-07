@@ -296,7 +296,7 @@ elif args.length > 1 and args[1] == "falls":  // `falls`: a soldier crumples as 
         for(ps) a: for(ps) b:
             longest = max(longest, magnitude(a.a - b.a))
         return longest
-    for([ "human", "crew_1944", "robot" ]) id:
+    for([ "human", "gi_1944", "robot" ]) id:
         let up = span(id, 0.0)
         for([ 0.25, 0.5, 0.75 ]) t:
             print "falls: {id} at {t}: its length is {span(id, t) / up} of standing"
