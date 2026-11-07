@@ -193,6 +193,11 @@ class WorldSave:
     u_ly:[int]
     u_mount:[[int]]
     u_orders:[[Cmd]]
+    hook_unit_names:[string]
+    hook_unit_cols:[[int]]
+    hook_player_names:[string]
+    hook_player_cols:[[int]]
+    hook_tick_types:[int]
     t_tags:[[int]]
     t_damage:[int]
     events:[Event]
@@ -467,23 +472,21 @@ class WorldSave:
     pending:[Cmd]
     next_seq:[int]
     trace_tick:int
-    su_races:[JV]
+    su_sides:[JV]
     su_rules:JV
-    su_idents:[JV]
     su_classes:[string]
     su_btypes:[JV]
     su_btype_ids:[string]
     su_research:[JV]
     su_ages:[JV]
-    su_type_eval:[JV]
-    su_type_line:[[JV]]
-    su_type_recipe:[JV]
+    su_units:[JV]
     su_type_animal:[string]
     su_map:JV
     su_bridge_rects:[[int]]
     su_rng:Rng
     su_fx:[[JV]]
     ai_tokens:[string]
+    su_races:[JV]
     cfg_nums:dictionary<string, int>
     cfg_strs:dictionary<string, [string]>
     sight_cache:dictionary<int, [int]>
@@ -491,6 +494,10 @@ class WorldSave:
     ray_par:dictionary<int, [int]>
     save_format:int
     save_packs:[string]
+    su_idents:[JV]  // (these four: format 1 and before, for save_upgrade)
+    su_type_eval:[JV]
+    su_type_recipe:[JV]
+    su_type_line:[[JV]]
     bots:[Bot]  // the bots (the game keeps them)
 
 // The world and the bots as bytes (a save file, or the start of a network match).
@@ -688,6 +695,11 @@ def world_bytes(bots:[Bot]) -> string:
         u_ly,
         u_mount,
         u_orders,
+        hook_unit_names,
+        hook_unit_cols,
+        hook_player_names,
+        hook_player_cols,
+        hook_tick_types,
         t_tags,
         t_damage,
         events,
@@ -962,23 +974,21 @@ def world_bytes(bots:[Bot]) -> string:
         pending,
         next_seq,
         trace_tick,
-        su_races,
+        su_sides,
         su_rules,
-        su_idents,
         su_classes,
         su_btypes,
         su_btype_ids,
         su_research,
         su_ages,
-        su_type_eval,
-        su_type_line,
-        su_type_recipe,
+        su_units,
         su_type_animal,
         su_map,
         su_bridge_rects,
         su_rng,
         su_fx,
         ai_tokens,
+        su_races,
         cfg_nums,
         cfg_strs,
         sight_cache,
@@ -986,6 +996,10 @@ def world_bytes(bots:[Bot]) -> string:
         ray_par,
         SAVE_FORMAT,
         lib_mods,
+        []::JV,
+        []::JV,
+        []::JV,
+        []::[JV],
         bots }
     return flexbuffers_value_to_binary(w, 1000)
 
@@ -1196,6 +1210,11 @@ def load_world_bytes(data:string) -> [Bot]:
     u_ly = s.u_ly
     u_mount = s.u_mount
     u_orders = s.u_orders
+    hook_unit_names = s.hook_unit_names
+    hook_unit_cols = s.hook_unit_cols
+    hook_player_names = s.hook_player_names
+    hook_player_cols = s.hook_player_cols
+    hook_tick_types = s.hook_tick_types
     t_tags = s.t_tags
     t_damage = s.t_damage
     events = s.events
@@ -1470,23 +1489,21 @@ def load_world_bytes(data:string) -> [Bot]:
     pending = s.pending
     next_seq = s.next_seq
     trace_tick = s.trace_tick
-    su_races = s.su_races
+    su_sides = s.su_sides
     su_rules = s.su_rules
-    su_idents = s.su_idents
     su_classes = s.su_classes
     su_btypes = s.su_btypes
     su_btype_ids = s.su_btype_ids
     su_research = s.su_research
     su_ages = s.su_ages
-    su_type_eval = s.su_type_eval
-    su_type_line = s.su_type_line
-    su_type_recipe = s.su_type_recipe
+    su_units = s.su_units
     su_type_animal = s.su_type_animal
     su_map = s.su_map
     su_bridge_rects = s.su_bridge_rects
     su_rng = s.su_rng
     su_fx = s.su_fx
     ai_tokens = s.ai_tokens
+    su_races = s.su_races
     cfg_nums.clear()
     cfg_strs.clear()
     sight_cache.clear()
@@ -1518,6 +1535,12 @@ def save_upgrade(s:WorldSave):
         for(s.t_slot):
             s.t_air.push(0)
             s.t_hits_air.push(0)
+    if s.save_format < 4:  // (the table replaced races, #195)
+        s.su_units = map(s.su_type_eval) e, k: race_unit(s.su_type_recipe[k], e, s.su_type_line[k])
+        s.su_sides = map(s.su_races) race, p:
+            let side = race_to_side(race)
+            set(side, "lacks", at(s.su_idents[p], "lacks"))  // (a mode may have lifted some)
+            side
 
 // Why this save file can't load here, or "".
 def save_refusal_of(path:string) -> string:

@@ -221,7 +221,9 @@ def run(c0:Cmd):
         case CMD_RELEASE: cmd_release(p, c.a)
         case CMD_GARRISON: cmd_garrison(p, own_units_cleared(p, ids), c.a)
         case CMD_UNGARRISON: cmd_ungarrison(p, c.a)
-        default: assert false
+        default:
+            assert c.code >= HOOK_ORDER_BASE
+            hook_on_order(c.code, p, ids, c.a, c.b)
 
 // Units that have finished what they were doing take their next queued order; a queued BUILD whose
 // foundation another unit already laid becomes "help build" (World._next_orders).

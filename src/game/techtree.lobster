@@ -80,7 +80,7 @@ def unit_stats(e:JV) -> string:
     let arm = gobj(e, "armour")
     return "HP {gint(e, "hp", 0)}  Attack {gint(e, "attack", 0)}  Armour {gint(arm, "melee", 0)}/{gint(arm, "pierce", 0)}  Range {gint(e, "range", 0)}  Speed {gint(e, "speed", 0)}"
 
-def build_tree(p:int) -> TTree: return build_tree_of(su_races[p], su_idents[p], su_rules)
+def build_tree(p:int) -> TTree: return build_tree_of(su_races[p], su_sides[p], su_rules)
 
 // Any race's tree (the lobby's banners open it before there's a match).
 def build_tree_of(race:JV, ident:JV, rules:JV) -> TTree:
@@ -261,7 +261,7 @@ def slot_word(slot:string, rules:JV) -> string:
         if gstr(sd, "slot", "") == slot: return gstr(sd, "name", capitalize(slot))
     return capitalize(slot)
 
-def race_words(p:int) -> RaceWords: return race_words_of(su_races[p], su_idents[p], su_rules)
+def race_words(p:int) -> RaceWords: return race_words_of(su_races[p], su_sides[p], su_rules)
 
 def race_words_of(race:JV, ident:JV, rules:JV) -> RaceWords:
     let tdata = lib_data("tech.json")
