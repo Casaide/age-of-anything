@@ -25,9 +25,7 @@ class ShotLine:
 
 // A plain shot stuck in the ground at pos, its other end at pos + up, in width w and colour col.
 def stuck_lines(pos:float2, up:float2, w:float, col:float4, alpha:float) -> [ShotLine]:
-    return [ ShotLine { pos, pos + up, w + 1.2, float4 { 0.1, 0.07, 0.04, 0.8 * alpha }, false },
-             ShotLine { pos, pos + up, w, float4 { col.x * 0.65, col.y * 0.65, col.z * 0.65, alpha }, false },
-             ShotLine { pos + up, pos + up, w * 0.9, float4 { 0.92, 0.9, 0.84, alpha }, true } ]
+    return [ ShotLine { pos, pos + up, min(w, 1.3), float4 { col.x * 0.65, col.y * 0.65, col.z * 0.65, alpha }, false } ]
 
 // An arrow's lines, its point at tip and its nock at tail: a thin shaft, small fletching, and if its point shows a head narrowing to it.
 def arrow_lines(tip:float2, tail:float2, w:float, shaft:float4, head:float4, fletch:float4, point_shows:bool) -> [ShotLine]:
