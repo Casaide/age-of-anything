@@ -4,7 +4,7 @@
 #   card: a line or two over the first frame of takes/<bg>.mp4, darkened; end: the end card over it
 shot|cold|5|in=0|
 card|type|4|bg=make|Type an army. Play it.
-shot|make|6|in=0 crop=960:540:40:800|
+shot|make|6|in=1.2 crop=960:540:40:800|
 shot|rats|4|in=0|
 shot|age1|4|in=0 xfade=1.0|
 shot|age2|4|in=0 xfade=1.0|
