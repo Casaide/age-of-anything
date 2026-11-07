@@ -48,6 +48,7 @@ add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand 
 add test_formations "$L" test_formations.lobster  # big armies in formation, headless: drift, jitter, facing, overlap, the framed map
 add test_shot_look "$L" test_shot_look.lobster  # shots look faster and land when they always did
 add voxel_check "$L" voxel_check.lobster                # the voxel units' art: straight standing knees, skins that never clip or grey, kit that keeps the creature's shape, no look-alikes, no specks
+add vox_check "$L" vox_check.lobster                    # the .vox reader (#313): models, palette, MATL, the scene graph, broken files
 add size_check "$L" size_check.lobster                  # the one size table (data/voxel/sizes.json): every body as tall as it says, every mount at its ratio
 add rider_check "$L" rider_check.lobster                # riders and crews as drawn: every pair a race can field, showing, one on a seat, in the size table's ratios
 add voxel_parts "$L" voxel_proto.lobster -- - parts test.turret voxels:../tests/voxel/parts   # a part stays on its hull in every pair of facings
