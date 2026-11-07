@@ -99,6 +99,10 @@ A body's `"death": "knocked_out"` keeps it upright when it dies: burnt (`wreck`,
 
 A flier's `"death": "crash"` comes down burning, nose down and in one piece, and lands level (`vx_crashed`). `voxel_proto -- - bodies` checks that a flier never grows as it dies and ends on the ground.
 
+### Real subjects are traced
+
+A real vehicle is carved from real drawings scaled to published dimensions, not modelled by eye (D-235): `src/carve.lobster` and a spec in `mods/ww2/trace/`, with the references fetched by `tools/trace/refs.sh` into gitignored `reference/`. The method is in the voxel-art skill, "Real subjects".
+
 ## Mods
 
 A mod's parts (milestone 21, `docs/modding.md`) need no models: their looks are the voxel kit's, by
