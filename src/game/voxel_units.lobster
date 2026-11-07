@@ -259,7 +259,9 @@ def vx_job_step(j:vx_job, until:float) -> bool:
             if hull != "" and m != VX_DIE:  // (its parts are baked apart and stacked on it; it falls whole)
                 wu = copy(wu)
                 wu.body = hull
+            vx_fall_t = if m == VX_DIE: float(pose.y + 1) / float(VX_STEPS[VX_DIE]) else: 0.0
             var parts = vx_unit_prims(wu, if m == VX_DIE: 0.0 else: float(pose.y) * 45.0)
+            vx_fall_t = 0.0
             if m == VX_DIE:
                 parts = vx_dying(u, parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
             vx_act = ""
