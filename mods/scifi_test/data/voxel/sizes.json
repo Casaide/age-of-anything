@@ -1,0 +1,9 @@
+{
+  "_doc": "The robot worker is the height the humans were set to.",
+  "bodies": {
+    "robot": {
+      "size": 1.0,
+      "h": 58
+    }
+  }
+}
