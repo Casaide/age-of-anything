@@ -11,6 +11,7 @@ cd "$(dirname "$0")"
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 quick=0
 jobs="${AOA_JOBS:-4}"
+limit="${AOA_JOB_LIMIT:-900}"   # seconds a job may take: past that it's stuck, and fails (#294; a cold bake takes minutes)
 only=""
 for a in "$@"; do
 	case "$a" in
@@ -61,9 +62,9 @@ else
 	for i in 0 1 2 3; do add test_ai.$i "$L" test_ai.lobster -- shard:$i/4; done
 	add test_2v2 "$L" test_2v2.lobster
 	add test_mod_match "$L" test_mod_match.lobster
-	add air_click ./air_check.sh "$bakes"   # a click takes an aircraft where it's drawn
+	add air_click ./air_check.sh "$bakes" novsync   # a click takes an aircraft where it's drawn
 	add golden ./golden.sh
-	for i in 0 1 2 3; do add vbcheck.$i "$L" --background game.lobster -- none - vbcheck mute shard:$i/4; done   # every building look as voxels: no specks (a window each, behind the others)
+	for i in 0 1 2 3; do add vbcheck.$i "$L" --background game.lobster -- none - vbcheck mute novsync shard:$i/4; done   # every building look as voxels: no specks (a window each, behind the others; no vsync, which never comes with the display asleep, #294)
 	add cursor_check "$L" cursor_check.lobster   # the OS cursors in a real window (#222)
 	if [ "$(uname)" = Darwin ]; then add mac_app ../tests/mac_app_check.sh; fi   # the Mac app bundle: games category, name, icon, the binary inside (#224)
 	add prices "$L" calibrate.lobster -- measure expect check:42   # held-out round robins against the counter chain (D-199): 32% off now
@@ -71,9 +72,8 @@ else
 	add network ./net_check.sh 2000
 	add network_packs ./net_check_packs.sh
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
-	# (Their timeouts allow for baking from nothing, which isn't a hang: minutes, once a bake version.)
-	add perf timeout 900 ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20 "$bakes"
-	add perf_big timeout 900 ../play.sh lobby mods:big_battle mute perf:90 "$bakes"
+	add perf ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20 "$bakes"
+	add perf_big ../play.sh lobby mods:big_battle mute perf:90 "$bakes"
 fi
 if [ ! -s "$list" ]; then
 	echo "batch: no tests to run (only=$only)"
@@ -99,13 +99,15 @@ fi
 slowest='^vbcheck\.\|^voxel_contact\|^test_mod_match\|^test_ai\|^test_formations\|^prices\|^air_click\|^test_2v2\|^test_sim\|^golden'
 t0=$(date +%s)
 { grep "$slowest" "$list"; grep -v "$slowest\\|^perf" "$list"; } | tr '\n' '\0' |
-	xargs -0 -P "$jobs" -n 1 sh -c 'line="$0"; name="${line%%|*}"; cmd="${line#*|}"; start=$(date +%s); sh -c "$cmd" > "'"$logs"'/$name.log" 2>&1; echo "$name $? $(( $(date +%s) - start ))" > "'"$logs"'/$name.result"'
+	xargs -0 -P "$jobs" -n 1 sh -c 'line="$0"; name="${line%%|*}"; cmd="${line#*|}"; start=$(date +%s); timeout -k 5 "'"$limit"'" sh -c "$cmd" > "'"$logs"'/$name.log" 2>&1; echo "$name $? $(( $(date +%s) - start ))" > "'"$logs"'/$name.result"'
 
 # The ones that measure wall time, alone once the pool is done, and with no quick batch beside them.
 if grep -q '^perf' "$list"; then lock_take quick "batch.sh perf"; fi
+# (Vsync on, as the player has it, unless the display is asleep: then it never comes, and the frame cap paces them, #294.)
 grep '^perf' "$list" | while IFS='|' read -r name cmd; do
+	if system_profiler SPDisplaysDataType 2> /dev/null | grep -q 'Display Asleep: Yes'; then cmd="$cmd novsync"; fi
 	start=$(date +%s)
-	sh -c "$cmd" > "$logs/$name.log" 2>&1
+	timeout -k 5 "$limit" sh -c "$cmd" > "$logs/$name.log" 2>&1
 	echo "$name $? $(( $(date +%s) - start ))" > "$logs/$name.result"
 done
 
