@@ -64,6 +64,8 @@ else
 	for i in 0 1 2 3; do add test_ai.$i "$L" test_ai.lobster -- shard:$i/4; done
 	add test_2v2 "$L" test_2v2.lobster
 	add test_mod_match "$L" test_mod_match.lobster
+	add test_units_plain "$L" test_units_plain.lobster
+	add test_hooks "$L" test_hooks.lobster
 	add air_click ./air_check.sh "$bakes" novsync   # a click takes an aircraft where it's drawn
 	add golden ./golden.sh
 	for i in 0 1 2 3; do add vbcheck.$i "$L" --background game.lobster -- none - vbcheck mute novsync shard:$i/4; done   # every building look as voxels: no specks (a window each, behind the others; no vsync, which never comes with the display asleep, #294)
