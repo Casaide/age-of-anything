@@ -1,0 +1,159 @@
+{
+  "_doc": "The one size table (Dominic picked these from the lineup, 2026-11-06). bodies: a body's size, and h, its height bare and standing in voxels (32 art px is 58 voxels: a human). mounts: ride, its size under a rider of the human's height, scaled by the rider's h; seat or length is what that gives, in rider heights (rat on capybara is the model: seat 0.87). size_check.lobster fails if the drawings and this table part.",
+  "bodies": {
+    "human": {
+      "size": 0.785,
+      "h": 58
+    },
+    "rat": {
+      "size": 0.85,
+      "h": 40
+    },
+    "frog": {
+      "size": 0.885,
+      "h": 28,
+      "crew_k": 1.35,
+      "rides_as": 39
+    },
+    "spider": {
+      "size": 1.0,
+      "h": 27
+    },
+    "beetle_rear": {
+      "size": 0.92,
+      "h": 33,
+      "rides_as": 40
+    },
+    "bear": {
+      "size": 1.25,
+      "h": 81,
+      "crew_k": 0.8,
+      "crew_seats": 1,
+      "wide": 42
+    },
+    "deer": {
+      "size": 0.7,
+      "h": 49
+    },
+    "sheep": {
+      "size": 0.8,
+      "h": 29
+    },
+    "boar": {
+      "size": 0.75,
+      "h": 29
+    },
+    "pony": {
+      "size": 1.044,
+      "h": 71
+    },
+    "capybara": {
+      "size": 1.63,
+      "h": 59
+    },
+    "cat": {
+      "size": 1.42,
+      "h": 76
+    },
+    "bear_mount": {
+      "size": 1.203,
+      "h": 59,
+      "wide": 38
+    },
+    "newt": {
+      "size": 1.77,
+      "h": 47
+    },
+    "beetle": {
+      "size": 1.43,
+      "h": 46
+    },
+    "hummingbird": {
+      "size": 2.73,
+      "h": 124
+    },
+    "siege.beast.elephant": {
+      "size": 1.12,
+      "h": 129,
+      "deck": [
+        9.5,
+        9.5
+      ]
+    },
+    "siege.beast.boar": {
+      "size": 2.0,
+      "h": 83
+    },
+    "siege.beast.heron": {
+      "size": 0.8,
+      "h": 73
+    },
+    "siege.beast.mantis": {
+      "size": 1.35,
+      "h": 80
+    },
+    "siege.beast.tarantula": {
+      "size": 2.2,
+      "h": 58
+    },
+    "siege.bolt": {
+      "size": 1.4,
+      "h": 65
+    },
+    "siege.cart": {
+      "size": 1.3,
+      "h": 58
+    },
+    "siege.catapult": {
+      "size": 1.6,
+      "h": 79
+    },
+    "siege.ram": {
+      "size": 0.8,
+      "h": 99
+    },
+    "siege.sling": {
+      "size": 1.7,
+      "h": 198
+    },
+    "siege.tower": {
+      "size": 1.25,
+      "h": 231
+    }
+  },
+  "mounts": {
+    "pony": {
+      "ride": 1.044,
+      "seat": 0.87
+    },
+    "capybara": {
+      "ride": 1.63,
+      "seat": 0.87
+    },
+    "cat": {
+      "ride": 1.42,
+      "seat": 0.87
+    },
+    "bear_mount": {
+      "ride": 1.203,
+      "seat": 0.87
+    },
+    "spider": {
+      "ride": 2.53,
+      "seat": 0.87
+    },
+    "newt": {
+      "ride": 1.77,
+      "length": 2.0
+    },
+    "beetle": {
+      "ride": 1.43,
+      "length": 1.6
+    },
+    "hummingbird": {
+      "ride": 2.73,
+      "length": 1.64,
+      "span": 1.2
+    }
+  }
+}
