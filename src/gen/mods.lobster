@@ -126,7 +126,7 @@ def mod_check_shot_look(k:string, name:string, o:JV, known:[string]) -> string:
     return ""
 
 def mod_check_shot(k:string, m:JV) -> string:
-    let known = [ "_doc", "extends", "tag", "speed", "sound", "sticks", "arc", "form", "len", "w", "hold", "pulses", "scatter", "wobble", "jag", "col", "glow", "fade", "hit", "trail", "muzzle", "impact" ]
+    let known = [ "_doc", "extends", "tag", "speed", "sound", "sticks", "arc", "form", "len", "w", "shaft", "head", "fletch", "hold", "pulses", "scatter", "wobble", "jag", "col", "glow", "fade", "hit", "trail", "muzzle", "impact" ]
     for(m.keys) key:
         if not has_s(known, key): return "shots.json {k}: no knob \'{key}\' (knobs: {concat_string(known, ", ")})"
     for([ "arc", "len", "w", "hold", "wobble", "jag", "fade", "trail" ]) key:
