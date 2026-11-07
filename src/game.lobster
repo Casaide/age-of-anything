@@ -520,10 +520,13 @@ def fx_events():
         elif e.kind == EV_DIE and e.b == 1:
             if fog[ME][cell_of(e.x, e.y)] != 0: building_fell(e)
 
+let AIM_HOLD_S = 1.0  // how long after its next shot was due a gun stays up
+
 def unit_state(i:int, moving:bool) -> string, int:
     let k = u_kind[i]
     let t0 = attack_t0.get(u_id[i], -10.0)
-    if clock_s - t0 < 0.5 and not (t_mounts[k].length and moving): return "attack", int((clock_s - t0) * 16.0)  // (a turret fires as it drives: its tracks run on)
+    if clock_s - t0 < 0.5 and not (t_mounts[k].length and moving): return "attack", int((clock_s - t0) * 16.0)                              // (a turret fires as it drives: its tracks run on)
+    if clock_s - t0 < float(t_reload[k]) / 20.0 + AIM_HOLD_S and vx_between_shots(vx_kind_aims(k), moving) == "attack": return "attack", 7  // (a gun stays up between shots, #261)
     let res = if u_carry_kind[i] > 0: resource_names[u_carry_kind[i] - 1] else: ""
     let phase = int(clock_s * 8.0) + u_id[i]
     if moving:
@@ -1644,6 +1647,20 @@ def draw_ring(p:float2, r:float, col:float4):
             let a1 = 360.0 * float(k + 1) / float(n)
             ui_line(p + float2 { cos(a0) * r, sin(a0) * r * 0.5 }, p + float2 { cos(a1) * r, sin(a1) * r * 0.5 }, 1.6, col)
 
+// A shot's key in shot_from and shot_mouth, at its place in shots. (Two guns can fire together.)
+def shot_key(o:int) -> int: return (shots[o + SHOT_BY] * 65536 + shots[o + SHOT_LAND] % 65536) * 8 + shots[o + SHOT_MOUNT]
+
+// Forget the landed shots. One still flying keeps its start: forgotten, it would fire again and start over (#265).
+def forget_landed_shots():
+    let was_from, was_mouth = shot_from, shot_mouth
+    shot_from = dictionary<int, int>(1024)
+    shot_mouth = dictionary<int, float2>(1024)
+    for(shots.length / SHOT_STRIDE) k:
+        let key = shot_key(k * SHOT_STRIDE)
+        if was_from.get(key, -1) >= 0:
+            shot_from.set(key, was_from.get(key, -1))
+            shot_mouth.set(key, was_mouth.get(key, float2 { 0.0, -12.0 }))
+
 // Shots in flight (shots.gd, combat_fx.gd): each weapon's shot on its arc from the shooter's body to
 // where it lands, for the sim's flight, with a speck of shadow under it. Canvas units (under the 1.5 scale).
 def draw_shots(alpha:float):
@@ -1653,14 +1670,14 @@ def draw_shots(alpha:float):
         let o = k * SHOT_STRIDE
         let land = shots[o + SHOT_LAND]
         let mount = shots[o + SHOT_MOUNT]
-        let key = (shots[o + SHOT_BY] * 65536 + land % 65536) * 8 + mount  // (two guns can fire together)
+        let key = shot_key(o)
         var t_from = shot_from.get(key, -1)
         let firstseen = t_from < 0
         if firstseen:
             t_from = tick - 1
             shot_from.set(key, t_from)
             shot_mouth.set(key, muzzle_of(shots[o + SHOT_BY], mount))
-        let t = shot_drawn_u((float(tick - t_from) + alpha) / 20.0, float(max(1, land - t_from)) / 20.0)
+        let flight = float(max(1, land - t_from)) / 20.0
         let ax = shots[o + SHOT_X]
         let ay = shots[o + SHOT_Y]
         let sx = shots[o + SHOT_X0]
@@ -1669,6 +1686,7 @@ def draw_shots(alpha:float):
             let src = shots[o + SHOT_SRC]
             let own = if src >= 0 and mount < t_mounts[src].length: t_mounts[src][mount].shot else: ""
             let st = shot_style(if own != "": own elif src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
+            let t = shot_drawn_u((float(tick - t_from) + alpha) / 20.0, flight, st.muzzle.flash > 0.0)
             let a = ground_at(sx, sy) + shot_mouth.get(key, float2 { 0.0, -12.0 })
             let to_j = index_of(shots[o + SHOT_TO])
             let b = ground_at(ax, ay) - float2 { 0.0, 10.0 + (if to_j >= 0: air_lift(u_kind[to_j]) / 1.5 else: 0.0) }
@@ -1679,8 +1697,7 @@ def draw_shots(alpha:float):
                 if t >= 0.0: draw_bolt(st, a, b, t, 1.0)  // (launched late: it looks faster, and lands on the sim's tick)
             elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
     draw_tracers()
-    if tick % 200 == 0: shot_mouth = dictionary<int, float2>(1024)
-    if tick % 200 == 0: shot_from = dictionary<int, int>(1024)  // (forget the landed ones now and then)
+    if tick % 200 == 0: forget_landed_shots()
 
 // Health bars over hurt units you can see, and over the selected.
 def draw_bars(alpha:float):
@@ -2282,7 +2299,12 @@ for(args) a:
 if has_s(args, "vbcheck"):
     bake_live = false
     for(args) a: if starts_with(a, "dump:"): akb_check_dump = a.substring(5, a.length - 5)
-    if akb_check(all_architectures()) > 0: set_exit_code(1)
+    var checked = all_architectures()
+    for(args) a:  // shard:<i>/<n>: every n-th architecture from the i-th, for n processes side by side (batch.sh)
+        if starts_with(a, "shard:"):
+            let shard, shards = split_string(a.substring(6, a.length - 6), "/")
+            checked = filter(checked) _a, n: n % string_to_int(shards) == string_to_int(shard)
+    if akb_check(checked) > 0: set_exit_code(1)
     bake_quit = true
 // prebake: every prop and every architecture's buildings baked into the shipped folder (src/prebake.sh), then quit.
 if has_s(args, "prebake"):

@@ -131,6 +131,13 @@ def covers(fx:Effect, k:int) -> bool:
 
 // A unit type's numbers from a line step's eval with the effects applied (World.set_type,
 // Combat.type_vectors, Tech.retype). Its units keep their share of health and take its speed.
+// A shot.s pace, milli-tiles a tick: the fastest of these tags (a shell in a bolt thrower line flies as a shell, in
+// whatever order its tags come), else the rule.s.
+def shot_speed_of(tags:[int]) -> int:
+    var best = 0
+    for(tags) c: best = max(best, shot_speeds[c])
+    return if best > 0: best else: r_shot_speed
+
 def set_type_from(k:int, l:LineStep, fxs:[Effect]):
     let C = num_classes
     var attack = l.attack
@@ -175,12 +182,7 @@ def set_type_from(k:int, l:LineStep, fxs:[Effect]):
     t_ranged[k] = if ranged: 1 else: 0
     t_reach[k] = if ranged: range * TILE else: r_melee_reach
     t_reload[k] = if ranged: r_ranged_reload else: r_melee_reload
-    t_shot_speed[k] = r_shot_speed
-    var found = false
-    for(l.tags) c:  // the weapon's own pace: the first tag that has one
-        if not found and shot_speeds[c] > 0:
-            t_shot_speed[k] = shot_speeds[c]
-            found = true
+    t_shot_speed[k] = shot_speed_of(l.tags)
     t_machine[k] = if contains(l.tags, class_machine): 1 else: 0
     t_mounted[k] = if contains(l.tags, class_mounted): 1 else: 0
     if l.reload > 0: t_reload[k] = l.reload
