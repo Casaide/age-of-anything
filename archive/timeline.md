@@ -231,3 +231,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-06: Silent traps in bodies now work or say why, and every pack's bodies are checked (D-232, #184).
 - 2026-11-06: Shermans, Panzers, fighters and flak gunners in a match, all data on the new schema (D-233, #185).
 - 2026-11-06: Tanks are knocked out where they stand, burning then smoking, not tipped over (D-234, #186).
+- 2026-11-07: The Sherman is carved from the Army's own drawings; real subjects are traced, not guessed (D-235, #167, #302).
