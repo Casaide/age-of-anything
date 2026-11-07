@@ -8256,7 +8256,7 @@
     "pierce": 14
    },
    "radius": 420,
-   "form_radius": 850
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8307,7 +8307,7 @@
     "pierce": 14
    },
    "radius": 420,
-   "form_radius": 850
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8359,7 +8359,7 @@
     "pierce": 8
    },
    "radius": 420,
-   "form_radius": 850
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8410,7 +8410,7 @@
     "pierce": 14
    },
    "radius": 420,
-   "form_radius": 850
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8462,7 +8462,7 @@
     "pierce": 12
    },
    "radius": 420,
-   "form_radius": 850
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8774,7 +8774,7 @@
     "pierce": 6
    },
    "radius": 420,
-   "form_radius": 660
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -8826,7 +8826,7 @@
     "pierce": 6
    },
    "radius": 420,
-   "form_radius": 660
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -8878,7 +8878,7 @@
     "pierce": 6
    },
    "radius": 420,
-   "form_radius": 660
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -8930,7 +8930,7 @@
     "pierce": 6
    },
    "radius": 420,
-   "form_radius": 660
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -8982,7 +8982,7 @@
     "pierce": 4
    },
    "radius": 420,
-   "form_radius": 660
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -9033,7 +9033,7 @@
     "pierce": 16
    },
    "radius": 480,
-   "form_radius": 1020
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -9084,7 +9084,7 @@
     "pierce": 16
    },
    "radius": 480,
-   "form_radius": 1020
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -9135,7 +9135,7 @@
     "pierce": 16
    },
    "radius": 480,
-   "form_radius": 1020
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -9186,7 +9186,7 @@
     "pierce": 16
    },
    "radius": 480,
-   "form_radius": 1020
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -9237,7 +9237,7 @@
     "pierce": 16
    },
    "radius": 480,
-   "form_radius": 1020
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -10612,7 +10612,7 @@
     "pierce": 6
    },
    "radius": 420,
-   "form_radius": 620
+   "form_radius": 686
   },
   "shapes": [
    {
@@ -10665,7 +10665,7 @@
     "pierce": 6
    },
    "radius": 420,
-   "form_radius": 620
+   "form_radius": 686
   },
   "shapes": [
    {
@@ -10718,7 +10718,7 @@
     "pierce": 6
    },
    "radius": 420,
-   "form_radius": 620
+   "form_radius": 686
   },
   "shapes": [
    {
@@ -10771,7 +10771,7 @@
     "pierce": 6
    },
    "radius": 420,
-   "form_radius": 620
+   "form_radius": 686
   },
   "shapes": [
    {
@@ -10824,7 +10824,7 @@
     "pierce": 8
    },
    "radius": 420,
-   "form_radius": 620
+   "form_radius": 686
   },
   "shapes": [
    {
