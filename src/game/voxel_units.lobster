@@ -112,7 +112,7 @@ def vx_key_of(u:vx_unit_def) -> string:
 
 // How far a foot swings out from under the hip, body units (the body's, or its mount's).
 def vx_reach(u:vx_unit_def) -> float:
-    if u.mount != "": return vx_body_of(u.mount).reach * vx_body_of(u.mount).size / vx_size_of(u)
+    if u.mount != "": return vx_body_of(u.mount).reach * vx_mount_size(vx_body_of(u.body), vx_body_of(u.mount)) / vx_size_of(u)
     return vx_body_of(u.body).reach
 
 // The look a recipe is drawn in (made the first time it's asked for; not baked until planned).
@@ -259,7 +259,9 @@ def vx_job_step(j:vx_job, until:float) -> bool:
             if hull != "" and m != VX_DIE:  // (its parts are baked apart and stacked on it; it falls whole)
                 wu = copy(wu)
                 wu.body = hull
+            vx_fall_t = if m == VX_DIE: float(pose.y + 1) / float(VX_STEPS[VX_DIE]) else: 0.0
             var parts = vx_unit_prims(wu, if m == VX_DIE: 0.0 else: float(pose.y) * 45.0)
+            vx_fall_t = 0.0
             if m == VX_DIE:
                 let whole = vx_body_of(u.body)
                 parts = if whole.death == "knocked_out": vx_knocked_out(u, whole) else: vx_fallen(parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
@@ -542,6 +544,9 @@ def vx_frame_for(id:int, k:int, state:string, d:int, n:int) -> int:
     if fr >= 0: return fr
     vx_stand_now(lk)  // (drawn before it's baked: a unit of a later age put down)
     return vx_frame(lk, 0, VX_IDLE, f, 0)
+
+// Does type k hold a gun up to aim? (Its look now.)
+def vx_kind_aims(k:int) -> bool: return vx_drawn(k) and vx_aiming(vx_lks[vx_cur[k]].u)
 
 // A part's frame in facing f (asked for if it isn't baked yet), or -1.
 def vx_piece_frame(plk:int, f:int) -> int:
