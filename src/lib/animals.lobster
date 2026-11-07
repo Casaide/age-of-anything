@@ -252,33 +252,6 @@ def animal_hurt(i:int, by:int):
     let len = max(1, abs(dx) + abs(dy))
     order_move(i, u_x[i] + dx * t_flee[k] / len, u_y[i] + dy * t_flee[k] / len, 300, 0, -1, -1, 0)
 
-// An animal died at slot i: its carcass lies on the nearest open cell, and its hunters gather it.
-def animal_died(i:int):
-    let k = u_kind[i]
-    if t_food[k] <= 0: return
-    let here = cell_of(u_x[i], u_y[i])
-    var cell = -1
-    for(3) r:
-        var dy = -r
-        while dy <= r:
-            var dx = -r
-            while dx <= r:
-                let x = here % W + dx
-                let y = here / W + dy
-                if cell < 0 and x >= 0 and y >= 0 and x < W and y < H:
-                    let c = y * W + x
-                    if walks[0][c] == 1 and occupied[c] == 0 and amount[c] == 0: cell = c
-                dx++
-            dy++
-    if cell < 0: return
-    set_terrain(cell, tr_index("carcass"))
-    amount[cell] = t_food[k]
-    let dead = u_id[i]
-    for(u_x.length) j:
-        if u_foe[j] == dead and t_worker[u_kind[j]]:
-            u_foe[j] = 0
-            start_gather(j, cell, resource_index("food") + 1)
-
 def tr_index(name:string) -> int:
     for(tr_names) n, k:
         if n == name: return k
