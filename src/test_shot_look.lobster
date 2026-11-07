@@ -145,6 +145,19 @@ for([ "arrow", "bolt" ]) kind:
     check(magnitude(flying[1].b - flying[1].a) <= 1.8, "{kind}\'s fletching is small")
     check(flying[1].w <= 1.6, "{kind}\'s fletching is narrow ({flying[1].w})")
 
+// Whatever else stands in the ground (a javelin, a dart) is no peg either.
+let STUCK_W_MAX = 1.3
+for(shots_data.keys) kind, n:
+    let m = shots_data.a[n]
+    if kind != "_doc" and not has(m, "shaft") and has(m, "len") and as_float(at(m, "len")) > 0.0:
+        let plain = stuck_lines(float2_0, float2 { 0.0, -6.0 }, as_float(at(m, "w")), hex_of_knob(m, "col"), 1.0)
+        var plain_w = 0.0
+        var plain_balls = 0
+        for(plain) l:
+            plain_w = max(plain_w, l.w)
+            if l.ball: plain_balls++
+        check(plain_w <= STUCK_W_MAX and plain_balls == 0, "{kind} stuck in the ground: {plain_w} wide (at most {STUCK_W_MAX}), {plain_balls} round ends")
+
 // The game draws through it; the sim never reads it.
 let game = read_file("game.lobster") or ""
 let fx = read_file("game/fx.lobster") or ""
