@@ -209,6 +209,7 @@ def evaluate(recipe:JV, rules:JV, age:int) -> JV:
     set(out, "train_time", jint(max(3, (as_int(at(c, "train_base")) * curve(as_str(at(c, "train_curve")), points) * (100 + train_pct) / 100 + 500) / 1000)))
     set(out, "pop", jint(gint(terms, "pop", if has_s(tags, "large"): 2 else: 1)))
     set(out, "radius", jint(gint(bstats, "radius", 0)))
+    if has(bstats, "form_radius"): set(out, "form_radius", jint(gint(bstats, "form_radius", 0)))
     set(out, "sight", jint(sight))
     for(weapon.keys) k, n:
         if not has(out, k): set(out, k, weapon.a[n])
