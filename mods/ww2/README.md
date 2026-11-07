@@ -18,5 +18,5 @@ Or watch both sides' tanks fight:
 - **Fighter** (`siege.beast.fighter`): the war beast line, a real aircraft (`stats.air`, the `flying` tag) with a propeller (`wheels` with
   `blades`). Only what can hit air touches it. Its `flies` is a promise, not a lift: its points are set at that height.
 - **Flak gunners** (`weapon.flak`): the archer line, the counter to aircraft by a `bonus` on the `air` tag.
-- **People** (`crew_1944`): the game's human at 60%, a body of its own, so a person doesn't stand taller than a tank.
+- **Soldiers** (`gi_1944`, `landser_1944`): their own bodies, no parts of the game's kit: a GI in M1 helmet, M41 jacket and canvas leggings with an M1, a German in a Stahlhelm, field grey and jackboots with a Kar98k. Traced from public-domain US Army references (TM-E 30-451 plate I and fig. 36, a 1942 Fort Knox photograph, M1 rifle photographs; `reference/`, gitignored, is not shipped). `src/ww2_soldiers_check.sh` holds them to it.
 - **Shots** (`data/shots.json`): the 75 mm shell, the machine gun, the flak. **Sounds** (`data/audio.json`): engines, tracks, turret.
