@@ -314,6 +314,14 @@ elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (t
                 if as_wreck < WRECK_KEEPS_PCT:
                     print "bodies: {id} does not stay where it stood"
                     bad++
+            if b.track:  // (a vehicle's `skin` is its crew's skin colour: a tank painted in it comes out flesh coloured, #167)
+                let flesh = vx_mat("skin")
+                var painted = 0
+                for(b.shapes) s:
+                    if s.mat == flesh: painted++
+                if painted > 0:
+                    print "bodies: {id} has {painted} shapes painted in its crew\'s skin"
+                    bad++
             if b.parts.length: bad += parts_faults(id, "-")
     print "bodies: {n} bodies, {bad} faults"
     assert bad == 0
