@@ -19,3 +19,7 @@ view() {
 view 55 m4a3_75w side 640x340+325+495 200%
 view 55 m4a3_75w top 640x290+325+150 200%
 view 55 m4a3_75w front 300x340+1110+500 300%
+# FM 30-40, "PzKw IV Tank" (November 1943, the long gun)
+view 132 pz4 side 640x290+365+580 200%
+view 132 pz4 top 640x300+345+165 200%
+view 132 pz4 front 300x290+1180+580 300%
