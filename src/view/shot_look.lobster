@@ -9,7 +9,7 @@ let SHOT_DRAWN_MIN = 0.2    // seconds, at least (a short shot isn't a flicker)
 def shot_drawn_time(flight:float) -> float: return min(flight, max(flight * SHOT_DRAWN_SHARE, SHOT_DRAWN_MIN))
 
 // How far along its way a shot is drawn, that many seconds into its flight (1: landed); below 0: not yet launched.
-def shot_drawn_u(elapsed:float, flight:float) -> float:
-    let drawn = shot_drawn_time(flight)
+def shot_drawn_u(elapsed:float, flight:float, gun = false) -> float:
+    let drawn = if gun: flight else: shot_drawn_time(flight)  // (a gun's flash and its shell go together: all its flight, #265)
     if drawn <= 0.0: return 1.0
     return min(1.0, (elapsed - (flight - drawn)) / drawn)
