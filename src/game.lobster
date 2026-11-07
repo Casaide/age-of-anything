@@ -111,6 +111,16 @@ var mode_arg = ""             // mode:<id>: the lobby's game mode (data/modes.js
 var map_arg = ""              // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""            // races:<A>|<B>: the lobby's prompts, as if typed (then played)
 var look_y = -1
+var rec_dir = ""  // record:<dir>: from:<seconds> of play on, for:<seconds>, one PNG a frame at 30 fps, then quit (a clip of the game)
+var rec_from = 0.0
+var rec_for = 10.0
+var rec_n = 0
+var rec_fps = 30.0         // fps:<n>: frames a second of play
+var rec_clean = false      // clean: no HUD, panel or health bars (a clip for showing)
+var rec_type = []::string  // typein:A|B: (filming the lobby)
+var rec_side = 0
+var rec_char = 0
+var rec_wait = 30
 var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks through it)
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
@@ -148,6 +158,12 @@ for(args) a, k:
         if key == "fsat": window_toggles = map(tokenize(val, ",", " ")) t: string_to_float(t)
         if key == "fsreport": window_report = val
         if key == "at": shot_at = string_to_float(val)
+        if key == "record": rec_dir = val
+        if key == "typein": rec_type = tokenize(val, "|", " ")
+        if key == "from": rec_from = string_to_float(val)
+        if key == "for": rec_for = string_to_float(val)
+        if key == "fps": rec_fps = string_to_float(val)
+        if a == "clean": rec_clean = true
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
         if a == "reveal": reveal = true
@@ -193,7 +209,7 @@ for(args) a, k:
             look_y = string_to_int(ly)
 
 // Tests and captures are silent (Dominic: no sound from testing); `mute` silences a game too.
-if has_s(args, "mute") or shot != "" or selftest or airtest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
+if has_s(args, "mute") or shot != "" or rec_dir != "" or selftest or airtest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
     sound_on = false
     pace_background = false  // (tests and captures keep their pace with the window in the background, game/pace.lobster)
 
@@ -1601,8 +1617,8 @@ def scroll():
     if gl.button("right") >= 1 or gl.button("d") >= 1: d.x += 1.0
     if gl.button("up") >= 1 or gl.button("w") >= 1: d.y -= 1.0
     if gl.button("down") >= 1 or gl.button("s") >= 1: d.y += 1.0
-    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y  // (outside the window the mouse reads 0, 0)
-    if inside and shot == "" and gl.window_focused():                   // (the mouse is free now: not while it works in another app)
+    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y   // (outside the window the mouse reads 0, 0)
+    if inside and shot == "" and rec_dir == "" and gl.window_focused():  // (the mouse is free now: not while it works in another app)
         if m.x <= 3.0: d.x -= 1.0
         if m.y <= 3.0: d.y -= 1.0
         if m.x >= ws.x - 4.0: d.x += 1.0
@@ -1710,7 +1726,7 @@ def draw_rings(alpha:float, raised:bool):
 
 def draw_marks(alpha:float):
     gl.set_shader("color")
-    draw_bars(alpha)
+    if not rec_clean: draw_bars(alpha)
     for(selected_units()) id:
         let i = index_of(id)
         let px, py = prev_pos(i)
@@ -2201,7 +2217,7 @@ def note(s:string):
 note("start")
 // (a capture runs without vsync: with the display asleep or the screen locked, vsync never lets a frame through;
 // novsync: the same for a measure, the frame cap still pacing it)
-let no_vsync = shot != "" or selftest or padtest or has_s(args, "novsync")
+let no_vsync = shot != "" or rec_dir != "" or selftest or padtest or has_s(args, "novsync")
 volume_load()
 window_fullscreen = starts_fullscreen(args, windowed_setting)
 fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, window_flags(no_vsync, window_fullscreen)))
@@ -2765,6 +2781,9 @@ def play_match():
     end_watching = false
     note("loop")
     pace(PACE_MATCH)
+    if rec_dir != "":  // (as fast as it goes up to from:)
+        gl.set_fixed_delta_time(0.2, 0.0)
+        speed = 8.0
     while gl.frame() and not quit_game and not bake_quit:
         ui_click_tick()
         window_tick()
@@ -2902,9 +2921,9 @@ def play_match():
             cam += shake
             draw_world(acc / 0.05)
             cam -= shake
-            ui_batch(): draw_panel()
+            if not rec_clean: ui_batch(): draw_panel()
             perf_lap(6)
-            draw_hud(paused, speed)
+            if not rec_clean: draw_hud(paused, speed)
             perf_lap(7)
             draw_groups()
             perf_lap(8)
@@ -2947,6 +2966,19 @@ def play_match():
             print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
             quit_app = true
             return
+        if rec_dir != "" and winner >= 0 and clock_s < rec_from:  // (the match was over before from:, and play has stopped)
+            print "record: match over at {clock_s} s, before from:"
+            quit_app = true
+            return
+        if rec_dir != "" and clock_s >= rec_from:
+            if rec_n == 0:
+                gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
+                speed = start_speed
+            gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
+            rec_n++
+            if float(rec_n) >= rec_for * rec_fps:
+                quit_app = true
+                return
         if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return
