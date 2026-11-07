@@ -24,5 +24,42 @@
   },
   "ww2_fighter_mark": {
     "rgb": "#7a6644"
+  },
+  "ww2_od_jacket": {
+    "rgb": "#6d7050"
+  },
+  "ww2_od_wool": {
+    "rgb": "#4e4a34"
+  },
+  "ww2_canvas": {
+    "rgb": "#a3966f"
+  },
+  "ww2_web": {
+    "rgb": "#7e7a55"
+  },
+  "ww2_m1_green": {
+    "rgb": "#4c5535"
+  },
+  "ww2_boot_brown": {
+    "rgb": "#4a3020"
+  },
+  "ww2_feldgrau": {
+    "rgb": "#66705f"
+  },
+  "ww2_collar": {
+    "rgb": "#35402f"
+  },
+  "ww2_boot_black": {
+    "rgb": "#201d1a"
+  },
+  "ww2_stahl": {
+    "rgb": "#545a4e"
+  },
+  "ww2_walnut": {
+    "rgb": "#6e3b20"
+  },
+  "ww2_gunmetal": {
+    "rgb": "#23252b",
+    "shine": 0.4
   }
 }
