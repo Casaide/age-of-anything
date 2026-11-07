@@ -23,7 +23,7 @@ class row:
 let PARTS_OFF_PCT = 1.5     // (the outlines where a part meets its hull differ a little)
 let FLIER_LIFT_SHARE = 0.5  // how much of its flying height a flier's lowest pixel must be off the ground (its wings hang below its middle)
 let FLIER_FALL_STEPS = 8
-let FLIER_WRECK_LOW = 8   // px above its ground point it may end, at most
+let FLIER_WRECK_LOW = 8  // px above its ground point it may end, at most
 let AIM_STEPS = 8
 let AIM_DROP = 0.5      // body units its muzzle may rise or fall through the firing cycle
 let AIM_KICK_MIN = 0.5  // body units the recoil throws it back
