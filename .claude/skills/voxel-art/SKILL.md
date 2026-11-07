@@ -39,6 +39,7 @@ mixture of things, however careful (Dominic, 2026-11-06, D-235). The Sherman, `m
    `turret_top` traces the turret's inner line, since the top silhouette can't see it.
 5. **Details at traced positions:** points are pixels on the drawings (`["o", x inches, side h, side v]`, `["t", top v, top h, side v]`), sizes are inches.
    Running gear goes in `tracks` and `wheels`, sloped plates in `plates` (flat boxes, or they terrace). Hard shapes reach half a voxel past their size.
+   A line drawing crossed by dimension lines can't be filled: trace each view's `outline` as polygons over it (the P-51, `p51d.json`). Three outlines can't tell a wing from a tailplane at the same width: `exclude` a stretch of the front outline along the plane, or each grows a ghost of the other. A flier says `flies`: real-size wings reach the ground line on screen, so `voxel_proto -- - bodies` sets how high it must be.
 6. **Check against the drawing:** `lobster carve.lobster -- <spec> check <dir>` writes side, top and front overlays (grey agree, red voxels only, blue drawing only), a
    line per view of what's over a voxel out, and a table at the spec's `stations`. Aim for under a voxel; say honestly what isn't. The table goes in the PR.
 7. **Play it in a real match before showing it.** Renders aren't the game: an engine's `skin` is its crew's colour, so paint it with a material of its own.
