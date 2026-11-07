@@ -135,6 +135,9 @@ let sponson = poly(at(spec, "sponson"))
 let lower_half = as_float(at(spec, "lower_half_width"))
 let seat = as_float(at(spec, "seat"))
 
+// Sloped plates as lines on the side view: h0, v0, h1, v1.
+let plates = map(glist(spec, "plates")) q: float4 { as_float(q.a[0]), as_float(q.a[1]), as_float(q.a[2]), as_float(q.a[3]) }
+
 def sponson_at(h:float) -> float:
     for(sponson.length - 1) i:
         let a, b = sponson[i], sponson[i + 1]
@@ -148,6 +151,8 @@ def carved_hull(x:float, y:float, z:float) -> bool:
     let v = side_v(z)
     if v < seat or not in_views(x, y, z): return false
     let h = side_h(y)
+    for(plates) p:  // (a sloped plate is its own flat box: no voxel steps above it)
+        if h >= p.x and h <= p.z and v < p.y + (p.w - p.y) * (h - p.x) / (p.z - p.x): return false
     if v > sponson_at(h):  // under the sponsons: the lower hull between the tracks, the tracks are running gear
         return abs(x) <= lower_half and inside(lower_keep, h, v)
     return true
@@ -235,6 +240,25 @@ def wheel(w:JV) -> JV:
         if has(o, key): o.set(key, jnum(units(as_float(at(o, key)))))
     return o
 
+// A sloped plate as a flat box under its line, its top the plate: so light falls on one face, with no terraces.
+def plate_box(p:float4) -> JV:
+    let t = as_float(at(spec, "plate_half_inches"))
+    let y0, z0 = y_of_side(p.x), z_of_side(p.y)
+    let y1, z1 = y_of_side(p.z), z_of_side(p.w)
+    let len = magnitude(float2 { y1 - y0, z1 - z0 })
+    var ay, az = (z0 - z1) / len, (y1 - y0) / len
+    if az < 0.0:
+        ay = -ay
+        az = -az
+    let cy, cz = (y0 + y1) / 2.0 - ay * t, (z0 + z1) / 2.0 - az * t
+    let o = jobj()
+    o.set("box", jarr([ jstr("o"), jint(0), jnum(units(cy)), jnum(units(cz)) ]))
+    o.set("n", jarr([ jint(0), jnum(ay), jnum(az) ]))
+    o.set("half", jarr([ jnum(units(as_float(at(vt, "wide")) / 2.0 - 1.0)), jnum(units(t)), jnum(units(len / 2.0)) ]))
+    o.set("mat", jstr("skin"))
+    o.set("round", jint(0))
+    return o
+
 def build():
     let c = at(spec, "colours")
     let tr = deep_copy(at(spec, "tracks"))
@@ -245,6 +269,7 @@ def build():
     tr.set("round", jarr(circles))
     let hull = boxes_of(fn x, y, z: carved_hull(x, y, z))
     let turret = boxes_of(fn x, y, z: carved_turret(x, y, z))
+    for(plates) p: hull.push(plate_box(p))
     for(glist(spec, "hull_details")) d: hull.push(detail(d))
     for(glist(spec, "turret_details")) d: turret.push(detail(d))
     let pv = point_units(at(spec, "pivot").a)
@@ -355,6 +380,7 @@ def check(dir:string):
             if vhi >= 0 and dhi >= 0:
                 seen++
                 let e = max(abs(vlo - dlo), abs(vhi - dhi))
+                if e > 1: print "  {name}: column {c + c0} drawing {dlo}..{dhi} voxels {vlo}..{vhi}"
                 if e > 1: bad++
                 if float(e) > worst:
                     worst = float(e)
