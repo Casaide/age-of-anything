@@ -448,7 +448,7 @@ def fx_draw(ground_of):
         let a = clamp((STUCK_TIME - s.t) / 0.6, 0.0, 1.0)
         let up = float2 { sin(s.tilt * 57.29578), -cos(s.tilt * 57.29578) } * st.len * 0.9
         let arrow = st.shaft.w > 0.0
-        let w = if arrow: st.w else: max(st.w, 1.4)
+        let w = st.w
         let sh = s.pos + float2 { 0.6, 0.3 }
         ui_line(sh, sh + float2 { up.x * 1.4, -up.y * 0.35 }, w, float4 { 0.0, 0.0, 0.0, 0.3 * a })
         let parts = if arrow: arrow_lines(s.pos, s.pos + up, w, st.shaft, st.head, st.fletch, false) else: stuck_lines(s.pos, up, w, st.col, a)
