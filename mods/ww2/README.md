@@ -15,7 +15,7 @@ Or watch both sides' tanks fight:
 - **Tanks** (`data/voxel/bodies/siege.bolt.*`): the bolt thrower line, a crew's own (`families.json` `siege`). A turret on a mount
   (`engine.tank_gun`'s `stats.mounts`, the body's `parts`), a `muzzle` point, `tracks` and `wheels`. The same gun at the same price:
   the Sherman is quicker, the Panzer tougher.
-- **Fighter** (`siege.beast.fighter`): the war beast line, a real aircraft (`stats.air`, the `flying` tag) with a propeller (`wheels` with
+- **Fighter** (`siege.beast.fighter`, US side only): a P-51D Mustang traced from AN 01-60-3 (`trace/p51d.json`), the war beast line, a real aircraft (`stats.air`, the `flying` tag) with a propeller (`wheels` with `blades`). Only what can hit air touches it. The German side says `"war_beast": "none"`: no plane for now. Its `flies` is a promise, not a lift: its points are set at that height.
   `blades`). Only what can hit air touches it. Its `flies` is a promise, not a lift: its points are set at that height.
 - **Flak gunners** (`weapon.flak`): the archer line, the counter to aircraft by a `bonus` on the `air` tag.
 - **Soldiers** (`gi_1944`, `landser_1944`): their own bodies, no parts of the game's kit: a GI in M1 helmet, M41 jacket and canvas leggings with an M1, a German in a Stahlhelm, field grey and jackboots with a Kar98k. Traced from public-domain US Army references (TM-E 30-451 plate I and fig. 36, a 1942 Fort Knox photograph, M1 rifle photographs; `reference/`, gitignored, is not shipped). `src/ww2_soldiers_check.sh` holds them to it.

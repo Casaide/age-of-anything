@@ -298,7 +298,11 @@ def new_recipe(sd:JV, role:string) -> JV:
     return r
 
 def make_unit(sd:JV) -> JV?:
-    if has(sd, "engine"): return make_engine(sd)
+    if has(sd, "engine"):
+        // (a creature or culture can say it has none of this engine: a side with no plane)
+        let take_field = gstr(sd, "take", "siege")
+        if gstr(creature(g_creature), take_field, rstr(family(g_family), take_field)) == "none": return nil
+        return make_engine(sd)
     if rstr(sd, "role") == "unique": return make_unique(sd)
     let rng = g_rng
     let brief = g_brief

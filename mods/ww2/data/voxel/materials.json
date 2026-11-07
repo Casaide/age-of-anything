@@ -61,5 +61,16 @@
   "ww2_gunmetal": {
     "rgb": "#23252b",
     "shine": 0.4
-  }
+  },
+ "ww2_aluminium": {
+  "rgb": "#aab0b6",
+  "shine": 0.6
+ },
+ "ww2_canopy": {
+  "rgb": "#2c3a44",
+  "shine": 0.8
+ },
+ "ww2_antiglare": {
+  "rgb": "#3d4a30"
+ }
 }
