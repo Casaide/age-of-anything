@@ -8255,7 +8255,8 @@
     "melee": 0,
     "pierce": 14
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8305,7 +8306,8 @@
     "melee": 0,
     "pierce": 14
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8356,7 +8358,8 @@
     "melee": 2,
     "pierce": 8
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8406,7 +8409,8 @@
     "melee": 0,
     "pierce": 14
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8457,7 +8461,8 @@
     "melee": 1,
     "pierce": 12
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 715
   },
   "shapes": [
    {
@@ -8508,7 +8513,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 530
   },
   "shapes": [
    {
@@ -8559,7 +8565,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 530
   },
   "shapes": [
    {
@@ -8610,7 +8617,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 530
   },
   "shapes": [
    {
@@ -8661,7 +8669,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 530
   },
   "shapes": [
    {
@@ -8712,7 +8721,8 @@
     "melee": 1,
     "pierce": 8
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 530
   },
   "shapes": [
    {
@@ -8763,7 +8773,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -8814,7 +8825,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -8865,7 +8877,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -8916,7 +8929,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -8967,7 +8981,8 @@
     "melee": 1,
     "pierce": 4
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 640
   },
   "shapes": [
    {
@@ -9017,7 +9032,8 @@
     "melee": 2,
     "pierce": 16
    },
-   "radius": 480
+   "radius": 480,
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -9067,7 +9083,8 @@
     "melee": 2,
     "pierce": 16
    },
-   "radius": 480
+   "radius": 480,
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -9117,7 +9134,8 @@
     "melee": 2,
     "pierce": 16
    },
-   "radius": 480
+   "radius": 480,
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -9167,7 +9185,8 @@
     "melee": 2,
     "pierce": 16
    },
-   "radius": 480
+   "radius": 480,
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -9217,7 +9236,8 @@
     "melee": 2,
     "pierce": 16
    },
-   "radius": 480
+   "radius": 480,
+   "form_radius": 1113
   },
   "shapes": [
    {
@@ -10331,7 +10351,8 @@
     "melee": 0,
     "pierce": 3
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 580
   },
   "shapes": [
    {
@@ -10382,7 +10403,8 @@
     "melee": 0,
     "pierce": 3
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 580
   },
   "shapes": [
    {
@@ -10433,7 +10455,8 @@
     "melee": 0,
     "pierce": 3
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 580
   },
   "shapes": [
    {
@@ -10484,7 +10507,8 @@
     "melee": 0,
     "pierce": 3
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 580
   },
   "shapes": [
    {
@@ -10535,7 +10559,8 @@
     "melee": 0,
     "pierce": 3
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 580
   },
   "shapes": [
    {
@@ -10586,7 +10611,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 686
   },
   "shapes": [
    {
@@ -10638,7 +10664,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 686
   },
   "shapes": [
    {
@@ -10690,7 +10717,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 686
   },
   "shapes": [
    {
@@ -10742,7 +10770,8 @@
     "melee": 0,
     "pierce": 6
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 686
   },
   "shapes": [
    {
@@ -10794,7 +10823,8 @@
     "melee": 1,
     "pierce": 8
    },
-   "radius": 420
+   "radius": 420,
+   "form_radius": 686
   },
   "shapes": [
    {
@@ -10930,10 +10960,10 @@
  {"id": "siege.sling_packed.spooky", "slot": "engine", "noun": "Great Sling", "points": 0, "tags": ["machine"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 7, "armour": {"melee": 0, "pierce": 0}, "radius": 420}, "shapes": [{"t": "poly", "p": [[-16, -22], [16, -22], [16, 0], [-16, 0]], "ch": "wood"}], "note": "D-129: the great sling packed to move, its frame and arm on a long heavy wagon, two crew beside (siege_models.gd _great_packed). View only: shown while the sling isn't set up (siege.sling.<take> packed, UnitView.set_packed)."},
  {"id": "siege.sling_packed.frog", "slot": "engine", "noun": "Great Sling", "points": 0, "tags": ["machine"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 7, "armour": {"melee": 0, "pierce": 0}, "radius": 420}, "shapes": [{"t": "poly", "p": [[-16, -22], [16, -22], [16, 0], [-16, 0]], "ch": "wood"}], "note": "D-131: the frogs' great sling packed to move: the reed tower, the frame and the arm lashed on a heavy sledge, the bullfrog hauling it in a breast band, two frogs beside (siege_models.gd _frog_packed). View only: shown while the sling isn't set up (siege.sling.frog packed, UnitView.set_packed)."},
  {"id": "siege.sling_throw.frog", "slot": "engine", "noun": "Great Sling", "points": 0, "tags": ["machine"], "only_if": ["engine_only"], "stats": {"hp": 1, "speed": 7, "armour": {"melee": 0, "pierce": 0}, "radius": 420}, "shapes": [{"t": "poly", "p": [[-16, -22], [16, -22], [16, 0], [-16, 0]], "ch": "wood"}], "note": "D-131: the frogs' great sling as it throws: the bullfrog landed on the pad, the arm swung through, the sling whipped up and empty (siege_models.gd _frog_sling thrown). View only: shown for a moment after each shot (siege.sling.frog throw, UnitView.loose)."},
- {"id": "siege.beast.elephant", "slot": "engine", "noun": "War Elephant", "points": 20, "tags": ["war_beast", "large", "beast"], "stats": {"hp": 170, "speed": 9, "armour": {"melee": 1, "pierce": 5}, "radius": 460}, "shapes": [{"t": "poly", "p": [[-20, -40], [20, -40], [20, 0], [-20, 0]], "ch": "wood"}], "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast (milestone 13 step 7, D-129): the humans' war elephant (WB1 A): grey and wrinkled, bronze-capped tusks, a howdah in the culture's cloth, two riders. Its body, legs and head baked apart (siege_models.gd BEAST; the legs cut at each hip, the head at its neck, 2026-10-16) so it walks, strikes and falls (UnitView._beast), its riders the race's own soldiers on its crew sockets (rules roster war_beast: crew); alive, so it heals and costs food. Which creature or culture gets it: creatures.json / families.json war_beast.", "cut": ["legs", "head"], "sockets": {"head": [21, -36]}, "legs": {"part": "leg.beast_elephant", "anchors": [[15, -26, 0, 1, 0], [12, -26, 3.14, -1, 0], [-11, -26, 3.14, 1, 0], [-14, -26, 0, -1, 0]], "gait": {"swing": 0.0, "cadence": 0.6, "bob": 1.0, "rock": 0.02, "rock_rate": 1.0}, "stance": {"notch": 2.5, "_doc": "pillars straight down under the barrel; the howdah behind the withers stands higher than the head (the notch rule reads it as a shoulder)"}, "poses": 8, "_doc": "each leg jointed and baked in 8 walk steps (poses: the knee bends, the foot goes back along the ground and is lifted forward), not swung stiff; hind (the boar): its hind legs' own part; gait: its own cadence, bob and rock"}, "beast": {"head": "head.beast_elephant", "attack": "tusks", "fall": "side", "_doc": "its head part (on its head socket, cut by its body), how it strikes and how it falls (UnitView._beast: attack tusks, gore, bite, stab, strike; fall side, curl, topple, fold)"}},
+ {"id": "siege.beast.elephant", "slot": "engine", "noun": "War Elephant", "points": 20, "tags": ["war_beast", "large", "beast"], "stats": {"hp": 170, "speed": 9, "armour": {"melee": 1, "pierce": 5}, "radius": 460, "form_radius": 680}, "shapes": [{"t": "poly", "p": [[-20, -40], [20, -40], [20, 0], [-20, 0]], "ch": "wood"}], "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast (milestone 13 step 7, D-129): the humans' war elephant (WB1 A): grey and wrinkled, bronze-capped tusks, a howdah in the culture's cloth, two riders. Its body, legs and head baked apart (siege_models.gd BEAST; the legs cut at each hip, the head at its neck, 2026-10-16) so it walks, strikes and falls (UnitView._beast), its riders the race's own soldiers on its crew sockets (rules roster war_beast: crew); alive, so it heals and costs food. Which creature or culture gets it: creatures.json / families.json war_beast.", "cut": ["legs", "head"], "sockets": {"head": [21, -36]}, "legs": {"part": "leg.beast_elephant", "anchors": [[15, -26, 0, 1, 0], [12, -26, 3.14, -1, 0], [-11, -26, 3.14, 1, 0], [-14, -26, 0, -1, 0]], "gait": {"swing": 0.0, "cadence": 0.6, "bob": 1.0, "rock": 0.02, "rock_rate": 1.0}, "stance": {"notch": 2.5, "_doc": "pillars straight down under the barrel; the howdah behind the withers stands higher than the head (the notch rule reads it as a shoulder)"}, "poses": 8, "_doc": "each leg jointed and baked in 8 walk steps (poses: the knee bends, the foot goes back along the ground and is lifted forward), not swung stiff; hind (the boar): its hind legs' own part; gait: its own cadence, bob and rock"}, "beast": {"head": "head.beast_elephant", "attack": "tusks", "fall": "side", "_doc": "its head part (on its head socket, cut by its body), how it strikes and how it falls (UnitView._beast: attack tusks, gore, bite, stab, strike; fall side, curl, topple, fold)"}},
  {"id": "leg.beast_elephant", "slot": "leg", "shapes": [{"t": "line", "p": [[0, 0], [0, 20]], "w": 3, "ch": "skin"}], "tags": [], "stats": {}, "points": 0, "note": "a war beast's leg (siege_models.gd, 2026-10-16): baked at each of its hips, cut by its body, so the beast walks (UnitView._beast)"},
  {"id": "head.beast_elephant", "slot": "head", "shapes": [{"t": "circle", "c": [6, 0], "r": 5, "ch": "skin"}], "sockets": {"top": [4, -8]}, "tags": [], "stats": {}, "points": 0, "note": "a war beast's head (siege_models.gd, 2026-10-16): baked at its neck, cut by its body, so the beast strikes with it (UnitView._beast)"},
- {"id": "siege.beast.boar", "slot": "engine", "noun": "War Boar", "points": 20, "tags": ["war_beast", "large", "beast"], "stats": {"hp": 170, "speed": 9, "armour": {"melee": 1, "pierce": 5}, "radius": 460}, "shapes": [{"t": "poly", "p": [[-20, -40], [20, -40], [20, 0], [-20, 0]], "ch": "wood"}], "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast (milestone 13 step 7, D-129): the rats' war boar (WB2 A, the howdah: two riders read as more unit than the barded one with one): twice a pony's height, a bristle crest, tusks, rusted scrap riveted on its flanks, a junk pallet howdah chained on. Its body, legs and head baked apart (siege_models.gd BEAST; the legs cut at each hip, the head at its neck, 2026-10-16) so it walks, strikes and falls (UnitView._beast), its riders the race's own soldiers on its crew sockets (rules roster war_beast: crew); alive, so it heals and costs food. Which creature or culture gets it: creatures.json / families.json war_beast.", "cut": ["legs", "head"], "sockets": {"head": [21, -28]}, "legs": {"part": "leg.beast_boar", "hind": "leg.beast_boar_hind", "anchors": [[14, -24, 0, 1, 0, false], [14, -24, 3.14, -1, 0, false], [-19, -24, 3.14, 1, 0, true], [-19, -24, 0, -1, 0, true]], "gait": {"swing": 0.0, "cadence": 0.85, "bob": 1.2, "rock": 0.03, "rock_rate": 1.0}, "stance": {"notch": 2.5, "inside": 0.6, "_doc": "the junk howdah behind the hump stands higher than the head (the notch rule reads it as a shoulder); thick thighs set into the barrel"}, "poses": 8, "_doc": "each leg jointed and baked in 8 walk steps (poses: the knee bends, the foot goes back along the ground and is lifted forward), not swung stiff; hind (the boar): its hind legs' own part; gait: its own cadence, bob and rock"}, "beast": {"head": "head.beast_boar", "attack": "gore", "fall": "side", "_doc": "its head part (on its head socket, cut by its body), how it strikes and how it falls (UnitView._beast: attack tusks, gore, bite, stab, strike; fall side, curl, topple, fold)"}},
+ {"id": "siege.beast.boar", "slot": "engine", "noun": "War Boar", "points": 20, "tags": ["war_beast", "large", "beast"], "stats": {"hp": 170, "speed": 9, "armour": {"melee": 1, "pierce": 5}, "radius": 460, "form_radius": 560}, "shapes": [{"t": "poly", "p": [[-20, -40], [20, -40], [20, 0], [-20, 0]], "ch": "wood"}], "cost_mix": {"food": 60, "wood": 0, "gold": 40}, "note": "a war beast (milestone 13 step 7, D-129): the rats' war boar (WB2 A, the howdah: two riders read as more unit than the barded one with one): twice a pony's height, a bristle crest, tusks, rusted scrap riveted on its flanks, a junk pallet howdah chained on. Its body, legs and head baked apart (siege_models.gd BEAST; the legs cut at each hip, the head at its neck, 2026-10-16) so it walks, strikes and falls (UnitView._beast), its riders the race's own soldiers on its crew sockets (rules roster war_beast: crew); alive, so it heals and costs food. Which creature or culture gets it: creatures.json / families.json war_beast.", "cut": ["legs", "head"], "sockets": {"head": [21, -28]}, "legs": {"part": "leg.beast_boar", "hind": "leg.beast_boar_hind", "anchors": [[14, -24, 0, 1, 0, false], [14, -24, 3.14, -1, 0, false], [-19, -24, 3.14, 1, 0, true], [-19, -24, 0, -1, 0, true]], "gait": {"swing": 0.0, "cadence": 0.85, "bob": 1.2, "rock": 0.03, "rock_rate": 1.0}, "stance": {"notch": 2.5, "inside": 0.6, "_doc": "the junk howdah behind the hump stands higher than the head (the notch rule reads it as a shoulder); thick thighs set into the barrel"}, "poses": 8, "_doc": "each leg jointed and baked in 8 walk steps (poses: the knee bends, the foot goes back along the ground and is lifted forward), not swung stiff; hind (the boar): its hind legs' own part; gait: its own cadence, bob and rock"}, "beast": {"head": "head.beast_boar", "attack": "gore", "fall": "side", "_doc": "its head part (on its head socket, cut by its body), how it strikes and how it falls (UnitView._beast: attack tusks, gore, bite, stab, strike; fall side, curl, topple, fold)"}},
  {"id": "leg.beast_boar", "slot": "leg", "shapes": [{"t": "line", "p": [[0, 0], [0, 20]], "w": 3, "ch": "skin"}], "tags": [], "stats": {}, "points": 0, "note": "a war beast's leg (siege_models.gd, 2026-10-16): baked at each of its hips, cut by its body, so the beast walks (UnitView._beast)"},
  {"id": "leg.beast_boar_hind", "slot": "leg", "shapes": [{"t": "line", "p": [[0, 0], [0, 20]], "w": 3, "ch": "skin"}], "tags": [], "stats": {}, "points": 0, "note": "a war beast's leg (siege_models.gd, 2026-10-16): baked at each of its hips, cut by its body, so the beast walks (UnitView._beast): the hind leg"},
  {"id": "head.beast_boar", "slot": "head", "shapes": [{"t": "circle", "c": [6, 0], "r": 5, "ch": "skin"}], "sockets": {"top": [4, -8]}, "tags": [], "stats": {}, "points": 0, "note": "a war beast's head (siege_models.gd, 2026-10-16): baked at its neck, cut by its body, so the beast strikes with it (UnitView._beast)"},

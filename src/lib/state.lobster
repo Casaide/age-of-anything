@@ -63,8 +63,9 @@ var r_fog_worker = 0
 var num_classes = 0
 var t_speed = []::int
 var t_radius = []::int
-var t_role = []::int  // formation band (World._form_role)
-var t_gap = []::int   // form_gap
+var t_role = []::int    // formation band (World._form_role)
+var t_gap = []::int     // form_gap
+var t_form_r = []::int  // half its footprint with its crew, for its slot in a formation; 0: its radius (#253)
 var t_worker = []::int
 var t_harmless = []::int
 var t_healer = []::int
@@ -165,6 +166,33 @@ def unit_columns() -> [[int]]:
              u_route, u_ready, u_perch, u_wgoal, u_wnext, u_wexit, u_wtime, u_hull, u_lx, u_ly,
              u_owner, u_kind, u_speed, u_radius, u_mclass, u_block, u_bx, u_by ]
 
+// What hooks keep (hooks/active.lobster's hook_declare): saved and hashed like the sim's own. A column per name; a unit's
+// by its id, so it stays with the unit through a garrison and needn't change when units come and go.
+var hook_unit_names = []::string
+var hook_unit_cols = []::[int]
+var hook_player_names = []::string
+var hook_player_cols = []::[int]
+var hook_tick_types = []::int  // the unit types that asked for hook_unit_tick
+
+def hook_declare_unit(name:string) -> int:
+    hook_unit_names.push(name)
+    hook_unit_cols.push([]::int)
+    return hook_unit_names.length - 1
+
+def hook_unit_get(col:int, i:int) -> int:
+    let id = u_id[i]
+    return if id < hook_unit_cols[col].length: hook_unit_cols[col][id] else: 0
+
+def hook_unit_set(col:int, i:int, v:int):
+    let id = u_id[i]
+    while hook_unit_cols[col].length <= id: hook_unit_cols[col].push(0)
+    hook_unit_cols[col][id] = v
+
+def hook_declare_player(name:string, players:int) -> int:
+    hook_player_names.push(name)
+    hook_player_cols.push(map(players): 0)
+    return hook_player_names.length - 1
+
 let UNIT_HASHED = 47    // the columns hashed (unit_fields)
 var t_tags = []::[int]  // per unit type: its eval's tags (class indexes), as its line stands
 var t_damage = []::int  // per unit type: its attack's class (0 melee, 1 pierce, ...)
@@ -229,6 +257,7 @@ var b_inside = []::[int]  // units sheltering inside (garrison.gd): REC_SIZE int
 // empty (flexbuffers give a missing field its empty value), so it's padded here with 0 for every unit and building.
 // Anything else whose empty value is wrong mid-match needs its own fix after loading.
 def pad_saved_columns():
+    while t_form_r.length < t_gap.length: t_form_r.push(0)
     while u_mount.length < u_id.length: u_mount.push([])
     for(unit_columns()) col:
         while col.length < u_id.length: col.push(0)
