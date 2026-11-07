@@ -36,6 +36,8 @@ case "$1" in
 		done
 		sleep 1
 		;;
+	test_shot_look.lobster) trap '' TERM; sleep 30 ;;   # (stuck, as a window is in vsync with the display asleep: SIGTERM doesn't stop it)
+	*) echo "$*" >> "$TMPDIR/../../lobster_args" ;;
 esac
 EOF
 chmod +x "$work/lobster"
@@ -68,6 +70,19 @@ check "and says so" has "$work/c.out" '^test_2v2  *FAIL.*no result'
 
 # A run with no windowed job leaves the shared bakes alone: this test runs inside a real batch, whose jobs read them through that link.
 check "a run without windowed jobs doesn't touch the bakes' link" [ "$(readlink "$here/../build/bake_store" 2> /dev/null)" = "$link_before" ]
+
+# A stuck job fails on its time limit, even one that ignores SIGTERM, and the others still report (#294).
+started=$(date +%s)
+(export AOA_JOB_LIMIT=2; batch locks_f only=test_shot_look,test_heroes > "$work/stuck.out" 2>&1)
+stuck_code=$?
+check "a stuck job fails the batch" [ "$stuck_code" != 0 ]
+check "and shows as failed" has "$work/stuck.out" '^test_shot_look  *FAIL'
+check "the others still report" has "$work/stuck.out" '^test_heroes  *ok'
+check "and it doesn't wait for the job" [ $(($(date +%s) - started)) -lt 25 ]
+
+# The windowed checks that measure no frames don't wait on vsync: with the display asleep it never comes (#294).
+batch locks_g only=vbcheck > "$work/vb.out" 2>&1
+check "vbcheck runs without vsync" has "$work/lobster_args" 'vbcheck.*novsync'
 
 # Asking for tests that don't exist isn't a pass.
 batch locks_d only=no_such_suite > "$work/d.out" 2>&1
