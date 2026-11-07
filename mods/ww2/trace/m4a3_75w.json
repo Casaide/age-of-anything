@@ -1153,7 +1153,7 @@
         10.5,
         1
       ],
-      "mat": "skin",
+      "mat": "ww2_olive",
       "_doc": "driver's hatch ring"
     },
     {
@@ -1172,7 +1172,7 @@
         10.5,
         1
       ],
-      "mat": "skin",
+      "mat": "ww2_olive",
       "_doc": "assistant's hatch ring"
     },
     {
@@ -1192,7 +1192,7 @@
         4.8,
         4.8
       ],
-      "mat": "skin",
+      "mat": "ww2_olive",
       "hard": true,
       "_doc": "driver's hood"
     },
@@ -1213,7 +1213,7 @@
         4.8,
         4.8
       ],
-      "mat": "skin",
+      "mat": "ww2_olive",
       "hard": true,
       "_doc": "assistant's hood"
     },
@@ -1267,7 +1267,7 @@
         347
       ],
       "r": 4.6,
-      "mat": "skin",
+      "mat": "ww2_olive",
       "hard": true,
       "_doc": "bow gun ball"
     },
@@ -1371,7 +1371,7 @@
         7.6,
         1.2
       ],
-      "mat": "skin"
+      "mat": "ww2_olive"
     },
     {
       "disc": [
@@ -1389,7 +1389,7 @@
         7.6,
         1.2
       ],
-      "mat": "skin"
+      "mat": "ww2_olive"
     },
     {
       "cap": [
@@ -1652,7 +1652,7 @@
         1.5,
         1.4
       ],
-      "mat": "skin",
+      "mat": "ww2_olive",
       "hard": true,
       "_doc": "75 mm gun, ending behind the nose"
     },
@@ -1673,7 +1673,7 @@
         3.2,
         3.0
       ],
-      "mat": "skin",
+      "mat": "ww2_olive",
       "hard": true,
       "_doc": "gun sleeve"
     },
@@ -1693,7 +1693,7 @@
         15.4,
         0.8
       ],
-      "mat": "skin",
+      "mat": "ww2_olive",
       "_doc": "cupola race"
     },
     {
@@ -1712,7 +1712,7 @@
         12,
         2.2
       ],
-      "mat": "skin",
+      "mat": "ww2_olive",
       "_doc": "cupola wall"
     },
     {
@@ -1810,7 +1810,7 @@
         2,
         1
       ],
-      "mat": "skin",
+      "mat": "ww2_olive",
       "hard": true,
       "_doc": "gunner's sight hood"
     },
@@ -2059,5 +2059,6 @@
       275
     ]
   ],
-  "plate_half_inches": 1.5
+  "plate_half_inches": 1.5,
+  "paint": "ww2_olive"
 }
