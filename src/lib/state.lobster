@@ -63,8 +63,9 @@ var r_fog_worker = 0
 var num_classes = 0
 var t_speed = []::int
 var t_radius = []::int
-var t_role = []::int  // formation band (World._form_role)
-var t_gap = []::int   // form_gap
+var t_role = []::int    // formation band (World._form_role)
+var t_gap = []::int     // form_gap
+var t_form_r = []::int  // half its footprint with its crew, for its slot in a formation; 0: its radius (#253)
 var t_worker = []::int
 var t_harmless = []::int
 var t_healer = []::int
@@ -256,6 +257,7 @@ var b_inside = []::[int]  // units sheltering inside (garrison.gd): REC_SIZE int
 // empty (flexbuffers give a missing field its empty value), so it's padded here with 0 for every unit and building.
 // Anything else whose empty value is wrong mid-match needs its own fix after loading.
 def pad_saved_columns():
+    while t_form_r.length < t_gap.length: t_form_r.push(0)
     while u_mount.length < u_id.length: u_mount.push([])
     for(unit_columns()) col:
         while col.length < u_id.length: col.push(0)

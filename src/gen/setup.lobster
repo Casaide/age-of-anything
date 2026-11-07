@@ -198,6 +198,7 @@ def add_type(player:int, e:JV) -> int:
     t_carry_add.push(0)
     t_build_pct.push(0)
     t_gap.push(0)
+    t_form_r.push(gint(e, "form_radius", 0))
     t_hero.push(if has(e, "hero"): 1 else: 0)
     t_age.push(as_int(at(e, "age")))
     t_min_damage.push(0)
