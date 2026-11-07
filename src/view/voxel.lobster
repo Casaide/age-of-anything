@@ -374,7 +374,7 @@ class vx_body_spec:
     parts:[vx_part_spec] = []  // pieces that turn on their own (a turret): this body is the whole figure (a portrait, a fall)
     hull:string = ""           // with parts: the body without them
     piece:bool = false         // a hull or a part: on the ground as the whole body is, not under its own lowest point
-    death:string = ""          // how it dies: "knocked_out", or falling over
+    death:string = ""          // how it dies: "knocked_out", "crash", or falling over
     h:float = 0.0              // sizes.json: its height, bare and standing, in voxels (a rider's mount is sized from it)
     ride:float = 0.0           // sizes.json: a mount: its size under a rider of the human's height
     deck:float2 = float2_0     // sizes.json: a war beast: the half sizes of the deck its crew sit on, body units
@@ -1267,6 +1267,26 @@ def vx_fallen(parts:[vx_prim], t:float) -> [vx_prim]:
     def turn(q:float3) -> float3: return float3 { q.x * c + (q.z - mid) * s, q.y, -q.x * s + (q.z - mid) * c + mid }
     return map(parts) p: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, p.mat, p.hard, p.disc, p.box }
 
+// A flier shot down (a body's "death": "crash", #260), at t (0 flying .. 1 on the ground): burning, nose down, it comes down in one
+// piece and lands level. Only its pitch and height change, so its wings stay wings.
+let vx_CRASH_PITCH = 28.0
+def vx_crashed(parts:[vx_prim], t:float) -> [vx_prim]:
+    var low = 1000.0
+    for(parts) p: low = min(low, vx_lowest(p))
+    let a = vx_CRASH_PITCH * sin(180.0 * t) * t
+    let c, s = cos(a), sin(a)
+    let drop = low * t * t
+    let burnt, rust = vx_mat("wreck"), vx_mat("wreck_rust")
+    def turn(q:float3) -> float3:
+        let z = q.z - low
+        return float3 { q.x, q.y * c + z * s, z * c - q.y * s + low - drop }
+    return map(parts) p, n: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, if n % 7 == 0: rust else: burnt, p.hard, p.disc, p.box }
+
+// A unit dying, at t (0 alive .. 1 lying): what its body's `death` says, else it falls over.
+def vx_dying(u:vx_unit_def, parts:[vx_prim], t:float) -> [vx_prim]:
+    let b = vx_body_of(u.body)
+    return if b.death == "knocked_out": vx_knocked_out(u, b) elif b.death == "crash": vx_crashed(parts, t) else: vx_fallen(parts, t)
+
 // A unit's parts, falling dead at t.
 def vx_fallen_unit(u:vx_unit_def, t:float) -> [vx_prim]:
     vx_fall_t = t
@@ -1296,7 +1316,7 @@ def vx_knocked_out(u:vx_unit_def, b:vx_body_spec) -> [vx_prim]:
             out.push(vx_prim { turned(q.a), turned(q.b), q.ra, q.rb, q.mat, q.hard, q.disc, q.box })
     return out
 
-def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and not falling) or u.crew != nil or vx_body_of(u.body).piece
+def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and (not falling or vx_body_of(u.body).death == "crash")) or u.crew != nil or vx_body_of(u.body).piece
 
 // The unit's size: its body's (a mount is scaled to it).
 def vx_size_of(u:vx_unit_def) -> float: return vx_body_of(u.body).size
