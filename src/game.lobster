@@ -116,31 +116,34 @@ var rec_from = 0.0
 var rec_for = 10.0
 var rec_n = 0
 var rec_fps = 30.0         // fps:<n>: frames a second of play
-var rec_clean = false      // clean: no HUD, panel or health bars (a clip for showing)
+var rec_clean = false      // clean: nothing over the world: no top bar, panel, minimap, groups, health bars or banner (a clip for showing)
 var rec_type = []::string  // typein:A|B: (filming the lobby)
 var rec_side = 0
 var rec_char = 0
 var rec_wait = 30
-var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks through it)
-var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
-var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
-var army_n = 0                   // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
-var army_snap = false            // a skirmish's armies start in their blocks, once the first order has made them
-let ARMY_GAP = 600               // milli-tiles between them, in ranks
-var zoom_arg = 0.0               // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
-var reveal = false               // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
-var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
-var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
-var page_arg = ""                // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
-var lab_arg = false              // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
-var tree_arg = false             // tree: the tech tree page open from the start (captures)
-var tree_hover_arg = ""          // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
-var padtest = false              // padtest: a fake pad plays a few seconds, then quit
-var net_people = 2               // people in a network match (host:<n>)
-var net_others = []::Link        // a host's joiners after the first
-var hosting = false              // host: a network match, waiting for a player to join (net/lockstep.lobster)
-var join_ip = ""                 // join:<ip>: play the second side of the match a host there sets up
-var reload_at = -1.0             // reload:<seconds>: save then, load 5 s later (tests and captures)
+var rec_push = 1.0                    // push:<k>: a record:'s camera closes in, its zoom k times by the end (1.15 is a slow push)
+var rec_pan = float2_0                // pan:<x>,<y>: a record:'s camera drifts that many tiles by the end (no follow then)
+var window_arg = int2 { 1600, 1000 }  // window:<w>,<h>: the window's size in points (filming: 1280,720 is 16:9, 2560x1440 frames on a Mac)
+var fort_gate = int2 { -1, -1 }       // place:fort's gate (captures: army: walks through it)
+var place_arg = ""                    // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
+var skirmish = false                  // the lobby's Skirmish: both armies on the map at once, marching on each other
+var army_n = 0                        // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+var army_snap = false                 // a skirmish's armies start in their blocks, once the first order has made them
+let ARMY_GAP = 600                    // milli-tiles between them, in ranks
+var zoom_arg = 0.0                    // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
+var reveal = false                    // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
+var hurt_pct = -1                     // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
+var raze_at = -1.0                    // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
+var page_arg = ""                     // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
+var lab_arg = false                   // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
+var tree_arg = false                  // tree: the tech tree page open from the start (captures)
+var tree_hover_arg = ""               // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
+var padtest = false                   // padtest: a fake pad plays a few seconds, then quit
+var net_people = 2                    // people in a network match (host:<n>)
+var net_others = []::Link             // a host's joiners after the first
+var hosting = false                   // host: a network match, waiting for a player to join (net/lockstep.lobster)
+var join_ip = ""                      // join:<ip>: play the second side of the match a host there sets up
+var reload_at = -1.0                  // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
 var touch_play = false  // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
 // A mod can say how it starts (its manifest's `launch`): those options, as if typed after the rest.
@@ -163,6 +166,13 @@ for(args) a, k:
         if key == "from": rec_from = string_to_float(val)
         if key == "for": rec_for = string_to_float(val)
         if key == "fps": rec_fps = string_to_float(val)
+        if key == "push": rec_push = string_to_float(val)
+        if key == "pan":
+            let px, py = split_string(val, ",")
+            rec_pan = float2 { string_to_float(px), string_to_float(py) }
+        if key == "window":
+            let wx, wy = split_string(val, ",")
+            window_arg = int2 { string_to_int(wx), string_to_int(wy) }
         if a == "clean": rec_clean = true
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
@@ -1064,7 +1074,7 @@ def draw_world(alpha:float):
                     draw_town()
                     draw_shots(alpha)
                     fx_draw() id: unit_anchor(id)
-                draw_marks(alpha)
+                if not rec_clean: draw_marks(alpha)
                 perf_lap(5)
 
 // ------------------------------------------------------------------ the lobby (type your races; Lobster makes and sets them up)
@@ -2220,7 +2230,7 @@ note("start")
 let no_vsync = shot != "" or rec_dir != "" or selftest or padtest or has_s(args, "novsync")
 volume_load()
 window_fullscreen = starts_fullscreen(args, windowed_setting)
-fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, window_flags(no_vsync, window_fullscreen)))
+fatal(gl.window("Age of Anything (Lobster)", window_arg.x, window_arg.y, window_flags(no_vsync, window_fullscreen)))
 pace(PACE_MATCH)                           // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon_mac.png")  // (the Dock's icon on the Mac)
 note("window")
@@ -2544,7 +2554,7 @@ def make_match() -> bool:
                 let mid_x = (start_x[0] + start_x[1]) / 2
                 let mid_y = (start_y[0] + start_y[1]) / 2
                 cam = iso(float(mid_x), float(mid_y))
-                follow = true  // (watching: the camera goes where they fight)
+                if look_x < 0: follow = true  // (watching: the camera goes where they fight, unless look: says where)
             else: look_at_army = true
     if hurt_pct >= 0:
         for(b_id.length) b:
@@ -2925,7 +2935,7 @@ def play_match():
             perf_lap(6)
             if not rec_clean: draw_hud(paused, speed)
             perf_lap(7)
-            draw_groups()
+            if not rec_clean: draw_groups()
             perf_lap(8)
             pad_draw()
             if touch_play: build_button()
@@ -2934,7 +2944,7 @@ def play_match():
             tree_tick()
             if menu_open: pause_menu()
             elif end_screen_up(): end_screen()
-            draw_banner()
+            if not rec_clean: draw_banner()
             if typing_race: typing_tick()
             os_cursor_tick()
         perf_lap(9)
@@ -2974,11 +2984,16 @@ def play_match():
             if rec_n == 0:
                 gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
                 speed = start_speed
+                if rec_pan != float2_0: follow = false  // (a pan is the take's own camera move; the follow would pull against it)
             gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
             rec_n++
-            if float(rec_n) >= rec_for * rec_fps:
+            let take_frames = rec_for * rec_fps
+            if float(rec_n) >= take_frames:
                 quit_app = true
                 return
+            // the camera's move over the take, a frame of it at a time: the push in and the drift (iso: tiles are 1000 art units)
+            zoom *= pow(rec_push, 1.0 / take_frames)
+            cam += (iso(rec_pan.x * 1000.0, rec_pan.y * 1000.0) - iso(0.0, 0.0)) / take_frames
         if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return
