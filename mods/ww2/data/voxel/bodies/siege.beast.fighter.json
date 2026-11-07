@@ -340,9 +340,18 @@
   {"box":["o",0.25,-50.25,109.25],"half":[0.52,3.52,0.02],"mat":"ww2_aluminium","n":[0,1,0],"round":0},
   {"_doc":"spinner, team colour","disc":["o",0.0,58.236,89.064],"mat":"team","n":[0.0,1.0,0.0],"r":[2.1,0.6]},
   {"_doc":"canopy","cap":["o",0.0,0.353,97.89],"hard":true,"mat":"ww2_canopy","r":[2.1,1.8],"to":["o",0.0,15.177,97.89]},
-  {"_doc":"star on the wing: team colour","disc":["o",-42.971,13.091,85.321],"mat":"team","n":[0.0,0.05,1.0],"r":[4.2,0.12]},
-  {"disc":["o",42.901,13.091,85.321],"mat":"team","n":[0.0,0.05,1.0],"r":[4.2,0.12]},
-  {"_doc":"star on the fuselage","disc":["o",5.7,-21.53,88.711],"mat":"team","mirror":true,"n":[1.0,0.0,0.0],"r":[3.6,0.12]},
-  {"_doc":"olive anti-glare panel ahead of the canopy","cap":["o",0.0,22.236,94.713],"hard":true,"mat":"ww2_antiglare","r":[2.4,1.8],"to":["o",0.0,47.648,92.383]}
+  {"_doc":"olive anti-glare panel ahead of the canopy","cap":["o",0.0,22.236,94.713],"hard":true,"mat":"ww2_antiglare","r":[2.4,1.8],"to":["o",0.0,47.648,92.383]},
+  {"_doc":"star and bar, fuselage: blue border","box":["o",5.76,-28.447,88.711],"half":[3.3,0.135,1.38],"mat":"ww2_insignia","mirror":true,"n":[1.0,0.0,0.0],"round":0.0},
+  {"box":["o",5.76,-14.612,88.711],"half":[3.3,0.135,1.38],"mat":"ww2_insignia","mirror":true,"n":[1.0,0.0,0.0],"round":0.0},
+  {"box":["o",5.94,-28.447,88.711],"half":[3.0,0.105,0.96],"mat":"white","mirror":true,"n":[1.0,0.0,0.0],"round":0.0},
+  {"box":["o",5.94,-14.612,88.711],"half":[3.0,0.105,0.96],"mat":"white","mirror":true,"n":[1.0,0.0,0.0],"round":0.0},
+  {"disc":["o",6.0,-21.53,88.711],"mat":"ww2_insignia","mirror":true,"n":[1.0,0.0,0.0],"r":[3.75,0.15]},
+  {"disc":["o",6.24,-21.53,88.711],"mat":"white","mirror":true,"n":[1.0,0.0,0.0],"r":[2.25,0.09]},
+  {"_doc":"star and bar, top of the left wing","box":["o",-50.255,13.091,88.852],"half":[3.0,0.18,1.56],"mat":"ww2_insignia","n":[0.0,0.0,1.0],"round":0.0},
+  {"box":["o",-35.686,13.091,87.722],"half":[3.0,0.18,1.56],"mat":"ww2_insignia","n":[0.0,0.0,1.0],"round":0.0},
+  {"box":["o",-50.255,13.091,88.993],"half":[2.7,0.15,1.08],"mat":"white","n":[0.0,0.0,1.0],"round":0.0},
+  {"box":["o",-35.686,13.091,87.863],"half":[2.7,0.15,1.08],"mat":"white","n":[0.0,0.0,1.0],"round":0.0},
+  {"disc":["o",-42.971,13.091,87.863],"mat":"ww2_insignia","n":[0.087,0.0,0.996],"r":[5.1,0.21]},
+  {"disc":["o",-42.971,13.091,88.146],"mat":"white","n":[0.087,0.0,0.996],"r":[3.15,0.15]}
  ]
 }
