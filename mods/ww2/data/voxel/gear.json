@@ -1,61 +1,16 @@
 {
   "_doc": "The gunners: a steel helmet, a tunic, a long gun held like a spear.",
   "gear": {
-    "ww2_helmet": {
-      "flags": [
-        "helm"
-      ],
-      "fits": {
-        "*": [
-          {
-            "helm": 0.0,
-            "mat": "ww2_olive"
-          }
-        ]
-      }
-    },
-    "ww2_tunic": {
-      "flags": [
-        "armour"
-      ],
-      "fits": {
-        "*": [
-          {
-            "fit": 0.0,
-            "mat": "ww2_olive_worn"
-          }
-        ]
-      }
-    },
     "ww2_rifle": {
+      "_doc": "M1 Garand, 43.6 in: a walnut stock and handguard, the dark receiver, gas cylinder and barrel past the wood.",
       "hand": "right",
-      "hold": "thrust",
+      "hold": "rifle",
       "shapes": [
         {
           "cap": [
             "hand",
-            -6,
-            0,
-            0
-          ],
-          "to": [
-            "hand",
-            16,
-            0,
-            0
-          ],
-          "r": [
-            0.5,
-            0.32
-          ],
-          "mat": "ww2_rubber",
-          "hard": true
-        },
-        {
-          "cap": [
-            "hand",
-            -6,
-            0,
+            -6.5,
+            -0.1,
             0
           ],
           "to": [
@@ -65,10 +20,167 @@
             0
           ],
           "r": [
-            0.75,
+            0.65,
+            0.42
+          ],
+          "mat": "ww2_walnut",
+          "hard": true
+        },
+        {
+          "cap": [
+            "hand",
+            1,
+            0.1,
+            0
+          ],
+          "to": [
+            "hand",
+            4.5,
+            0.1,
+            0
+          ],
+          "r": [
+            0.45,
+            0.42
+          ],
+          "mat": "ww2_gunmetal",
+          "hard": true
+        },
+        {
+          "cap": [
+            "hand",
+            4.5,
+            0,
+            0
+          ],
+          "to": [
+            "hand",
+            14,
+            0,
+            0
+          ],
+          "r": [
+            0.4,
+            0.34
+          ],
+          "mat": "ww2_walnut",
+          "hard": true
+        },
+        {
+          "cap": [
+            "hand",
+            14,
+            0,
+            0
+          ],
+          "to": [
+            "hand",
+            19.2,
+            0,
+            0
+          ],
+          "r": [
+            0.24,
+            0.22
+          ],
+          "mat": "ww2_gunmetal",
+          "hard": true
+        }
+      ]
+    },
+    "ww2_kar98k": {
+      "_doc": "Kar98k, 43.5 in (TM-E 30-451 fig. 36): the wood nearly to the muzzle, a bare bolt with its turned-down knob, only a short barrel past the stock.",
+      "hand": "right",
+      "hold": "rifle",
+      "shapes": [
+        {
+          "cap": [
+            "hand",
+            -6.5,
+            -0.15,
+            0
+          ],
+          "to": [
+            "hand",
+            2,
+            0,
+            0
+          ],
+          "r": [
+            0.6,
+            0.36
+          ],
+          "mat": "ww2_walnut",
+          "hard": true
+        },
+        {
+          "cap": [
+            "hand",
+            2,
+            0,
+            0
+          ],
+          "to": [
+            "hand",
+            16.5,
+            0,
+            0
+          ],
+          "r": [
+            0.36,
+            0.3
+          ],
+          "mat": "ww2_walnut",
+          "hard": true
+        },
+        {
+          "cap": [
+            "hand",
+            -0.5,
+            0.45,
+            0
+          ],
+          "to": [
+            "hand",
+            3,
+            0.45,
+            0
+          ],
+          "r": [
+            0.22,
+            0.22
+          ],
+          "mat": "ww2_gunmetal",
+          "hard": true
+        },
+        {
+          "bead": [
+            "hand",
+            0,
+            0.3,
             0.6
           ],
-          "mat": "wood",
+          "r": 0.3,
+          "mat": "ww2_gunmetal"
+        },
+        {
+          "cap": [
+            "hand",
+            16.5,
+            0,
+            0
+          ],
+          "to": [
+            "hand",
+            19.1,
+            0,
+            0
+          ],
+          "r": [
+            0.22,
+            0.2
+          ],
+          "mat": "ww2_gunmetal",
           "hard": true
         }
       ]
@@ -78,14 +190,33 @@
     {
       "part": "weapon.flak",
       "gear": "ww2_rifle"
-    },
-    {
-      "part": "helm.ww2",
-      "gear": "ww2_helmet"
-    },
-    {
-      "part": "armour.ww2_tunic",
-      "gear": "ww2_tunic"
     }
-  ]
+  ],
+  "holds": {
+    "rifle": {
+      "_doc": "a rifle in both hands: across the chest at the ready, brought up to the shoulder and held there to fire, kicking back at the shot (#261)",
+      "rest": [
+        -0.05,
+        0.5,
+        -0.45
+      ],
+      "dir": [
+        -0.35,
+        0.45,
+        0.8
+      ],
+      "aim": [
+        0.0,
+        0.62,
+        0.02
+      ],
+      "aim_dir": [
+        0,
+        1,
+        0.02
+      ],
+      "kick": 0.09,
+      "support": 6.5
+    }
+  }
 }

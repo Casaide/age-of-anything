@@ -1,7 +1,11 @@
 {
-  "_doc": "A crew member stands as tall as a human.",
+  "_doc": "The soldiers stand as tall as a human.",
   "bodies": {
-    "crew_1944": {
+    "gi_1944": {
+      "size": 0.79,
+      "h": 58
+    },
+    "landser_1944": {
       "size": 0.79,
       "h": 58
     }
