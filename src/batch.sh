@@ -54,6 +54,7 @@ add voxel_parts_twin "$L" voxel_proto.lobster -- - parts test.twin voxels:../tes
 add voxel_bodies "$L" voxel_proto.lobster -- - bodies voxels:../tests/voxel/parts $(for d in ../mods/*/data/voxel; do [ -d "$d" ] && printf "voxels:%s " "$d"; done)   # every body in every pack draws, its parts stay on it
 add voxel_aim "$L" voxel_proto.lobster -- - aim voxels:../mods/ww2/data/voxel   # a rifle stays up through the firing cycle and kicks (#261)
 add ww2_soldiers ./ww2_soldiers_check.sh   # the WW2 mod's sides are a GI and a German, in their own kit (#264)
+add voxel_falls "$L" voxel_proto.lobster -- - falls voxels:../mods/ww2/data/voxel voxels:../mods/scifi_test/data/voxel   # a soldier crumples as it dies (#263)
 for i in 0 1 2 3; do add test_sim.$i "$L" test_sim.lobster -- shard:$i/4; done
 for a in 2 3; do add counters.$a "$L" calibrate.lobster -- pairs $a; done   # the counter chain, each pair in ages 2 and 3 (D-200)
 if [ $quick = 1 ]; then
