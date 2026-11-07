@@ -93,6 +93,8 @@ moves the belt one link, the cycle's length comes from the pitch, and `voxel_pro
 
 ### How a vehicle dies
 
+A body with arms and legs crumples as it dies (`vx_slump`): its hips drop and its trunk folds forward, then it goes over. `voxel_proto -- - falls` checks it.
+
 A body's `"death": "knocked_out"` keeps it upright when it dies: burnt (`wreck`, `wreck_rust`), its parts knocked askew (`vx_knocked_out`), burning then smoking, then fading (`collect_wreck`). `voxel_proto -- - bodies` checks that it keeps its outline.
 
 ## Mods
