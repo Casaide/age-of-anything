@@ -43,7 +43,10 @@ import lib.expand
 import lib.bot
 import lib.walls_ai
 import lib.world
+import hooks.active
+import hooks.rules
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -59,7 +62,7 @@ let SEED = 2026
 let MAP = "open_field"
 
 def archers(p:int, n:int, x:int, y:int) -> [int]:
-    let kind = find(t_slot.length) k: t_player[k] == p and t_ranged[k] != 0 and t_shot_speed[k] > 0 and not has(su_type_recipe[k], "crew")
+    let kind = find(t_slot.length) k: t_player[k] == p and t_ranged[k] != 0 and t_shot_speed[k] > 0 and not has(gobj(su_units[k], "look"), "crew")
     let ids = []::int
     for(n) a: ids.push(u_id[add_unit(p, kind, x + (a % 8) * 700, y + (a / 8) * 700)])
     return ids
@@ -110,6 +113,8 @@ check(seen_for <= long_shot * 0.6, "a long shot looks faster ({seen_for} s of {l
 check(shot_drawn_u(long_shot, long_shot) == 1.0, "it lands on the tick the sim says, not before or after")
 check(shot_drawn_u(long_shot - 0.05, long_shot) < 1.0, "and is not there a tick early")
 check(shot_drawn_u(0.0, long_shot) <= 0.0, "it leaves late, not early")
+check(shot_drawn_u(0.0, long_shot, true) == 0.0, "a gun\'s shell shows from the flash (#265)")
+check(shot_drawn_u(long_shot, long_shot, true) == 1.0, "and lands on the same tick")
 let short_shot = 0.1
 check(shot_drawn_time(short_shot) == short_shot, "a shot quicker than the least we show flies its whole way")
 
