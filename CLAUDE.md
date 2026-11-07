@@ -34,18 +34,26 @@ so are bugs (`bug`). Commit messages name the issue (`#12`), and close it when i
 **Commit.** Commit each tested piece straight away, by file name, so nothing sits uncommitted: `git status` is clean at the end of
 every task. Run `src/lint.sh` and the piece's tests first. Scratch goes in `.gitignore`d places, never left lying around.
 
-**Push.** Push `main` once its quick batch passes, at the end of each piece of work. Never force push. The Lobster fork's `game`
-branch is pushed with every commit to it, since the game can't be rebuilt without it.
+**Push.** Lint and the quick batch gate every push and merge (`./tests/batch.sh --quick`, lint is in it), at the end of each piece of work. The whole batch runs
+once on `main` after a merge, not before each push. A change that could cost frame time also runs `./tests/batch.sh only=perf,perf_big` first. Never force push (one exception: rebasing
+the Lobster fork's `master` onto upstream, below). The fork's `master` is pushed with every commit to it, since the game can't be
+rebuilt without it.
 
-**Lobster.** The game builds only against the `game` branch of `Drache93/lobster`, checked out in `~/Dev/lobster`:
+**Lobster.** The game builds only against the `master` branch of `Drache93/lobster` (the fork), checked out in `~/Dev/lobster`
+and tracking `fork/master` (Dominic, 2026-11-06, #256; the old `game` branch is retired):
+- **Before any Lobster change**, `git fetch origin fork` and check both: `git status -sb` reads `## master...fork/master` with
+  nothing ahead or behind (all our work is pushed), and `git log --oneline master..origin/master` is empty (we have all of
+  upstream). If upstream moved, rebase `master` onto `origin/master` first, rebuild `bin/lobster`, run the quick batch, and push
+  with `--force-with-lease` (the one allowed force push). Stop and report if anything is unpushed or uncommitted.
 - It's upstream master plus one commit per fix, however big, with a message detailed enough to split it into several commits or PRs
   later. `bin/lobster` is always built from a clean checkout of it. No stashes, no uncommitted changes, no patching the engine in a game build.
-- Every change to Lobster has an `upstream-lobster` issue here, opened first: what it does, whether it's Lobster's bug or ours, the
-  evidence, and its PR if any. `reports/lobster-fork.md` is the overview.
+- Every change to Lobster has its own `upstream-lobster` issue here, opened first and separate from the game issue that needed
+  it: what it does, whether it's Lobster's bug or ours, the evidence, and the plan to take it upstream (its PR once open).
+  `reports/lobster-fork.md` gets a row for it in the same piece of work. The game issue and PR link to it.
 - Before changing Lobster, prove the fault is Lobster's and not our code. Reproduce it without the game if you can, measure with and
   without the change, and keep it only if removing it breaks something. A workaround in the game may be the right fix.
-- Only what's validated stays on `game` (Dominic, 2026-11-04): if we aren't sure it's needed, it comes off until we are.
-- A PR upstream only for what's committed on `game` and tested with our game (Dominic, 2026-11-04): no loose files, nothing that
+- Only what's validated stays on `master` (Dominic, 2026-11-04): if we aren't sure it's needed, it comes off until we are.
+- A PR upstream only for what's committed on the fork's `master` and tested with our game (Dominic, 2026-11-04): no loose files, nothing that
   has only been tried on its own. Each PR is then made on its own branch from upstream master, one change only.
 
 ## Status
@@ -125,7 +133,7 @@ tools/           mods/ (new_mod.sh, pack.sh), perf/, deck/pull_lobster.sh
 
 ## Commands
 
-Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `game` branch (alias it as `lobster`). Run programs from `src/`. No Python: tools are Lobster programs or shell (#114).
+Lobster on this Mac: `~/Dev/lobster/bin/lobster`, from the fork's `master` branch (alias it as `lobster`). Run programs from `src/`. No Python: tools are Lobster programs or shell (#114).
 
 ```sh
 ./play.sh                                                          # the game: the title screen (Battle the AI, network, saves, Race Lab)
@@ -170,9 +178,11 @@ compiles with no warnings. `./lint.sh` checks both (`--fix` formats; in the quic
 
 **Testing rhythm** (Dominic: iteration must stay fast, and the machine quiet). While working: `run_tests` after every
 change to `data/` or `src/`, the piece you're touching (`test_sim -- part:<name>`, `test_ai -- piece:<name>`,
-`voxel_check`), or `./tests/batch.sh --quick`. After a set of changes, the whole batch once, in the
-background. The batch runs 4 processes at once by default (`jobs=N` or `AOA_JOBS`), not every core: one heavy run at a
-time. Each shard is its own seeded world, so results match a serial run. The tick-time check measures wall time:
+`voxel_check`), or `./tests/batch.sh --quick`. After a merge to `main`, the whole batch once, in the
+background. The batch runs 4 processes at once by default (`jobs=N` or `AOA_JOBS`), not every core. One heavy run at a time on this
+machine, across every worktree and session (`src/machine_lock.sh`): a whole batch or `shards.sh` waits for the `full` lane, saying who holds it; `--quick` and
+`only=` take the `quick` lane, so checking a change never waits for a whole batch, and only the perf stage holds both. Each run
+keeps its results in its own folder, and a job with no result fails the table. Each shard is its own seeded world, so results match a serial run. The tick-time check measures wall time:
 on a busy machine it can fail. Raise `BAKE_VERSION` (`view/bake_cache.lobster`: buildings and props) once for a batch of bake changes, not
 per tweak: every raise rebakes everything. Tests are silent (`mute`, and every capture option mutes). Look at a
 screenshot after visual changes. After a change to `src/audio/`, re-render and commit `assets/audio/` with it.
