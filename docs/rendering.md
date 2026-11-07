@@ -12,6 +12,8 @@ subject read, colour, checks, review) is the voxel-art skill (`.claude/skills/vo
 
 ## Voxel units (data/voxel/)
 
+Sizes live in one table, `data/voxel/sizes.json` (a mod has its own): each body's `size` and its height `h` in voxels (a human 58, 32 art px), and each mount's `ride`, its size under a rider of the human's height, scaled by the rider's height. `size_check.lobster` (quick batch) fails when the drawings and the table part. A mod body not in a table keeps its own `size`.
+
 Every unit is a procedural voxel body (D-201; Dominic, 2026-11-03: "replace all units with voxels"; the composed
 units of parts were removed after it). Everything about how a unit looks is data in `data/voxel/`; `src/view/voxel.lobster` is a small
 builder that reads it, fills a voxel grid at a voxel a baked pixel, and draws 8 facings with banded light,
@@ -91,7 +93,15 @@ moves the belt one link, the cycle's length comes from the pitch, and `voxel_pro
 
 ### How a vehicle dies
 
+A body with arms and legs crumples as it dies (`vx_slump`): its hips drop and its trunk folds forward, then it goes over. `voxel_proto -- - falls` checks it.
+
 A body's `"death": "knocked_out"` keeps it upright when it dies: burnt (`wreck`, `wreck_rust`), its parts knocked askew (`vx_knocked_out`), burning then smoking, then fading (`collect_wreck`). `voxel_proto -- - bodies` checks that it keeps its outline.
+
+A flier's `"death": "crash"` comes down burning, nose down and in one piece, and lands level (`vx_crashed`). `voxel_proto -- - bodies` checks that a flier never grows as it dies and ends on the ground.
+
+### Real subjects are traced
+
+A real vehicle is carved from real drawings scaled to published dimensions, not modelled by eye (D-235): `src/carve.lobster` and a spec in `mods/ww2/trace/`, with the references fetched by `tools/trace/refs.sh` into gitignored `reference/`. The method is in the voxel-art skill, "Real subjects".
 
 ## Mods
 
