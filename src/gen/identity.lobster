@@ -13,13 +13,6 @@ def id_load(root:string):
     id_buildings = at(lib_data("buildings.json"), "buildings")
     id_cache = dictionary<string, JV>(31)
 
-def starts_with(s:string, pre:string) -> bool: return s.length >= pre.length and substring(s, 0, pre.length) == pre
-def ends_with(s:string, post:string) -> bool: return s.length >= post.length and substring(s, s.length - post.length, post.length) == post
-def has_char(s:string, c:int) -> bool:
-    for(s.length) n:
-        if s[n] == c: return true
-    return false
-
 // Godot's String.capitalize for a snake_case id ("nile" -> "Nile", "sea_folk" -> "Sea Folk").
 def capitalize(s:string) -> string:
     let words = filter(tokenize(s, "_", " ")) w: w.length > 0
@@ -49,16 +42,6 @@ def priced(fx:JV) -> bool:
     let stat = as_str(at(fx, "stat"))
     if has(fx, "pct"): return has_s(PRICED_PCT, stat)
     return has_s(PRICED_ADD, stat) or starts_with(stat, "armour.") or starts_with(stat, "bonus.")
-
-def reaches(fx:JV, tags:[string]) -> bool:
-    if not has(fx, "tag"): return false
-    let t = as_str(at(fx, "tag"))
-    if not (t == "all" or has_s(tags, t)): return false
-    for(gstrs(fx, "and")) x:
-        if not has_s(tags, x): return false
-    for(gstrs(fx, "not")) x:
-        if has_s(tags, x): return false
-    return true
 
 def identity_of(cid:string, fid:string) -> JV:
     let key = cid + "|" + fid

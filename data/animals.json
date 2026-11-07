@@ -16,7 +16,7 @@
    "behaviour": "flee",
    "flee_tiles": 3,
    "slaughter_damage": 3,
-   "recipe": {
+   "look": {
     "slot": "deer",
     "name": "Deer",
     "body": "body.deer",
@@ -40,7 +40,7 @@
    },
    "food": 320,
    "behaviour": "fight",
-   "recipe": {
+   "look": {
     "slot": "boar",
     "name": "Boar",
     "body": "body.boar",
@@ -65,7 +65,7 @@
    "food": 100,
    "behaviour": "herd",
    "slaughter_damage": 3,
-   "recipe": {
+   "look": {
     "slot": "sheep",
     "name": "Sheep",
     "body": "body.sheep",

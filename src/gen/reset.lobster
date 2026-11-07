@@ -192,6 +192,11 @@ var stashed_u_lx = []::int
 var stashed_u_ly = []::int
 var stashed_u_mount = []::[int]
 var stashed_u_orders = []::[Cmd]
+var stashed_hook_unit_names = []::string
+var stashed_hook_unit_cols = []::[int]
+var stashed_hook_player_names = []::string
+var stashed_hook_player_cols = []::[int]
+var stashed_hook_tick_types = []::int
 var stashed_t_tags = []::[int]
 var stashed_t_damage = []::int
 var stashed_events = []::Event
@@ -466,23 +471,21 @@ var stashed_next_cmd = 0
 var stashed_pending = []::Cmd
 var stashed_next_seq = []::int
 var stashed_trace_tick = -1
-var stashed_su_races = []::JV
+var stashed_su_sides = []::JV
 var stashed_su_rules = jobj()
-var stashed_su_idents = []::JV
 var stashed_su_classes = []::string
 var stashed_su_btypes = []::JV
 var stashed_su_btype_ids = []::string
 var stashed_su_research = []::JV
 var stashed_su_ages = []::JV
-var stashed_su_type_eval = []::JV
-var stashed_su_type_line = []::[JV]
-var stashed_su_type_recipe = []::JV
+var stashed_su_units = []::JV
 var stashed_su_type_animal = []::string
 var stashed_su_map = jobj()
 var stashed_su_bridge_rects = []::[int]
 var stashed_su_rng = new_rng(1)
 var stashed_su_fx = []::[JV]
 var stashed_ai_tokens = []::string
+var stashed_su_races = []::JV
 
 def reset_world():
     // lib/abilities.lobster
@@ -694,6 +697,11 @@ def reset_world():
     u_ly = []::int
     u_mount = []::[int]
     u_orders = []::[Cmd]
+    hook_unit_names = []::string
+    hook_unit_cols = []::[int]
+    hook_player_names = []::string
+    hook_player_cols = []::[int]
+    hook_tick_types = []::int
     t_tags = []::[int]
     t_damage = []::int
     events = []::Event
@@ -974,23 +982,22 @@ def reset_world():
     next_seq = []::int
     trace_tick = -1
     // gen/setup.lobster
-    su_races = []::JV
+    su_sides = []::JV
     su_rules = jobj()
-    su_idents = []::JV
     su_classes = []::string
     su_btypes = []::JV
     su_btype_ids = []::string
     su_research = []::JV
     su_ages = []::JV
-    su_type_eval = []::JV
-    su_type_line = []::[JV]
-    su_type_recipe = []::JV
+    su_units = []::JV
     su_type_animal = []::string
     su_map = jobj()
     su_bridge_rects = []::[int]
     su_rng = new_rng(1)
     su_fx = []::[JV]
     ai_tokens = []::string
+    // gen/race_to_types.lobster
+    su_races = []::JV
 
 def stash_world():
     stashed_ab_kind = ab_kind
@@ -1185,6 +1192,11 @@ def stash_world():
     stashed_u_ly = u_ly
     stashed_u_mount = u_mount
     stashed_u_orders = u_orders
+    stashed_hook_unit_names = hook_unit_names
+    stashed_hook_unit_cols = hook_unit_cols
+    stashed_hook_player_names = hook_player_names
+    stashed_hook_player_cols = hook_player_cols
+    stashed_hook_tick_types = hook_tick_types
     stashed_t_tags = t_tags
     stashed_t_damage = t_damage
     stashed_events = events
@@ -1459,23 +1471,21 @@ def stash_world():
     stashed_pending = pending
     stashed_next_seq = next_seq
     stashed_trace_tick = trace_tick
-    stashed_su_races = su_races
+    stashed_su_sides = su_sides
     stashed_su_rules = su_rules
-    stashed_su_idents = su_idents
     stashed_su_classes = su_classes
     stashed_su_btypes = su_btypes
     stashed_su_btype_ids = su_btype_ids
     stashed_su_research = su_research
     stashed_su_ages = su_ages
-    stashed_su_type_eval = su_type_eval
-    stashed_su_type_line = su_type_line
-    stashed_su_type_recipe = su_type_recipe
+    stashed_su_units = su_units
     stashed_su_type_animal = su_type_animal
     stashed_su_map = su_map
     stashed_su_bridge_rects = su_bridge_rects
     stashed_su_rng = su_rng
     stashed_su_fx = su_fx
     stashed_ai_tokens = ai_tokens
+    stashed_su_races = su_races
 
 def unstash_world():
     ab_kind = stashed_ab_kind
@@ -1670,6 +1680,11 @@ def unstash_world():
     u_ly = stashed_u_ly
     u_mount = stashed_u_mount
     u_orders = stashed_u_orders
+    hook_unit_names = stashed_hook_unit_names
+    hook_unit_cols = stashed_hook_unit_cols
+    hook_player_names = stashed_hook_player_names
+    hook_player_cols = stashed_hook_player_cols
+    hook_tick_types = stashed_hook_tick_types
     t_tags = stashed_t_tags
     t_damage = stashed_t_damage
     events = stashed_events
@@ -1944,20 +1959,18 @@ def unstash_world():
     pending = stashed_pending
     next_seq = stashed_next_seq
     trace_tick = stashed_trace_tick
-    su_races = stashed_su_races
+    su_sides = stashed_su_sides
     su_rules = stashed_su_rules
-    su_idents = stashed_su_idents
     su_classes = stashed_su_classes
     su_btypes = stashed_su_btypes
     su_btype_ids = stashed_su_btype_ids
     su_research = stashed_su_research
     su_ages = stashed_su_ages
-    su_type_eval = stashed_su_type_eval
-    su_type_line = stashed_su_type_line
-    su_type_recipe = stashed_su_type_recipe
+    su_units = stashed_su_units
     su_type_animal = stashed_su_type_animal
     su_map = stashed_su_map
     su_bridge_rects = stashed_su_bridge_rects
     su_rng = stashed_su_rng
     su_fx = stashed_su_fx
     ai_tokens = stashed_ai_tokens
+    su_races = stashed_su_races
