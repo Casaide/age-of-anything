@@ -19,5 +19,11 @@ for b in gi_1944 landser_1944; do
 done
 rifle="$(jq -r '.tools.ww2_rifle // ""' ../mods/ww2/data/voxel/bodies/landser_1944.json 2>/dev/null)"
 want "the German's rifle" "$rifle" "ww2_kar98k"
+# the US side flies; the German side has no plane for now
+planes="$(printf '%s\n' "$out" | jq -r '[.units[].recipe | select(.body == "siege.beast.fighter")] | length' | tr '\n' ' ')"
+want "planes on each side" "$planes" "1 0 "
+# a US plane carries the star and bar: team colour only on its spinner, or its markings go red (a roundel of the wrong side)
+team="$(jq -r '[.shapes[] | select(.mat == "team")] | length' ../mods/ww2/data/voxel/bodies/siege.beast.fighter.json)"
+want "team coloured shapes on the US plane" "$team" "1"
 [ "$bad" = 0 ] && say "a GI and a German, in their own kit"
 exit "$bad"
