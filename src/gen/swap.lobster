@@ -9,20 +9,12 @@
 
 var type_gen = 0  // bumped when any type changes look (the views rebuild)
 
-def line_of(u:JV) -> [JV]:
-    if has(u, "line"): return glist(u, "line")
-    let r = at(u, "recipe")
-    return [ line_step(as_int(at(r, "tier")), r, at(u, "eval")) ]
-
 // Type k takes another recipe and line (World._make_type's fields; retype does the rest).
-def retarget_type(k:int, r:JV, e:JV, line:[JV]):
-    var radius = BASE_RADIUS * as_int(at(r, "scale")) / 100
-    if has(r, "mount"): radius = max(radius, MOUNTED_RADIUS)
-    if gint(e, "radius", 0) > 0: radius = as_int(at(e, "radius"))
-    let tags = eval_tags(e)
+def retarget_type(k:int, e:JV):
+    let tags = unit_tags(e)
     let heal = gint(e, "heal", 0)
     let trader = has_s(tags, "trade")
-    t_radius[k] = min(radius, MAX_RADIUS)
+    t_radius[k] = min(as_int(at(e, "radius")), MAX_RADIUS)
     t_worker[k] = if has_s(tags, "worker"): 1 else: 0
     t_healer[k] = if heal > 0: 1 else: 0
     t_trader[k] = if trader: 1 else: 0
@@ -36,32 +28,25 @@ def retarget_type(k:int, r:JV, e:JV, line:[JV]):
             found = true
     t_mclass[k] = mc
     t_docks[k] = if has_s(tags, "docks"): 1 else: 0
-    t_age[k] = as_int(at(line[0], "age"))
+    t_age[k] = as_int(at(e, "age"))
     let no_heal = gstrs(at(su_rules, "combat"), "heal_not")
     t_no_heal[k] = if any_in(tags, no_heal): 1 else: 0
-    su_type_eval[k] = e
-    su_type_line[k] = line
-    su_type_recipe[k] = r
-    lines[k] = map(line) l: line_step_of(t_slot[k], l)
+    su_units[k] = e
+    lines[k] = map(glist(e, "line")) l: line_step_of(t_slot[k], l)
     for(u_kind) uk, i:
         if uk == k:
             u_radius[i] = t_radius[k]
             u_mclass[i] = t_mclass[k]
 
 def swap_race(p:int, race:JV):
-    let units = glist(race, "units")
+    let ident = race_to_side(race)
     for(t_slot.length) k:
         if t_player[k] == p:
-            for(units) u:
-                if rstr(at(u, "recipe"), "slot") == t_slot[k]:
-                    retarget_type(k, at(u, "recipe"), at(u, "eval"), line_of(u))
+            for(glist(ident, "units")) u:
+                if rstr(u, "slot") == t_slot[k]: retarget_type(k, u)
     su_races[p] = race
-    let ident = shallow_copy(identity_of(rstr(race, "creature"), rstr(race, "family")))
-    su_idents[p] = ident
-    let fxs = []::JV
-    for(glist(ident, "bonuses")) b:
-        for(glist(b, "effects")) fx:
-            if not priced(fx) and not has(fx, "start"): fxs.push(fx)
+    su_sides[p] = ident
+    let fxs = filter(glist(ident, "effects")) fx: not has(fx, "start")
     race_fx[p] = map(fxs) fx: encode_effect(fx)
     let ab = gobj(ident, "ability")
     let on = ab.keys.length > 0
@@ -73,7 +58,7 @@ def swap_race(p:int, race:JV):
     ab_cooldown[p] = if on: as_int(at(ab, "cooldown")) else: 0
     for(t_slot.length) k:
         if t_player[k] == p:
-            t_ability[k] = if on and has(ab, "tag") and reaches_tags(ab, eval_tags(su_type_eval[k])): 1 else: 0
+            t_ability[k] = if on and has(ab, "tag") and reaches(ab, unit_tags(su_units[k])): 1 else: 0
     retype(p)
     tech_refresh(p)
     type_gen++
