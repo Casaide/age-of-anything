@@ -1,0 +1,648 @@
+{
+  "_doc": "A US infantryman, 1942-44, from public-domain references: M1 steel helmet with its all-round brim, M1941 olive drab field jacket, wool trousers, canvas M1938 leggings, web belt and suspenders, M1 rifle (43.6 in). Team colour: neck scarf and shoulder patches.",
+  "skin": "#dba880",
+  "pale": "#ebbf99",
+  "fur": 0.0,
+  "skin_scale": 1.3,
+  "reach": 6.4,
+  "gait": {
+    "_doc": "A real walk at real proportions: planted feet, a heel up as a foot leaves, opposite arm and leg, a little lean, shift and turn in the trunk; blows from a split stance with the body behind them (#142).",
+    "heel": 28.0,
+    "toe": 14.0,
+    "toes": 2.3,
+    "arm": 0.26,
+    "held": 0.05,
+    "twist": 0.6,
+    "front": 2.4,
+    "back": 2.4,
+    "dip": 0.5,
+    "turn": 1.0
+  },
+  "points": {
+    "hip": {
+      "at": [
+        0,
+        0,
+        21.0
+      ],
+      "sway": 0.45,
+      "drive": 0.5
+    },
+    "chest": {
+      "at": [
+        0,
+        0.3,
+        29.6
+      ],
+      "sway": 0.25,
+      "lean": 0.5,
+      "drive": 1.5
+    },
+    "head": {
+      "at": [
+        0,
+        0.7,
+        37.1
+      ],
+      "sway": 0.15,
+      "lean": 0.9,
+      "drive": 1.8
+    }
+  },
+  "legs": [
+    {
+      "hip": [
+        "hip",
+        1.75,
+        0,
+        0
+      ],
+      "foot": [
+        1.9,
+        0,
+        1.9
+      ],
+      "stride": 6.4,
+      "lift": 2.8,
+      "bones": [
+        9.58,
+        9.58
+      ],
+      "pole": [
+        0,
+        1,
+        0
+      ],
+      "r": [
+        2.2,
+        1.45,
+        1.4,
+        0.9
+      ],
+      "mats": [
+        "ww2_od_wool",
+        "ww2_canvas"
+      ],
+      "shapes": [
+        {
+          "cap": [
+            "ankle",
+            0,
+            -0.1,
+            1.4
+          ],
+          "to": [
+            "ankle",
+            0,
+            0,
+            -0.6
+          ],
+          "r": [
+            1.0,
+            0.95
+          ],
+          "mat": "ww2_boot_brown",
+          "hard": true
+        },
+        {
+          "cap": [
+            "ankle",
+            0,
+            -0.4,
+            -0.8
+          ],
+          "to": [
+            "ankle",
+            0,
+            2.3,
+            -1
+          ],
+          "r": [
+            0.95,
+            0.8
+          ],
+          "mat": "ww2_boot_brown",
+          "hard": true
+        }
+      ]
+    }
+  ],
+  "arms": {
+    "shoulder": [
+      "chest",
+      4.3,
+      -0.2,
+      1.2
+    ],
+    "bone": 6.7,
+    "thick": 1.4,
+    "sleeve": "ww2_od_jacket",
+    "hand": "skin"
+  },
+  "seat": {
+    "z": 21.5,
+    "astride": [
+      "ww2_od_wool",
+      "ww2_canvas",
+      "ww2_boot_brown"
+    ]
+  },
+  "looks": [
+    {
+      "skin": 1.0,
+      "hair": "#1f1714"
+    },
+    {
+      "skin": 0.78,
+      "hair": "#8c8780"
+    },
+    {
+      "skin": 1.22,
+      "hair": "#6b2b17"
+    }
+  ],
+  "shapes": [
+    {
+      "cap": [
+        "chest",
+        0,
+        0,
+        2.2
+      ],
+      "to": [
+        "head",
+        0,
+        -0.3,
+        -2.2
+      ],
+      "r": [
+        1.15,
+        1.0
+      ],
+      "mat": "skin"
+    },
+    {
+      "ball": [
+        "head",
+        0,
+        -0.15,
+        0.35
+      ],
+      "r": 2.55,
+      "mat": "skin"
+    },
+    {
+      "cap": [
+        "head",
+        0,
+        0.35,
+        -0.5
+      ],
+      "to": [
+        "head",
+        0,
+        1.05,
+        -2
+      ],
+      "r": [
+        2.0,
+        1.25
+      ],
+      "mat": "skin"
+    },
+    {
+      "cap": [
+        "head",
+        0,
+        2.3,
+        0.3
+      ],
+      "to": [
+        "head",
+        0,
+        2.75,
+        -0.6
+      ],
+      "r": [
+        0.55,
+        0.5
+      ],
+      "mat": "skin"
+    },
+    {
+      "ball": [
+        "head",
+        2.5,
+        -0.2,
+        0.0
+      ],
+      "r": 0.7,
+      "mat": "skin",
+      "mirror": true
+    },
+    {
+      "cap": [
+        "chest",
+        -1.1,
+        0.3,
+        2.4
+      ],
+      "to": [
+        "chest",
+        1.1,
+        0.3,
+        2.4
+      ],
+      "r": [
+        1.25,
+        1.25
+      ],
+      "mat": "team",
+      "_doc": "neck scarf: the team colour, with the shoulder patches"
+    },
+    {
+      "cap": [
+        "chest",
+        -1.25,
+        0,
+        1.2
+      ],
+      "to": [
+        "chest",
+        -1,
+        0.1,
+        -3.2
+      ],
+      "r": [
+        2.15,
+        1.85
+      ],
+      "mat": "ww2_od_jacket"
+    },
+    {
+      "cap": [
+        "chest",
+        1.25,
+        0,
+        1.2
+      ],
+      "to": [
+        "chest",
+        1.0,
+        0.1,
+        -3.2
+      ],
+      "r": [
+        2.15,
+        1.85
+      ],
+      "mat": "ww2_od_jacket"
+    },
+    {
+      "cap": [
+        "hip",
+        -1,
+        0,
+        3.6
+      ],
+      "to": [
+        "hip",
+        -1.25,
+        0,
+        0.6
+      ],
+      "r": [
+        1.75,
+        1.95
+      ],
+      "mat": "ww2_od_jacket"
+    },
+    {
+      "cap": [
+        "hip",
+        1.0,
+        0,
+        3.6
+      ],
+      "to": [
+        "hip",
+        1.25,
+        0,
+        0.6
+      ],
+      "r": [
+        1.75,
+        1.95
+      ],
+      "mat": "ww2_od_jacket"
+    },
+    {
+      "cap": [
+        "hip",
+        -1.2,
+        0.1,
+        0.6
+      ],
+      "to": [
+        "hip",
+        -1.3,
+        0.15,
+        -1.6
+      ],
+      "r": [
+        2.0,
+        2.1
+      ],
+      "mat": "ww2_od_jacket"
+    },
+    {
+      "cap": [
+        "hip",
+        1.2,
+        0.1,
+        0.6
+      ],
+      "to": [
+        "hip",
+        1.3,
+        0.15,
+        -1.6
+      ],
+      "r": [
+        2.0,
+        2.1
+      ],
+      "mat": "ww2_od_jacket"
+    },
+    {
+      "cap": [
+        "hip",
+        -1.1,
+        0,
+        -0.4
+      ],
+      "to": [
+        "hip",
+        -1.5,
+        0,
+        -2.6
+      ],
+      "r": [
+        2.0,
+        2.0
+      ],
+      "mat": "ww2_od_wool"
+    },
+    {
+      "cap": [
+        "hip",
+        1.1,
+        0,
+        -0.4
+      ],
+      "to": [
+        "hip",
+        1.5,
+        0,
+        -2.6
+      ],
+      "r": [
+        2.0,
+        2.0
+      ],
+      "mat": "ww2_od_wool"
+    },
+    {
+      "cap": [
+        "chest",
+        -3.6,
+        -0.2,
+        1.9
+      ],
+      "to": [
+        "chest",
+        3.6,
+        -0.2,
+        1.9
+      ],
+      "r": [
+        1.3,
+        1.3
+      ],
+      "mat": "ww2_od_jacket"
+    },
+    {
+      "bead": [
+        "chest",
+        4.6,
+        -0.2,
+        0.2
+      ],
+      "r": 1.25,
+      "mat": "team",
+      "mirror": true,
+      "_doc": "armband: team colour"
+    },
+    {
+      "bead": [
+        "head",
+        0,
+        -0.2,
+        0.85
+      ],
+      "r": 2.85,
+      "mat": "ww2_m1_green",
+      "_doc": "M1 helmet: a round steel dome"
+    },
+    {
+      "disc": [
+        "head",
+        0,
+        0.05,
+        0.0
+      ],
+      "n": [
+        0,
+        0.06,
+        1
+      ],
+      "r": [
+        3.45,
+        0.22
+      ],
+      "mat": "ww2_m1_green",
+      "_doc": "and the level brim all round it, its signature"
+    },
+    {
+      "cap": [
+        "head",
+        -2.2,
+        0.4,
+        0.0
+      ],
+      "to": [
+        "head",
+        -1.5,
+        0.7,
+        -2.5
+      ],
+      "r": [
+        0.15,
+        0.15
+      ],
+      "mat": "ww2_web",
+      "hard": true,
+      "mirror": false
+    },
+    {
+      "cap": [
+        "head",
+        2.2,
+        0.4,
+        0.0
+      ],
+      "to": [
+        "head",
+        1.5,
+        0.7,
+        -2.5
+      ],
+      "r": [
+        0.15,
+        0.15
+      ],
+      "mat": "ww2_web",
+      "hard": true
+    },
+    {
+      "box": [
+        "hip",
+        0,
+        0.1,
+        1.7
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.25,
+        2.35,
+        0.5
+      ],
+      "round": 0.15,
+      "mat": "ww2_web",
+      "_doc": "web belt"
+    },
+    {
+      "box": [
+        "hip",
+        -1.6,
+        2.35,
+        1.6
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        0.8,
+        0.35,
+        0.7
+      ],
+      "round": 0.15,
+      "mat": "ww2_web",
+      "_doc": "cartridge pockets"
+    },
+    {
+      "box": [
+        "hip",
+        1.6,
+        2.35,
+        1.6
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        0.8,
+        0.35,
+        0.7
+      ],
+      "round": 0.15,
+      "mat": "ww2_web"
+    },
+    {
+      "cap": [
+        "chest",
+        -1.7,
+        1.9,
+        1.9
+      ],
+      "to": [
+        "hip",
+        -1.8,
+        2.4,
+        2.2
+      ],
+      "r": [
+        0.25,
+        0.25
+      ],
+      "mat": "ww2_web",
+      "hard": true,
+      "_doc": "suspenders"
+    },
+    {
+      "cap": [
+        "chest",
+        1.7,
+        1.9,
+        1.9
+      ],
+      "to": [
+        "hip",
+        1.8,
+        2.4,
+        2.2
+      ],
+      "r": [
+        0.25,
+        0.25
+      ],
+      "mat": "ww2_web",
+      "hard": true
+    },
+    {
+      "cap": [
+        "hip",
+        2.9,
+        -1,
+        1.0
+      ],
+      "to": [
+        "hip",
+        2.9,
+        -1,
+        -0.8
+      ],
+      "r": [
+        0.85,
+        0.85
+      ],
+      "mat": "ww2_canvas",
+      "hard": true,
+      "_doc": "canteen"
+    }
+  ],
+  "check": {
+    "knees": 15,
+    "shows": 0.2,
+    "_doc": "shows: a human in plate is mostly its clothes"
+  },
+  "bare": true
+}
