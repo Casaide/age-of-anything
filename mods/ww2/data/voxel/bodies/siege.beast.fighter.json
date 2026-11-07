@@ -6,6 +6,7 @@
   "fur": 0.0,
   "size": 1.0,
   "flies": 38.0,
+  "death": "crash",
   "crew": [],
   "points": {
     "o": {

@@ -263,8 +263,7 @@ def vx_job_step(j:vx_job, until:float) -> bool:
             var parts = vx_unit_prims(wu, if m == VX_DIE: 0.0 else: float(pose.y) * 45.0)
             vx_fall_t = 0.0
             if m == VX_DIE:
-                let whole = vx_body_of(u.body)
-                parts = if whole.death == "knocked_out": vx_knocked_out(u, whole) else: vx_fallen(parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
+                parts = vx_dying(u, parts, float(pose.y + 1) / float(VX_STEPS[VX_DIE]))
             vx_act = ""
             vx_stand = false
             vx_carried = ""
@@ -407,10 +406,10 @@ def vx_start():
     vx_type_lks = []::[int]
     vx_cur = []::int
     for(t_slot.length) k:
-        let line = su_type_line[k]
+        let line = glist(su_units[k], "line")
         let lks = []::int
         for(max(1, line.length)) s:
-            let r = if s < line.length: at(line[s], "recipe") else: su_type_recipe[k]
+            let r = if s < line.length: at(line[s], "look") else: at(su_units[k], "look")
             if not vx_engine_made(r):
                 lks.push(-1)
                 continue
@@ -457,9 +456,9 @@ var vx_type_gen = -1
 def vx_refresh():
     if vx_type_gen != type_gen and vx_type_gen >= 0:  // (a race changed mid-match: its new steps' looks)
         for(t_slot.length) k:
-            let line = su_type_line[k]
+            let line = glist(su_units[k], "line")
             for(max(1, line.length)) s:
-                let r = if s < line.length: at(line[s], "recipe") else: su_type_recipe[k]
+                let r = if s < line.length: at(line[s], "look") else: at(su_units[k], "look")
                 if s < vx_type_lks[k].length: vx_type_lks[k][s] = if vx_engine_made(r): vx_look_for(r) else: -1
     vx_type_gen = type_gen
     for(vx_cur) cur, k:
