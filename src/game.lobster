@@ -56,7 +56,10 @@ import .gen.mods
 import .gen.pricing
 import .gen.heroes
 import .gen.generator
+import .hooks.active
+import .hooks.rules
 import .gen.setup
+import .gen.race_to_types
 import .gen.modes
 import .gen.start
 import .view.facing
@@ -108,6 +111,16 @@ var mode_arg = ""             // mode:<id>: the lobby's game mode (data/modes.js
 var map_arg = ""              // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""            // races:<A>|<B>: the lobby's prompts, as if typed (then played)
 var look_y = -1
+var rec_dir = ""  // record:<dir>: from:<seconds> of play on, for:<seconds>, one PNG a frame at 30 fps, then quit (a clip of the game)
+var rec_from = 0.0
+var rec_for = 10.0
+var rec_n = 0
+var rec_fps = 30.0         // fps:<n>: frames a second of play
+var rec_clean = false      // clean: no HUD, panel or health bars (a clip for showing)
+var rec_type = []::string  // typein:A|B: (filming the lobby)
+var rec_side = 0
+var rec_char = 0
+var rec_wait = 30
 var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks through it)
 var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
 var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
@@ -145,6 +158,12 @@ for(args) a, k:
         if key == "fsat": window_toggles = map(tokenize(val, ",", " ")) t: string_to_float(t)
         if key == "fsreport": window_report = val
         if key == "at": shot_at = string_to_float(val)
+        if key == "record": rec_dir = val
+        if key == "typein": rec_type = tokenize(val, "|", " ")
+        if key == "from": rec_from = string_to_float(val)
+        if key == "for": rec_for = string_to_float(val)
+        if key == "fps": rec_fps = string_to_float(val)
+        if a == "clean": rec_clean = true
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
         if a == "reveal": reveal = true
@@ -190,7 +209,7 @@ for(args) a, k:
             look_y = string_to_int(ly)
 
 // Tests and captures are silent (Dominic: no sound from testing); `mute` silences a game too.
-if has_s(args, "mute") or shot != "" or selftest or airtest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
+if has_s(args, "mute") or shot != "" or rec_dir != "" or selftest or airtest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
     sound_on = false
     pace_background = false  // (tests and captures keep their pace with the window in the background, game/pace.lobster)
 
@@ -1128,9 +1147,9 @@ def race_facts(races:[JV]):
     voice_of = map(races) r: rstr(creature(rstr(r, "creature")), "voice")
     arch_of = map(races) r: architecture(r)
     for(t_slot.length) k:
-        let r = su_type_recipe[k]
+        let r = at(su_units[k], "look")
         unit_names.set(k, gstr(r, "name", t_slot[k]))
-        let tags = eval_tags(su_type_eval[k])
+        let tags = unit_tags(su_units[k])
         unit_blow.set(k, if has_s(tags, "ram"): "ram_hit" elif has_s(tags, "blade"): "hit_blade" elif has_s(tags, "blunt"): "hit_blunt" else: "hit_pierce")
         let kind = shot_kind_of(tags)
         unit_shotk.set(k, kind)
@@ -1545,7 +1564,7 @@ def selected_soldiers() -> [int]: return filter(selected_units()) id: t_worker[u
 
 // Our race's ability (data: its name, desc, hotkey...), or nil; and the selected units that may use it.
 def my_ability() -> JV?:
-    let ab = get(su_idents[ME], "ability")
+    let ab = get(su_sides[ME], "ability")
     return if ab and ab.kind == J_OBJ and gstr(ab, "kind", "") != "": ab else: nil
 def ability_hotkey() -> string:
     let ab = my_ability()
@@ -1598,8 +1617,8 @@ def scroll():
     if gl.button("right") >= 1 or gl.button("d") >= 1: d.x += 1.0
     if gl.button("up") >= 1 or gl.button("w") >= 1: d.y -= 1.0
     if gl.button("down") >= 1 or gl.button("s") >= 1: d.y += 1.0
-    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y  // (outside the window the mouse reads 0, 0)
-    if inside and shot == "" and gl.window_focused():                   // (the mouse is free now: not while it works in another app)
+    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y   // (outside the window the mouse reads 0, 0)
+    if inside and shot == "" and rec_dir == "" and gl.window_focused():  // (the mouse is free now: not while it works in another app)
         if m.x <= 3.0: d.x -= 1.0
         if m.y <= 3.0: d.y -= 1.0
         if m.x >= ws.x - 4.0: d.x += 1.0
@@ -1621,6 +1640,20 @@ def draw_ring(p:float2, r:float, col:float4):
             let a1 = 360.0 * float(k + 1) / float(n)
             ui_line(p + float2 { cos(a0) * r, sin(a0) * r * 0.5 }, p + float2 { cos(a1) * r, sin(a1) * r * 0.5 }, 1.6, col)
 
+// A shot's key in shot_from and shot_mouth, at its place in shots. (Two guns can fire together.)
+def shot_key(o:int) -> int: return (shots[o + SHOT_BY] * 65536 + shots[o + SHOT_LAND] % 65536) * 8 + shots[o + SHOT_MOUNT]
+
+// Forget the landed shots. One still flying keeps its start: forgotten, it would fire again and start over (#265).
+def forget_landed_shots():
+    let was_from, was_mouth = shot_from, shot_mouth
+    shot_from = dictionary<int, int>(1024)
+    shot_mouth = dictionary<int, float2>(1024)
+    for(shots.length / SHOT_STRIDE) k:
+        let key = shot_key(k * SHOT_STRIDE)
+        if was_from.get(key, -1) >= 0:
+            shot_from.set(key, was_from.get(key, -1))
+            shot_mouth.set(key, was_mouth.get(key, float2 { 0.0, -12.0 }))
+
 // Shots in flight (shots.gd, combat_fx.gd): each weapon's shot on its arc from the shooter's body to
 // where it lands, for the sim's flight, with a speck of shadow under it. Canvas units (under the 1.5 scale).
 def draw_shots(alpha:float):
@@ -1630,14 +1663,14 @@ def draw_shots(alpha:float):
         let o = k * SHOT_STRIDE
         let land = shots[o + SHOT_LAND]
         let mount = shots[o + SHOT_MOUNT]
-        let key = (shots[o + SHOT_BY] * 65536 + land % 65536) * 8 + mount  // (two guns can fire together)
+        let key = shot_key(o)
         var t_from = shot_from.get(key, -1)
         let firstseen = t_from < 0
         if firstseen:
             t_from = tick - 1
             shot_from.set(key, t_from)
             shot_mouth.set(key, muzzle_of(shots[o + SHOT_BY], mount))
-        let t = shot_drawn_u((float(tick - t_from) + alpha) / 20.0, float(max(1, land - t_from)) / 20.0)
+        let flight = float(max(1, land - t_from)) / 20.0
         let ax = shots[o + SHOT_X]
         let ay = shots[o + SHOT_Y]
         let sx = shots[o + SHOT_X0]
@@ -1646,6 +1679,7 @@ def draw_shots(alpha:float):
             let src = shots[o + SHOT_SRC]
             let own = if src >= 0 and mount < t_mounts[src].length: t_mounts[src][mount].shot else: ""
             let st = shot_style(if own != "": own elif src >= 0: unit_shotk.get(src, "arrow") else: "arrow")
+            let t = shot_drawn_u((float(tick - t_from) + alpha) / 20.0, flight, st.muzzle.flash > 0.0)
             let a = ground_at(sx, sy) + shot_mouth.get(key, float2 { 0.0, -12.0 })
             let to_j = index_of(shots[o + SHOT_TO])
             let b = ground_at(ax, ay) - float2 { 0.0, 10.0 + (if to_j >= 0: air_lift(u_kind[to_j]) / 1.5 else: 0.0) }
@@ -1656,8 +1690,7 @@ def draw_shots(alpha:float):
                 if t >= 0.0: draw_bolt(st, a, b, t, 1.0)  // (launched late: it looks faster, and lands on the sim's tick)
             elif firstseen: fx_fire(st, a, b, float(land - t_from) / 20.0, if src >= 0: unit_shot.get(src, "") else: "")
     draw_tracers()
-    if tick % 200 == 0: shot_mouth = dictionary<int, float2>(1024)
-    if tick % 200 == 0: shot_from = dictionary<int, int>(1024)  // (forget the landed ones now and then)
+    if tick % 200 == 0: forget_landed_shots()
 
 // Health bars over hurt units you can see, and over the selected.
 def draw_bars(alpha:float):
@@ -1693,7 +1726,7 @@ def draw_rings(alpha:float, raised:bool):
 
 def draw_marks(alpha:float):
     gl.set_shader("color")
-    draw_bars(alpha)
+    if not rec_clean: draw_bars(alpha)
     for(selected_units()) id:
         let i = index_of(id)
         let px, py = prev_pos(i)
@@ -2184,7 +2217,7 @@ def note(s:string):
 note("start")
 // (a capture runs without vsync: with the display asleep or the screen locked, vsync never lets a frame through;
 // novsync: the same for a measure, the frame cap still pacing it)
-let no_vsync = shot != "" or selftest or padtest or has_s(args, "novsync")
+let no_vsync = shot != "" or rec_dir != "" or selftest or padtest or has_s(args, "novsync")
 volume_load()
 window_fullscreen = starts_fullscreen(args, windowed_setting)
 fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, window_flags(no_vsync, window_fullscreen)))
@@ -2387,7 +2420,7 @@ def make_match() -> bool:
         let picked = args[1] == "lobby" and lobby_teams.length == races.length and races.length > 2  // (a team game picked in the lobby: its map and teams)
         let four = races.length > 2 and not picked                                                   // (host:<n> with more people: the 2v2 map)
         let real_map = if four: "reed_meadow_2v2" else: map_id
-        setup_world(20261010, real_map, races, rules, if picked: lobby_teams elif four: map(races.length) k: k % 2 else: [])
+        setup_match(20261010, real_map, races, rules, if picked: lobby_teams elif four: map(races.length) k: k % 2 else: [])
         load_species(real_map)
         map_name_now = real_map
         if pack_library: race_facts(races)
@@ -2396,18 +2429,14 @@ def make_match() -> bool:
         // a scenario has no recipes: set its races up (as export.gd did) for the units' looks, then load it over a clean world
         let rules = load_rules(rules_id())
         let races = map(if pack_prompts.length >= 2: pack_prompts else: [ "sewer rats with cheese hammers", "angry swamp frogs with reed spears" ]) pr: generate(pr, rules, 0)
-        setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
-        let keep_recipe = su_type_recipe
-        let keep_line = su_type_line
-        let keep_eval = su_type_eval
+        setup_match(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
+        let keep_units = su_units
         let keep_btypes = su_btypes
         let keep_races = su_races
         let keep_rules = su_rules
         reset_world()
         start_world(args[1])
-        su_type_recipe = keep_recipe
-        su_type_line = keep_line
-        su_type_eval = keep_eval
+        su_units = keep_units
         su_btypes = keep_btypes
         su_races = keep_races
         su_rules = keep_rules
@@ -2490,7 +2519,7 @@ def make_match() -> bool:
                 let side = int(ceiling(sqrt(float(slots.length * army_n))))  // (in ranks, not all on one spot)
                 for(slots) slot:
                     let kind = type_of_slot(p, slot)
-                    for(if has(su_type_recipe[kind], "crew"): max(1, army_n / 8) else: army_n):  // (engines: a few, not as many as soldiers)
+                    for(if has(gobj(su_units[kind], "look"), "crew"): max(1, army_n / 8) else: army_n):  // (engines: a few, not as many as soldiers)
                         let at = ids.length
                         let x = clamp(start_x[p] + 4000 + (at % side - side / 2) * ARMY_GAP, TILE, (W - 1) * TILE)
                         let y = clamp(start_y[p] + 4000 + (at / side - side / 2) * ARMY_GAP, TILE, (H - 1) * TILE)
@@ -2752,6 +2781,9 @@ def play_match():
     end_watching = false
     note("loop")
     pace(PACE_MATCH)
+    if rec_dir != "":  // (as fast as it goes up to from:)
+        gl.set_fixed_delta_time(0.2, 0.0)
+        speed = 8.0
     while gl.frame() and not quit_game and not bake_quit:
         ui_click_tick()
         window_tick()
@@ -2889,9 +2921,9 @@ def play_match():
             cam += shake
             draw_world(acc / 0.05)
             cam -= shake
-            ui_batch(): draw_panel()
+            if not rec_clean: ui_batch(): draw_panel()
             perf_lap(6)
-            draw_hud(paused, speed)
+            if not rec_clean: draw_hud(paused, speed)
             perf_lap(7)
             draw_groups()
             perf_lap(8)
@@ -2934,6 +2966,19 @@ def play_match():
             print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
             quit_app = true
             return
+        if rec_dir != "" and winner >= 0 and clock_s < rec_from:  // (the match was over before from:, and play has stopped)
+            print "record: match over at {clock_s} s, before from:"
+            quit_app = true
+            return
+        if rec_dir != "" and clock_s >= rec_from:
+            if rec_n == 0:
+                gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
+                speed = start_speed
+            gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
+            rec_n++
+            if float(rec_n) >= rec_for * rec_fps:
+                quit_app = true
+                return
         if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return

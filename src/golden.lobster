@@ -37,7 +37,7 @@ if section == "starts":
         if m[1] != "": set(rules, "mode", jstr(m[1]))
         set(rules, "animals", jbool(true))
         let races = map(m.slice(2, -1)) p: generate(p, rules, 0)
-        setup_world(20261010, m[0], races, rules, [])
+        setup_match(20261010, m[0], races, rules, [])
         print "{m[0]} {m[1]} {m[2]} | {m[3]}: " + sha256_text(concat_string(scenario_tokens(), " ")).substring(0, 16) + " " + sha256_text(concat_string(ai_tokens, " ")).substring(0, 16)
 elif section == "buildings":
     let bt = gobj(load_json("../data/buildings.json"), "buildings")

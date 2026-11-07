@@ -89,7 +89,7 @@ def by_side(part:[int]) -> [int]:
 
 def form_rmax(part:[int]) -> int:
     var r = 0
-    for(part) i: r = max(r, u_radius[i])
+    for(part) i: r = max(r, max(u_radius[i], t_form_r[u_kind[i]]))
     return r
 
 def form_space(part:[int]) -> int:
@@ -141,6 +141,13 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     let paces = map(chunks) c: block_speed(c)
     sort_ints(paces)
     let army_pace = paces[paces.length / 2] * 4 / 5  // (a little under their walk: whoever falls behind can catch up)
+    // whoever can't keep it goes at the back, the slowest last: in front, the blocks behind would walk through it (#253)
+    def lags(c:[int]) -> bool: return block_speed(c) * 4 / 5 < army_pace
+    let late_keys = []::int
+    for(chunks) c, n: if lags(c): late_keys.push(((1 << 20) - block_speed(c)) * (1 << KEY_BITS) + n)
+    sort_ints(late_keys)
+    let in_order = filter(chunks) c: not lags(c)
+    for(late_keys) key: in_order.push(chunks[key & ((1 << KEY_BITS) - 1)])
     // flankers go on the wings of an army that has a middle; an army mostly of them forms in rows like any other
     var flankers = 0
     for(idx) i: if t_role[u_kind[i]] == 3: flankers++
@@ -149,8 +156,8 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     var band = -1
     var used = 0
     let flank = []::[int]
-    for(chunks) c:
-        let role = t_role[u_kind[c[0]]]
+    for(in_order) c:
+        let role = if lags(c): 4 else: t_role[u_kind[c[0]]]
         if role == 3 and wings and band >= 0:
             flank.push(c)
             continue

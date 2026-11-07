@@ -152,3 +152,4 @@ let CMD_ROUTE = 23
 let CMD_PEN = 24
 let CMD_RELEASE = 25
 let CMD_ABILITY = 26
+let HOOK_ORDER_BASE = 100  // a hook's own orders: command codes from here up (hook_on_order)

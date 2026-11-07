@@ -2,15 +2,15 @@
 
 def rules_part(name:string) -> JV: return gobj(su_rules, name)
 
-def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[int]):
-    su_races = races
+def setup_world(seed_value:int, map_id:string, sides:[JV], rules:JV, team_ids:[int]):
+    su_sides = sides
     su_rules = rules
     su_rng = new_rng(seed_value)
     scenario_mode = "match"
     next_id = 1
     next_group = 1
     tick = 0
-    let np = races.length
+    let np = sides.length
     num_players = np
     resource_names = []
     let rd = at(lib_data("resources.json"), "resources")
@@ -72,10 +72,8 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
         speed_pct.push(map(W * H) cell: row[terrain[cell]])
     load_btypes()
     load_tech_data()
-    for(races) race, p:
-        for(glist(race, "units")) u:
-            let r = at(u, "recipe")
-            add_type(p, r, at(u, "eval"), if has(u, "line"): glist(u, "line") else: [ line_step(as_int(at(r, "tier")), r, at(u, "eval")) ])
+    for(sides) side, p:
+        for(glist(side, "units")) u: add_type(p, u)
     add_animal_types(lib_data("animals.json"))
     setup_classes()
     num_classes = su_classes.length
@@ -119,16 +117,16 @@ def setup_world(seed_value:int, map_id:string, races:[JV], rules:JV, team_ids:[i
     fresh_was = []
     load_ai_config()
     next_seq = map(np): 0
+    hook_declare()
 
 // The attack and armour classes (Combat.setup): the base three, then every other name sorted.
 def setup_classes():
     let names = []::string
-    for(su_type_line) line:
-        for(line) l:
-            let e = at(l, "eval")
+    for(su_units) u:
+        for(glist(u, "line")) e:
             for(at(e, "armour").keys) k: push_new(names, k)
             for(at(e, "bonus").keys) k: push_new(names, k)
-            for(eval_tags(e)) k: push_new(names, k)
+            for(unit_tags(e)) k: push_new(names, k)
     for(su_btypes) b:
         for(gobj(b, "armour").keys) k: push_new(names, k)
     su_classes = copy(BASE_CLASSES)
@@ -204,20 +202,11 @@ def setup_btypes():
 def setup_identities():
     let np = num_players
     let fxs = []::[JV]
-    for(su_races) race:
-        let ident = shallow_copy(identity_of(rstr(race, "creature"), rstr(race, "family")))
-        su_idents.push(ident)
-        let out = []::JV
-        for(glist(ident, "bonuses")) b:
-            for(glist(b, "effects")) fx:
-                if not priced(fx): out.push(fx)
-        fxs.push(out)
+    for(su_sides) side: fxs.push(copy(glist(side, "effects")))
     for(np) p:
         for(np) q:
             if q != p and teams[q] == teams[p]:
-                for(glist(su_idents[q], "bonuses")) b:
-                    if gbool(b, "team", false):
-                        for(glist(b, "effects")) fx: fxs[p].push(fx)
+                for(glist(su_sides[q], "team_effects")) fx: fxs[p].push(fx)
     for(fxs) fx: race_fx.push(map(fx) x: encode_effect(x))
     su_fx = fxs
     slot_names = []
@@ -244,9 +233,8 @@ def setup_tech():
         let line_has = []::int
         let before = []::int
         for(np) p:
-            let race = su_races[p]
             let only = gstrs(item, "only")
-            let o = (not only.length or gbool(su_rules, "full_tech_tree", false) or has_s(only, rstr(race, "creature")) or has_s(only, rstr(race, "family"))) and
+            let o = (not only.length or gbool(su_rules, "full_tech_tree", false) or any_in(gstrs(su_sides[p], "owners"), only)) and
                 not ident_lacks(p, rstr(item, "id"))
             open.push(if o: 1 else: 0)
             let lh = if has(item, "line"): line_has_kit(p, rstr(item, "line"), as_int(at(item, "line_age"))) else: true
@@ -255,7 +243,7 @@ def setup_tech():
         research.push(Research { rstr(item, "id"), btype_index(rstr(item, "building")), as_int(at(item, "time")) * 20, as_int(at(item, "age")),
                                  after, gint(item, "line_age", 0), cost_vec(at(item, "cost")), open, line_has, before,
                                  map(glist(item, "effects")) fx: encode_effect(fx) })
-    for(t_slot.length) k: lines.push(map(su_type_line[k]) l: line_step_of(t_slot[k], l))
+    for(t_slot.length) k: lines.push(map(glist(su_units[k], "line")) l: line_step_of(t_slot[k], l))
     for(np):
         ages.push(1)
         researched.push(zeros(research.length))
@@ -286,8 +274,7 @@ def setup_tech():
             hero_types.push(k)
             hero_id.push(0)
             hero_fell.push(0)
-            let sid = rstr(su_type_recipe[k], "hero")
-            hero_fx.push(map(glist(at(at(at(lib_heroes, "hero_signatures"), sid), "aura"), "effects")) fx: encode_effect(fx))
+            hero_fx.push(map(glist(su_units[k], "hero_aura")) fx: encode_effect(fx))
 
 // The buildings an age needs first, for this player (Tech.requires): a lacked one gives way to its requires_else.
 def requires_for(p:int, a:JV) -> [string]:
@@ -324,7 +311,7 @@ def setup_rest():
     tr_trail = gint(tc, "trail", 30)
     tr_speed_pct = gint(tc, "speed_pct", 0)
     wear = zeros(W * H)
-    for(su_idents) ident:
+    for(su_sides) ident:
         let ab = gobj(ident, "ability")
         let on = ab.keys.length > 0
         ab_kind.push(if on: 1 else: 0)
@@ -336,8 +323,8 @@ def setup_rest():
     for(t_slot.length) k:
         var can = false
         if not t_animal[k]:
-            let ab = gobj(su_idents[t_player[k]], "ability")
-            can = ab.keys.length > 0 and has(ab, "tag") and reaches_tags(ab, eval_tags(su_type_eval[k]))
+            let ab = gobj(su_sides[t_player[k]], "ability")
+            can = ab.keys.length > 0 and has(ab, "tag") and reaches(ab, unit_tags(su_units[k]))
         t_ability.push(if can: 1 else: 0)
     let wr = rules_part("wonder")
     wonder_hold = if gbool(wr, "victory", false): as_int(at(wr, "hold_seconds")) * 20 else: 0
@@ -348,9 +335,6 @@ def setup_rest():
     br_arm = map(su_classes.length): 0
     let ba = at(bc, "armour")
     for(ba.keys) k, n: br_arm[str_index(su_classes, k)] = as_int(ba.a[n])
-
-// Identity.reaches on a type's tag names.
-def reaches_tags(fx:JV, tags:[string]) -> bool: return reaches(fx, tags)
 
 // Starting stocks, a finished Town Center on each start, its workers (Economy.setup).
 def setup_starts():

@@ -72,7 +72,10 @@ import lib.expand
 import lib.bot
 import lib.walls_ai
 import lib.world
+import hooks.active
+import hooks.rules
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -139,7 +142,7 @@ let bare0 = bare_of(rules0)
 def new_world(map_id:string, races:[JV], rules:JV, team_ids:[int]):
     reset_world()
     due = []
-    setup_world(SEED, map_id, races, rules, team_ids)
+    setup_match(SEED, map_id, races, rules, team_ids)
     events_on = true  // (the checks read them; they aren't state)
 
 // World's SPAWN as it runs: `count` of p's `slot` round (x, y), jittered by the world's rng, onto open ground.
@@ -255,17 +258,17 @@ def has_word(code:string, w:string) -> bool:  // w in code, not inside a longer 
 
 def test_source_lint():
     var files = 0
-    let names = filter(scan_folder("lib", true) or []) f: ends_with(f, ".lobster")
+    let names = append(map(filter(scan_folder("lib", true) or []) f: ends_with(f, ".lobster")) f: "lib/" + f, map(filter(scan_folder("hooks", true) or []) f: ends_with(f, ".lobster")) f: "hooks/" + f)
     let sorted_names = sorted_strs(names)
     for(sorted_names) f:
         files++
-        let src_lines = tokenize(read_file("lib/" + f) or "", "\n", "")
+        let src_lines = tokenize(read_file(f) or "", "\n", "")
         for(src_lines) line, n:
             let cut = find_string(line, "//")
             let code = if cut >= 0: substring(line, 0, cut) else: line
             for(BANNED) b:
-                if has_word(code, b): check(false, "lib/{f}:{n + 1} uses banned \'{b}\': {line}")
-            if has_decimal(code): check(false, "lib/{f}:{n + 1} has a float literal: {line}")
+                if has_word(code, b): check(false, "{f}:{n + 1} uses banned \'{b}\': {line}")
+            if has_decimal(code): check(false, "{f}:{n + 1} has a float literal: {line}")
     check(files >= 20, "lint saw the sim and AI sources ({files} files)")
 
 // ------------------------------------------------------------------ flow fields
@@ -716,7 +719,7 @@ def watch(n:int, uid:int) -> Watch:
 
 def eval_has_tag(e:JV, tag:string) -> bool: return has_str(glist(e, "tags"), tag)
 
-def type_has_tag(k:int, tag:string) -> bool: return eval_has_tag(su_type_eval[k], tag)
+def type_has_tag(k:int, tag:string) -> bool: return eval_has_tag(su_units[k], tag)
 
 // Healers: one heals a wounded friend in range to full, walks to one further off, never heals an
 // enemy, and never fights, not even when told to or when struck.
@@ -731,7 +734,7 @@ def test_heal():
     stance(1, [ foe ], "passive")
     let hi = index_of(healer)
     check(u_posture[hi] == PASSIVE, "heal: a healer spawns with the no-attack stance")
-    check(as_int(at(su_type_eval[u_kind[hi]], "attack")) == 0, "heal: a healer has no attack")
+    check(as_int(at(su_units[u_kind[hi]], "attack")) == 0, "heal: a healer has no attack")
     issue_cmd(0, CMD_ATTACK, [ healer ], foe, 0, 0, 0)
     steps(8)
     let full = t_hp[u_kind[index_of(near)]]
@@ -1470,7 +1473,7 @@ def test_trade():
     issue_cmd(0, CMD_ROUTE, [ c3 ], af, 0, 0, 0)
     steps(40)
     check(u_task[index_of(c3)] == T_TRADE, "trade: an ally\'s market is traded with")
-    let cart_eval = su_type_eval[k]
+    let cart_eval = su_units[k]
     let cost = at(cart_eval, "cost")
     check(gint(cost, "gold", 0) > 0 and gint(cost, "wood", 0) > 0 and gint(cart_eval, "pop", 0) == 1, "trade: a cart costs wood and gold, 1 pop ({stringify(cost)})")
 
@@ -3572,7 +3575,7 @@ def test_effects():
     for(u_kind) k, i:
         if k == wk: full = full and u_hp[i] == t_hp[wk]
     check(full, "effects: workers already out are at their new full health")
-    check(t_hp[sp] == as_int(at(su_type_eval[sp], "hp")) and t_hp[sp] == lines[sp][0].hp, "effects: Thick Skins leaves spears alone")
+    check(t_hp[sp] == as_int(at(su_units[sp], "hp")) and t_hp[sp] == lines[sp][0].hp, "effects: Thick Skins leaves spears alone")
     // A track's next step needs the one before.
     ages[0] = 3
     let ak = btype_index("armoury")
@@ -4370,6 +4373,18 @@ def air_scene() -> int:
     let h = state_hash()
     return h
 
+// A weapon's pace is its own, whatever else it's tagged: a tank gun in the bolt thrower line flies at the shell's pace (#265).
+def test_shot_pace():
+    let was = shot_speeds
+    shot_speeds = map(4): 0
+    shot_speeds[1] = 220  // (the line's)
+    shot_speeds[3] = 900  // (the weapon's)
+    check(shot_speed_of([ 1, 3 ]) == 900, "a shell in a bolt thrower line flies at 900: {shot_speed_of([ 1, 3 ])}")
+    check(shot_speed_of([ 3, 1 ]) == 900, "whatever order the tags are in: {shot_speed_of([ 3, 1 ])}")
+    check(shot_speed_of([ 1 ]) == 220, "a bolt thrower alone flies at its own: {shot_speed_of([ 1 ])}")
+    check(shot_speed_of([ 0, 2 ]) == r_shot_speed, "no tag with a pace: the rule speed: {shot_speed_of([ 0, 2 ])}")
+    shot_speeds = was
+
 def test_air():
     let h1 = air_scene()
     check(h1 == air_scene(), "the same on a second run")
@@ -4406,7 +4421,7 @@ def test_air():
     let race = gen_race(PROMPTS[1])
     new_world("flat_test", [ race, race ], rules0, [])
     let kb = type_of_slot(0, "bolt_thrower")
-    check(t_air[kb] == (if rstr(su_type_recipe[kb], "body") == "siege.bolt.timber": 1 else: 0), "air on a part reaches the sim")
+    check(t_air[kb] == (if rstr(gobj(su_units[kb], "look"), "body") == "siege.bolt.timber": 1 else: 0), "air on a part reaches the sim")
     check(t_air[type_of_slot(0, "archer")] == 0, "and only on that line")
     set(bolt, "stats", plain)
 
@@ -4465,7 +4480,7 @@ def test_save_load():
 
 // ------------------------------------------------------------------ the parts
 
-let PARTS = [ "fixed", "turret", "air", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
+let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
@@ -4523,6 +4538,7 @@ def run_part(name:string):
     elif name == "wonder": test_wonder()
     elif name == "turret": test_turret()
     elif name == "air": test_air()
+    elif name == "shot_pace": test_shot_pace()
     elif name == "hold_ground": test_hold_ground()
     elif name == "save_load": test_save_load()
     elif name == "match": test_match()

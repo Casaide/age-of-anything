@@ -346,7 +346,7 @@ def land():
                 j = stray(recs[o + SHOT_OWNER], ax, ay, slack)
                 if j >= 0: d = shot_damage(recs[o + SHOT_SRC], recs[o + SHOT_UP], j)
             if j >= 0:
-                c_hurt[j] += d
+                c_hurt[j] += hook_on_hit(by, j, d)
                 c_hurt_by[j] = by
                 if events_on: events.push(Event { EV_HIT, by, u_id[j], d, ax, ay })
             elif events_on: events.push(Event { EV_MISS, by, to, 0, ax, ay })
@@ -525,9 +525,7 @@ def apply_hits(n:int):
     // its last blow killed this tick. (Sticky hits: abilities, not ported, asserted by the exporter.)
     let gold = resource_index("gold")
     for(n) jj:
-        if c_hurt[jj] > 0 and u_hp[jj] > 0:
-            let byi = index_of(c_hurt_by[jj])
-            if byi >= 0 and t_slow_on_hit[u_kind[byi]] > 0: stick(jj, t_slow_on_hit[u_kind[byi]])
+        if c_hurt[jj] > 0 and u_hp[jj] > 0: hook_on_hurt(jj, c_hurt_by[jj])
         if c_hurt[jj] != 0 and u_hp[jj] <= 0 and t_animal[u_kind[jj]] == 0:
             let kk = index_of(c_hurt_by[jj])
             if kk >= 0 and t_kill_gold[u_kind[kk]] != 0 and is_foe(u_owner[kk], u_owner[jj]): stock[gold][u_owner[kk]] += t_kill_gold[u_kind[kk]]
@@ -535,8 +533,8 @@ def apply_hits(n:int):
     while j >= 0:
         if u_hp[j] <= 0:
             if events_on: events.push(Event { EV_DIE, u_id[j], 0, 0, u_x[j], u_y[j] })
-            if t_animal[u_kind[j]] != 0: animal_died(j)  // a carcass to gather (food, not a unit lost)
-            else: lost[u_owner[j]]++
+            hook_on_death(j, c_hurt_by[j])
+            if t_animal[u_kind[j]] == 0: lost[u_owner[j]]++
             remove_unit(j)
         j--
     var b = b_id.length - 1
@@ -825,7 +823,7 @@ def combat_tick():
                         shoot_unit(i, k, j, up)
                     else:
                         let d = hit_on_unit(i, k, j, up)
-                        c_hurt[j] += d
+                        c_hurt[j] += hook_on_hit(u_id[i], j, d)
                         c_hurt_by[j] = u_id[i]
                         if events_on: events.push(Event { EV_HIT, u_id[i], u_id[j], d, u_x[j], u_y[j] })
                 else:
