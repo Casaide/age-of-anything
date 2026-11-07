@@ -234,3 +234,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-07: The Sherman is carved from the Army's own drawings; real subjects are traced, not guessed (D-235, #167, #302).
 - 2026-11-06: The sim builds from a table of unit types; a match runs with no generator in the program (D-236).
 - 2026-11-06: The sim has hook points; sticky shots, carcasses and engine picks are game rules through them (D-237).
+- 2026-11-07: The demo video rebuilt from scratch: a shot list, a cut script and the game's own music, filmed at 1080p60 with nothing over the world (D-238, #267, #277).
