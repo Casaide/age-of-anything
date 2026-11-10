@@ -324,14 +324,26 @@ def least_busy(cell:int, kind:int, except:int, i:int) -> int:
 
 // The nearest cell with this resource within SEARCH_TILES, or -1 (ties to the lower cell).
 def nearest_resource(x:int, y:int, kind:int, i:int, farms:bool, roomy_only:bool, seen:bool) -> int:
+    return nearest_resource_within(x, y, kind, i, farms, roomy_only, seen, SEARCH_TILES)
+
+// A gatherer whose patch ran out looks near first, then further out over ground its side has seen (#336): a worker
+// only stands idle when there's none of it about.
+def next_patch(i:int, kind:int) -> int:
+    var c = nearest_resource(u_x[i], u_y[i], kind, i, false, true, true)
+    if c < 0: c = nearest_resource(u_x[i], u_y[i], kind, i, false, false, true)
+    if c < 0: c = nearest_resource_within(u_x[i], u_y[i], kind, i, false, true, true, FAR_SEARCH_TILES)
+    if c < 0: c = nearest_resource_within(u_x[i], u_y[i], kind, i, false, false, true, FAR_SEARCH_TILES)
+    return c
+
+def nearest_resource_within(x:int, y:int, kind:int, i:int, farms:bool, roomy_only:bool, seen:bool, r:int) -> int:
     let cx = x / TILE
     let cy = y / TILE
     var best = -1
     var best_d2 = 1 << 62
-    var yy = max(cy - SEARCH_TILES, 0)
-    while yy < min(cy + SEARCH_TILES + 1, H):
-        var xx = max(cx - SEARCH_TILES, 0)
-        while xx < min(cx + SEARCH_TILES + 1, W):
+    var yy = max(cy - r, 0)
+    while yy < min(cy + r + 1, H):
+        var xx = max(cx - r, 0)
+        while xx < min(cx + r + 1, W):
             let c = yy * W + xx
             let d2 = dist2(x, y, xx * TILE + 500, yy * TILE + 500)
             xx++
@@ -478,8 +490,7 @@ def gather(i:int, carry_max:int):
         fallow(i, cell, kind)
         return
     if res_at(cell) != kind:
-        var more = nearest_resource(u_x[i], u_y[i], kind, i, false, true, true)
-        if more < 0: more = nearest_resource(u_x[i], u_y[i], kind, i, false, false, true)
+        let more = next_patch(i, kind)
         if more >= 0:
             u_target[i] = more
             u_home[i] = more
@@ -553,8 +564,9 @@ def return_home(i:int):
         else:
             clear_task(i)
     elif u_moving[i] == 0:
-        if u_stuck[i] >= GIVE_UP: clear_task(i)
-        else: approach_building(i, b)
+        // Held up by the crowd at the drop-off (#336): try again from where it stands, never drop the load and idle.
+        if u_stuck[i] >= GIVE_UP: u_stuck[i] = 0
+        approach_building(i, b)
 
 // The nearest unfinished building of the worker's owner within NEXT_BUILD_TILES, on explored ground.
 def nearby_foundation(i:int) -> int:
