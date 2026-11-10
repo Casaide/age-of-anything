@@ -314,6 +314,10 @@
   "unique": "moss_warden"
  },
  "imperial": {
+  "bodies": {
+   "_doc": "the culture's own body for a creature (#418): its base dress drawn in .vox; only the look changes",
+   "human": "roman"
+  },
   "cloth": [
    "#9b2f2f",
    "#5a1f1f"

@@ -1086,6 +1086,16 @@ def vx_body_of(id:string) -> vx_body_spec:
     assert b
     return b
 
+// A culture's own body for a creature (#418): the family's `bodies` (creature -> voxel body, families.json), drawn
+// wherever a unit has that creature's own body (not an engine, a role's body or a body part of its own). Only the
+// look changes: the recipe, its stats and the race key are the creature's.
+def vx_culture_body(body:string, creature:string, fam:JV) -> string:
+    if body != creature: return body
+    let own = gstr(gobj(fam, "bodies"), creature, "")
+    if own == "": return body
+    assert vx_bodies.get(own)
+    return own
+
 // The gear for a recipe's part in a slot (the rules' first match), or "".
 def vx_gear_for(part_id:string, tags:[string], slot:string) -> string:
     for(vx_rules) r:
