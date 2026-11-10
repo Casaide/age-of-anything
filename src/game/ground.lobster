@@ -93,6 +93,36 @@ PIXELFUNCTIONS
         return k == 1.0 ? rock * 1.18 + vec3(0.03) : k == 2.0 ? rock * 0.92 : k == 3.0 ? rock * 0.66 : k == 4.0 ? col * 0.8 : col;
     }
 
+    // A texel of the ground atlas (data/ground/atlas.png, src/ground_textures.lobster): tile k, at p art px, wrapping.
+    vec4 gtex(sampler2D atlas, int k, vec2 p) {
+        ivec2 q = ivec2(mod(floor(p), 256.0)) + ivec2(k % 4, k / 4) * 256;
+        return texelFetch(atlas, q, 0);
+    }
+    // One terrain's texture with no repeat to see: two grids of big cells half a cell apart, each cell offsetting the
+    // texture its own way, faded towards its edges, the higher texel of the two showing where both are strong.
+    vec4 ground(sampler2D atlas, int k, vec2 ap) {
+        vec2 g = ap / 150.0;
+        vec2 c1 = floor(g);
+        vec2 c2 = floor(g + 0.5);
+        vec2 f1 = fract(g);
+        vec2 f2 = fract(g + 0.5);
+        float w1 = min(min(f1.x, 1.0 - f1.x), min(f1.y, 1.0 - f1.y));
+        float w2 = min(min(f2.x, 1.0 - f2.x), min(f2.y, 1.0 - f2.y));
+        uint s = uint(k) * 7u + 3u;
+        vec4 a = gtex(atlas, k, ap + vec2(hs(c1, s), hs(c1, s + 1u)) * 256.0);
+        vec4 b = gtex(atlas, k, ap + vec2(hs(c2, s + 2u), hs(c2, s + 3u)) * 256.0 + 128.0);
+        return mix(a, b, smoothstep(-0.05, 0.05, (b.a - a.a) * 0.25 + (w2 - w1) * 1.5));
+    }
+    // A layer laid over the ground where its weight w passes 0.5, its edge ragged by the two heights: the higher shows
+    // through near the line (blades over dirt, stones through grass), in a band a few texels wide.
+    void splat(inout vec3 col, inout float h, vec4 s, float w) {
+        float t = smoothstep(-0.05, 0.05, (s.a - h) * 0.8 + (w - 0.5) * 2.2);
+        col = mix(col, s.rgb, t);
+        h = mix(h, s.a, t);
+    }
+    // How close to an edge a layer of weight w is: 1 on its line, 0 well clear of it.
+    float near(float w) { return 1.0 - smoothstep(0.0, 0.12, abs(w - 0.5)); }
+
 SHADER terrain
     VERTEX
         INPUTS apos:4 atc:2
@@ -101,7 +131,7 @@ SHADER terrain
         iworld = vec3(apos.xy / 1.5 + vec2(0.0, atc.x), 1.0 + atc.y);   // canvas units (64 x 32 a tile) on the base plane (raised ground says how far it was lifted), and a shade
     PIXEL
         INPUTS iworld:3
-        UNIFORMS tex0 tex1 tex2 tex3
+        UNIFORMS tex0 tex1 tex2 tex3 tex4
         UNIFORM vec2 map_size
         UNIFORM float art_px
         UNIFORM float dev_px
@@ -112,65 +142,54 @@ SHADER terrain
         float b = world.y / 16.0;
         vec2 t = vec2((a + b) * 0.5, (b - a) * 0.5);
         if (t.x < 0.0 || t.y < 0.0 || t.x > map_size.x || t.y > map_size.y) discard;
-        // Detail is sized on the screen, not on the tile, and pinned to the world: a device px for the grain and the
-        // blades, an art px (the units' voxel) for the tufts and stones.
-        vec2 dp = floor(world * 1.5 * dev_px);
+        // The textures are sized on the screen and pinned to the world: a texel an art px (the units' voxel; a device px
+        // on a Retina Mac, and never less than one when zoomed out), so the ground stays fine at every zoom.
         vec2 ap = floor(world * 1.5 * dev_px / max(1.0, floor(art_px + 0.5)));
         vec4 m = texture(tex0, t / map_size);
         float n = vnoise(t * 2.3) * 0.6 + vnoise(t * 6.1) * 0.4;
-        float macro = fbm(t * 0.21);
-        float fine = vnoise(ap * 0.3) * 0.65 + hs(ap, 9u) * 0.35;  // the height edges meet along, per art px
-        float lit = clamp(0.5 + (macro - fbm(t * 0.21 + vec2(0.35, 0.12))) * 2.2, 0.0, 1.0);
-        float light = 0.93 + 0.13 * lit;
-        // grass: a soft tone over several tiles, lusher by water, drier in patches, then grain and blades
+        float edge_n = fbm(t * 1.1 + 3.0) - 0.5 + (vnoise(t * 3.7 + 11.0) - 0.5) * 0.4 + (vnoise(t * 9.0 + 5.0) - 0.5) * 0.25 + (vnoise(t * 21.0 + 2.0) - 0.5) * 0.12;  // (ragged edges, at a few scales)
+        // the grass in zones over many tiles: lush by water, darker by woods and reeds, dry and yellow on open and
+        // raised ground, flowered meadows, patches of bare earth; each laid over the last along its own ragged edge
         float lush = smoothstep(0.04, 0.35, m.r);
-        float dry = smoothstep(0.45, 0.8, vnoise(t * 0.45 + 17.0)) * (1.0 - lush);
-        vec3 col = mix(vec3(0.31, 0.416, 0.173), vec3(0.525, 0.569, 0.247), 0.22 + 0.5 * macro);
-        col = mix(col, vec3(0.27, 0.40, 0.18), lush * 0.6);
-        col = mix(col, vec3(0.55, 0.55, 0.27), dry * 0.45);
-        col *= mix(vec3(1.03, 1.01, 0.92), vec3(0.96, 1.0, 1.04), vnoise(t * 0.13 + 61.0));
-        col *= 0.93 + 0.12 * vnoise(ap * 0.09 + 3.0) + 0.05 * vnoise(ap * 0.3);
-        col *= 0.96 + 0.08 * hs(dp, 7u);
-        if (hs(dp, 11u) > 0.8) col = col * 1.18 + vec3(0.02, 0.03, 0.0);
-        else if (hs(dp - vec2(0.0, 1.0), 11u) > 0.8) col *= 0.84;
-        else if (hs(dp - vec2(0.0, 2.0), 11u) > 0.9) col *= 0.9;
-        float reed = clamp(m.b * 1.3 + (n - 0.5) * 0.5, 0.0, 1.0);
-        col = mix(col, col * vec3(1.04, 0.98, 0.78), reed * 0.5);
-        float tk = tuft(ap, 0.42 + 0.2 * lush + 0.35 * reed - 0.2 * dry, floor(reed * 2.0), 21u);
-        // swamp: dark olive bog, mud, and standing pools between tall reeds
-        float swamp = m.g + (n - 0.5) * 0.4 + (fine - 0.5) * 0.15;
-        bool bare = false;
-        if (swamp > 0.5) {
-            float bog = fbm(t * 1.7 + 5.0);
-            col = mix(vec3(0.24, 0.29, 0.15), vec3(0.34, 0.38, 0.20), bog) * (0.965 + 0.07 * hs(dp, 7u));
-            if (bog + (fine - 0.5) * 0.15 < 0.34) col = mix(col, mix(vec3(0.30, 0.26, 0.17), vec3(0.36, 0.31, 0.20), fine), 0.7);
-            float pool = vnoise(t * 0.55 + 13.0) * 0.75 + vnoise(t * 2.0 + 3.0) * 0.25 + (fine - 0.5) * 0.06;
-            if (pool > 0.6) {
-                col = mix(vec3(0.17, 0.27, 0.24), vec3(0.22, 0.33, 0.29), smoothstep(0.6, 0.75, pool));
-                if (pool < 0.615) col = vec3(0.26, 0.22, 0.15);
-                else if (hs(ap, 31u) > 0.985) col = vec3(0.42, 0.52, 0.50);
-                tk = 0.0;
-                bare = true;
-            } else {
-                tk = tuft(ap, 0.55, 2.0, 41u);
+        float raised = clamp((ishade - 1.0) * 4.0, 0.0, 1.0);
+        vec4 s = ground(tex4, 0, ap);
+        vec3 col = s.rgb;
+        float h = s.a;
+        float w_dark = max(m.b * 1.3, smoothstep(0.62, 0.8, fbm(t * 0.05 + 7.0)) * 0.9) + edge_n * 0.35;
+        if (w_dark > 0.35) splat(col, h, ground(tex4, 2, ap), w_dark);
+        float dry_zone = smoothstep(0.42, 0.68, fbm(t * 0.06 + 17.0));
+        float w_dry = dry_zone * (1.0 - lush) * (1.0 - m.b) + raised * 0.35 + edge_n * 0.35;
+        if (w_dry > 0.35) splat(col, h, ground(tex4, 1, ap), w_dry);
+        float w_meadow = smoothstep(0.6, 0.75, fbm(t * 0.09 + 30.0)) * (1.0 - m.b) + edge_n * 0.3;
+        if (w_meadow > 0.35) splat(col, h, ground(tex4, 3, ap), w_meadow);
+        float w_earth = smoothstep(0.56, 0.84, fbm(t * 0.16 + 50.0)) * (0.55 + 0.45 * dry_zone) * (1.0 - lush) * (1.0 - m.b) + edge_n * 0.3;
+        if (w_earth > 0.35) splat(col, h, ground(tex4, 9, ap), w_earth);
+        col *= mix(vec3(1.03, 1.01, 0.94), vec3(0.97, 1.0, 1.03), vnoise(t * 0.08 + 61.0));  // (a faint drift of hue)
+        col *= 0.94 + 0.12 * fbm(t * 0.35 + 70.0);  // (and of tone, within a zone)
+        float grass = 1.0;  // (how much of the top is grass, for the tufts)
+        // swamp: mud with standing pools between reeds
+        float w_mud = m.g + (n - 0.5) * 0.3 + edge_n * 0.3;
+        bool pool_here = false;
+        if (w_mud > 0.35) {
+            splat(col, h, ground(tex4, 8, ap), w_mud);
+            float hummock = (fbm(t * 0.7 + 90.0) - 0.5) * 1.4 + 0.5 + edge_n * 0.3;  // (tussocks of bog grass in the mud)
+            if (hummock > 0.35) splat(col, h, ground(tex4, 2, ap) * vec4(0.9, 0.92, 0.8, 1.0), hummock);
+            float pool = vnoise(t * 0.55 + 13.0) * 0.75 + vnoise(t * 2.0 + 3.0) * 0.25 + (h - 0.4) * 0.05;
+            if (w_mud > 0.5 && pool > 0.6) {
+                col = mix(vec3(0.17, 0.27, 0.24), vec3(0.22, 0.33, 0.29), smoothstep(0.6, 0.75, pool)) * (0.97 + 0.06 * h);
+                if (pool < 0.612) col = vec3(0.24, 0.21, 0.14);
+                h = 0.1;
+                pool_here = true;
             }
-        } else if (swamp > 0.42) {
-            col = mix(col, vec3(0.26, 0.31, 0.17), 0.55);
+            grass *= 1.0 - smoothstep(0.45, 0.55, w_mud);
         }
-        // rock: grey ground strewn with stones; scree on the grass at its edge
-        float rock = m.a + (n - 0.5) * 0.35 + (fine - 0.5) * 0.3;
-        float sk = 0.0;
-        vec3 sc = mix(vec3(0.50, 0.48, 0.44), vec3(0.62, 0.60, 0.55), hs(floor(ap / 5.0), 71u));
-        if (rock > 0.5) {
-            col = mix(vec3(0.427, 0.416, 0.392), vec3(0.608, 0.588, 0.545), 0.2 + 0.6 * fbm(t * 0.7 + 23.0)) * (0.95 + 0.1 * hs(dp, 7u));
-            if (vnoise(ap * 0.18 + 3.0) > 0.72) col *= 0.88;
-            sk = stone(ap, 0.6, 51u);
-            tk = 0.0;
-        } else if (rock > 0.36) {
-            sk = stone(ap, 0.45, 51u);
-            if (rock > 0.44) tk = 0.0;
+        // rock: weathered stone through the grass
+        float w_rock = m.a + (n - 0.5) * 0.3 + edge_n * 0.3;
+        if (w_rock > 0.35) {
+            splat(col, h, ground(tex4, 5, ap), w_rock);
+            grass *= 1.0 - smoothstep(0.45, 0.55, w_rock);
         }
-        // the paths (game/paths.lobster: a channel a style) and the trails worn by walkers, height-blended into the ground
+        // the paths (game/paths.lobster: a channel a style) and the trails worn by walkers
         vec4 pth = texture(tex1, t / map_size);
         vec2 wob = vec2(vnoise(t * 1.3 + 11.0), vnoise(t * 1.3 + 29.0)) - 0.5;
         float trod = texture(tex2, (t + wob * 0.5) / map_size).r * 0.4;
@@ -179,71 +198,76 @@ SHADER terrain
             trod += texture(tex2, (t + wob * 0.8 + vec2(cos(ak), sin(ak)) * 0.7) / map_size).r * 0.15;
         }
         pth.r = max(pth.r, smoothstep(0.12, 0.5, trod) * 0.7);
-        float st_trail = pth.r + (n - 0.5) * 0.4 + (fine - 0.5) * 0.3;
+        float st_trail = pth.r + (n - 0.5) * 0.3 + edge_n * 0.25;
         float st_board = pth.g + (n - 0.5) * 0.12;
-        float st_cob = pth.b + (n - 0.5) * 0.2 + (fine - 0.5) * 0.12;
-        float st_road = pth.a + (n - 0.5) * 0.08 + (fine - 0.5) * 0.08;
-        float top = max(max(st_trail, st_board), max(st_cob, st_road));
+        float st_cob = pth.b + (n - 0.5) * 0.15;
+        float st_road = pth.a + (n - 0.5) * 0.08;
+        float paved = max(st_cob, st_road);
+        float w_dirt = max(st_trail, paved + 0.08 + edge_n * 0.15);  // (a dirt fringe along a paved road)
+        if (w_dirt > 0.35) {
+            splat(col, h, ground(tex4, 4, ap), w_dirt);
+            grass *= 1.0 - smoothstep(0.45, 0.55, w_dirt);
+        }
         float u = texture(tex3, t / map_size).r * 9.0;  // (boards a ninth of a tile wide, their seams a device px: the slope out here, where every pixel takes it)
         float uw = fwidth(u);
-        vec3 dirt = mix(vec3(0.478, 0.380, 0.259), vec3(0.604, 0.490, 0.333), 0.25 + 0.5 * fbm(t * 0.8 + 41.0));
+        vec3 dirt = vec3(0.54, 0.43, 0.29);
+        float top = max(st_board, paved);
         if (top > 0.5) {
-            tk = 0.0;
-            if (top == st_trail) {
-                col = dirt * (0.95 + 0.1 * hs(dp, 7u)) * (0.94 + 0.12 * fine);
-                if (abs(pth.r - 0.8) < 0.04) col *= 0.9;
-                sk = stone(ap, 0.12, 61u);
-                sc = mix(dirt, sc, 0.45);
-                if (sk == 0.0 && hs(ap, 63u) > 0.97) col *= 0.8;
-            } else if (top == st_board) {
+            grass = 0.0;
+            if (top == st_board) {
                 float plank = floor(u);
                 float seam = fract(u) / max(uw, 1e-4);
                 col = mix(vec3(0.46, 0.33, 0.19), vec3(0.60, 0.45, 0.27), hash(vec2(plank, 7.0)));
-                col *= 0.92 + 0.12 * vnoise(vec2(plank * 5.0, ap.x * 0.35 + ap.y * 0.7)) + 0.05 * hs(dp, 7u);
+                col *= 0.92 + 0.12 * vnoise(vec2(plank * 5.0, ap.x * 0.35 + ap.y * 0.7)) + 0.05 * hs(ap, 7u);
                 if (hash(vec2(plank, 3.0)) > 0.86) col = mix(col, vec3(0.50, 0.48, 0.42), 0.35);
                 if (seam < 1.0) col = vec3(0.20, 0.13, 0.07);
                 else if (seam < 2.0) col *= 1.14;
                 if (st_board < 0.56) {
-                    col = vec3(0.30, 0.20, 0.11) * (0.95 + 0.1 * hs(dp, 7u));
+                    col = vec3(0.30, 0.20, 0.11) * (0.95 + 0.1 * hs(ap, 7u));
                     if (mod(plank, 6.0) < 1.0) col = (fract(u) < 0.5) ? vec3(0.46, 0.33, 0.19) : vec3(0.20, 0.13, 0.07);
                 }
-                sk = 0.0;
             } else {
                 bool cob = top == st_cob;
                 vec2 id;
                 vec2 off;
                 vec3 v = cob ? stones(t * 7.0, 0.85, id, off) : stones(t * vec2(3.2, 3.6), 0.55, id, off);
-                col = cob ? mix(vec3(0.42, 0.41, 0.37), vec3(0.62, 0.60, 0.54), v.y) : mix(vec3(0.58, 0.56, 0.50), vec3(0.72, 0.70, 0.63), v.y);
-                col *= 0.95 + 0.1 * hs(dp, 7u);
+                vec3 paving = cob ? mix(vec3(0.42, 0.41, 0.37), vec3(0.62, 0.60, 0.54), v.y) : mix(vec3(0.58, 0.56, 0.50), vec3(0.72, 0.70, 0.63), v.y);
+                paving *= 0.95 + 0.1 * hs(ap, 7u);
                 float facing = dot(normalize(off + vec2(1e-4)), normalize(vec2(-0.6, -0.8)));
-                float rim = cob ? 0.3 : 0.2;
-                if (v.x < rim) col *= facing > 0.25 ? 1.14 : (facing < -0.25 ? 0.76 : 1.0);
-                if (v.x < (cob ? 0.12 : 0.06)) col = mix(dirt, vec3(0.30, 0.26, 0.19), 0.6);
-                if ((cob ? st_cob : st_road) < 0.58 && hash(id + 5.0) > 0.5) col = dirt * (0.9 + 0.1 * fine);
-                sk = 0.0;
+                if (v.x < (cob ? 0.3 : 0.2)) paving *= facing > 0.25 ? 1.14 : (facing < -0.25 ? 0.76 : 1.0);
+                if (v.x < (cob ? 0.12 : 0.06)) paving = mix(col, vec3(0.30, 0.26, 0.19), 0.5);
+                if ((cob ? st_cob : st_road) < 0.58 && hash(id + 5.0) > 0.5) paving = col;  // (stones missing at the edge)
+                col = paving;
             }
-        } else if (top > 0.4) {
-            col = mix(col, dirt * 0.92, 0.35);
-            if (top > 0.45) tk = 0.0;
-            if (top == st_board) col *= 0.78;  // (the walk's shadow on the ground beside it)
-            if (top == st_trail || top == st_cob || top == st_road) sk = max(sk, stone(ap, 0.3, 61u));
+        } else if (top > 0.44 && top == st_board) {
+            col *= 0.78;  // (the walk's shadow on the ground beside it)
         }
-        if (!bare && sk > 0.0) col = stoned(col, sc, sk);
-        else if (tk > 0.0) col = tufted(col, tk);
-        col *= light;
-        // the shore: sand, then wet sand, then water (deep to shallow), its foam, the sky and fine ripples
-        float water = m.r + (n - 0.5) * 0.3 + (fine - 0.5) * 0.05;
-        if (water > 0.36) {
-            vec3 sand = mix(vec3(0.722, 0.639, 0.455), vec3(0.804, 0.725, 0.541), 0.3 + 0.5 * fbm(t * 0.9 + 8.0)) * (0.95 + 0.1 * hs(dp, 7u));
-            if (hs(ap, 81u) > 0.96) sand *= 0.86;
-            float wet = smoothstep(0.42, 0.49, water + (fine - 0.5) * 0.04);
-            col = mix(sand, sand * vec3(0.66, 0.64, 0.62), wet) * light;
+        // voxel accents, sparse: a few tufts on grass, more along the edges of rock and dirt; a few stones on rock and trails
+        float edgy = max(max(near(w_rock), near(w_dirt)), near(w_earth) * 0.6);
+        if (!pool_here && top <= 0.5) {
+            float sk = stone(ap, 0.015 + 0.12 * smoothstep(0.5, 0.6, max(w_rock, st_trail)) * (1.0 - grass), 51u);
+            if (sk > 0.0) col = stoned(col, mix(vec3(0.50, 0.48, 0.44), vec3(0.64, 0.62, 0.57), hs(floor(ap / 5.0), 71u)), sk);
+            else if (grass > 0.5) {
+                float tk = tuft(ap, 0.012 + 0.16 * edgy + 0.08 * m.b, floor(m.b * 2.0), 21u);
+                if (tk > 0.0) col = tufted(col, tk);
+            }
+        }
+        // light: a soft roll over several tiles
+        float macro = fbm(t * 0.21);
+        float lit = clamp(0.5 + (macro - fbm(t * 0.21 + vec2(0.35, 0.12))) * 2.2, 0.0, 1.0);
+        col *= 0.93 + 0.13 * lit;
+        // the shore: a sand fringe, a darker wet band, then water (deep to shallow), its foam, the sky and fine ripples
+        float water = m.r + (n - 0.5) * 0.3 + edge_n * 0.06;
+        if (water > 0.28) {
+            float lift = 0.93 + 0.13 * lit;
+            splat(col, h, ground(tex4, 6, ap) * vec4(lift, lift, lift, 1.0), water - 0.36 + 0.5);
+            if (water > 0.4) splat(col, h, ground(tex4, 7, ap) * vec4(lift, lift, lift, 1.0), water - 0.46 + 0.5);
         }
         if (water > 0.5) {
             float depth = smoothstep(0.5, 1.0, m.r + (n - 0.5) * 0.12);
             col = mix(vec3(0.310, 0.541, 0.549), vec3(0.141, 0.314, 0.416), depth);
             col *= 0.96 + 0.08 * fbm(t * 0.5 + 12.0);
-            if (depth < 0.18) col = mix(col, vec3(0.55, 0.55, 0.42), (0.18 - depth) * 2.4);
+            if (depth < 0.18) col = mix(col, vec3(0.50, 0.50, 0.40), (0.18 - depth) * 2.4);
             vec2 sp = vec2(world.x * 0.018, world.y * 0.16);
             float sky = vnoise(sp + vec2(time * 0.03, 0.0)) * 0.6 + vnoise(sp * 2.3 + vec2(-time * 0.05, 3.0)) * 0.4;
             col = mix(col, vec3(0.52, 0.68, 0.70), smoothstep(0.6, 0.85, sky) * 0.25 * (0.4 + depth * 0.6));
@@ -258,8 +282,8 @@ SHADER terrain
             else if (water < foam + 0.025) col *= 0.88;
         }
         col *= ishade;
-        float edge = min(min(t.x, t.y), min(map_size.x - t.x, map_size.y - t.y));
-        col *= mix(0.25, 1.0, smoothstep(0.0, 0.9, edge));
+        float rim = min(min(t.x, t.y), min(map_size.x - t.x, map_size.y - t.y));
+        col *= mix(0.25, 1.0, smoothstep(0.0, 0.9, rim));
         frag_color = vec4(col, 1.0);
 
 SHADER cliff
@@ -328,7 +352,13 @@ var ground_tex_size = int2_0
 var ground_tex_cam = float2_0
 var ground_tex_zoom = 0.0
 var ground_tex_step = -1.0
-var ground_stale = true  // a texture its shader reads was rebuilt
+var ground_stale = true                        // a texture its shader reads was rebuilt
+var ground_atlas_tex:resource<texture>? = nil  // the ground's textures (data/ground/atlas.png: src/ground_textures.lobster)
+
+def ground_atlas() -> resource<texture>:
+    if not ground_atlas_tex:
+        ground_atlas_tex = gl.load_texture("../data/ground/atlas.png", texture_format_clamp | texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min)
+    return assert ground_atlas_tex
 
 def mask_channel(name:string) -> int:
     return switch name:
@@ -628,6 +658,7 @@ def draw_terrain_mesh(m:resource<mesh>, art_px:float):
     gl.set_mesh_texture(m, 0, 1, pt)
     gl.set_mesh_texture(m, 0, 2, wt)
     gl.set_mesh_texture(m, 0, 3, at)
+    gl.set_mesh_texture(m, 0, 4, ground_atlas())
     gl.render_mesh(m)
 
 def draw_occluder(o:Occluder, art_px:float):
@@ -654,6 +685,7 @@ def draw_ground(art_px:float):
     gl.set_mesh_texture(gq, 0, 1, pt)
     gl.set_mesh_texture(gq, 0, 2, wt)
     gl.set_mesh_texture(gq, 0, 3, at)
+    gl.set_mesh_texture(gq, 0, 4, ground_atlas())
     gl.render_mesh(gq)
 
 // The time the terrain shader sees: in steps, so the water moves only when the still ground is redrawn.
