@@ -307,10 +307,8 @@ def blocks_tick():
             alive[b]++
             if u_foe[i] != 0: fighting[b]++
             else:
-                let px = fb_x[b] + u_bx[i]
-                let py = fb_y[b] + u_by[i]
-                let open = walkable(px, py, lane_base[u_owner[i]] + u_mclass[i])
-                if not open or dist2(u_x[i], u_y[i], px, py) <= 40000: placed[b]++
+                let px, py = block_place(i)  // (its place off blocked ground, #355)
+                if dist2(u_x[i], u_y[i], px, py) <= 40000: placed[b]++
     for(fb_state) state, b:
         if state != 0:
             if alive[b] == 0: fb_state[b] = 0
