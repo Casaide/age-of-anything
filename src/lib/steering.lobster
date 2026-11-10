@@ -289,5 +289,14 @@ def steer_group(i:int, x:int, y:int, s:int, mc:int):
         elif fb_state[b] == BLOCK_THERE and dd <= u_arrive[i] * ARRIVE_SETTLE + TILE and poor and not place_free(i):
             u_moving[i] = 0  // (its place in a crowd: it stops as near as it gets)
             u_stuck[i] = 0
+        elif fb_state[b] == BLOCK_THERE and u_stuck[i] < 6 and poor and u_vx[i] == 0 and u_vy[i] == 0:
+            u_stuck[i]++  // (standing, wedged behind its groupmates with its place clear: a few looks, then where it stands is its place)
+            if u_stuck[i] >= STALL_LOOKS:
+                u_tx[i] = x
+                u_ty[i] = y
+                u_moving[i] = 0
+                u_stuck[i] = 0
         elif u_stuck[i] >= 6 and clear:
+            u_stuck[i] = 0
+        elif u_stuck[i] < 6:
             u_stuck[i] = 0
