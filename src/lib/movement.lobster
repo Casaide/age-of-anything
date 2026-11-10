@@ -251,84 +251,6 @@ def passed(i:int, x:int, y:int) -> bool:
         yy++
     return false
 
-// Local avoidance (World._sidestep): (0, 0) if nothing is in the way.
-def sidestep(i:int, x:int, y:int, ux:int, uy:int, s:int) -> int, int:
-    let cx = x / TILE
-    let cy = y / TILE
-    var best = -1
-    var best_ahead = 1 << 30
-    var best_side = 0
-    let ri = u_radius[i]
-    let gi = u_group[i]
-    let oi = u_owner[i]
-    let x0 = if ux > ONE / 2: cx else: cx - 1
-    let x1 = if ux < -ONE / 2: cx else: cx + 1
-    let y0 = if uy > ONE / 2: cy else: cy - 1
-    let y1 = if uy < -ONE / 2: cy else: cy + 1
-    var yy = max(y0, 0)
-    let ye = min(y1 + 1, H)
-    while yy < ye:
-        var xx = max(x0, 0)
-        let xe = min(x1 + 1, W)
-        while xx < xe:
-            let c = yy * W + xx
-            var k = sp_start[c]
-            let e = sp_end[c]
-            while k < e:
-                let j = sp_items[k]
-                k++
-                if j == i or (gi > 0 and (u_group[j] == gi or u_owner[j] != oi)): continue
-                var head_on = false
-                if o_moving[j] == 1:
-                    if u_owner[j] != oi: continue
-                    if (o_wx[j] - o_x[j]) * ux + (o_wy[j] - o_y[j]) * uy >= 0: continue
-                    head_on = true
-                let rx = o_x[j] - x
-                let ry = o_y[j] - y
-                let rr = ri + u_radius[j]
-                let ah = (rx * ux + ry * uy) / ONE
-                if ah <= 0 or ah > rr + (if head_on: 4 else: 2) * s or ah >= best_ahead: continue
-                var side = (rx * uy - ry * ux) / ONE
-                if side >= rr or side <= -rr: continue
-                if head_on:
-                    side = 1
-                elif side == 0:
-                    side = if (u_id[i] + u_id[j]) % 2 == 0: 1 else: -1
-                best = j
-                best_ahead = ah
-                best_side = side
-            xx++
-        yy++
-    if best < 0: return 0, 0
-    let sgn = if best_side > 0: 1 else: -1
-    let vx = ux * 2 - sgn * uy
-    let vy = uy * 2 + sgn * ux
-    if not walkable(x + vx * s / (2 * ONE), y + vy * s / (2 * ONE), lane(i)): return 0, 0
-    return vx, vy
-
-// Where unit i goes this tick when it wants to go from (x, y) to (nx, ny): its velocity turns towards that by at most a
-// share of its speed s a tick, so a push one way then the other evens out instead of swaying it (#346).
-def steer(i:int, x:int, y:int, nx:int, ny:int, s:int) -> int, int:
-    var vx = u_vx[i]
-    var vy = u_vy[i]
-    if vx * (nx - x) + vy * (ny - y) < 0:  // (turning back, a load dropped or a new order: it turns where it stands, not sliding on backwards)
-        vx = 0
-        vy = 0
-    var ex = nx - x - vx
-    var ey = ny - y - vy
-    let e = isqrt(ex * ex + ey * ey)
-    let acc = max(1, s / ACCEL_DIV)
-    if e > acc:
-        ex = ex * acc / e
-        ey = ey * acc / e
-    vx += ex
-    vy += ey
-    let v = isqrt(vx * vx + vy * vy)
-    if v > s:
-        vx = vx * s / v
-        vy = vy * s / v
-    return x + vx, y + vy
-
 def move():
     let n = u_x.length
     // World._move means these as the tick's start, but Godot's packed arrays are shared, not copied
@@ -427,23 +349,22 @@ def move():
                 continue
             wxs[i] = wx
             wys[i] = wy
-        var dx = wxs[i] - x
-        var dy = wys[i] - y
-        var d = isqrt(dx * dx + dy * dy)
-        var stepping = false
-        if d > u_radius[i] and u_foe[i] == 0:
-            let vx, vy = sidestep(i, x, y, dx * ONE / d, dy * ONE / d, s)
-            if vx != 0 or vy != 0:
-                dx = vx
-                dy = vy
-                d = isqrt(dx * dx + dy * dy)
-                stepping = true
+        if u_foe[i] == 0:  // (walking, not at a foe: steering for its waypoint like everyone in a block, #351)
+            steer_to(i, x, y, s, mc, wxs[i], wys[i], 0, wxs[i] == u_tx[i] and wys[i] == u_ty[i])
+            if xs[i] == x and ys[i] == y and u_reach[i] == 0:  // (held right by its target: it has arrived; anywhere else the progress checks above decide)
+                let near = u_arrive[i] * ARRIVE_SETTLE
+                if dist2(x, y, u_tx[i], u_ty[i]) <= near * near:
+                    mv[i] = 0
+                    st[i] = 0
+            continue
+        let dx = wxs[i] - x
+        let dy = wys[i] - y
+        let d = isqrt(dx * dx + dy * dy)
         var nx = x
         var ny = y
         if d > 0:
             nx = x + dx * min(s, d) / d
             ny = y + dy * min(s, d) / d
-            if not stepping and u_foe[i] == 0: nx, ny = steer(i, x, y, nx, ny, s)  // (a sidestep or a foe: straight)
         let wk = walks[mc]
         let ok_xy = nx >= 0 and ny >= 0 and nx / TILE < mw and ny / TILE < mh and wk[ny / TILE * mw + nx / TILE] == 1
         let ok_x = nx >= 0 and y >= 0 and nx / TILE < mw and y / TILE < mh and wk[y / TILE * mw + nx / TILE] == 1

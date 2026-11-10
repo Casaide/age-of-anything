@@ -592,7 +592,7 @@ def defend(bot:Bot, army:[int], hx:int, hy:int):
     if intruder < 0: return
     let ids = []::int
     for(army) i:
-        if u_foe[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) < 4 * r * r and not is_climbing(bot.land, i) and u_perch[i] == 0: ids.push(u_id[i])
+        if u_foe[i] == 0 and dist2(hx, hy, u_x[i], u_y[i]) < 4 * r * r and not is_climbing(bot.land, i) and u_perch[i] == 0 and u_task[i] != T_CLIMB: ids.push(u_id[i])  // (not one on its way up our wall)
     if ids.length:
         let tx, ty = reachable(bot, u_x[intruder], u_y[intruder])
         issue_cmd(bot.player, 1, ids, tx, ty, 0, 0)
@@ -717,7 +717,7 @@ def respond(bot:Bot, tc:int, army:[int], workers:[int], hx:int, hy:int):
     let keys = []::int
     let pops = dictionary<int, int>(127)
     for(army) i:
-        if not ((u_foe[i] != 0 and index_of(u_foe[i]) >= 0) or is_climbing(bot.land, i) or u_perch[i] != 0):  // (up on our wall: it shoots from there)
+        if not ((u_foe[i] != 0 and index_of(u_foe[i]) >= 0) or is_climbing(bot.land, i) or u_perch[i] != 0 or u_task[i] == T_CLIMB):  // (up on our wall, or on its way: it shoots from there)
             let d2 = dist2(u_x[i], u_y[i], fx, fy)
             if not (dist2(u_x[i], u_y[i], hx, hy) > home_r * home_r and d2 > RESPOND_TILES * RESPOND_TILES * 1000000):
                 keys.push(d2 * (1 << 20) + u_id[i])
