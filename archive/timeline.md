@@ -237,3 +237,6 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-07: The demo video rebuilt from scratch: a shot list, a cut script and the game's own music, filmed at 1080p60 with nothing over the world (D-238, #267, #277).
 - 2026-11-10: On a Retina Mac the art is baked at the screen's density (one voxel a device pixel) and the view starts a quarter further out; the grass's patches made smaller and softer (D-239, #358).
 - 2026-11-10: The haidut, the first unit drawn as a MagicaVoxel model, in an example mod with three cloaks (D-240, #381).
+- 2026-11-10: The ground repainted from scratch: fine grain and blades sized on the screen, height-blended edges, voxel tufts and stones, a new shore (D-241, #392).
+- 2026-11-10: The ground repainted again, as textures: ten painted tiles overlapped by height along ragged edges, grass in zones over many tiles, voxel tufts only as accents (D-242, #392).
+- 2026-11-10: The ground made a mixture of grass and soil in many hues, with a forest floor under the woods and scree about stone and gold, and softened (D-243, #392).
