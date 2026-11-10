@@ -122,6 +122,8 @@ var u_pace = []::int
 var u_block = []::int  // the marching block it keeps its place in (+1; 0: none), and that place from the block's centre
 var u_bx = []::int
 var u_by = []::int
+var u_vx = []::int  // its velocity: milli-tiles a tick (#346)
+var u_vy = []::int
 var u_hp = []::int
 var u_foe = []::int
 var u_cooldown = []::int
@@ -164,7 +166,34 @@ def unit_columns() -> [[int]]:
              u_hp, u_foe, u_cooldown, u_stance, u_posture, u_gx, u_gy, u_amx, u_amy, u_amc,
              u_task, u_target, u_home, u_gspot, u_carry_kind, u_carry, u_work, u_reach, u_rx0, u_ry0, u_rx1, u_ry1, u_patient,
              u_route, u_ready, u_perch, u_wgoal, u_wnext, u_wexit, u_wtime, u_hull, u_lx, u_ly,
-             u_owner, u_kind, u_speed, u_radius, u_mclass, u_block, u_bx, u_by ]
+             u_owner, u_kind, u_speed, u_radius, u_mclass, u_block, u_bx, u_by, u_vx, u_vy ]
+
+// What hooks keep (hooks/active.lobster's hook_declare): saved and hashed like the sim's own. A column per name; a unit's
+// by its id, so it stays with the unit through a garrison and needn't change when units come and go.
+var hook_unit_names = []::string
+var hook_unit_cols = []::[int]
+var hook_player_names = []::string
+var hook_player_cols = []::[int]
+var hook_tick_types = []::int  // the unit types that asked for hook_unit_tick
+
+def hook_declare_unit(name:string) -> int:
+    hook_unit_names.push(name)
+    hook_unit_cols.push([]::int)
+    return hook_unit_names.length - 1
+
+def hook_unit_get(col:int, i:int) -> int:
+    let id = u_id[i]
+    return if id < hook_unit_cols[col].length: hook_unit_cols[col][id] else: 0
+
+def hook_unit_set(col:int, i:int, v:int):
+    let id = u_id[i]
+    while hook_unit_cols[col].length <= id: hook_unit_cols[col].push(0)
+    hook_unit_cols[col][id] = v
+
+def hook_declare_player(name:string, players:int) -> int:
+    hook_player_names.push(name)
+    hook_player_cols.push(map(players): 0)
+    return hook_player_names.length - 1
 
 let UNIT_HASHED = 47    // the columns hashed (unit_fields)
 var t_tags = []::[int]  // per unit type: its eval's tags (class indexes), as its line stands
@@ -423,7 +452,7 @@ def insert_unit(uid:int, owner:int, k:int, x:int, y:int, speed:int, radius:int, 
               hp, 0, 0, 0, 0, x, y, 0, 0, -1,
               0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
               0, 0, 0, 0, 0, 0, 0, 0, x, y,
-              owner, k, speed, radius, 0, 0, 0, 0 ]
+              owner, k, speed, radius, 0, 0, 0, 0, 0, 0 ]
     unit_changes++
     for(unit_columns()) col, n: col.insert(at, v[n])
     u_orders.insert(at, [])

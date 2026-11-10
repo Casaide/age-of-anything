@@ -122,21 +122,45 @@ def z_of_side(v:float) -> float: return (as_float(at(vs, "ground")) - v) * side_
 def y_of_top(h:float) -> float: return (h - as_float(at(vt, "h0"))) * top_ih - side_len / 2.0
 def x_of_top(v:float) -> float: return (v - top_mid) * top_iv
 
-let raw_side = silhouette(read_pbm(as_str(at(vs, "file"))))
-let raw_top = silhouette(read_pbm(as_str(at(vt, "file"))))
-let raw_front = silhouette(read_pbm(as_str(at(vf, "file"))))
+// A view's outline: what the drawing fills, or, for a line drawing crossed by dimension lines, polygons traced over it.
+def outline_of(v:JV) -> mask:
+    let drawn = read_pbm(as_str(at(v, "file")))
+    if not has(v, "outline"): return silhouette(drawn)
+    let ps = map(glist(v, "outline")) p: poly(p)
+    let on = map(drawn.w * drawn.h) i:
+        var hit = false
+        for(ps) p:
+            if inside(p, float(i % drawn.w) + 0.5, float(i / drawn.w) + 0.5): hit = true
+        hit
+    return mask { drawn.w, drawn.h, on }
+
+let raw_side = outline_of(vs)
+let raw_top = outline_of(vt)
+let raw_front = outline_of(vf)
 let er = at(spec, "erase")
 let m_side = erased(raw_side, map(glist(er, "side")) p: poly(p))
 let m_top = erased(raw_top, map(glist(er, "top")) p: poly(p))
 let m_front = erased(raw_front, map(glist(er, "front")) p: poly(p))
-let turret_top = poly(at(spec, "turret_top"))
-let lower_keep = poly(at(spec, "lower_keep"))
-let sponson = poly(at(spec, "sponson"))
-let lower_half = as_float(at(spec, "lower_half_width"))
-let seat = as_float(at(spec, "seat"))
+// A flier has no turret or running gear: all of it is one volume, its points set at its flying height (`flies`).
+let flies = gfloat(spec, "flies", 0.0)
+let flier = flies > 0.0
+let lift_in = flies * 2.0 / k  // inches
+let turret_top = if flier: []::float2 else: poly(at(spec, "turret_top"))
+let lower_keep = if flier: []::float2 else: poly(at(spec, "lower_keep"))
+let sponson = if flier: []::float2 else: poly(at(spec, "sponson"))
+let lower_half = if flier: 0.0 else: as_float(at(spec, "lower_half_width"))
+let seat = if flier: -1.0 else: as_float(at(spec, "seat"))
 
 // Sloped plates as lines on the side view: h0, v0, h1, v1.
 let plates = map(glist(spec, "plates")) q: float4 { as_float(q.a[0]), as_float(q.a[1]), as_float(q.a[2]), as_float(q.a[3]) }
+
+// Where along the tank (top view h) a stretch of the front outline doesn't apply.
+class exclude:
+    h0:float
+    h1:float
+    front:[float2]
+
+let excludes = map(glist(spec, "exclude")) e: exclude { as_float(at(e, "h").a[0]), as_float(at(e, "h").a[1]), poly(at(e, "front")) }
 
 def sponson_at(h:float) -> float:
     for(sponson.length - 1) i:
@@ -151,8 +175,12 @@ def carved_hull(x:float, y:float, z:float) -> bool:
     let v = side_v(z)
     if v < seat or not in_views(x, y, z): return false
     let h = side_h(y)
+    for(excludes) e:  // (three outlines can't tell a wing from a tailplane at the same width: a ghost of each at the other's height)
+        let th = top_h(y)
+        if th >= e.h0 and th <= e.h1 and inside(e.front, front_h(x), front_v(z)): return false
     for(plates) p:  // (a sloped plate is its own flat box: no voxel steps above it)
         if h >= p.x and h <= p.z and v < p.y + (p.w - p.y) * (h - p.x) / (p.z - p.x): return false
+    if flier: return true
     if v > sponson_at(h):  // under the sponsons: the lower hull between the tracks, the tracks are running gear
         return abs(x) <= lower_half and inside(lower_keep, h, v)
     return true
@@ -200,7 +228,7 @@ def boxes_of(carved) -> [JV]:
             // (a hard shape reaches half a voxel past its edge: the outermost voxels' centres on the box's face)
             let o = jobj()
             let u = 0.5  // body units a voxel
-            o.set("box", jarr([ jstr("o"), jnum(u * float(x + x1 + 1 - w) / 2.0), jnum(u * float(y + y1 + 1 - d) / 2.0), jnum(u * float(z + z1 + 1) / 2.0) ]))
+            o.set("box", jarr([ jstr("o"), jnum(u * float(x + x1 + 1 - w) / 2.0), jnum(u * float(y + y1 + 1 - d) / 2.0), jnum(u * float(z + z1 + 1) / 2.0 + flies) ]))
             o.set("n", jarr([ jint(0), jint(1), jint(0) ]))
             o.set("half", jarr([ jnum(u * (float(x1 - x) / 2.0 + 0.04)), jnum(u * (float(y1 - y) / 2.0 + 0.04)), jnum(u * (float(z1 - z) / 2.0 + 0.04)) ]))
             o.set("mat", at(spec, "paint"))
@@ -212,8 +240,8 @@ def units(inches:float) -> float: return inches * k / 2.0
 
 def point_units(p:[JV]) -> float3:
     if as_str(p[0]) == "t":
-        return float3 { x_of_top(as_float(p[1])), y_of_top(as_float(p[2])), z_of_side(as_float(p[3])) } * k / 2.0
-    return float3 { as_float(p[1]), y_of_side(as_float(p[2])), z_of_side(as_float(p[3])) } * k / 2.0
+        return float3 { x_of_top(as_float(p[1])), y_of_top(as_float(p[2])), z_of_side(as_float(p[3])) + lift_in } * k / 2.0
+    return float3 { as_float(p[1]), y_of_side(as_float(p[2])), z_of_side(as_float(p[3])) + lift_in } * k / 2.0
 
 def jpoint(p:[JV]) -> JV:
     let v = point_units(p)
@@ -254,10 +282,38 @@ def plate_box(p:float4) -> JV:
     let o = jobj()
     o.set("box", jarr([ jstr("o"), jint(0), jnum(units(cy)), jnum(units(cz)) ]))
     o.set("n", jarr([ jint(0), jnum(ay), jnum(az) ]))
-    o.set("half", jarr([ jnum(units(as_float(at(vt, "wide")) / 2.0 - 1.0)), jnum(units(t)), jnum(units(len / 2.0)) ]))
+    o.set("half", jarr([ jnum(units(as_float(at(spec, "plate_half_width")))), jnum(units(t)), jnum(units(len / 2.0)) ]))
     o.set("mat", at(spec, "paint"))
     o.set("round", jint(0))
     return o
+
+def build_flier():
+    let c = at(spec, "colours")
+    let hull = boxes_of(fn x, y, z: carved_hull(x, y, z))
+    for(plates) p: hull.push(plate_box(p))
+    for(glist(spec, "hull_details")) d: hull.push(detail(d))
+    let mz = point_units(at(spec, "muzzle").a)
+    let points = parse_json("\{\"o\":\{\"at\":[0,0,0]\},\"muzzle\":\{\"at\":[{mz.x},{mz.y},{mz.z}]\}\}")
+    let look = jobj()
+    for([ "skin", "pale", "mark" ]) key: look.set(key, at(c, key))
+    let style = jobj()
+    style.set(as_str(at(c, "style")), look)
+    def lines(key:string, vals:[JV]) -> string:
+        return "\"" + key + "\": [\n  " + concat_string(map(vals) v: stringify(v), ",\n  ") + "\n ]"
+    let wh = map(glist(spec, "wheels")) w:
+        let o = deep_copy(w)
+        let a = at(w, "at").a
+        let v = point_units([ jstr("o"), a[0], a[1], a[2] ])
+        o.set("at", jarr([ jnum(v.x), jnum(v.y), jnum(v.z) ]))
+        o.set("r", jnum(units(as_float(at(w, "r")))))
+        o.set("thick", jnum(units(as_float(at(w, "thick")))))
+        o
+    let text = "\{\n \"_doc\": " + stringify(jstr("Traced from drawings by src/carve.lobster and " + spec_path + "; do not edit by hand: " + as_str(at(spec, "_doc")))) +
+        ",\n \"skin\": " + stringify(at(c, "skin")) + ",\n \"pale\": " + stringify(at(c, "pale")) + ",\n \"mark\": " + stringify(at(c, "mark")) +
+        ",\n \"fur\": 0.0,\n \"size\": 1.0,\n \"flies\": {flies},\n \"crew\": [],\n \"death\": \"crash\",\n \"points\": " + stringify(points) +
+        ",\n \"styles\": " + stringify(style) + ",\n " + lines("wheels", wh) + ",\n " + lines("shapes", hull) + "\n\}\n"
+    assert write_file(as_str(at(spec, "out")), text)
+    print "{hull.length} boxes"
 
 def build():
     let c = at(spec, "colours")
@@ -301,7 +357,9 @@ def build():
     assert write_file(as_str(at(spec, "out")), text)
     print "{hull.length} hull boxes, {turret.length} turret boxes"
 
-if mode == "build": build()
+if mode == "build":
+    if flier: build_flier()
+    else: build()
 
 // ---- the check: the voxels as they fill, each view's silhouette against the drawing's
 
@@ -365,9 +423,9 @@ def check(dir:string):
         pt.on[(q.x - lo.x) * n.y + q.y - lo.y] = true
         pf.on[(q.z - lo.z) * n.x + q.x - lo.x] = true
     print "voxels: length {n.y} ({float(n.y) / k} in), width {n.x} ({float(n.x) / k} in), height {n.z} ({float(n.z) / k} in), {shape.pos.length} on the surface"
-    overlay(dir + "/side.ppm", read_pbm(as_str(at(vs, "file"))), raw_side, fn h: y_of_side(h), fn v: z_of_side(v), ps)
+    overlay(dir + "/side.ppm", read_pbm(as_str(at(vs, "file"))), raw_side, fn h: y_of_side(h), fn v: z_of_side(v) + lift_in, ps)
     overlay(dir + "/top.ppm", read_pbm(as_str(at(vt, "file"))), raw_top, fn h: y_of_top(h), fn v: x_of_top(v), proj { n.y, n.x, lo.y, lo.x, pt.on })
-    overlay(dir + "/front.ppm", read_pbm(as_str(at(vf, "file"))), raw_front, fn h: (front_mid - h) * front_ih, fn v: (as_float(at(vf, "ground")) - v) * front_iv, proj { n.x, n.z, lo.x, lo.z, pf.on })
+    overlay(dir + "/front.ppm", read_pbm(as_str(at(vf, "file"))), raw_front, fn h: (front_mid - h) * front_ih, fn v: (as_float(at(vf, "ground")) - v) * front_iv + lift_in, proj { n.x, n.z, lo.x, lo.z, pf.on })
     // every column: where the drawing's outline ends and where the voxels do, in voxels
     def compare(name:string, m:mask, cols:int, c0:int, rows:int, r0:int, px_of, on) -> void:
         var worst = 0.0
@@ -386,13 +444,13 @@ def check(dir:string):
                     worst = float(e)
                     worst_at = c + c0
         print "{name}: {seen} columns, {bad} over 1 voxel out, worst {worst} at column {worst_at}"
-    def in_side(mm:mask, y:int, z:int) -> bool: return in_mask(mm, int(side_h((float(y) + 0.5) / k)), int(side_v((float(z) + 0.5) / k)))
+    def in_side(mm:mask, y:int, z:int) -> bool: return in_mask(mm, int(side_h((float(y) + 0.5) / k)), int(side_v((float(z) + 0.5) / k - lift_in)))
     def in_top(mm:mask, y:int, x:int) -> bool: return in_mask(mm, int(top_h((float(y) + 0.5) / k)), int(top_v((float(x) + 0.5) / k)))
-    def in_front(mm:mask, x:int, z:int) -> bool: return in_mask(mm, int(front_h((float(x) + 0.5) / k)), int(front_v((float(z) + 0.5) / k)))
-    compare("side, top and bottom edge per column along the tank", raw_side, n.y + 8, lo.y - 4, n.z + 30, 0, fn a, b, c: in_side(a, b, c), fn a, b: proj_on(ps, a, b))
+    def in_front(mm:mask, x:int, z:int) -> bool: return in_mask(mm, int(front_h((float(x) + 0.5) / k)), int(front_v((float(z) + 0.5) / k - lift_in)))
+    compare("side, top and bottom edge per column along the tank", raw_side, n.y + 8, lo.y - 4, n.z + 30, lo.z - 4, fn a, b, c: in_side(a, b, c), fn a, b: proj_on(ps, a, b))
     compare("top, both edges per column along the tank", raw_top, n.y + 8, lo.y - 4, n.x + 8, lo.x - 4, fn a, b, c: in_top(a, b, c), fn a, b: proj_on(pt, a, b))
     def front_rows(a:int, b:int) -> bool: return proj_on(pf, b, a)
-    compare("front, both edges per height", raw_front, n.z + 30, 0, n.x + 8, lo.x - 4, fn a, b, c: in_front(a, c, b), fn a, b: front_rows(a, b))
+    compare("front, both edges per height", raw_front, n.z + 30, lo.z - 4, n.x + 8, lo.x - 4, fn a, b, c: in_front(a, c, b), fn a, b: front_rows(a, b))
     // the named stations, as a table
     let st = at(spec, "stations")
     print "| view | station | drawing | voxels | off, voxels |"
@@ -404,8 +462,8 @@ def check(dir:string):
         let h = as_float(s.a[1])
         let c = int(floor(y_of_side(h) * k))
         let dlo, dhi = extent(fn r: in_mask(raw_side, int(h), int(side_v(float(r) / 5.0))), 700)
-        let vlo, vhi = extent(fn r: proj_on(ps, c, r), n.z + 30)
-        row("side", s.a[0], "(height)", float(dlo) / 5.0, float(dhi) / 5.0, float(vlo + lo.z * 0) / k, float(vhi + 1) / k)
+        let vlo, vhi = extent(fn r: proj_on(ps, c, r), lo.z + n.z + 30)
+        row("side", s.a[0], "(height)", float(dlo) / 5.0, float(dhi) / 5.0, float(vlo) / k - lift_in, float(vhi + 1) / k - lift_in)
     for(glist(st, "top")) s:
         let h = as_float(s.a[1])
         let c = int(floor(y_of_top(h) * k))
@@ -414,7 +472,7 @@ def check(dir:string):
         row("top", s.a[0], "(width)", x_of_top(float(dlo)), x_of_top(float(dhi + 1)), float(vlo + lo.x) / k, float(vhi + lo.x + 1) / k)
     for(glist(st, "front")) s:
         let v = as_float(s.a[1])
-        let c = int(floor((as_float(at(vf, "ground")) - v) * front_iv * k))
+        let c = int(floor(((as_float(at(vf, "ground")) - v) * front_iv + lift_in) * k))
         let dlo, dhi = extent(fn r: in_mask(raw_front, r, int(v)), raw_front.w)
         let vlo, vhi = extent(fn r: proj_on(pf, r + lo.x, c), n.x)
         row("front", s.a[0], "(width)", (front_mid - float(dhi + 1)) * front_ih, (front_mid - float(dlo)) * front_ih, float(vlo + lo.x) / k, float(vhi + lo.x + 1) / k)

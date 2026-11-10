@@ -1,0 +1,1269 @@
+{
+  "_doc": "Panzer IV traced: pixel numbers are in the crops of tools/trace/refs.sh (FM 30-40 p132, November 1943). h runs tail to nose in side and top; a point of a detail is [\"o\", x inches right of the centre line, side h, side v] or [\"t\", top v, top h, side v]; every r, half and round is in inches. Dimensions, Ausf. H: hull length 5.92 m, width 2.88 m, height 2.68 m, 7.02 m gun forward. The hull and turret are the drawing's; its gun is shorter than an Ausf. H's, so the gun runs to the published 7.02 m. The drawing has no side skirts, so neither does this.",
+  "body": "siege.bolt.panzer",
+  "out": "../mods/ww2/data/voxel/bodies/siege.bolt.panzer.json",
+  "voxels_per_inch": 0.6,
+  "paint": "ww2_dunkelgelb",
+  "plate_half_inches": 1.5,
+  "colours": {
+    "skin": "#9a8650",
+    "pale": "#24231f",
+    "mark": "#b09c66",
+    "style": "panzer"
+  },
+  "views": {
+    "side": {
+      "file": "../reference/pz4/side.pbm",
+      "h0": 15,
+      "h1": 1190,
+      "len": 233,
+      "ground": 545,
+      "top": 88,
+      "high": 92.2
+    },
+    "top": {
+      "file": "../reference/pz4/top.pbm",
+      "h0": 30,
+      "h1": 1215,
+      "len": 233,
+      "v0": 25,
+      "v1": 575,
+      "wide": 113.4
+    },
+    "front": {
+      "file": "../reference/pz4/front.pbm",
+      "h0": 28,
+      "h1": 877,
+      "wide": 113.4,
+      "ground": 810,
+      "top": 128,
+      "high": 92.2
+    }
+  },
+  "erase": {
+    "side": [
+      [
+        [
+          370,
+          0
+        ],
+        [
+          560,
+          0
+        ],
+        [
+          560,
+          87
+        ],
+        [
+          370,
+          87
+        ]
+      ],
+      [
+        [
+          780,
+          110
+        ],
+        [
+          1260,
+          110
+        ],
+        [
+          1260,
+          185
+        ],
+        [
+          780,
+          185
+        ]
+      ],
+      [
+        [
+          970,
+          250
+        ],
+        [
+          1095,
+          250
+        ],
+        [
+          1095,
+          275
+        ],
+        [
+          970,
+          275
+        ]
+      ]
+    ],
+    "front": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          900,
+          0
+        ],
+        [
+          900,
+          127
+        ],
+        [
+          0,
+          127
+        ]
+      ]
+    ]
+  },
+  "seat": 216,
+  "turret_top": [
+    [
+      280,
+      280
+    ],
+    [
+      315,
+      210
+    ],
+    [
+      390,
+      210
+    ],
+    [
+      440,
+      160
+    ],
+    [
+      470,
+      150
+    ],
+    [
+      600,
+      130
+    ],
+    [
+      730,
+      135
+    ],
+    [
+      785,
+      160
+    ],
+    [
+      800,
+      245
+    ],
+    [
+      862,
+      245
+    ],
+    [
+      862,
+      355
+    ],
+    [
+      800,
+      355
+    ],
+    [
+      785,
+      440
+    ],
+    [
+      730,
+      465
+    ],
+    [
+      600,
+      470
+    ],
+    [
+      470,
+      450
+    ],
+    [
+      440,
+      440
+    ],
+    [
+      390,
+      390
+    ],
+    [
+      315,
+      390
+    ],
+    [
+      280,
+      320
+    ]
+  ],
+  "sponson": [
+    [
+      15,
+      398
+    ],
+    [
+      120,
+      312
+    ],
+    [
+      1100,
+      312
+    ],
+    [
+      1190,
+      362
+    ]
+  ],
+  "lower_half_width": 38.5,
+  "lower_keep": [
+    [
+      150,
+      312
+    ],
+    [
+      245,
+      480
+    ],
+    [
+      1015,
+      480
+    ],
+    [
+      1150,
+      360
+    ],
+    [
+      1150,
+      312
+    ]
+  ],
+  "plates": [
+    [
+      720,
+      222,
+      962,
+      238
+    ]
+  ],
+  "pivot": [
+    "o",
+    0,
+    600,
+    216
+  ],
+  "muzzle": [
+    "o",
+    0,
+    1409,
+    152
+  ],
+  "tracks": {
+    "x": 46.9,
+    "half": 7.5,
+    "pitch": 4,
+    "thick": 1.3,
+    "bar": 0.8,
+    "mat": "ww2_rubber",
+    "bar_mat": "ww2_steel",
+    "round": [
+      [
+        1085,
+        390,
+        12.8
+      ],
+      [
+        970,
+        490,
+        10.4
+      ],
+      [
+        293,
+        490,
+        10.4
+      ],
+      [
+        140,
+        445,
+        14.2
+      ],
+      [
+        332,
+        355,
+        5.5
+      ],
+      [
+        920,
+        350,
+        5.5
+      ]
+    ]
+  },
+  "wheels": [
+    {
+      "at": [
+        46.9,
+        293,
+        490
+      ],
+      "r": 8.6,
+      "thick": 3.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 6.6,
+      "hub": "ww2_steel",
+      "hub_r": 2,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        392,
+        490
+      ],
+      "r": 8.6,
+      "thick": 3.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 6.6,
+      "hub": "ww2_steel",
+      "hub_r": 2,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        488,
+        490
+      ],
+      "r": 8.6,
+      "thick": 3.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 6.6,
+      "hub": "ww2_steel",
+      "hub_r": 2,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        586,
+        490
+      ],
+      "r": 8.6,
+      "thick": 3.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 6.6,
+      "hub": "ww2_steel",
+      "hub_r": 2,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        680,
+        490
+      ],
+      "r": 8.6,
+      "thick": 3.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 6.6,
+      "hub": "ww2_steel",
+      "hub_r": 2,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        778,
+        490
+      ],
+      "r": 8.6,
+      "thick": 3.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 6.6,
+      "hub": "ww2_steel",
+      "hub_r": 2,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        875,
+        490
+      ],
+      "r": 8.6,
+      "thick": 3.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 6.6,
+      "hub": "ww2_steel",
+      "hub_r": 2,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        970,
+        490
+      ],
+      "r": 8.6,
+      "thick": 3.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 6.6,
+      "hub": "ww2_steel",
+      "hub_r": 2,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        332,
+        368
+      ],
+      "r": 4.3,
+      "thick": 2.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 3,
+      "hub": "ww2_steel",
+      "hub_r": 1,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        532,
+        360
+      ],
+      "r": 4.3,
+      "thick": 2.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 3,
+      "hub": "ww2_steel",
+      "hub_r": 1,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        728,
+        360
+      ],
+      "r": 4.3,
+      "thick": 2.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 3,
+      "hub": "ww2_steel",
+      "hub_r": 1,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        920,
+        360
+      ],
+      "r": 4.3,
+      "thick": 2.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 3,
+      "hub": "ww2_steel",
+      "hub_r": 1,
+      "mat": "ww2_rubber"
+    },
+    {
+      "at": [
+        46.9,
+        1085,
+        390
+      ],
+      "r": 11,
+      "thick": 3.4,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 8.5,
+      "hub": "ww2_steel",
+      "hub_r": 3,
+      "mat": "ww2_steel"
+    },
+    {
+      "at": [
+        46.9,
+        140,
+        440
+      ],
+      "r": 11.8,
+      "thick": 2.6,
+      "face": "ww2_dunkelgelb_worn",
+      "face_r": 9.5,
+      "hub": "ww2_steel",
+      "hub_r": 2.2,
+      "mat": "ww2_steel"
+    }
+  ],
+  "hull_details": [
+    {
+      "box": [
+        "o",
+        44,
+        345,
+        433
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.4,
+        4.8,
+        3.6
+      ],
+      "mat": "ww2_dunkelgelb_worn",
+      "round": 0,
+      "mirror": true,
+      "_doc": "leaf-spring bogie"
+    },
+    {
+      "cap": [
+        "o",
+        46.9,
+        293,
+        490
+      ],
+      "to": [
+        "o",
+        46.9,
+        345,
+        452
+      ],
+      "r": [
+        1.4,
+        1.2
+      ],
+      "mat": "ww2_steel",
+      "hard": true,
+      "mirror": true
+    },
+    {
+      "cap": [
+        "o",
+        46.9,
+        391,
+        490
+      ],
+      "to": [
+        "o",
+        46.9,
+        345,
+        452
+      ],
+      "r": [
+        1.4,
+        1.2
+      ],
+      "mat": "ww2_steel",
+      "hard": true,
+      "mirror": true
+    },
+    {
+      "box": [
+        "o",
+        44,
+        538,
+        433
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.4,
+        4.8,
+        3.6
+      ],
+      "mat": "ww2_dunkelgelb_worn",
+      "round": 0,
+      "mirror": true,
+      "_doc": "leaf-spring bogie"
+    },
+    {
+      "cap": [
+        "o",
+        46.9,
+        486,
+        490
+      ],
+      "to": [
+        "o",
+        46.9,
+        538,
+        452
+      ],
+      "r": [
+        1.4,
+        1.2
+      ],
+      "mat": "ww2_steel",
+      "hard": true,
+      "mirror": true
+    },
+    {
+      "cap": [
+        "o",
+        46.9,
+        584,
+        490
+      ],
+      "to": [
+        "o",
+        46.9,
+        538,
+        452
+      ],
+      "r": [
+        1.4,
+        1.2
+      ],
+      "mat": "ww2_steel",
+      "hard": true,
+      "mirror": true
+    },
+    {
+      "box": [
+        "o",
+        44,
+        730,
+        433
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.4,
+        4.8,
+        3.6
+      ],
+      "mat": "ww2_dunkelgelb_worn",
+      "round": 0,
+      "mirror": true,
+      "_doc": "leaf-spring bogie"
+    },
+    {
+      "cap": [
+        "o",
+        46.9,
+        678,
+        490
+      ],
+      "to": [
+        "o",
+        46.9,
+        730,
+        452
+      ],
+      "r": [
+        1.4,
+        1.2
+      ],
+      "mat": "ww2_steel",
+      "hard": true,
+      "mirror": true
+    },
+    {
+      "cap": [
+        "o",
+        46.9,
+        776,
+        490
+      ],
+      "to": [
+        "o",
+        46.9,
+        730,
+        452
+      ],
+      "r": [
+        1.4,
+        1.2
+      ],
+      "mat": "ww2_steel",
+      "hard": true,
+      "mirror": true
+    },
+    {
+      "box": [
+        "o",
+        44,
+        925,
+        433
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        3.4,
+        4.8,
+        3.6
+      ],
+      "mat": "ww2_dunkelgelb_worn",
+      "round": 0,
+      "mirror": true,
+      "_doc": "leaf-spring bogie"
+    },
+    {
+      "cap": [
+        "o",
+        46.9,
+        873,
+        490
+      ],
+      "to": [
+        "o",
+        46.9,
+        925,
+        452
+      ],
+      "r": [
+        1.4,
+        1.2
+      ],
+      "mat": "ww2_steel",
+      "hard": true,
+      "mirror": true
+    },
+    {
+      "cap": [
+        "o",
+        46.9,
+        971,
+        490
+      ],
+      "to": [
+        "o",
+        46.9,
+        925,
+        452
+      ],
+      "r": [
+        1.4,
+        1.2
+      ],
+      "mat": "ww2_steel",
+      "hard": true,
+      "mirror": true
+    },
+    {
+      "box": [
+        "t",
+        183,
+        305,
+        219
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "half": [
+        11,
+        0.2,
+        24
+      ],
+      "mat": "ww2_dunkelgelb_worn",
+      "round": 0,
+      "_doc": "engine deck panel"
+    },
+    {
+      "box": [
+        "t",
+        417,
+        305,
+        219
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "half": [
+        11,
+        0.2,
+        24
+      ],
+      "mat": "ww2_dunkelgelb_worn",
+      "round": 0,
+      "_doc": "engine deck panel"
+    },
+    {
+      "box": [
+        "o",
+        -14,
+        968,
+        262
+      ],
+      "n": [
+        0,
+        1,
+        0
+      ],
+      "half": [
+        5.5,
+        1.0,
+        2.2
+      ],
+      "mat": "ww2_steel",
+      "round": 0,
+      "_doc": "driver's visor"
+    },
+    {
+      "ball": [
+        "o",
+        13,
+        968,
+        262
+      ],
+      "r": 2.8,
+      "mat": "ww2_dunkelgelb_worn",
+      "hard": true,
+      "_doc": "bow gun"
+    },
+    {
+      "cap": [
+        "o",
+        13,
+        968,
+        262
+      ],
+      "to": [
+        "o",
+        13,
+        1000,
+        262
+      ],
+      "r": [
+        0.6,
+        0.6
+      ],
+      "mat": "ww2_steel",
+      "hard": true
+    },
+    {
+      "disc": [
+        "t",
+        150,
+        1000,
+        238
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        6,
+        0.5
+      ],
+      "mat": "ww2_dunkelgelb_worn",
+      "_doc": "hull hatch"
+    },
+    {
+      "disc": [
+        "t",
+        450,
+        1000,
+        238
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        6,
+        0.5
+      ],
+      "mat": "ww2_dunkelgelb_worn"
+    },
+    {
+      "box": [
+        "o",
+        45.9,
+        640,
+        255
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        1.25,
+        0.25,
+        5
+      ],
+      "mat": "team",
+      "round": 0
+    },
+    {
+      "box": [
+        "o",
+        45.9,
+        640,
+        255
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        5,
+        0.25,
+        1.25
+      ],
+      "mat": "team",
+      "round": 0
+    },
+    {
+      "box": [
+        "o",
+        -45.9,
+        640,
+        255
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        1.25,
+        0.25,
+        5
+      ],
+      "mat": "team",
+      "round": 0
+    },
+    {
+      "box": [
+        "o",
+        -45.9,
+        640,
+        255
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        5,
+        0.25,
+        1.25
+      ],
+      "mat": "team",
+      "round": 0
+    }
+  ],
+  "turret_details": [
+    {
+      "disc": [
+        "t",
+        295,
+        490,
+        78
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        14.4,
+        1.6
+      ],
+      "mat": "ww2_dunkelgelb",
+      "_doc": "cupola, stepped drums"
+    },
+    {
+      "disc": [
+        "t",
+        295,
+        490,
+        62
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        13.6,
+        1.2
+      ],
+      "mat": "ww2_dunkelgelb"
+    },
+    {
+      "disc": [
+        "t",
+        295,
+        490,
+        48
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        13,
+        1.0
+      ],
+      "mat": "ww2_dunkelgelb_worn"
+    },
+    {
+      "disc": [
+        "t",
+        295,
+        490,
+        34
+      ],
+      "n": [
+        0,
+        0,
+        1
+      ],
+      "r": [
+        12.4,
+        0.9
+      ],
+      "mat": "ww2_dunkelgelb"
+    },
+    {
+      "cap": [
+        "o",
+        0,
+        770,
+        152
+      ],
+      "to": [
+        "o",
+        0,
+        1409,
+        152
+      ],
+      "r": [
+        1.5,
+        1.3
+      ],
+      "mat": "ww2_dunkelgelb",
+      "hard": true,
+      "_doc": "7.5 cm KwK 40 L/48, to the published length"
+    },
+    {
+      "cap": [
+        "o",
+        0,
+        775,
+        152
+      ],
+      "to": [
+        "o",
+        0,
+        1010,
+        152
+      ],
+      "r": [
+        2.6,
+        2.3
+      ],
+      "mat": "ww2_dunkelgelb",
+      "hard": true,
+      "_doc": "recoil sleeve"
+    },
+    {
+      "ball": [
+        "o",
+        0,
+        770,
+        152
+      ],
+      "r": 6,
+      "mat": "ww2_dunkelgelb_worn",
+      "hard": true,
+      "_doc": "mantlet"
+    },
+    {
+      "cap": [
+        "o",
+        0,
+        1370,
+        152
+      ],
+      "to": [
+        "o",
+        0,
+        1385,
+        152
+      ],
+      "r": [
+        2.8,
+        2.8
+      ],
+      "mat": "ww2_steel",
+      "hard": true,
+      "_doc": "muzzle brake"
+    },
+    {
+      "cap": [
+        "o",
+        0,
+        1395,
+        152
+      ],
+      "to": [
+        "o",
+        0,
+        1409,
+        152
+      ],
+      "r": [
+        2.8,
+        2.8
+      ],
+      "mat": "ww2_steel",
+      "hard": true
+    },
+    {
+      "box": [
+        "o",
+        27.5,
+        500,
+        145
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        6.5,
+        0.3,
+        8
+      ],
+      "mat": "ww2_dunkelgelb_worn",
+      "round": 0,
+      "mirror": true,
+      "_doc": "side hatch"
+    },
+    {
+      "box": [
+        "o",
+        27.5,
+        625,
+        145
+      ],
+      "n": [
+        1,
+        0,
+        0
+      ],
+      "half": [
+        3.2,
+        0.3,
+        2.2
+      ],
+      "mat": "ww2_steel",
+      "round": 0,
+      "mirror": true,
+      "_doc": "vision port"
+    }
+  ],
+  "stations": {
+    "side": [
+      [
+        "tail fender",
+        70
+      ],
+      [
+        "engine deck",
+        300
+      ],
+      [
+        "bin",
+        270
+      ],
+      [
+        "turret ring",
+        600
+      ],
+      [
+        "turret front",
+        740
+      ],
+      [
+        "hull roof front",
+        900
+      ],
+      [
+        "nose",
+        1000
+      ],
+      [
+        "nose fender",
+        1130
+      ]
+    ],
+    "top": [
+      [
+        "rear",
+        60
+      ],
+      [
+        "engine deck",
+        300
+      ],
+      [
+        "turret",
+        600
+      ],
+      [
+        "hatches",
+        1000
+      ],
+      [
+        "nose",
+        1150
+      ]
+    ],
+    "front": [
+      [
+        "track",
+        760
+      ],
+      [
+        "fender",
+        480
+      ],
+      [
+        "superstructure",
+        380
+      ],
+      [
+        "turret low",
+        280
+      ],
+      [
+        "turret high",
+        170
+      ]
+    ]
+  },
+  "plate_half_width": 45
+}

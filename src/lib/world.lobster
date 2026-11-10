@@ -60,6 +60,9 @@ def step():
     heal_tick()
     combat_tick()
     hero_tick()
+    if hook_tick_types.length:
+        for(u_kind) k, i:
+            if contains(hook_tick_types, k): hook_unit_tick(i)
     match_tick()
     fog_tick()
     trails_tick()
@@ -98,6 +101,10 @@ def state_hash() -> int:
     h = mix(h, next_id)
     h = mix(h, next_group)
     for(field_keys) k: h = mix(h, k)
+    for(hook_unit_cols) col:
+        for(col) v: h = mix(h, v)
+    for(hook_player_cols) col:
+        for(col) v: h = mix(h, v)
     h = mix(h, -1)
     for(field_queue) k: h = mix(h, k)
     let n = u_x.length
@@ -317,7 +324,7 @@ def load(path:string):
     expect("UNITS")
     let cols = unit_columns()
     for(next_int()):
-        let f = read_ints(cols.length - 3)  // (a scenario has no marching blocks)
+        let f = read_ints(cols.length - 5)  // (a scenario has no marching blocks or velocities)
         for(cols) col, k: col.push(if k < f.length: f[k] else: 0)
         u_orders.push([]::Cmd)  // (no queued orders at the start: asserted)
         u_mount.push([]::int)
