@@ -350,7 +350,7 @@ def move():
             u_vx[i] = 0
             u_vy[i] = 0
             if u_group[i] == 0 or u_foe[i] != 0 or (tick + u_id[i]) % REPLAN_EVERY != 0: continue
-            let back = u_arrive[i] * ARRIVE_SETTLE + (if u_arrive[i] == SLOT_ARRIVE: SLOT_SLACK else: RETURN_SLACK)
+            let back = if u_block[i] > 0: 2 * TILE else: u_arrive[i] * ARRIVE_SETTLE + (if u_arrive[i] == SLOT_ARRIVE: SLOT_SLACK else: RETURN_SLACK)
             if dist2(xs[i], ys[i], u_tx[i], u_ty[i]) <= back * back:
                 st[i] = 0
                 continue
