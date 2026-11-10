@@ -70,6 +70,21 @@ for(dirs) d:
         if has(o, "seat") and abs(seat - gfloat(o, "seat", 0.0)) > 0.03: fail("{id}: seat {seat} rider heights, the table says {gfloat(o, "seat", 0.0)}")
         if has(o, "length") and abs(along - gfloat(o, "length", 0.0)) > 0.03: fail("{id}: {along} rider heights long, the table says {gfloat(o, "length", 0.0)}")
 
+// At a high-DPI screen's density (the game's art_density, #358: a Retina Mac's 2.4, its most) every body is its table's
+// height in that density's voxels: within the base's one voxel (k of these: the same size in the world) and the one
+// voxel of edge every density draws. (Thin tips the base loses come back here: the deer's tines are the most.)
+vx_set_res(1.1 * 2.4)
+let hi_k = vx_RES / 2.0
+for(dirs) d:
+    let bs = gobj(parse_json(read_file(d + "/sizes.json") or "\{\}"), "bodies")
+    for(bs.keys) id:
+        let b = vx_body_of(id)
+        let top = drawn(id, b.size)
+        let want = floor(b.h * hi_k + 0.5)
+        if report: print "{id} at 2.4: h {top}, in the table {want}"
+        if not report and abs(float(top) - want) > hi_k + 1.0: fail("{id}: drawn {top} voxels tall at density 2.4, the table says {want}")
+vx_set_res(2.0)
+
 // Every mount a race can ride has a ratio, and every creature that can ride has a height.
 def mounts_of(c:JV) -> [string]:
     let out = gstrs(c, "mounts")
