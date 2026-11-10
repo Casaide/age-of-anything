@@ -10,6 +10,7 @@ import gen.rng
 import gen.sha256
 import gen.datalib
 import gen.identity
+import view.vox
 import view.voxel
 
 let NAMES = [ "roman_house", "roman_tc", "rat_shack", "rat_silo", "cypress", "broadleaf", "rock" ]
