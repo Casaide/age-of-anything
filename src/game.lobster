@@ -86,6 +86,7 @@ import .game.paths
 import .game.fx
 import .game.topbar_fit
 import .game.ui
+import .game.view_state
 import .game.text_cache
 import .game.levels
 import .game.perf
@@ -151,8 +152,7 @@ var hosting = false                   // host: a network match, waiting for a pl
 var join_ip = ""                      // join:<ip>: play the second side of the match a host there sets up
 var reload_at = -1.0                  // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
-var touch_play = false  // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
-var atmo_arg = ""       // atmosphere:<mood>: the match in that mood (data/atmosphere.json), atmosphere:off: none (the frame drawn straight)
+var atmo_arg = ""  // atmosphere:<mood>: the match in that mood (data/atmosphere.json), atmosphere:off: none (the frame drawn straight)
 // A mod can say how it starts (its manifest's `launch`): those options, as if typed after the rest.
 for(copy(args)) a:
     if starts_with(a, "mods:"):
@@ -232,7 +232,6 @@ if has_s(args, "mute") or shot != "" or rec_dir != "" or selftest or airtest or 
     sound_on = false
     pace_background = false  // (tests and captures keep their pace with the window in the background, game/pace.lobster)
 
-var ME = 0  // the side you command (1 for the one who joins a network match)
 var in_net_match = false
 let TEAM_COLS = [ float4 { 0.85, 0.22, 0.18, 1.0 }, float4 { 0.20, 0.42, 0.85, 1.0 }, float4 { 0.85, 0.75, 0.2, 1.0 },
                   float4 { 0.25, 0.7, 0.3, 1.0 } ]
@@ -245,11 +244,6 @@ def team_col(p:int) -> float4:
 
 // ------------------------------------------------------------------ iso (Iso.to_screen * 1.5: art px)
 
-var cam = float2_0  // art px at the middle of the window
-var zoom = 2.0      // screen px per art px
-
-def to_screen(p:float2) -> float2: return (p - cam) * zoom + float(gl.window_size()) / 2.0
-def from_screen(p:float2) -> float2: return (p - float(gl.window_size()) / 2.0) / zoom + cam
 def mouse_milli() -> float2: return pick_milli(from_screen(mouse_px()))  // (on raised ground: the hill under the mouse)
 
 // ------------------------------------------------------------------ the ground
@@ -1200,7 +1194,6 @@ def race_facts(races:[JV]):
 // N: type a race; Enter: your people become it at its own prices (no fights, D-195), line by line,
 // units and all, and your buildings take its style.
 
-var typing_race = false
 var banner = ""
 var banner_t = -100.0
 
@@ -1218,11 +1211,11 @@ def become(prompt:string):
 def typing_tick():
     let text = gl.text_input_state()
     if gl.button("escape") == 1:
-        typing_race = false
+        typing_text = false
         gl.end_text_input()
         return
     if gl.button("return") == 1 and not window_combo():
-        typing_race = false
+        typing_text = false
         gl.end_text_input()
         if text != "": become(text)
         return
@@ -1247,18 +1240,12 @@ def draw_banner():
 
 // ------------------------------------------------------------------ selection and orders
 
-var selected = []::int                   // unit ids
 let groups = dictionary<int, [int]>(10)  // control group (0 for key 1) -> unit ids
 var last_group = -1
 var last_group_at = -10.0
-var sel_building = 0  // building id
-var sel_foreign = 0   // a unit that isn't mine, shown in the panel: view-only, so never in selected
-var panel_hp = -1     // the HP the panel last drew (the self-test reads it)
+var panel_hp = -1  // the HP the panel last drew (the self-test reads it)
 var drag_from = float2_0
 var dragging = false
-var build_menu = false
-var placing = -1                 // building type being placed
-var wall_from = int2 { -1, -1 }  // where a wall's drag began (a cell), while placing walls or gates (bt_line)
 
 def selected_units() -> [int]: return filter(selected) id: index_of(id) >= 0
 def selected_workers() -> [int]: return filter(selected_units()) id: t_worker[u_kind[index_of(id)]] != 0
@@ -1386,10 +1373,6 @@ def box_select(a:float2, b:float2):
             let s = to_screen(iso(float(u_x[i]), float(u_y[i])))
             if s.x >= lo.x and s.x <= hi.x and s.y >= lo.y and s.y <= hi.y and not contains(selected, u_id[i]): selected.push(u_id[i])
     if selected.length: say(ME, "select")
-
-var arming_attack = false   // the Attack-move button (or R): the next left click is where
-var arming_ability = false  // the race's ability button: the next left click is where
-var pad_lb_held = false     // LB held on a pad (game/pad.lobster): orders queue, A adds to the selection
 
 // The armed order (attack-move or the race's ability) given at m.
 def give_armed(m:float2):
@@ -1561,7 +1544,7 @@ def recall_group(n:int):
 def keys():
     if gl.button("m") == 1: sound_on = not sound_on
     if gl.button("n") == 1 and not in_net_match:  // a new race, mid-match
-        typing_race = true
+        typing_text = true
         gl.start_text_input(int2 { 0, 0 }, int2 { 400, 40 })
         gl.set_text_input("")
         return
@@ -2688,7 +2671,6 @@ var speed = start_speed
 var steps = 0
 var frame_no = 0
 var step_time = 0.0
-var menu_open = false      // the pause menu (Esc)
 var menu_saves = false     // ...showing the saved games (Load game)
 var menu_settings = false  // ...showing Settings (game/lobby.lobster)
 var quit_game = false
@@ -2851,8 +2833,8 @@ def play_match():
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
             perf_finish_house(clock_s, ME)
         drop_lost_selection()
-        if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
-        if gl.button("controller_start") == 1 and not typing_race and not tree_open: menu_open = not menu_open
+        if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_text and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
+        if gl.button("controller_start") == 1 and not typing_text and not tree_open: menu_open = not menu_open
         if has_s(args, "menu") and frame_no == 2: menu_open = true  // (captures)
         if has_s(args, "orders") and frame_no == 30:                // (captures: your units sent off, and the Town Center's rally set)
             selected = filter(u_id) id: u_owner[index_of(id)] == ME
@@ -2913,12 +2895,12 @@ def play_match():
             quick_load()
             print "loaded: tick {tick}, {u_id.length} units, {b_id.length} buildings, hash {state_hash()}"
             reload_tick = -1
-        if not typing_race and gl.button("f5") == 1: quick_save()
-        if not typing_race and not net_on and gl.button("f9") == 1: quick_load()
+        if not typing_text and gl.button("f5") == 1: quick_save()
+        if not typing_text and not net_on and gl.button("f9") == 1: quick_load()
         if swap_arg != "" and clock_s >= swap_at:
             become(swap_arg)
             swap_arg = ""
-        if not paused and not test_pause and winner < 0 and not typing_race and ((not tree_open and not menu_open) or net_on): acc += dt * speed
+        if not paused and not test_pause and winner < 0 and not typing_text and ((not tree_open and not menu_open) or net_on): acc += dt * speed
         acc = min(acc, 0.5)
         if net_on:
             ls_receive(lockstep)
@@ -2965,12 +2947,12 @@ def play_match():
                         fy += u_y[i]
                         nf++
             if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
-        if not typing_race and not tree_open and not menu_open and not end_screen_up():
+        if not typing_text and not tree_open and not menu_open and not end_screen_up():
             let padded = (touch_play and touch_tick(dt)) or pad_tick(if padtest: pad_script() else: read_pad(), dt)
             if touch_wants_menu:
                 menu_open = true
                 touch_wants_menu = false
-            if not padded and not touch_play and not typing_race: scroll()
+            if not padded and not touch_play and not typing_text: scroll()
             keys()
             if not padded and not panel_click(mouse_px()): mouse()
         perf_lap(0)
@@ -2998,7 +2980,7 @@ def play_match():
             if menu_open: pause_menu()
             elif end_screen_up(): end_screen()
             if not rec_clean: draw_banner()
-            if typing_race: typing_tick()
+            if typing_text: typing_tick()
             os_cursor_tick()
         perf_lap(9)
         if has_s(args, "savegame") and clock_s >= 3.0:  // (tests: the pause menu's Save game, then quit)
@@ -3082,7 +3064,7 @@ def new_match_reset():
     town_emit.clear()
     town_builders = []
     path_bytes = []
-    typing_race = false
+    typing_text = false
     tree_open = false
     build_menu = false
     arming_attack = false
