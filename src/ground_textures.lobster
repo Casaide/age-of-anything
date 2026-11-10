@@ -8,7 +8,7 @@ import vec
 
 let GT = 256
 let GT_COLS = 4
-let GT_NAMES = [ "lush", "dry", "dark", "meadow", "dirt", "rock", "sand", "wet", "mud", "earth" ]
+let GT_NAMES = [ "lush", "dry", "dark", "meadow", "dirt", "rock", "sand", "wet", "mud", "earth", "forest", "scree", "olive", "worn" ]
 
 // ---- a small rng and periodic value noise (every period divides GT, so a tile wraps)
 
@@ -83,8 +83,12 @@ def gt_blade(t:GtTile, x:int, y:int, len:int, lean:float, root:float3, tip:float
         gt_put(t, x + int(floor(lean * f * float(len) + 0.5)), y - k, lerp(root, tip, f), h + f * 0.25)
 
 // A clump of grass: blades of one hue fanning out from a middle, its shadow under it, painted far to near.
-def gt_clumps(t:GtTile, n:int, rlo:float, rhi:float, greens:[float3], light:float, h:float):
-    let mids = map(n): float2 { gt_rand() * float(GT), gt_rand() * float(GT) }
+// Clumps keep off the bare ground: where gt_cover is under `bare` the soil shows, in spots of a few texels and in
+// thin patches.
+def gt_cover(x:float, y:float, s:int) -> float: return gt_fbm(x, y, 32, s) * 0.6 + gt_vnoise(x, y, 4, s + 5) * 0.4
+
+def gt_clumps(t:GtTile, n:int, rlo:float, rhi:float, greens:[float3], light:float, h:float, bare:float, s:int):
+    let mids = filter(map(n): float2 { gt_rand() * float(GT), gt_rand() * float(GT) }) m: gt_cover(m.x, m.y, s) > bare
     insertion_sort(mids) p, q: p.y < q.y
     for(mids) m:
         let r = gt_range(rlo, rhi)
@@ -98,8 +102,8 @@ def gt_clumps(t:GtTile, n:int, rlo:float, rhi:float, greens:[float3], light:floa
             let len = 2 + int(gt_rand() * (r * 0.5 + 2.0))
             gt_blade(t, int(m.x + b.x), int(m.y + b.y), len, b.x / r * 0.6 + gt_range(-0.2, 0.2), base * 0.7, base * light * gt_range(0.95, 1.08) + float3 { 0.02, 0.025, 0.0 }, h)
 
-def gt_blades(t:GtTile, n:int, lo:int, hi:int, greens:[float3], light:float, h:float):
-    let roots = map(n): int2 { int(gt_rand() * float(GT)), int(gt_rand() * float(GT)) }
+def gt_blades(t:GtTile, n:int, lo:int, hi:int, greens:[float3], light:float, h:float, bare:float, s:int):
+    let roots = filter(map(n): int2 { int(gt_rand() * float(GT)), int(gt_rand() * float(GT)) }) r: gt_cover(float(r.x), float(r.y), s) > bare * 0.8
     insertion_sort(roots) p, q: p.y < q.y  // (painted far to near)
     for(roots) r:
         let base = greens[int(gt_rand() * float(greens.length)) % greens.length] * gt_range(0.9, 1.08)
@@ -156,32 +160,31 @@ def gt_flowers(t:GtTile, n:int, cols:[float3]):
 
 // ---- the tiles
 
-let G_LUSH = [ gt_hex("#4f6a2c"), gt_hex("#56752f"), gt_hex("#5f7d33"), gt_hex("#4a6630"), gt_hex("#66823a") ]
-let G_DRY = [ gt_hex("#86913f"), gt_hex("#8f8f45"), gt_hex("#9a9650"), gt_hex("#7d863c"), gt_hex("#a39c58") ]
-let G_DARK = [ gt_hex("#3e5a2a"), gt_hex("#45612d"), gt_hex("#3a5530"), gt_hex("#4b6531") ]
+// Grass is a mixture: blue-, mid- and yellow-greens and olive, some straw, over soil that shows through.
+let G_LUSH = [ gt_hex("#4f6a2c"), gt_hex("#56752f"), gt_hex("#476a3a"), gt_hex("#6a7f34"), gt_hex("#7d8a3c"), gt_hex("#5c6b2e"), gt_hex("#3f6040") ]
+let G_DRY = [ gt_hex("#86913f"), gt_hex("#8f8a45"), gt_hex("#9a9650"), gt_hex("#7d863c"), gt_hex("#a39c58"), gt_hex("#736f38") ]
+let G_DARK = [ gt_hex("#3e5a2a"), gt_hex("#45612d"), gt_hex("#36553a"), gt_hex("#4b6531"), gt_hex("#566030") ]
+let G_OLIVE = [ gt_hex("#6b6f33"), gt_hex("#5f6a2f"), gt_hex("#7a7a3c"), gt_hex("#56652f"), gt_hex("#848043") ]
+let G_STRAW = [ gt_hex("#a8955a"), gt_hex("#b4a266"), gt_hex("#9a8550"), gt_hex("#8c7a4a") ]
 
-def gt_lush() -> GtTile:
+// A grass: soil mottled underneath, then clumps and loose blades of the greens and some straw, the soil left bare in
+// spots and thin patches.
+def gt_grass(soil_a:string, soil_b:string, greens:[float3], straw:float, clumps:int, bare:float, light:float, s:int) -> GtTile:
     let t = GtTile {}
-    gt_ground(t, gt_hex("#3f5824"), gt_hex("#526c2e"), 32, 0.06, 0.3, 11)
-    gt_clumps(t, 900, 2.5, 5.5, G_LUSH, 1.28, 0.5)
-    gt_blades(t, 2500, 2, 3, G_LUSH, 1.2, 0.45)
+    gt_ground(t, gt_hex(soil_a), gt_hex(soil_b), 32, 0.1, 0.25, s)
+    gt_pebbles(t, 60, 0.5, 1.1, gt_hex(soil_b) * 1.15, gt_hex(soil_b) * 1.35, 0.35)
+    let n_straw = int(float(clumps) * straw)
+    gt_clumps(t, clumps - n_straw, 2.0, 5.5, greens, light, 0.5, bare, s + 3)
+    gt_clumps(t, n_straw, 1.5, 3.5, G_STRAW, 1.1, 0.5, bare, s + 3)
+    gt_blades(t, clumps * 2, 2, 3, greens, light * 0.95, 0.45, bare, s + 3)
+    gt_blades(t, int(float(clumps) * straw * 3.0), 2, 3, G_STRAW, 1.05, 0.45, bare, s + 3)
     return t
 
-def gt_dry() -> GtTile:
-    let t = GtTile {}
-    gt_ground(t, gt_hex("#76783a"), gt_hex("#8e8a48"), 64, 0.1, 0.35, 21)
-    gt_pebbles(t, 40, 0.6, 1.2, gt_hex("#8a7652"), gt_hex("#a08a62"), 0.4)
-    gt_clumps(t, 650, 2.0, 4.5, G_DRY, 1.16, 0.5)
-    gt_blades(t, 2000, 2, 3, G_DRY, 1.12, 0.45)
-    return t
-
-def gt_dark() -> GtTile:
-    let t = GtTile {}
-    gt_ground(t, gt_hex("#2e4326"), gt_hex("#3e532b"), 32, 0.06, 0.3, 31)
-    gt_pebbles(t, 120, 0.6, 1.1, gt_hex("#5a4a30"), gt_hex("#6e5a38"), 0.45)  // (leaf litter)
-    gt_clumps(t, 950, 2.5, 6.0, G_DARK, 1.3, 0.5)
-    gt_blades(t, 2000, 2, 3, G_DARK, 1.2, 0.45)
-    return t
+def gt_lush() -> GtTile: return gt_grass("#45472a", "#5a5632", G_LUSH, 0.06, 1000, 0.24, 1.26, 11)
+def gt_dry() -> GtTile: return gt_grass("#6e5f3e", "#857252", G_DRY, 0.3, 800, 0.4, 1.14, 21)
+def gt_dark() -> GtTile: return gt_grass("#34331f", "#463f28", G_DARK, 0.04, 1050, 0.25, 1.3, 31)
+def gt_olive() -> GtTile: return gt_grass("#5a5232", "#6e6440", G_OLIVE, 0.15, 900, 0.36, 1.18, 101)
+def gt_worn() -> GtTile: return gt_grass("#6a5a3c", "#7e6c4a", G_LUSH, 0.12, 700, 0.5, 1.2, 111)
 
 def gt_meadow() -> GtTile:
     let t = gt_lush()
@@ -193,7 +196,7 @@ def gt_dirt() -> GtTile:
     gt_ground(t, gt_hex("#7a6142"), gt_hex("#9a7d55"), 64, 0.1, 0.3, 41)
     for(14): gt_crack(t, gt_rand() * float(GT), gt_rand() * float(GT), 8 + int(gt_rand() * 18.0), 0.8)
     gt_pebbles(t, 260, 0.7, 1.8, gt_hex("#857a68"), gt_hex("#ad9f86"), 0.6)
-    gt_blades(t, 160, 2, 3, G_DRY, 1.15, 0.45)
+    gt_blades(t, 160, 2, 3, G_DRY, 1.15, 0.45, 0.0, 41)
     return t
 
 def gt_rock() -> GtTile:
@@ -243,7 +246,7 @@ def gt_mud() -> GtTile:
                 let i = y * GT + x
                 t.col[i] = lerp(t.col[i], gt_hex("#3d3a2a"), 0.6)
                 t.hgt[i] = 0.15
-    gt_blades(t, 2200, 2, 5, [ gt_hex("#4f5a2a"), gt_hex("#5c6230"), gt_hex("#46522a") ], 1.3, 0.55)
+    gt_blades(t, 2200, 2, 5, [ gt_hex("#4f5a2a"), gt_hex("#5c6230"), gt_hex("#46522a") ], 1.3, 0.55, 0.0, 81)
     return t
 
 def gt_earth() -> GtTile:
@@ -251,16 +254,59 @@ def gt_earth() -> GtTile:
     gt_ground(t, gt_hex("#8a7150"), gt_hex("#a48a62"), 64, 0.09, 0.32, 91)
     for(40): gt_crack(t, gt_rand() * float(GT), gt_rand() * float(GT), 10 + int(gt_rand() * 20.0), 0.82)
     gt_pebbles(t, 120, 0.6, 1.4, gt_hex("#8e826c"), gt_hex("#b3a58a"), 0.6)
-    gt_blades(t, 700, 2, 3, G_DRY, 1.15, 0.45)
+    gt_blades(t, 700, 2, 3, G_DRY, 1.15, 0.45, 0.0, 91)
+    return t
+
+// The forest floor: dark soil, fallen leaves and needles, moss, a few roots.
+def gt_forest() -> GtTile:
+    let t = GtTile {}
+    gt_ground(t, gt_hex("#3a3020"), gt_hex("#4e4028"), 32, 0.1, 0.3, 121)
+    for(GT) y:
+        for(GT) x:
+            if gt_fbm(float(x), float(y), 16, 122) > 0.62:
+                let i = y * GT + x
+                t.col[i] = lerp(t.col[i], gt_hex("#4a5a2a"), 0.45) * (0.9 + 0.2 * gt_hash(x, y, 123))     // (moss)
+    for(10): gt_crack(t, gt_rand() * float(GT), gt_rand() * float(GT), 14 + int(gt_rand() * 20.0), 1.35)  // (roots, lighter)
+    gt_pebbles(t, 900, 0.6, 1.4, gt_hex("#6e4a28"), gt_hex("#9a6a34"), 0.55)                              // (leaves)
+    gt_pebbles(t, 300, 0.5, 1.0, gt_hex("#8a7a40"), gt_hex("#a08c4a"), 0.5)
+    gt_blades(t, 1800, 2, 4, [ gt_hex("#6a5530"), gt_hex("#7a6236"), gt_hex("#5a4a2c") ], 1.1, 0.45, 0.0, 124)  // (needles)
+    gt_clumps(t, 120, 1.5, 3.0, G_DARK, 1.25, 0.5, 0.45, 125)
+    return t
+
+// Scree: gravel and broken stone over bare rocky soil.
+def gt_scree() -> GtTile:
+    let t = GtTile {}
+    gt_ground(t, gt_hex("#5a5040"), gt_hex("#736652"), 32, 0.12, 0.25, 131)
+    gt_pebbles(t, 1100, 0.6, 1.5, gt_hex("#6e6a62"), gt_hex("#b0aa9c"), 0.6)
+    gt_pebbles(t, 220, 1.6, 3.2, gt_hex("#6a665e"), gt_hex("#a49e92"), 0.8)
+    gt_blades(t, 900, 2, 3, G_DRY, 1.1, 0.45, 0.0, 132)
     return t
 
 // ---- the atlas, as a TGA (sips makes it a PNG)
+
+// Takes the harsh edge off a tile (Dominic: "not so crisp"): each texel part way to the mean of itself and its four
+// neighbours, and its height further, so the edges terrains meet along are softer too.
+def gt_soften(t:GtTile, k:float) -> GtTile:
+    let o = GtTile {}
+    for(GT) y:
+        for(GT) x:
+            let i = y * GT + x
+            let n = [ gt_at(x - 1, y), gt_at(x + 1, y), gt_at(x, y - 1), gt_at(x, y + 1) ]
+            var c = t.col[i]
+            var h = t.hgt[i]
+            for(n) j:
+                c += t.col[j]
+                h += t.hgt[j]
+            o.col[i] = lerp(t.col[i], c / 5.0, k)
+            o.hgt[i] = lerp(t.hgt[i], h / 5.0, min(1.0, k * 1.5))
+    return o
 
 def gt_le16(out:[int], v:int):
     out.push(v & 255)
     out.push((v >> 8) & 255)
 
-let tiles = [ gt_lush(), gt_dry(), gt_dark(), gt_meadow(), gt_dirt(), gt_rock(), gt_sand(), gt_wet(), gt_mud(), gt_earth() ]
+let tiles = map([ gt_lush(), gt_dry(), gt_dark(), gt_meadow(), gt_dirt(), gt_rock(), gt_sand(), gt_wet(), gt_mud(), gt_earth(), gt_forest(), gt_scree(), gt_olive(),
+                  gt_worn() ]) t: gt_soften(t, 0.4)
 let aw = GT * GT_COLS
 let ah = GT * ((tiles.length + GT_COLS - 1) / GT_COLS)
 let out = [ 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
