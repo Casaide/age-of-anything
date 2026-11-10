@@ -70,7 +70,12 @@ The engine is `Casaide/creel` (public, Apache 2.0), here as the git submodule `c
   before it's pushed. The game's PR then moves the submodule to the merged commit (`git add creel`), stacked on nothing: Creel's PR
   merges first. Never point the submodule at a commit that isn't on Creel's `main`.
 - **Creel is public.** Nothing of the game's content, no private notes, and the Originality rules below apply to it in full.
-- `creel/docs/roadmap.md` has what's still to move (the window and match loop in `game.lobster` first) and the lighting to-do.
+- `creel/docs/roadmap.md` has what's still to move (the frame loop and the panels) and the lighting to-do.
+- **The view is Creel's too (#433):** the controls' shared state (`game/view_state`), the world's drawing (`game/world_view`,
+  `world_draw`, `voxel_units`), selection, orders, marks and the minimap (`game/controls`) left `game.lobster`, which imports them
+  at the places the code was. What they call of ours: `akb_tile_name`, `akb_wall_tile`, `refresh_paths`, `on_path`, `collect_town`,
+  `draw_town`, `draw_cracks_of`, `draw_topbar`, `hud_s`. A global that moves earlier in the import order can shadow a local in a
+  file imported after it; lint catches it.
 
 ## Status
 

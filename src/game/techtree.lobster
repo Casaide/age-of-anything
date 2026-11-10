@@ -307,7 +307,6 @@ def race_words_of(race:JV, ident:JV, rules:JV) -> RaceWords:
     return RaceWords { bonuses, own, lacks, moves }
 
 // The page's state (game/techtree_page.lobster draws it; the lobby and the match open it).
-var tree_open = false
 var tree_lobby = false  // opened from the lobby: no F1
 var tree_title = ""
 var tree_page:TTree? = nil

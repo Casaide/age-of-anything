@@ -338,67 +338,6 @@ def bmat_normal(img:[int], w:int, h:int, bump:float) -> [int]:
             out.push(255)
     return out
 
-// ------------------------------------------------------------------ PNG (RGBA8, stored deflate: no compression)
-
-let bmat_crc_table = map(256) n:
-    var c = n
-    for(8): c = if c & 1: 0xEDB88320 ^ (c >> 1) else: c >> 1
-    c
-
-def bmat_be32(out:[int], v:int):
-    out.push((v >> 24) & 255)
-    out.push((v >> 16) & 255)
-    out.push((v >> 8) & 255)
-    out.push(v & 255)
-
-def bmat_chunk(out:[int], kind:string, data:[int]):
-    bmat_be32(out, data.length)
-    let start = out.length
-    for(kind) ch: out.push(ch)
-    for(data) b: out.push(b)
-    var crc = 0xFFFFFFFF
-    var i = start
-    while i < out.length:
-        crc = bmat_crc_table[(crc ^ out[i]) & 255] ^ (crc >> 8)
-        i++
-    bmat_be32(out, crc ^ 0xFFFFFFFF)
-
-def bmat_png(rgba:[int], w:int, h:int) -> string:
-    let raw = []::int
-    for(h) y:
-        raw.push(0)
-        var i = y * w * 4
-        let e = i + w * 4
-        while i < e:
-            raw.push(rgba[i])
-            i++
-    let z = [ 0x78, 0x01 ]
-    var at = 0
-    var s1 = 1
-    var s2 = 0
-    for(raw) b:
-        s1 = (s1 + b) % 65521
-        s2 = (s2 + s1) % 65521
-    while at < raw.length:
-        let len = min(65535, raw.length - at)
-        z.push(if at + len >= raw.length: 1 else: 0)
-        z.push(len & 255)
-        z.push(len >> 8)
-        z.push((len ^ 0xFFFF) & 255)
-        z.push((len ^ 0xFFFF) >> 8)
-        for(len) k: z.push(raw[at + k])
-        at += len
-    bmat_be32(z, (s2 << 16) | s1)
-    let out = [ 137, 80, 78, 71, 13, 10, 26, 10 ]
-    let ihdr = []::int
-    bmat_be32(ihdr, w)
-    bmat_be32(ihdr, h)
-    for([ 8, 6, 0, 0, 0 ]) b: ihdr.push(b)
-    bmat_chunk(out, "IHDR", ihdr)
-    bmat_chunk(out, "IDAT", z)
-    bmat_chunk(out, "IEND", [])
-    return vector_to_buffer(out, 1)
-
 // ------------------------------------------------------------------ the materials
 
 // A noise material's recipe (materials.gd _make): its noise, colour ramp, uv scale, bump
@@ -423,8 +362,8 @@ def bmat_textures(name:string, r:BRecipe):
     let nm = bmat_tex_path(name, "normal")
     if exists_file(a + ".png") and exists_file(nm + ".png"): return
     let img = bmat_image(r)
-    assert write_file(a + ".png", bmat_png(bmat_pixels(r, img, "albedo"), 512, 512))
-    assert write_file(nm + ".png", bmat_png(bmat_pixels(r, img, "normal"), 512, 512))
+    assert write_file(a + ".png", png_bytes(bmat_pixels(r, img, "albedo"), 512, 512))
+    assert write_file(nm + ".png", png_bytes(bmat_pixels(r, img, "normal"), 512, 512))
 
 // Materials.flat
 def bflat(c:float3, rough:float = 0.6, metal:float = 0.0) -> MMat:
