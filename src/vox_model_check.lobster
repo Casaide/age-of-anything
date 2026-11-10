@@ -2,6 +2,7 @@
 // voxel thick shows in every facing, its palette maps to our materials (named, by colour, else its own), and a
 // changed model changes the bake cache's key. Models are written byte by byte into a scratch folder.
 //   lobster vox_model_check.lobster
+import from "../creel/src"
 import std
 import vec
 import dictionary

@@ -5,6 +5,7 @@
 // They were held to Godot's (start_check, model_check, building_check, effect_words_check) until Godot went; these
 // digests keep what those checks proved.
 //   lobster golden.lobster -- <section>
+import from "../creel/src"
 import game.deps
 import gen.scenario_out
 import gen.effect_words

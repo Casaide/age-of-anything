@@ -15,7 +15,7 @@ else
 	"$LOBSTERFMT" -l *.lobster 2>&1 | sed 's/^/not formatted: /' >> "$out"
 fi
 # Every name assigned anywhere, in one pass: a pass each, for hundreds of names, was nearly all of lint's time (#245).
-grep -rhoE --include='*.lobster' '(^|[^.a-zA-Z0-9_])[a-zA-Z0-9_]+ *(=[^=]|\+=|-=|\*=|/=|\+\+|--)' . | sed -E 's/^[^a-zA-Z0-9_]//; s/ *(=.|\+=|-=|\*=|\/=|\+\+|--)$//' | sort -u > "$assigned"
+grep -rhoE --include='*.lobster' '(^|[^.a-zA-Z0-9_])[a-zA-Z0-9_]+ *(=[^=]|\+=|-=|\*=|/=|\+\+|--)' . ../creel/src | sed -E 's/^[^a-zA-Z0-9_]//; s/ *(=.|\+=|-=|\*=|\/=|\+\+|--)$//' | sort -u > "$assigned"
 for prog in *.lobster; do
 	"$LOBSTER" --compile-only "$prog" 2>&1 | grep 'warning:\|error:' | while IFS= read -r line; do
 		name="$(printf '%s\n' "$line" | sed -n 's/.*use `let` to declare `\([a-zA-Z0-9_]*\)`.*/\1/p')"

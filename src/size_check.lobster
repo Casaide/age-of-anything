@@ -1,6 +1,7 @@
 // One size table (data/voxel/sizes.json, a mod's own too): every body's size and its height as drawn, and every mount
 // under its rider. This fails when the table and the drawings part: a body redrawn or resized, a mount without a ratio.
 //   lobster size_check.lobster -- [report]   (report: the numbers only, no failing)
+import from "../creel/src"
 import std
 import vec
 import dictionary

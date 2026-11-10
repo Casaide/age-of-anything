@@ -2,6 +2,7 @@
 // with it in MagicaVoxel needs no `mats` map (a colour that is a material's is that material). Written to
 // data/voxel/creel.vox; vox_model_check holds the file to the materials.
 //   lobster vox_palette.lobster
+import from "../creel/src"
 import std
 import vec
 import dictionary

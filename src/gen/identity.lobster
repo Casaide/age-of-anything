@@ -13,6 +13,9 @@ def id_load(root:string):
     id_buildings = at(lib_data("buildings.json"), "buildings")
     id_cache = dictionary<string, JV>(31)
 
+// The pack loader calls this once the packs are merged (gen/mods.lobster): what a race lacks depends on the buildings.
+def packs_loaded(root:string): id_load(root)
+
 // Godot's String.capitalize for a snake_case id ("nile" -> "Nile", "sea_folk" -> "Sea Folk").
 def capitalize(s:string) -> string:
     let words = filter(tokenize(s, "_", " ")) w: w.length > 0

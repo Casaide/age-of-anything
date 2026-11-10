@@ -21,6 +21,7 @@
 //   checked here as the data it reads: the mod's shot "pulse" is called by a tag the rifle's eval has.
 // - "sound take loads" / "music stem loads": the WAVs and OGGs are read from their headers (length in
 //   seconds), not through Godot's AudioStream loaders.
+import from "../creel/src"
 import std
 import dictionary
 import gen.json
@@ -971,8 +972,8 @@ def g_cursors():
         expect(src and find_string(src, "vc_") < 0, "cursors: {f} has no virtual cursor")
         expect(src and find_string(src, "gl.cursor(") < 0, "cursors: {f} doesn\'t use relative mode")
         expect(src and find_string(src, "draw_cursor") < 0, "cursors: {f} doesn\'t draw one")
-    let game = read_file("game.lobster")
-    expect(game and find_string(game, "def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))") >= 0, "cursors: mouse_px reads the OS\'s mouse")
+    let ui_src = read_file("game/ui.lobster")
+    expect(ui_src and find_string(ui_src, "def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))") >= 0, "cursors: mouse_px reads the OS\'s mouse")
 // ------------------------------------------------------------------ fullscreen (#223)
 
 def g_window():

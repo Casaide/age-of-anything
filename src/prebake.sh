@@ -7,7 +7,7 @@
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 cd "$(dirname "$0")"
 set -e
-version=$(sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' view/bake_cache.lobster)
+version=$(sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' ../creel/src/view/bake_cache.lobster)
 mkdir -p baked
 if [ "$(cat baked/version 2>/dev/null)" != "$version" ]; then
 	find baked -mindepth 1 -delete
