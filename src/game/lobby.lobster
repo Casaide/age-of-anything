@@ -281,7 +281,7 @@ def fe_box(id:int, at:float2, size:float2, text:string, placeholder:string, fs:i
     if ui_clicked() and fe_over(at, size): fe_focus(id, text)
     let focused = fe_field == id
     let acc = ui_look.accent
-    if focused:  // the box with the keyboard: tinted, and ringed in the accent inside its frame (#431)
+    if focused:                        // the box with the keyboard: tinted, and ringed in the accent inside its frame (#431)
         let fw = max(3.0, 6.0 * ui())  // (the frame's width, as ui_box draws it)
         ui_fill(at + float2_1 * fw, size - float2_1 * fw * 2.0, float4 { acc.x, acc.y, acc.z, 0.1 })
         ui_outline(at + float2_1 * (fw - 1.0), size - float2_1 * (fw - 1.0) * 2.0, max(2.0, 3.0 * fe_k), acc)
@@ -1342,7 +1342,7 @@ def run_front(page0:string, typed:[string]) -> string:
             fe_bs_held = if gl.button("backspace") >= 1: max(0.0, fe_bs_held) + dt else: -1.0
             let typed_now, editing = gl.text_input_state()
             let n_bs = if editing == "": tf_repeats(bs_was, fe_bs_held) else: 0  // (while an IME composes, its own)
-            if n_bs > 0:  // SDL's text input only adds; backspace is ours (#431)
+            if n_bs > 0:                                                         // SDL's text input only adds; backspace is ours (#431)
                 var t = typed_now
                 for(n_bs): t = tf_drop_last(t)
                 gl.set_text_input(t)
