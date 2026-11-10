@@ -18,6 +18,7 @@ import lib.flow
 import lib.spatial
 import lib.orders
 import lib.movement
+import lib.steering
 import lib.fog
 import lib.map
 import lib.economy
@@ -293,6 +294,10 @@ def scene_through(rules:JV, races:[JV]):
 // 5. Cavalry funnel through the pass (choke_test: a 2-tile gap in a rock wall).
 def scene_funnel(rules:JV, races:[JV]):
     new_world(SEED, "choke_test", races, rules, [])
+    var k = u_x.length  // (the other side's start units stand 5 tiles past the gap: a move, not a fight)
+    while k > 0:
+        k--
+        if u_owner[k] == 1: remove_unit(k)
     let a = group(0, "large", 16, 12000, 16000)
     let w = watch_new(a)
     issue_cmd(0, CMD_MOVE, a, 36000, 16000, 0, 0)
