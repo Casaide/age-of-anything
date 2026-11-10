@@ -1,9 +1,9 @@
 // ------------------------------------------------------------------ the ground (src/view/art/terrain_view.gd, scenes/art_pixel/terrain.gdshader)
 // One quad over the map drawn by the terrain shader: no grid. Terrain from blurred masks (R water,
-// G swamp, B reed-bed ground, A rock) perturbed by noise: rolling light in dithered bands, grass
-// lush by water and dry in patches, clover, clumps and worn soil, bog and standing pools, rock
-// and scree, trails worn by walkers, water with a sandy bank, a wet edge, depth, the sky and
-// ripples. The fog is drawn over it, per tile. Each culture's paths come from game/paths.lobster.
+// G swamp, B reed-bed ground, A rock) perturbed by noise (D-241): grass in a soft tone over several
+// tiles with grain and blades a device px, voxel tufts and stones in the units' voxel size, bog and
+// standing pools, rock, trails worn by walkers, each meeting the next along a height noise per
+// pixel, and water with sand, a wet edge, depth, the sky and ripples. The fog is drawn over it, per tile. Each culture's paths come from game/paths.lobster.
 
 let MASK_K = 4  // mask samples per tile
 let OCCLUDE_BACK = 2
@@ -27,8 +27,13 @@ PIXELFUNCTIONS
         f = f * f * (3.0 - 2.0 * f);
         return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
     }
-    float height(vec2 t) {
-        return vnoise(t * 0.35) * 0.55 + vnoise(t * 0.8 + 3.0) * 0.3 + vnoise(t * 1.9 + 7.0) * 0.15;
+    float fbm(vec2 p) { return vnoise(p) * 0.5 + vnoise(p * 2.03 + 5.2) * 0.3 + vnoise(p * 4.1 + 9.7) * 0.2; }
+    // A pixel's own number: an integer hash (sin's loses its way on device px far from the origin).
+    float hs(vec2 p, uint s) {
+        uvec2 q = uvec2(ivec2(floor(p))) * uvec2(1597334673u, 3812015801u);
+        uint n = (q.x ^ q.y ^ (s * 2654435761u)) * 1597334673u;
+        n ^= n >> 15;
+        return float(n >> 8) * (1.0 / 16777216.0);
     }
     vec3 stones(vec2 p, float jitter, out vec2 id, out vec2 off) {
         vec2 ip = floor(p);
@@ -46,14 +51,6 @@ PIXELFUNCTIONS
         }
         return vec3(d2 - d1, hash(id + 9.0), 0.0);
     }
-    vec3 bevel(vec3 col, vec2 off, float edge, float width) {
-        float rim = 1.0 - smoothstep(0.0, width, edge);
-        float facing = dot(normalize(off + vec2(1e-4)), normalize(vec2(-0.6, -0.8)));
-        if (rim > 0.35) {
-            col *= facing > 0.2 ? 1.16 : (facing < -0.2 ? 0.74 : 1.0);
-        }
-        return col;
-    }
     vec3 ramp4(vec3 a, vec3 b, vec3 c, vec3 d, float v) {
         float q = floor(clamp(v, 0.0, 0.999) * 4.0);
         return q < 1.0 ? a : q < 2.0 ? b : q < 3.0 ? c : d;
@@ -62,6 +59,38 @@ PIXELFUNCTIONS
         int k = (ap.y % 4) * 4 + (ap.x % 4);
         float BAYER[16] = float[](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
         return BAYER[k] / 16.0 - 0.5;
+    }
+    // A voxel tuft, in a cell of 7 art px: three blades (light left, mid middle, dark right), 2 to 4 px tall, lit from
+    // the top left as the units are, and its shadow on the ground. 0 none, 1 light, 2 mid, 3 dark, 4 tip, 5 shadow.
+    float tuft(vec2 ap, float density, float tall, uint s) {
+        vec2 c = floor(ap / 7.0);
+        if (hs(c, s) >= density) return 0.0;
+        float h = min(2.0 + floor(hs(c, s + 1u) * 3.0) + tall, 5.0);
+        vec2 d = ap - (c * 7.0 + vec2(2.0 + floor(hs(c, s + 2u) * 3.0), 5.0));
+        if (d.y == 1.0 && (d.x == 1.0 || d.x == 2.0)) return 5.0;
+        if (d.y > 0.0) return 0.0;
+        if (d.x == 0.0 && d.y > -h) return d.y == 1.0 - h ? 4.0 : 2.0;
+        if (d.x == -1.0 && d.y > 1.0 - h) return 1.0;
+        if (d.x == 1.0 && d.y > 2.0 - h) return 3.0;
+        return 0.0;
+    }
+    vec3 tufted(vec3 col, float k) {
+        return k == 1.0 ? col * 1.34 + vec3(0.03, 0.04, 0.0) : k == 2.0 ? col * 1.1 + vec3(0.0, 0.02, 0.0) : k == 3.0 ? col * 0.64
+             : k == 4.0 ? col * 1.5 + vec3(0.07, 0.07, 0.0) : k == 5.0 ? col * 0.8 : col;
+    }
+    // A voxel stone, in a cell of 5 art px: 2 by 2, its top lit, its left side mid and its right dark, its shadow down
+    // to the right. 0 none, 1 top, 2 left, 3 right, 4 shadow.
+    float stone(vec2 ap, float density, uint s) {
+        vec2 c = floor(ap / 5.0);
+        if (hs(c, s) >= density) return 0.0;
+        vec2 d = ap - (c * 5.0 + vec2(floor(hs(c, s + 1u) * 2.0), floor(hs(c, s + 2u) * 2.0)));
+        if (d.x < 0.0 || d.y < 0.0 || d.x > 2.0 || d.y > 2.0) return 0.0;
+        if (d.y == 0.0) return d.x < 2.0 ? 1.0 : 0.0;
+        if (d.y == 1.0) return d.x == 0.0 ? 2.0 : d.x == 1.0 ? 3.0 : 4.0;
+        return d.x > 0.0 ? 4.0 : 0.0;
+    }
+    vec3 stoned(vec3 col, vec3 rock, float k) {
+        return k == 1.0 ? rock * 1.18 + vec3(0.03) : k == 2.0 ? rock * 0.92 : k == 3.0 ? rock * 0.66 : k == 4.0 ? col * 0.8 : col;
     }
 
 SHADER terrain
@@ -75,6 +104,7 @@ SHADER terrain
         UNIFORMS tex0 tex1 tex2 tex3
         UNIFORM vec2 map_size
         UNIFORM float art_px
+        UNIFORM float dev_px
         UNIFORM float time
         vec2 world = iworld.xy;
         float ishade = iworld.z;
@@ -82,152 +112,154 @@ SHADER terrain
         float b = world.y / 16.0;
         vec2 t = vec2((a + b) * 0.5, (b - a) * 0.5);
         if (t.x < 0.0 || t.y < 0.0 || t.x > map_size.x || t.y > map_size.y) discard;
+        // Detail is sized on the screen, not on the tile, and pinned to the world: a device px for the grain and the
+        // blades, an art px (the units' voxel) for the tufts and stones.
+        vec2 dp = floor(world * 1.5 * dev_px);
+        vec2 ap = floor(world * 1.5 * dev_px / max(1.0, floor(art_px + 0.5)));
         vec4 m = texture(tex0, t / map_size);
         float n = vnoise(t * 2.3) * 0.6 + vnoise(t * 6.1) * 0.4;
-        float grain = vnoise(t * 14.0) * 0.55 + vnoise(t * 36.0) * 0.45;  // (fine: under a unit, #358)
-        vec2 cell = floor(t * 22.0);
-        float bay = bayer(ivec2(gl_FragCoord.xy / art_px));
-        vec2 e = vec2(0.06, 0.0);
-        vec2 grad = vec2(height(t + e.xy) - height(t - e.xy), height(t + e.yx) - height(t - e.yx)) / (2.0 * e.x);
-        float lit = clamp(0.5 + dot(grad, vec2(-0.8, -0.25)) * 1.1, 0.0, 1.0);
-        float light = mix(0.8, 1.16, floor(clamp(lit + bay * 0.3, 0.0, 0.999) * 5.0) / 4.0);
+        float macro = fbm(t * 0.21);
+        float fine = vnoise(ap * 0.3) * 0.65 + hs(ap, 9u) * 0.35;  // the height edges meet along, per art px
+        float lit = clamp(0.5 + (macro - fbm(t * 0.21 + vec2(0.35, 0.12))) * 2.2, 0.0, 1.0);
+        float light = 0.93 + 0.13 * lit;
+        // grass: a soft tone over several tiles, lusher by water, drier in patches, then grain and blades
         float lush = smoothstep(0.04, 0.35, m.r);
-        float dry = smoothstep(0.5, 0.78, vnoise(t * 1.0 + 17.0)) * (1.0 - lush);  // (patches smaller than a group of units, #358)
-        float g = clamp(grain + bay * 0.22, 0.0, 0.999);
-        vec3 col = ramp4(vec3(0.24, 0.36, 0.14), vec3(0.30, 0.43, 0.17), vec3(0.36, 0.50, 0.20), vec3(0.43, 0.56, 0.24), g);
-        vec3 dry_col = mix(col, ramp4(vec3(0.36, 0.38, 0.16), vec3(0.44, 0.45, 0.19), vec3(0.52, 0.51, 0.24), vec3(0.60, 0.57, 0.30), g), 0.55);  // (and softer)
-        vec3 lush_col = ramp4(vec3(0.16, 0.30, 0.13), vec3(0.20, 0.36, 0.15), vec3(0.24, 0.42, 0.18), vec3(0.30, 0.48, 0.20), g);
-        if (dry + bay * 0.3 > 0.45) col = dry_col;
-        if (lush + bay * 0.3 > 0.5) col = lush_col;
-        float h = hash(cell);
-        if (h > 0.965) col = col * 1.25 + vec3(0.04, 0.05, 0.0);
-        else if (h < 0.03) col *= 0.7;
-        if (vnoise(t * 3.1 + 40.0) > 0.78 && hash(cell + 21.0) > 0.4) col = mix(col, vec3(0.28, 0.48, 0.20), 0.6);
-        float drift = vnoise(t * 0.17 + 61.0);
-        col *= mix(vec3(1.06, 1.02, 0.84), vec3(0.9, 1.0, 1.06), drift);
-        float clump = vnoise(t * 7.0 + 7.0) * 0.7 + vnoise(t * 18.0) * 0.3;
-        if (clump > 0.66) col *= (hash(cell + 31.0) > 0.7 ? 1.07 : 0.88);
-        float worn = vnoise(t * 1.3 + 33.0) * 0.8 + vnoise(t * 5.0 + 3.0) * 0.2;
-        if (worn > 0.7 && hash(cell + 41.0) > 0.45) col = mix(col, vec3(0.42, 0.34, 0.22), 0.55 + 0.2 * hash(cell + 43.0));
+        float dry = smoothstep(0.45, 0.8, vnoise(t * 0.45 + 17.0)) * (1.0 - lush);
+        vec3 col = mix(vec3(0.31, 0.416, 0.173), vec3(0.525, 0.569, 0.247), 0.22 + 0.5 * macro);
+        col = mix(col, vec3(0.27, 0.40, 0.18), lush * 0.6);
+        col = mix(col, vec3(0.55, 0.55, 0.27), dry * 0.45);
+        col *= mix(vec3(1.03, 1.01, 0.92), vec3(0.96, 1.0, 1.04), vnoise(t * 0.13 + 61.0));
+        col *= 0.93 + 0.12 * vnoise(ap * 0.09 + 3.0) + 0.05 * vnoise(ap * 0.3);
+        col *= 0.96 + 0.08 * hs(dp, 7u);
+        if (hs(dp, 11u) > 0.8) col = col * 1.18 + vec3(0.02, 0.03, 0.0);
+        else if (hs(dp - vec2(0.0, 1.0), 11u) > 0.8) col *= 0.84;
+        else if (hs(dp - vec2(0.0, 2.0), 11u) > 0.9) col *= 0.9;
         float reed = clamp(m.b * 1.3 + (n - 0.5) * 0.5, 0.0, 1.0);
-        col = mix(col, col * vec3(0.8, 0.86, 0.72), floor(reed * 3.0) / 3.0 * 0.8);
-        float swamp = m.g + (n - 0.5) * 0.4;
+        col = mix(col, col * vec3(1.04, 0.98, 0.78), reed * 0.5);
+        float tk = tuft(ap, 0.42 + 0.2 * lush + 0.35 * reed - 0.2 * dry, floor(reed * 2.0), 21u);
+        // swamp: dark olive bog, mud, and standing pools between tall reeds
+        float swamp = m.g + (n - 0.5) * 0.4 + (fine - 0.5) * 0.15;
+        bool bare = false;
         if (swamp > 0.5) {
-            float bog = vnoise(t * 1.6 + 5.0) * 0.6 + vnoise(t * 4.5 + 9.0) * 0.4;
-            col = ramp4(vec3(0.20, 0.24, 0.13), vec3(0.25, 0.30, 0.15), vec3(0.30, 0.35, 0.17), vec3(0.36, 0.40, 0.19), grain);
-            if (bog < 0.36) col = ramp4(vec3(0.26, 0.21, 0.14), vec3(0.31, 0.25, 0.16), vec3(0.36, 0.29, 0.19), vec3(0.41, 0.34, 0.22), grain);
-            float pool = vnoise(t * 0.55 + 13.0) * 0.75 + vnoise(t * 2.0 + 3.0) * 0.2 + (vnoise(t * 9.0) - 0.5) * 0.05;
+            float bog = fbm(t * 1.7 + 5.0);
+            col = mix(vec3(0.24, 0.29, 0.15), vec3(0.34, 0.38, 0.20), bog) * (0.965 + 0.07 * hs(dp, 7u));
+            if (bog + (fine - 0.5) * 0.15 < 0.34) col = mix(col, mix(vec3(0.30, 0.26, 0.17), vec3(0.36, 0.31, 0.20), fine), 0.7);
+            float pool = vnoise(t * 0.55 + 13.0) * 0.75 + vnoise(t * 2.0 + 3.0) * 0.25 + (fine - 0.5) * 0.06;
             if (pool > 0.6) {
-                col = mix(vec3(0.20, 0.31, 0.28), vec3(0.26, 0.38, 0.35), floor(clamp(grain + bay * 0.3, 0.0, 0.999) * 3.0) / 2.0);
-                if (pool < 0.615) col = vec3(0.30, 0.25, 0.16);
-                else if (vnoise(t * 2.0 + vec2(0.0, 0.6)) - vnoise(t * 2.0) > 0.06) col = mix(col, vec3(0.42, 0.55, 0.56), 0.45);
-                if (hash(cell + 17.0) > 0.97) col = vec3(0.45, 0.58, 0.2);
+                col = mix(vec3(0.17, 0.27, 0.24), vec3(0.22, 0.33, 0.29), smoothstep(0.6, 0.75, pool));
+                if (pool < 0.615) col = vec3(0.26, 0.22, 0.15);
+                else if (hs(ap, 31u) > 0.985) col = vec3(0.42, 0.52, 0.50);
+                tk = 0.0;
+                bare = true;
             } else {
-                if (hash(cell + 7.0) > 0.93 && fract(t.y * 22.0) < 0.6) col = (hash(cell + 8.0) > 0.5) ? vec3(0.42, 0.50, 0.20) : vec3(0.14, 0.20, 0.10);
-                if (vnoise(t * 6.0 + 77.0) > 0.74) col = mix(col, vec3(0.44, 0.52, 0.18), 0.5);
+                tk = tuft(ap, 0.55, 2.0, 41u);
             }
-        } else if (swamp > 0.44) {
-            col = mix(col, vec3(0.20, 0.27, 0.16), 0.6);
+        } else if (swamp > 0.42) {
+            col = mix(col, vec3(0.26, 0.31, 0.17), 0.55);
         }
-        float rock = m.a + (n - 0.5) * 0.35;
+        // rock: grey ground strewn with stones; scree on the grass at its edge
+        float rock = m.a + (n - 0.5) * 0.35 + (fine - 0.5) * 0.3;
+        float sk = 0.0;
+        vec3 sc = mix(vec3(0.50, 0.48, 0.44), vec3(0.62, 0.60, 0.55), hs(floor(ap / 5.0), 71u));
         if (rock > 0.5) {
-            col = ramp4(vec3(0.27, 0.25, 0.21), vec3(0.33, 0.31, 0.26), vec3(0.40, 0.37, 0.31), vec3(0.46, 0.43, 0.36), grain);
-            if (hash(cell + 13.0) > 0.88) col *= 0.72;
-        } else if (rock > 0.42) {
-            col = mix(col, vec3(0.32, 0.29, 0.22), 0.5);
+            col = mix(vec3(0.427, 0.416, 0.392), vec3(0.608, 0.588, 0.545), 0.2 + 0.6 * fbm(t * 0.7 + 23.0)) * (0.95 + 0.1 * hs(dp, 7u));
+            if (vnoise(ap * 0.18 + 3.0) > 0.72) col *= 0.88;
+            sk = stone(ap, 0.6, 51u);
+            tk = 0.0;
+        } else if (rock > 0.36) {
+            sk = stone(ap, 0.45, 51u);
+            if (rock > 0.44) tk = 0.0;
         }
+        // the paths (game/paths.lobster: a channel a style) and the trails worn by walkers, height-blended into the ground
         vec4 pth = texture(tex1, t / map_size);
         vec2 wob = vec2(vnoise(t * 1.3 + 11.0), vnoise(t * 1.3 + 29.0)) - 0.5;
-        float trod = 0.0;
-        for (int k = 0; k < 8; k++) {
-            float ak = float(k) * 0.785398;
-            trod += texture(tex2, (t + wob * 0.8 + vec2(cos(ak), sin(ak)) * 0.75) / map_size).r;
+        float trod = texture(tex2, (t + wob * 0.5) / map_size).r * 0.4;
+        for (int k = 0; k < 4; k++) {
+            float ak = float(k) * 1.570796 + 0.4;
+            trod += texture(tex2, (t + wob * 0.8 + vec2(cos(ak), sin(ak)) * 0.7) / map_size).r * 0.15;
         }
-        trod = (trod / 8.0) * 0.6 + texture(tex2, (t + wob * 0.5) / map_size).r * 0.4;
         pth.r = max(pth.r, smoothstep(0.12, 0.5, trod) * 0.7);
-        float st_trail = pth.r + (n - 0.5) * 0.45;
+        float st_trail = pth.r + (n - 0.5) * 0.4 + (fine - 0.5) * 0.3;
         float st_board = pth.g + (n - 0.5) * 0.12;
-        float st_cob = pth.b + (n - 0.5) * 0.25;
-        float st_road = pth.a + (n - 0.5) * 0.08;
-        float jag = (hash(floor(t * 11.0)) - 0.5) * 0.12;
-        float top = max(max(st_trail, st_board + jag), max(st_cob - jag, st_road + jag * 0.5));
+        float st_cob = pth.b + (n - 0.5) * 0.2 + (fine - 0.5) * 0.12;
+        float st_road = pth.a + (n - 0.5) * 0.08 + (fine - 0.5) * 0.08;
+        float top = max(max(st_trail, st_board), max(st_cob, st_road));
+        float u = texture(tex3, t / map_size).r * 9.0;  // (boards a ninth of a tile wide, their seams a device px: the slope out here, where every pixel takes it)
+        float uw = fwidth(u);
+        vec3 dirt = mix(vec3(0.478, 0.380, 0.259), vec3(0.604, 0.490, 0.333), 0.25 + 0.5 * fbm(t * 0.8 + 41.0));
         if (top > 0.5) {
+            tk = 0.0;
             if (top == st_trail) {
-                col = ramp4(vec3(0.38, 0.30, 0.19), vec3(0.44, 0.35, 0.22), vec3(0.50, 0.40, 0.26), vec3(0.55, 0.45, 0.30), grain);
-                float across = pth.r;
-                if (abs(across - 0.8) < 0.04) col *= 0.78;
-                else if (across > 0.9 && vnoise(t * 7.0) > 0.55) col = mix(col, vec3(0.30, 0.40, 0.17), 0.7);
-                if (hash(cell + 3.0) > 0.95) col = vec3(0.62, 0.58, 0.50);
-                else if (hash(cell + 5.0) < 0.04) col = vec3(0.30, 0.24, 0.15);
-            } else if (top == st_board + jag) {
-                float u = texture(tex3, t / map_size).r * 3.4;
+                col = dirt * (0.95 + 0.1 * hs(dp, 7u)) * (0.94 + 0.12 * fine);
+                if (abs(pth.r - 0.8) < 0.04) col *= 0.9;
+                sk = stone(ap, 0.12, 61u);
+                sc = mix(dirt, sc, 0.45);
+                if (sk == 0.0 && hs(ap, 63u) > 0.97) col *= 0.8;
+            } else if (top == st_board) {
                 float plank = floor(u);
-                col = mix(vec3(0.42, 0.29, 0.16), vec3(0.56, 0.40, 0.23), hash(vec2(plank, 7.0)));
-                col *= 0.88 + 0.24 * vnoise(vec2(plank * 5.0, (t.x - t.y) * 9.0));
-                if (hash(vec2(plank, 3.0)) > 0.86) col = mix(col, vec3(0.46, 0.44, 0.38), 0.45);
-                if (fract(u) < 0.13) col = vec3(0.20, 0.13, 0.07);
-                if (st_board < 0.6) {
-                    col = vec3(0.30, 0.20, 0.11);
-                    if (mod(plank, 5.0) < 1.0) col = (fract(u) < 0.5) ? vec3(0.44, 0.31, 0.18) : vec3(0.17, 0.11, 0.06);
+                float seam = fract(u) / max(uw, 1e-4);
+                col = mix(vec3(0.46, 0.33, 0.19), vec3(0.60, 0.45, 0.27), hash(vec2(plank, 7.0)));
+                col *= 0.92 + 0.12 * vnoise(vec2(plank * 5.0, ap.x * 0.35 + ap.y * 0.7)) + 0.05 * hs(dp, 7u);
+                if (hash(vec2(plank, 3.0)) > 0.86) col = mix(col, vec3(0.50, 0.48, 0.42), 0.35);
+                if (seam < 1.0) col = vec3(0.20, 0.13, 0.07);
+                else if (seam < 2.0) col *= 1.14;
+                if (st_board < 0.56) {
+                    col = vec3(0.30, 0.20, 0.11) * (0.95 + 0.1 * hs(dp, 7u));
+                    if (mod(plank, 6.0) < 1.0) col = (fract(u) < 0.5) ? vec3(0.46, 0.33, 0.19) : vec3(0.20, 0.13, 0.07);
                 }
-                if (hash(cell + plank) > 0.985) col = vec3(0.70, 0.66, 0.58);
-            } else if (top == st_cob - jag) {
-                vec2 id;
-                vec2 off;
-                vec3 v = stones(t * 7.0, 0.85, id, off);
-                col = mix(vec3(0.38, 0.37, 0.32), vec3(0.58, 0.55, 0.48), v.y);
-                col *= mix(vec3(1.0), vec3(1.06, 0.98, 0.9), hash(id + 2.0));
-                col = bevel(col, off, v.x, 0.3);
-                if (v.x < 0.15) col = (hash(cell + 19.0) > 0.8) ? vec3(0.24, 0.30, 0.14) : vec3(0.25, 0.20, 0.14);
-                if (st_cob < 0.58 && v.y > 0.6) col = mix(col, vec3(0.32, 0.27, 0.18), 0.7);
+                sk = 0.0;
             } else {
+                bool cob = top == st_cob;
                 vec2 id;
                 vec2 off;
-                vec3 v = stones(t * vec2(3.2, 3.6), 0.55, id, off);
-                col = mix(vec3(0.58, 0.55, 0.48), vec3(0.74, 0.71, 0.62), v.y);
-                col *= 0.92 + 0.12 * vnoise(t * 14.0 + id);
-                if (vnoise(t * 2.2 + id * 3.0) > 0.72) col *= vec3(0.86, 0.84, 0.76);
-                col = bevel(col, off, v.x, 0.22);
-                if (v.x < 0.07) col = vec3(0.30, 0.26, 0.19);
-                if (st_road < 0.62 && hash(id + 5.0) > 0.55) col = mix(vec3(0.34, 0.30, 0.21), col, 0.25);
-                else if (st_road < 0.56) col = vec3(0.46, 0.44, 0.39);
+                vec3 v = cob ? stones(t * 7.0, 0.85, id, off) : stones(t * vec2(3.2, 3.6), 0.55, id, off);
+                col = cob ? mix(vec3(0.42, 0.41, 0.37), vec3(0.62, 0.60, 0.54), v.y) : mix(vec3(0.58, 0.56, 0.50), vec3(0.72, 0.70, 0.63), v.y);
+                col *= 0.95 + 0.1 * hs(dp, 7u);
+                float facing = dot(normalize(off + vec2(1e-4)), normalize(vec2(-0.6, -0.8)));
+                float rim = cob ? 0.3 : 0.2;
+                if (v.x < rim) col *= facing > 0.25 ? 1.14 : (facing < -0.25 ? 0.76 : 1.0);
+                if (v.x < (cob ? 0.12 : 0.06)) col = mix(dirt, vec3(0.30, 0.26, 0.19), 0.6);
+                if ((cob ? st_cob : st_road) < 0.58 && hash(id + 5.0) > 0.5) col = dirt * (0.9 + 0.1 * fine);
+                sk = 0.0;
             }
-        } else if (top > 0.43) {
-            col = mix(col, vec3(0.30, 0.26, 0.18), 0.45);
-            if (top == st_board + jag) col = mix(col, vec3(0.10, 0.08, 0.05), 0.45);
-            else if (hash(cell + 51.0) > 0.7) col = mix(col, vec3(0.30, 0.42, 0.18), 0.6);
+        } else if (top > 0.4) {
+            col = mix(col, dirt * 0.92, 0.35);
+            if (top > 0.45) tk = 0.0;
+            if (top == st_board) col *= 0.78;  // (the walk's shadow on the ground beside it)
+            if (top == st_trail || top == st_cob || top == st_road) sk = max(sk, stone(ap, 0.3, 61u));
         }
-        float water = m.r + (n - 0.5) * 0.3;
+        if (!bare && sk > 0.0) col = stoned(col, sc, sk);
+        else if (tk > 0.0) col = tufted(col, tk);
         col *= light;
-        if (water > 0.38) {
-            col = ramp4(vec3(0.42, 0.36, 0.24), vec3(0.48, 0.41, 0.27), vec3(0.54, 0.47, 0.31), vec3(0.60, 0.53, 0.36), g) * light;
-        }
-        if (water > 0.45) {
-            col = mix(vec3(0.30, 0.25, 0.17), vec3(0.24, 0.20, 0.14), step(0.0, bay));
+        // the shore: sand, then wet sand, then water (deep to shallow), its foam, the sky and fine ripples
+        float water = m.r + (n - 0.5) * 0.3 + (fine - 0.5) * 0.05;
+        if (water > 0.36) {
+            vec3 sand = mix(vec3(0.722, 0.639, 0.455), vec3(0.804, 0.725, 0.541), 0.3 + 0.5 * fbm(t * 0.9 + 8.0)) * (0.95 + 0.1 * hs(dp, 7u));
+            if (hs(ap, 81u) > 0.96) sand *= 0.86;
+            float wet = smoothstep(0.42, 0.49, water + (fine - 0.5) * 0.04);
+            col = mix(sand, sand * vec3(0.66, 0.64, 0.62), wet) * light;
         }
         if (water > 0.5) {
             float depth = smoothstep(0.5, 1.0, m.r + (n - 0.5) * 0.12);
-            float dd = clamp(depth + bay * 0.05, 0.0, 1.0);
-            vec3 shallow = vec3(0.33, 0.45, 0.36);
-            vec3 mid = vec3(0.17, 0.34, 0.37);
-            vec3 deep = vec3(0.09, 0.21, 0.28);
-            col = dd < 0.45 ? mix(shallow, mid, dd / 0.45) : mix(mid, deep, (dd - 0.45) / 0.55);
-            col *= 0.94 + 0.12 * vnoise(t * 0.9 + 12.0);
-            if (depth < 0.22) col = mix(col, vec3(0.46, 0.43, 0.30), (0.22 - depth) * 1.6 * vnoise(t * 5.0 + 4.0));
+            col = mix(vec3(0.310, 0.541, 0.549), vec3(0.141, 0.314, 0.416), depth);
+            col *= 0.96 + 0.08 * fbm(t * 0.5 + 12.0);
+            if (depth < 0.18) col = mix(col, vec3(0.55, 0.55, 0.42), (0.18 - depth) * 2.4);
             vec2 sp = vec2(world.x * 0.018, world.y * 0.16);
             float sky = vnoise(sp + vec2(time * 0.03, 0.0)) * 0.6 + vnoise(sp * 2.3 + vec2(-time * 0.05, 3.0)) * 0.4;
-            col = mix(col, vec3(0.50, 0.64, 0.66), smoothstep(0.58, 0.82, sky) * 0.35 * (0.4 + depth * 0.6));
-            float rip = vnoise(vec2(world.x * 0.09 + time * 0.4, world.y * 0.6 + time * 0.15));
-            float rip2 = vnoise(vec2(world.x * 0.07 - time * 0.3, world.y * 0.55 + 5.0));
-            if (rip > 0.8 && rip2 > 0.55) col = mix(col, vec3(0.70, 0.82, 0.82), 0.35);
-            else if (rip > 0.74 && rip2 > 0.55) col *= 0.92;
-            col *= mix(0.86, 1.0, smoothstep(0.5, 0.6, water));
-            float foam = 0.53 + 0.012 * sin(time * 1.1 + n * 9.0);
-            if (water < foam) col = mix(col, vec3(0.70, 0.80, 0.76), 0.6 * step(0.35, vnoise(t * 14.0 + time * 0.3)));
+            col = mix(col, vec3(0.52, 0.68, 0.70), smoothstep(0.6, 0.85, sky) * 0.25 * (0.4 + depth * 0.6));
+            vec2 rp = ap * vec2(0.055, 0.42) + vec2(time * 0.6, time * 0.08);
+            float rip = vnoise(rp) * 0.7 + vnoise(rp * 2.1 + 7.0) * 0.3;
+            float above = vnoise(rp - vec2(0.0, 0.42)) * 0.7 + vnoise((rp - vec2(0.0, 0.42)) * 2.1 + 7.0) * 0.3;
+            float gate = vnoise(ap * vec2(0.02, 0.1) + vec2(-time * 0.2, 4.0));
+            if (rip > 0.74 && gate > 0.45) col = mix(col, vec3(0.66, 0.80, 0.80), 0.4);
+            else if (above > 0.74 && gate > 0.45) col *= 0.9;
+            float foam = 0.515 + 0.01 * sin(time * 1.1 + n * 9.0);
+            if (water < foam && hs(ap, 91u) > 0.3) col = mix(col, vec3(0.78, 0.84, 0.80), 0.55);
+            else if (water < foam + 0.025) col *= 0.88;
         }
         col *= ishade;
         float edge = min(min(t.x, t.y), min(map_size.x - t.x, map_size.y - t.y));
-        col *= mix(0.25, 1.0, floor(clamp(edge / 0.9 + bay * 0.25, 0.0, 1.0) * 4.0) / 4.0);
+        col *= mix(0.25, 1.0, smoothstep(0.0, 0.9, edge));
         frag_color = vec4(col, 1.0);
 
 SHADER cliff
@@ -270,7 +302,7 @@ SHADER cliff
         if (vnoise(p * 0.12 + 40.0) > 0.68 && cy > 0.45 && hash(floor(p / 1.5)) > 0.3) col = mix(col, vec3(0.36, 0.45, 0.20), 0.6);
         float lip = 2.0 + 2.5 * vnoise(vec2(p.x * 0.3, 2.0)) + (hash(vec2(floor(p.x / 1.5), 5.0)) > 0.8 ? 2.0 : 0.0);
         if (p.y < lip) {
-            col = ramp4(vec3(0.22, 0.34, 0.13), vec3(0.28, 0.41, 0.16), vec3(0.34, 0.48, 0.19), vec3(0.41, 0.54, 0.23), g);
+            col = mix(vec3(0.31, 0.416, 0.173), vec3(0.47, 0.53, 0.23), g);
             if (p.y < 1.5) col *= 1.15;
         } else if (p.y < lip + 1.5) {
             col *= 0.55;
@@ -590,6 +622,7 @@ def draw_terrain_mesh(m:resource<mesh>, art_px:float):
     gl.set_shader("terrain")
     gl.set_uniform("map_size", float2 { float(W), float(H) })
     gl.set_uniform("art_px", art_px)
+    gl.set_uniform("dev_px", art_px * ART_K)
     gl.set_uniform("time", ground_step())
     gl.set_mesh_texture(m, 0, 0, mt)
     gl.set_mesh_texture(m, 0, 1, pt)
@@ -615,6 +648,7 @@ def draw_ground(art_px:float):
     gl.set_shader("terrain")
     gl.set_uniform("map_size", float2 { float(W), float(H) })
     gl.set_uniform("art_px", art_px)
+    gl.set_uniform("dev_px", art_px * ART_K)
     gl.set_uniform("time", ground_step())
     gl.set_mesh_texture(gq, 0, 0, mt)
     gl.set_mesh_texture(gq, 0, 1, pt)
