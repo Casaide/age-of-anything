@@ -515,6 +515,7 @@ def gather(i:int, carry_max:int):
             u_work[i] = 0
             take(cell)
             u_carry[i]++
+            if res_at(cell) != kind and pool[cell] < 0: rally_on(u_owner[i], cell, i, kind)  // (a farm fallows instead)
             if pool[cell] >= 0 and left_at(cell) <= 0: farm_done(i, cell)
     elif u_moving[i] == 0:
         if u_stuck[i] >= GIVE_UP:
@@ -720,6 +721,16 @@ def go_to_rally(b:int, i:int):
     let kind = res_at(cell)
     if kind > 0 and is_worker(i): start_gather(i, cell, kind)
     else: order_move(i, b_rally_x[b], b_rally_y[b], 200, 0, -1, -1, 0)
+
+// The tree (or mine) a side rallies to has run out (#336): its rallies move to the next of it the worker would go to,
+// so those still to come gather instead of standing by a stump.
+def rally_on(p:int, cell:int, i:int, kind:int):
+    let more = next_patch(i, kind)
+    if more < 0: return
+    for(b_id.length) b:
+        if b_owner[b] == p and b_rally_x[b] >= 0 and cell_of(b_rally_x[b], b_rally_y[b]) == cell:
+            b_rally_x[b] = (more % W) * TILE + TILE / 2
+            b_rally_y[b] = (more / W) * TILE + TILE / 2
 
 // Advance every building's train queue; training waits at the pop cap (Economy.train).
 def train():
