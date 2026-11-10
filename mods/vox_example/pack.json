@@ -1,0 +1,22 @@
+{
+ "id": "vox_example",
+ "name": "The haidut (a .vox unit)",
+ "version": "0.1.0",
+ "authors": [
+  "Claude (for Dominic)"
+ ],
+ "description": "An example of a unit drawn in MagicaVoxel: an 18th-century Bulgarian man in haidut dress, as a new creature (the human, drawn his own way). His looks are one .vox file, data/voxel/models/haidut.vox, written by tools/haidut.lobster; open it in MagicaVoxel to see how a body is drawn: standing, a piece an object, a hidden points layer. Original art.",
+ "license": "Same as the game",
+ "load_order": 100,
+ "depends": [
+  "age_of_anything@0.21"
+ ],
+ "data": "data",
+ "check": {
+  "rules": "anything",
+  "prompts": [
+   "haiduts",
+   "bulgarian archers"
+  ]
+ }
+}
