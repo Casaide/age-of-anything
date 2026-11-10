@@ -15,11 +15,11 @@
   and the worn kit is .vox gear fitted to it.
 
 ## Decisions
-- D-245: culture bodies in the view only; kit stays gear so the ages show.
+- D-246: culture bodies in the view only; kit stays gear so the ages show.
 
 ## Pictures
-- `images/2026-11-10/85-romans-concept-base.png`: the approved base dress sheet.
-- `images/2026-11-10/86-roman-vox-body-and-kit.png`: the body alone, then in leather and montefortino, mail and galea,
+- `images/2026-11-10/91-romans-concept-base.png`: the approved base dress sheet.
+- `images/2026-11-10/92-roman-vox-body-and-kit.png`: the body alone, then in leather and montefortino, mail and galea,
   and the segmentata, at 3x.
 
 ## Funny moments
