@@ -21,6 +21,7 @@ let DIRECT_COST = 160
 let STUCK_LIMIT = 60
 let PROGRESS_EVERY = 40
 let CORRECT_MAX = 150
+let ACCEL_DIV = 6  // a unit's velocity turns towards where it wants to go by at most its speed / this a tick (#346)
 let RETURN_SLACK = 1000
 let FIELD_CACHE = 24
 let SOLVE_BUDGET = 1500
