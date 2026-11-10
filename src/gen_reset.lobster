@@ -6,6 +6,7 @@
 //   gen/save.lobster: save_world(path) / load_world(path) write and read every one of those globals (one
 //   WorldSave record, a flexbuffer), for saving a match.
 // Run after adding a global: ./gen_reset.sh (this, then the formatter over both files).
+import from "../creel/src"
 import std
 
 def is_word(c:int) -> bool:

@@ -6,6 +6,7 @@
 // y to the front, x across; a tile is about 62. Each is drawn facing as the game's baked one is (its front to the
 // lower left).
 //   lobster voxel_buildings_gen.lobster
+import from "../creel/src"
 import std
 import vec
 import dictionary

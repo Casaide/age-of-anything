@@ -7,6 +7,7 @@
 //   Q E R T Y F G H J on a building: research;  M: sound on / off;  the minimap (bottom right): click to look there
 //   WASD / arrows / screen edges: scroll;  wheel: zoom;  space: pause;  + / -: speed;  Ctrl/Cmd + / -: the HUD's size
 
+import from "../creel/src"
 import std
 import vec
 import color
@@ -249,8 +250,6 @@ var zoom = 2.0      // screen px per art px
 
 def to_screen(p:float2) -> float2: return (p - cam) * zoom + float(gl.window_size()) / 2.0
 def from_screen(p:float2) -> float2: return (p - float(gl.window_size()) / 2.0) / zoom + cam
-var fake_mouse = float2 { -1.0, -1.0 }  // the self-test's mouse (screen px), when set
-def mouse_px() -> float2: return if fake_mouse.x >= 0.0: fake_mouse else: float(gl.mouse_pos(0))
 def mouse_milli() -> float2: return pick_milli(from_screen(mouse_px()))  // (on raised ground: the hill under the mouse)
 
 // ------------------------------------------------------------------ the ground
@@ -1793,9 +1792,6 @@ def draw_marks(alpha:float):
 
 let MM_SIZE = 300.0  // its width in UI px (minimap.gd's SIZE)
 let MM_RIM = 12.0    // the frame round the diamond
-
-// The UI's size: its numbers are for a window 1000 px high (a retina screen has twice the pixels).
-def ui() -> float: return max(1.0, float(gl.window_size().y) / 1000.0)
 
 // The art's density (#358): on a screen where the default view draws a world art px over more than 2 device px (a
 // Retina Mac), units, buildings and props bake at that many texture px a world px (2.4 at most), so a baked pixel is

@@ -7,6 +7,7 @@
 //    that never attack, so the economy runs the whole time through the ages.
 // Run from src:  lobster resource_audit.lobster -- <map_id> [minutes] [radius] [bots,passive,peace]
 
+import from "../creel/src"
 import std
 import vec
 import dictionary

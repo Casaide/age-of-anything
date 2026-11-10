@@ -4,6 +4,7 @@
 # The game makes the races and the start itself (gen/); scenario:<file> plays a scenario file instead.
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 cd "$(dirname "$0")"
+[ -f ../creel/src/lib/world.lobster ] || { echo "creel/ is empty (the engine, a git submodule, #428): git submodule update --init" >&2; exit 1; }
 . ./bake_cache.sh   # (buildings, props and voxel units baked once are kept in bake_cache/: emptied when the bake version changes)
 # (the game's first word was a Godot art pack's folder: gone with Godot, D-184; "none", or skipped)
 if [ $# -gt 0 ] && { [ "$1" = none ] || [ -d "$1" ]; }; then
