@@ -107,6 +107,29 @@ if ell.length == 2:
     expect(solid_at(ell[0], 1.0, -1.0) and not solid_at(ell[0], 1.0, 1.0) and solid_at(ell[0], -1.0, 1.0), "the L stands as drawn, its foot right")
     expect(solid_at(ell[1], -1.0, -1.0) and not solid_at(ell[1], -1.0, 1.0) and solid_at(ell[1], 1.0, 1.0), "the mirrored L has its foot left")
 
+// a sword drawn symmetric about its centre column keeps its shape on its point (Dominic, 2026-11-10: "that sword is
+// bugged, off center": the sword in #360's picture was drawn off its own centre)
+let sw = []::int3
+for(16) y: for(3) x: for(2) z: sw.push(int3 { 2 + x, 8 + y, z + 1 })
+for(7) x: for(2) z: sw.push(int3 { x, 7, z + 1 })
+for(5) y: for(2) z: sw.push(int3 { 3, 2 + y, z + 1 })
+for(2) y: for(3) x: for(2) z: sw.push(int3 { 2 + x, y, z + 1 })
+put("sword.vox", vox_of(model(int3 { 7, 24, 4 }, sw, map(sw): 1) + rgba([ 0xb8bcc4 ])))
+let swsh = vx_fill(prims_of("\{\"model\": \"sword.vox\", \"at\": [\"o\", 0, 0, 0]\}"), 1.0)
+// (7 wide on a grid whose lines meet at the point: it sits half a voxel to one side, but must keep its shape)
+var x0 = 1000
+var x1 = -1000
+for(swsh.grid) m, i:
+    if m >= 0:
+        x0 = min(x0, i % swsh.dims.x)
+        x1 = max(x1, i % swsh.dims.x)
+var asym = 0
+for(swsh.grid) m, i:
+    if m >= 0 and swsh.grid[i - i % swsh.dims.x + x0 + x1 - i % swsh.dims.x] < 0: asym++
+let off = float(swsh.lo.x) + float(x0 + x1 + 1) * 0.5
+expect(x1 - x0 == 6 and abs(off) <= 0.5, "a symmetric sword 7 voxels wide stays 7 wide within half a voxel of its point: {x1 - x0 + 1} wide, {off} off")
+expect(solid(swsh) == sw.length and asym == 0, "a symmetric sword fills {solid(swsh)} of {sw.length} voxels, {asym} without a mirror twin about its own centre")
+
 // 3. facings: a blade one voxel thick and 12 long shows in all 8 facings
 let blv, bli = box_voxels(int3 { 1, 12, 3 }, 1)
 put("blade.vox", vox_of(model(int3 { 1, 12, 3 }, blv, bli) + rgba([ 0xc8c8d0 ])))
