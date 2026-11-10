@@ -49,6 +49,8 @@ add test_formations "$L" test_formations.lobster  # big armies in formation, hea
 add test_movement "$L" test_movement.lobster -- small crossing head_on through queue  # group moves, headless: sway, flicker, overlap, settling (the scenes #344 has made green so far)
 add test_shot_look "$L" test_shot_look.lobster  # shots look faster and land when they always did
 add voxel_check "$L" voxel_check.lobster                # the voxel units' art: straight standing knees, skins that never clip or grey, kit that keeps the creature's shape, no look-alikes, no specks
+add vox_check "$L" vox_check.lobster                    # the .vox reader (#313): models, palette, MATL, the scene graph, broken files
+add vox_model_check "$L" vox_model_check.lobster        # .vox models as a shape (#313): placement, mirror, facings, materials, the bake key
 add size_check "$L" size_check.lobster                  # the one size table (data/voxel/sizes.json): every body as tall as it says, every mount at its ratio
 add rider_check "$L" rider_check.lobster                # riders and crews as drawn: every pair a race can field, showing, one on a seat, in the size table's ratios
 add voxel_parts "$L" voxel_proto.lobster -- - parts test.turret voxels:../tests/voxel/parts   # a part stays on its hull in every pair of facings
