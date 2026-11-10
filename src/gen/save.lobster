@@ -340,10 +340,6 @@ class WorldSave:
     f_side:[int]
     s_pushx:[int]
     s_pushy:[int]
-    s_settle:[int]
-    s_stood:[int]
-    s_yields:[int]
-    s_role:[int]
     s_planted:[int]
     t_hero:[int]
     t_heal:[int]
@@ -844,10 +840,6 @@ def world_bytes(bots:[Bot]) -> string:
         f_side,
         s_pushx,
         s_pushy,
-        s_settle,
-        s_stood,
-        s_yields,
-        s_role,
         s_planted,
         t_hero,
         t_heal,
@@ -1361,10 +1353,6 @@ def load_world_bytes(data:string) -> [Bot]:
     f_side = s.f_side
     s_pushx = s.s_pushx
     s_pushy = s.s_pushy
-    s_settle = s.s_settle
-    s_stood = s.s_stood
-    s_yields = s.s_yields
-    s_role = s.s_role
     s_planted = s.s_planted
     t_hero = s.t_hero
     t_heal = s.t_heal
