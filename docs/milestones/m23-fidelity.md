@@ -118,7 +118,7 @@ does); the Deck build.
 voxel is one device px, and desktops start a quarter further out (zoom 3 to 2.4). Sprites and the camera land on whole
 device px. The ground's patches are about a tile across and softer. 1080p, the Deck and headless checks keep the base, 2.
 
-**2026-11-10, trees, rocks, stone and gold (#410, D-246).** The map's props are built voxel by voxel at a voxel an art px
+**2026-11-10, trees, rocks, stone and gold (#410, D-247).** The map's props are built voxel by voxel at a voxel an art px
 (`view/voxel_grid.lobster`), lit and coloured as Dominic's approved mockup: oak, pine and willow in three styles with their
 felled, sawn and stump stages, granite boulders, field stones, limestone and gold deposits as they're mined. Sizes on the
 map kept. Props bake in 46 s (16 s before); shipped by the prebake, so no first-match bake.
