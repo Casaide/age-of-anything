@@ -163,5 +163,13 @@ let key0 = vx_data_text()
 put("box.vox", vox_of(model(int3 { 4, 6, 2 }, bv, bi) + rgba([ 0xb04021 ])))
 expect(vx_data_text() != key0, "a changed model colour changes the bake key")
 
+// 8. the creel.vox palette (vox_palette.lobster): painted with it, every colour is its material, no mats map needed
+let creel = vox_parse(assert read_file("../data/voxel/creel.vox"))
+let base_mats = filter(vx_mat_names) n: (find(n) c: c == '#') < 0 and not n.starts_with("vox:")
+expect(creel.error == "" and creel.models.length == 1 and creel.models[0].xyz.length == base_mats.length, "creel.vox has a swatch for each of our {base_mats.length} materials")
+for(base_mats) n, i:
+    let m = vx_vox_mat(creel, "creel.vox", i + 1, parse_json("\{\}"))
+    expect(m == vx_mat(n), "creel.vox index {i + 1} is {n}: {vx_mat_names[m]}")
+
 print "{n_checks} checks, {n_failed} failed"
 if n_failed > 0: set_exit_code(1)
