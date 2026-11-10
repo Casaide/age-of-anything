@@ -628,6 +628,7 @@ def fe_turf(at:float2, size:float2, k:float, side:int):
     gl.set_uniform("time", 0.0)
     for(4) u: gl.set_primitive_texture(u, tex)
     gl.set_primitive_texture(4, ground_atlas())
+    gl.set_primitive_texture(5, tex)
     gl.translate(at):
         gl.scale(k):
             gl.translate(-o):
