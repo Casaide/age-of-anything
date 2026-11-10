@@ -350,7 +350,7 @@ def move():
             u_vx[i] = 0
             u_vy[i] = 0
             if u_group[i] == 0 or u_foe[i] != 0 or (tick + u_id[i]) % REPLAN_EVERY != 0: continue
-            let back = if u_block[i] > 0: 2 * TILE else: u_arrive[i] * ARRIVE_SETTLE + (if u_arrive[i] == SLOT_ARRIVE: SLOT_SLACK else: RETURN_SLACK)
+            let back = if u_block[i] > 0 and not place_free(i): 2 * TILE else: u_arrive[i] * ARRIVE_SETTLE + (if u_arrive[i] == SLOT_ARRIVE: SLOT_SLACK else: RETURN_SLACK)  // (in a block: back to its place once it's clear, #347)
             if dist2(xs[i], ys[i], u_tx[i], u_ty[i]) <= back * back:
                 st[i] = 0
                 continue
@@ -568,7 +568,7 @@ def separate():
                     if grp[i] == grp[j] and grp[i] > 0 and mv[i] != mv[j]:
                         let m = if mv[i] == 1: i else: j
                         let near = ar[m] * (if ar[m] == SLOT_ARRIVE: 2 else: ARRIVE_SETTLE)
-                        if dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near: s_settle[m] = 1
+                        if dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near and not steered(m): s_settle[m] = 1  // (steering, it brakes into its place itself)
                     let d = isqrt(d2)
                     var ux = 0
                     var uy = 0
