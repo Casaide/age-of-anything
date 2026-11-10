@@ -17,11 +17,15 @@ class vx_prim:
     ra:float
     rb:float
     mat:int
-    hard:bool   // gear and fine details: no melting into the body
-    disc:bool   // a disc round a, facing along b - a, ra across and rb thick
-    box:float3  // not zero: a box round a, these half sizes (across, thick, up), facing along b - a, edges rounded by ra
+    hard:bool       // gear and fine details: no melting into the body
+    disc:bool       // a disc round a, facing along b - a, ra across and rb thick
+    box:float3      // not zero: a box round a, these half sizes (across, thick, up), facing along b - a, edges rounded by ra
+    model:int = -1  // a .vox model (vx_models): its centre at a, its +y along b - a, its +x mx, its +z mz, ra a voxel
+    mx:float3 = float3_0
+    mz:float3 = float3_0
 
 def vx_dist(p:float3, s:vx_prim) -> float:
+    if s.model >= 0: return vx_model_sd(p, s)
     let ba = s.b - s.a
     if s.box.x > 0.0:
         let n = normalize(ba)
@@ -114,8 +118,152 @@ def vx_hex(h:string) -> float3:
     def byte(i:int) -> float: return float(string_to_int(s.substring(i, 2), 16)) / 255.0
     return float3 { byte(0), byte(2), byte(4) }
 
+def vx_new_mat(name:string) -> int:  // a material with every setting off, its colour black
+    vx_mat_names.push(name)
+    vx_MAT_BASE.push(float3_0)
+    vx_MAT_FUR.push(0)
+    vx_MAT_PAT.push(0)
+    vx_MAT_PSIZE.push(float2_1)
+    vx_MAT_PDEPTH.push(0.0)
+    vx_MAT_PMIX.push(0.0)
+    vx_MAT_C2.push(float3_0)
+    vx_MAT_GLOW.push(0)
+    vx_MAT_SHINE.push(0.0)
+    vx_MAT_PROUND.push(0)
+    return vx_mat_names.length - 1
+
+// ---- .vox models as a shape (#313): a model is turned into a grid of signed distances to its surface (in its own
+// voxels) and the material of the voxel nearest each cell, once at load, and sampled like any other part.
+class vx_model:
+    size:int3  // the model's own size
+    dims:int3  // the grid: the model and vx_MODEL_PAD empty voxels round it
+    sd:[float]
+    mat:[int]
+
+let vx_MODEL_PAD = 3
+let vx_models = []::vx_model
+let vx_model_keys = []::string    // per model: its file and material map
+var vx_cur_dir = "../data/voxel"  // the data folder being loaded: a shape's model is in its models/
+
+// A palette index's material: the shape's `mats` names it, else a material of exactly its colour, else a fixed
+// material of its own (vox:<file>:<index>), shiny if MagicaVoxel calls it metal, a light if emissive.
+def vx_vox_mat(f:vox_file, file:string, index:int, mats:JV) -> int:
+    let key = string(index)
+    if has(mats, key): return vx_mat(as_str(at(mats, key)))
+    let rgb = vox_rgb(f, index)
+    let c = float3 { float((rgb >> 16) & 255), float((rgb >> 8) & 255), float(rgb & 255) } / 255.0
+    let same = find(vx_MAT_BASE) b: magnitude(b - c) < 0.001
+    if same >= 0: return same
+    let name = "vox:{file}:{index}"
+    var m = find(vx_mat_names) n: n == name
+    if m < 0:
+        m = vx_new_mat(name)
+        vx_MAT_BASE[m] = c
+        if vx_mat_cols.length: vx_mat_cols.push(c)
+        let ty = vox_mat_type(f, index)
+        if ty == "_metal": vx_MAT_SHINE[m] = 0.3 + 0.6 * vox_mat_float(f, index, "_metal", 0.5) * (1.0 - vox_mat_float(f, index, "_rough", 0.5))
+        if ty == "_emit": vx_MAT_GLOW[m] = 1
+    return m
+
+def vx_cell_at(dims:int3, i:int) -> int3: return int3 { i % dims.x, (i / dims.x) % dims.y, i / (dims.x * dims.y) }
+
+// Per cell, the nearest of the cells marked (by squared distance, spread from neighbour to neighbour).
+def vx_nearest(dims:int3, marked:[bool]) -> [int]:
+    let near = map(marked) m, i: if m: i else: -1
+    let q = []::int
+    for(marked) m, i: if m: q.push(i)
+    var h = 0
+    while h < q.length:
+        let c = q[h]
+        h += 1
+        let cp = vx_cell_at(dims, c)
+        let s = vx_cell_at(dims, near[c])
+        for(27) k:
+            let v = cp + int3 { k % 3 - 1, k / 3 % 3 - 1, k / 9 - 1 }
+            if k != 13 and v.x >= 0 and v.y >= 0 and v.z >= 0 and v.x < dims.x and v.y < dims.y and v.z < dims.z:
+                let j = (v.z * dims.y + v.y) * dims.x + v.x
+                if near[j] < 0 or vx_sq(v - s) < vx_sq(v - vx_cell_at(dims, near[j])):
+                    near[j] = near[c]
+                    q.push(j)
+    return near
+
+def vx_sq(v:int3) -> int: return v.x * v.x + v.y * v.y + v.z * v.z
+
+// A model shape's model: the first model in data/<folder>/models/<file>, with its palette mapped to materials.
+def vx_model_of(file:string, mats:JV) -> int:
+    let f = vx_vox_file(file)
+    assert f.models.length
+    return vx_model_in(f, file, 0, mats)
+
+// A .vox file in the data folder's models/ (a broken one stops the load).
+def vx_vox_file(file:string) -> vox_file:
+    let f = vox_parse(assert read_file(vx_cur_dir + "/models/" + file))
+    assert f.error == ""
+    return f
+
+// Model n of a .vox file, its palette mapped to materials (loaded once per file, model and map).
+def vx_model_in(f:vox_file, file:string, mi:int, mats:JV) -> int:
+    var key = "{vx_cur_dir}/models/{file} {mi}"
+    for(mats.keys) k, i: key += " {k}={as_str(mats.a[i])}"
+    let had = find(vx_model_keys) k: k == key
+    if had >= 0: return had
+    let md = f.models[mi]
+    let pad = int3_1 * vx_MODEL_PAD
+    let dims = md.size + pad * 2
+    let idx = map(dims.x * dims.y * dims.z): 0
+    for(md.xyz) v, i:
+        let c = v + pad
+        idx[(c.z * dims.y + c.y) * dims.x + c.x] = md.idx[i]
+    let mat_of = map(256) i: if i > 0 and (exists(idx) j: j == i): vx_vox_mat(f, file, i, mats) else: 0
+    let solid = map(idx) i: i > 0
+    let near_solid = vx_nearest(dims, solid)
+    let near_air = vx_nearest(dims, map(solid) s: not s)
+    let sd = map(idx) n, i:
+        let v = vx_cell_at(dims, i)
+        if n > 0: -(sqrt(float(vx_sq(v - vx_cell_at(dims, near_air[i])))) - 0.5)
+        else: sqrt(float(vx_sq(v - vx_cell_at(dims, near_solid[i])))) - 0.5
+    vx_models.push(vx_model { md.size, dims, sd, map(near_solid) j: mat_of[idx[j]] })
+    vx_model_keys.push(key)
+    return vx_models.length - 1
+
+// A model prim's half size along the world's axes (its box turned).
+def vx_model_reach(p:vx_prim) -> float3:
+    let h = float(vx_models[p.model].size) * (p.ra * 0.5)
+    let y = normalize(p.b - p.a)
+    return abs(p.mx) * h.x + abs(y) * h.y + abs(p.mz) * h.z
+
+// Where p is in a model prim's grid, in cells (a cell's centre at its index; outside the grid past its ends).
+def vx_model_grid(p:float3, s:vx_prim) -> float3:
+    let q = p - s.a
+    return float3 { dot(q, s.mx), dot(q, normalize(s.b - s.a)), dot(q, s.mz) } / s.ra + float(vx_models[s.model].dims) * 0.5 - float3_1 * 0.5
+
+// A model prim's distance at p (in p's units).
+def vx_model_sd(p:float3, s:vx_prim) -> float:
+    let md = vx_models[s.model]
+    let dims = md.dims
+    let u = vx_model_grid(p, s)
+    let g = clamp(u, float3_0, float(dims - int3_1))
+    let out = magnitude(u - g)
+    let i0 = min(int3 { int(g.x), int(g.y), int(g.z) }, dims - int3 { 2, 2, 2 })
+    let f = g - float(i0)
+    def sd(x:int, y:int, z:int) -> float: return md.sd[((i0.z + z) * dims.y + i0.y + y) * dims.x + i0.x + x]
+    let d = lerp(lerp(lerp(sd(0, 0, 0), sd(1, 0, 0), f.x), lerp(sd(0, 1, 0), sd(1, 1, 0), f.x), f.y),
+                 lerp(lerp(sd(0, 0, 1), sd(1, 0, 1), f.x), lerp(sd(0, 1, 1), sd(1, 1, 1), f.x), f.y), f.z)
+    // (inside or out as its nearest cell is, so a model scaled up stays square, corners and all; the blend only smooths
+    // the distance for the normals)
+    let n = int3 { int(g.x + 0.5), int(g.y + 0.5), int(g.z + 0.5) }
+    let inside = md.sd[(n.z * dims.y + n.y) * dims.x + n.x] < 0.0 and out == 0.0
+    return (if inside: min(d, -0.05) else: max(d, 0.05) + out) * s.ra
+
+// A model prim's material at p: its nearest voxel's.
+def vx_model_mat_at(p:float3, s:vx_prim) -> int:
+    let md = vx_models[s.model]
+    let g = clamp(vx_model_grid(p, s), float3_0, float(md.dims - int3_1))
+    let n = int3 { int(g.x + 0.5), int(g.y + 0.5), int(g.z + 0.5) }
+    return md.mat[(n.z * md.dims.y + n.y) * md.dims.x + n.x]
+
 enum vx_kind:
-    vx_k_cap, vx_k_ball, vx_k_disc, vx_k_box, vx_k_chain, vx_k_ring, vx_k_helm, vx_k_fit
+    vx_k_cap, vx_k_ball, vx_k_disc, vx_k_box, vx_k_chain, vx_k_ring, vx_k_helm, vx_k_fit, vx_k_model
 
 // A shape as data: on named points with offsets (in the body's frame, or a hold's for held gear).
 class vx_spec:
@@ -138,6 +286,12 @@ class vx_spec:
     taper:float
     need:[string]  // flags that must be there (if) and mustn't (unless)
     avoid:[string]
+    model:int = -1        // a model shape's model (vx_models)
+    flip:bool = false     // the model drawn mirrored (a left limb's part from the right one's)
+    ax:float3 = float3_0  // not zero: the model's own axes in the body (a part placed in a .vox body), else the frame's
+    ay:float3 = float3_0
+    az:float3 = float3_0
+    bone:bool = false  // a limb's part: centred between pa and pb, its own down turned along the bone
 
 def vx_v3(v:JV) -> float3: return float3 { as_float(v.a[0]), as_float(v.a[1]), as_float(v.a[2]) }
 def vx_pt(v:JV) -> string, float3: return as_str(v.a[0]), float3 { as_float(v.a[1]), as_float(v.a[2]), as_float(v.a[3]) }
@@ -194,6 +348,13 @@ def vx_parse_shape(o:JV, hard_by_default:bool) -> vx_spec:
         s.kind = vx_k_fit
         s.ra = as_float(at(o, "fit"))
         s.hard = true
+    elif has(o, "model"):  // a .vox model in the data folder's models/: its centre on `at`, its +y aimed at `to` (if given)
+        s.kind = vx_k_model
+        s.model = vx_model_of(as_str(at(o, "model")), gobj(o, "mats"))
+        s.pa, s.a = vx_pt(at(o, "at"))
+        if has(o, "to"): s.pb, s.b = vx_pt(at(o, "to"))
+        s.ra = gfloat(o, "scale", 1.0) / vx_RES
+        s.hard = gbool(o, "hard", not gbool(o, "soft", false))
     else: assert false
     return s
 
@@ -412,7 +573,12 @@ class vx_body_spec:
     gait:vx_gait? = nil
     tool_jobs:[string] = []  // gear it uses in place of the kit's (a robot's laser cutter for the axe and the pick)
     tool_gear:[string] = []
-    bare:bool = false  // it wears nothing (a robot: no caps or armour on it)
+    bare:bool = false     // it wears nothing (a robot: no caps or armour on it)
+    leg_r:[vx_spec] = []  // a .vox body's limb parts (thigh, shin; upper_arm, forearm), right and left, on every pair of legs
+    leg_l:[vx_spec] = []
+    arm_r:[vx_spec] = []
+    arm_l:[vx_spec] = []
+    vox_bones:[string] = []  // the bones its .vox draws (their capsules aren't drawn)
 
 class vx_hold_spec:
     rest:float3
@@ -539,7 +705,74 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
     b.wheels = map(glist(o, "wheels")) w: vx_parse_wheel(w, if tr: tr.pitch else: 0.0)
     b.death = gstr(o, "death", "")
     vx_parse_parts(b, glist(o, "parts"))
+    if has(o, "vox"): vx_vox_body(b, as_str(at(o, "vox")), gobj(o, "mats"))
     return b
+
+// ---- a body from a .vox file (#313): its `points` layer places the body's points (one voxel each, named after the
+// point, or hip.r, foot.r, shoulder.r, helm), and every other shown object is a part named after what it rides: a
+// point (head, chest ...) or a bone (thigh, shin, upper_arm, forearm; .r, and .l or the .r mirrored). Limbs are drawn
+// hanging straight down; each is centred on its bone as it moves. Its JSON keeps the behaviour (legs' bones, gait, size).
+let vx_VOX_BONES = [ "thigh", "shin", "upper_arm", "forearm" ]
+let vx_VOX_ENDS = [ "hip", "knee", "knee", "ankle", "shoulder", "elbow", "elbow", "hand" ]
+
+def vx_vox_axis(r:[int3], k:int) -> float3: return float3 { float(r[0][k]), float(r[1][k]), float(r[2][k]) }
+
+def vx_vox_body(b:vx_body_spec, file:string, mats:JV):
+    let f = vx_vox_file(file)
+    def rest(name:string) -> float3:
+        let k = find(b.pnames) n: n == name
+        assert k >= 0
+        return b.pat[k]
+    // the points: the body's own first (the rest are placed from them), then the limbs' and the helmet's
+    for(2) pass:
+        for(f.nodes) nd:
+            if nd.layer == "points":
+                let at = (float(vox_world(f, nd, 0)) + float3_1 * 0.5) / vx_RES
+                let k = find(b.pnames) n: n == nd.name
+                let special = nd.name == "hip.r" or nd.name == "foot.r" or nd.name == "shoulder.r" or nd.name == "helm"
+                if pass == 0 and not special:
+                    if k >= 0: b.pat[k] = at
+                    else:
+                        b.pnames.push(nd.name)
+                        b.pat.push(at)
+                        for([ b.pbob, b.pflap, b.plean, b.psway, b.pdrive ]) l: l.push(0.0)
+                elif pass == 1:
+                    if nd.name == "hip.r": for(b.legs) l: l.a = at - rest(l.pa)
+                    if nd.name == "foot.r": for(b.legs) l: l.foot = at
+                    if nd.name == "shoulder.r": b.sh = at - rest(b.sh_pt)
+                    if nd.name == "helm": b.helm = at - rest(b.helm_pt)
+    // the parts
+    let lefts = []::string
+    for(f.nodes) nd:
+        if nd.layer != "points" and not nd.hidden:
+            let md = f.models[nd.model]
+            let half = float(md.size - int3_1) * 0.5 - float(md.size / 2)
+            let ax, ay, az = vx_vox_axis(nd.r, 0), vx_vox_axis(nd.r, 1), vx_vox_axis(nd.r, 2)
+            let centre = (ax * half.x + ay * half.y + az * half.z + float(nd.t) + float3_1 * 0.5) / vx_RES
+            let s = vx_spec { vx_k_model, true, false, "", float3_0, "", float3_0, 1.0 / vx_RES, 0.0, 0, 0, float3_0, float3_0, [], [], 0.0, 0.0,
+                              [], [], model: vx_model_in(f, file, nd.model, mats), ax: ax, ay: ay, az: az }
+            let dot_at = find(nd.name) c: c == '.'
+            let bone = find(vx_VOX_BONES) n: dot_at > 0 and n == substring(nd.name, 0, dot_at)
+            if bone >= 0:
+                let side = substring(nd.name, dot_at + 1, nd.name.length - dot_at - 1)
+                assert side == "r" or side == "l"
+                s.bone = true
+                s.pa, s.pb = vx_VOX_ENDS[bone * 2], vx_VOX_ENDS[bone * 2 + 1]
+                if (find(b.vox_bones) n: n == vx_VOX_BONES[bone]) < 0: b.vox_bones.push(vx_VOX_BONES[bone])
+                if side == "l": lefts.push(vx_VOX_BONES[bone])
+                (if bone < 2: (if side == "r": b.leg_r else: b.leg_l) else: (if side == "r": b.arm_r else: b.arm_l)).push(s)
+            else:
+                s.pa = nd.name
+                s.a = centre - rest(nd.name)
+                b.shapes.push(s)
+    // a limb drawn only on the right is mirrored on the left
+    for(f.nodes) nd:
+        let dot_at = find(nd.name) c: c == '.'
+        let bone = find(vx_VOX_BONES) n: dot_at > 0 and n == substring(nd.name, 0, dot_at)
+        if bone >= 0 and nd.layer != "points" and not nd.hidden and ends_with(nd.name, ".r") and (find(lefts) n: n == vx_VOX_BONES[bone]) < 0:
+            let rs = if bone < 2: b.leg_r else: b.arm_r
+            let s = rs[find(rs) q: q.pa == vx_VOX_ENDS[bone * 2] and q.pb == vx_VOX_ENDS[bone * 2 + 1]]
+            (if bone < 2: b.leg_l else: b.arm_l).push(vx_mirrored(s))
 
 // The gear body b uses for gear g (its own in its place, or g).
 def vx_tool_for(b:vx_body_spec, tool:string) -> string:
@@ -627,19 +860,7 @@ def vx_load(dirs:[string]):
         for(mo.keys) name, k:
             if name[0] != '_':
                 var m = find(vx_mat_names) n: n == name
-                if m < 0:
-                    vx_mat_names.push(name)
-                    vx_MAT_BASE.push(float3_0)
-                    vx_MAT_FUR.push(0)
-                    vx_MAT_PAT.push(0)
-                    vx_MAT_PSIZE.push(float2_1)
-                    vx_MAT_PDEPTH.push(0.0)
-                    vx_MAT_PMIX.push(0.0)
-                    vx_MAT_C2.push(float3_0)
-                    vx_MAT_GLOW.push(0)
-                    vx_MAT_SHINE.push(0.0)
-                    vx_MAT_PROUND.push(0)
-                    m = vx_mat_names.length - 1
+                if m < 0: m = vx_new_mat(name)
                 vx_MAT_BASE[m] = vx_hex(gstr(mo.a[k], "rgb", "#ff00ff"))
                 vx_MAT_FUR[m] = if gbool(mo.a[k], "fur", false): 1 else: 0
                 vx_MAT_GLOW[m] = if gbool(mo.a[k], "glow", false): 1 else: 0
@@ -658,6 +879,7 @@ def vx_load(dirs:[string]):
     vx_mat_cols = copy(vx_MAT_BASE)
     vx_mat_team = vx_mat("team")
     for(dirs) d:
+        vx_cur_dir = d
         let go = parse_json(read_file(d + "/gear.json") or "\{\}")
         if has(go, "holds"):
             let ho = at(go, "holds")
@@ -750,6 +972,8 @@ def vx_data_text() -> string:
         t += (read_file(d + "/materials.json") or "") + (read_file(d + "/gear.json") or "") + (read_file(d + "/sizes.json") or "")
         let names = scan_folder(d + "/bodies", false)
         if names: for(sorted_strs(names)) n: t += read_file(d + "/bodies/" + n) or ""
+        let models = scan_folder(d + "/models", false)  // (.vox: a changed model rebakes)
+        if models: for(sorted_strs(models)) n: t += n + (read_file(d + "/models/" + n) or "")
     return t
 
 def vx_body_of(id:string) -> vx_body_spec:
@@ -915,7 +1139,41 @@ def vx_emit(out:[vx_prim], s:vx_spec, p:vx_points, fx:float3, fy:float3, fz:floa
             case vx_k_fit:
                 let b = body
                 if b: out.push(vx_hard(vx_where(p, b.fit_pa) + b.fit_a, vx_where(p, b.fit_pb) + b.fit_b, b.fit_r.x + s.ra, b.fit_r.y + s.ra, s.mat))
+            case vx_k_model:
+                if s.bone or s.ax != float3_0: out.push(vx_part_prim(s, p, fx * m.x, fy, fz))
+                else:
+                    let c = vx_where(p, s.pa) + tr(s.a)
+                    let x0 = fx * m.x * (if s.flip: -1.0 else: 1.0)
+                    var y = fy
+                    if s.pb != "": y = normalize(vx_where(p, s.pb) + tr(s.b) - c)
+                    let x = normalize(x0 - y * dot(x0, y))
+                    let z = cross(fx, y)  // (from the unmirrored x: a mirrored model keeps its up)
+                    out.push(vx_prim { c, c + y, s.ra, s.ra, s.mat, s.hard, false, float3_0, model: s.model, mx: x, mz: normalize(z - y * dot(z, y)) })
             default: assert false
+
+// A .vox body's part: on its point, its own axes turned by the frame; or a limb's, centred on its bone and turned from
+// hanging straight down (as it's drawn) to along the bone. (Mirrored, its axes are: a left-handed set draws it flipped.)
+def vx_part_prim(s:vx_spec, p:vx_points, fx:float3, fy:float3, fz:float3) -> vx_prim:
+    def tr(o:float3) -> float3: return fx * o.x + fy * o.y + fz * o.z
+    if not s.bone:
+        let c = vx_where(p, s.pa) + tr(s.a)
+        return vx_prim { c, c + tr(s.ay), s.ra, s.ra, s.mat, s.hard, false, float3_0, model: s.model, mx: tr(s.ax), mz: tr(s.az) }
+    let a = vx_where(p, s.pa)
+    let b = vx_where(p, s.pb)
+    let d = normalize(b - a)
+    def turn(v:float3) -> float3: return vx_turned_to(float3 { 0.0, 0.0, -1.0 }, d, v)
+    let c = (a + b) * 0.5 + turn(s.a)
+    return vx_prim { c, c + turn(s.ay), s.ra, s.ra, s.mat, s.hard, false, float3_0, model: s.model, mx: turn(s.ax), mz: turn(s.az) }
+
+// v turned by the least turn that takes direction a to direction b.
+def vx_turned_to(a:float3, b:float3, v:float3) -> float3:
+    let ax = cross(a, b)
+    let sn = magnitude(ax)
+    let cs = dot(a, b)
+    if sn < 0.000001:
+        return if cs > 0.0: v else: float3 { -v.x, v.y, -v.z }  // (straight back up: half a turn round y)
+    let k = ax / sn
+    return v * cs + cross(k, v) * sn + k * dot(k, v) * (1.0 - cs)
 
 let vx_X = float3 { 1.0, 0.0, 0.0 }
 let vx_Y = float3 { 0.0, 1.0, 0.0 }
@@ -992,9 +1250,10 @@ def vx_legs(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:float,
             let fy = float3 { 0.0, cos(pitch), sin(pitch) }  // (the foot's shapes, rolled with it)
             let fz = float3 { 0.0, -sin(pitch), cos(pitch) }
             let knee, ankle = vx_ik(hip, foot, l.l1, l.l2, l.pole * m)
-            out.push(vx_cap(hip, knee, l.r[0], l.r[1], l.mats[0]))
-            out.push(vx_cap(knee, ankle, l.r[2], l.r[3], l.mats[1]))
+            if (find(b.vox_bones) n: n == "thigh") < 0: out.push(vx_cap(hip, knee, l.r[0], l.r[1], l.mats[0]))
+            if (find(b.vox_bones) n: n == "shin") < 0: out.push(vx_cap(knee, ankle, l.r[2], l.r[3], l.mats[1]))
             let lp = vx_points { [ "hip", "knee", "ankle" ], [ hip, knee, ankle ] }
+            for(if side > 0.0: b.leg_r else: b.leg_l) s: vx_emit(out, s, lp, vx_X, vx_Y, vx_Z, flags, nil)
             for(l.shapes) s:
                 let s2 = s  // (the left one mirrored: its offsets' x turned)
                 if side > 0.0: vx_emit(out, s2, lp, vx_X, fy, fz, flags, nil)
@@ -1013,7 +1272,8 @@ def vx_limb_gear(out:[vx_prim], u:vx_unit_def, leg:bool, side:float, lp:vx_point
 def vx_mirrored(s:vx_spec) -> vx_spec:
     let m = float3 { -1.0, 1.0, 1.0 }
     return vx_spec { s.kind, s.hard, false, s.pa, s.a * m, s.pb, s.b * m, s.ra, s.rb, s.mat, s.mat2, s.n * m, s.half,
-                     s.pts, map(s.offs) o: o * m, s.step, s.taper, s.need, s.avoid }
+                     s.pts, map(s.offs) o: o * m, s.step, s.taper, s.need, s.avoid, model: s.model, flip: not s.flip,
+                     ax: s.ax * m, ay: s.ay * m, az: s.az * m, bone: s.bone }
 
 def vx_worn_gear(g:string) -> bool:
     let gs = vx_gears.get(g)
@@ -1082,10 +1342,13 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         let sh = if side > 0.0: sh_r else: sh_l
         let target = if side > 0.0: hr else: hl
         let elbow, hand = vx_ik(sh, target, b.arm, b.arm, float3 { side * 0.5, -1.0, -0.4 })
-        out.push(vx_cap(sh, elbow, b.thick, b.thick * 0.8, b.sleeve))
-        out.push(vx_cap(elbow, hand, b.thick * 0.75, b.thick * 0.6, b.hand))
-        out.push(vx_ball(hand, b.thick * 0.8, b.hand))
-        vx_limb_gear(out, u, false, side, vx_points { [ "shoulder", "elbow", "hand" ], [ sh, elbow, hand ] }, vx_Y, vx_Z, flags)
+        if (find(b.vox_bones) n: n == "upper_arm") < 0: out.push(vx_cap(sh, elbow, b.thick, b.thick * 0.8, b.sleeve))
+        if (find(b.vox_bones) n: n == "forearm") < 0:
+            out.push(vx_cap(elbow, hand, b.thick * 0.75, b.thick * 0.6, b.hand))
+            out.push(vx_ball(hand, b.thick * 0.8, b.hand))
+        let ap = vx_points { [ "shoulder", "elbow", "hand" ], [ sh, elbow, hand ] }
+        for(if side > 0.0: b.arm_r else: b.arm_l) s: vx_emit(out, s, ap, vx_X, vx_Y, vx_Z, flags, nil)
+        vx_limb_gear(out, u, false, side, ap, vx_Y, vx_Z, flags)
         if side > 0.0: hr = hand
         else: hl = hand
     if pushed != "":
@@ -1209,14 +1472,14 @@ def vx_crew_prims(out:[vx_prim], u:vx_unit_def, c:vx_unit_def, ph0:float):
     let ps = []::vx_prim
     for(b.crew) at:
         vx_whole_body(ps, c, cb, vx_body_points(cb, ph, float3_0), ph, t, vx_flags_of(c))
-        for(ps) q: out.push(vx_prim { q.a * ms + at, q.b * ms + at, q.ra * ms, q.rb * ms, q.mat, q.hard, q.disc, q.box * ms })
+        for(ps) q: out.push(vx_prim { q.a * ms + at, q.b * ms + at, q.ra * ms, q.rb * ms, q.mat, q.hard, q.disc, q.box * ms, model: q.model, mx: q.mx, mz: q.mz })
         while ps.length: ps.pop()
     vx_seated = true
     let sat = ms * cb.crew_k
     let seats = if cb.crew_seats == 1 and b.seats.length > 1: [ fold(b.seats, float3_0) s, x: s + x / float(b.seats.length) ] else: b.seats
     for(seats) at:
         vx_whole_body(ps, c, cb, vx_body_points(cb, 0.0, float3 { 0.0, 0.0, -cb.seat_z }), 0.0, t, vx_flags_of(c))
-        for(ps) q: out.push(vx_prim { q.a * sat + at, q.b * sat + at, q.ra * sat, q.rb * sat, q.mat, q.hard, q.disc, q.box * sat })
+        for(ps) q: out.push(vx_prim { q.a * sat + at, q.b * sat + at, q.ra * sat, q.rb * sat, q.mat, q.hard, q.disc, q.box * sat, model: q.model, mx: q.mx, mz: q.mz })
         while ps.length: ps.pop()
     vx_seated = false
 
@@ -1250,7 +1513,7 @@ def vx_rider_prims(u:vx_unit_def, ph0:float) -> [vx_prim]:
     let mark = vx_mat("mark")
     for(mount) q:  // (the mount's own colours: its skin is the coat)
         let m = if q.mat == skin: vx_mat("coat") elif q.mat == pale: vx_mat("mane") elif q.mat == mark: vx_mat("coat_mark") else: q.mat
-        out.push(vx_prim { q.a * ms, q.b * ms, q.ra * ms, q.rb * ms, m, q.hard, q.disc, q.box * ms })
+        out.push(vx_prim { q.a * ms, q.b * ms, q.ra * ms, q.rb * ms, m, q.hard, q.disc, q.box * ms, model: q.model, mx: q.mx, mz: q.mz })
     vx_seated = true
     let flags = vx_flags_of(u)
     if fused:
@@ -1288,7 +1551,7 @@ def vx_fallen(parts:[vx_prim], t:float) -> [vx_prim]:
     let c = cos(a)
     let s = sin(a)
     def turn(q:float3) -> float3: return float3 { q.x * c + (q.z - mid) * s, q.y, -q.x * s + (q.z - mid) * c + mid }
-    return map(parts) p: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, p.mat, p.hard, p.disc, p.box }
+    return map(parts) p: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, p.mat, p.hard, p.disc, p.box, model: p.model, mx: turn(p.a + p.mx) - turn(p.a), mz: turn(p.a + p.mz) - turn(p.a) }
 
 // A flier shot down (a body's "death": "crash", #260), at t (0 flying .. 1 on the ground): burning, nose down, it comes down in one
 // piece and lands level. Only its pitch and height change, so its wings stay wings.
@@ -1302,7 +1565,7 @@ def vx_crashed(parts:[vx_prim], t:float) -> [vx_prim]:
     def turn(q:float3) -> float3:
         let z = q.z - low
         return float3 { q.x, q.y * c + z * s, z * c - q.y * s + low - drop }
-    return map(parts) p: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, vx_burnt_mat(p.mat), p.hard, p.disc, p.box }
+    return map(parts) p: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, vx_burnt_mat(p.mat), p.hard, p.disc, p.box, model: p.model, mx: turn(p.a + p.mx) - turn(p.a), mz: turn(p.a + p.mz) - turn(p.a) }
 
 // A unit dying, at t (0 alive .. 1 lying): what its body's `death` says, else it falls over.
 def vx_dying(u:vx_unit_def, parts:[vx_prim], t:float) -> [vx_prim]:
@@ -1327,7 +1590,7 @@ def vx_burnt_mat(m:int) -> int: return if m == vx_mat_team: vx_mat("wreck_rust")
 // A vehicle knocked out (a body's "death": "knocked_out", #186): it stays where it stood, burnt, its parts knocked askew.
 def vx_knocked_out(u:vx_unit_def, b:vx_body_spec) -> [vx_prim]:
     let out = []::vx_prim
-    def burn(p:vx_prim) -> vx_prim: return vx_prim { p.a, p.b, p.ra, p.rb, vx_burnt_mat(p.mat), p.hard, p.disc, p.box }
+    def burn(p:vx_prim) -> vx_prim: return vx_prim { p.a, p.b, p.ra, p.rb, vx_burnt_mat(p.mat), p.hard, p.disc, p.box, model: p.model, mx: p.mx, mz: p.mz }
     def body_of(id:string) -> vx_unit_def: return vx_unit_def { u.label, id, u.skin, u.pale, u.mark, [], "", false, u.coat, u.mane, u.coat_mark, nil }
     for(vx_unit_prims(body_of(if b.hull != "": b.hull else: b.id), 0.0)) p: out.push(burn(p))
     for(b.parts) part, k:
@@ -1336,7 +1599,7 @@ def vx_knocked_out(u:vx_unit_def, b:vx_body_spec) -> [vx_prim]:
             return float3 { v.x * cos(yaw) - v.y * sin(yaw) + part.pivot.x, v.x * sin(yaw) + v.y * cos(yaw) + part.pivot.y, v.z - 0.6 }
         for(vx_unit_prims(body_of(part.body), 0.0)) p:
             let q = burn(p)
-            out.push(vx_prim { turned(q.a), turned(q.b), q.ra, q.rb, q.mat, q.hard, q.disc, q.box })
+            out.push(vx_prim { turned(q.a), turned(q.b), q.ra, q.rb, q.mat, q.hard, q.disc, q.box, model: q.model, mx: turned(q.a + q.mx) - turned(q.a), mz: turned(q.a + q.mz) - turned(q.a) })
     return out
 
 def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and (not falling or vx_body_of(u.body).death == "crash")) or u.crew != nil or vx_body_of(u.body).piece
@@ -1357,9 +1620,12 @@ class vx_shape:  // a filled grid's surface: the voxels with air beside them (no
 
 def vx_scaled(p:vx_prim, s:float, lift:float) -> vx_prim:
     let up = float3 { 0.0, 0.0, lift }
-    return vx_prim { (p.a + up) * s, (p.b + up) * s, p.ra * s, p.rb * s, p.mat, p.hard, p.disc, p.box * s }
+    return vx_prim { (p.a + up) * s, (p.b + up) * s, p.ra * s, p.rb * s, p.mat, p.hard, p.disc, p.box * s, model: p.model, mx: p.mx, mz: p.mz }
 
 def vx_bounds(p:vx_prim) -> float3, float3:
+    if p.model >= 0:
+        let e = vx_model_reach(p)
+        return p.a - e, p.a + e
     let r = max(p.ra, p.rb) + (if p.disc: p.ra else: 0.0) + magnitude(p.box)
     return min(p.a, p.b) - float3_1 * r, max(p.a, p.b) + float3_1 * r
 
@@ -1373,20 +1639,24 @@ def vx_field(ps:[vx_prim], near:[int], p:float3, k:float) -> float, int:
     for(near) i:
         let s = ps[i]
         var d = 0.0
-        if s.disc or s.box.x > 0.0: d = vx_dist(p, s)
+        var sm = s.mat
+        if s.model >= 0:
+            d = vx_model_sd(p, s)
+            sm = vx_model_mat_at(p, s)
+        elif s.disc or s.box.x > 0.0: d = vx_dist(p, s)
         else:
             let ba = s.b - s.a
             let pa = p - s.a
             let l2 = dot(ba, ba)
             let h = if l2 > 0.0: clamp(dot(pa, ba) / l2, 0.0, 1.0) else: 0.0
             d = magnitude(pa - ba * h) - (s.ra + (s.rb - s.ra) * h)
-        if s.hard: gear = min(gear, d)
+        if s.hard: gear = min(gear, if s.model >= 0: d + 0.5 else: d)  // (a model is drawn as it is: not thickened)
         else:
             let e = max(k - abs(body - d), 0.0) / k
             body = min(body, d) - e * e * k * 0.25
         if d < best:
             best = d
-            m = s.mat
+            m = sm
     return min(body, gear - 0.5), m  // (gear thickened half a voxel: a shaft thinner than a voxel would break up)
 
 let vx_AO_TAPS = [ int3 { 2, 0, 0 }, int3 { -2, 0, 0 }, int3 { 0, 2, 0 }, int3 { 0, -2, 0 }, int3 { 0, 0, 2 }, int3 { 0, 0, -2 },
@@ -1417,6 +1687,7 @@ class vx_filling:
 
 // How low a shape really goes (vx_bounds is generous, for finding what's near).
 def vx_lowest(p:vx_prim) -> float:
+    if p.model >= 0: return p.a.z - vx_model_reach(p).z
     if p.box.x > 0.0 or p.disc:
         let n = normalize(p.b - p.a)
         let flat = sqrt(max(0.0, 1.0 - n.z * n.z))
@@ -1481,11 +1752,11 @@ def vx_fill_more(fl:vx_filling, until:float) -> bool:
             for(near) j:
                 let pj = ps[j]
                 let d = vx_dist(pc, pj)
-                if pj.hard: gear = min(gear, d)
+                if pj.hard: gear = min(gear, if pj.model >= 0: d + 0.5 else: d)
                 else: body = vx_smin(body, d, k)
                 if d < best:
                     best = d
-                    mc = pj.mat
+                    mc = if pj.model >= 0: vx_model_mat_at(pc, pj) else: pj.mat
                 if d < reach + k + 3.0: close.push(j)
             let dc = min(body, gear - 0.5)
             if dc < reach:
