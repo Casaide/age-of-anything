@@ -2,6 +2,7 @@
 // them using voxels"): data/voxel/buildings/ (written by src/voxel_buildings_gen.lobster) drawn by the voxel builder, a
 // facing a column, at a voxel a baked pixel (as the units) or finer. The game doesn't draw them.
 //   lobster voxel_buildings.lobster -- <out.ppm> [res] [facing|all]   (res: voxels a body unit, 2 as the units)
+import from "../creel/src"
 import std
 import vec
 import dictionary

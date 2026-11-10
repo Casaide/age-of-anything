@@ -451,7 +451,7 @@ help the game and its mods directly; 5 to 8 are the split itself. Backlog 00 wai
    and saved; `mod_check` gets the builtin refusal and the lint; living towns become the first UI hook. Done: every
    match tick for tick as before (`test_sim`, `test_ai`, golden starts); a test pack with a clock call or a float in
    a rule hook is refused; `perf` within budget.
-7. **The folders (2-3 days).** One mechanical commit: `git mv` into `engine/` and `games/age-of-anything/`,
+7. **The folders (2-3 days).** *Done another way 2026-11-10 (#428, D-248): Creel is its own repo, `Casaide/creel`, a submodule here at `creel/`, with the modules that compile without the game; the folder names are unchanged, and `game.lobster`'s loop is still to move.* One mechanical commit: `git mv` into `engine/` and `games/age-of-anything/`,
    `--import` for the engine, `play.sh`, `batch.sh`, `deck/build.sh`, `android/build.sh` and `prebake.sh` follow.
    Done: `./play.sh` plays, the whole batch passes, the Deck build runs on the Deck, the APK runs on the emulator,
    `CLAUDE.md`'s layout and commands updated.

@@ -22,6 +22,7 @@
 //   the hill orders' count. Camps by far gatherers are counted as the camp BUILDs the bot issues on a
 //   think where its camp timer was just reset (expand.camps), an approximation of expand.gd's stats.
 
+import from "../creel/src"
 import std
 import vec
 import dictionary

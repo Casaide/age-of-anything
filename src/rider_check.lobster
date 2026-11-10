@@ -8,6 +8,7 @@
 //   contrast  every skin a crew comes in against the deck under it (a brown rat on a brown crate)
 //   bulk      a rider against its mount, in pixels drawn (a frog bigger than its newt)
 //   lobster rider_check.lobster -- [report]   (report: the numbers only, no failing)
+import from "../creel/src"
 import std
 import vec
 import dictionary

@@ -29,6 +29,7 @@
 // - the sapper: parked (D-128), as in GDScript (a check says so, to bring it back with the unit);
 // - the save test's bot plays at the normal level (the hard level isn't ported).
 
+import from "../creel/src"
 import std
 import dictionary
 import gen.json

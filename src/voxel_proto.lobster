@@ -3,6 +3,7 @@
 //   lobster voxel_proto.lobster -- <out.ppm>   (then: magick out.ppm -filter box -resize 55% out.png)
 //   lobster voxel_proto.lobster -- <out.ppm> solo <body> [gear,...]   (one body alone at 3x: make it from scratch)
 //   lobster voxel_proto.lobster -- <out.ppm or -> parts <body> [voxels:<dir>]   (hull facing by part facing, 8 x 8; checks the part sits on the hull)
+import from "../creel/src"
 import std
 import vec
 import dictionary

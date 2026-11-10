@@ -46,6 +46,8 @@ rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/mods/" "$out/mod
 rsync -a --delete --delete-excluded --exclude 'pack' --exclude 'pack6b' --exclude 'pack_scifi' --exclude 'library' --exclude 'bake_cache' \
 	--exclude 'model/mods' --exclude 'textures/bmat*' --exclude '*.sav' --exclude 'memory_leaks.txt' \
 	--exclude 'deck' "$here/" "$out/src/"
+[ -f "$root/creel/src/lib/world.lobster" ] || { echo "creel/ is empty: git submodule update --init"; exit 1; }
+rsync -a --delete "$root/creel/src/" "$out/creel/src/"   # (the engine's modules, where the game's programs look for them)
 rsvg-convert -w 512 -h 512 "$root/assets/art/ui/game_icon.svg" -o "$out/icon.png"
 cat > "$out/run.sh" <<'EOF'
 #!/bin/sh

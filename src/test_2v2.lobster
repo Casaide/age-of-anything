@@ -7,6 +7,7 @@
 // A hit counts as splash when it follows a stone's (or a charge's) landing by the same thrower in the
 // tick's events (siege.lobster lists the landing, then what it hurt), where GDScript flags the hit.
 
+import from "../creel/src"
 import std
 import vec
 import dictionary
