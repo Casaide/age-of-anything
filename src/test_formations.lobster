@@ -18,6 +18,7 @@ import lib.flow
 import lib.spatial
 import lib.orders
 import lib.movement
+import lib.steering
 import lib.fog
 import lib.map
 import lib.economy
@@ -52,6 +53,7 @@ import gen.start
 import gen.reset
 import testkit.kit
 import view.facing
+import view.vox
 import view.voxel
 
 // Big armies in formation, headless and seeded (#171): an army of several blocks on open ground, a plain move and an
