@@ -1,0 +1,23 @@
+{
+ "_doc": "Words for the haidut.",
+ "words": {
+  "haidut": {
+   "creature": "haidut"
+  },
+  "haiduts": {
+   "creature": "haidut"
+  },
+  "hajduk": {
+   "creature": "haidut"
+  },
+  "hajduks": {
+   "creature": "haidut"
+  },
+  "bulgarian": {
+   "creature": "haidut"
+  },
+  "bulgarians": {
+   "creature": "haidut"
+  }
+ }
+}
