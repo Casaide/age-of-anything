@@ -83,6 +83,7 @@ let OVERLAP_MAX = 0.02    // share of watched units, a sample, standing within h
 let HERD_TICKS = 2400     // two minutes for the herd to get through
 let HERD_PAST = 30000     // milli-tiles: the far side of the gap
 let SETTLE_SECS = 2       // after the last one arrives, nobody still moving this long after
+let RALLY_SHOVED_MAX = 300  // milli-tiles a unit standing at a rally point may be pushed about, all told, as more arrive
 let SHOVED_MAX = 1500     // milli-tiles a standing group's units may be pushed from where they stood
 let ZIGZAG_MAX = 0.1      // swerves one way then the other within ZIGZAG_TICKS, a unit, a second (a sway as it walks)
 let ZIGZAG_TICKS = 20
@@ -323,6 +324,47 @@ def scene_town(rules:JV, races:[JV]):
     issue_cmd(0, CMD_MOVE, a, 33000, 33000, 0, 0)
     run_settle("town yard", w, a, 1600)
 
+// 4c. Units trained one by one walk to their barracks' rally point (#394): each stands beside those already there, and
+// none of those standing is pushed about by the next to come, or the crowd creeps outward all match.
+def scene_rally(rules:JV, races:[JV]):
+    flat(races, rules)
+    let bk = btype_index("barracks")
+    let b = place(0, bk, 23, 10)
+    b_done[b] = 1
+    b_hp[b] = bm_hp[0][bk]
+    cmd_rally(0, b_id[b], (23 + b_sx[b]) * TILE + 500, 11500)  // (right by its door: where they come out, as a bot sets it)
+    let ids = []::int
+    let kinds = map([ "spear", "archer" ]) slot: (find(t_slot.length) kk: t_player[kk] == 0 and t_slot[kk] == slot)
+    let pushed = []::int
+    var was = []::int
+    for(14) n:
+        let k = kinds[n % 2]
+        let c = spawn_cell(b, k)
+        let i = add_unit(0, k, (c % W) * TILE + 500, (c / W) * TILE + 500)
+        ids.push(u_id[i])
+        pushed.push(0)
+        go_to_rally(b, i)
+        for(60):
+            was = map(ids) id: if u_moving[index_of(id)] == 0: u_x[index_of(id)] * (1 << 20) + u_y[index_of(id)] else: -1
+            let ox = map(ids) id: u_x[index_of(id)]
+            let oy = map(ids) id: u_y[index_of(id)]
+            wstep()
+            for(ids) id, a:
+                let j = index_of(id)
+                if was[a] >= 0 and u_moving[j] == 0: pushed[a] += isqrt(dist2(ox[a], oy[a], u_x[j], u_y[j]))
+    for(600):
+        let ox = map(ids) id: u_x[index_of(id)]
+        let oy = map(ids) id: u_y[index_of(id)]
+        wstep()
+        for(ids) id, a: pushed[a] += isqrt(dist2(ox[a], oy[a], u_x[index_of(id)], u_y[index_of(id)]))
+    let worst = fold(pushed, 0) m, v: max(m, v)
+    let total = fold(pushed, 0) m, v: m + v
+    let ov = overlap_of(ids)
+    print "rally point: standing units pushed about {total} milli-tiles in all, {worst} at worst; overlap {fixed_str(ov, 3)}"
+    check(not any_moving(ids), "rally point: they all stand in the end")
+    check(worst <= RALLY_SHOVED_MAX, "rally point: nobody standing is pushed about by those arriving ({worst})")
+    check(ov <= OVERLAP_MAX, "rally point: they stand beside each other, not inside ({fixed_str(ov, 3)})")
+
 // 5. Cavalry funnel through the pass (choke_test: a 2-tile gap in a rock wall).
 def scene_funnel(rules:JV, races:[JV]):
     new_world(SEED, "choke_test", races, rules, [])
@@ -532,6 +574,7 @@ if on("crossing"): scene_cross(rules, races, false)
 if on("head_on"): scene_cross(rules, races, true)
 if on("through"): scene_through(rules, races)
 if on("town"): scene_town(rules, races)
+if on("rally"): scene_rally(rules, races)
 if on("funnel"): scene_funnel(rules, races)
 if on("herd"): scene_herd(rules, races)
 if on("meet"): scene_meet(rules, races)
