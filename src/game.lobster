@@ -133,6 +133,7 @@ var army_n = 0                        // army:<n>: n of each of your soldier typ
 var army_snap = false                 // a skirmish's armies start in their blocks, once the first order has made them
 let ARMY_GAP = 600                    // milli-tiles between them, in ranks
 var zoom_arg = 0.0                    // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
+var density_arg = 0.0                 // density:<z>: prebake at that art density (prebake.sh: the base, then a Retina Mac's 2.4, #358)
 var reveal = false                    // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
 var hurt_pct = -1                     // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var raze_at = -1.0                    // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
@@ -178,6 +179,7 @@ for(args) a, k:
         if a == "clean": rec_clean = true
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
+        if key == "density": density_arg = string_to_float(val)
         if a == "reveal": reveal = true
         if a == "perflive": perf_live = true
         if a == "oldtext": text_off = true  // (measuring: text drawn as before game/text_cache.lobster)
@@ -1037,10 +1039,12 @@ def draw_world(alpha:float):
         paths_tick = tick
         if refresh_paths(): perf_built_now = true
     let ws = float(gl.window_size())
-    draw_ground_cached(gl.window_size(), float2 { floor(cam.x), floor(cam.y) }, zoom, zoom / ART_K)  // (screen px an art px: finer art, D-173)
+    let cam_px = float2 { floor(cam.x * zoom), floor(cam.y * zoom) } / zoom  // (on a whole device px, as the sprites: #358)
+    sprite_snap = zoom
+    draw_ground_cached(gl.window_size(), cam_px, zoom, zoom / ART_K)  // (screen px an art px: finer art, D-173)
     gl.translate(ws / 2.0):
         gl.scale(zoom):
-            gl.translate(-float2 { floor(cam.x), floor(cam.y) }):
+            gl.translate(-cam_px):
                 if not reveal: draw_fog()
                 perf_lap(1)
                 set_view_rect()
@@ -1086,6 +1090,7 @@ def draw_world(alpha:float):
                     fx_draw() id: unit_anchor(id)
                 if not rec_clean: draw_marks(alpha)
                 perf_lap(5)
+    sprite_snap = 1.0
 
 // ------------------------------------------------------------------ the lobby (type your races; Lobster makes and sets them up)
 // Two prompts, each race shown as you type (the generator takes a few milliseconds); Enter starts the
@@ -1775,6 +1780,21 @@ let MM_RIM = 12.0    // the frame round the diamond
 // The UI's size: its numbers are for a window 1000 px high (a retina screen has twice the pixels).
 def ui() -> float: return max(1.0, float(gl.window_size().y) / 1000.0)
 
+// The art's density (#358): on a screen where the default view draws a world art px over more than 2 device px (a
+// Retina Mac), units, buildings and props bake at that many texture px a world px (2.4 at most), so a baked pixel is
+// a device pixel (a voxel unit's voxel exactly: a body unit is 1.1 world px). Other screens keep the base, 2.
+def art_density(zoom0:float):
+    if zoom0 <= 2.0: return
+    let z = min(zoom0, 2.4)  // (at most a Retina Mac's: a 5K screen's 4 would bake 3 times today's pixels)
+    ART_SCALE = ART_BASE * z
+    ART_K = z
+    WB_ART = ART_SCALE
+    WB_PX = 32.0 / 0.70710678 * WB_ART
+    FX_ART_PX = ART_SCALE
+    vx_set_res(1.1 * z)
+    VX_DRAW_K = 1.1 / vx_RES
+    VX_ATLAS = 4096
+
 // Screen px per canvas unit: the diamond (48 (W + H) canvas units wide) MM_SIZE wide.
 def mm_scale() -> float: return MM_SIZE * hud_s() / (48.0 * float(W + H))
 
@@ -2269,8 +2289,10 @@ startup_frame("Loading...", 0.05)
 for(args) a:  // cache:<folder>: the parts kept there instead of bake_cache/ ("cache:" alone: baked afresh, kept nowhere)
     if starts_with(a, "cache:"): bake_cache_dir = a.substring(6, a.length - 6)
 zoom = 2.0 * floor(ui() + 0.5)  // two screen points an art pixel, as the game's camera
-// Desktops start one zoom step further out; Steam Deck-sized screens (800 px tall or less) and touch keep the closer view
-if not touch_play and gl.framebuffer_size().y > 800: zoom = max(1.0, zoom - 1.0)
+// Desktops start one zoom step further out, and then a quarter further again (#358); Steam Deck-sized screens (800 px
+// tall or less) and touch keep the closer view
+if not touch_play and gl.framebuffer_size().y > 800: zoom = max(1.0, (zoom - 1.0) * 0.8)
+art_density(if has_s(args, "prebake"): density_arg else: zoom)  // (prebake: the density it's asked for, the base by default)
 if zoom_arg > 0.0: zoom = zoom_arg
 // The tables come from data (game/pack_data.lobster); units are voxel bodies (game/voxel_units.lobster); buildings and
 // props are baked once (src/baked/) or at the start. (A Godot art pack, args[0], is gone with Godot: D-184.)

@@ -6,9 +6,10 @@
 // ground shadow of its own. game/voxel_units.lobster bakes a match's units; voxel_proto.lobster draws a sheet.
 
 let vx_ELEV = 30.0                                                      // the camera's elevation, degrees
-let vx_RES = 2.0                                                        // voxels a body unit (a body unit is about a world pixel; a voxel a baked pixel)
-let vx_CELL = int2 { int(100.0 * vx_RES), int(170.0 * vx_RES) }         // a sprite cell (room for a siege tower; each is cropped to what's drawn)
-let vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(40.0 * vx_RES) }  // the ground under the unit, in its cell (room in front: a cart's puller, a trunk)
+var vx_RES = 2.0                                                        // voxels a body unit (a body unit is about a world pixel; a voxel a baked pixel)
+var vx_CELL = int2 { int(100.0 * vx_RES), int(170.0 * vx_RES) }         // a sprite cell (room for a siege tower; each is cropped to what's drawn)
+var vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(40.0 * vx_RES) }  // the ground under the unit, in its cell (room in front: a cart's puller, a trunk)
+let vx_VOX_RES = 2.0                                                    // a .vox model's voxels a body unit (the base's: a model is one size on every screen, #358)
 let vx_BLEND = 0.8                                                      // how far body parts melt into each other, body units (round 1's 2.2 made muscles)
 
 class vx_prim:
@@ -365,7 +366,7 @@ def vx_parse_shape(o:JV, hard_by_default:bool) -> vx_spec:
         s.model = vx_model_of(as_str(at(o, "model")), gobj(o, "mats"))
         s.pa, s.a = vx_pt(at(o, "at"))
         if has(o, "to"): s.pb, s.b = vx_pt(at(o, "to"))
-        s.ra = gfloat(o, "scale", 1.0) / vx_RES
+        s.ra = gfloat(o, "scale", 1.0) / vx_VOX_RES
         s.hard = gbool(o, "hard", not gbool(o, "soft", false))
     else: assert false
     return s
@@ -744,9 +745,9 @@ def vx_vox_piece_of(f:vox_file, nd:vox_node, i:int) -> vx_vox_piece:
     let md = f.models[nd.model]
     let ax = [ vx_vox_axis(nd.r, 0), vx_vox_axis(nd.r, 1), vx_vox_axis(nd.r, 2) ]
     let half = float(md.size - int3_1) * 0.5 - float(md.size / 2)
-    let centre = (ax[0] * half.x + ax[1] * half.y + ax[2] * half.z + float(nd.t) + float3_1 * 0.5) / vx_RES
+    let centre = (ax[0] * half.x + ax[1] * half.y + ax[2] * half.z + float(nd.t) + float3_1 * 0.5) / vx_VOX_RES
     let long = if md.size.z >= md.size.x and md.size.z >= md.size.y: 2 elif md.size.y >= md.size.x: 1 else: 0
-    let at = map(md.xyz.length) n: (float(vox_world(f, nd, n)) + float3_1 * 0.5) / vx_RES
+    let at = map(md.xyz.length) n: (float(vox_world(f, nd, n)) + float3_1 * 0.5) / vx_VOX_RES
     let along = map(at) p: dot(p, ax[long])
     let a0 = fold(along, 1000000.0) m, x: min(m, x)
     let a1 = fold(along, -1000000.0) m, x: max(m, x)
@@ -754,7 +755,7 @@ def vx_vox_piece_of(f:vox_file, nd:vox_node, i:int) -> vx_vox_piece:
         var s = float3_0
         var n = 0
         for(at) p, k:
-            if abs(along[k] - v) < 0.5 / vx_RES:
+            if abs(along[k] - v) < 0.5 / vx_VOX_RES:
                 s += p
                 n++
         return s / float(n)
@@ -805,7 +806,7 @@ def vx_vox_body(b:vx_body_spec, file:string, mats:JV):
         return b.pat[k]
     for(f.nodes) nd:
         if nd.layer == "points":
-            let at = (float(vox_world(f, nd, 0)) + float3_1 * 0.5) / vx_RES
+            let at = (float(vox_world(f, nd, 0)) + float3_1 * 0.5) / vx_VOX_RES
             let k = find(b.pnames) n: n == nd.name
             if nd.name == "helm": b.helm = at - rest(b.helm_pt)
             elif k >= 0: b.pat[k] = at
@@ -845,7 +846,7 @@ def vx_vox_body(b:vx_body_spec, file:string, mats:JV):
     // the parts (body, not gear: soft, so the legs set the ground and the joints blend)
     for(pieces) q:
         let nd = f.nodes[q.node]
-        let s = vx_spec { vx_k_model, false, false, "", float3_0, "", float3_0, 1.0 / vx_RES, 0.0, 0, 0, float3_0, float3_0, [], [], 0.0, 0.0,
+        let s = vx_spec { vx_k_model, false, false, "", float3_0, "", float3_0, 1.0 / vx_VOX_RES, 0.0, 0, 0, float3_0, float3_0, [], [], 0.0, 0.0,
                           [], [], model: vx_model_in(f, file, nd.model, mats), ax: vx_vox_axis(nd.r, 0), ay: vx_vox_axis(nd.r, 1),
                           az: vx_vox_axis(nd.r, 2) }
         let bone = find(vx_VOX_BONES) n: n == q.name
@@ -2163,8 +2164,17 @@ def vx_halo(cw:int, ch:int):
 
 // One facing's shadow on the ground (the sun's, as the world's props and buildings cast it): a cell of its own, drawn
 // under every unit. vx_SCELL wide and high round vx_SANCHOR; drawn in vx_sbox; reused by the next call.
-let vx_SCELL = int2 { vx_CELL.x * 2, vx_CELL.y }
-let vx_SANCHOR = int2 { vx_SCELL.x / 2 - int(14.0 * vx_RES), vx_SCELL.y - int(44.0 * vx_RES) }
+var vx_SCELL = int2 { vx_CELL.x * 2, vx_CELL.y }
+var vx_SANCHOR = int2 { vx_SCELL.x / 2 - int(14.0 * vx_RES), vx_SCELL.y - int(44.0 * vx_RES) }
+
+// The voxels a body unit (the game raises it on a high-DPI screen, #358), and the cells that follow from it.
+def vx_set_res(res:float):
+    vx_RES = res
+    vx_CELL = int2 { int(100.0 * vx_RES), int(170.0 * vx_RES) }
+    vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(40.0 * vx_RES) }
+    vx_SCELL = int2 { vx_CELL.x * 2, vx_CELL.y }
+    vx_SANCHOR = int2 { vx_SCELL.x / 2 - int(14.0 * vx_RES), vx_SCELL.y - int(44.0 * vx_RES) }
+
 let vx_SHADOW = float4 { 0.05, 0.04, 0.02, 0.5 }
 var vx_sout = []::float4
 var vx_sbox = int4_0

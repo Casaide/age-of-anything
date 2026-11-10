@@ -5,8 +5,8 @@
 // creases, an outline, its shadow on the ground. The sprite is in the old baker's frame (its camera, art px a world
 // unit, the world origin as its anchor), so the art kits place every frame as they did.
 
-let WB_ART = ART_SCALE                  // art px a canvas unit
-let WB_PX = 32.0 / 0.70710678 * WB_ART  // art px a world unit (the old baker's camera: buildings keep their size)
+var WB_ART = ART_SCALE                  // art px a canvas unit
+var WB_PX = 32.0 / 0.70710678 * WB_ART  // art px a world unit (the old baker's camera: buildings keep their size)
 
 let WB_SHADOW = [ 15, 13, 8, 107 ]  // the ground shadow's colour (0.06, 0.05, 0.03, 0.42), as the old baker's
 let WB_CONTACT = [ 15, 13, 8, 61 ]  // the contact shadow's (alpha 0.24)
