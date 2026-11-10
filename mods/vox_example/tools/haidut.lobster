@@ -71,7 +71,7 @@ assert cape == "" or cape == "fleece" or cape == "yamurluk"
 def lock(x:int, y:int) -> float: return float(((x * 73856093) ^ (y * 19349663)) & 1023) / 1023.0
 let pieces = []::piece
 
-// the head: a long oval face over a firm jaw, ears, the eyes (a dark voxel each under a brow), a handlebar moustache
+// the head: a long oval face over a firm jaw, ears, the eyes (a dark voxel each, apart), a small nose, a handlebar moustache
 // that stands out from the face (a bar under the nose, its ends drooping past the mouth), and the kalpak (a fur cap a
 // little wider than the head, a red band at its foot)
 let head = piece { "head", 0 }
@@ -79,18 +79,16 @@ fill(head, int3 { -6, -5, 61 }, int3 { 6, 7, 79 }) c:
     let ax = abs(c.x)
     let face = in_ball(c, float3 { 0.0, 0.3, 67.8 }, float3 { 3.7, 4.1, 5.3 }) or
         in_taper(c, 62.0, 65.0, float2 { 0.0, 0.2 }, float2 { 0.0, 0.6 }, float2 { 2.6, 3.0 }, float2 { 3.0, 3.4 })
-    let bar = c.y > 3.2 and c.y < 5.4 and ax < 3.0 and c.z > 65.0 and c.z < 66.2
-    let ends = c.y > 2.4 and c.y < 5.0 and ax >= 2.6 and ax < 4.6 and abs(c.z - (65.6 - (ax - 2.6) * 1.0)) < 0.7
-    let eye = c.y > 2.4 and ax > 0.8 and ax < 2.6 and c.z > 68.4 and c.z < 69.4
-    let brow = c.y > 2.4 and ax > 0.6 and ax < 3.0 and c.z > 69.6 and c.z < 70.6
+    let bar = c.y > 3.2 and c.y < 6.0 and ax < 3.0 and c.z > 64.0 and c.z < 66.2
+    let ends = c.y > 2.4 and c.y < 5.6 and ax >= 2.6 and ax < 5.0 and abs(c.z - (65.6 - (ax - 2.6) * 1.0)) < 0.7
+    let eye = c.y > 2.4 and ax > 1.0 and ax < 2.0 and c.z > 68.4 and c.z < 69.4
     if in_taper(c, 71.6, 78.0, float2 { 0.0, -0.6 }, float2 { 0.0, -0.8 }, float2 { 4.0, 4.3 }, float2 { 3.8, 4.0 }) and c.z > 71.6 + max(0.0, c.y) * 0.25:
         if c.z < 73.0 + max(0.0, c.y) * 0.25: TRIM else: FUR
     elif bar or ends: HAIR
     elif face and eye: EYE
-    elif face and brow: HAIR
     elif face: SKIN
     elif in_ball(c, float3 { 3.8, -0.2, 67.5 }, float3 { 0.8, 1.2, 1.6 }) or in_ball(c, float3 { -3.8, -0.2, 67.5 }, float3 { 0.8, 1.2, 1.6 }): SKIN
-    elif in_ball(c, float3 { 0.0, 4.4, 67.4 }, float3 { 0.8, 0.9, 1.4 }): SKIN  // the nose
+    elif in_ball(c, float3 { 0.0, 4.5, 67.5 }, float3 { 0.8, 0.8, 1.2 }): SKIN  // the nose
     else: 0
 pieces.push(head)
 
