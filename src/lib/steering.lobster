@@ -152,6 +152,7 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
                     ux = dx * ONE / d
                     uy = dy * ONE / d
                 if u_owner[j] != me: pass()  // (anyone else's, an enemy above all, is a body to bump: separate() pushes them apart)
+                elif u_stuck[i] > 0 and u_task[i] != T_NONE and u_moving[j] == 0 and u_task[j] == T_NONE and u_foe[j] == 0 and t_worker[u_kind[j]] == 0 and t_animal[u_kind[j]] == 0: pass()  // (a worker held up on its job slips through a soldier standing about, #395)
                 else:
                     // Its own side: round them, to the side it's already on, more than away (a standing one hardest; its own
                     // block only once they press into each other, as their places keep them apart).
