@@ -584,6 +584,7 @@ def self_test() -> bool:
         return true
     return false
 
+import .game.hud_kit
 import .game.pad  // (here: it plays through the controls above)
 import .game.techtree
 import .game.panel
