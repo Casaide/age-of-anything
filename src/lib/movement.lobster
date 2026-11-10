@@ -314,7 +314,7 @@ def move():
             continue
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:
             let px, py = progress(i, x, y)
-            if u_prog[i] >= 0 and px > u_prog[i] - py and u_group[i] > 0 and u_reach[i] == 0 and (queued(i, x, y) or passed(i, x, y)):
+            if u_prog[i] >= 0 and px > u_prog[i] - py and u_reach[i] == 0 and (queued(i, x, y) or (u_group[i] > 0 and passed(i, x, y))):  // (held up behind its own side going its way: not stuck, #382)
                 pass()
             elif u_prog[i] >= 0 and px > u_prog[i] - py:
                 st[i] += STUCK_LIMIT / (if u_group[i] > 0 and u_reach[i] == 0: 6 else: 2)
