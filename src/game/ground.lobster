@@ -361,12 +361,12 @@ def build_wear():
     wear_tex = gl.create_texture(map(H) y: map(W) x: float4 { float(if y * W + x < wear.length: wear[y * W + x] else: 0) / 255.0, 0.0, 0.0, 0.0 },
                                  texture_format_clamp | texture_format_nomipmap)
 
-// The fog over the ground, per tile (explored: dimmed; never seen: dark), corners blended; over the cliff faces
+// The fog over the ground, per tile (out of sight: dimmed, seen or not, #334), corners blended; over the cliff faces
 // that show (a tile's edge above its neighbour's), and over each hill's near-edge tops, which are drawn again after
 // the fog (game.lobster: what's behind a hill hides).
 def build_fog(me:int):
     let fg = fog[me]
-    let dark = map(W * H) c: if fg[c] == 0: 0.88 elif fg[c] == 1: 0.45 else: 0.0
+    let dark = map(W * H) c: fog_dark(fg[c])
     let corner = map((W + 1) * (H + 1)) v:
         let vx = v % (W + 1)
         let vy = v / (W + 1)
