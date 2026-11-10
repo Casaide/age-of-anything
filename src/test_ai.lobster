@@ -41,6 +41,7 @@ import lib.flow
 import lib.spatial
 import lib.orders
 import lib.movement
+import lib.steering
 import lib.fog
 import lib.map
 import lib.economy
