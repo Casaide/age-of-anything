@@ -161,7 +161,7 @@ for(shots_data.keys) kind, n:
         check(plain_w <= STUCK_W_MAX and plain_balls == 0, "{kind} stuck in the ground: {plain_w} wide (at most {STUCK_W_MAX}), {plain_balls} round ends")
 
 // The game draws through it; the sim never reads it.
-let game = read_file("game.lobster") or ""
+let game = (read_file("game.lobster") or "") + (read_file("game/world_draw.lobster") or "") + (read_file("game/controls.lobster") or "")  // (the view: ours and Creel's, #433)
 let fx = read_file("game/fx.lobster") or ""
 check(find_string(game, "shot_drawn_u(") >= 0, "the game draws plain shots by it")
 check(find_string(fx, "shot_drawn_time(") >= 0, "and tracers")
