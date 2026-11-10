@@ -99,15 +99,18 @@ def mod_check_manifest(id:string, m:JV) -> string:
 // The mod's data files, parsed; "" or why it can't be read.
 def mod_read(rec:Pack) -> string:
     let root = rec.root
+    var models = ""  // (MagicaVoxel models, voxel/models/*.vox: their bytes, read by the voxel kit itself)
     for(mod_files(root, "")) f:
         let base = if has_char(f, '/'): substring(f, 0, find_string(f, "/")) else: ""
-        if not (has_s(MOD_DATA_FILES, f) or (has_s(MOD_DATA_DIRS, base) and ends_with(f, ".json"))):
-            return "data/{f} can\'t be modded yet (moddable: {concat_string(MOD_DATA_FILES, ", ")}, rules/*.json, maps/*.json, voxel/**.json)"
+        let model = starts_with(f, "voxel/models/") and ends_with(f, ".vox")
+        if not (has_s(MOD_DATA_FILES, f) or (has_s(MOD_DATA_DIRS, base) and ends_with(f, ".json")) or model):
+            return "data/{f} can\'t be modded yet (moddable: {concat_string(MOD_DATA_FILES, ", ")}, rules/*.json, maps/*.json, voxel/**.json, voxel/models/*.vox)"
         let text = read_file(root + "/" + f)
         if not text: return "data/{f} can\'t be read"
-        set(rec.data, f, parse_json(text))
+        if model: models += f + sha256_text(text)
+        else: set(rec.data, f, parse_json(text))
     // (the hash is of the parsed data, not the files' bytes: line endings differ between checkouts)
-    rec.sig = "{rec.id}@{gstr(rec.manifest, "version", "")}#{substring(sha256_text(stringify(jobj_without(rec.data, "audio.json"))), 0, 8)}"
+    rec.sig = "{rec.id}@{gstr(rec.manifest, "version", "")}#{substring(sha256_text(stringify(jobj_without(rec.data, "audio.json")) + models), 0, 8)}"
     return ""
 
 // What's wrong with a mod's data against the data before it (the base and earlier mods), or "".
