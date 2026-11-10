@@ -356,15 +356,18 @@ def scene_queue(rules:JV, races:[JV]):
         wstep()
         if (find(ids) id: index_of(id) >= 0 and u_foe[index_of(id)] != 0) >= 0: after++
         if after > 0 and tick % 20 == 0:
-            // units marching with their block found among another block's marchers
+            // units in their places in a block found among another block's units in their places: the blocks inside each other
+            def placed(i:int) -> bool:
+                let b = u_block[i] - 1
+                return b >= 0 and u_foe[i] == 0 and dist2(u_x[i], u_y[i], fb_x[b] + u_bx[i], fb_y[b] + u_by[i]) <= TILE * TILE
             var mixed = 0
             for(ids) id:
                 let i = index_of(id)
-                if i >= 0 and u_block[i] > 0 and u_foe[i] == 0:
+                if i >= 0 and placed(i):
                     var inside = false
                     for(ids) jd:
                         let j = index_of(jd)
-                        if not inside and j >= 0 and u_block[j] > 0 and u_block[j] != u_block[i] and u_foe[j] == 0:
+                        if not inside and j >= 0 and u_block[j] != u_block[i] and placed(j):
                             let rr = (u_radius[i] + u_radius[j]) / 2
                             if dist2(u_x[i], u_y[i], u_x[j], u_y[j]) < rr * rr: inside = true
                     if inside: mixed++
