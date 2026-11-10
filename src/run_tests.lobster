@@ -1085,6 +1085,15 @@ def g_atmosphere():
     for(moods) m: expect(atmo_set(j, m) == "" and atmo_on, "atmosphere: the mood {m} can be set ({atmo_set(j, m)})")
     expect(has_s(moods, atmo_mood_for(j, "flat_test", "")), "atmosphere: a map with no mood of its own gets the default")
     for(gobj(j, "maps").keys) id: expect(has_s(map_ids_on_disk(), id), "atmosphere: the map {id} it names exists")
+    expect(atmo_mood_for(j, "flat_test", "") == "late_afternoon", "atmosphere: the default is late_afternoon (#419)")
+    for(gobj(j, "maps").keys) id: expect(atmo_mood_for(j, id, "") != "none", "atmosphere: the map {id} isn\'t given none: it is for tests only")
+    expect(atmo_mood_for(j, "flat_test", "") != "none", "atmosphere: the default isn\'t none")
+    // Dominic (#419): no mood is flat; each has a shadow tint, a highlight tint, haze and bloom.
+    for(moods) m:
+        if m != "none":
+            atmo_set(j, m)
+            for([ "shadow", "highlight", "haze", "bloom" ]) knob:
+                expect(atmo_nums[find(ATMO_NUMS) k: k == knob] > 0.0, "atmosphere: the mood {m} has some {knob}, not a flat frame")
     expect(atmo_mood_for(j, "reed_meadow", "misty_morning") == "misty_morning", "atmosphere: atmosphere:<mood> wins over the map\'s")
     let unknown = atmo_set(j, "purple_haze")
     expect(contains_text(unknown, "no mood \'purple_haze\'") and not atmo_on, "atmosphere: an unknown mood is reported ({unknown})")
