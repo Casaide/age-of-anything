@@ -132,7 +132,7 @@ def tt_bname(t:TTree, id:string) -> string:
 
 // The page for a player's race in the match.
 def open_tree(p:int):
-    tt_open(su_races[p], su_idents[p], su_rules, p, true)
+    tt_open(su_races[p], su_sides[p], su_rules, p, true)
 
 // Any race's page (the lobby's banners: side i's race in its colours).
 def open_tree_of(race:JV, ident:JV, rules:JV, side:int): tt_open(race, ident, rules, side, false)

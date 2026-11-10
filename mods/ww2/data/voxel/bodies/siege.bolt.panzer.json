@@ -1,923 +1,251 @@
 {
-  "_doc": "The Panzer IV Ausf. H. 5.92 m long hull by 2.88 m wide by 2.68 m tall. A boxy hull of flat plates with vertical sides and a stepped front: low nose, then the vertical driver's plate. A boxy turret narrowing upward, a stowage bin across the back, the cupola at the rear of the roof. The long 75 mm L/48 gun with a double-baffle muzzle brake overhangs the nose by a metre. Eight small road wheels a side in four leaf-spring bogies, four return rollers, a front sprocket, a rear idler, a flat top run. Dark yellow (skin), rubber and dark steel (pale, frame2), a paler yellow (mark). Top-run width is a little exaggerated (no side skirts or wide guards) to read at game size.",
-  "skin": "#9a8650",
-  "pale": "#24231f",
-  "mark": "#b09c66",
-  "fur": 0.0,
-  "size": 1.2,
-  "crew": [],
-  "points": {
-    "o": {
-      "at": [
-        0,
-        0,
-        0
-      ]
-    }
-  },
-  "shapes": [
-    {
-      "box": [
-        "o",
-        12.60,
-        15.300,
-        7.000
-      ],
-      "n": [
-        1.0000,
-        0.0000,
-        0.0000
-      ],
-      "half": [
-        3.20,
-        0.400,
-        0.700
-      ],
-      "mat": "ww2_dunkelgelb",
-      "round": 0.15,
-      "hard": true,
-      "mirror": true
-    },
-    {
-      "disc": [
-        "o",
-        11.20,
-        15.30,
-        11.10
-      ],
-      "n": [
-        1,
-        0,
-        0
-      ],
-      "r": [
-        0.95,
-        0.70
-      ],
-      "mat": "ww2_steel",
-      "hard": true,
-      "mirror": true
-    },
-    {
-      "box": [
-        "o",
-        12.60,
-        5.200,
-        7.000
-      ],
-      "n": [
-        1.0000,
-        0.0000,
-        0.0000
-      ],
-      "half": [
-        3.20,
-        0.400,
-        0.700
-      ],
-      "mat": "ww2_dunkelgelb",
-      "round": 0.15,
-      "hard": true,
-      "mirror": true
-    },
-    {
-      "disc": [
-        "o",
-        11.20,
-        5.20,
-        11.10
-      ],
-      "n": [
-        1,
-        0,
-        0
-      ],
-      "r": [
-        0.95,
-        0.70
-      ],
-      "mat": "ww2_steel",
-      "hard": true,
-      "mirror": true
-    },
-    {
-      "box": [
-        "o",
-        12.60,
-        -5.200,
-        7.000
-      ],
-      "n": [
-        1.0000,
-        0.0000,
-        0.0000
-      ],
-      "half": [
-        3.20,
-        0.400,
-        0.700
-      ],
-      "mat": "ww2_dunkelgelb",
-      "round": 0.15,
-      "hard": true,
-      "mirror": true
-    },
-    {
-      "disc": [
-        "o",
-        11.20,
-        -5.20,
-        11.10
-      ],
-      "n": [
-        1,
-        0,
-        0
-      ],
-      "r": [
-        0.95,
-        0.70
-      ],
-      "mat": "ww2_steel",
-      "hard": true,
-      "mirror": true
-    },
-    {
-      "box": [
-        "o",
-        12.60,
-        -15.300,
-        7.000
-      ],
-      "n": [
-        1.0000,
-        0.0000,
-        0.0000
-      ],
-      "half": [
-        3.20,
-        0.400,
-        0.700
-      ],
-      "mat": "ww2_dunkelgelb",
-      "round": 0.15,
-      "hard": true,
-      "mirror": true
-    },
-    {
-      "disc": [
-        "o",
-        11.20,
-        -15.30,
-        11.10
-      ],
-      "n": [
-        1,
-        0,
-        0
-      ],
-      "r": [
-        0.95,
-        0.70
-      ],
-      "mat": "ww2_steel",
-      "hard": true,
-      "mirror": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        0.000,
-        6.500
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        8.20,
-        22.500,
-        3.500
-      ],
-      "mat": "ww2_rubber",
-      "round": 0.30,
-      "hard": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        -5.000,
-        13.000
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        8.90,
-        18.000,
-        3.300
-      ],
-      "mat": "ww2_dunkelgelb",
-      "round": 0.25,
-      "hard": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        18.300,
-        9.900
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        8.60,
-        5.800,
-        2.200
-      ],
-      "mat": "ww2_dunkelgelb",
-      "round": 0.25,
-      "hard": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        18.600,
-        12.150
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        8.60,
-        5.400,
-        0.120
-      ],
-      "mat": "ww2_dunkelgelb",
-      "round": 0.10,
-      "hard": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        24.600,
-        8.600
-      ],
-      "n": [
-        0.0000,
-        0.5000,
-        0.8660
-      ],
-      "half": [
-        7.80,
-        0.500,
-        2.600
-      ],
-      "mat": "ww2_dunkelgelb",
-      "round": 0.20,
-      "hard": true
-    },
-    {
-      "box": [
-        "o",
-        -4.60,
-        13.200,
-        14.300
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        2.00,
-        0.200,
-        0.280
-      ],
-      "mat": "ww2_rubber",
-      "round": 0.05,
-      "hard": true
-    },
-    {
-      "bead": [
-        "o",
-        4.40,
-        13.30,
-        14.20
-      ],
-      "r": 0.80,
-      "mat": "ww2_rubber"
-    },
-    {
-      "box": [
-        "o",
-        3.90,
-        5.000,
-        16.750
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        2.40,
-        3.200,
-        0.140
-      ],
-      "mat": "ww2_dunkelgelb_worn",
-      "round": 0.20,
-      "hard": true,
-      "mirror": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        -18.000,
-        16.650
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        6.60,
-        4.200,
-        0.100
-      ],
-      "mat": "ww2_dunkelgelb_worn",
-      "round": 0.15,
-      "hard": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        -16.000,
-        16.720
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        6.00,
-        0.340,
-        0.100
-      ],
-      "mat": "ww2_rubber",
-      "round": 0.05,
-      "hard": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        -17.700,
-        16.720
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        6.00,
-        0.340,
-        0.100
-      ],
-      "mat": "ww2_rubber",
-      "round": 0.05,
-      "hard": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        -19.400,
-        16.720
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        6.00,
-        0.340,
-        0.100
-      ],
-      "mat": "ww2_rubber",
-      "round": 0.05,
-      "hard": true
-    },
-    {
-      "box": [
-        "o",
-        0.00,
-        -23.400,
-        10.500
-      ],
-      "n": [
-        0.0000,
-        1.0000,
-        0.0000
-      ],
-      "half": [
-        7.60,
-        0.450,
-        3.000
-      ],
-      "mat": "ww2_rubber",
-      "round": 0.20,
-      "hard": true
-    },
-    {
-      "cap": [
-        "o",
-        -7.00,
-        -24.60,
-        9.80
-      ],
-      "to": [
-        "o",
-        7.00,
-        -24.60,
-        9.80
-      ],
-      "r": [
-        0.90,
-        0.90
-      ],
-      "mat": "ww2_rubber"
-    },
-    {
-      "cap": [
-        "o",
-        -5.00,
-        -8.00,
-        16.80
-      ],
-      "to": [
-        "o",
-        -5.20,
-        -10.00,
-        29.00
-      ],
-      "r": [
-        0.18,
-        0.14
-      ],
-      "mat": "ww2_rubber",
-      "hard": true
-    }
-  ],
-  "styles": {
-    "panzer": {
-      "skin": "#9a8650",
-      "pale": "#24231f",
-      "mark": "#b09c66"
-    }
-  },
-  "parts": [
-    {
-      "name": "turret",
-      "pivot": [
-        0,
-        -1.6,
-        17
-      ],
-      "shapes": [
-        {
-          "box": [
-            "o",
-            0.00,
-            -1.600,
-            18.400
-          ],
-          "n": [
-            0.0000,
-            1.0000,
-            0.0000
-          ],
-          "half": [
-            6.30,
-            7.200,
-            1.500
-          ],
-          "mat": "ww2_dunkelgelb",
-          "round": 0.30,
-          "hard": true
-        },
-        {
-          "box": [
-            "o",
-            0.00,
-            -1.800,
-            21.000
-          ],
-          "n": [
-            0.0000,
-            1.0000,
-            0.0000
-          ],
-          "half": [
-            5.50,
-            6.700,
-            1.200
-          ],
-          "mat": "ww2_dunkelgelb",
-          "round": 0.30,
-          "hard": true
-        },
-        {
-          "box": [
-            "o",
-            0.00,
-            5.800,
-            19.800
-          ],
-          "n": [
-            0.0000,
-            0.2000,
-            0.0000
-          ],
-          "half": [
-            3.00,
-            0.700,
-            2.000
-          ],
-          "mat": "ww2_dunkelgelb_worn",
-          "round": 0.30,
-          "hard": true
-        },
-        {
-          "box": [
-            "o",
-            0.00,
-            -10.900,
-            20.000
-          ],
-          "n": [
-            0.0000,
-            1.0000,
-            0.0000
-          ],
-          "half": [
-            5.10,
-            1.900,
-            1.900
-          ],
-          "mat": "ww2_dunkelgelb_worn",
-          "round": 0.30,
-          "hard": true
-        },
-        {
-          "disc": [
-            "o",
-            0.00,
-            -5.00,
-            22.60
-          ],
-          "n": [
-            0,
-            0,
-            1
-          ],
-          "r": [
-            2.40,
-            0.70
-          ],
-          "mat": "ww2_dunkelgelb",
-          "hard": true
-        },
-        {
-          "disc": [
-            "o",
-            0.00,
-            -5.00,
-            23.40
-          ],
-          "n": [
-            0,
-            0,
-            1
-          ],
-          "r": [
-            2.00,
-            0.30
-          ],
-          "mat": "ww2_dunkelgelb_worn",
-          "hard": true
-        },
-        {
-          "disc": [
-            "o",
-            3.00,
-            1.00,
-            22.60
-          ],
-          "n": [
-            0,
-            0,
-            1
-          ],
-          "r": [
-            1.30,
-            0.20
-          ],
-          "mat": "ww2_dunkelgelb_worn",
-          "hard": true
-        },
-        {
-          "box": [
-            "o",
-            6.20,
-            -1.800,
-            19.600
-          ],
-          "n": [
-            1.0000,
-            0.0000,
-            0.0000
-          ],
-          "half": [
-            6.80,
-            0.220,
-            1.050
-          ],
-          "mat": "team",
-          "round": 0.10,
-          "hard": true,
-          "mirror": true
-        },
-        {
-          "cap": [
-            "o",
-            0.00,
-            6.00,
-            20.00
-          ],
-          "to": [
-            "o",
-            0.00,
-            33.30,
-            20.00
-          ],
-          "r": [
-            0.92,
-            0.62
-          ],
-          "mat": "ww2_dunkelgelb",
-          "hard": true
-        },
-        {
-          "box": [
-            "o",
-            0.00,
-            33.500,
-            20.000
-          ],
-          "n": [
-            0.0000,
-            1.0000,
-            0.0000
-          ],
-          "half": [
-            1.25,
-            0.320,
-            1.000
-          ],
-          "mat": "ww2_steel",
-          "round": 0.08,
-          "hard": true
-        },
-        {
-          "box": [
-            "o",
-            0.00,
-            35.100,
-            20.000
-          ],
-          "n": [
-            0.0000,
-            1.0000,
-            0.0000
-          ],
-          "half": [
-            1.25,
-            0.320,
-            1.000
-          ],
-          "mat": "ww2_steel",
-          "round": 0.08,
-          "hard": true
-        },
-        {
-          "cap": [
-            "o",
-            0.00,
-            33.20,
-            20.00
-          ],
-          "to": [
-            "o",
-            0.00,
-            35.30,
-            20.00
-          ],
-          "r": [
-            0.50,
-            0.50
-          ],
-          "mat": "ww2_rubber",
-          "hard": true
-        }
-      ],
-      "points": {
-        "muzzle": [
-          0,
-          35.6,
-          20
-        ]
-      }
-    }
-  ],
-  "tracks": {
-    "x": 10.9,
-    "half": 2.1,
-    "pitch": 1.8,
-    "mat": "ww2_rubber",
-    "bar_mat": "ww2_steel",
-    "round": [
-      [
-        24.8,
-        9.9,
-        3.0
-      ],
-      [
-        18.0,
-        3.6,
-        3.1
-      ],
-      [
-        -18.0,
-        3.6,
-        3.1
-      ],
-      [
-        -25.0,
-        9.5,
-        3.0
-      ]
-    ]
-  },
-  "wheels": [
-    {
-      "at": [
-        11.2,
-        18.0,
-        3.6
-      ],
-      "r": 2.6,
-      "face": "ww2_dunkelgelb_worn",
-      "face_r": 2.1,
-      "hub": "ww2_steel",
-      "hub_r": 0.65,
-      "mat": "ww2_rubber"
-    },
-    {
-      "at": [
-        11.2,
-        12.6,
-        3.6
-      ],
-      "r": 2.6,
-      "face": "ww2_dunkelgelb_worn",
-      "face_r": 2.1,
-      "hub": "ww2_steel",
-      "hub_r": 0.65,
-      "mat": "ww2_rubber"
-    },
-    {
-      "at": [
-        11.2,
-        7.9,
-        3.6
-      ],
-      "r": 2.6,
-      "face": "ww2_dunkelgelb_worn",
-      "face_r": 2.1,
-      "hub": "ww2_steel",
-      "hub_r": 0.65,
-      "mat": "ww2_rubber"
-    },
-    {
-      "at": [
-        11.2,
-        2.5,
-        3.6
-      ],
-      "r": 2.6,
-      "face": "ww2_dunkelgelb_worn",
-      "face_r": 2.1,
-      "hub": "ww2_steel",
-      "hub_r": 0.65,
-      "mat": "ww2_rubber"
-    },
-    {
-      "at": [
-        11.2,
-        -2.5,
-        3.6
-      ],
-      "r": 2.6,
-      "face": "ww2_dunkelgelb_worn",
-      "face_r": 2.1,
-      "hub": "ww2_steel",
-      "hub_r": 0.65,
-      "mat": "ww2_rubber"
-    },
-    {
-      "at": [
-        11.2,
-        -7.9,
-        3.6
-      ],
-      "r": 2.6,
-      "face": "ww2_dunkelgelb_worn",
-      "face_r": 2.1,
-      "hub": "ww2_steel",
-      "hub_r": 0.65,
-      "mat": "ww2_rubber"
-    },
-    {
-      "at": [
-        11.2,
-        -12.6,
-        3.6
-      ],
-      "r": 2.6,
-      "face": "ww2_dunkelgelb_worn",
-      "face_r": 2.1,
-      "hub": "ww2_steel",
-      "hub_r": 0.65,
-      "mat": "ww2_rubber"
-    },
-    {
-      "at": [
-        11.2,
-        -18.0,
-        3.6
-      ],
-      "r": 2.6,
-      "face": "ww2_dunkelgelb_worn",
-      "face_r": 2.1,
-      "hub": "ww2_steel",
-      "hub_r": 0.65,
-      "mat": "ww2_rubber"
-    },
-    {
-      "at": [
-        11.0,
-        24.8,
-        9.9
-      ],
-      "r": 2.55,
-      "face": "ww2_dunkelgelb",
-      "face_r": 2.0,
-      "hub": "ww2_steel",
-      "hub_r": 0.9,
-      "mat": "ww2_rubber"
-    },
-    {
-      "at": [
-        11.0,
-        -25.0,
-        9.5
-      ],
-      "r": 2.55,
-      "face": "ww2_dunkelgelb_worn",
-      "face_r": 2.0,
-      "hub": "ww2_steel",
-      "hub_r": 0.8,
-      "mat": "ww2_rubber"
-    }
-  ],
-  "death": "knocked_out"
+ "_doc": "Traced from drawings by src/carve.lobster and ../mods/ww2/trace/pz4_h.json; do not edit by hand: Panzer IV traced: pixel numbers are in the crops of tools/trace/refs.sh (FM 30-40 p132, November 1943). h runs tail to nose in side and top; a point of a detail is [\"o\", x inches right of the centre line, side h, side v] or [\"t\", top v, top h, side v]; every r, half and round is in inches. Dimensions, Ausf. H: hull length 5.92 m, width 2.88 m, height 2.68 m, 7.02 m gun forward. The hull and turret are the drawing's; its gun is shorter than an Ausf. H's, so the gun runs to the published 7.02 m. The drawing has no side skirts, so neither does this.",
+ "skin": "#9a8650",
+ "pale": "#24231f",
+ "mark": "#b09c66",
+ "fur": 0.0,
+ "size": 1.0,
+ "crew": [],
+ "death": "knocked_out",
+ "points": {"o":{"at":[0,0,0]}},
+ "styles": {"panzer":{"mark":"#b09c66","pale":"#24231f","skin":"#9a8650"}},
+ "tracks": {"bar":0.24,"bar_mat":"ww2_steel","half":2.25,"mat":"ww2_rubber","pitch":1.2,"round":[[28.704,9.381,3.84],[21.862,3.329,3.12],[-18.412,3.329,3.12],[-27.514,6.053,4.26],[-16.092,11.5,1.65],[18.888,11.802,1.65]],"thick":0.39,"x":14.07},
+ "wheels": [
+  {"at":[14.07,-18.412,3.329],"face":"ww2_dunkelgelb_worn","face_r":1.98,"hub":"ww2_steel","hub_r":0.6,"mat":"ww2_rubber","r":2.58,"thick":1.02},
+  {"at":[14.07,-12.523,3.329],"face":"ww2_dunkelgelb_worn","face_r":1.98,"hub":"ww2_steel","hub_r":0.6,"mat":"ww2_rubber","r":2.58,"thick":1.02},
+  {"at":[14.07,-6.812,3.329],"face":"ww2_dunkelgelb_worn","face_r":1.98,"hub":"ww2_steel","hub_r":0.6,"mat":"ww2_rubber","r":2.58,"thick":1.02},
+  {"at":[14.07,-0.982,3.329],"face":"ww2_dunkelgelb_worn","face_r":1.98,"hub":"ww2_steel","hub_r":0.6,"mat":"ww2_rubber","r":2.58,"thick":1.02},
+  {"at":[14.07,4.61,3.329],"face":"ww2_dunkelgelb_worn","face_r":1.98,"hub":"ww2_steel","hub_r":0.6,"mat":"ww2_rubber","r":2.58,"thick":1.02},
+  {"at":[14.07,10.44,3.329],"face":"ww2_dunkelgelb_worn","face_r":1.98,"hub":"ww2_steel","hub_r":0.6,"mat":"ww2_rubber","r":2.58,"thick":1.02},
+  {"at":[14.07,16.211,3.329],"face":"ww2_dunkelgelb_worn","face_r":1.98,"hub":"ww2_steel","hub_r":0.6,"mat":"ww2_rubber","r":2.58,"thick":1.02},
+  {"at":[14.07,21.862,3.329],"face":"ww2_dunkelgelb_worn","face_r":1.98,"hub":"ww2_steel","hub_r":0.6,"mat":"ww2_rubber","r":2.58,"thick":1.02},
+  {"at":[14.07,-16.092,10.713],"face":"ww2_dunkelgelb_worn","face_r":0.9,"hub":"ww2_steel","hub_r":0.3,"mat":"ww2_rubber","r":1.29,"thick":0.72},
+  {"at":[14.07,-4.194,11.197],"face":"ww2_dunkelgelb_worn","face_r":0.9,"hub":"ww2_steel","hub_r":0.3,"mat":"ww2_rubber","r":1.29,"thick":0.72},
+  {"at":[14.07,7.466,11.197],"face":"ww2_dunkelgelb_worn","face_r":0.9,"hub":"ww2_steel","hub_r":0.3,"mat":"ww2_rubber","r":1.29,"thick":0.72},
+  {"at":[14.07,18.888,11.197],"face":"ww2_dunkelgelb_worn","face_r":0.9,"hub":"ww2_steel","hub_r":0.3,"mat":"ww2_rubber","r":1.29,"thick":0.72},
+  {"at":[14.07,28.704,9.381],"face":"ww2_dunkelgelb_worn","face_r":2.55,"hub":"ww2_steel","hub_r":0.9,"mat":"ww2_steel","r":3.3,"thick":1.02},
+  {"at":[14.07,-27.514,6.355],"face":"ww2_dunkelgelb_worn","face_r":2.85,"hub":"ww2_steel","hub_r":0.66,"mat":"ww2_steel","r":3.54,"thick":0.78}
+ ],
+ "shapes": [
+  {"box":["o",0.0,2.0,10.0],"half":[11.27,23.77,4.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-22.25,10.25],"half":[11.27,0.02,4.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,26.25,10.25],"half":[11.27,0.02,4.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,26.75,10.5],"half":[11.27,0.02,4.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-22.75,10.75],"half":[11.27,0.02,4.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,27.25,10.75],"half":[11.27,0.02,4.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,27.75,11.0],"half":[11.27,0.02,3.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-23.25,11.25],"half":[11.27,0.02,3.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,28.5,11.25],"half":[11.27,0.27,3.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,29.25,11.0],"half":[11.27,0.02,2.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-23.75,11.75],"half":[11.27,0.02,3.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,29.75,11.0],"half":[11.27,0.02,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.25,-34.75,9.5],"half":[3.02,0.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.5,-34.75,9.5],"half":[2.77,0.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-10.75,30.25,11.25],"half":[0.52,0.02,2.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-3.75,30.25,11.25],"half":[0.02,0.02,2.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-1.75,30.25,11.25],"half":[0.52,0.02,2.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,30.25,11.25],"half":[0.27,0.02,2.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",5.5,30.25,11.25],"half":[4.27,0.02,2.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",11.0,30.25,11.25],"half":[0.27,0.02,2.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.25,-34.25,10.0],"half":[3.02,0.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.5,-34.25,10.0],"half":[2.77,0.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-24.25,12.25],"half":[11.27,0.02,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-10.75,30.75,11.5],"half":[0.52,0.02,1.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,30.75,11.5],"half":[0.27,0.02,1.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",11.0,30.75,11.5],"half":[0.27,0.02,1.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.25,-33.75,10.5],"half":[3.02,0.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.5,-33.75,10.5],"half":[2.77,0.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-24.75,12.5],"half":[11.27,0.02,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-10.75,31.25,11.5],"half":[0.52,0.02,1.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,31.25,11.5],"half":[0.27,0.02,1.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",11.0,31.25,11.5],"half":[0.27,0.02,1.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.25,-33.0,10.75],"half":[3.02,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.5,-33.0,10.75],"half":[2.77,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-10.75,31.75,11.5],"half":[0.52,0.02,0.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,31.75,11.5],"half":[0.27,0.02,0.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",11.0,31.75,11.5],"half":[0.27,0.02,0.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,-32.5,11.25],"half":[3.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,-32.5,11.25],"half":[3.02,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-25.25,13.0],"half":[11.27,0.02,1.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-10.75,32.25,11.5],"half":[0.52,0.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,32.25,11.5],"half":[0.27,0.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",11.0,32.25,11.5],"half":[0.27,0.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,-32.0,11.75],"half":[3.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,-32.0,11.75],"half":[3.02,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,34.5,11.75],"half":[3.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,34.5,11.75],"half":[0.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,34.5,11.75],"half":[3.02,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,-31.5,12.25],"half":[3.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,-31.5,12.25],"half":[3.02,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-25.75,13.5],"half":[11.27,0.02,1.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,34.0,12.25],"half":[3.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,34.0,12.25],"half":[0.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,34.0,12.25],"half":[3.02,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,-31.0,12.75],"half":[3.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,-31.0,12.75],"half":[3.02,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,33.5,13.0],"half":[3.27,0.27,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,33.5,13.0],"half":[0.27,0.27,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,33.5,13.0],"half":[3.02,0.27,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,-30.25,13.25],"half":[3.27,0.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,-30.25,13.25],"half":[3.02,0.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-26.25,14.0],"half":[11.27,0.02,0.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,-29.5,13.75],"half":[3.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,-29.5,13.75],"half":[3.02,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,32.75,13.75],"half":[3.27,0.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,32.75,13.75],"half":[0.27,0.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,32.75,13.75],"half":[3.02,0.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,-28.0,14.25],"half":[3.27,1.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,-28.0,14.25],"half":[3.02,1.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-27.0,16.75],"half":[9.77,0.27,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-14.25,1.25,14.5],"half":[2.52,27.52,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",14.25,1.25,14.5],"half":[2.52,27.52,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,31.75,14.25],"half":[3.27,1.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,31.75,14.25],"half":[0.27,1.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,31.75,14.25],"half":[3.02,1.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,-27.75,14.75],"half":[3.27,1.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,-27.75,14.75],"half":[3.02,1.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,29.5,14.75],"half":[16.77,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.5,31.0,14.75],"half":[3.27,0.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-3.75,30.25,14.75],"half":[0.02,0.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-1.75,30.25,14.75],"half":[0.52,0.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,31.0,14.75],"half":[0.27,0.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",5.5,30.25,14.75],"half":[4.27,0.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",13.75,31.0,14.75],"half":[3.02,0.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.25,-2.5,15.25],"half":[3.02,24.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-2.0,15.5],"half":[9.77,24.27,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-3.25,24.5,15.25],"half":[13.02,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-3.25,27.75,15.25],"half":[13.02,2.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-11.75,-2.5,15.75],"half":[1.52,24.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",12.0,-2.5,15.75],"half":[1.27,24.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",10.25,-2.0,15.75],"half":[0.02,24.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-11.75,-2.75,16.75],"half":[1.52,24.52,0.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",12.0,-2.75,16.75],"half":[1.27,24.52,0.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.25,-2.25,16.75],"half":[10.02,24.02,0.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-11.75,-3.0,18.0],"half":[1.52,24.27,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",12.0,-3.0,18.0],"half":[1.27,24.27,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.25,-2.5,18.0],"half":[10.02,23.77,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-11.75,-4.25,18.75],"half":[1.52,23.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",12.0,-4.25,18.75],"half":[1.27,23.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.25,-3.75,18.75],"half":[10.02,22.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-11.75,-8.0,19.25],"half":[1.52,19.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",12.0,-8.0,19.25],"half":[1.27,19.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.25,-7.5,19.25],"half":[10.02,18.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-13.25,-4.75,19.75],"half":[0.02,11.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",1.0,-4.75,19.75],"half":[11.77,11.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0,14.158,18.616],"half":[13.5,0.45,7.214],"mat":"ww2_dunkelgelb","n":[0,0.067,0.998],"round":0},
+  {"_doc":"leaf-spring bogie","box":["o",13.2,-15.319,6.779],"half":[1.02,1.44,1.08],"mat":"ww2_dunkelgelb_worn","mirror":true,"n":[0.0,1.0,0.0],"round":0.0},
+  {"cap":["o",14.07,-18.412,3.329],"hard":true,"mat":"ww2_steel","mirror":true,"r":[0.42,0.36],"to":["o",14.07,-15.319,5.629]},
+  {"cap":["o",14.07,-12.582,3.329],"hard":true,"mat":"ww2_steel","mirror":true,"r":[0.42,0.36],"to":["o",14.07,-15.319,5.629]},
+  {"_doc":"leaf-spring bogie","box":["o",13.2,-3.837,6.779],"half":[1.02,1.44,1.08],"mat":"ww2_dunkelgelb_worn","mirror":true,"n":[0.0,1.0,0.0],"round":0.0},
+  {"cap":["o",14.07,-6.931,3.329],"hard":true,"mat":"ww2_steel","mirror":true,"r":[0.42,0.36],"to":["o",14.07,-3.837,5.629]},
+  {"cap":["o",14.07,-1.101,3.329],"hard":true,"mat":"ww2_steel","mirror":true,"r":[0.42,0.36],"to":["o",14.07,-3.837,5.629]},
+  {"_doc":"leaf-spring bogie","box":["o",13.2,7.585,6.779],"half":[1.02,1.44,1.08],"mat":"ww2_dunkelgelb_worn","mirror":true,"n":[0.0,1.0,0.0],"round":0.0},
+  {"cap":["o",14.07,4.491,3.329],"hard":true,"mat":"ww2_steel","mirror":true,"r":[0.42,0.36],"to":["o",14.07,7.585,5.629]},
+  {"cap":["o",14.07,10.321,3.329],"hard":true,"mat":"ww2_steel","mirror":true,"r":[0.42,0.36],"to":["o",14.07,7.585,5.629]},
+  {"_doc":"leaf-spring bogie","box":["o",13.2,19.185,6.779],"half":[1.02,1.44,1.08],"mat":"ww2_dunkelgelb_worn","mirror":true,"n":[0.0,1.0,0.0],"round":0.0},
+  {"cap":["o",14.07,16.092,3.329],"hard":true,"mat":"ww2_steel","mirror":true,"r":[0.42,0.36],"to":["o",14.07,19.185,5.629]},
+  {"cap":["o",14.07,21.922,3.329],"hard":true,"mat":"ww2_steel","mirror":true,"r":[0.42,0.36],"to":["o",14.07,19.185,5.629]},
+  {"_doc":"engine deck panel","box":["o",-7.237,-18.728,19.731],"half":[3.3,0.06,7.2],"mat":"ww2_dunkelgelb_worn","n":[0.0,0.0,1.0],"round":0.0},
+  {"_doc":"engine deck panel","box":["o",7.237,-18.728,19.731],"half":[3.3,0.06,7.2],"mat":"ww2_dunkelgelb_worn","n":[0.0,0.0,1.0],"round":0.0},
+  {"_doc":"driver's visor","box":["o",-4.2,21.743,17.129],"half":[1.65,0.3,0.66],"mat":"ww2_steel","n":[0.0,1.0,0.0],"round":0.0},
+  {"_doc":"bow gun","ball":["o",3.9,21.743,17.129],"hard":true,"mat":"ww2_dunkelgelb_worn","r":0.84},
+  {"cap":["o",3.9,21.743,17.129],"hard":true,"mat":"ww2_steel","r":[0.18,0.18],"to":["o",3.9,23.647,17.129]},
+  {"_doc":"hull hatch","disc":["o",-9.278,22.268,18.581],"mat":"ww2_dunkelgelb_worn","n":[0.0,0.0,1.0],"r":[1.8,0.15]},
+  {"disc":["o",9.278,22.268,18.581],"mat":"ww2_dunkelgelb_worn","n":[0.0,0.0,1.0],"r":[1.8,0.15]},
+  {"box":["o",13.77,2.231,17.552],"half":[0.375,0.075,1.5],"mat":"team","n":[1.0,0.0,0.0],"round":0.0},
+  {"box":["o",13.77,2.231,17.552],"half":[1.5,0.075,0.375],"mat":"team","n":[1.0,0.0,0.0],"round":0.0},
+  {"box":["o",-13.77,2.231,17.552],"half":[0.375,0.075,1.5],"mat":"team","n":[1.0,0.0,0.0],"round":0.0},
+  {"box":["o",-13.77,2.231,17.552],"half":[1.5,0.075,0.375],"mat":"team","n":[1.0,0.0,0.0],"round":0.0}
+ ],
+ "parts": [ {"name":"turret","pivot":[0.0,-0.149,19.913],"points":{"muzzle":[0.0,47.978,23.786]}, "shapes": [
+  {"box":["o",0.0,-2.25,20.25],"half":[5.27,12.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-5.75,-1.75,20.25],"half":[0.02,11.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",5.75,-1.75,20.25],"half":[0.02,11.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.25,-1.5,20.25],"half":[0.02,11.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.25,-1.5,20.25],"half":[0.02,11.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.75,-1.25,20.25],"half":[0.02,11.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.75,-1.25,20.25],"half":[0.02,11.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-7.25,-1.0,20.25],"half":[0.02,10.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",7.25,-1.0,20.25],"half":[0.02,10.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-7.75,-1.0,22.75],"half":[0.02,10.27,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",7.75,-1.0,22.75],"half":[0.02,10.27,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-8.25,-0.75,22.75],"half":[0.02,10.02,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",8.25,-0.75,22.75],"half":[0.02,10.02,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-8.75,-0.5,22.0],"half":[0.02,9.77,1.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",8.75,-0.5,22.5],"half":[0.02,9.77,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-9.25,-0.25,21.5],"half":[0.02,8.52,1.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",9.25,-0.25,21.75],"half":[0.02,8.52,1.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-9.75,0.75,21.0],"half":[0.02,6.52,0.77],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",9.75,0.75,21.25],"half":[0.02,6.52,1.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-10.25,1.25,20.25],"half":[0.02,4.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",10.25,1.25,20.5],"half":[0.02,4.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,10.25,20.25],"half":[4.27,0.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,11.0,20.25],"half":[3.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-2.5,23.0],"half":[5.27,11.77,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-5.75,-2.0,23.0],"half":[0.02,11.27,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",5.75,-2.0,23.0],"half":[0.02,11.27,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.25,-1.75,23.0],"half":[0.02,11.02,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.25,-1.75,23.0],"half":[0.02,11.02,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.75,-1.5,23.0],"half":[0.02,10.77,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.75,-1.5,23.0],"half":[0.02,10.77,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-7.25,-1.25,23.0],"half":[0.02,10.52,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",7.25,-1.25,23.0],"half":[0.02,10.52,2.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-17.25,23.75],"half":[1.77,2.52,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-2.5,-17.0,23.75],"half":[0.27,2.27,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",2.5,-17.0,23.75],"half":[0.27,2.27,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-3.75,-16.75,23.75],"half":[0.52,2.02,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",3.75,-16.75,23.75],"half":[0.52,2.02,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-5.0,-16.5,23.75],"half":[0.27,1.77,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",5.0,-16.5,23.75],"half":[0.27,1.77,2.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,9.75,23.25],"half":[7.27,0.02,1.52],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,10.25,23.5],"half":[4.27,0.02,1.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-2.75,26.0],"half":[5.27,11.52,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-5.75,-2.25,26.0],"half":[0.02,11.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",5.75,-2.25,26.0],"half":[0.02,11.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.25,-2.0,26.0],"half":[0.02,10.77,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.25,-2.0,26.0],"half":[0.02,10.77,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.75,-1.75,26.0],"half":[0.02,10.52,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.75,-1.75,26.0],"half":[0.02,10.52,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-7.25,-1.5,26.0],"half":[0.02,10.27,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",7.25,-1.5,26.0],"half":[0.02,10.27,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-7.75,-1.25,26.0],"half":[0.02,10.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",7.75,-1.25,26.0],"half":[0.02,10.02,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",8.25,-1.0,26.0],"half":[0.02,9.77,0.27],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-19.25,26.75],"half":[1.77,0.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-2.5,-19.0,26.75],"half":[0.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",2.5,-19.0,26.75],"half":[0.27,0.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-3.75,-18.75,26.75],"half":[0.52,0.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",3.75,-18.75,26.75],"half":[0.52,0.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-5.75,26.75],"half":[5.27,12.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-5.75,-3.5,26.75],"half":[0.02,9.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",5.75,-3.5,26.75],"half":[0.02,9.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.25,-3.25,26.75],"half":[0.02,9.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.25,-3.25,26.75],"half":[0.02,9.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.75,-3.0,26.75],"half":[0.02,9.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.75,-3.0,26.75],"half":[0.02,9.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-7.25,-2.75,26.75],"half":[0.02,9.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",7.25,-2.75,26.75],"half":[0.02,9.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",7.75,-2.5,26.75],"half":[0.02,8.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",0.0,-7.25,27.25],"half":[5.27,9.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-5.75,-5.5,27.25],"half":[0.02,7.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",5.75,-5.5,27.25],"half":[0.02,7.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.25,-5.25,27.25],"half":[0.02,7.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.25,-5.25,27.25],"half":[0.02,7.52,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-6.75,-5.0,27.25],"half":[0.02,7.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",6.75,-5.0,27.25],"half":[0.02,7.27,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",-7.25,-4.75,27.25],"half":[0.02,7.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",7.25,-4.75,27.25],"half":[0.02,7.02,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"box":["o",7.75,-4.5,27.25],"half":[0.02,6.77,0.02],"mat":"ww2_dunkelgelb","n":[0,1,0],"round":0},
+  {"_doc":"cupola, stepped drums","disc":["o",-0.309,-7.816,28.265],"mat":"ww2_dunkelgelb","n":[0.0,0.0,1.0],"r":[4.32,0.48]},
+  {"disc":["o",-0.309,-7.816,29.234],"mat":"ww2_dunkelgelb","n":[0.0,0.0,1.0],"r":[4.08,0.36]},
+  {"disc":["o",-0.309,-7.816,30.081],"mat":"ww2_dunkelgelb_worn","n":[0.0,0.0,1.0],"r":[3.9,0.3]},
+  {"disc":["o",-0.309,-7.816,30.928],"mat":"ww2_dunkelgelb","n":[0.0,0.0,1.0],"r":[3.72,0.27]},
+  {"_doc":"7.5 cm KwK 40 L/48, to the published length","cap":["o",0.0,9.964,23.786],"hard":true,"mat":"ww2_dunkelgelb","r":[0.45,0.39],"to":["o",0.0,47.978,23.786]},
+  {"_doc":"recoil sleeve","cap":["o",0.0,10.262,23.786],"hard":true,"mat":"ww2_dunkelgelb","r":[0.78,0.69],"to":["o",0.0,24.242,23.786]},
+  {"_doc":"mantlet","ball":["o",0.0,9.964,23.786],"hard":true,"mat":"ww2_dunkelgelb_worn","r":1.8},
+  {"_doc":"muzzle brake","cap":["o",0.0,45.658,23.786],"hard":true,"mat":"ww2_steel","r":[0.84,0.84],"to":["o",0.0,46.55,23.786]},
+  {"cap":["o",0.0,47.145,23.786],"hard":true,"mat":"ww2_steel","r":[0.84,0.84],"to":["o",0.0,47.978,23.786]},
+  {"_doc":"side hatch","box":["o",8.25,-6.098,24.21],"half":[1.95,0.09,2.4],"mat":"ww2_dunkelgelb_worn","mirror":true,"n":[1.0,0.0,0.0],"round":0.0},
+  {"_doc":"vision port","box":["o",8.25,1.339,24.21],"half":[0.96,0.09,0.66],"mat":"ww2_steel","mirror":true,"n":[1.0,0.0,0.0],"round":0.0}
+ ] } ]
 }

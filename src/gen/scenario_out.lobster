@@ -139,7 +139,7 @@ def scenario_tokens() -> [string]:
     sov([ tick, next_id, next_group ])
     so("UNITS")
     soi(u_id.length)
-    let cols = unit_columns().slice(0, unit_columns().length - 3)  // (a scenario has no marching blocks)
+    let cols = unit_columns().slice(0, unit_columns().length - 5)  // (a scenario has no marching blocks or velocities)
     for(u_id.length) i:
         for(cols) col: soi(col[i])
     so("BUILDINGS")
