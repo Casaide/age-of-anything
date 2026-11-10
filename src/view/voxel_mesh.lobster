@@ -209,17 +209,42 @@ let VM_AO_TAPS = [ int3 { 2, 0, 0 }, int3 { -2, 0, 0 }, int3 { 0, 2, 0 }, int3 {
                    int3 { 2, 2, 2 }, int3 { -2, 2, 2 }, int3 { 2, -2, 2 }, int3 { -2, -2, 2 },
                    int3 { 2, 2, -2 }, int3 { -2, 2, -2 }, int3 { 2, -2, -2 }, int3 { -2, -2, -2 } ]
 
+let VM_VIEW = float3 { -30.0, 45.0, 0.0 }  // the camera's turn
+let VM_SUN = float3 { -48.0, -58.0, 0.0 }  // the light's
+
 // A model as a voxel sprite in world_bake's frame: RGBA bytes, rows top down, its size, the world origin on it.
 def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
+    let sh = vm_fill(model, VM_PX / WB_PX)
+    let sun = light_along(VM_SUN)
+    let to_light = -sun
+    // the light: in bands by the sun, its own shadow (a few steps towards the light through the shell), occlusion in
+    // the creases
+    return vm_draw(sh, shadow) i:
+        let q = sh.pos[i]
+        var k = 1.0
+        if not sh.glow[i]:
+            let n = sh.nrm[i]
+            k = dot(n, to_light) * 0.5 + 0.5
+            var r = float(q) + float3_1 * 0.5 + n * 1.2 + to_light * 1.0
+            for(10):
+                if k > 0.42 and vm_solid(sh, int3 { int(floor(r.x)), int(floor(r.y)), int(floor(r.z)) }): k = 0.3
+                r += to_light * 1.7
+            var hit = 0
+            for(VM_AO_TAPS) t: if vm_solid(sh, q + t): hit++
+            k -= clamp((float(hit) / 14.0 - 0.45) / 0.35, 0.0, 1.0) * 0.3
+            k = 0.52 + 0.54 * smoothstep(0.15, 0.95, k)  // (a smooth ramp: hard bands read as inked comic art, Dominic)
+        min(sh.col[i] * k, float3_1)
+
+// A shell drawn as a sprite in world_bake's frame: each voxel that shows in the colour shadef(its slot) gives, an
+// outline, and (shadow) its shadows on the ground. RGBA bytes, rows top down, its size, the world origin on it.
+def vm_draw(sh:vm_shell, shadow:bool, shadef) -> string, int, int, float2:
     let px = WB_PX
-    let v = VM_PX / px
-    let sh = vm_fill(model, v)
-    let view = euler(float3 { -30.0, 45.0, 0.0 })
+    let v = sh.v
+    let view = euler(VM_VIEW)
     let cx = view.x
     let cy = view.y
     let cz = view.z
-    let sun = light_along(float3 { -48.0, -58.0, 0.0 })  // (where the light goes)
-    let to_light = -sun
+    let sun = light_along(VM_SUN)  // (where the light goes)
     def screen(p:float3) -> float2: return float2 { dot(p, cx), -dot(p, cy) } * px
     // the frame: the voxels and their shadows on the ground
     var lo = float2_1 * 1000000000.0
@@ -257,29 +282,17 @@ def voxel_bake(model:MNode, shadow:bool) -> string, int, int, float2:
             if d > depth[j]:
                 depth[j] = d
                 win[j] = i
-    // the light, only on the voxels that show: in bands by the sun, its own shadow (a few steps towards the light
-    // through the shell), occlusion in the creases
-    let shade = map(sh.pos.length): -1.0
+    // each voxel that shows in its colour, worked out once
+    let lit = map(sh.pos.length): float3_0
+    let done = map(sh.pos.length): false
     let cols = map(w * h): float4_0
     for(win) i, j:
         if i >= 0:
-            if shade[i] < 0.0:
+            if not done[i]:
                 bake_pulse()
-                let q = sh.pos[i]
-                var k = 1.0
-                if not sh.glow[i]:
-                    let n = sh.nrm[i]
-                    k = dot(n, to_light) * 0.5 + 0.5
-                    var r = float(q) + float3_1 * 0.5 + n * 1.2 + to_light * 1.0
-                    for(10):
-                        if k > 0.42 and vm_solid(sh, int3 { int(floor(r.x)), int(floor(r.y)), int(floor(r.z)) }): k = 0.3
-                        r += to_light * 1.7
-                    var hit = 0
-                    for(VM_AO_TAPS) t: if vm_solid(sh, q + t): hit++
-                    k -= clamp((float(hit) / 14.0 - 0.45) / 0.35, 0.0, 1.0) * 0.3
-                    k = 0.52 + 0.54 * smoothstep(0.15, 0.95, k)  // (a smooth ramp: hard bands read as inked comic art, Dominic)
-                shade[i] = k
-            let c = min(sh.col[i] * shade[i], float3_1)
+                lit[i] = shadef(i)
+                done[i] = true
+            let c = lit[i]
             cols[j] = float4 { c.x, c.y, c.z, 1.0 }
     let out = ensure_size("", w * h * 4, 0)
     // the outline: only round the whole silhouette's outside (not every gap between stakes or posts), soft: the colour
