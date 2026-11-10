@@ -85,6 +85,7 @@ else
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
 	add perf ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20 "$bakes"
 	add perf_big ../play.sh lobby mods:big_battle mute perf:90 "$bakes"
+	add perf_tree "$L" --background game.lobster -- none lobby "\"races:sewer rats|romans\"" page:setup treecheck mute novsync cache:   # the lobby's tech tree opened with nothing baked answers every frame (#430: a whole bake hung it for minutes)
 fi
 if [ ! -s "$list" ]; then
 	echo "batch: no tests to run (only=$only)"

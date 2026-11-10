@@ -15,6 +15,7 @@
 let AKB_HOUSE_SCALE = 1.1
 let AKB_BUILD_STAGES = [ 0.15, 0.4, 0.45, 0.72 ]
 let AKB_ALONG = [ "", "^z", "^d", "^a" ]
+let AKB_PICTURE_K = 0.4  // a building's picture alone (akb_picture) at this share of the bake's density
 let AKB_SEEN = float3 { 1.0, 0.0, 1.0 }
 let AKB_TEAM = float3 { 1.0, 0.0, 1.0 }  // PartShape.TEAM_KEY: the sprite shader recolours it
 let AKB_NONE = float3 { -999999.0, -999999.0, -999999.0 }
@@ -430,6 +431,18 @@ def akb_looks_of(arch:string, type:string) -> [[string]]:
 // Whether a building look has broken-up stages: not walls and gates, nor what has a near layer.
 def akb_breaks(type:string, lk:Look) -> bool:
     return not lk.arms.length and (lk.front == "-" or lk.front == "") and not gbool(at(gobj(akb_bdata(), "buildings"), type), "gate", false)
+
+// A building's base look as a picture (the lobby's tech tree, #430): from the shipped bakes or the cache when they have
+// it, else its whole frame alone, not its stages and ruins (a match's start bakes the look, with its loader).
+// (at AKB_PICTURE_K of the density: a page's frame is some 60 px, and a wonder at the whole was 3.5 s)
+def akb_picture(arch:string, type:string):
+    let name = "{arch}:{type}"
+    if looks.get(name) or frame_index(name + ":picture") >= 0 or akb_load_cached(name): return
+    bmat_matte = true
+    let px = WB_PX
+    WB_PX *= AKB_PICTURE_K
+    akb_keep(name + ":picture", akb_placed(arch, type, "", "").body, true)
+    WB_PX = px
 
 // Bake every look of every building of these architectures the pack lacks (all with ak_rebake). Frames baked.
 def bake_buildings_for(archs:[string]) -> int:

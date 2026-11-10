@@ -246,3 +246,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-10: Walk cycles measured from the legs: every body's planted feet now keep to the ground at its drawn size, mounted or not, and go back at a steady speed (walk_check, #422).
 - 2026-11-10: Trees, rocks, stone and gold rebuilt voxel by voxel at the screen's density, as the approved mockup: oak, pine and willow in three styles with their felled and stump stages, granite boulders, limestone and gold deposits as they're mined (D-247, #410).
 - 2026-11-10: Creel, the engine, split into its own public repo (`Casaide/creel`): 79 modules that compile without the game; the game uses it as a submodule (D-248, #428).
+- 2026-11-10: The lobby's tech tree no longer hangs the game for two minutes on a race not yet baked. It makes one building picture a frame instead (#430).
