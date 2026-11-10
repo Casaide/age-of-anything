@@ -62,7 +62,7 @@ def ak_load_frames(fs:[AkFrame]) -> bool:
 // A frame kept for the cache: its PNG beside the stem.
 def ak_cache_frame(stem:string, n:int, name:string, sprite:string, w:int, h:int, anchor:float2) -> AkFrame:
     let file = "{stem}_{n}.png"
-    write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
+    write_file(file, png_bytes(map(sprite.length) i: sprite[i], w, h))
     return AkFrame { name, file, w, h, int(anchor.x + 0.5), int(anchor.y + 0.5) }
 
 var ak_dump = ""  // propframes dump:<folder>: every prop as a PNG (art review)
@@ -85,7 +85,7 @@ def ak_have(name:string) -> bool:
 // A prop's sprite into the pack and the cache (reach > 1: its long ground shadow kept apart, to lie under everything).
 def ak_keep(name:string, sprite:string, w:int, h:int, anchor:float2, reach:float):
     let stem = if bake_cache_dir != "": ak_stem(name) else: ""
-    if ak_dump != "" and w > 0 and h > 0: write_file("{ak_dump}/{ak_baked}_{name}.png", bmat_png(map(sprite.length) i: sprite[i], w, h), 0, 1)
+    if ak_dump != "" and w > 0 and h > 0: write_file("{ak_dump}/{ak_baked}_{name}.png", png_bytes(map(sprite.length) i: sprite[i], w, h), 0, 1)
     let kept = []::AkFrame
     if reach > 1.0:
         let art, shade = split_shadow(sprite, w, h)

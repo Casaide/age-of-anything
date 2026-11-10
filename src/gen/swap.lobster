@@ -7,8 +7,6 @@
 // Attack classes the match didn't know (a tag no race at the start had) count as the last class,
 // as in GDScript's _class.
 
-var type_gen = 0  // bumped when any type changes look (the views rebuild)
-
 // Type k takes another recipe and line (World._make_type's fields; retype does the rest).
 def retarget_type(k:int, e:JV):
     let tags = unit_tags(e)

@@ -37,7 +37,7 @@ def os_cursor_release():
 
 // What a right click would do at m (order in game.lobster), as a cursor's name.
 def cursor_kind(m:float2) -> string:
-    if menu_open or placing >= 0 or tree_open or typing_race or end_screen_up() or panel_click(m) or in_minimap(m): return "pointer"
+    if menu_open or placing >= 0 or tree_open or typing_text or end_screen_up() or panel_click(m) or in_minimap(m): return "pointer"
     if arming_attack or arming_ability: return "attack"
     let all = selected_units()
     if not all.length: return "pointer"

@@ -290,7 +290,7 @@ def draw_topbar(speed:float, paused:bool):
     // Idle workers: how many; a click (or ".") goes to the next one.
     let bh = 40.0 * s
     let by = y + (ph - bh) / 2.0
-    if hud_button(float2 { x, by }, float2 { idle_w, bh }, false, true) or (gl.button(".") == 1 and not typing_race and not tree_open): tb_next_idle()
+    if hud_button(float2 { x, by }, float2 { idle_w, bh }, false, true) or (gl.button(".") == 1 and not typing_text and not tree_open): tb_next_idle()
     let ia = if idle.length: 1.0 else: 0.5
     icon("idle", float2 { x + 8.0 * s, by + 4.0 * s }, bh - 8.0 * s, ia)
     tb_text(float2 { x + 46.0 * s, by + (bh - 18.0 * s) / 2.0 - 2.0 * s }, string(idle.length), int(18.0 * s),
