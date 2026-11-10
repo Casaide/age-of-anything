@@ -21,6 +21,7 @@ import .lib.flow
 import .lib.spatial
 import .lib.orders
 import .lib.movement
+import .lib.steering
 import .lib.fog
 import .lib.map
 import .lib.economy
@@ -487,6 +488,7 @@ import .game.art_kit
 import .game.ruin
 import .game.art_kit_buildings
 import .game.pack_data
+import .view.vox
 import .view.voxel
 import .game.voxel_units
 
