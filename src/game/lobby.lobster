@@ -283,19 +283,20 @@ def fe_box(id:int, at:float2, size:float2, text:string, placeholder:string, fs:i
     let acc = ui_look.accent
     if focused:                        // the box with the keyboard: tinted, and ringed in the accent inside its frame (#431)
         let fw = max(3.0, 6.0 * ui())  // (the frame's width, as ui_box draws it)
-        ui_fill(at + float2_1 * fw, size - float2_1 * fw * 2.0, float4 { acc.x, acc.y, acc.z, 0.1 })
+        ui_fill(at + float2_1 * fw, size - float2_1 * fw * 2.0, float4 { acc.x, acc.y, acc.z, 0.16 })
         ui_outline(at + float2_1 * (fw - 1.0), size - float2_1 * (fw - 1.0) * 2.0, max(2.0, 3.0 * fe_k), acc)
     let s = if text == "": placeholder else: text  // (empty: the placeholder stays, the caret before it)
     let col = if text == "": ui_look.dim else: ui_look.text
     var f = fs
     while f > 10 and ui_text_wf(s, f, 0) > size.x - 34.0 * fe_k: f -= 2
     let y = at.y + (size.y - float(f)) / 2.0 - 2.0 * fe_k
-    let x = if centred: at.x + (size.x - ui_text_wf(s, f, 0)) / 2.0 else: at.x + 14.0 * fe_k
+    let cw = max(2.0, 2.5 * fe_k)  // the caret's width; an empty focused box starts the placeholder after it
+    let lead = if focused and text == "": cw + 6.0 * fe_k else: 0.0
+    let x = lead + (if centred: at.x + (size.x - ui_text_wf(s, f, 0)) / 2.0 else: at.x + 14.0 * fe_k)
     ui_text(float2 { x, y }, s, f, col)
     if focused and tf_caret_on(fe_clock() - fe_field_at):  // the caret: a bar after the text (before the placeholder)
-        let cw = max(2.0, 2.5 * fe_k)
-        let cx = if text == "": x - cw - 3.0 * fe_k else: x + ui_text_wf(text, f, 0) + 2.0 * fe_k
-        ui_fill(float2 { cx, y + float(f) * 0.08 }, float2 { cw, float(f) * 1.05 }, acc)
+        let cx = if text == "": x - lead else: x + ui_text_wf(text, f, 0) + 2.0 * fe_k
+        ui_fill(float2 { cx, y + float(f) * 0.08 }, float2 { cw, float(f) * 1.05 }, ui_look.text)  // (the text's colour: it stands off the ring)
 
 // The text in the box that has the keyboard.
 def fe_field_text() -> string:
