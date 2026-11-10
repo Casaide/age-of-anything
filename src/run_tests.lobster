@@ -79,6 +79,7 @@ import vec
 import game.cursor_images
 import gl
 import game.window_mode
+import game.topbar_fit
 import game.fog_look
 
 let DATA = "../data"
@@ -1002,9 +1003,42 @@ def g_fog_look():
     expect(game and find_string(game, "tr_names[tt] == \"tree\") and") < 0, "fog: not just trees show where never seen")
     expect(game and find_string(game, "fog_shows_land(fog[ME][c])") >= 0, "fog: resources and doodads show by fog_shows_land")
 
+// ------------------------------------------------------------------ the top bar fits the window (#370)
+
+def g_topbar():
+    let names = [ "Gutterkin", "Third Armored Division", "Fourth Armored Division of the Very Long Name Brigade" ]
+    let age_txts = [ "Mud Age", "Mud Age  ->  Bronze Age  45%" ]
+    let paces = [ "", "Paused", "x10.0" ]
+    var tried = 0
+    var off = 0
+    var bad_name = 0
+    var worst = ""
+    for([ 640, 800, 1024, 1280, 1600, 1920, 2560, 3024, 3840 ]) ww:
+        for([ 70, 100, 115, 150, 200 ]) hs:
+            let ws = float2 { float(ww), float(ww) * 0.625 }
+            let s = hud_scale(hs, ws)
+            for(names) name:
+                for(age_txts) age:
+                    for(paces) pace:
+                        let t = TbTexts { [ "99999", "99999", "99999", "99999" ], "200/200", name, "4", age, "59:59", pace }
+                        let l = tb_layout(t, ws.x, s)
+                        tried++
+                        if l.w + 10.0 * l.s > ws.x - 10.0 * l.s:
+                            off++
+                            if worst == "": worst = "{ww} px, hud {hs}: {name} / {age} / {pace}: the bar ends at {l.w + 10.0 * l.s}"
+                        let whole = l.title == name
+                        let cut = l.title == "" or ends_with(l.title, "...") and starts_with(name, l.title.substring(0, l.title.length - 3))
+                        if not (whole or cut) or tb_text_w(l.title, int(22.0 * l.s), 2) > l.title_w: bad_name++
+    expect(off == 0, "top bar: inside the window ({off} of {tried} off it; {worst})")
+    expect(bad_name == 0, "top bar: the name shown is the race\'s, whole or cut with ..., inside its room ({bad_name} of {tried})")
+    // Where there's room the name isn't cut and the scale is the player's.
+    let t = TbTexts { [ "300", "200", "0", "0" ], "3/5", "Third Armored Division", "1", "Mud Age  ->  Bronze Age  45%", "0:05", "x10.0" }
+    let l = tb_layout(t, 2560.0, hud_scale(115, float2 { 2560.0, 1600.0 }))
+    expect(l.title == "Third Armored Division" and l.s == 1.15, "top bar: a long name whole at 2560 px ({l.title}, {l.s})")
+
 // ------------------------------------------------------------------ the run
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look" ]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look", "topbar" ]
 
 def run_group(name:string):
     switch name:
@@ -1026,6 +1060,7 @@ def run_group(name:string):
         case "cursors": g_cursors()
         case "window": g_window()
         case "fog_look": g_fog_look()
+        case "topbar": g_topbar()
         default: assert false
 
 var shard = 0
