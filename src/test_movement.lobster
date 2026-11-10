@@ -67,6 +67,10 @@ let MOD = "big_battle"
 let PROMPTS = [ "norse frogs", "centaurs" ]
 let REVERSALS_MAX = 0.05  // steps back the way it was walking, a unit, a second
 let FLIPS_MAX = 0.05      // facing flickers (to a facing and back within ZIGZAG_TICKS), a unit, a second
+let GATHER_TICKS = 2400   // two minutes of trips
+let FACE_BACK = 112.5     // degrees: facing more than this from where it walks is walking backwards
+let BACK_WINDOW = 4       // ticks: where it walks, over a turn's worth of steps
+let BACK_WALKED = 100     // milli-tiles in them: it's really walking
 let FACE_OFF_MAX = 10     // percent of looks at a walking unit finding it facing over FACE_OFF from where it walks
 let FACE_OFF = 50.0       // degrees
 let FACE_WINDOW = 10      // ticks over which "where it walks" is taken
@@ -251,8 +255,16 @@ def run_settle(name:string, w:MoveWatch, ids:[int], limit:int):
     print "{name}: settled at {if done >= 0: string(done / 20) + " s" else: "never"}; {moved} still moving {SETTLE_SECS} s later"
     check(moved == 0, "{name}: everyone stands still once there ({moved} moving)")
 
+// The other side's start units taken off: a move, not a fight (by an enemy, a group doesn't form up, #347).
+def no_foes():
+    var k = u_x.length
+    while k > 0:
+        k--
+        if u_owner[k] == 1: remove_unit(k)
+
 def flat(races:[JV], rules:JV):
     new_world(SEED, "flat_test", races, rules, [])
+    no_foes()  // (they stand by where the head-on group starts)
 
 // 1. A small group crosses open ground and stops.
 def scene_small(rules:JV, races:[JV]):
@@ -294,10 +306,7 @@ def scene_through(rules:JV, races:[JV]):
 // 5. Cavalry funnel through the pass (choke_test: a 2-tile gap in a rock wall).
 def scene_funnel(rules:JV, races:[JV]):
     new_world(SEED, "choke_test", races, rules, [])
-    var k = u_x.length  // (the other side's start units stand 5 tiles past the gap: a move, not a fight)
-    while k > 0:
-        k--
-        if u_owner[k] == 1: remove_unit(k)
+    no_foes()  // (the other side's start units stand 5 tiles past the gap)
     let a = group(0, "large", 16, 12000, 16000)
     let w = watch_new(a)
     issue_cmd(0, CMD_MOVE, a, 36000, 16000, 0, 0)
@@ -382,6 +391,53 @@ def scene_queue(rules:JV, races:[JV]):
     check(after > 0, "queue: the front meets the foe")
     check(mixed_worst * 50 <= ids.length, "queue: blocks behind don\'t walk into the ones ahead ({mixed_worst})")
 
+// 9. Workers gathering by their Town Center: walking to the patch and back with a load, they face the way they walk.
+def scene_gather(rules:JV, races:[JV]):
+    new_world(SEED, "reed_meadow", races, rules, [])
+    let ids = []::int
+    for(u_x.length) i:
+        if u_owner[i] == 0 and t_worker[u_kind[i]] != 0: ids.push(u_id[i])
+    for([ "wood", "food" ]) kind, n:
+        var best = -1
+        var best_d2 = 1 << 62
+        for(resource_cells) c:
+            let r = tr_res[terrain[c]]
+            if r > 0 and resource_names[r - 1] == kind:
+                let cx, cy = centre(c)
+                let d2 = dist2(start_x[0], start_y[0], cx, cy)
+                if d2 < best_d2:
+                    best_d2 = d2
+                    best = c
+        assert best >= 0
+        issue_cmd(0, CMD_GATHER, filter(ids) id, k: k % 2 == n, best, 0, 0, 0)
+    let face = map(ids): 2
+    let hist_x = map(ids): map(BACK_WINDOW): -1
+    let hist_y = map(ids): map(BACK_WINDOW): -1
+    var looks = 0
+    var back = 0
+    for(GATHER_TICKS):
+        let was_x = map(ids) id: u_x[index_of(id)]
+        let was_y = map(ids) id: u_y[index_of(id)]
+        wstep()
+        for(ids) id, a:
+            let i = index_of(id)
+            let h = tick % BACK_WINDOW
+            let ox = hist_x[a][h]
+            let oy = hist_y[a][h]
+            hist_x[a][h] = u_x[i]
+            hist_y[a][h] = u_y[i]
+            let walking, nd = unit_walk(i, face[a], was_x[a], was_y[a])
+            if walking:
+                face[a] = nd
+                if ox >= 0 and dist2(ox, oy, u_x[i], u_y[i]) >= BACK_WALKED * BACK_WALKED:
+                    let way = atan2(normalize(iso(float(u_x[i] - ox), float(u_y[i] - oy))))
+                    looks++
+                    let now = atan2(normalize(iso(float(u_x[i] - was_x[a]), float(u_y[i] - was_y[a]))))  // (and this tick's step: not just the turn itself)
+                    if abs((way - float(nd) * 45.0 + 540.0) % 360.0 - 180.0) > FACE_BACK and abs((now - float(nd) * 45.0 + 540.0) % 360.0 - 180.0) > FACE_BACK: back++
+    print "gather: {ids.length} workers, {back} of {looks} looks at one walking find it facing back the way it came"
+    check(looks > 0, "gather: they walk")
+    check(back == 0, "gather: workers never walk backwards ({back} of {looks} looks)")
+
 let args = plain_args(command_line_arguments())
 vx_load([ "../data/voxel" ])
 lib_load("../data")
@@ -392,6 +448,7 @@ let rules = load_rules("default")
 let races = map(PROMPTS) p: generate(p, rules, 0)
 def on(s:string) -> bool: return args.length == 0 or (find(args) a: a == s) >= 0
 if on("small"): scene_small(rules, races)
+if on("gather"): scene_gather(rules, races)
 if on("crossing"): scene_cross(rules, races, false)
 if on("head_on"): scene_cross(rules, races, true)
 if on("through"): scene_through(rules, races)

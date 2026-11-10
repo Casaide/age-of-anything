@@ -174,5 +174,25 @@ for(8) k:
     if k == 4: expect(not near(ts[0].a, last, 0.01), "the thigh moves through the walk")
     if k == 0: last = ts[0].a
 
+// a broken .vox body says what's wrong: a misspelt object, a limb's piece alone, a piece without a side, a left limb
+// without its right, mats that aren't palette indexes or our materials; a good one has nothing to say
+def scene_of(names:[string]) -> vox_file:
+    var ns = ntrn(0, "", 1, -1, int3_0) + ngrp(1, map(names) _, i: 2 + i * 2)
+    for(names) n, i: ns += ntrn(2 + i * 2, n, 3 + i * 2, 0, int3 { 4, 0, 15 + i * 18 }) + nshp(3 + i * 2, 3)
+    return vox_parse(vox_of(models + ns + rgba([ 0xb04020 ]) + layr(0, "body", false)))
+def problems(names:[string], mats:string) -> string: return concat_string(vx_vox_problems(scene_of(names), b, parse_json(mats)), "; ")
+def says(names:[string], mats:string, what:string) -> bool:
+    let p = problems(names, mats)
+    return find_string(p, what) >= 0
+let good = problems([ "thigh.r", "shin.r", "head" ], "\{\}")
+expect(good == "", "a good body has nothing wrong: {good}")
+expect(says([ "thign.r", "shin.r" ], "\{\}", "thign.r: not a body point"), "a misspelt object is named")
+expect(says([ "thigh.r" ], "\{\}", "thigh.r without shin.r"), "a thigh without its shin is named")
+expect(says([ "thigh", "shin.r" ], "\{\}", "thigh: a limb piece ends .r or .l"), "a limb piece without a side is named")
+expect(says([ "thigh.l", "shin.l" ], "\{\}", "thigh.l without thigh.r"), "a left leg without a right is named")
+expect(says([ "head" ], "\{\"0\": \"team\"\}", "mats: 0 isn\'t a palette index"), "mats index 0 is named")
+expect(says([ "head" ], "\{\"3\": \"teem\"\}", "mats: 3 names teem"), "mats naming no material is named")
+expect(vox_parse(substring(vox_of(models), 0, 40)).error != "", "a cut-off file is an error, not a crash")
+
 print "{n_checks} checks, {n_failed} failed"
 if n_failed > 0: set_exit_code(1)

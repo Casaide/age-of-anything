@@ -72,6 +72,25 @@ Draw it: `cd src && lobster voxel_proto.lobster -- /tmp/s.ppm legs <body> <gear>
 attacking in 8 facings), and play it: `./play.sh lobby mods:<id> rules:anything`. How to make a look read well at
 game size: the voxel-art skill (`.claude/skills/voxel-art/`).
 
+### Drawing it in MagicaVoxel (.vox)
+
+A body or a piece of gear can be drawn in MagicaVoxel (or anything that writes `.vox`) instead of typed as shapes (#313).
+Put the file in the mod's `data/voxel/models/`. One voxel is one baked pixel at `size` 1.
+
+- **Gear or a single piece**: a shape `{"model": "spear.vox", "at": ["hand.r", 0, 0, 0], "to": ["hand.r", 0, 1, 0]}`
+  sits the model's centre on a point, its +Y along `to`. `"mirror": true` draws it again on the left, flipped.
+- **A whole body**: the body JSON keeps the behaviour (copy a game body of the same build: gait, legs, arms, size) and
+  adds `"vox": "<file>.vox"`. Draw the figure standing, in one file, one object per piece:
+  - limbs `thigh.r`, `shin.r`, `upper_arm.r`, `forearm.r` (and `foot.r`, `hand.r`): the hip, knee, ankle, shoulder,
+    elbow and hand are where the pieces meet, so draw them touching. A missing `.l` is the `.r` mirrored.
+  - anything else is named after the body point it rides (`head`, `chest`, `pelvis` ...).
+  - a hidden layer named `points`, one voxel per object, moves a body's point, adds a new one, or places the helmet (`helm`).
+- **Colours**: load `data/voxel/creel.vox`'s palette in MagicaVoxel and paint with it: each swatch is one of our
+  materials (skin, team, metal, wood ...), recoloured per race and team like ours, no mapping needed. Any other colour
+  is a material of its own; or map a palette index by name, `"mats": {"5": "team"}`. A MagicaVoxel `metal` material shines.
+- A wrong file stops the load with `file: what's wrong` (a misspelt object, a limb's piece alone, a bad `mats` entry).
+  After the game's materials change, `cd src && lobster vox_palette.lobster` rewrites `creel.vox`.
+
 ## 4. Words, rules, check
 
 - `data/lexicon.json`: words that give your tag (`"tags": {"scifi": 5}`); with an era, the word also
