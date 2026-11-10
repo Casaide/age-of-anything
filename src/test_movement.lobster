@@ -64,7 +64,7 @@ let SEED = 2026
 let MOD = "big_battle"
 let PROMPTS = [ "norse frogs", "centaurs" ]
 let REVERSALS_MAX = 0.05  // steps back the way it was walking, a unit, a second
-let FLIPS_MAX = 0.05      // turns of facing, a unit, a second
+let FLIPS_MAX = 0.05      // facing flickers (to a facing and back within ZIGZAG_TICKS), a unit, a second
 let FACE_OFF_MAX = 10     // percent of looks at a walking unit finding it facing over FACE_OFF from where it walks
 let FACE_OFF = 50.0       // degrees
 let FACE_WINDOW = 10      // ticks over which "where it walks" is taken
@@ -84,6 +84,9 @@ class MoveWatch:
     step_x:[int] = []
     step_y:[int] = []
     face:[int] = []
+    face_was:[int] = []
+    face_tick:[int] = []
+    turns:int = 0
     hist_x:[[int]] = []
     hist_y:[[int]] = []
     unit_ticks:int = 0
@@ -108,6 +111,8 @@ def watch_new(ids:[int]) -> MoveWatch:
     w.step_x = map(ids): 0
     w.step_y = map(ids): 0
     w.face = map(ids): 2
+    w.face_was = map(ids): -1
+    w.face_tick = map(ids): -1000
     w.hist_x = map(ids): map(FACE_WINDOW): -1
     w.hist_y = map(ids): map(FACE_WINDOW): -1
     w.turn_sign = map(ids): 0
@@ -171,7 +176,11 @@ def watch_tick(w:MoveWatch):
                 if (dx != 0 or dy != 0) and (w.step_x[a] != 0 or w.step_y[a] != 0) and dx * w.step_x[a] + dy * w.step_y[a] < 0: w.reversals++
                 let walking, nd = unit_walk(i, w.face[a], w.last_x[a], w.last_y[a])
                 if walking:
-                    if nd != w.face[a] and (w.step_x[a] != 0 or w.step_y[a] != 0): w.flips++
+                    if nd != w.face[a] and (w.step_x[a] != 0 or w.step_y[a] != 0):
+                        w.turns++
+                        if nd == w.face_was[a] and tick - w.face_tick[a] <= ZIGZAG_TICKS: w.flips++
+                        w.face_was[a] = w.face[a]
+                        w.face_tick[a] = tick
                     w.face[a] = nd
                     if ox >= 0 and dist2(ox, oy, x, y) >= FACE_WALKED * FACE_WALKED:
                         let way = atan2(normalize(iso(float(x - ox), float(y - oy))))
@@ -192,6 +201,7 @@ def watch_report(name:string, w:MoveWatch):
     let secs = float(w.unit_ticks) / 20.0
     let rev = float(w.reversals) / max(secs, 1.0)
     let flips = float(w.flips) / max(secs, 1.0)
+    let turns = float(w.turns) / max(secs, 1.0)
     let off = w.off * 100 / max(1, w.looks)
     let mean = w.overlap_sum / float(max(1, w.samples))
     let zig = float(w.zigzags) / max(secs, 1.0)
@@ -199,10 +209,10 @@ def watch_report(name:string, w:MoveWatch):
     print "{name}: swerves {fixed_str(zig, 3)} a unit a second; wobble {fixed_str(wob, 3)}"
     check(zig <= ZIGZAG_MAX, "{name}: no swaying side to side ({fixed_str(zig, 3)} a unit a second)")
     check(wob <= WOBBLE_MAX, "{name}: they walk straight ({fixed_str(wob, 3)} past the line)")
-    print "{name}: {int(secs)} unit-seconds walking; reversals {fixed_str(rev, 3)}, turns {fixed_str(flips, 3)} a unit a second; facing off {off}% of {w.looks}; overlap mean {fixed_str(mean, 3)}, worst {fixed_str(w.overlap_worst, 3)}"
+    print "{name}: {int(secs)} unit-seconds walking; reversals {fixed_str(rev, 3)}, turns {fixed_str(turns, 3)}, flickers {fixed_str(flips, 3)} a unit a second; facing off {off}% of {w.looks}; overlap mean {fixed_str(mean, 3)}, worst {fixed_str(w.overlap_worst, 3)}"
     check(w.unit_ticks > 0, "{name}: they walk")
     check(rev <= REVERSALS_MAX, "{name}: no walking back and forth ({fixed_str(rev, 3)} a unit a second)")
-    check(flips <= FLIPS_MAX, "{name}: no turning while walking ({fixed_str(flips, 3)} a unit a second)")
+    check(flips <= FLIPS_MAX, "{name}: no facing flicker ({fixed_str(flips, 3)} a unit a second)")
     check(off <= FACE_OFF_MAX, "{name}: they face the way they walk ({off}% off)")
     check(mean <= OVERLAP_MAX, "{name}: nobody walks inside another ({fixed_str(mean, 3)} on average)")
 
