@@ -40,3 +40,12 @@ grass, and the grain is finer.
 - 1080p desktops start at zoom 1, much further out than a Retina Mac's 2.4 (1,080 world px tall against 764). One
   rule for every desktop would be cleaner.
 - Dominic's next step: smaller units with more voxels, a high-detail human from a .vox model (#313).
+
+## No waiting on a bake (Dominic: a 6-minute first-start bake can't ship)
+`prebake.sh` now bakes the buildings and props twice, at the base density and at 2.4, each keyed by its density, and
+the builds ship both. The game reads the set that matches its screen, so a first start bakes no buildings anywhere.
+- prebake: base 10.5 min, 2.4 15 min (2,522 building and 193 prop frames each). Shipped: base 151 MB, 2.4 193 MB
+  (343 MB in all, was 151).
+- Launch to the first frame of a match on an empty cache: 2.4: 5.0 s (2.6 s of it the first unit bakes), base 3.5 s
+  (1.6 s). It was over 6 minutes at 2.4 before the second set.
+- The rest of the units (341 bakes) bake during play, 6 ms a frame and only when calm: 58.7 fps at 2.4, 59.6 at base.
