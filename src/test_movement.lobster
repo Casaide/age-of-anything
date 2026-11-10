@@ -558,6 +558,25 @@ def scene_gather(rules:JV, races:[JV]):
     check(looks > 0, "gather: they walk")
     check(back == 0, "gather: workers never walk backwards ({back} of {looks} looks)")
 
+// 4e. Three units sent one by one, each on its own order, to the same point in a lane between two houses (#396): they
+// stand round it and settle, instead of jittering on top of each other for ever.
+def scene_one_spot(rules:JV, races:[JV]):
+    flat(races, rules)
+    let hk = btype_index("house")
+    let a = place(0, hk, 27, 9)
+    b_done[a] = 1
+    b_hp[a] = bm_hp[0][hk]
+    let bx = 27 + b_sx[a] + 1
+    let b = place(0, hk, bx, 9)
+    b_done[b] = 1
+    b_hp[b] = bm_hp[0][hk]
+    let k = find(t_slot.length) kk: t_player[kk] == 0 and t_slot[kk] == "spear"
+    let ids = []::int
+    for(3) n: ids.push(u_id[add_unit(0, k, 25000 + n * 2500, 16000 + n * 700)])
+    let w = watch_new(ids)
+    for(ids) id, n: issue_cmd(0, if n == 1: CMD_MOVE else: CMD_ATTACK_MOVE, [ id ], (bx - 1) * TILE + 500, 10500, 0, 0)
+    run_settle("one spot", w, ids, 600)
+
 // 4d. Workers carrying wood home walk by soldiers standing about in town (#395): they go round them, and nobody standing
 // is pushed along their way (armies parked in town got smeared along the workers' paths).
 def scene_workers_by(rules:JV, races:[JV]):
@@ -617,6 +636,7 @@ if on("through"): scene_through(rules, races)
 if on("town"): scene_town(rules, races)
 if on("rally"): scene_rally(rules, races)
 if on("workers_by"): scene_workers_by(rules, races)
+if on("one_spot"): scene_one_spot(rules, races)
 if on("funnel"): scene_funnel(rules, races)
 if on("herd"): scene_herd(rules, races)
 if on("meet"): scene_meet(rules, races)
