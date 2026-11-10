@@ -2932,8 +2932,8 @@ def rally_gather_on(map_id:string):
     var idle_most = 0
     var idle_at = -1
     for(3600) t:
-        if t % 60 == 0 and trained.length < 24:
-            let uid = spawn_by(tc, worker)  // as training does: beside the Town Center, then off to the rally
+        if t % 150 == 0 and trained.length < 24:  // (as a Town Center trains: the rally tree runs out while they still come)
+            let uid = spawn_by(tc, worker)        // as training does: beside the Town Center, then off to the rally
             go_to_rally(tc, index_of(uid))
             trained.push(uid)
         tick_on()
@@ -2945,6 +2945,7 @@ def rally_gather_on(map_id:string):
             if idle > idle_most:
                 idle_most = idle
                 idle_at = t
+    check(res_at(tree) != wood, "rally gather {map_id}: the rally tree runs out while villagers still come")
     check(gathered[wood - 1][0] >= 400, "rally gather {map_id}: wood comes in ({gathered[wood - 1][0]})")
     check(idle_most == 0, "rally gather {map_id}: no villager trained to a tree gives up and stands idle (at most {idle_most} idle, first at tick {idle_at})")
 
