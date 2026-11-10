@@ -311,6 +311,9 @@ def sidestep(i:int, x:int, y:int, ux:int, uy:int, s:int) -> int, int:
 def steer(i:int, x:int, y:int, nx:int, ny:int, s:int) -> int, int:
     var vx = u_vx[i]
     var vy = u_vy[i]
+    if vx * (nx - x) + vy * (ny - y) < 0:  // (turning back, a load dropped or a new order: it turns where it stands, not sliding on backwards)
+        vx = 0
+        vy = 0
     var ex = nx - x - vx
     var ey = ny - y - vy
     let e = isqrt(ex * ex + ey * ey)
