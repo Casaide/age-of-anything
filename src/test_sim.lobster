@@ -72,7 +72,10 @@ import lib.expand
 import lib.bot
 import lib.walls_ai
 import lib.world
+import hooks.active
+import hooks.rules
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -139,7 +142,7 @@ let bare0 = bare_of(rules0)
 def new_world(map_id:string, races:[JV], rules:JV, team_ids:[int]):
     reset_world()
     due = []
-    setup_world(SEED, map_id, races, rules, team_ids)
+    setup_match(SEED, map_id, races, rules, team_ids)
     events_on = true  // (the checks read them; they aren't state)
 
 // World's SPAWN as it runs: `count` of p's `slot` round (x, y), jittered by the world's rng, onto open ground.
@@ -255,17 +258,17 @@ def has_word(code:string, w:string) -> bool:  // w in code, not inside a longer 
 
 def test_source_lint():
     var files = 0
-    let names = filter(scan_folder("lib", true) or []) f: ends_with(f, ".lobster")
+    let names = append(map(filter(scan_folder("lib", true) or []) f: ends_with(f, ".lobster")) f: "lib/" + f, map(filter(scan_folder("hooks", true) or []) f: ends_with(f, ".lobster")) f: "hooks/" + f)
     let sorted_names = sorted_strs(names)
     for(sorted_names) f:
         files++
-        let src_lines = tokenize(read_file("lib/" + f) or "", "\n", "")
+        let src_lines = tokenize(read_file(f) or "", "\n", "")
         for(src_lines) line, n:
             let cut = find_string(line, "//")
             let code = if cut >= 0: substring(line, 0, cut) else: line
             for(BANNED) b:
-                if has_word(code, b): check(false, "lib/{f}:{n + 1} uses banned \'{b}\': {line}")
-            if has_decimal(code): check(false, "lib/{f}:{n + 1} has a float literal: {line}")
+                if has_word(code, b): check(false, "{f}:{n + 1} uses banned \'{b}\': {line}")
+            if has_decimal(code): check(false, "{f}:{n + 1} has a float literal: {line}")
     check(files >= 20, "lint saw the sim and AI sources ({files} files)")
 
 // ------------------------------------------------------------------ flow fields
@@ -716,7 +719,7 @@ def watch(n:int, uid:int) -> Watch:
 
 def eval_has_tag(e:JV, tag:string) -> bool: return has_str(glist(e, "tags"), tag)
 
-def type_has_tag(k:int, tag:string) -> bool: return eval_has_tag(su_type_eval[k], tag)
+def type_has_tag(k:int, tag:string) -> bool: return eval_has_tag(su_units[k], tag)
 
 // Healers: one heals a wounded friend in range to full, walks to one further off, never heals an
 // enemy, and never fights, not even when told to or when struck.
@@ -731,7 +734,7 @@ def test_heal():
     stance(1, [ foe ], "passive")
     let hi = index_of(healer)
     check(u_posture[hi] == PASSIVE, "heal: a healer spawns with the no-attack stance")
-    check(as_int(at(su_type_eval[u_kind[hi]], "attack")) == 0, "heal: a healer has no attack")
+    check(as_int(at(su_units[u_kind[hi]], "attack")) == 0, "heal: a healer has no attack")
     issue_cmd(0, CMD_ATTACK, [ healer ], foe, 0, 0, 0)
     steps(8)
     let full = t_hp[u_kind[index_of(near)]]
@@ -1470,7 +1473,7 @@ def test_trade():
     issue_cmd(0, CMD_ROUTE, [ c3 ], af, 0, 0, 0)
     steps(40)
     check(u_task[index_of(c3)] == T_TRADE, "trade: an ally\'s market is traded with")
-    let cart_eval = su_type_eval[k]
+    let cart_eval = su_units[k]
     let cost = at(cart_eval, "cost")
     check(gint(cost, "gold", 0) > 0 and gint(cost, "wood", 0) > 0 and gint(cart_eval, "pop", 0) == 1, "trade: a cart costs wood and gold, 1 pop ({stringify(cost)})")
 
@@ -2908,6 +2911,44 @@ def test_wood_spots():
     check(shared == 0, "wood spots: no two woodcutters hold the same spot ({shared})")
     check(at_work > 0 and got >= 60, "wood spots: they get to work ({at_work} samples) and wood comes in ({got})")
 
+// A Town Center rallied to a tree, and villager after villager trained to it (#336): every one of
+// them keeps cutting wood while the forest lasts. None ends up standing about with nothing to do.
+def test_rally_gather():
+    for([ "old_forest", "reed_meadow", "river_delta", "siege_vale" ]) map_id: rally_gather_on(map_id)
+
+def rally_gather_on(map_id:string):
+    new_world(map_id, races0, rules0, [])
+    var tc = -1
+    for(b_owner) o, b:
+        if tc < 0 and o == 0: tc = b
+    let worker = type_of_slot(0, "worker")
+    let wood = kind_of("wood")
+    // the nearest tree to the Town Center, as a player would click
+    let tree = nearest_res(b_cx[tc] * TILE + TILE, b_cy[tc] * TILE + TILE, "wood")
+    check(tree >= 0, "rally gather {map_id}: a tree near the Town Center")
+    issue_cmd(0, CMD_RALLY, [], b_id[tc], (tree % W) * TILE + 500, (tree / W) * TILE + 500, 0)
+    steps(12)
+    let trained = []::int
+    var idle_most = 0
+    var idle_at = -1
+    for(3600) t:
+        if t % 150 == 0 and trained.length < 24:  // (as a Town Center trains: the rally tree runs out while they still come)
+            let uid = spawn_by(tc, worker)        // as training does: beside the Town Center, then off to the rally
+            go_to_rally(tc, index_of(uid))
+            trained.push(uid)
+        tick_on()
+        if t % 20 == 0:
+            var idle = 0
+            for(trained) uid:
+                let i = index_of(uid)
+                if i >= 0 and u_task[i] == T_NONE: idle++
+            if idle > idle_most:
+                idle_most = idle
+                idle_at = t
+    check(res_at(tree) != wood, "rally gather {map_id}: the rally tree runs out while villagers still come")
+    check(gathered[wood - 1][0] >= 400, "rally gather {map_id}: wood comes in ({gathered[wood - 1][0]})")
+    check(idle_most == 0, "rally gather {map_id}: no villager trained to a tree gives up and stands idle (at most {idle_most} idle, first at tick {idle_at})")
+
 // A long shift-queue of builds (a dragged wall) all goes up.
 def test_build_queue():
     new_world("flat_test", races0, rules0, [])
@@ -3572,7 +3613,7 @@ def test_effects():
     for(u_kind) k, i:
         if k == wk: full = full and u_hp[i] == t_hp[wk]
     check(full, "effects: workers already out are at their new full health")
-    check(t_hp[sp] == as_int(at(su_type_eval[sp], "hp")) and t_hp[sp] == lines[sp][0].hp, "effects: Thick Skins leaves spears alone")
+    check(t_hp[sp] == as_int(at(su_units[sp], "hp")) and t_hp[sp] == lines[sp][0].hp, "effects: Thick Skins leaves spears alone")
     // A track's next step needs the one before.
     ages[0] = 3
     let ak = btype_index("armoury")
@@ -4418,7 +4459,7 @@ def test_air():
     let race = gen_race(PROMPTS[1])
     new_world("flat_test", [ race, race ], rules0, [])
     let kb = type_of_slot(0, "bolt_thrower")
-    check(t_air[kb] == (if rstr(su_type_recipe[kb], "body") == "siege.bolt.timber": 1 else: 0), "air on a part reaches the sim")
+    check(t_air[kb] == (if rstr(gobj(su_units[kb], "look"), "body") == "siege.bolt.timber": 1 else: 0), "air on a part reaches the sim")
     check(t_air[type_of_slot(0, "archer")] == 0, "and only on that line")
     set(bolt, "stats", plain)
 
@@ -4480,7 +4521,7 @@ def test_save_load():
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
-              "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots",
+              "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
               "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "wonder", "save_load", "match", "match_b", "match_flipped" ]
 
@@ -4517,6 +4558,7 @@ def run_part(name:string):
     elif name == "builder_back_to_work": test_builder_back_to_work()
     elif name == "no_dark_picks": test_no_dark_picks()
     elif name == "wood_spots": test_wood_spots()
+    elif name == "rally_gather": test_rally_gather()
     elif name == "build_queue": test_build_queue()
     elif name == "drop_off": test_drop_off()
     elif name == "animals": test_animals()

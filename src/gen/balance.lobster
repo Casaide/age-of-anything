@@ -75,7 +75,7 @@ def rr_left() -> int, int:
 // (rr_hash.gd's check), and the whole state at tick dumpat.
 def rr_fight(races:[JV], rules:JV, age:int, a:RRUnit, b:RRUnit, trace = false, dumpat = -1) -> int:
     reset_world()
-    setup_world(1, "flat_test", [ races[a.race], races[b.race] ], rules, [])
+    setup_match(1, "flat_test", [ races[a.race], races[b.race] ], rules, [])
     for(2) p: rr_in_age(p, age)
     let value = []::int
     let kinds = []::int

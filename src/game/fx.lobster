@@ -37,9 +37,12 @@ class ShotStyle:
     len:float
     w:float
     col:float4
-    glow = float4_0  // a soft halo round it; alpha 0: none
-    sticks = true    // a miss stands in the ground (false: a bolt of light)
-    beam = false     // a line from muzzle to target, for `hold` seconds
+    glow = float4_0   // a soft halo round it; alpha 0: none
+    shaft = float4_0  // an arrow: a thin shaft, a head and fletching; alpha 0: a plain line
+    head = float4_0
+    fletch = float4_0
+    sticks = true  // a miss stands in the ground (false: a bolt of light)
+    beam = false   // a line from muzzle to target, for `hold` seconds
     hold = 0.12
     pulses = 1
     gap = 0.0
@@ -67,6 +70,10 @@ def shot_style_of(m:JV) -> ShotStyle:
     def num(k:string, f:float) -> float: return if has(m, k): as_float(at(m, k)) else: f
     let s = ShotStyle { num("arc", 0.0), num("len", 0.0), num("w", 1.0), hex_col(substring(rstr(m, "col"), 1, 6)) }
     if has(m, "glow"): s.glow = hex_col(substring(rstr(m, "glow"), 1, 6))
+    if has(m, "shaft"):
+        s.shaft = hex_col(substring(rstr(m, "shaft"), 1, 6))
+        s.head = hex_col(substring(rstr(m, "head"), 1, 6))
+        s.fletch = hex_col(substring(rstr(m, "fletch"), 1, 6))
     s.sticks = gbool(m, "sticks", true)
     s.beam = gstr(m, "form", "bolt") == "beam"
     s.hold = num("hold", 0.12)
@@ -119,7 +126,10 @@ def draw_bolt(st:ShotStyle, a:float2, b:float2, u:float, alpha:float):
             let t0 = st.len * 0.5 + tail * float(k) / 3.0
             let t1 = st.len * 0.5 + tail * float(k + 1) / 3.0
             ui_line(p - dir * t0, p - dir * t1, st.w * (1.0 - float(k) * 0.25), float4 { col.x, col.y, col.z, col.w * [ 0.6, 0.35, 0.15 ][k] })
-    if st.len > 0.0: ui_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w, col)
+    if st.shaft.w > 0.0:
+        for(arrow_lines(p + dir * st.len * 0.5, p - dir * st.len * 0.5, st.w, st.shaft, st.head, st.fletch, true)) l:
+            ui_line(l.a, l.b, l.w, float4 { l.col.x, l.col.y, l.col.z, alpha })
+    elif st.len > 0.0: ui_line(p - dir * st.len * 0.5, p + dir * st.len * 0.5, st.w, col)
     else: fx_circle(p, st.w, col)
     fx_circle(p + float2 { 0.0, lift + 1.0 }, 0.8, float4 { 0.0, 0.0, 0.0, 0.25 * alpha })
 
@@ -437,12 +447,14 @@ def fx_draw(ground_of):
         let st = shot_style(s.kind)
         let a = clamp((STUCK_TIME - s.t) / 0.6, 0.0, 1.0)
         let up = float2 { sin(s.tilt * 57.29578), -cos(s.tilt * 57.29578) } * st.len * 0.9
-        let w = max(st.w, 1.4)
+        let arrow = st.shaft.w > 0.0
+        let w = st.w
         let sh = s.pos + float2 { 0.6, 0.3 }
         ui_line(sh, sh + float2 { up.x * 1.4, -up.y * 0.35 }, w, float4 { 0.0, 0.0, 0.0, 0.3 * a })
-        ui_line(s.pos, s.pos + up, w + 1.2, float4 { 0.1, 0.07, 0.04, 0.8 * a })
-        ui_line(s.pos, s.pos + up, w, float4 { st.col.x * 0.65, st.col.y * 0.65, st.col.z * 0.65, a })
-        fx_circle(s.pos + up, w * 0.9, float4 { 0.92, 0.9, 0.84, a })
+        let parts = if arrow: arrow_lines(s.pos, s.pos + up, w, st.shaft, st.head, st.fletch, false) else: stuck_lines(s.pos, up, w, st.col, a)
+        for(parts) l:
+            if l.ball: fx_circle(l.b, l.w, l.col)
+            else: ui_line(l.a, l.b, l.w, float4 { l.col.x, l.col.y, l.col.z, if arrow: a else: l.col.w })
     for(fx_heals) h:
         let g = ground_of(h.id)
         if g.x > -100000000.0:

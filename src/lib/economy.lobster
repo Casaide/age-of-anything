@@ -105,7 +105,7 @@ def add_unit(owner:int, k:int, x:int, y:int) -> int:
               t_hp[k], 0, 0, 0, t_posture[k], x, y, 0, 0, -1,
               T_NONE, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
               0, 0, 0, 0, 0, 0, 0, 0, x, y,
-              owner, k, t_speed[k], t_radius[k], t_mclass[k], 0, 0, 0 ]
+              owner, k, t_speed[k], t_radius[k], t_mclass[k], 0, 0, 0, 0, 0 ]
     unit_changes++
     for(unit_columns()) col, n: col.push(v[n])
     u_orders.push([])
@@ -324,14 +324,26 @@ def least_busy(cell:int, kind:int, except:int, i:int) -> int:
 
 // The nearest cell with this resource within SEARCH_TILES, or -1 (ties to the lower cell).
 def nearest_resource(x:int, y:int, kind:int, i:int, farms:bool, roomy_only:bool, seen:bool) -> int:
+    return nearest_resource_within(x, y, kind, i, farms, roomy_only, seen, SEARCH_TILES)
+
+// A gatherer whose patch ran out looks near first, then further out over ground its side has seen (#336): a worker
+// only stands idle when there's none of it about.
+def next_patch(i:int, kind:int) -> int:
+    var c = nearest_resource(u_x[i], u_y[i], kind, i, false, true, true)
+    if c < 0: c = nearest_resource(u_x[i], u_y[i], kind, i, false, false, true)
+    if c < 0: c = nearest_resource_within(u_x[i], u_y[i], kind, i, false, true, true, FAR_SEARCH_TILES)
+    if c < 0: c = nearest_resource_within(u_x[i], u_y[i], kind, i, false, false, true, FAR_SEARCH_TILES)
+    return c
+
+def nearest_resource_within(x:int, y:int, kind:int, i:int, farms:bool, roomy_only:bool, seen:bool, r:int) -> int:
     let cx = x / TILE
     let cy = y / TILE
     var best = -1
     var best_d2 = 1 << 62
-    var yy = max(cy - SEARCH_TILES, 0)
-    while yy < min(cy + SEARCH_TILES + 1, H):
-        var xx = max(cx - SEARCH_TILES, 0)
-        while xx < min(cx + SEARCH_TILES + 1, W):
+    var yy = max(cy - r, 0)
+    while yy < min(cy + r + 1, H):
+        var xx = max(cx - r, 0)
+        while xx < min(cx + r + 1, W):
             let c = yy * W + xx
             let d2 = dist2(x, y, xx * TILE + 500, yy * TILE + 500)
             xx++
@@ -478,8 +490,7 @@ def gather(i:int, carry_max:int):
         fallow(i, cell, kind)
         return
     if res_at(cell) != kind:
-        var more = nearest_resource(u_x[i], u_y[i], kind, i, false, true, true)
-        if more < 0: more = nearest_resource(u_x[i], u_y[i], kind, i, false, false, true)
+        let more = next_patch(i, kind)
         if more >= 0:
             u_target[i] = more
             u_home[i] = more
@@ -504,6 +515,7 @@ def gather(i:int, carry_max:int):
             u_work[i] = 0
             take(cell)
             u_carry[i]++
+            if res_at(cell) != kind and pool[cell] < 0: rally_on(u_owner[i], cell, i, kind)  // (a farm fallows instead)
             if pool[cell] >= 0 and left_at(cell) <= 0: farm_done(i, cell)
     elif u_moving[i] == 0:
         if u_stuck[i] >= GIVE_UP:
@@ -553,8 +565,9 @@ def return_home(i:int):
         else:
             clear_task(i)
     elif u_moving[i] == 0:
-        if u_stuck[i] >= GIVE_UP: clear_task(i)
-        else: approach_building(i, b)
+        // Held up by the crowd at the drop-off (#336): try again from where it stands, never drop the load and idle.
+        if u_stuck[i] >= GIVE_UP: u_stuck[i] = 0
+        approach_building(i, b)
 
 // The nearest unfinished building of the worker's owner within NEXT_BUILD_TILES, on explored ground.
 def nearby_foundation(i:int) -> int:
@@ -708,6 +721,16 @@ def go_to_rally(b:int, i:int):
     let kind = res_at(cell)
     if kind > 0 and is_worker(i): start_gather(i, cell, kind)
     else: order_move(i, b_rally_x[b], b_rally_y[b], 200, 0, -1, -1, 0)
+
+// The tree (or mine) a side rallies to has run out (#336): its rallies move to the next of it the worker would go to,
+// so those still to come gather instead of standing by a stump.
+def rally_on(p:int, cell:int, i:int, kind:int):
+    let more = next_patch(i, kind)
+    if more < 0: return
+    for(b_id.length) b:
+        if b_owner[b] == p and b_rally_x[b] >= 0 and cell_of(b_rally_x[b], b_rally_y[b]) == cell:
+            b_rally_x[b] = (more % W) * TILE + TILE / 2
+            b_rally_y[b] = (more / W) * TILE + TILE / 2
 
 // Advance every building's train queue; training waits at the pop cap (Economy.train).
 def train():

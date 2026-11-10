@@ -57,9 +57,9 @@ def research_look(b:Btn, r:int):
         let k = type_of_slot(ME, line)
         if k >= 0:
             let age = gint(item, "line_age", 0)
-            for(su_type_line[k]) l:
+            for(glist(su_units[k], "line")) l:
                 if as_int(at(l, "age")) == age:
-                    b.line_recipe = at(l, "recipe")
+                    b.line_recipe = at(l, "look")
                     b.line_key = 100000 + k * 16 + age
             if b.line_key < 0: b.unit = k
             b.accent = true
@@ -160,9 +160,9 @@ def unit_tip(k:int, room:bool) -> string:
         if researched[ME][r] == 0 and item.open[ME] != 0 and betters_unit(item, t_tags[k]):
             ups.push("{research_name(r)} ({bname(item.building)})")
     if ups.length: rows.push("~Upgrades: " + names_list(ups, 4))
-    for(su_type_line[k]) l, n:
+    for(glist(su_units[k], "line")) l, n:
         let age = as_int(at(l, "age"))
-        if n > 0 and age > ages[ME]: rows.push("~{age_name(age)}: becomes {gstr(at(l, "recipe"), "name", unit_name(k))}")
+        if n > 0 and age > ages[ME]: rows.push("~{age_name(age)}: becomes {gstr(at(l, "look"), "name", unit_name(k))}")
     if not room: rows.push("!The queue is full.")
     else:
         let short = short_of(t_cost[k])
@@ -533,7 +533,7 @@ def draw_bust(key:int, recipe:JV, owner:int, at:float2, side:float):
         let g = side * 0.375
         tb_icon("glyph/role_" + p.glyph, at + float2_1 * (side - g - max(1.0, side / 40.0)), g, 1.0)
 
-def draw_type_bust(k:int, at:float2, side:float): draw_bust(k, su_type_recipe[k], t_player[k], at, side)
+def draw_type_bust(k:int, at:float2, side:float): draw_bust(k, gobj(su_units[k], "look"), t_player[k], at, side)
 
 // A building's picture scaled into a box (its look's body bake; sprite_xf places the frame's corner).
 def draw_building_icon(k:int, owner:int, at:float2, size:float):
@@ -600,7 +600,7 @@ def wrap(s:string, size:int, font:int, w:float) -> [string]:
 
 // The card's first lines (unit_card.gd short): attack, damage, range and hp; armour and speed.
 def card_lines(k:int) -> [string]:
-    let e = su_type_eval[k]
+    let e = su_units[k]
     let C = su_classes.length
     if t_heal[k] > 0:
         let cb = gobj(su_rules, "combat")
