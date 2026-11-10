@@ -50,6 +50,8 @@ var fe_k = 1.0         // screen px per design px
 var fe_w = 1600.0      // the window's width in design px
 var fe_h = 950.0       // its height
 var fe_field = -1      // the box that has the keyboard: a side (0..3), 10 + a lab side, 20 the address; -1 none
+var fe_field_at = 0.0  // when that box was last clicked or typed in (its caret is lit for a moment after; #431)
+var fe_bs_held = -1.0  // how long backspace has been down, -1 up (it repeats when held; #431)
 var fe_maps = []::string
 var fe_map_k = 0
 var fe_map_json = jobj()
@@ -276,17 +278,25 @@ def fe_dice(at:float2, side:float) -> bool:
 // A box to type in: click it to type there. Shows the placeholder when empty.
 def fe_box(id:int, at:float2, size:float2, text:string, placeholder:string, fs:int, centred:bool):
     fe_well(at, size)
-    if fe_field == id: ui_outline(at + float2_1 * 2.0, size - float2_1 * 4.0, 2.0 * fe_k, float4 { ui_look.accent.x, ui_look.accent.y, ui_look.accent.z, 0.6 })
     if ui_clicked() and fe_over(at, size): fe_focus(id, text)
-    let caret = if fe_field == id and (int(fe_clock() * 2.0) % 2) == 0: "|" else: ""
-    let s = if text == "": placeholder else: text + caret  // (empty: the placeholder stays, the caret before it)
+    let focused = fe_field == id
+    let acc = ui_look.accent
+    if focused:                        // the box with the keyboard: tinted, and ringed in the accent inside its frame (#431)
+        let fw = max(3.0, 6.0 * ui())  // (the frame's width, as ui_box draws it)
+        ui_fill(at + float2_1 * fw, size - float2_1 * fw * 2.0, float4 { acc.x, acc.y, acc.z, 0.16 })
+        ui_outline(at + float2_1 * (fw - 1.0), size - float2_1 * (fw - 1.0) * 2.0, max(2.0, 3.0 * fe_k), acc)
+    let s = if text == "": placeholder else: text  // (empty: the placeholder stays, the caret before it)
     let col = if text == "": ui_look.dim else: ui_look.text
     var f = fs
-    while f > 10 and ui_text_wf(s, f, 0) > size.x - 28.0 * fe_k: f -= 2
+    while f > 10 and ui_text_wf(s, f, 0) > size.x - 34.0 * fe_k: f -= 2
     let y = at.y + (size.y - float(f)) / 2.0 - 2.0 * fe_k
-    let x = if centred: at.x + (size.x - ui_text_wf(s, f, 0)) / 2.0 else: at.x + 14.0 * fe_k
+    let cw = max(2.0, 2.5 * fe_k)  // the caret's width; an empty focused box starts the placeholder after it
+    let lead = if focused and text == "": cw + 6.0 * fe_k else: 0.0
+    let x = lead + (if centred: at.x + (size.x - ui_text_wf(s, f, 0)) / 2.0 else: at.x + 14.0 * fe_k)
     ui_text(float2 { x, y }, s, f, col)
-    if text == "" and caret != "": ui_text(float2 { x - ui_text_wf(caret, f, 0) - 2.0 * fe_k, y }, caret, f, ui_look.text)
+    if focused and tf_caret_on(fe_clock() - fe_field_at):  // the caret: a bar after the text (before the placeholder)
+        let cx = if text == "": x - lead else: x + ui_text_wf(text, f, 0) + 2.0 * fe_k
+        ui_fill(float2 { cx, y + float(f) * 0.08 }, float2 { cw, float(f) * 1.05 }, ui_look.text)  // (the text's colour: it stands off the ring)
 
 // The text in the box that has the keyboard.
 def fe_field_text() -> string:
@@ -297,6 +307,7 @@ def fe_field_text() -> string:
 
 def fe_focus(id:int, text:string):
     fe_field = id
+    fe_field_at = fe_clock()
     gl.set_text_input(text)
 
 // Words wrapped to a width (about: the text's measure is a guess).
@@ -1306,8 +1317,8 @@ def run_front(page0:string, typed:[string]) -> string:
     fe_page = page0
     front_shown = true
     fe_frames = 0
-    fe_field = -1
-    var typing = false  // text input on: only while a box has the keyboard (on a phone it brings up the keyboard)
+    fe_field = if page0 == "setup": 0 elif page0 == "lab": 10 else: -1  // (as the title's buttons do: side 1's box has the keyboard)
+    var typing = false                                                  // text input on: only while a box has the keyboard (on a phone it brings up the keyboard)
     var shot_frame = -1
     pace(PACE_MENU)
     while gl.frame():
@@ -1328,7 +1339,16 @@ def run_front(page0:string, typed:[string]) -> string:
                 gl.set_text_input(fe_field_text())
             else: gl.end_text_input()
         if fe_field >= 0:
+            let bs_was = fe_bs_held
+            fe_bs_held = if gl.button("backspace") >= 1: max(0.0, fe_bs_held) + dt else: -1.0
+            let typed_now, editing = gl.text_input_state()
+            let n_bs = if editing == "": tf_repeats(bs_was, fe_bs_held) else: 0  // (while an IME composes, its own)
+            if n_bs > 0:                                                         // SDL's text input only adds; backspace is ours (#431)
+                var t = typed_now
+                for(n_bs): t = tf_drop_last(t)
+                gl.set_text_input(t)
             let text = gl.text_input_state()
+            if text != fe_field_text() or n_bs > 0: fe_field_at = fe_clock()
             if fe_field < 4 and fe_field < fe_sides.length:
                 if text != fe_sides[fe_field].typed:
                     fe_sides[fe_field].typed = text
