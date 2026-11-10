@@ -117,6 +117,7 @@ def block_speed(c:[int]) -> int:
 
 // Every unit's block, its place in it and its slot at the end into slot_block, slot_bx, slot_by, slot_x, slot_y.
 def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, uy:int):
+    let gap = if idx.length < BLOCK_ARMY: SMALL_GAP else: BLOCK_GAP  // (a small group's blocks stand close: one formation, #347)
     for(idx) i:
         f_ahead[i] = (u_x[i] - cx) * ux + (u_y[i] - cy) * uy
         f_side[i] = (u_y[i] - cy) * ux - (u_x[i] - cx) * uy
@@ -140,9 +141,10 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     // the march's pace: the middling block's, so the slowest engines fall behind instead of holding everyone up
     let paces = map(chunks) c: block_speed(c)
     sort_ints(paces)
-    let army_pace = paces[paces.length / 2] * 4 / 5  // (a little under their walk: whoever falls behind can catch up)
+    let spare = if idx.length < BLOCK_ARMY: 19 else: 16  // (twentieths of their walk: a little under it, so whoever falls behind can catch up; a small group
+    let army_pace = paces[paces.length / 2] * spare / 20  // starts in its places, so it needs less)
     // whoever can't keep it goes at the back, the slowest last: in front, the blocks behind would walk through it (#253)
-    def lags(c:[int]) -> bool: return block_speed(c) * 4 / 5 < army_pace
+    def lags(c:[int]) -> bool: return block_speed(c) * spare / 20 < army_pace
     let late_keys = []::int
     for(chunks) c, n: if lags(c): late_keys.push(((1 << 20) - block_speed(c)) * (1 << KEY_BITS) + n)
     sort_ints(late_keys)
@@ -166,12 +168,16 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
             used = 0
             band = role
         rows[rows.length - 1].push(c)
-        used += wide(c) + BLOCK_GAP
+        used += wide(c) + gap
+    if flank.length % 2 == 1 and flank[flank.length - 1].length >= 2:  // (a wing each: the odd block out split in two, #347)
+        let c = flank.pop()
+        flank.push(c.slice(0, c.length / 2))
+        flank.push(c.slice(c.length / 2, c.length - c.length / 2))
     var total = 0
     for(rows) r:
         var h = 0
         for(r) c: h = max(h, deep(c))
-        total += h + BLOCK_GAP
+        total += h + gap
     // where each block goes: rows front to back, then the flankers in columns at the ends of the rows
     let spot_al = []::int
     let spot_ac = []::int
@@ -184,27 +190,27 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     var half_w = 0
     for(rows) r:
         var h = 0
-        var width = -BLOCK_GAP
+        var width = -gap
         for(r) c:
             h = max(h, deep(c))
-            width += wide(c) + BLOCK_GAP
+            width += wide(c) + gap
         var across = -width / 2
         for(r) c:
             spot(c, along0 - h / 2, across + wide(c) / 2)
-            across += wide(c) + BLOCK_GAP
+            across += wide(c) + gap
         half_w = max(half_w, width / 2)
-        along0 -= h + BLOCK_GAP
-    let wing = [ -half_w - BLOCK_GAP, half_w + BLOCK_GAP ]  // each wing's next column, and how far down it's filled
+        along0 -= h + gap
+    let wing = [ -half_w - gap, half_w + gap ]  // each wing's next column, and how far down it's filled
     let wing_at = [ total / 2, total / 2 ]
     var wing_wide = 0
     for(flank) c: wing_wide = max(wing_wide, wide(c))
     for(flank) c, k:
         let s = k % 2
         if wing_at[s] - deep(c) < -total / 2 and wing_at[s] < total / 2:
-            wing[s] += (if s == 0: -1 else: 1) * (wing_wide + BLOCK_GAP)
+            wing[s] += (if s == 0: -1 else: 1) * (wing_wide + gap)
             wing_at[s] = total / 2
         spot(c, wing_at[s] - deep(c) / 2, wing[s] + (if s == 0: -1 else: 1) * wing_wide / 2)
-        wing_at[s] -= deep(c) + BLOCK_GAP
+        wing_at[s] -= deep(c) + gap
     if flank.length: half_w = max(-wing[0], wing[1]) + wing_wide
     // where the army forms up: from where it stands, on along the way to the first ground that holds it all
     let ln0 = lane(idx[0])
@@ -223,7 +229,7 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
         return n
     var form_x = cx
     var form_y = cy
-    var least = blocked(cx, cy)
+    var least = if idx.length < BLOCK_ARMY: 0 else: blocked(cx, cy)  // (a small group forms where it stands, on the march)
     let way = isqrt(dist2(cx, cy, x, y))
     var on_way = 2 * TILE
     while on_way <= way / 2 and least > 0:  // (not as far as the enemy's door)
@@ -241,7 +247,7 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
         let by = (uy * along + ux * across) / ONE
         let b = block_new()
         let tx, ty = snap(x + bx, y + by, lane(c[0]))
-        fb_state[b] = BLOCK_FORMING
+        fb_state[b] = if idx.length < BLOCK_ARMY: BLOCK_MARCHING else: BLOCK_FORMING
         fb_x[b] = form_x + bx
         fb_y[b] = form_y + by
         fb_tx[b] = tx
@@ -250,7 +256,7 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
         fb_wy[b] = ty
         fb_dx[b] = ux
         fb_dy[b] = uy
-        fb_pace[b] = min(army_pace, block_speed(c) * 4 / 5)
+        fb_pace[b] = min(army_pace, block_speed(c) * spare / 20)
         fb_key[b] = cell_field(cell_of(tx, ty), false, lane(c[0]))
         fb_r[b] = deep(c) / 2
         fb_owner[b] = u_owner[c[0]]
