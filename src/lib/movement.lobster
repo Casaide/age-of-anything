@@ -384,7 +384,7 @@ def move():
             if found: pct = pct * slow_pcts[at] / 100  // in an enemy web, or hit by sticky silk
         if pct != 100: s = s * pct / 100
         if tr_speed_pct != 0 and mci != 2: s = s * trail_pct(here) / 100  // quicker on a worn trail (a rule, off by default)
-        if steered(i):  // in a formation block: steering for its place (lib/steering.lobster, #355)
+        if steered(i):                                                    // in a formation block: steering for its place (lib/steering.lobster, #355)
             steer_group(i, x, y, s, mc)
             continue
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:
@@ -582,7 +582,7 @@ def separate():
                     let si = steered(i)
                     let sj = steered(j)
                     if u_block[i] > 0 and u_block[j] > 0 and grp[i] == grp[j] and d > rr / 4: continue  // (an army's blocks: their places keep them apart, and a unit crossing to its place isn't shoved back)
-                    if si and sj and owners[i] == owners[j]: continue  // (two of a side's steering units keep off each other themselves, #355)
+                    if si and sj and owners[i] == owners[j]: continue                                   // (two of a side's steering units keep off each other themselves, #355)
                     if si != sj and owners[i] == owners[j]:
                         // One of the side's own steering through another standing about: the standing one is eased aside, the
                         // walker steers round it (#355). One at work or set to fire stays put.
