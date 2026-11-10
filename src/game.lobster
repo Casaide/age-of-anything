@@ -1019,6 +1019,7 @@ def draw_world(alpha:float):
         ground_tick = tick
     if not ground_quad or (map_version != mask_version and tick - mask_tick >= 50):
         build_masks()
+        perf_masks_now = true
         if not relief_built:
             build_relief()
             relief_built = true
@@ -1026,7 +1027,7 @@ def draw_world(alpha:float):
             build_doodads(map_name_now, doodads) t: keep_clear(t) or on_path(t)
         mask_version = map_version
         mask_tick = tick
-    if relief_built and tick % 20 == 0: refresh_paths()
+    if relief_built and tick % 20 == 0 and refresh_paths(): perf_built_now = true
     let ws = float(gl.window_size())
     draw_ground_cached(gl.window_size(), float2 { floor(cam.x), floor(cam.y) }, zoom, zoom / ART_K)  // (screen px an art px: finer art, D-173)
     gl.translate(ws / 2.0):
@@ -2801,6 +2802,7 @@ def play_match():
         if perf_for > 0.0:  // (the Town Center selected: its panel and queue drawn, the HUD full)
             perf_begin()
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
+            perf_finish_house(clock_s, ME)
         drop_lost_selection()
         if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
         if gl.button("controller_start") == 1 and not typing_race and not tree_open: menu_open = not menu_open
