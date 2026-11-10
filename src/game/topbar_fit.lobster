@@ -73,3 +73,48 @@ def tb_layout(t:TbTexts, win_w:float, s:float) -> TbLayout:
     var l = tb_widths(t, s, "")
     while not tb_fits(l, win_w): l = tb_widths(t, l.s * 0.95, "")
     return l
+
+// ---- the plaques' lines, top to bottom (#376)
+// Lobster draws a line's glyphs in its size's box centred by the font's tallest and deepest glyphs, so the ink isn't
+// the box. Where it is, as a share of the size below where the line is drawn (measured in captures of the bar at
+// s 0.865 and 1.15: digits and capitals, to a pixel).
+let TB_BOLD_INK = float2 { 0.05, 0.78 }
+let TB_DISPLAY_INK = float2 { 0.11, 0.86 }
+
+def tb_ink(y:float, size:int, font:int) -> float2:
+    let k = if font == 2: TB_DISPLAY_INK else: TB_BOLD_INK
+    return float2 { y + k.x * float(size), y + k.y * float(size) }
+
+// Where each line goes, down from its plaque's top (48 px high at s).
+class TbRows:
+    stock:float  // a resource's stock (20 px, bold)
+    work:float   // its workers under it (15 px, bold), the small worker beside them (14 px)
+    work_icon:float
+    pop:float       // the population (20 px)
+    clock:float     // (18 px)
+    pace:float      // (16 px)
+    age_icon:float  // the age's icon (26 px), its number (24 px, the display face) and name (17 px), the age-up's bar (5 px)
+    age_num:float
+    age_txt:float
+    age_bar:float
+
+// Where a line goes for its ink's middle at mid.
+def tb_line_at(mid:float, size:int, font:int) -> float:
+    let k = if font == 2: TB_DISPLAY_INK else: TB_BOLD_INK
+    return mid - (k.x + k.y) / 2.0 * float(size)
+
+// Every line on the plaque's middle: the stock over its workers as one block, the age's number and name on its
+// icon's middle, and the icon with the age-up's bar under it as one block.
+def tb_rows(s:float, ageing:bool) -> TbRows:
+    let mid = 24.0 * s
+    let big = int(20.0 * s)
+    let small = int(15.0 * s)
+    let big_h = (TB_BOLD_INK.y - TB_BOLD_INK.x) * float(big)
+    let small_h = (TB_BOLD_INK.y - TB_BOLD_INK.x) * float(small)
+    let top = mid - (big_h + 5.0 * s + small_h) / 2.0
+    let work_mid = top + big_h + 5.0 * s + small_h / 2.0
+    let icon = mid - (if ageing: 16.0 else: 13.0) * s
+    let icon_mid = icon + 13.0 * s
+    return TbRows { tb_line_at(top + big_h / 2.0, big, 1), tb_line_at(work_mid, small, 1), work_mid - 7.0 * s,
+                    tb_line_at(mid, int(20.0 * s), 1), tb_line_at(mid, int(18.0 * s), 1), tb_line_at(mid, int(16.0 * s), 1), icon,
+                    tb_line_at(icon_mid, int(24.0 * s), 2), tb_line_at(icon_mid, int(17.0 * s), 1), icon + 27.0 * s }

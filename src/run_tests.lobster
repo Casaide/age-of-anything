@@ -1035,6 +1035,38 @@ def g_topbar():
     let t = TbTexts { [ "300", "200", "0", "0" ], "3/5", "Third Armored Division", "1", "Mud Age  ->  Bronze Age  45%", "0:05", "x10.0" }
     let l = tb_layout(t, 2560.0, hud_scale(115, float2 { 2560.0, 1600.0 }))
     expect(l.title == "Third Armored Division" and l.s == 1.15, "top bar: a long name whole at 2560 px ({l.title}, {l.s})")
+    // The plaques' lines in the middle of their insides (#376): clear of the frame, as much room over as under.
+    var rows_bad = 0
+    var rows_first = ""
+    for(17) k:
+        let s = 0.4 + 0.1 * float(k)
+        for([ false, true ]) ageing:
+            let r = tb_rows(s, ageing)
+            let ph = 48.0 * s
+            let fw = max(1.0, 2.0 * s)
+            def ink2(a:float2, b:float2) -> float2: return float2 { min(a.x, b.x), max(a.y, b.y) }
+            let icon = float2 { r.age_icon, r.age_icon + 26.0 * s }
+            var age = ink2(icon, ink2(tb_ink(r.age_num, int(24.0 * s), 2), tb_ink(r.age_txt, int(17.0 * s), 1)))
+            if ageing: age = ink2(age, float2 { r.age_bar, r.age_bar + 5.0 * s })
+            let blocks = [ ink2(tb_ink(r.stock, int(20.0 * s), 1), tb_ink(r.work, int(15.0 * s), 1)), tb_ink(r.pop, int(20.0 * s), 1),
+                           tb_ink(r.clock, int(18.0 * s), 1), tb_ink(r.pace, int(16.0 * s), 1), age ]
+            let what = [ "stock and workers", "population", "clock", "pace", "age" ]
+            for(blocks) b, i:
+                let over = b.x - fw
+                let under = ph - fw - b.y
+                if over < 3.0 * s or abs(over - under) > 1.5:
+                    rows_bad++
+                    if rows_first == "": rows_first = "s {s}{if ageing: " ageing" else: ""}: {what[i]} {over} px over, {under} under"
+            // The age's number and name on its icon's middle, the workers on the small worker's.
+            let mid = (icon.x + icon.y) / 2.0
+            let num = tb_ink(r.age_num, int(24.0 * s), 2)
+            let txt = tb_ink(r.age_txt, int(17.0 * s), 1)
+            let wk = tb_ink(r.work, int(15.0 * s), 1)
+            for([ (num.x + num.y) / 2.0 - mid, (txt.x + txt.y) / 2.0 - mid, (wk.x + wk.y) / 2.0 - (r.work_icon + 7.0 * s) ]) d, i:
+                if abs(d) > 1.5:
+                    rows_bad++
+                    if rows_first == "": rows_first = "s {s}: {[ "age number", "age name", "worker count" ][i]} {d} px off its icon\'s middle"
+    expect(rows_bad == 0, "top bar: the plaques\' lines in their middles ({rows_bad} off; {rows_first})")
 
 // ------------------------------------------------------------------ the run
 

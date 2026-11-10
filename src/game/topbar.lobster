@@ -221,6 +221,7 @@ def draw_topbar(speed:float, paused:bool):
     let sep = 10.0 * s
     let light = ui_look.text
     tb_tip = ""
+    let rows = tb_rows(s, next != "")
     let res_w = lay.res_w
     let pop_w = lay.pop_w
     let title = lay.title
@@ -249,12 +250,12 @@ def draw_topbar(speed:float, paused:bool):
         tb_plaque(float2 { x, y }, float2 { res_w[r], ph })
         icon("res_" + resource_names[r], float2 { x + 8.0 * s, y + (ph - 28.0 * s) / 2.0 }, 28.0 * s, 1.0)
         let nx = x + 42.0 * s
-        tb_text(float2 { nx, y + 3.0 * s }, string(stock[r][ME]), int(20.0 * s), light, 1)
+        tb_text(float2 { nx, y + rows.stock }, string(stock[r][ME]), int(20.0 * s), light, 1)
         var total = 0
         for(counts[r]) c: total += c
         let a = if total > 0: 1.0 else: 0.55
-        icon("res_pop", float2 { nx, y + 29.0 * s }, 14.0 * s, 0.85 * a)
-        tb_text(float2 { nx + 17.0 * s, y + 27.0 * s }, string(total), int(15.0 * s), TB_WORK * float4 { 1.0, 1.0, 1.0, a }, 1)
+        icon("res_pop", float2 { nx, y + rows.work_icon }, 14.0 * s, 0.85 * a)
+        tb_text(float2 { nx + 17.0 * s, y + rows.work }, string(total), int(15.0 * s), TB_WORK * float4 { 1.0, 1.0, 1.0, a }, 1)
         if tb_over(float2 { x, y }, float2 { res_w[r], ph }):
             let parts = map(verbs[r]) v, k: "{counts[r][k]} {v}"
             tb_tip = "{tb_cap(resource_names[r])}: " + (if total > 0: concat_string(parts, ", ") else: "nobody on it")
@@ -262,7 +263,7 @@ def draw_topbar(speed:float, paused:bool):
     // Population over room.
     tb_plaque(float2 { x, y }, float2 { pop_w, ph })
     icon("res_pop", float2 { x + 8.0 * s, y + (ph - 28.0 * s) / 2.0 }, 28.0 * s, 1.0)
-    tb_text(float2 { x + 42.0 * s, y + (ph - 20.0 * s) / 2.0 - 3.0 * s }, pop_txt, int(20.0 * s), if pop[ME] >= pop_cap[ME]: TB_FULL else: light, 1)
+    tb_text(float2 { x + 42.0 * s, y + rows.pop }, pop_txt, int(20.0 * s), if pop[ME] >= pop_cap[ME]: TB_FULL else: light, 1)
     if tb_over(float2 { x, y }, float2 { pop_w, ph }): tb_tip = "Population / room (build houses for more)"
     x += pop_w + sep + 8.0 * s + sep
     // The race's name (cut, or gone, where the window has no room for it).
@@ -271,15 +272,15 @@ def draw_topbar(speed:float, paused:bool):
         x += title_w + sep
     // The age badge.
     tb_plaque(float2 { x, y }, float2 { age_w, ph })
-    let line_y = y + (ph - (if next != "": 30.0 else: 26.0) * s) / 2.0
+    let line_y = y + rows.age_icon
     icon("age_up", float2 { x + 8.0 * s, line_y }, 26.0 * s, 1.0)
     let num_x = x + 40.0 * s
-    tb_text(float2 { num_x, line_y - 2.0 * s }, string(ages[ME]), int(24.0 * s), ui_look.title, 2)
-    tb_text(float2 { num_x + tb_text_w(string(ages[ME]), int(24.0 * s), 2) + 6.0 * s, line_y + 2.0 * s }, age_txt, int(17.0 * s), if next != "": TB_GOLD else: light, 1)
+    tb_text(float2 { num_x, y + rows.age_num }, string(ages[ME]), int(24.0 * s), ui_look.title, 2)
+    tb_text(float2 { num_x + tb_text_w(string(ages[ME]), int(24.0 * s), 2) + 6.0 * s, y + rows.age_txt }, age_txt, int(17.0 * s), if next != "": TB_GOLD else: light, 1)
     if next != "":  // the age-up's progress: a slim bar under the line
         let bx = x + 8.0 * s
         let bw = age_w - 16.0 * s
-        let by = line_y + 27.0 * s
+        let by = y + rows.age_bar
         ui_fill(float2 { bx, by }, float2 { bw, 5.0 * s }, float4 { 0.0, 0.0, 0.0, 0.6 })
         ui_fill(float2 { bx, by }, float2 { bw * frac, 5.0 * s }, ui_look.accent)
         ui_fill(float2 { bx, by }, float2 { bw * frac, 1.5 * s }, float4 { 1.0, 1.0, 1.0, 0.35 })
@@ -305,11 +306,11 @@ def draw_topbar(speed:float, paused:bool):
     x += tree_w + sep
     // The clock, and the game's pace when it isn't the usual.
     tb_plaque(float2 { x, y }, float2 { clock_w, ph })
-    tb_text(float2 { x + (clock_w - tb_text_w(clock_txt, int(18.0 * s), 1)) / 2.0, y + (ph - 18.0 * s) / 2.0 - 3.0 * s }, clock_txt, int(18.0 * s), light, 1)
+    tb_text(float2 { x + (clock_w - tb_text_w(clock_txt, int(18.0 * s), 1)) / 2.0, y + rows.clock }, clock_txt, int(18.0 * s), light, 1)
     x += clock_w + sep
     if pace != "":
         tb_plaque(float2 { x, y }, float2 { pace_w, ph })
-        tb_text(float2 { x + 8.0 * s, y + (ph - 16.0 * s) / 2.0 - 3.0 * s }, pace, int(16.0 * s), TB_GOLD, 1)
+        tb_text(float2 { x + 8.0 * s, y + rows.pace }, pace, int(16.0 * s), TB_GOLD, 1)
         if tb_over(float2 { x, y }, float2 { pace_w, ph }): tb_tip = if paused: "Paused: space to go on" else: "Game speed: + and - to change it"
     // A hover's card under the bar.
     if tb_tip != "":
