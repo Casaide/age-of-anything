@@ -84,7 +84,7 @@ let HERD_TICKS = 2400     // two minutes for the herd to get through
 let HERD_PAST = 30000     // milli-tiles: the far side of the gap
 let SETTLE_SECS = 2       // after the last one arrives, nobody still moving this long after
 let RALLY_SHOVE = 300     // milli-tiles a unit standing at a rally point may be pushed about, all told, as more arrive
-let WORKED_SHOVE = 300    // milli-tiles soldiers standing on the workers' way may end up from where they stood
+let WORKED_SHOVE = 600    // milli-tiles a soldier standing on the workers' way may end up from where it stood: a body's width, stepping aside for one held up by it
 let SHOVED_MAX = 1500     // milli-tiles a standing group's units may be pushed from where they stood
 let ZIGZAG_MAX = 0.1      // swerves one way then the other within ZIGZAG_TICKS, a unit, a second (a sway as it walks)
 let ZIGZAG_TICKS = 20
@@ -586,7 +586,8 @@ def scene_workers_by(rules:JV, races:[JV]):
         let ly = wy - start_y[0]
         let len = isqrt(lx * lx + ly * ly)
         let x, y = snap(start_x[0] + lx * f / 1000 - ly * side / len, start_y[0] + ly * f / 1000 + lx * side / len, lane_base[0] + t_mclass[k])
-        soldiers.push(u_id[add_unit(0, k, x, y)])
+        let cx, cy = clear_point(0, k, x, y)
+        soldiers.push(u_id[add_unit(0, k, cx, cy)])
     let sx = map(soldiers) id: u_x[index_of(id)]
     let sy = map(soldiers) id: u_y[index_of(id)]
     let wood = find(resource_names) nm: nm == "wood"

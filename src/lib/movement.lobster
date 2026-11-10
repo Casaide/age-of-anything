@@ -471,14 +471,23 @@ def separate():
                     let sj = steered(j)
                     if u_block[i] > 0 and u_block[j] > 0 and grp[i] == grp[j] and d > rr / 4 and not (si != sj and mv[if si: j else: i] == 0 and u_block[i] == u_block[j] and u_stuck[if si: i else: j] >= 6): continue  // (an army's blocks: their places keep them apart, and a unit crossing to its place isn't shoved back)
                     if si and sj and owners[i] == owners[j] and grp[i] == grp[j]: continue                                                                                                                               // (two of a side's steering units keep off each other themselves, #355)
-                    if si != sj and owners[i] == owners[j]:
-                        // One of the side's own steering through another standing about: the standing one is eased aside, the
-                        // walker steers round it (#355). One at work or set to fire stays put.
-                        let o = if si: j else: i
+                    let ji = mv[i] == 1 and u_task[i] != T_NONE and mv[j] == 0 and u_task[j] == T_NONE and u_foe[j] == 0 and t_worker[u_kind[j]] == 0 and t_animal[u_kind[j]] == 0                                       // (a worker on its job by a soldier standing about, #395)
+                    let jj = mv[j] == 1 and u_task[j] != T_NONE and mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
+                    if (si != sj or ji or jj) and owners[i] == owners[j]:
+                        // One of the side's own steering (or on a job) through another standing about: the standing one is eased
+                        // aside, the walker steers round it (#355); a worker no longer shoves a soldier along its way (#395). One at
+                        // work or set to fire stays put.
+                        let o = if si or ji: j else: i
+                        if (ji or jj) and u_stuck[if ji: i else: j] == 0:  // (unless it's held up there: then the soldier steps aside, below)
+                            let wk = if ji: i else: j
+                            let ow = if o == i: -1 else: 1
+                            s_pushx[wk] -= ow * ux * ((rr - d) / SEPARATION_DIV + 1) / ONE  // (it holds its ground; the worker is the one eased off it and goes round)
+                            s_pushy[wk] -= ow * uy * ((rr - d) / SEPARATION_DIV + 1) / ONE
+                            continue
                         if mv[o] == 0 and u_foe[o] == 0 and s_planted[o] == 0:
                             let ease = (rr - d) / (SEPARATION_DIV * 2) + 1
                             let sg = if o == i: -1 else: 1
-                            let wk = if si: i else: j
+                            let wk = if si or ji: i else: j
                             let wv = isqrt(u_vx[wk] * u_vx[wk] + u_vy[wk] * u_vy[wk])
                             var ex = sg * ux
                             var ey = sg * uy
@@ -506,6 +515,14 @@ def separate():
                     let hi = idle_i or job_i or (si and own and not sj and u_foe[j] == 0) or s_planted[i] == 1 or (own and s_planted[i] == 2) or (u_block[i] > 0 and t_animal[u_kind[j]] != 0) or (own and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and (placed_j or (mv[j] == 1 and homing(j))))
                     let hj = idle_j or job_j or (sj and own and not si and u_foe[i] == 0) or s_planted[j] == 1 or (own and s_planted[j] == 2) or (u_block[j] > 0 and t_animal[u_kind[i]] != 0) or (own and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and (placed_i or (mv[i] == 1 and homing(i))))
                     if hi and hj: continue
+                    let stand_i = mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0 and t_animal[u_kind[j]] != 0
+                    let stand_j = mv[j] == 0 and u_task[j] == T_NONE and u_foe[j] == 0 and t_worker[u_kind[j]] == 0 and t_animal[u_kind[j]] == 0 and t_animal[u_kind[i]] != 0
+                    if (stand_i and not hj) or (stand_j and not hi):  // (a soldier standing about isn't shoved by a sheep, nor by the workers driving one into it: the sheep gives way, #395)
+                        let push = (rr - d) / SEPARATION_DIV + 1
+                        let sg = if stand_i: 1 else: -1
+                        s_pushx[if stand_i: j else: i] += sg * ux * push * 2 / ONE
+                        s_pushy[if stand_i: j else: i] += sg * uy * push * 2 / ONE
+                        continue
                     let push = (rr - d) / SEPARATION_DIV + 1
                     let px = ux * push / ONE
                     let py = uy * push / ONE
