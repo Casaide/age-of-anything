@@ -84,6 +84,7 @@ let HERD_TICKS = 2400     // two minutes for the herd to get through
 let HERD_PAST = 30000     // milli-tiles: the far side of the gap
 let SETTLE_SECS = 2       // after the last one arrives, nobody still moving this long after
 let RALLY_SHOVE = 300     // milli-tiles a unit standing at a rally point may be pushed about, all told, as more arrive
+let WORKED_SHOVE = 300    // milli-tiles soldiers standing on the workers' way may end up from where they stood
 let SHOVED_MAX = 1500     // milli-tiles a standing group's units may be pushed from where they stood
 let ZIGZAG_MAX = 0.1      // swerves one way then the other within ZIGZAG_TICKS, a unit, a second (a sway as it walks)
 let ZIGZAG_TICKS = 20
@@ -557,6 +558,46 @@ def scene_gather(rules:JV, races:[JV]):
     check(looks > 0, "gather: they walk")
     check(back == 0, "gather: workers never walk backwards ({back} of {looks} looks)")
 
+// 4d. Workers carrying wood home walk by soldiers standing about in town (#395): they go round them, and nobody standing
+// is pushed along their way (armies parked in town got smeared along the workers' paths).
+def scene_workers_by(rules:JV, races:[JV]):
+    new_world(SEED, "reed_meadow", races, rules, [])
+    let ids = []::int
+    for(u_x.length) i:
+        if u_owner[i] == 0 and t_worker[u_kind[i]] != 0: ids.push(u_id[i])
+    var best = -1
+    var best_d2 = 1 << 62
+    for(resource_cells) c:
+        let r = tr_res[terrain[c]]
+        if r > 0 and resource_names[r - 1] == "wood":
+            let cx, cy = centre(c)
+            let d2 = dist2(start_x[0], start_y[0], cx, cy)
+            if d2 < best_d2:
+                best_d2 = d2
+                best = c
+    issue_cmd(0, CMD_GATHER, ids, best, 0, 0, 0)
+    let wx, wy = centre(best)
+    let k = find(t_slot.length) kk: t_player[kk] == 0 and t_slot[kk] == "spear"
+    let soldiers = []::int
+    for(5) n:  // (on the way, a little either side of the line from the Town Center to the wood)
+        let f = 300 + n * 100
+        let side = (n % 2 * 2 - 1) * 400
+        let lx = wx - start_x[0]
+        let ly = wy - start_y[0]
+        let len = isqrt(lx * lx + ly * ly)
+        let x, y = snap(start_x[0] + lx * f / 1000 - ly * side / len, start_y[0] + ly * f / 1000 + lx * side / len, lane_base[0] + t_mclass[k])
+        soldiers.push(u_id[add_unit(0, k, x, y)])
+    let sx = map(soldiers) id: u_x[index_of(id)]
+    let sy = map(soldiers) id: u_y[index_of(id)]
+    let wood = find(resource_names) nm: nm == "wood"
+    let got = stock[wood][0]
+    for(GATHER_TICKS): wstep()
+    var worst = 0
+    for(soldiers) id, a: worst = max(worst, isqrt(dist2(sx[a], sy[a], u_x[index_of(id)], u_y[index_of(id)])))
+    print "workers by: soldiers standing on their way end up {worst} from where they stood at worst; {stock[wood][0] - got} wood home"
+    check(stock[wood][0] > got, "workers by: they bring wood home")
+    check(worst <= WORKED_SHOVE, "workers by: soldiers standing about aren\'t pushed along the workers\' way ({worst})")
+
 let args = plain_args(command_line_arguments())
 vx_load([ "../data/voxel" ])
 lib_load("../data")
@@ -574,6 +615,7 @@ if on("head_on"): scene_cross(rules, races, true)
 if on("through"): scene_through(rules, races)
 if on("town"): scene_town(rules, races)
 if on("rally"): scene_rally(rules, races)
+if on("workers_by"): scene_workers_by(rules, races)
 if on("funnel"): scene_funnel(rules, races)
 if on("herd"): scene_herd(rules, races)
 if on("meet"): scene_meet(rules, races)
