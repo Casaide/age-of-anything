@@ -250,6 +250,7 @@ def mouse_milli() -> float2: return pick_milli(from_screen(mouse_px()))  // (on 
 
 var ground_mesh:resource<mesh>? = nil
 var ground_tick = -1000
+var paths_tick = -1000  // when the paths were last re-planned (#335: never in a frame that rebuilt the ground)
 var relief_built = false
 var mask_version = -1
 var mask_tick = -1000
@@ -1012,12 +1013,14 @@ def collect_props():
 
 def draw_world(alpha:float):
     atlas_pack()
-    if tick - ground_tick >= 10 or not ground_mesh:
+    let ground_now = tick - ground_tick >= 10 or not ground_mesh
+    if ground_now:
         build_ground()
         build_fog(ME)
         build_wear()
         ground_tick = tick
-    if not ground_quad or (map_version != mask_version and tick - mask_tick >= 50):
+    let masks_now = not ground_quad or (map_version != mask_version and tick - mask_tick >= 50)
+    if masks_now:
         build_masks()
         perf_masks_now = true
         if not relief_built:
@@ -1027,7 +1030,10 @@ def draw_world(alpha:float):
             build_doodads(map_name_now, doodads) t: keep_clear(t) or on_path(t)
         mask_version = map_version
         mask_tick = tick
-    if relief_built and tick % 20 == 0 and refresh_paths(): perf_built_now = true
+    // (a frame that rebuilt the ground or the masks leaves the paths to the next: one heavy job a frame, #335)
+    if relief_built and tick - paths_tick >= 20 and not ground_now and not masks_now:
+        paths_tick = tick
+        if refresh_paths(): perf_built_now = true
     let ws = float(gl.window_size())
     draw_ground_cached(gl.window_size(), float2 { floor(cam.x), floor(cam.y) }, zoom, zoom / ART_K)  // (screen px an art px: finer art, D-173)
     gl.translate(ws / 2.0):
@@ -2604,10 +2610,13 @@ def view_reset():
     path_used = []
     path_done.clear()
     path_out = []
+    path_painted = 0
+    path_raw = []
     path_anchor_hub.clear()
     path_anchor_res.clear()
     path_count = -1
     ground_tick = -1000
+    paths_tick = -1000
     mask_version = -1
     mask_tick = -1000
     selected = []
