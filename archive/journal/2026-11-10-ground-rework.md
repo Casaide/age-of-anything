@@ -43,3 +43,35 @@ Claude rewrote the terrain shader (`TERRAIN_SHADERS` in `src/game/ground.lobster
 
 ## Ideas parked
 - #397, the boardwalk's empty distance-along texture.
+
+## Afternoon: "much much worse", and textures
+Dominic on the first try: the ground looked "much much worse"; voxels for details make sense but were overused, with
+"zero effort into creating effective overlapping ground tiles/textures", and the map was "basically all one slab of
+green". He was right: the shader drew per-pixel noise and a carpet of tufts, with no texture and no zones.
+
+The second try paints real textures. `src/ground_textures.lobster` (run by `src/ground_textures.sh`) paints ten
+seamless 256 x 256 tiles once into `data/ground/atlas.png`: lush, dry and dark grass and a flowered meadow (clumps of
+blades fanning out, shadowed underneath, painted far to near), trail dirt with pebbles and cracks, weathered rock with
+fissures and lichen, rippled sand, wet sand, swamp mud and bare earth. Each texel's alpha is its height. The shader
+reads a texel an art px, so detail stays fine at every zoom. Two grids of big cells, half a cell apart, each offset the
+texture their own way, so no repeat shows. Every terrain is laid over the last by a height splat: past its line the
+higher texel wins in a band a few texels wide, along an edge noise of four octaves, so grass creeps over dirt and sand
+and stones poke through. The grass comes in zones over many tiles (lush by water, dark by woods and reeds, dry and
+yellow on open and raised ground, meadows, bare earth). Voxel tufts and stones are down to occasional accents, most of
+them along the edges of rock and dirt.
+
+- The first rock tile looked like crazy paving with black wedges, then like camouflage. It ended as low-contrast
+  mottled grey with thin cracks.
+- The swamp was one flat brown slab until tussocks of dark grass went into the mud.
+
+### Pictures (second try)
+- `images/2026-11-10/58-ground-textured-close.jpg`, `59-ground-textured-grass-1to1.png`: a start at the default zoom.
+- `60-ground-textured-zones-zoomed-out.jpg`, `64-ground-textured-rock-zones.jpg`: the zones, further out.
+- `61-ground-textured-shore-1to1.png`, `62-ground-textured-swamp.jpg`, `63-ground-textured-trail-1to1.png`,
+  `66-ground-textured-road-1to1.png`, `65-ground-textured-1080p.jpg`.
+- `67-ground-atlas.jpg`: the atlas at half size.
+
+### Numbers (second try, turn about with main)
+- 2,000 units: main 57.9 and 58.2 fps, new 58.0 and 58.1; work 6.7 to 7.4 ms median for both.
+- GPU watts in a normal match over four rounds each: main 1.21, 1.36, 1.29, 0.74; new 3.03, 1.05, 1.13, 1.62. Noisy,
+  medians about 1.25 against 1.4 W.
