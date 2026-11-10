@@ -80,6 +80,8 @@ let FACE_OFF = 50.0       // degrees
 let FACE_WINDOW = 10      // ticks over which "where it walks" is taken
 let FACE_WALKED = 300     // milli-tiles it must cover in that window to count as walking
 let OVERLAP_MAX = 0.02    // share of watched units, a sample, standing within half their summed radii of another unit
+let PAST_SETTLE = 40      // ticks for the archers to stand and shoot
+let PAST_TICKS = 600      // the spearmen's time to get to the building
 let HERD_TICKS = 2400     // two minutes for the herd to get through
 let HERD_PAST = 30000     // milli-tiles: the far side of the gap
 let SETTLE_SECS = 2       // after the last one arrives, nobody still moving this long after
@@ -231,11 +233,15 @@ def watch_report(name:string, w:MoveWatch):
     check(mean <= OVERLAP_MAX, "{name}: nobody walks inside another ({fixed_str(mean, 3)} on average)")
 
 // n of p's units of slot `slot` in a block of rows round (x, y), facing along +x: their ids.
-def group(p:int, slot:string, n:int, x:int, y:int) -> [int]:
+def kind_of(p:int, slot:string) -> int:
     var k = -1
     for(t_slot.length) kk:
         if k < 0 and t_player[kk] == p and t_slot[kk] == slot: k = kk
     assert k >= 0
+    return k
+
+def group(p:int, slot:string, n:int, x:int, y:int) -> [int]:
+    let k = kind_of(p, slot)
     let ids = []::int
     let gap = t_radius[k] * 2 + 300
     let w = int(ceiling(sqrt(float(n))))
@@ -364,6 +370,32 @@ def scene_rally(rules:JV, races:[JV]):
     check(not any_moving(ids), "rally point: they all stand in the end")
     check(worst <= RALLY_SHOVE, "rally point: nobody standing is pushed about by those arriving ({worst})")
     check(ov <= OVERLAP_MAX, "rally point: they stand beside each other, not inside ({fixed_str(ov, 3)})")
+// 4c. Spearmen sent at a building past their own archers, who stand shooting it in their way (#391): they get round them.
+def scene_past_archers(rules:JV, races:[JV]):
+    flat(races, rules)
+    let hk = btype_index("town_center")
+    let hb = place(1, hk, 50, 50)
+    b_done[hb] = 1
+    b_hp[hb] = bm_hp[1][hk] * 50  // (it stands the whole scene)
+    // Laid out as in the match where it was seen: two archers shooting it stand closer than a body apart, square across
+    // the spearman's straight way to its place.
+    let bows = map([ int2 { 48300, 51615 }, int2 { 48300, 51985 } ]) at: u_id[add_unit(0, kind_of(0, "archer"), at.x, at.y)]
+    issue_cmd(0, CMD_ATTACK, bows, b_id[hb], 0, 0, 0)
+    for(PAST_SETTLE): wstep()
+    for([ int2 { 48300, 51615 }, int2 { 48300, 51985 } ]) at, n:  // (back where they stood, nudged apart while they set to)
+        u_x[index_of(bows[n])] = at.x
+        u_y[index_of(bows[n])] = at.y
+    let a = [ u_id[add_unit(0, kind_of(0, "spear"), 47600, 51800)] ]
+    u_x[index_of(a[0])] = 47600  // (just behind them: its straight line to the building runs between them)
+    u_y[index_of(a[0])] = 51800
+    issue_cmd(0, CMD_ATTACK, a, b_id[hb], 0, 0, 0)
+    for(PAST_TICKS): wstep()
+    var there = 0
+    for(a) id:
+        let i = index_of(id)
+        if gap_b(i, hb) <= t_reach[u_kind[i]] + REACH: there++
+    print "past archers: {there} of {a.length} spearmen at the building after {PAST_TICKS / 20} s"
+    check(there == a.length, "past archers: the spearman gets round its own archers to the building ({there} of {a.length})")
 
 // 5. Cavalry funnel through the pass (choke_test: a 2-tile gap in a rock wall).
 def scene_funnel(rules:JV, races:[JV]):
@@ -617,6 +649,7 @@ if on("through"): scene_through(rules, races)
 if on("town"): scene_town(rules, races)
 if on("rally"): scene_rally(rules, races)
 if on("workers_by"): scene_workers_by(rules, races)
+if on("past_archers"): scene_past_archers(rules, races)
 if on("funnel"): scene_funnel(rules, races)
 if on("herd"): scene_herd(rules, races)
 if on("meet"): scene_meet(rules, races)
