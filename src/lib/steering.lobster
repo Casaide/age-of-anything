@@ -13,6 +13,74 @@
 def steered(i:int) -> bool:
     return u_block[i] > 0 and u_moving[i] == 1 and u_foe[i] == 0 and u_stuck[i] < STUCK_LIMIT and u_perch[i] == 0
 
+// Is unit i's own target clear of everyone else's body (a stopped unit in a finished block goes back when it is)?
+def place_free(i:int) -> bool:
+    let tx = u_tx[i]
+    let ty = u_ty[i]
+    let cx = clamp(tx / TILE, 0, W - 1)
+    let cy = clamp(ty / TILE, 0, H - 1)
+    for(3) oy:
+        let ny = cy + oy - 1
+        if ny >= 0 and ny < H:
+            for(3) ox:
+                let nx = cx + ox - 1
+                if nx >= 0 and nx < W:
+                    let c = ny * W + nx
+                    var k = sp_start[c]
+                    while k < sp_end[c]:
+                        let j = sp_items[k]
+                        k++
+                        let rr = (u_radius[i] + u_radius[j]) * 3 / 4
+                        if j != i and dist2(u_x[j], u_y[j], tx, ty) < rr * rr: return false
+    return true
+
+// Unit i at (x, y), hardly getting nearer its place: a groupmate of its block standing right by it whose place is nearer
+// to i, and i's nearer to it, takes i's place and i takes its (the ring of a formation that filled before it got there).
+def swap_place(i:int, x:int, y:int) -> bool:
+    let b = u_block[i]
+    let mine = dist2(x, y, u_tx[i], u_ty[i])
+    let cx = clamp(x / TILE, 0, W - 1)
+    let cy = clamp(y / TILE, 0, H - 1)
+    var best = -1
+    var gain = 0
+    for(3) oy:
+        let ny = cy + oy - 1
+        if ny >= 0 and ny < H:
+            for(3) ox:
+                let nx = cx + ox - 1
+                if nx >= 0 and nx < W:
+                    let c = ny * W + nx
+                    var k = sp_start[c]
+                    while k < sp_end[c]:
+                        let j = sp_items[k]
+                        k++
+                        if j != i and u_block[j] == b and u_moving[j] == 0 and u_foe[j] == 0 and u_kind[j] == u_kind[i]:
+                            let rr = u_radius[i] + u_radius[j]
+                            if dist2(x, y, u_x[j], u_y[j]) < rr * rr:
+                                let now = isqrt(mine) + isqrt(dist2(u_x[j], u_y[j], u_tx[j], u_ty[j]))
+                                let then = isqrt(dist2(x, y, u_tx[j], u_ty[j])) + isqrt(dist2(u_x[j], u_y[j], u_tx[i], u_ty[i]))
+                                if now - then > gain:
+                                    gain = now - then
+                                    best = j
+    if best < 0: return false
+    let j = best
+    let tx = u_tx[i]
+    let ty = u_ty[i]
+    let bx = u_bx[i]
+    let by = u_by[i]
+    u_tx[i] = u_tx[j]
+    u_ty[i] = u_ty[j]
+    u_bx[i] = u_bx[j]
+    u_by[i] = u_by[j]
+    u_tx[j] = tx
+    u_ty[j] = ty
+    u_bx[j] = bx
+    u_by[j] = by
+    u_moving[j] = 1
+    u_stuck[j] = 0
+    u_prog[j] = -1
+    return true
+
 // Unit i's place in its formation: round the centre (at the end, its own place), and on ground it can stand on. A place
 // on a tree or in water moves in towards the centre until it's clear, so a formation squeezes past instead of its units
 // each finding their own way round.
@@ -50,6 +118,7 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
     let ri = u_radius[i]
     let me = u_owner[i]
     let air = t_air[u_kind[i]]
+    let ln = lane(i)
     let cx = clamp(x / TILE, 0, W - 1)
     let cy = clamp(y / TILE, 0, H - 1)
     for(3) oy:
@@ -87,15 +156,16 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
                     // Its own side: round them, to the side it's already on, more than away (a standing one hardest; its own
                     // block only once they press into each other, as their places keep them apart).
                     let same = u_block[j] == u_block[i]
-                    let army = not same and u_block[j] > 0 and u_group[j] == u_group[i]           // (its army's other blocks: slipped through to its place)
-                    let close = if same or army: rr * 3 / 4 elif u_moving[j] == 0: rr else: look  // (one standing: right up to it, so it eases aside)
+                    let army = not same and u_block[j] > 0 and u_group[j] == u_group[i]                                                             // (its army's other blocks: slipped through to its place)
+                    let close = if same or army or (u_stuck[i] >= 6 and u_group[j] != u_group[i]): rr * 3 / 4 elif u_moving[j] == 0: rr else: look  // (one standing: right up to it, so it eases aside)
                     if d < close:
                         let w = if same: 3 elif u_moving[j] == 0 and not army: 2 else: 1
                         var sx = ux
                         var sy = uy
                         if h > 0:
                             let side = (ux * -hy + uy * hx) / h  // (its offset across its own heading)
-                            let sgn = if abs(side) < ONE / 4 and lean_sgn != 0: lean_sgn elif side > 0: 1 elif side < 0: -1 elif u_id[i] < u_id[j]: 1 else: -1
+                            var sgn = if abs(side) < ONE / 4 and lean_sgn != 0: lean_sgn elif side > 0: 1 elif side < 0: -1 elif u_id[i] < u_id[j]: 1 else: -1
+                            if not walkable(x - hy * rr * sgn / h, y + hx * rr * sgn / h, ln): sgn = -sgn  // (not into a wall or the water: the other side)
                             sx = -hy * ONE / h * sgn
                             sy = hx * ONE / h * sgn
                             if (ux * hx + uy * hy) / h < 0 or same:  // (already past it, or its own block: off to the side and away)
@@ -202,10 +272,15 @@ def steer_group(i:int, x:int, y:int, s:int, mc:int):
         let was = u_prog[i]
         u_prog[i] = dd
         if was < 0: return
-        if fb_state[b] == BLOCK_THERE and dd <= 2 * TILE and dd > was - s * PROGRESS_EVERY / 8:
-            u_moving[i] = 0  // (its place in a crowd, or against a wall: it stops as near as it gets)
+        let poor = dd > was - s * PROGRESS_EVERY / 8  // (hardly nearer)
+        let clear = clear_path(x, y, px, py, u_radius[i], mc)
+        if u_stuck[i] < 6 and poor and not clear:
+            u_stuck[i] = 6  // (ground in the way, not a crowd: by the flow field; there, the field to its own place)
+            if fb_state[b] == BLOCK_THERE: u_fkey[i] = cell_field(cell_of(u_tx[i], u_ty[i]), false, mc)
+        elif poor and swap_place(i, x, y):
+            u_prog[i] = -1  // (a groupmate stood between it and its place: they swapped)
+        elif fb_state[b] == BLOCK_THERE and dd <= u_arrive[i] * ARRIVE_SETTLE + TILE and poor and not place_free(i):
+            u_moving[i] = 0  // (its place in a crowd: it stops as near as it gets)
             u_stuck[i] = 0
-        elif u_stuck[i] < 6 and dd > was - s * PROGRESS_EVERY / 8 and not clear_path(x, y, px, py, u_radius[i], mc):  // (ground in the way, not a crowd: hardly nearer)
-            u_stuck[i] = 6
-        elif u_stuck[i] >= 6 and clear_path(x, y, px, py, u_radius[i], mc):
+        elif u_stuck[i] >= 6 and clear:
             u_stuck[i] = 0
