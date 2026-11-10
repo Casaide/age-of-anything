@@ -67,6 +67,10 @@ let MOD = "big_battle"
 let PROMPTS = [ "norse frogs", "centaurs" ]
 let REVERSALS_MAX = 0.05  // steps back the way it was walking, a unit, a second
 let FLIPS_MAX = 0.05      // facing flickers (to a facing and back within ZIGZAG_TICKS), a unit, a second
+let DUEL_TICKS = 600      // 30 s of the fight
+let DUEL_ENGAGED = 65     // percent of the living with a foe, at best (74 when it was written)
+let DUEL_PILE = 3         // hand to hand on one foe at most (2 when it was written)
+let DUEL_SUITED = 40      // percent of picks a foe it counters, at least (55 when it was written)
 let GATHER_TICKS = 2400   // two minutes of trips
 let FACE_BACK = 112.5     // degrees: facing more than this from where it walks is walking backwards
 let BACK_WINDOW = 4       // ticks: where it walks, over a turn's worth of steps
@@ -337,6 +341,49 @@ def scene_meet(rules:JV, races:[JV]):
     print "lines meet: at best {best} of {a.length + b.length} trading blows within {limit / 20} s"
     check(best * 2 >= a.length + b.length, "lines meet: half of them trade blows within {limit / 20} s ({best})")
 
+// 10. Two mixed groups meet (#350): the fight breaks into one-on-ones, each going for a foe it's suited to, not a pile on one.
+def scene_duel(rules:JV, races:[JV]):
+    flat(races, rules)
+    let a = mixed(0, 30, 14000, 30000)
+    let b = mixed(1, 30, 40000, 30000)
+    issue_cmd(0, CMD_ATTACK_MOVE, a, 42000, 31000, 0, 0)
+    issue_cmd(1, CMD_ATTACK_MOVE, b, 14000, 31000, 0, 0)
+    let all = a.append(b)
+    var contact = -1
+    while tick < 3000 and contact < 0:
+        wstep()
+        if (find(all) id: index_of(id) >= 0 and u_foe[index_of(id)] != 0) >= 0: contact = tick
+    check(contact > 0, "duel: they meet")
+    var engaged_best = 0
+    var pile_worst = 0
+    var suited = 0
+    var picked = 0
+    let t0 = tick
+    while tick < t0 + DUEL_TICKS:
+        wstep()
+        var alive = 0
+        var engaged = 0
+        let on = map(u_x.length): 0
+        for(all) id:
+            let i = index_of(id)
+            if i >= 0:
+                alive++
+                let j = if u_foe[i] != 0: index_of(u_foe[i]) else: -1
+                if j >= 0:
+                    engaged++
+                    if t_ranged[u_kind[i]] == 0 and gap(i, j) <= t_reach[u_kind[i]] + 100: on[j]++
+                    if (tick - t0) % 20 == 0:
+                        picked++
+                        let cls = t_cls[u_kind[j]]
+                        if (find(t_counters[u_kind[i]]) c: cls[c] != 0) >= 0: suited++
+        engaged_best = max(engaged_best, engaged * 100 / max(1, alive))
+        for(on) n: pile_worst = max(pile_worst, n)
+        if (tick - t0) % 100 == 0: print "duel: {(tick - t0) / 20} s after contact: {engaged} of {alive} have a foe"
+    print "duel: at best {engaged_best}% have a foe; at worst {pile_worst} hand to hand on one foe; {suited * 100 / max(1, picked)}% of picks are a foe it counters"
+    check(engaged_best >= DUEL_ENGAGED, "duel: the fight spreads to most of them ({engaged_best}% at best have a foe)")
+    check(pile_worst <= DUEL_PILE, "duel: no pile on one foe (at worst {pile_worst} hand to hand on one)")
+    check(suited * 100 >= picked * DUEL_SUITED, "duel: they go for foes they counter ({suited * 100 / max(1, picked)}% of picks)")
+
 // n of p's soldiers of every type, 20 to a row from (x, y): their ids.
 def mixed(p:int, n:int, x:int, y:int) -> [int]:
     let kinds = []::int
@@ -449,6 +496,7 @@ let races = map(PROMPTS) p: generate(p, rules, 0)
 def on(s:string) -> bool: return args.length == 0 or (find(args) a: a == s) >= 0
 if on("small"): scene_small(rules, races)
 if on("gather"): scene_gather(rules, races)
+if on("duel"): scene_duel(rules, races)
 if on("crossing"): scene_cross(rules, races, false)
 if on("head_on"): scene_cross(rules, races, true)
 if on("through"): scene_through(rules, races)
