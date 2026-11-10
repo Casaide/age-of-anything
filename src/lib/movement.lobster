@@ -350,7 +350,7 @@ def move():
             u_vx[i] = 0
             u_vy[i] = 0
             if u_group[i] == 0 or u_foe[i] != 0 or (tick + u_id[i]) % REPLAN_EVERY != 0: continue
-            let back = u_arrive[i] * ARRIVE_SETTLE + (if u_arrive[i] == SLOT_ARRIVE: SLOT_SLACK else: RETURN_SLACK)
+            let back = if u_block[i] > 0 and not place_free(i): u_arrive[i] * ARRIVE_SETTLE + TILE else: u_arrive[i] * ARRIVE_SETTLE + (if u_arrive[i] == SLOT_ARRIVE: SLOT_SLACK else: RETURN_SLACK)  // (in a block: back to its place once it's clear, #347)
             if dist2(xs[i], ys[i], u_tx[i], u_ty[i]) <= back * back:
                 st[i] = 0
                 continue
@@ -568,7 +568,7 @@ def separate():
                     if grp[i] == grp[j] and grp[i] > 0 and mv[i] != mv[j]:
                         let m = if mv[i] == 1: i else: j
                         let near = ar[m] * (if ar[m] == SLOT_ARRIVE: 2 else: ARRIVE_SETTLE)
-                        if dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near: s_settle[m] = 1
+                        if dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near and not steered(m): s_settle[m] = 1  // (steering, it brakes into its place itself)
                     let d = isqrt(d2)
                     var ux = 0
                     var uy = 0
@@ -581,8 +581,8 @@ def separate():
                         uy = dy * ONE / d
                     let si = steered(i)
                     let sj = steered(j)
-                    if u_block[i] > 0 and u_block[j] > 0 and grp[i] == grp[j] and d > rr / 4: continue  // (an army's blocks: their places keep them apart, and a unit crossing to its place isn't shoved back)
-                    if si and sj and owners[i] == owners[j]: continue                                   // (two of a side's steering units keep off each other themselves, #355)
+                    if u_block[i] > 0 and u_block[j] > 0 and grp[i] == grp[j] and d > rr / 4 and not (si != sj and mv[if si: j else: i] == 0 and u_block[i] == u_block[j] and u_stuck[if si: i else: j] >= 6): continue  // (an army's blocks: their places keep them apart, and a unit crossing to its place isn't shoved back)
+                    if si and sj and owners[i] == owners[j] and grp[i] == grp[j]: continue                                                                                                                               // (two of a side's steering units keep off each other themselves, #355)
                     if si != sj and owners[i] == owners[j]:
                         // One of the side's own steering through another standing about: the standing one is eased aside, the
                         // walker steers round it (#355). One at work or set to fire stays put.
@@ -590,8 +590,18 @@ def separate():
                         if mv[o] == 0 and u_foe[o] == 0 and s_planted[o] == 0:
                             let ease = (rr - d) / (SEPARATION_DIV * 2) + 1
                             let sg = if o == i: -1 else: 1
-                            s_pushx[o] += sg * ux * ease / ONE
-                            s_pushy[o] += sg * uy * ease / ONE
+                            let wk = if si: i else: j
+                            let wv = isqrt(u_vx[wk] * u_vx[wk] + u_vy[wk] * u_vy[wk])
+                            var ex = sg * ux
+                            var ey = sg * uy
+                            if wv > 0:  // (aside: off the walker's line, never shoved along ahead of it)
+                                let px = -u_vy[wk] * ONE / wv
+                                let py = u_vx[wk] * ONE / wv
+                                let across = (ex * px + ey * py) / ONE
+                                ex = px * (if across >= 0: 1 else: -1)
+                                ey = py * (if across >= 0: 1 else: -1)
+                            s_pushx[o] += ex * ease / ONE
+                            s_pushy[o] += ey * ease / ONE
                             continue
                     if grp[i] == grp[j] and ((s_stood[i] == 1 and mv[j] == 1) or (s_stood[j] == 1 and mv[i] == 1)): continue
                     if s_stood[i] == 1 and s_stood[j] == 1: continue
