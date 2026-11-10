@@ -1074,6 +1074,10 @@ def test_siege_bot(a:JV, b:JV):
     var rams_out = 0
     while tick < 20 * 1500 and winner < 0:
         if tick % 1200 == 0: stock_at_least(0, 2000)
+        // The economy side's towns hold out: this piece is about engines, and when an attack wins first depends on the
+        // fights, not on them (it fell at 18:13 before #346's steering, at 13:41 after, with the first engine at 13:40).
+        for(b_id.length) bi:
+            if b_owner[bi] == 1 and has_role(b_kind[bi], ROLE_HUB): b_hp[bi] = max(b_hp[bi], 1000)
         think_all(sides)
         wstep()
         for(events) e:

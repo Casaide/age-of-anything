@@ -157,6 +157,8 @@ var stashed_u_pace = []::int
 var stashed_u_block = []::int
 var stashed_u_bx = []::int
 var stashed_u_by = []::int
+var stashed_u_vx = []::int
+var stashed_u_vy = []::int
 var stashed_u_hp = []::int
 var stashed_u_foe = []::int
 var stashed_u_cooldown = []::int
@@ -662,6 +664,8 @@ def reset_world():
     u_block = []::int
     u_bx = []::int
     u_by = []::int
+    u_vx = []::int
+    u_vy = []::int
     u_hp = []::int
     u_foe = []::int
     u_cooldown = []::int
@@ -1157,6 +1161,8 @@ def stash_world():
     stashed_u_block = u_block
     stashed_u_bx = u_bx
     stashed_u_by = u_by
+    stashed_u_vx = u_vx
+    stashed_u_vy = u_vy
     stashed_u_hp = u_hp
     stashed_u_foe = u_foe
     stashed_u_cooldown = u_cooldown
@@ -1645,6 +1651,8 @@ def unstash_world():
     u_block = stashed_u_block
     u_bx = stashed_u_bx
     u_by = stashed_u_by
+    u_vx = stashed_u_vx
+    u_vy = stashed_u_vy
     u_hp = stashed_u_hp
     u_foe = stashed_u_foe
     u_cooldown = stashed_u_cooldown
