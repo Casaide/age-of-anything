@@ -68,6 +68,7 @@ import .view.facing
 import .view.shot_look
 import .view.node
 import .view.art
+import .view.png
 import .view.bake_cache
 import .view.atmosphere
 import .gen.reset
@@ -457,16 +458,6 @@ def add_xf(f:int, xf:[float], sort_y:float, col:float4):
         draws.push(Drawable { sort_y, draws.length, f, 0.0, 0.0, col, xf })
 
 var frame_dt = 1.0 / 60.0
-
-// The line step a type is drawn in (as retype picks it): the recipe its units look like now.
-def type_step(k:int) -> int:
-    let p = t_player[k]
-    if p < 0 or p >= num_players: return 0
-    let line = lines[k]
-    var step = 0
-    for(line) l, n:
-        if l.age <= ages[p] and (l.age == line[0].age or t_worker[k] or t_hero[k] or upgraded_line(p, l)): step = n
-    return step
 
 def canvas(x:float, y:float) -> float2: return iso(x, y) / 1.5
 
@@ -2871,6 +2862,8 @@ def play_match():
             bake_progress_from = 0.5
             bake_progress_to = 0.95
             bake_what = "the armies"
+            vx_all_fielded = army_n > 0 or skirmish  // (an army or a skirmish: they're all on the field)
+            vx_start_now = army_n > 0
             vx_start()
             let t1 = seconds_elapsed()
             ak_rebake = rebake_art

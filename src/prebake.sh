@@ -15,7 +15,7 @@ if [ "$(cat baked/version 2>/dev/null)" != "$version" ]; then
 fi
 "$LOBSTER" game.lobster -- none - prebake mute 2>&1 | grep '^prebake:'
 "$LOBSTER" game.lobster -- none - prebake density:2.4 mute 2>&1 | grep '^prebake:'
-# Recompressed in place (the game's PNG writer, model/build_mats.lobster bmat_png, stores the pixels uncompressed), only
+# Recompressed in place (the game's PNG writer, creel's view/png.lobster png_bytes, stores the pixels uncompressed), only
 # what's new since the last run. Pixels unchanged.
 newer=""
 if [ -f baked/squeezed ]; then newer="-newer baked/squeezed"; fi
