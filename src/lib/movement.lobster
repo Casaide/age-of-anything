@@ -527,10 +527,12 @@ def separate():
                     let jj = mv[j] == 1 and u_task[j] != T_NONE and mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
                     if (si != sj or ji or jj) and owners[i] == owners[j]:
                         // One of the side's own steering (or on a job) through another standing about: the standing one is eased
-                        // aside, the walker steers round it (#355); a worker no longer shoves a soldier along its way (#395). One at
-                        // work or set to fire stays put.
+                        // aside, the walker steers round it (#355); a worker on its job is eased off a soldier instead and goes round,
+                        // or held up, slips through it: it no longer shoves the soldier along its way (#395). One at work or set to fire
+                        // stays put.
                         let o = if si or ji: j else: i
-                        if (ji or jj) and u_stuck[if ji: i else: j] == 0:  // (unless it's held up there: then the soldier steps aside, below)
+                        if (ji or jj) and u_stuck[if ji: i else: j] > 0: continue  // (held up by it all the same: it slips through, a friend's body soft, and the soldier stays put)
+                        if ji or jj:
                             let wk = if ji: i else: j
                             let ow = if o == i: -1 else: 1
                             s_pushx[wk] -= ow * ux * ((rr - d) / SEPARATION_DIV + 1) / ONE  // (it holds its ground; the worker is the one eased off it and goes round)
