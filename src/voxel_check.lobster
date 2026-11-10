@@ -37,6 +37,7 @@ def hexc(s:string) -> float3: return vx_hex(s)
 // The bodies races are made of (a creature's own body), with their palettes.
 let bodies = []::string
 let body_skins = []::[string]
+let body_creature = []::string  // (a culture's body is its creature's, in other clothes: not a look-alike)
 let ckeys = creatures.keys
 for(ckeys.length) i:
     let c = creatures.a[i]
@@ -45,6 +46,26 @@ for(ckeys.length) i:
         if vx_bodies.get(b) and (find(bodies) x: x == b) < 0:
             bodies.push(b)
             body_skins.push(gstrs(c, "skins"))
+            body_creature.push(ckeys[i])
+// and the cultures' own bodies for a creature (#418), each drawn for that creature alone
+let families = parse_json(assert read_file("../data/families.json"))
+for(sorted_strs(families.keys)) fid:
+    let own = gobj(at(families, fid), "bodies")
+    for(sorted_strs(own.keys)) cid:
+        if not starts_with(cid, "_"):
+            let b = gstr(own, cid, "")
+            let c = at(creatures, cid)
+            if not vx_bodies.get(b): fail("{fid}: its body for {cid}, {b}, isn\'t a voxel body")
+            elif c.kind != J_OBJ: fail("{fid}: has a body for {cid}, which isn\'t a creature")
+            else:
+                let made = vx_culture_body(cid, cid, at(families, fid))
+                if made != b: fail("{fid}: a {cid} of the culture is drawn as {made}, not {b}")
+                if vx_culture_body(cid, cid, jobj()) != cid: fail("{fid}: a {cid} of no culture isn\'t drawn as its own body")
+                if vx_culture_body("siege.ram", cid, at(families, fid)) != "siege.ram": fail("{fid}: an engine took the culture\'s body")
+                if (find(bodies) x: x == b) < 0:
+                    bodies.push(b)
+                    body_skins.push(gstrs(c, "skins"))
+                    body_creature.push(cid)
 
 // ---- knees: a standing leg's bend (180 - the knee's angle), degrees
 def knee_bend(b:vx_body_spec) -> float:
@@ -182,6 +203,10 @@ for(bodies) id, bi:
         print "{id}: in {KIT} its silhouette is {int(worst * 100.0)}% of its own"
         if worst > 1.3 and not report: fail("{id}: worn kit swells its silhouette to {int(worst * 100.0)}% (at most 130%)")
         // and the creature still shows through it: its own materials' share of what's drawn, the worst facing
+        // (a .vox body's clothes drawn in team colour are its own: the Roman's tunic, #417)
+        let file = parse_json(read_file("../data/voxel/bodies/" + vx_body_of(id).id + ".json") or "\{\}")
+        let own_mats = OWN.copy()
+        if (find(gobj(file, "mats").a) m: m.kind == J_STR and m.s == "team") >= 0: own_mats.push("team")
         var shows = 1.0
         for([ 1, 3, 5, 7 ]) f:
             mask(kit, f)
@@ -191,7 +216,7 @@ for(bodies) id, bi:
                 let m = vx_mat[(vx_box.y + yy) * vx_CELL.x + vx_box.x + xx]
                 if m >= 0:
                     all++
-                    if (find(OWN) n: vx_mat(n) == m) >= 0: own++
+                    if (find(own_mats) n: vx_mat(n) == m) >= 0: own++
             shows = min(shows, float(own) / float(max(1, all)))
         print "{id}: in {KIT} {int(shows * 100.0)}% of it is still the creature"
         let least = vx_check_limit(id, "shows", 0.45)
@@ -208,7 +233,7 @@ for(bodies) id, bi:
 // apart: each pair of race bodies, side on
 for(bodies) a, i:
     for(bodies) b, j:
-        if j > i and shapes[i].length and shapes[j].length and vx_body_of(a).id != vx_body_of(b).id:  // (one body in other colours)
+        if j > i and shapes[i].length and shapes[j].length and vx_body_of(a).id != vx_body_of(b).id and body_creature[i] != body_creature[j]:  // (one body in other colours)
             let o = max(overlap(shapes[i], shapes[j]), overlap(shapes3[i], shapes3[j]))
             if o > 0.7:
                 print "{a} and {b}: silhouettes {int(o * 100.0)}% alike"

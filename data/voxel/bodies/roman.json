@@ -1,0 +1,128 @@
+{
+ "_doc": "A Roman of the 1st century AD in the base dress every Roman unit wears (#417), drawn as roman.vox (written by tools/vox/roman.lobster) from the approved concept sheet: 7.5 heads, short dark hair, clean-shaven, a knee-length tunica with short sleeves in team colour, a leather belt with brass studs, caligae. Helmets, armour, shields and weapons are gear over it. The behaviour (walk, arms' reach, seat) is the haidut's.",
+ "skin": "#c8956c",
+ "pale": "#d8a67c",
+ "size": 0.73,
+ "fur": 0.0,
+ "reach": 5.0,
+ "points": {
+  "hip": {
+   "at": [
+    0,
+    0,
+    21.0
+   ],
+   "bob": 0.5
+  },
+  "chest": {
+   "at": [
+    0,
+    0.3,
+    29.6
+   ],
+   "bob": 0.5
+  },
+  "head": {
+   "at": [
+    0,
+    0.7,
+    37.1
+   ]
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "hip",
+    1.75,
+    0,
+    0
+   ],
+   "foot": [
+    1.9,
+    0,
+    1.9
+   ],
+   "stride": 5.0,
+   "lift": 2.2,
+   "bones": [
+    9.58,
+    9.58
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    2.0,
+    1.4,
+    1.3,
+    0.85
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": []
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "chest",
+   4.3,
+   -0.2,
+   1.2
+  ],
+  "bone": 6.7,
+  "thick": 1.3,
+  "sleeve": "skin",
+  "hand": "skin"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.3,
+   1.0
+  ],
+  "r": 2.75
+ },
+ "armour": {
+  "a": [
+   "hip",
+   0,
+   0.1,
+   2.6
+  ],
+  "b": [
+   "chest",
+   0,
+   0,
+   0.4
+  ],
+  "r": [
+   2.7,
+   3.2
+  ]
+ },
+ "seat": {
+  "z": 21.5,
+  "astride": [
+   "skin",
+   "skin",
+   "leather"
+  ]
+ },
+ "shapes": [],
+ "vox": "roman.vox",
+ "mats": {
+  "1": "skin",
+  "2": "hair",
+  "3": "team",
+  "4": "leather",
+  "5": "bronze",
+  "6": "leather"
+ },
+ "bare": false
+}
