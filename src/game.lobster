@@ -76,6 +76,7 @@ import .net.lan
 import .game.audio
 import .game.pack
 import .game.relief
+import .game.fog_look
 import .game.ground
 import .game.doodads
 import .game.paths
@@ -262,7 +263,7 @@ def build_ground():
     let cols = map(W * H) c:
         let t = terrain[c]
         let k = 0.35 + 0.65 * cell_noise(c)
-        let shade = if fg[c] == 0: 0.12 elif fg[c] == 1: 0.55 else: 1.0
+        let shade = fog_ground_shade(fg[c])
         (ground_a[t] * k + ground_b[t] * (1.0 - k)) * shade
     let corner = map((W + 1) * (H + 1)) v:
         let vx = v % (W + 1)
@@ -972,12 +973,12 @@ def refresh_paths() -> bool:
 def collect_doodads():
     for(doodad_list) d:
         let c = clamp(int(d.t.y), 0, H - 1) * W + clamp(int(d.t.x), 0, W - 1)
-        if fog[ME][c] != 0 and near_view(iso(d.t.x * 1000.0, d.t.y * 1000.0)):
+        if fog_shows_land(fog[ME][c]) and near_view(iso(d.t.x * 1000.0, d.t.y * 1000.0)):
             let f = frame_index(d.name)
             if f >= 0:
                 let at = iso(d.t.x * 1000.0, d.t.y * 1000.0)
                 let ay = at.y - lift_at(d.t.x * 1000.0, d.t.y * 1000.0) * 1.5
-                let shade = if fog[ME][c] == 2: 1.0 else: 0.6
+                let shade = fog_prop_shade(fog[ME][c])
                 if d.scale == 1.0: add(f, at.x, ay, at.y, float4 { 1.0, 1.0, 1.0, shade })
                 else:
                     let fr = frames[f]
@@ -989,8 +990,8 @@ def collect_props():
         // (under the fog, the ground as you last saw it: a farm sown in the dark stays grass until you look, Fog's memory)
         let now = fog[ME][c] == 2 or fog_ground.length <= ME
         let tt = if now: terrain[c] else: fog_ground[ME][c]
-        // (trees show even where never explored, as the map was made: the land's lie is no secret; the rest waits to be seen)
-        if (fog[ME][c] != 0 or tr_names[tt] == "tree") and (tr_res[tt] != 0 or species[c] != "-") and near_view(iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))):
+        // (the land is no secret, #334: trees, gold, stone and bushes show where never explored, as the map was made)
+        if fog_shows_land(fog[ME][c]) and (tr_res[tt] != 0 or species[c] != "-") and near_view(iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))):
             let tname = tr_names[tt]
             var kind = prop_of.get(tname, "")
             if kind == "tree": kind = species[c]
@@ -1003,7 +1004,7 @@ def collect_props():
                 let name = staged(kind, pick % doodads.get(kind, 1), stage)
                 let at = iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))
                 let up = lift_at(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500)) * 1.5
-                let shade = if fog[ME][c] == 2: 1.0 elif fog[ME][c] == 1: 0.6 else: 0.3
+                let shade = fog_prop_shade(fog[ME][c])
                 let flat = pool[c] >= 0
                 add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, float4 { 1.0, 1.0, 1.0, shade })
                 let sh = frame_index(name + "~shadow")
