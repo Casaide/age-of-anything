@@ -79,7 +79,9 @@ def vx_style_of(body:string, body_id:string) -> float3, float3, float3:
 // A recipe as a voxel body and gear: its body (bodies/<body id>.json), the race's colours, each part's gear by
 // gear.json's rules, its mount (its mount body, in its own colours).
 def vx_def_of(r:JV) -> vx_unit_def:
-    let body = vx_body_for(rstr(r, "body"), gstr(r, "creature", ""))
+    let cid = gstr(r, "creature", "")
+    let fid = gstr(r, "family", "")
+    let body = vx_culture_body(vx_body_for(rstr(r, "body"), cid), cid, if has(lib_families, fid): family(fid) else: jobj())
     var skin, pale, mark = vx_palette(gstr(r, "skin", ""))
     var crew:vx_unit_def? = nil
     if has(r, "crew"):  // an engine or a war beast: its frame in its style, its crew in their own colours
@@ -110,11 +112,6 @@ def vx_key_of(u:vx_unit_def) -> string:
     let ck = if c: " crew \{" + vx_key_of(c) + "\}" else: ""
     return "{u.body} {u.skin} {u.pale} {u.mark} {u.gear} {u.mount} {u.fused} {u.coat} {u.mane} {u.coat_mark}{ck}"
 
-// How far a foot swings out from under the hip, body units (the body's, or its mount's).
-def vx_reach(u:vx_unit_def) -> float:
-    if u.mount != "": return vx_body_of(u.mount).reach * vx_mount_size(vx_body_of(u.body), vx_body_of(u.mount)) / vx_size_of(u)
-    return vx_body_of(u.body).reach
-
 // The look a recipe is drawn in (made the first time it's asked for; not baked until planned).
 def vx_look_for(r:JV) -> int: return vx_look_of(vx_def_of(r), gstr(r, "role", "") == "worker")
 
@@ -122,11 +119,8 @@ def vx_look_of(u:vx_unit_def, worker:bool) -> int:
     let key = vx_key_of(u) + " {worker}"
     let have = vx_lk_ids.get(key, -1)
     if have >= 0: return have
-    // a cycle of 8 steps is a stride (the body moves its foot's reach twice each half cycle, the planted foot fixed),
-    // so its length is four times that reach; a body unit is about 1/62 of a tile along the ground
     let lk = vx_lks.length
-    let pitch = vx_track_cycle(vx_body_of(u.body))  // (a belt goes by its links, so it doesn't slide on the ground)
-    let cycle = if pitch > 0.0: pitch * vx_size_of(u) * 1000.0 / 62.0 else: 4.0 * vx_reach(u) * 1000.0 / 62.0
+    let cycle = vx_walk_cycle(u)
     vx_lks.push(vx_lk { key, u, worker, cycle, false, [] })
     vx_lk_ids.set(key, lk)
     for(vx_body_of(u.body).parts) p:
