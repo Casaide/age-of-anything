@@ -1,284 +1,193 @@
-// ------------------------------------------------------------------ trees (scenes/art_pixel/tree_models.gd)
-// Three tree_kind (broadleaf, pine, swamp), each in three looks (`style` 0-2), and `stage` 0-3 (standing, felled,
-// half sawn, the stump), in world units, each function tree_models.gd's of the same name (`_card_crown` ->
-// tree_card_crown: its private helpers carry the file's name), line for line; its comments are there. Seeded with
-// Godot's RandomNumberGenerator, drawn in the same order.
+// ------------------------------------------------------------------ trees as voxel grids (#410)
+// Three tree_kind (broadleaf: an oak; pine; swamp: a willow), each in three looks (`style` 0-2), and `stage` 0-3
+// (standing, felled, half sawn, the stump), built voxel by voxel (view/voxel_grid.lobster) in design units: a
+// voxel each in Dominic's approved mockup (2026-11-10), scaled to the trees' size in the world.
 
 let TREE_SPECIES = [ "broadleaf", "pine", "swamp" ]
-let TREE_VIEW_UP = float3 { 0.25, 0.8, 0.45 }
-
-var tree_rng = grng(0)
 
 def tree_species_index(tree_kind:string) -> int:  // SPECIES.find
     for(TREE_SPECIES) s, i:
         if s == tree_kind: return i
     return -1
 
-class TreeLook:
-    height:float
-    trunk:float
-    bark:float3
-    leaf:float3
-    plain:bool
+let TREE_BARK = [ float3 { 0.20, 0.15, 0.12 }, float3 { 0.36, 0.29, 0.22 }, float3 { 0.52, 0.45, 0.36 }, float3 { 0.66, 0.60, 0.50 } ]
+let TREE_BIRCH = [ float3 { 0.22, 0.20, 0.19 }, float3 { 0.58, 0.56, 0.52 }, float3 { 0.80, 0.78, 0.73 }, float3 { 0.92, 0.91, 0.87 } ]
 
-class TreeLobe:
-    c:float3
-    r:float3
+// World units a design unit: the trees keep the size they had on the map.
+def tree_unit(tree_kind:string) -> float:
+    return switch tree_kind:
+        case "pine": 0.0148
+        case "swamp": 0.0195
+        default: 0.0177
 
-def tree(seed_value:int, tree_kind:string, style:int = 0, stage:int = 0) -> MNode:
-    tree_rng = grng(seed_value * 31 + tree_species_index(tree_kind) * 7 + style)
-    let rng = tree_rng
-    let size = randf_range(rng, 0.88, 1.12)
-    let lx = randf_range(rng, -0.06, 0.06)
-    let lz = randf_range(rng, -0.06, 0.06)
-    let lean = float3 { lx, 0.0, lz }
-    let fall = randf(rng) * TAU
-    let n = mnode()
-    let look = tree_look(tree_kind, style)
-    let h = look.height * size
-    if stage == 0:
-        add_child(n, tree_standing(tree_kind, style, size, lean, look))
-    else:
-        add_child(n, tree_stump(look, size))
-        if stage < 3: add_child(n, tree_felled(look, size, h, fall, stage))
-    return n
-
-def tree_look(tree_kind:string, style:int) -> TreeLook:
-    switch tree_kind:
-        case "pine":
-            return TreeLook { [ 2.3, 2.2, 2.6 ][style], 0.085, [ float3 { 1.0, 1.0, 1.15 }, float3 { 0.9, 0.95, 1.1 }, float3 { 1.25, 1.0, 0.9 } ][style],
-                              float3 { 0.32, 0.46, 0.34 }, false }
-        case "swamp":
-            return TreeLook { [ 2.4, 1.9, 2.0 ][style], [ 0.11, 0.1, 0.09 ][style], [ float3 { 1.2, 1.15, 1.25 }, float3 { 1.0, 1.05, 1.2 }, float3 { 1.35, 1.4, 1.5 } ][style],
-                              [ float3 { 0.7, 0.72, 0.4 }, float3 { 0.6, 0.72, 0.4 }, float3 { 0.45, 0.56, 0.36 } ][style], false }
+def tree_look(tree_kind:string, style:int) -> vglook:
+    let leaf = switch tree_kind:
+        case "pine": [ float3 { 0.55, 0.62, 0.36 }, float3 { 0.24, 0.37, 0.24 }, float3 { 0.06, 0.13, 0.12 }, float3 { 0.48, 0.47, 0.26 } ]
+        case "swamp": [ float3 { 0.74, 0.74, 0.40 }, float3 { 0.45, 0.52, 0.26 }, float3 { 0.14, 0.21, 0.14 }, float3 { 0.70, 0.64, 0.34 } ]
         default:
-            return TreeLook { [ 2.1, 2.1, 2.3 ][style], [ 0.1, 0.1, 0.06 ][style], [ float3 { 1.05, 1.1, 1.3 }, float3 { 1.05, 1.1, 1.3 }, html("#e8e2d4") ][style],
-                              [ float3 { 0.5, 0.6, 0.38 }, float3 { 0.5, 0.6, 0.38 }, float3 { 0.66, 0.74, 0.4 } ][style], style == 2 }
+            if style == 2: [ float3 { 0.72, 0.72, 0.34 }, float3 { 0.40, 0.50, 0.22 }, float3 { 0.12, 0.19, 0.13 }, float3 { 0.70, 0.62, 0.28 } ]
+            else: [ float3 { 0.62, 0.66, 0.32 }, float3 { 0.32, 0.43, 0.20 }, float3 { 0.09, 0.16, 0.13 }, float3 { 0.62, 0.55, 0.26 } ]
+    return vglook { leaf, if tree_kind == "broadleaf" and style == 2: TREE_BIRCH else: TREE_BARK, [], false, true, true }
 
-def tree_bark(look:TreeLook) -> MMat: return if look.plain: plain(look.bark) else: surf("bark_plate", look.bark, 2.0)
+def tree(seed_value:int, tree_kind:string, style:int = 0, stage:int = 0) -> vgrid:
+    let rng = grng(seed_value * 31 + tree_species_index(tree_kind) * 7 + style)
+    let size = randf_range(rng, 0.88, 1.12)
+    let k = vg_k(tree_unit(tree_kind) * size)
+    let look = tree_look(tree_kind, style)
+    if stage > 0:
+        look.standing = false
+        return tree_cut(rng, look, k, tree_kind, stage)
+    return switch tree_kind:
+        case "pine": tree_pine(rng, look, k, style)
+        case "swamp": tree_willow(rng, look, k, style)
+        default: tree_oak(rng, look, k, style)
 
-def tree_standing(tree_kind:string, style:int, size:float, lean:float3, look:TreeLook) -> MNode:
-    let rng = tree_rng
-    let n = mnode()
-    let h = look.height * size
-    let bark = tree_bark(look)
-    let r = look.trunk * size
-    switch tree_kind + "{style}":
-        case "broadleaf0", "broadleaf1":
-            let top = float3 { 0.0, h * 0.5, 0.0 } + lean * h
-            tree_trunk(n, float3_0, top, r, bark)
-            for(3):
-                let a = randf(rng) * TAU
-                let by = randf_range(rng, 0.15, 0.35)
-                add_child(n, rod(top * 0.85, top + float3 { rcos(a) * 0.3, by, rsin(a) * 0.3 } * size, r * 0.6, r * 0.3, bark, false))
-            let lobes = tree_lobes(top + float3 { 0.0, 0.5 * size, 0.0 }, 0.4 * size, 0.42 * size, randi_range(rng, 6, 8))
-            if style == 0: tree_card_crown(n, lobes, "leaf", 0.12 * size, 1500, look.leaf)
-            else: tree_painted_crown(n, lobes, look.leaf, 0.13 * size)
-        case "broadleaf2":
-            for(randi_range(rng, 1, 2)) k:
-                let ox = randf_range(rng, -0.14, 0.14)
-                let oz = randf_range(rng, -0.14, 0.14)
-                let off = float3 { ox, 0.0, oz } * float(k)
-                let top = off + float3 { 0.0, h * 0.8, 0.0 } + lean * h * (1.0 + float(k))
-                tree_trunk(n, off, top, r, bark)
-                for(6):
-                    let t = randf_range(rng, 0.1, 0.8)
-                    add_child(n, blob(float3 { r * 1.04, 0.012, r * 1.04 }, plain(html("#2a2420")), lerp(off, top, t)))
-                let lobes = tree_lobes(lerp(off, top, 0.8), 0.22 * size, 0.3 * size, 6)
-                tree_card_crown(n, lobes, "leaf", 0.09 * size, 900, look.leaf)
-        case "pine0":
-            tree_trunk(n, float3_0, float3 { 0.0, h * 0.82, 0.0 } + lean * h, r, bark)
-            let tiers = 10
-            for(tiers) t:
-                let f = float(t) / float(tiers)
-                let y = lerpf(0.35, 0.95, f) * h
-                let spread = lerpf(0.62, 0.1, f) * size
-                let at = float3 { 0.0, y, 0.0 } + lean * y
-                let cards = int(lerpf(90.0, 18.0, f))
-                for(cards) k:
-                    let a = float(k) / float(cards) * TAU + randf_range(rng, -0.2, 0.2)
-                    let out = float3 { rcos(a), 0.0, rsin(a) }
-                    let len = spread * randf_range(rng, 0.8, 1.15)
-                    let down = normalize(out + float3 { 0.0, -0.45, 0.0 })
-                    let mid = at + down * len * 0.5
-                    let shade = clamp(f * 0.6 + (0.5 + 0.5 * dot(out, float3 { -0.6, 0.0, 0.8 })) * 0.4, 0.0, 1.0)
-                    let tint = tree_lerp_col(float3 { 0.22, 0.32, 0.24 }, float3 { 0.62, 0.78, 0.55 }, shade)
-                    add_child(n, tree_card("reed_leaf", 0.16 * size, len, mid, TREE_VIEW_UP, down, tint))
-                add_child(n, cone(0.02, spread * 0.55, spread * 0.4, plain(html("#1a2a1c")), at + float3 { 0.0, -spread * 0.12, 0.0 }))
-        case "pine1":
-            tree_trunk(n, float3_0, float3 { 0.0, h * 0.5, 0.0 }, r, bark)
-            let fol = surf("foliage", float3 { 0.62, 0.78, 0.62 }, 0.6)
-            for(4) t:
-                let f = float(t) / 4.0
-                let rb = lerpf(0.6, 0.22, f) * size
-                let ch = lerpf(0.75, 0.55, f) * size
-                let y = lerpf(0.3, 1.45, f) * size + ch * 0.5
-                add_child(n, cone(0.0, rb, ch, fol, float3 { 0.0, y, 0.0 } + lean * y, float3 { 0.0, randf(rng) * 90.0, 0.0 }, 9))
-                for(26):
-                    let a = randf(rng) * TAU
-                    let out = float3 { rcos(a), 0.0, rsin(a) }
-                    let down = normalize(out + float3 { 0.0, -0.6, 0.0 })
-                    let at = float3 { 0.0, y - ch * 0.4, 0.0 } + out * rb * 0.85 + lean * y
-                    add_child(n, tree_card("reed_leaf", 0.14 * size, 0.22 * size, at, TREE_VIEW_UP, down, tree_lerp_col(float3 { 0.3, 0.42, 0.3 }, float3 { 0.6, 0.75, 0.55 }, randf(rng))))
-        case "pine2":
-            let top = float3 { 0.0, h * 0.88, 0.0 } + lean * h
-            tree_trunk(n, float3_0, top, r, bark)
-            for(5):
-                let a = randf(rng) * TAU
-                let y = randf_range(rng, 0.7, 0.95) * h
-                let tip = float3 { rcos(a) * 0.38, y + 0.08, rsin(a) * 0.38 } * float3 { size, 1.0, size } + lean * y
-                add_child(n, rod(float3 { 0.0, y - 0.1, 0.0 } + lean * y, tip, r * 0.45, r * 0.2, bark, false))
-                let lobes = tree_lobes(tip + float3 { 0.0, 0.05, 0.0 }, 0.08 * size, 0.22 * size, 2, 0.35)
-                tree_card_crown(n, lobes, "reed_leaf", 0.12 * size, 260, look.leaf, 0.3)
-            tree_card_crown(n, tree_lobes(top + float3 { 0.0, 0.12, 0.0 }, 0.05, 0.24 * size, 2, 0.4), "reed_leaf", 0.12 * size, 260, look.leaf, 0.3)
-        case "swamp0":
-            let top = float3 { 0.0, h * 0.92, 0.0 } + lean * h
-            tree_trunk(n, float3_0, top, r * 0.8, bark)
-            add_child(n, cone(r * 0.9, r * 2.6, 0.45 * size, bark, float3 { 0.0, 0.22 * size, 0.0 }, float3_0, 9))
-            for(randi_range(rng, 4, 7)):
-                let a = randf(rng) * TAU
-                let d = randf_range(rng, 0.28, 0.45)
-                add_child(n, cone(0.008, 0.035, randf_range(rng, 0.08, 0.16), bark, float3 { rcos(a) * d, 0.05, rsin(a) * d }))
-            let lobes = []::TreeLobe
-            for(5) t:
-                let f = float(t) / 5.0
-                lobes.push(TreeLobe { float3 { 0.0, lerpf(0.45, 0.88, f) * h, 0.0 } + lean * h * f, float3 { 1.0, 0.7, 1.0 } * lerpf(0.42, 0.16, f) * size })
-            tree_card_crown(n, lobes, "reed_leaf", 0.12 * size, 1300, look.leaf, 0.3)
-        case "swamp1":
-            let top = float3 { 0.0, h * 0.55, 0.0 } + lean * h
-            tree_trunk(n, float3_0, top, r, bark)
-            let lobes = tree_lobes(top + float3 { 0.0, 0.3 * size, 0.0 }, 0.6 * size, 0.38 * size, 6)
-            tree_card_crown(n, lobes, "leaf", 0.1 * size, 1100, look.leaf)
-            for(420) k:
-                let l = lobes[k % lobes.length]
-                let dx = randf_range(rng, -1.0, 1.0)
-                let dy = randf_range(rng, -0.2, 0.6)
-                let dz = randf_range(rng, -1.0, 1.0)
-                let d = normalize(float3 { dx, dy, dz })
-                let at = on_surface(l.c, l.r, d, -0.02)
-                var len = randf_range(rng, 0.4, 0.85) * size
-                len = min(len, at.y - 0.12)
-                let out = normalize(float3 { d.x, 0.0, d.z })
-                let tint = tree_lerp_col(float3 { 0.45, 0.55, 0.32 }, float3 { 0.9, 0.95, 0.6 }, randf(rng) * 0.5 + 0.3 * (if dot(out, float3 { -0.6, 0.0, 0.8 }) > 0.0: 1.0 else: 0.0))
-                add_child(n, tree_card("reed_leaf", 0.06 * size, len, at + float3 { 0.0, -len * 0.5, 0.0 }, normalize(float3 { 0.5, 0.0, 1.0 }), float3 { 0.0, 1.0, 0.0 }, tint))
-        case "swamp2":
-            let top = float3 { 0.0, h * 0.55, 0.0 } + lean * h
-            let foot = float3 { 0.0, 0.38 * size, 0.0 }
-            tree_trunk(n, foot, top, r, bark)
-            for(7) k:
-                let a = float(k) / 7.0 * TAU + randf_range(rng, -0.3, 0.3)
-                let ground = float3 { rcos(a), 0.0, rsin(a) } * randf_range(rng, 0.28, 0.42) * size
-                let knee = lerp(foot, ground, 0.5) + float3 { 0.0, 0.16 * size, 0.0 }
-                add_child(n, rod(foot + float3 { 0.0, 0.05, 0.0 }, knee, r * 0.45, r * 0.35, bark, false))
-                add_child(n, rod(knee, ground, r * 0.35, r * 0.3, bark, true))
-            let lobes = tree_lobes(top + float3 { 0.0, 0.4 * size, 0.0 }, 0.55 * size, 0.36 * size, 7)
-            tree_card_crown(n, lobes, "leaf", 0.12 * size, 1400, look.leaf)
-    return n
+def tree_roots(g:vgrid, count:int, spread:float, top:float, ra:float, rb:float, turn:float):
+    for(count) i:
+        let a = float(i) / float(count) * TAU + turn
+        vg_capsule(g, float3 { rcos(a) * spread, rsin(a) * spread, 0.0 }, float3 { 0.0, 0.0, top }, ra, rb, VG_BARK)
 
-def tree_trunk(n:MNode, a:float3, b:float3, r:float, bark:MMat):
-    add_child(n, rod(a, b, r, r * 0.6, bark, false))
-    add_child(n, cone(r * 1.0, r * 1.5, r * 2.0, bark, a + float3 { 0.0, r, 0.0 }, float3_0, 10))
+// Leaf clumps at the tips, each a ragged blob with holes in its own tone.
+def tree_clumps(g:vgrid, rng:Pcg, tips:[float3], rlo:float, rhi:float):
+    let nz = vg_field(g, 3.0, g.seed + 11)
+    let gaps = vg_field(g, 7.0, g.seed + 21)
+    for(tips) t:
+        let r = randf_range(rng, rlo, rhi)
+        vg_blob(g, t + float3 { 0.0, 0.0, r * 0.25 }, r, 1.35, 0.9, nz, VG_LEAF, randf_range(rng, -1.0, 1.0), 0.18, gaps, 0.66)
 
-def tree_lobes(centre:float3, spread:float, r:float, count:int, flat:float = 0.8) -> [TreeLobe]:
-    let rng = tree_rng
-    let out = []::TreeLobe
-    for(count):
+// The oak: a flared, ridged trunk, branches forking four deep, clumped leaves (style 1 taller and narrower, style 2 a
+// pale-barked birch with smaller clumps).
+def tree_oak(rng:Pcg, look:vglook, k:float, style:int) -> vgrid:
+    let g = vg_new(look, float3 { -58.0, -58.0, 0.0 }, float3 { 58.0, 58.0, 160.0 }, k, randi_range(rng, 0, 1000000000))
+    let tips = []::float3
+    let slim = if style == 2: 0.7 else: 1.0
+    def branch(p:float3, d0:float3, length:float, r:float, depth:int) -> void:
+        let d = normalize(d0)
+        let q = p + d * length
+        let m = (p + q) / 2.0 + vg_gauss3(rng) * length * 0.08
+        vg_capsule(g, p, m, r, r * 0.85, VG_BARK)
+        vg_capsule(g, m, q, r * 0.85, r * 0.7, VG_BARK)
+        if depth == 0 or r < 0.9:
+            tips.push(q)
+            return
+        for(if depth < 3: 2 else: 3):
+            let nd = d + vg_gauss3(rng) * 0.55
+            branch(q, float3 { nd.x, nd.y, abs(nd.z) * 0.8 + 0.25 }, length * randf_range(rng, 0.6, 0.78), r * 0.68, depth - 1)
+        if depth <= 2: tips.push(q)
+    tree_roots(g, 5, 7.0 * slim, 9.0, 2.2 * slim, 3.5 * slim, 0.4)
+    let rise = if style == 1: 54.0 elif style == 2: 48.0 else: 40.0
+    let top = float3 { 2.0, -1.0, rise }
+    vg_capsule(g, float3_0, float3 { 1.0, 0.0, rise * 0.55 }, 6.0 * slim, 5.0 * slim, VG_BARK)
+    vg_capsule(g, float3 { 1.0, 0.0, rise * 0.55 }, top, 5.0 * slim, 4.0 * slim, VG_BARK)
+    let limbs = if style == 1: 3 else: 4
+    let reach = if style == 1: 19.0 elif style == 2: 20.0 else: 24.0
+    for(limbs) i:
+        let a = float(i) / float(limbs) * TAU + 0.3
+        branch(top, float3 { rcos(a), rsin(a), if style == 1: 1.4 else: 0.9 }, reach, 3.3 * slim, 4)
+    let lead = top + float3 { 0.0, 0.0, 30.0 }
+    vg_capsule(g, top, lead, 3.0 * slim, 1.2, VG_BARK)
+    tips.push(lead)
+    if style == 2: tree_clumps(g, rng, tips, 7.0, 10.0)
+    else: tree_clumps(g, rng, tips, 9.0, 13.0)
+    return g
+
+// The pine: a straight trunk, whorls of drooping branches carrying flat needle pads from a third up (style 1 shorter
+// and fuller, style 2 tall with its crown only near the top).
+def tree_pine(rng:Pcg, look:vglook, k:float, style:int) -> vgrid:
+    let g = vg_new(look, float3 { -42.0, -42.0, 0.0 }, float3 { 42.0, 42.0, 180.0 }, k, randi_range(rng, 0, 1000000000))
+    let h = if style == 1: 140.0 else: 165.0
+    let base = if style == 2: 92.0 elif style == 1: 34.0 else: 48.0
+    let wide = if style == 1: 1.15 else: 1.0
+    tree_roots(g, 4, 5.0, 6.0, 1.6, 2.6, 0.7)
+    vg_capsule(g, float3_0, float3 { 1.0, 0.0, h - 6.0 }, 4.2, 0.8, VG_BARK)
+    let nz = vg_field(g, 3.0, g.seed + 31)
+    var z = base
+    while z < h - 4.0:
+        let f = (h - z) / (h - base)
+        let reach = (6.0 + 22.0 * pow(f, 0.9)) * wide
+        let nb = 5 + int(3.0 * f)
+        let off = randf_range(rng, 0.0, TAU)
+        for(nb) i:
+            let a = off + float(i) / float(nb) * TAU + vg_gauss(rng) * 0.25
+            let d = float3 { rcos(a), rsin(a), 0.0 }
+            let at = float3 { 0.0, 0.0, z }
+            vg_capsule(g, at, at + d * reach + float3 { 0.0, 0.0, -reach * 0.35 }, 1.2, 0.5, VG_BARK)
+            for(4) j:
+                let s = 0.35 + 0.65 * float(j) / 3.0
+                let c = at + d * reach * s + float3 { 0.0, 0.0, -reach * 0.35 * s + 1.5 }
+                vg_blob(g, c, 3.2 + 3.0 * s * f + 0.8, 2.3, 0.8, nz, VG_LEAF, randf_range(rng, -1.0, 0.3), 0.15, nil, 1.0)
+        z += randf_range(rng, 9.0, 12.0)
+    return g
+
+// The willow: a buttressed trunk, a dome of leaves, curtains of leaf strands hanging from it (style 1 taller, style 2
+// lower with longer curtains).
+def tree_willow(rng:Pcg, look:vglook, k:float, style:int) -> vgrid:
+    let g = vg_new(look, float3 { -66.0, -66.0, 0.0 }, float3 { 66.0, 66.0, 130.0 }, k, randi_range(rng, 0, 1000000000))
+    let rise = if style == 1: 46.0 elif style == 2: 28.0 else: 34.0
+    tree_roots(g, if style == 2: 8 else: 6, 10.0, 12.0, 2.6, 4.5, 0.0)
+    let top = float3 { -3.0, 2.0, rise }
+    vg_capsule(g, float3_0, top, 7.5, 5.5, VG_BARK)
+    let tips = []::float3
+    for(6) i:
+        let a = float(i) / 6.0 * TAU + vg_gauss(rng) * 0.3
+        let d = float3 { rcos(a), rsin(a), 0.0 }
+        let m = top + d * 16.0 + float3 { 0.0, 0.0, 22.0 }
+        let e = top + d * 34.0 + float3 { 0.0, 0.0, 28.0 }
+        vg_capsule(g, top, m, 3.6, 2.4, VG_BARK)
+        vg_capsule(g, m, e, 2.4, 1.2, VG_BARK)
+        tips.push(m)
+        tips.push(e)
+        tips.push((m + e) / 2.0)
+    let nz = vg_field(g, 3.0, g.seed + 41)
+    for(tips) t: vg_blob(g, t, randf_range(rng, 10.0, 13.0), 1.5, 0.8, nz, VG_LEAF, randf_range(rng, -0.6, 1.0), 0.0, nil, 1.0)
+    // the curtains: from the dome's outer leaves, about as many as the mockup's whatever the scale
+    let longer = if style == 2: 1.3 else: 1.0
+    let pick = 0.012 / (g.k * g.k * g.k)
+    let hang = []::float3
+    vg_box(g, float(g.lo) / g.k, float(g.lo + g.n) / g.k) i, p:
+        if g.mat[i] == VG_LEAF and magnitude(float2 { p.x, p.y }) > 22.0 and vg_hash(g.seed + 3, i, 0, 0) < pick: hang.push(p)
+    for(hang) p:
+        let ln = randf_range(rng, 14.0, 34.0) * longer
+        let dx = vg_gauss(rng)
+        let dy = vg_gauss(rng)
+        vg_capsule(g, p, p + float3 { dx, dy, -min(ln, p.z - 2.0) }, 1.0, 0.7, VG_LEAF, true, 0.6)
+    vg_thin(g, VG_LEAF, 0.12)
+    return g
+
+// What's left once a worker has started: the stump, and (stage 1) the felled trunk with its crown or (2) half of it
+// sawn away; (3) the stump alone. Chips round it all.
+def tree_cut(rng:Pcg, look:vglook, k:float, tree_kind:string, stage:int) -> vgrid:
+    let g = vg_new(look, float3 { -70.0, -70.0, 0.0 }, float3 { 70.0, 70.0, 34.0 }, k, randi_range(rng, 0, 1000000000))
+    let r = if tree_kind == "pine": 4.6 elif tree_kind == "swamp": 7.5 else: 6.0
+    let fall = randf(rng) * TAU
+    let dir = float3 { rcos(fall), rsin(fall), 0.0 }
+    let side = float3 { -dir.y, dir.x, 0.0 }
+    // the stump: its roots, the trunk cut a little above them, the cut end pale
+    tree_roots(g, 5, r * 1.3, r * 1.2, r * 0.38, r * 0.55, fall)
+    let sh = r * 1.5
+    vg_cylinder(g, float3_0, float3 { 0.0, 0.0, sh }, r * 1.12, r, VG_BARK)
+    vg_cylinder(g, float3 { 0.0, 0.0, sh - 0.7 }, float3 { 0.0, 0.0, sh + 0.2 }, r * 0.88, r * 0.86, VG_WOOD, true)
+    if stage < 3:
+        let len = if stage == 1: 62.0 else: 32.0
+        let a = dir * (r * 1.6) + float3 { 0.0, 0.0, r * 0.9 }
+        let b = a + dir * len
+        vg_cylinder(g, a, b, r * 0.9, r * 0.75, VG_BARK)
+        vg_cylinder(g, a - dir * 0.2, a + dir * 0.7, r * 0.8, r * 0.8, VG_WOOD, true)
+        if stage == 1:
+            let nz = vg_field(g, 3.0, g.seed + 51)
+            for(3) j:
+                let t = b + dir * (float(j) * 6.0 - 2.0) + side * vg_gauss(rng) * 4.0
+                vg_capsule(g, b, t + float3 { 0.0, 0.0, 3.0 }, r * 0.4, 1.0, VG_BARK)
+            for(7):
+                let c = b + dir * randf_range(rng, -4.0, 14.0) + side * vg_gauss(rng) * 6.0 + float3 { 0.0, 0.0, randf_range(rng, 5.0, 9.0) }
+                vg_blob(g, c, randf_range(rng, 6.0, 9.0), 1.5, 0.9, nz, VG_LEAF, randf_range(rng, -1.0, 1.0), 0.18, nil, 1.0)
+        else:
+            vg_cylinder(g, b - dir * 0.7, b + dir * 0.2, r * 0.7, r * 0.7, VG_WOOD, true)
+    // chips and sawdust
+    for(4 + stage):
         let a = randf(rng) * TAU
-        let d = randf_range(rng, 0.2, 1.0) * spread
-        let rr = r * randf_range(rng, 0.8, 1.15)
-        out.push(TreeLobe { centre + float3 { rcos(a) * d, randf_range(rng, -0.6, 0.7) * r, rsin(a) * d }, float3 { rr, rr * flat, rr } })
-    return out
-
-// Color.lerp (in Color's floats).
-def tree_lerp_col(a:float3, b:float3, t:float) -> float3:
-    let w = f32(t)
-    def l(x:float, y:float) -> float: return f32(f32(x) + f32(f32(f32(y) - f32(x)) * w))
-    return float3 { l(a.x, b.x), l(a.y, b.y), l(a.z, b.z) }
-
-def tree_card_crown(n:MNode, lobes:[TreeLobe], card:string, w:float, count:int, tint:float3, aspect:float = 1.3):
-    let rng = tree_rng
-    var lo = 1000000000.0
-    var hi = -1000000000.0
-    let core = plain(float3 { tint.x * 0.42, tint.y * 0.46, tint.z * 0.34 })
-    for(lobes) l:
-        lo = min(lo, l.c.y - l.r.y)
-        hi = max(hi, l.c.y + l.r.y)
-        add_child(n, blob(l.r * 0.86, core, l.c))
-    for(count) k:
-        let l = lobes[k % lobes.length]
-        let dx = randf_range(rng, -1.0, 1.0)
-        let dy = randf_range(rng, -0.5, 1.0)
-        let dz = randf_range(rng, -1.0, 1.0)
-        let d = normalize(float3 { dx, dy, dz })
-        let depth = randf_range(rng, -0.06, 0.02)
-        let fx = randf_range(rng, -0.5, 0.5)
-        let fy = randf_range(rng, 0.0, 0.6)
-        let fz = randf_range(rng, -0.5, 0.5)
-        let face = normalize(d + float3 { fx, fy, fz })
-        let at = on_surface(l.c, l.r, d, depth)
-        let lit = clamp((at.y - lo) / max(hi - lo, 0.01), 0.0, 1.0) * 0.55 + clamp(dot(d, float3 { -0.5, 0.5, 0.7 }), 0.0, 1.0) * 0.3 + (depth + 0.06) / 0.08 * 0.15
-        let c = tree_lerp_col(float3 { tint.x * 0.62, tint.y * 0.66, tint.z * 0.62 }, float3 { min(tint.x * 1.8, 1.0), min(tint.y * 1.6, 1.0), min(tint.z * 1.7, 1.0) }, lit)
-        add_child(n, tree_card(card, w, w * aspect, at, face, d, c))
-
-def tree_painted_crown(n:MNode, lobes:[TreeLobe], tint:float3, w:float):
-    let rng = tree_rng
-    for(lobes) l:
-        let m = surf("foliage", float3 { tint.x * 1.6, tint.y * 1.5, tint.z * 1.5 }, 0.45)
-        add_child(n, blob(l.r, m, l.c, float3 { 0.0, randf(rng) * 180.0, 0.0 }))
-    for(180) k:
-        let l = lobes[k % lobes.length]
-        let dx = randf_range(rng, -1.0, 1.0)
-        let dy = randf_range(rng, -0.3, 1.0)
-        let dz = randf_range(rng, -1.0, 1.0)
-        let d = normalize(float3 { dx, dy, dz })
-        let at = on_surface(l.c, l.r, d, 0.0)
-        let lit = clamp(d.y * 0.5 + 0.5, 0.0, 1.0)
-        add_child(n, tree_card("leaf", w, w * 1.3, at, d, float3 { 0.0, 1.0, 0.0 }, tree_lerp_col(tint * 0.8, float3 { 1.0, 1.0, 0.8 }, lit * 0.6)))
-
-def tree_stump(look:TreeLook, size:float) -> MNode:
-    let rng = tree_rng
-    let n = mnode()
-    let r = look.trunk * size * 1.25
-    let sh = 0.13 * size
-    let bark = tree_bark(look)
-    add_child(n, cone(r * 0.95, r * 1.35, sh, bark, float3 { 0.0, sh * 0.5, 0.0 }, float3_0, 10))
-    let tx = randf_range(rng, -8.0, 8.0)
-    let tz = randf_range(rng, -8.0, 8.0)
-    add_child(n, cone(r * 0.85, r * 0.9, 0.012, plain(html("#d8b880")), float3 { 0.0, sh + 0.004, 0.0 }, float3 { tx, 0.0, tz }, 10))
-    let chip = plain(html("#c8a46a"))
-    for(6):
-        let a = randf(rng) * TAU
-        let d = randf_range(rng, 0.12, 0.32)
-        add_child(n, blob(float3 { 0.03, 0.008, 0.018 }, chip, float3 { rcos(a) * d, 0.006, rsin(a) * d }, float3 { 0.0, randf(rng) * 180.0, 0.0 }))
-    return n
-
-def tree_felled(look:TreeLook, size:float, h:float, fall:float, stage:int) -> MNode:
-    let n = mnode()
-    let r = look.trunk * size
-    let dir = float3 { rcos(fall), 0.0, rsin(fall) }
-    let len = (if stage == 1: 0.85 else: 0.45) * size
-    let a = dir * 0.12 + float3 { 0.0, r, 0.0 }
-    let b = a + dir * len
-    add_child(n, rod(a, b, r, r * 0.8, tree_bark(look), true))
-    let face = add_child(n, cone(r * 0.95, r * 0.95, 0.01, plain(html("#d8b880")), a - dir * 0.005))
-    set_basis(face, arc(float3 { 0.0, 1.0, 0.0 }, dir))
-    if stage == 1:
-        let lobes = [ TreeLobe { b + float3 { 0.0, 0.1, 0.0 }, float3 { 0.18, 0.1, 0.18 } * size }, TreeLobe { b + dir * 0.14 + float3 { 0.0, 0.08, 0.0 }, float3 { 0.14, 0.08, 0.14 } * size } ]
-        tree_card_crown(n, lobes, "leaf", 0.09 * size, 90, look.leaf * float3 { 1.1, 0.95, 0.75 })
-    return n
-
-// UnitModels.decal with the tint quantised to steps of 0.04 (tree_models.gd _card: cards of about the same tint
-// share a material); always lit.
-def tree_card(name:string, w:float, h:float, pos:float3, facing:float3, up:float3, tint:float3) -> MNode:
-    def snap(x:float) -> float: return f32(floor(x / 0.04 + 0.5) * 0.04)
-    let m = MMat { float3 { snap(tint.x), snap(tint.y), snap(tint.z) } }
-    m.tex = name
-    m.scissor = true
-    m.two_sided = true
-    let n = mesh_node(quad_mesh(float2 { w, h }), m)
-    n.meta = name
-    n.pos = pos
-    let f = normalize(facing)
-    let u = if abs(dot(f, normalize(up))) < 0.95: up else: float3 { 0.0, 0.0, -1.0 }
-    set_basis(n, basis_looking_at(-f, u))
-    return n
+        let d = randf_range(rng, r * 1.8, r * 4.5)
+        let p = float3 { rcos(a) * d, rsin(a) * d, 0.6 }
+        let q = p + float3 { rcos(a + 1.3), rsin(a + 1.3), 0.0 } * randf_range(rng, 0.8, 2.0)
+        vg_capsule(g, p, q, 0.6, 0.45, VG_WOOD)
+    return g

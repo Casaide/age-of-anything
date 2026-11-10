@@ -1,6 +1,6 @@
 // ------------------------------------------------------------------ landscape props (scenes/art_pixel/prop_models.gd)
-// Reed beds, bug bushes, grass tufts, field stones, lily pads, rock outcrops, quarries (stone and gold), carcasses,
-// crops and paddies, in world units (1 = a tile), each builder prop_models.gd's of the same name, line for line
+// Reed beds, bug bushes, grass tufts, lily pads, carcasses, crops and paddies (rocks, stone and gold: model/rocks.lobster),
+// in world units (1 = a tile), each builder prop_models.gd's of the same name, line for line
 // (its comments are there), seeded with Godot's RandomNumberGenerator (model/grng.lobster) drawn in the same order.
 // stone_mesh needs Godot's FastNoiseLite (OpenSimplex2S, FBm, its defaults): ported here, as fnl_noise3/fnl_noise2.
 
@@ -403,31 +403,6 @@ def grass_tuft(seed_value:int) -> MNode:
         add_child(n, decal("reed_leaf", 0.034, h, base + up * h * 0.5, facing, true, up, tint))
     return n
 
-// A stone's mesh node: its material, scale, turn (degrees) and place.
-def prop_stone(mesh:MMesh, m:MMat, scl:float3, rot:float3, pos:float3) -> MNode:
-    let mi = mesh_node(mesh, m)
-    mi.scl = scl
-    mi.rot = rot
-    mi.pos = pos
-    return mi
-
-def field_stones(seed_value:int) -> MNode:
-    let rng = grng(seed_value)
-    let n = mnode()
-    for(randi_range(rng, 2, 4)) k:
-        let r = randf_range(rng, 0.05, 0.12)
-        let mesh = stone_mesh(seed_value * 17 + k)
-        let m = surf("rock", mix3(float3 { 0.74, 0.74, 0.66 }, float3 { 0.6, 0.62, 0.55 }, randf(rng)), 0.5)
-        let sx = r * randf_range(rng, 1.0, 1.5)
-        let sy = r * randf_range(rng, 0.5, 0.8)
-        let rx = randf_range(rng, -10.0, 10.0)
-        let ry = randf_range(rng, 0.0, 180.0)
-        let rz = randf_range(rng, -10.0, 10.0)
-        let px = randf_range(rng, -0.16, 0.16)
-        let pz = randf_range(rng, -0.16, 0.16)
-        add_child(n, prop_stone(mesh, m, float3 { sx, sy, r }, float3 { rx, ry, rz }, float3 { px, r * 0.2, pz }))
-    return n
-
 def lily_pads(seed_value:int) -> MNode:
     let rng = grng(seed_value)
     let n = mnode()
@@ -500,111 +475,6 @@ def stone_mesh(seed_value:int, cut:bool = false) -> MMesh:
         add_vertex(m, pts[i], normalized32(v32(sums[group[i]])), stone_sphere_uv[i])
     m.idx = map(m.p.length) i: i
     return m
-
-def boulders(seed_value:int) -> MNode:
-    let rng = grng(seed_value)
-    let n = mnode()
-    let tints = [ float3 { 0.72, 0.7, 0.66 }, float3 { 0.62, 0.6, 0.56 }, float3 { 0.8, 0.77, 0.7 }, float3 { 0.66, 0.66, 0.62 } ]
-    let sx0 = randf_range(rng, -0.08, 0.08)
-    let sz0 = randf_range(rng, -0.08, 0.08)
-    let at = [ float3 { sx0, 0.0, sz0 } ]
-    let rs = [ randf_range(rng, 0.26, 0.34) ]
-    for(randi_range(rng, 6, 9)):
-        let a = randf(rng) * TAU
-        let d = randf_range(rng, 0.2, 0.45)
-        at.push(float3 { rcos(a) * d, 0.0, rsin(a) * d })
-        rs.push(randf_range(rng, 0.06, 0.15))
-    for(at.length) k:
-        let r = rs[k]
-        let mesh = stone_mesh(seed_value * 31 + k)
-        let m = surf("rock", tints[k % tints.length], 0.6)
-        let sx = r * randf_range(rng, 1.0, 1.4)
-        let sy = r * randf_range(rng, 0.7, 1.0)
-        let rx = randf_range(rng, -15.0, 15.0)
-        let ry = randf_range(rng, 0.0, 180.0)
-        let rz = randf_range(rng, -15.0, 15.0)
-        add_child(n, prop_stone(mesh, m, float3 { sx, sy, r }, float3 { rx, ry, rz }, at[k] + float3 { 0.0, r * 0.35, 0.0 }))
-    let lichen = [ plain(html("#b8b46a")), plain(html("#d8d6c8")), plain(html("#5e7a34")) ]
-    for(at.length) k:
-        let r = rs[k]
-        for(if k == 0: 8 else: 2) d:
-            let a = randf(rng) * TAU
-            let up = randf_range(rng, 0.3, 0.75)
-            let p = at[k] + float3 { rcos(a) * r * 0.7 * (1.0 - up * 0.4), r * 0.35 + r * up * 0.7, rsin(a) * r * 0.7 * (1.0 - up * 0.4) }
-            let sz = r * randf_range(rng, 0.14, 0.26)
-            add_child(n, blob(float3 { sz * 1.4, sz * 0.3, sz }, lichen[(k + d) % 3], p))
-        if k == 0:
-            for(3):
-                let a = randf_range(rng, -0.6, 1.6)
-                let p = at[k] + float3 { rcos(a) * r * 0.95, r * 0.55, rsin(a) * r * 0.95 }
-                let rx = randf_range(rng, -20.0, 20.0)
-                let rz = randf_range(rng, -25.0, 25.0)
-                add_child(n, box(float3 { 0.012, r * 0.6, 0.012 }, plain(html("#2a2622")), p, float3 { rx, 0.0, rz }))
-    for(12) k:
-        let a = randf(rng) * TAU
-        let d = randf_range(rng, 0.3, 0.55)
-        if k % 3 == 0:
-            let root = float3 { rcos(a) * d, 0.0, rsin(a) * d }
-            for(4) g:
-                let lx = randf_range(rng, -0.03, 0.03)
-                let ly = randf_range(rng, 0.07, 0.12)
-                let lz = randf_range(rng, -0.03, 0.03)
-                add_child(n, rod(root, root + float3 { lx, ly, lz }, 0.012, 0.003, plain(if g % 2 == 0: html("#4e7a2c") else: html("#6a9238")), false))
-        else:
-            let pr = randf_range(rng, 0.015, 0.035)
-            add_child(n, prop_stone(stone_mesh(seed_value * 13 + k), surf("rock", tints[k % tints.length], 0.6), float3 { pr * 1.3, pr * 0.7, pr },
-                                    float3_0, float3 { rcos(a) * d, pr * 0.3, rsin(a) * d }))
-    return n
-
-def quarry(seed_value:int, stage:int = 0, ore:string = "stone") -> MNode:
-    let rng = grng(seed_value)
-    let n = mnode()
-    let gold = ore == "gold"
-    var tints = [ float3 { 0.98, 0.88, 0.7 }, float3 { 0.9, 0.79, 0.62 }, float3 { 1.0, 0.93, 0.8 }, float3 { 0.86, 0.75, 0.6 } ]
-    if gold: tints = [ float3 { 0.62, 0.56, 0.5 }, float3 { 0.55, 0.5, 0.46 }, float3 { 0.68, 0.62, 0.55 }, float3 { 0.5, 0.46, 0.42 } ]
-    let metal = plain(html("#f2c440"))
-    metal.emission = html("#7a5a10")
-    let keep = [ 1.0, 0.65, 0.35, 0.0 ][stage]
-    let rat = []::float3
-    let rr = []::float
-    let rturn = []::float
-    let rstretch = []::float
-    let rkeep = []::bool
-    for(randi_range(rng, 5, 7)) k:
-        let a = randf(rng) * TAU
-        let d = if k == 0: 0.0 else: randf_range(rng, 0.16, 0.38)
-        let r = if k == 0: randf_range(rng, 0.3, 0.36) else: randf_range(rng, 0.09, 0.17)
-        rat.push(float3 { rcos(a) * d, 0.0, rsin(a) * d })
-        rr.push(r)
-        rturn.push(randf_range(rng, 0.0, 360.0))
-        rstretch.push(randf_range(rng, 1.0, 1.3))
-        rkeep.push(randf(rng) < keep)
-    for(rat.length) k:
-        let r = rr[k] * (if k == 0: 1.0 - 0.25 * float(stage) else: 1.0)
-        if rkeep[k] or k == 0 and stage < 3:
-            let mi = add_child(n, prop_stone(stone_mesh(seed_value * 31 + k, true), surf("rock", tints[k % tints.length], 0.6),
-                                             float3 { r * rstretch[k], r * 0.9, r }, float3 { 0.0, rturn[k], 0.0 }, rat[k] + float3 { 0.0, r * 0.3, 0.0 }))
-            if gold:
-                let count = if k == 0: 11 else: 3
-                for(count) g:
-                    let a = if k == 0: (float(g) / float(count)) * MPI * 1.4 - 0.2 else: randf(rng) * TAU
-                    let h = if k == 0: 0.1 + 0.3 * abs(rsin(float(g) * 1.7)) else: randf_range(rng, 0.05, 0.35)
-                    let gr = r * (if k == 0: 0.17 else: randf_range(rng, 0.18, 0.24))
-                    let local = float3 { rcos(a) * 0.68, h, rsin(a) * 0.68 }
-                    add_child(n, prop_stone(stone_mesh(seed_value * 7 + k * 5 + g), metal, float3 { gr * 1.3, gr * 0.8, gr }, float3_0, mi.pos + bxf(node_basis(mi), local)))
-    if not gold and stage < 3:
-        let br = rr[0] * (1.0 - 0.25 * float(stage))
-        add_child(n, box(float3 { 0.02, br * 0.9, br * 1.1 }, surf("rock", float3 { 1.0, 0.97, 0.9 }, 0.4), rat[0] + float3 { br * 0.55, br * 0.75, br * 0.45 }, float3 { 0.0, 30.0, -50.0 }))
-        let blocks = [ float3 { 0.36, 0.05, 0.3 }, float3 { 0.48, 0.05, 0.2 }, float3 { 0.42, 0.14, 0.26 } ]
-        for(3 - stage) b:
-            add_child(n, box(float3 { 0.13, 0.09, 0.09 }, surf("rock", tints[b % tints.length], 0.6), blocks[b], float3 { 0.0, 20.0 + float(b) * 25.0, 0.0 }))
-    for(9 - stage) k:
-        let a = randf(rng) * TAU
-        let d = randf_range(rng, 0.15, 0.48)
-        let r = randf_range(rng, 0.025, 0.05)
-        let m = if gold and k % 3 == 0: metal else: surf("rock", tints[k % tints.length], 0.6)
-        add_child(n, prop_stone(stone_mesh(seed_value * 17 + k, true), m, float3 { r * 1.3, r * 0.8, r }, float3_0, float3 { rcos(a) * d, r * 0.3, rsin(a) * d }))
-    return n
 
 def carcass(seed_value:int, stage:int = 0) -> MNode:
     let rng = grng(seed_value)
