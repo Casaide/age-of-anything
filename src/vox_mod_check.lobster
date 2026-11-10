@@ -2,6 +2,7 @@
 // creature, and its body comes from the .vox: every limb drawn, the head and chest pieces on their points, and
 // the mod's key holds the model (a changed .vox is a different mod).
 //   lobster vox_mod_check.lobster
+import from "../creel/src"
 import std
 import vec
 import dictionary

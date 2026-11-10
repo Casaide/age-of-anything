@@ -8,6 +8,7 @@
 # One batch at a time on this machine (machine_lock.sh, #242): a whole batch takes the full lane, and waits for another
 # whole batch, in any worktree; --quick and only= take the quick lane, so they don't wait a whole batch to check one change.
 cd "$(dirname "$0")"
+[ -f ../creel/src/lib/world.lobster ] || { echo "creel/ is empty (the engine, a git submodule, #428): git submodule update --init" >&2; exit 1; }
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 quick=0
 jobs="${AOA_JOBS:-4}"
@@ -94,7 +95,7 @@ fi
 # together). They reach it through a link, as the game takes a relative path. Only a run with such a job touches any of it.
 if grep -q "$bakes" "$list"; then
 	store="${XDG_CACHE_HOME:-$HOME/.cache}/aoa-bakes"
-	version="$(sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' view/bake_cache.lobster)"
+	version="$(sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' ../creel/src/view/bake_cache.lobster)"
 	mkdir -p "$store/$version" ../build
 	find "$store" -mindepth 1 -maxdepth 1 ! -name "$version" -mtime +3 -exec rm -rf {} +
 	if [ "$(du -sk "$store/$version" | cut -f1)" -gt 4000000 ]; then

@@ -3,6 +3,7 @@
 // thigh and shin stay on their bones through a walk, mirrored on the left when only the right is drawn. Files are
 // written byte by byte into a scratch folder.
 //   lobster vox_body_check.lobster
+import from "../creel/src"
 import std
 import vec
 import dictionary
