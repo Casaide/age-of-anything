@@ -19,3 +19,20 @@ view() {
 view 55 m4a3_75w side 640x340+325+495 200%
 view 55 m4a3_75w top 640x290+325+150 200%
 view 55 m4a3_75w front 300x340+1110+500 300%
+# FM 30-40, "PzKw IV Tank" (November 1943, the long gun)
+view 132 pz4 side 640x290+365+580 200%
+view 132 pz4 top 640x300+345+165 200%
+view 132 pz4 front 300x290+1180+580 300%
+# AN 01-60-3 p30 (19 Sept 1945), the P-51D three-view, public domain: a line drawing, so its outlines are traced in the spec as polygons
+p51="reference/p51/3v.png"
+if [ ! -f "$p51" ]; then
+	mkdir -p reference/p51
+	curl -sL -A 'AgeOfAnythingTracer/1.0' -o "$p51" 'https://commons.wikimedia.org/wiki/Special:FilePath/North_American_P-51D_Mustang_3-view_line_drawing.png'
+fi
+p51view() {
+	magick "$p51" -resize 1300x -crop "$2" +repage $3 -filter point -resize 200% "reference/p51/$1.png"
+	magick "reference/p51/$1.png" -threshold 60% -compress none "reference/p51/$1.pbm"
+}
+p51view side 860x300+200+20 -flop
+p51view top 1000x860+130+840 "-rotate -90"
+p51view front 980x340+135+410 ""

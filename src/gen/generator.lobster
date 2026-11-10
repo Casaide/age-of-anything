@@ -84,9 +84,7 @@ def tadd(o:JV, k:string, n:int): set(o, k, jint(tget(o, k) + n))
 def ptags(p:JV) -> [string]: return gstrs(p, "tags")
 def pts(p:JV) -> int: return as_int(at(p, "points"))
 def ptier(p:JV) -> int: return gint(p, "tier", 1)
-def any_in(xs:[string], ys:[string]) -> bool: return exists(xs) t: has_s(ys, t)
 def rparts(r:JV) -> JV: return at(r, "parts")
-def rstr(r:JV, k:string) -> string: return as_str(at(r, k))
 
 // ---- the prompt
 
@@ -97,8 +95,6 @@ def normalize_prompt(prompt:string) -> string:
         let ch = low[n]
         cleaned += if (ch >= 'a' and ch <= 'z') or (ch >= '0' and ch <= '9'): unicode_to_string([ ch ]) else: " "
     return concat_string(prompt_words(cleaned), " ")
-
-def prompt_words(s:string) -> [string]: return filter(tokenize(s, " ", "")) w: w.length > 0
 
 def lookup(word:string) -> string:
     if has(lib_lexicon, word): return word
@@ -302,7 +298,11 @@ def new_recipe(sd:JV, role:string) -> JV:
     return r
 
 def make_unit(sd:JV) -> JV?:
-    if has(sd, "engine"): return make_engine(sd)
+    if has(sd, "engine"):
+        // (a creature or culture can say it has none of this engine: a side with no plane)
+        let take_field = gstr(sd, "take", "siege")
+        if gstr(creature(g_creature), take_field, rstr(family(g_family), take_field)) == "none": return nil
+        return make_engine(sd)
     if rstr(sd, "role") == "unique": return make_unique(sd)
     let rng = g_rng
     let brief = g_brief

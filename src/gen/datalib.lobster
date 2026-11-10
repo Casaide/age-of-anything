@@ -19,6 +19,19 @@ var lib_cands = dictionary<string, [JV]>(31)  // slot|eras -> candidates
 var lib_mods:[string] = []
 var mod_shots = jobj()  // shot looks chosen by tag (kind -> look)
 
+def any_in(xs:[string], ys:[string]) -> bool: return exists(xs) x: has_s(ys, x)
+
+// Whether a bonus reaches a unit with these tags (Identity.reaches).
+def reaches(fx:JV, tags:[string]) -> bool:
+    if not has(fx, "tag"): return false
+    let t = as_str(at(fx, "tag"))
+    if not (t == "all" or has_s(tags, t)): return false
+    for(gstrs(fx, "and")) x:
+        if not has_s(tags, x): return false
+    for(gstrs(fx, "not")) x:
+        if has_s(tags, x): return false
+    return true
+
 def push_new(xs:[string], s:string):
     if not has_s(xs, s): xs.push(s)
 
@@ -34,7 +47,7 @@ def sorted_strs(xs:[string]) -> [string]:
 
 // Saves: the format this build writes, and what stops one loading. A save names the packs it was made with, and a
 // match only makes sense with those. A save from before formats reads as format 0 with no packs: the base game.
-let SAVE_FORMAT = 3
+let SAVE_FORMAT = 4
 var save_refused = ""  // why the last load didn't happen
 
 def sig_id(sig:string) -> string:

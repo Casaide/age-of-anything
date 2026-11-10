@@ -1,0 +1,22 @@
+# The demo video, shot by shot (tools/film/cut.sh reads this). Fields split by |, blank and # lines skipped.
+# kind|name|beats|options|text
+#   shot: takes/<name>.mp4 from in=<s>, for that many beats of the music (92 to the minute); crop=<w>:<h>:<x>:<y> of the take; xfade=<s> into the next; text: a mod's name on the corner ribbon
+#   card: a line or two over the first frame of takes/<bg>.mp4, darkened; end: the end card over it
+shot|cold|5|in=0|
+card|type|4|bg=make|Type an army. Play it.
+shot|make|6|in=1.2 crop=960:540:40:800|
+shot|rats|4|in=0|
+shot|age1|4|in=0 xfade=1.0|
+shot|age2|4|in=0 xfade=1.0|
+shot|age3|4|in=0|
+shot|race1|3|in=0|
+shot|race2|3|in=0|
+shot|race3|3|in=0|
+shot|race4|3|in=0|
+shot|battle|14|in=0|
+card|mods|4|bg=big|Make the game your own,\nwith full mod support.
+shot|big|9|in=0|Big battles mod
+shot|space|9|in=0|Space mod
+shot|ww2|9|in=0|WW2 mod
+shot|ww2b|6|in=0|WW2 mod
+end|end|6|bg=battle|Age of Anything
