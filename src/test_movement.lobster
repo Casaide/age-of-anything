@@ -309,6 +309,20 @@ def scene_through(rules:JV, races:[JV]):
     print "through a standing group: the standing ones pushed up to {worst}"
     check(worst <= SHOVED_MAX, "through a standing group: the standing ones aren\'t shoved about ({worst})")
 
+// 4b. A group sent into a town's yard, buildings all round with lanes between (#392): it fits in and stands, nobody drifts.
+def scene_town(rules:JV, races:[JV]):
+    flat(races, rules)
+    let hk = btype_index("house")
+    let bk = btype_index("barracks")
+    for([ int3 { 30, 29, hk }, int3 { 35, 29, hk }, int3 { 29, 34, bk }, int3 { 35, 34, hk }, int3 { 32, 37, hk } ]) at:
+        let bi = place(1 - 1, at.z, at.x, at.y)
+        b_done[bi] = 1
+        b_hp[bi] = bm_hp[0][at.z]
+    let a = group(0, "spear", 12, 16000, 32000)
+    let w = watch_new(a)
+    issue_cmd(0, CMD_MOVE, a, 33000, 33000, 0, 0)
+    run_settle("town yard", w, a, 1600)
+
 // 5. Cavalry funnel through the pass (choke_test: a 2-tile gap in a rock wall).
 def scene_funnel(rules:JV, races:[JV]):
     new_world(SEED, "choke_test", races, rules, [])
@@ -517,6 +531,7 @@ if on("duel"): scene_duel(rules, races)
 if on("crossing"): scene_cross(rules, races, false)
 if on("head_on"): scene_cross(rules, races, true)
 if on("through"): scene_through(rules, races)
+if on("town"): scene_town(rules, races)
 if on("funnel"): scene_funnel(rules, races)
 if on("herd"): scene_herd(rules, races)
 if on("meet"): scene_meet(rules, races)
