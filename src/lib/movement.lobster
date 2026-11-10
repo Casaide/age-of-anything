@@ -225,6 +225,69 @@ def queued(i:int, x:int, y:int) -> bool:
         yy++
     return false
 
+// Unit i at (x, y), nearly at its target: one of its own side standing on that point already (sent there first)?
+def spot_taken(i:int, x:int, y:int) -> bool:
+    let tx = u_tx[i]
+    let ty = u_ty[i]
+    let near = u_radius[i] * 8  // (before it walks into the ring round it, so the free place there is ahead or beside, not behind)
+    if dist2(x, y, tx, ty) > near * near: return false
+    let cx = clamp(tx / TILE, 0, W - 1)
+    let cy = clamp(ty / TILE, 0, H - 1)
+    for(3) oy:
+        let ny = cy + oy - 1
+        if ny >= 0 and ny < H:
+            for(3) ox:
+                let nx = cx + ox - 1
+                if nx >= 0 and nx < W:
+                    let c = ny * W + nx
+                    var k = sp_start[c]
+                    while k < sp_end[c]:
+                        let j = sp_items[k]
+                        k++
+                        let rr = (u_radius[i] + u_radius[j]) / 2
+                        if j != i and u_moving[j] == 0 and u_owner[j] == u_owner[i] and t_air[u_kind[j]] == t_air[u_kind[i]] and dist2(u_x[j], u_y[j], tx, ty) < rr * rr: return true
+    return false
+
+// Room for unit i to stand at (x, y): nobody pressed into it more than a quarter of their bodies (separate() eases that).
+def room_here(i:int, x:int, y:int) -> bool:
+    let cx = clamp(x / TILE, 0, W - 1)
+    let cy = clamp(y / TILE, 0, H - 1)
+    for(3) oy:
+        let ny = cy + oy - 1
+        if ny >= 0 and ny < H:
+            for(3) ox:
+                let nx = cx + ox - 1
+                if nx >= 0 and nx < W:
+                    let c = ny * W + nx
+                    var k = sp_start[c]
+                    while k < sp_end[c]:
+                        let j = sp_items[k]
+                        k++
+                        let rr = (u_radius[i] + u_radius[j]) * 3 / 4
+                        if j != i and t_air[u_kind[j]] == t_air[u_kind[i]] and dist2(u_x[j], u_y[j], x, y) < rr * rr: return false
+    return true
+
+// A herd animal driven somewhere with its flock all round it going too (#398): held up among them, not stuck, it's as
+// patient as a group (on its own it gave up for good in the jostle at a wall's gap, its flock gone on).
+def in_flock(i:int, x:int, y:int) -> bool:
+    if t_behave[u_kind[i]] != B_HERD: return false
+    let cx = x / TILE
+    let cy = y / TILE
+    let reach = u_radius[i] * 3
+    for(3) oy:
+        let ny = cy + oy - 1
+        if ny >= 0 and ny < H:
+            for(3) ox:
+                let nx = cx + ox - 1
+                if nx >= 0 and nx < W:
+                    let c = ny * W + nx
+                    var k = sp_start[c]
+                    while k < sp_end[c]:
+                        let j = sp_items[k]
+                        k++
+                        if j != i and o_moving[j] == 1 and u_owner[j] == u_owner[i] and t_behave[u_kind[j]] == B_HERD and dist2(o_x[j], o_y[j], x, y) <= reach * reach: return true
+    return false
+
 def passed(i:int, x:int, y:int) -> bool:
     if u_arrive[i] != SLOT_ARRIVE or dist2(x, y, u_tx[i], u_ty[i]) > RETURN_YIELD * RETURN_YIELD: return false
     let cx = x / TILE
@@ -246,6 +309,7 @@ def passed(i:int, x:int, y:int) -> bool:
                 k++
                 if j == i or o_moving[j] == 0 or u_owner[j] != oi or u_group[j] == gi or u_group[j] == 0: continue
                 let reach = ri + u_radius[j] + QUEUE_GAP
+                if dist2(u_tx[j], u_ty[j], u_tx[i], u_ty[i]) <= reach * reach: continue  // (sent to the same spot: neither is passing, each would excuse the other for ever, #396)
                 if dist2(o_x[j], o_y[j], x, y) <= reach * reach: return true
             xx++
         yy++
@@ -307,7 +371,16 @@ def move():
             if found: pct = pct * slow_pcts[at] / 100  // in an enemy web, or hit by sticky silk
         if pct != 100: s = s * pct / 100
         if tr_speed_pct != 0 and mci != 2: s = s * trail_pct(here) / 100  // quicker on a worn trail (a rule, off by default)
-        if steered(i):                                                    // in a formation block: steering for its place (lib/steering.lobster, #355)
+        if u_block[i] == 0 and u_reach[i] == 0 and u_foe[i] == 0 and t_animal[u_kind[i]] == 0 and (tick + u_id[i]) % REPLAN_EVERY == 0 and spot_taken(i, x, y):
+            var fx, fy = clear_point(u_owner[i], u_kind[i], u_tx[i], u_ty[i], i)
+            if room_here(i, x, y) and dist2(x, y, u_tx[i], u_ty[i]) <= dist2(fx, fy, u_tx[i], u_ty[i]):  // (already as near, with room where it is: it stops there, not walking back)
+                fx = x
+                fy = y
+            u_tx[i] = fx  // (one of its own already standing on the spot it was sent to: it takes the nearest one free beside it, #396)
+            u_ty[i] = fy
+            wxs[i] = fx
+            wys[i] = fy
+        if steered(i):  // in a formation block: steering for its place (lib/steering.lobster, #355)
             steer_group(i, x, y, s, mc)
             continue
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:
@@ -315,7 +388,7 @@ def move():
             if u_prog[i] >= 0 and px > u_prog[i] - py and u_reach[i] == 0 and (queued(i, x, y) or (u_group[i] > 0 and passed(i, x, y))):  // (held up behind its own side going its way: not stuck, #382)
                 pass()
             elif u_prog[i] >= 0 and px > u_prog[i] - py:
-                st[i] += STUCK_LIMIT / (if u_group[i] > 0 and u_reach[i] == 0: 6 else: 2)
+                st[i] += STUCK_LIMIT / (if (u_group[i] > 0 or in_flock(i, x, y)) and u_reach[i] == 0: 6 else: 2)
                 if st[i] >= STUCK_LIMIT:
                     let near = u_arrive[i] * ARRIVE_SETTLE + RETURN_SLACK
                     if u_reach[i] != 1 and dist2(x, y, u_tx[i], u_ty[i]) <= near * near: st[i] = 0
@@ -450,14 +523,25 @@ def separate():
                     let sj = steered(j)
                     if u_block[i] > 0 and u_block[j] > 0 and grp[i] == grp[j] and d > rr / 4 and not (si != sj and mv[if si: j else: i] == 0 and u_block[i] == u_block[j] and u_stuck[if si: i else: j] >= 6): continue  // (an army's blocks: their places keep them apart, and a unit crossing to its place isn't shoved back)
                     if si and sj and owners[i] == owners[j] and grp[i] == grp[j]: continue                                                                                                                               // (two of a side's steering units keep off each other themselves, #355)
-                    if si != sj and owners[i] == owners[j]:
-                        // One of the side's own steering through another standing about: the standing one is eased aside, the
-                        // walker steers round it (#355). One at work or set to fire stays put.
-                        let o = if si: j else: i
+                    let ji = mv[i] == 1 and u_task[i] != T_NONE and mv[j] == 0 and u_task[j] == T_NONE and u_foe[j] == 0 and t_worker[u_kind[j]] == 0 and t_animal[u_kind[j]] == 0                                       // (a worker on its job by a soldier standing about, #395)
+                    let jj = mv[j] == 1 and u_task[j] != T_NONE and mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
+                    if (si != sj or ji or jj) and owners[i] == owners[j]:
+                        // One of the side's own steering (or on a job) through another standing about: the standing one is eased
+                        // aside, the walker steers round it (#355); a worker on its job is eased off a soldier instead and goes round,
+                        // or held up, slips through it: it no longer shoves the soldier along its way (#395). One at work or set to fire
+                        // stays put.
+                        let o = if si or ji: j else: i
+                        if (ji or jj) and u_stuck[if ji: i else: j] > 0: continue  // (held up by it all the same: it slips through, a friend's body soft, and the soldier stays put)
+                        if ji or jj:
+                            let wk = if ji: i else: j
+                            let ow = if o == i: -1 else: 1
+                            s_pushx[wk] -= ow * ux * ((rr - d) / SEPARATION_DIV + 1) / ONE  // (it holds its ground; the worker is the one eased off it and goes round)
+                            s_pushy[wk] -= ow * uy * ((rr - d) / SEPARATION_DIV + 1) / ONE
+                            continue
                         if mv[o] == 0 and u_foe[o] == 0 and s_planted[o] == 0:
                             let ease = (rr - d) / (SEPARATION_DIV * 2) + 1
                             let sg = if o == i: -1 else: 1
-                            let wk = if si: i else: j
+                            let wk = if si or ji: i else: j
                             let wv = isqrt(u_vx[wk] * u_vx[wk] + u_vy[wk] * u_vy[wk])
                             var ex = sg * ux
                             var ey = sg * uy
@@ -484,7 +568,23 @@ def separate():
                     let job_j = own and mv[j] == 1 and u_task[j] != T_NONE and mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and not placed_i
                     let hi = idle_i or job_i or (si and own and not sj and u_foe[j] == 0) or s_planted[i] == 1 or (own and s_planted[i] == 2) or (u_block[i] > 0 and t_animal[u_kind[j]] != 0) or (own and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and (placed_j or (mv[j] == 1 and homing(j))))
                     let hj = idle_j or job_j or (sj and own and not si and u_foe[i] == 0) or s_planted[j] == 1 or (own and s_planted[j] == 2) or (u_block[j] > 0 and t_animal[u_kind[i]] != 0) or (own and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and (placed_i or (mv[i] == 1 and homing(i))))
+                    let hit_i = u_foe[j] == ids[i] and u_foe[i] == 0  // (one attacked and not fighting, a sheep for the knife, holds its ground: the one hitting it gives way, #414)
+                    let hit_j = u_foe[i] == ids[j] and u_foe[j] == 0
+                    if (hit_i and not hj) or (hit_j and not hi):
+                        let push = (rr - d) / SEPARATION_DIV + 1
+                        let sg = if hit_i: 1 else: -1
+                        s_pushx[if hit_i: j else: i] += sg * ux * push * 2 / ONE
+                        s_pushy[if hit_i: j else: i] += sg * uy * push * 2 / ONE
+                        continue
                     if hi and hj: continue
+                    let stand_i = mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0 and t_animal[u_kind[j]] != 0
+                    let stand_j = mv[j] == 0 and u_task[j] == T_NONE and u_foe[j] == 0 and t_worker[u_kind[j]] == 0 and t_animal[u_kind[j]] == 0 and t_animal[u_kind[i]] != 0
+                    if (stand_i and not hj) or (stand_j and not hi):  // (a soldier standing about isn't shoved by a sheep, nor by the workers driving one into it: the sheep gives way, #395)
+                        let push = (rr - d) / SEPARATION_DIV + 1
+                        let sg = if stand_i: 1 else: -1
+                        s_pushx[if stand_i: j else: i] += sg * ux * push * 2 / ONE
+                        s_pushy[if stand_i: j else: i] += sg * uy * push * 2 / ONE
+                        continue
                     let push = (rr - d) / SEPARATION_DIV + 1
                     let px = ux * push / ONE
                     let py = uy * push / ONE
