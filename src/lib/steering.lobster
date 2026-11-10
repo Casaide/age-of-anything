@@ -13,6 +13,27 @@
 def steered(i:int) -> bool:
     return u_block[i] > 0 and u_moving[i] == 1 and u_foe[i] == 0 and u_stuck[i] < STUCK_LIMIT and u_perch[i] == 0
 
+// Is unit i's own target clear of everyone else's body (a stopped unit in a finished block goes back when it is)?
+def place_free(i:int) -> bool:
+    let tx = u_tx[i]
+    let ty = u_ty[i]
+    let cx = clamp(tx / TILE, 0, W - 1)
+    let cy = clamp(ty / TILE, 0, H - 1)
+    for(3) oy:
+        let ny = cy + oy - 1
+        if ny >= 0 and ny < H:
+            for(3) ox:
+                let nx = cx + ox - 1
+                if nx >= 0 and nx < W:
+                    let c = ny * W + nx
+                    var k = sp_start[c]
+                    while k < sp_end[c]:
+                        let j = sp_items[k]
+                        k++
+                        let rr = (u_radius[i] + u_radius[j]) * 3 / 4
+                        if j != i and dist2(u_x[j], u_y[j], tx, ty) < rr * rr: return false
+    return true
+
 // Unit i's place in its formation: round the centre (at the end, its own place), and on ground it can stand on. A place
 // on a tree or in water moves in towards the centre until it's clear, so a formation squeezes past instead of its units
 // each finding their own way round.
@@ -207,7 +228,8 @@ def steer_group(i:int, x:int, y:int, s:int, mc:int):
         let poor = dd > was - s * PROGRESS_EVERY / 8  // (hardly nearer)
         let clear = clear_path(x, y, px, py, u_radius[i], mc)
         if u_stuck[i] < 6 and poor and not clear:
-            u_stuck[i] = 6  // (ground in the way, not a crowd: by the flow field)
+            u_stuck[i] = 6  // (ground in the way, not a crowd: by the flow field; there, the field to its own place)
+            if fb_state[b] == BLOCK_THERE: u_fkey[i] = cell_field(cell_of(u_tx[i], u_ty[i]), false, mc)
         elif fb_state[b] == BLOCK_THERE and dd <= 2 * TILE and poor:
             u_moving[i] = 0  // (its place in a crowd: it stops as near as it gets)
             u_stuck[i] = 0
