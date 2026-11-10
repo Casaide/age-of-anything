@@ -691,6 +691,30 @@ def spawn_cell(b:int, k:int) -> int:
     assert c >= 0
     return c
 
+// Where a unit of kind k (radius r) coming out at (x, y) for side p stands: there if no one's body is in the way, or else
+// the nearest point round it clear of everyone, rings a body apart (#394: on top of the last one out, the two were
+// shoved apart and every new one pushed the crowd at the rally point further out).
+def clear_point(p:int, k:int, x:int, y:int) -> int, int:
+    let r = t_radius[k]
+    let ln = lane_base[p] + t_mclass[k]
+    let air = t_air[k]
+    def free(px:int, py:int) -> bool:
+        if not walkable(px, py, ln): return false
+        for(u_x.length) j:
+            if t_air[u_kind[j]] == air:
+                let rr = r + u_radius[j]
+                if dist2(px, py, u_x[j], u_y[j]) < rr * rr: return false
+        return true
+    if free(x, y): return x, y
+    for(CLEAR_RINGS) rg:
+        let d = (rg + 1) * r * 2
+        let n = (rg + 1) * 8
+        for(n) a:
+            let ang = a * 256 / n
+            let px, py = off_walls(x + cos_a(ang) * d / ONE, y + sin_a(ang) * d / ONE, r, ln)
+            if free(px, py) and clear_path(x, y, px, py, r, ln): return px, py  // (on its own side of a wall or the water)
+    return x, y
+
 // The walkable cell beside building b nearest its rally point (or its front corner), or -1.
 def spawn_cell_loose(b:int, k:int) -> int:
     let cx = b_cx[b]
@@ -733,6 +757,12 @@ def rally_on(p:int, cell:int, i:int, kind:int):
             b_rally_y[b] = (more / W) * TILE + TILE / 2
 
 // Advance every building's train queue; training waits at the pop cap (Economy.train).
+// A unit of kind k just trained at building b: out beside it, nearest its rally point, clear of anyone standing there.
+def trained(b:int, k:int) -> int:
+    let c = spawn_cell(b, k)
+    let x, y = clear_point(b_owner[b], k, (c % W) * TILE + 500, (c / W) * TILE + 500)
+    return add_unit(b_owner[b], k, x, y)
+
 def train():
     update_pop()
     for(b_id.length) b:
@@ -745,8 +775,7 @@ def train():
                 if b_train[b] >= t_train_ticks[k]:
                     b_train[b] = 0
                     q.remove(0)
-                    let c = spawn_cell(b, k)
-                    let i = add_unit(p, k, (c % W) * TILE + 500, (c / W) * TILE + 500)
+                    let i = trained(b, k)
                     pop[p] += t_pop[k]
                     if t_hero[k]: hero_spawned(i)
                     go_to_rally(b, i)
