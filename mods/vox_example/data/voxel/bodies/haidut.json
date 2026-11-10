@@ -114,5 +114,6 @@
   "7": "team",
   "8": "leather",
   "9": "metal"
- }
+ },
+ "bare": true
 }
