@@ -24,12 +24,22 @@ let PERF_BIG_MEDIAN = 0.010
 let PERF_BIG_P95 = 0.0166
 let PERF_BIG_BUSY = 0.65
 let PERF_BIG_BUFFERS = 8  // (a batch past the pool's biggest buffer)
+// A building finished (#335): the frame that re-plans and repaints the paths to it. 2026-11-10 on the MacBook, 35 to 48 ms
+// (the whole map's path mask rastered, blurred and made into textures again): three frames dropped as the camera moved.
+// Painting only the new paths, patched into the textures on the GPU, in a frame that rebuilds neither the ground nor the
+// masks: 3.2 ms (the median frame 2.6); in the big battle (160 tiles) 14.5 ms against a median of 9.1 and a 95th of 12.7.
+let PERF_BUILT_MAX = 0.008  // seconds of work in that frame, at worst: no worse than the 95th percentile may be
+let PERF_BIG_BUILT_MAX = 0.0166
 
-var perf_for = 0.0       // perf:<seconds> (0: off)
-var perf_live = false    // perflive: the bakes run as they do in play, nothing baked ahead (what a player sees with a new race)
-var perf_units_max = 0   // the most units alive in a frame
-var perf_unseen_max = 0  // the most units in view of the fog with no frame to draw (a health bar over nothing)
-var perf_unseen = 0      // this frame's
+var perf_for = 0.0          // perf:<seconds> (0: off)
+var perf_live = false       // perflive: the bakes run as they do in play, nothing baked ahead (what a player sees with a new race)
+var perf_units_max = 0      // the most units alive in a frame
+var perf_unseen_max = 0     // the most units in view of the fog with no frame to draw (a health bar over nothing)
+var perf_unseen = 0         // this frame's
+var perf_built_now = false  // this frame re-planned the paths to a building just finished (#335)
+var perf_masks_now = false  // and this one rebuilt the terrain masks (left out of it: their own cost)
+let perf_built = []::float  // the work of each such frame
+var perf_house_put = false
 let perf_work = []::float
 let perf_made = []::int
 var perf_t = -1.0  // the frame's start (after gl.frame)
@@ -56,6 +66,8 @@ def perf_sorted_at(xs, q:float):
 
 // At the top of a frame: its start.
 def perf_begin():
+    perf_built_now = false
+    perf_masks_now = false
     perf_t = seconds_elapsed()
     perf_last = perf_t
     perf_b = gl.buffers_made()
@@ -77,6 +89,7 @@ def perf_end(clock:float, big:bool) -> bool:
     perf_units_max = max(perf_units_max, u_x.length)
     perf_unseen_max = max(perf_unseen_max, perf_unseen)
     perf_made.push(gl.buffers_made() - perf_b)
+    if perf_built_now and not perf_masks_now: perf_built.push(perf_work[perf_work.length - 1])
     if clock < PERF_WARM + perf_for: return false
     let wall = seconds_elapsed() - perf_wall0
     let fps = float(perf_work.length) / wall
@@ -100,11 +113,36 @@ def perf_end(clock:float, big:bool) -> bool:
     if text > PERF_TEXT_MAX: bad.push("text {text * 1000.0} ms a frame, over {PERF_TEXT_MAX * 1000.0} ms")
     if perf_unseen_max > 0: bad.push("{perf_unseen_max} units with nothing to draw (#170)")
     if b95 > budget_buffers: bad.push("{b95} GPU buffers a frame (95th), over {budget_buffers}")
+    let built_worst = if perf_built.length: perf_sorted_at(perf_built, 1.0) else: 0.0
+    if not big and not perf_built.length: bad.push("no building finished in the measure (#335)")
+    let budget_built = if big: PERF_BIG_BUILT_MAX else: PERF_BUILT_MAX
+    if built_worst > budget_built: bad.push("a building finished: a frame of {tenths(built_worst * 1000.0)} ms, over {budget_built * 1000.0} ms (#335)")
     if bad.length:
         print "perf FAIL: {concat_string(bad, "; ")}"
         set_exit_code(1)
     print "perf: {stats}"
+    print "perf built: {perf_built.length} frames re-planned the paths to a finished building, the worst {tenths(built_worst * 1000.0)} ms"
     print "perf units: {perf_units_max} at most, {perf_unseen_max} with nothing to draw at most"
     if perf_step.length: print "perf ticks: {tenths(float(perf_step.length) / wall)} a second (20 keeps time), sim {tenths(perf_sorted_at(perf_step, 0.5) * 1000.0)} ms median, {tenths(perf_sorted_at(perf_step, 0.95) * 1000.0)} ms 95th, bots {tenths(perf_sorted_at(perf_think, 0.5) * 1000.0)} ms median, {tenths(perf_sorted_at(perf_think, 0.95) * 1000.0)} ms 95th"
     print "perf phases (ms a frame): {concat_string(map(PERF_PHASES) n, k: "{n} {tenths(perf_phase[k] * 1000.0 / float(perf_work.length) * 10.0) / 10.0}", ", ")}"
     return true
+
+// A house of yours finished a second into the measure, by the Town Center (#335): a building finishing is measured on
+// every run, not only when the bots happen to finish one in time.
+def perf_finish_house(clock:float, me:int):
+    if perf_for <= 0.0 or perf_house_put or clock < PERF_WARM + 1.0: return
+    perf_house_put = true
+    let tc = town_center(me)
+    let k = btype_index("house")
+    if tc < 0 or k < 0: return
+    var done = false
+    for(12) r:
+        for(2 * r + 1) j:
+            for([ -r, r ]) dy:
+                let x = b_cx[tc] + j - r
+                let y = b_cy[tc] + dy
+                if not done and r >= 4 and can_place(me, k, x, y):
+                    fort_put(me, k, x, y, 0)
+                    update_pop()
+                    print "perf: a house finished at {x},{y}, {clock} s"
+                    done = true
