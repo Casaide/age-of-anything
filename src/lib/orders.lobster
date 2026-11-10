@@ -324,15 +324,24 @@ def blocks_tick():
                 for(fb_state) other, o:
                     if other == BLOCK_FORMING and fb_army[o] == fb_army[b] and placed[o] < alive[o]: ready = false
             if ready: fb_state[b] = BLOCK_MARCHING
-        elif state == BLOCK_MARCHING and fb_held[b] == 0:
-            var wait = false
-            for(fb_state) other, o:
-                if other != 0 and o != b and fb_held[o] == 1 and fb_owner[o] == fb_owner[b]:
-                    let ox = fb_x[o] - fb_x[b]
-                    let oy = fb_y[o] - fb_y[b]
-                    let reach = fb_r[o] + fb_r[b] + BLOCK_GAP * 2
-                    if dist2(0, 0, ox, oy) <= reach * reach and ox * fb_dx[b] + oy * fb_dy[b] > 0: wait = true
-            if not wait: block_march(b)
+    // A marching block waits for one of its side's just ahead that's fighting, or that's waiting itself (#312): the wait
+    // runs back down a column, front to back.
+    let waits = map(fb_state.length) b: fb_held[b]
+    var changed = true
+    while changed:
+        changed = false
+        for(fb_state) state, b:
+            if state == BLOCK_MARCHING and waits[b] == 0:
+                for(fb_state) other, o:
+                    if waits[b] == 0 and other != 0 and o != b and waits[o] == 1 and fb_owner[o] == fb_owner[b]:
+                        let ox = fb_x[o] - fb_x[b]
+                        let oy = fb_y[o] - fb_y[b]
+                        let reach = fb_r[o] + fb_r[b] + BLOCK_GAP * 2
+                        if dist2(0, 0, ox, oy) <= reach * reach and ox * fb_dx[b] + oy * fb_dy[b] > 0:
+                            waits[b] = 1
+                            changed = true
+    for(fb_state) state, b:
+        if state == BLOCK_MARCHING and waits[b] == 0: block_march(b)
 
 def block_march(b:int):
     let x = fb_x[b]
