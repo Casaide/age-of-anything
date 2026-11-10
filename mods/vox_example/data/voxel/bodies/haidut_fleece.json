@@ -106,6 +106,14 @@
    3.2
   ]
  },
+ "seat": {
+  "z": 21.5,
+  "astride": [
+   "white",
+   "hair",
+   "leather"
+  ]
+ },
  "shapes": [],
  "vox": "haidut_fleece.vox",
  "mats": {
