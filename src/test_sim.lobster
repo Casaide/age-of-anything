@@ -3104,6 +3104,35 @@ def first_worker(p:int) -> int:
 // Claimed sheep: each walks to one spot by its owner's Town Center and stops there for good,
 // forgetting what its old owner told it; a sheep takes no fighting orders; a worker slaughters one in
 // a few blows, a deer still takes a few more and a boar gets no such help.
+// A party hitting a sheep does not shove it about: whoever is attacked holds its ground and the attackers give way (#414).
+def test_hunt_holds():
+    new_world("flat_test", races0, animal_rules(), [])
+    var sheep = -1
+    for(u_owner) o, i:
+        if sheep < 0 and o == gaia and animal_name(i) == "sheep": sheep = u_id[i]
+    let x, y = pos_of(sheep)
+    let party = spawn(0, "spear", 6, x + 3000, y)
+    steps(400)
+    var si = index_of(sheep)
+    check(si >= 0 and u_owner[si] == 0, "hunt holds: the sheep is ours")
+    let x0 = u_x[si]
+    let y0 = u_y[si]
+    issue_cmd(0, CMD_ATTACK, party, sheep, 0, 0, 0)
+    var shoved = 0
+    var hit = false
+    var lx = x0
+    var ly = y0
+    for(1200):
+        tick_on()
+        si = index_of(sheep)
+        if si < 0: break
+        if u_hp[si] < t_hp[u_kind[si]]: hit = true
+        shoved += abs(u_x[si] - lx) + abs(u_y[si] - ly)
+        lx = u_x[si]
+        ly = u_y[si]
+    check(hit and index_of(sheep) < 0, "hunt holds: six spears kill the sheep")
+    check(shoved == 0, "hunt holds: the sheep is not shoved by those killing it ({shoved} milli-tiles)")
+
 def test_sheep_spot():
     new_world("flat_test", races0, animal_rules(), [])
     let sheep = home_sheep(0)
@@ -4523,7 +4552,7 @@ let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_ord
               "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
-              "build_queue", "drop_off", "animals", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
+              "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
               "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "wonder", "save_load", "match", "match_b", "match_flipped" ]
 
 def run_part(name:string):
@@ -4563,6 +4592,7 @@ def run_part(name:string):
     elif name == "build_queue": test_build_queue()
     elif name == "drop_off": test_drop_off()
     elif name == "animals": test_animals()
+    elif name == "hunt_holds": test_hunt_holds()
     elif name == "sheep_spot": test_sheep_spot()
     elif name == "pen": test_pen()
     elif name == "bot_hunts": test_bot_hunts()
