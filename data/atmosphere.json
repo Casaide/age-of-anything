@@ -1,0 +1,47 @@
+{
+  "_doc": "The atmosphere (view only, #411): how the world's light and air look, laid over the frame by one pass (src/view/atmosphere.lobster). A mood's knobs: exposure, contrast, saturation (-1 to 1, 0 leaves it); shadow_tint and highlight_tint, colours the dark and the bright parts lean to, by shadow and highlight (0 to 1); haze_colour laid over the view by haze (0 to 1), thickest toward the top of the screen from haze_start (0 the bottom, 1 the top) and drifting by haze_drift (0 to 1); vignette (0 to 1) darkens the corners from vignette_radius (0 to 2); bloom (0 to 2) adds a soft blur of what is brighter than bloom_threshold (0 to 1); glow (0 to 4) is how much the glows light what is round them, glow_air (0 to 1) how much they light the air. A mood of all zeros draws the frame as it is. default is the mood a map gets unless maps names its own; atmosphere:<mood> picks one, atmosphere:off none. glows: the lights the game places (building_fire, ruin_fire, window, flash, shot), each a colour (or \"own\": the thing's own), a radius in canvas px, a strength (0 to 4) and a flicker (0 to 1); a source left out doesn't glow. A mod's atmosphere.json merges over this; a mood can start from another with \"extends\".",
+  "default": "late_afternoon",
+  "maps": {
+    "river_delta": "misty_morning",
+    "siege_vale": "golden_evening"
+  },
+  "moods": {
+    "none": {
+      "exposure": 0, "contrast": 0, "saturation": 0,
+      "shadow_tint": "#808080", "shadow": 0, "highlight_tint": "#808080", "highlight": 0,
+      "haze_colour": "#808080", "haze": 0, "haze_start": 0, "haze_drift": 0,
+      "vignette": 0, "vignette_radius": 0, "bloom": 0, "bloom_threshold": 1, "glow": 0, "glow_air": 0
+    },
+    "clear_noon": {
+      "exposure": 0.05, "contrast": 0.13, "saturation": 0.12,
+      "shadow_tint": "#5676c8", "shadow": 0.42, "highlight_tint": "#fff2d8", "highlight": 0.24,
+      "haze_colour": "#c4d6ea", "haze": 0.12, "haze_start": 0.45, "haze_drift": 0.3,
+      "vignette": 0.16, "vignette_radius": 0.62, "bloom": 0.28, "bloom_threshold": 0.68, "glow": 0.8, "glow_air": 0.08
+    },
+    "late_afternoon": {
+      "exposure": 0.01, "contrast": 0.1, "saturation": 0.11,
+      "shadow_tint": "#5464aa", "shadow": 0.36, "highlight_tint": "#ffd6a2", "highlight": 0.24,
+      "haze_colour": "#d2c8b6", "haze": 0.08, "haze_start": 0.5, "haze_drift": 0.35,
+      "vignette": 0.2, "vignette_radius": 0.56, "bloom": 0.32, "bloom_threshold": 0.66, "glow": 1.3, "glow_air": 0.13
+    },
+    "golden_evening": {
+      "exposure": -0.02, "contrast": 0.12, "saturation": 0.08,
+      "shadow_tint": "#4a5aa8", "shadow": 0.45, "highlight_tint": "#ffb46a", "highlight": 0.48,
+      "haze_colour": "#dca27a", "haze": 0.24, "haze_start": 0.3, "haze_drift": 0.4,
+      "vignette": 0.4, "vignette_radius": 0.5, "bloom": 0.4, "bloom_threshold": 0.6, "glow": 1.8, "glow_air": 0.18
+    },
+    "misty_morning": {
+      "exposure": 0.03, "contrast": -0.02, "saturation": -0.08,
+      "shadow_tint": "#7b8fa8", "shadow": 0.25, "highlight_tint": "#f2ead8", "highlight": 0.1,
+      "haze_colour": "#d2dce2", "haze": 0.5, "haze_start": 0.22, "haze_drift": 0.75,
+      "vignette": 0.18, "vignette_radius": 0.6, "bloom": 0.25, "bloom_threshold": 0.7, "glow": 0.9, "glow_air": 0.14
+    }
+  },
+  "glows": {
+    "building_fire": { "colour": "#ff8a38", "radius": 46, "strength": 1.0, "flicker": 0.35 },
+    "ruin_fire": { "colour": "#ff7a30", "radius": 40, "strength": 0.9, "flicker": 0.4 },
+    "window": { "colour": "#ffbf6a", "radius": 14, "strength": 0.35, "flicker": 0.15 },
+    "flash": { "colour": "own", "radius": 22, "strength": 0.8, "flicker": 0 },
+    "shot": { "colour": "own", "radius": 16, "strength": 0.6, "flicker": 0.1 }
+  }
+}

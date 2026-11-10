@@ -7,7 +7,7 @@
 // key), as in GDScript. The models are the bake's (Godot's, until step 6c).
 
 let mod_roots = [ "../mods", "../mods_private" ]  // (a later folder's copy of a mod wins)
-let MOD_DATA_FILES = [ "parts.json", "creatures.json", "families.json", "palettes.json", "lexicon.json", "shots.json", "buildings.json", "tech.json", "ai.json", "audio.json" ]
+let MOD_DATA_FILES = [ "parts.json", "creatures.json", "families.json", "palettes.json", "lexicon.json", "shots.json", "buildings.json", "tech.json", "ai.json", "audio.json", "atmosphere.json" ]
 let MOD_DATA_DIRS = [ "rules", "maps", "voxel" ]
 let MOD_BASE_ERAS = [ "bronze", "medieval", "gunpowder" ]
 
@@ -110,7 +110,7 @@ def mod_read(rec:Pack) -> string:
         if model: models += f + sha256_text(text)
         else: set(rec.data, f, parse_json(text))
     // (the hash is of the parsed data, not the files' bytes: line endings differ between checkouts)
-    rec.sig = "{rec.id}@{gstr(rec.manifest, "version", "")}#{substring(sha256_text(stringify(jobj_without(rec.data, "audio.json")) + models), 0, 8)}"
+    rec.sig = "{rec.id}@{gstr(rec.manifest, "version", "")}#{substring(sha256_text(stringify(jobj_without(jobj_without(rec.data, "audio.json"), "atmosphere.json")) + models), 0, 8)}"
     return ""
 
 // What's wrong with a mod's data against the data before it (the base and earlier mods), or "".

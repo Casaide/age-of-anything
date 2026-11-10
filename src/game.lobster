@@ -68,6 +68,7 @@ import .view.shot_look
 import .view.node
 import .view.art
 import .view.bake_cache
+import .view.atmosphere
 import .gen.reset
 import .gen.balance
 import .gen.swap
@@ -150,6 +151,7 @@ var join_ip = ""                      // join:<ip>: play the second side of the 
 var reload_at = -1.0                  // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
 var touch_play = false  // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
+var atmo_arg = ""       // atmosphere:<mood>: the match in that mood (data/atmosphere.json), atmosphere:off: none (the frame drawn straight)
 // A mod can say how it starts (its manifest's `launch`): those options, as if typed after the rest.
 for(copy(args)) a:
     if starts_with(a, "mods:"):
@@ -196,6 +198,7 @@ for(args) a, k:
         if key == "meshes": mesh_dir = val
         if a == "rebake": rebake_art = true
         if key == "mods": mods_arg = val
+        if key == "atmosphere": atmo_arg = val
         if key == "reload": reload_at = string_to_float(val)
         if a == "host": hosting = true
         if key == "host":  // host:<n>: n people (more than two: a 2v2 on the four-player map)
@@ -498,6 +501,7 @@ import .view.voxel
 import .game.voxel_units
 
 import .game.town  // (here: it uses the views)
+import .game.glows
 
 // Where something stands on the canvas (Iso.to_ground: raised ground lifts it).
 def ground_at(x:int, y:int) -> float2: return canvas(float(x), float(y)) - float2 { 0.0, lift_at(float(x), float(y)) }
@@ -1044,7 +1048,14 @@ def draw_world(alpha:float):
     let ws = float(gl.window_size())
     let cam_px = float2 { floor(cam.x * zoom), floor(cam.y * zoom) } / zoom  // (on a whole device px, as the sprites: #358)
     sprite_snap = zoom
+    let atmo_drawn = atmo_begin(float4 { 0.05, 0.05, 0.05, 1.0 })  // (the world into the atmosphere's texture, view/atmosphere.lobster)
+    let ground_stale_was = ground_stale
+    let ground_step_was = ground_tex_step
     draw_ground_cached(gl.window_size(), cam_px, zoom, zoom / ART_K)  // (screen px an art px: finer art, D-173)
+    // (the still ground remade its picture, and left for the screen: back into the world's texture, and the picture again)
+    if atmo_drawn and ((ground_stale_was and not ground_stale) or ground_tex_step != ground_step_was):
+        atmo_rebind()
+        draw_ground_cached(gl.window_size(), cam_px, zoom, zoom / ART_K)
     gl.translate(ws / 2.0):
         gl.scale(zoom):
             gl.translate(-cam_px):
@@ -1124,6 +1135,9 @@ def map_ids() -> [string]:
 def load_species(map_id:string):
     species = species_from_map(map_id)
     pack_from_data(map_id)
+    let atmo = lib_data("atmosphere.json")  // (the mood: the asked one, the map's, else the default; an unknown one stops the game)
+    let bad = atmo_set(atmo, atmo_mood_for(atmo, map_id, atmo_arg))
+    if bad != "": fatal_exit(bad)
 
 def lobby_text(p:float2, s:string, col:float4): text_label(p, s, gl.get_font_size(), col, TEXT_FACE, 0.0, float4_0)
 
@@ -2269,6 +2283,7 @@ gl.window_icon("icons/game_icon_mac.png")  // (the Dock's icon on the Mac)
 note("window")
 fatal(gl.load_materials(SPRITE_SHADERS, true))
 fatal(gl.load_materials(TERRAIN_SHADERS, true))
+fatal(gl.load_materials(ATMO_SHADERS, true))
 check(gl.set_font_name("data/fonts/Droid_Sans/DroidSans.ttf"), "no font")
 bake_live = shot == "" and not selftest and not padtest  // (the window kept alive while art bakes; captures and tests bake quietly)
 
@@ -2969,6 +2984,9 @@ def play_match():
             let shake = fx_shake_off()
             cam += shake
             draw_world(acc / 0.05)
+            if atmo_on:
+                collect_glows()
+                atmo_end(float2 { floor(cam.x * zoom), floor(cam.y * zoom) } / zoom, zoom, 1.5)
             cam -= shake
             if not rec_clean: ui_batch(): draw_panel()
             perf_lap(6)

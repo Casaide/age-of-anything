@@ -119,6 +119,8 @@ def draw_bolt(st:ShotStyle, a:float2, b:float2, u:float, alpha:float):
     let lift = h * 4.0 * u * (1.0 - u)
     let col = float4 { st.col.x, st.col.y, st.col.z, st.col.w * alpha }
     if st.glow.w > 0.0:  // a bolt of light: a soft halo under its core
+        // (and its light on what it passes, view/atmosphere.lobster)
+        atmo_glow(atmo_source("shot"), p, st.glow.xyz, alpha, a.x + a.y)
         ui_line(p - dir * st.len * 0.6, p + dir * st.len * 0.6, st.w * 2.2, float4 { st.glow.x, st.glow.y, st.glow.z, 0.35 * alpha })
     if st.trail > 0.0:  // a tail, thinning out behind it, no longer than it has flown
         let tail = min(st.trail, magnitude(p - a))
