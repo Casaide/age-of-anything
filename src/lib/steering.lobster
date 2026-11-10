@@ -186,6 +186,9 @@ def steer_to(i:int, x:int, y:int, s:int, mc:int, gx:int, gy:int, pace:int, brake
         u_vx[i] = 0
         u_vy[i] = 0
     let v = isqrt(u_vx[i] * u_vx[i] + u_vy[i] * u_vy[i])
+    if u_foe[i] != 0 and dd > 0 and v > 0:  // (after a foe: it turns to it at once, keeping its pace, #351)
+        u_vx[i] = ex * v / dd
+        u_vy[i] = ey * v / dd
     if brake and dd <= PLACE_SETTLE and v <= acc and pace == 0:
         u_vx[i] = 0
         u_vy[i] = 0
@@ -196,9 +199,10 @@ def steer_to(i:int, x:int, y:int, s:int, mc:int, gx:int, gy:int, pace:int, brake
         let want = if brake: min(min(s, isqrt(2 * acc * dd)), dd) else: s  // (slowing to stop there, never past it in a tick; a marching place it trails a little)
         dvx = ex * want / dd
         dvy = ey * want / dd
-    let avx, avy = avoid(i, x, y, s, ex, ey)
-    dvx += avx
-    dvy += avy
+    if u_foe[i] == 0:  // (after a foe: straight at it; the crowd round it is bodies, separate()'s)
+        let avx, avy = avoid(i, x, y, s, ex, ey)
+        dvx += avx
+        dvy += avy
     var vx = u_vx[i]
     var vy = u_vy[i]
     var cx = dvx - vx
