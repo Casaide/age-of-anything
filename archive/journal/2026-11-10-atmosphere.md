@@ -48,3 +48,25 @@ the default, golden_evening, misty_morning), one per map where a map wants its o
 ## Ideas parked
 - Sun direction and shadow length per map (needs the sprite bake), god rays and cloud shadows: their own issues.
 - The Deck: if it can't hold 60 fps, the pass at a lower size first (the bloom is not where the cost is).
+
+## Later: a default with life in it (#419)
+Dominic called golden_evening "really great" but too golden to be the look of every match, and said nothing should
+look flat and dead unless the pass is off for speed. clear_noon, the old default, was close to flat: it looked like
+`atmosphere:off` made a little brighter. So:
+- **late_afternoon**, the new default (D-245): about half of golden_evening's warmth (a pale apricot sun instead of
+  orange), the same cool blue shadows and bloom, a light warm-grey haze from halfway up, and a softer vignette, so the
+  yellow team at the far corner keeps its colour. The grass stays green, and dry ground turns tan, not orange.
+- **clear_noon**, reworked: a whiter, higher sun, a stronger blue in the shadows, more contrast and saturation, a
+  little bloom and a pale blue haze. It looks like a bright day, not an untouched frame.
+- Tuned by eye in two places: reed_meadow's grass by the hut (the same view as pictures 80 to 83, the hut on fire),
+  and a four-way skirmish over reed_meadow_2v2's river, with dry ground, orange Romans close up and yellow-shielded
+  frogs at the far edge.
+- The first late_afternoon had too much warm haze and vignette: the frogs' yellow shields at the top went brown.
+  Less of both fixed it.
+- run_tests now checks the default is late_afternoon, that no map and no default uses `none`, and that every other
+  mood has some shadow tint, highlight tint, haze and bloom.
+
+Pictures:
+- `images/2026-11-10/85-atmosphere-late-afternoon.jpg`, `86-atmosphere-clear-noon-reworked.jpg`: the view of 80 to 83.
+- `87-atmosphere-battle-off.jpg`, `88-atmosphere-battle-late-afternoon.jpg`, `89-atmosphere-battle-clear-noon.jpg`:
+  the skirmish over the river, the same frame in each.

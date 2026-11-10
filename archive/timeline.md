@@ -241,3 +241,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-10: The ground repainted again, as textures: ten painted tiles overlapped by height along ragged edges, grass in zones over many tiles, voxel tufts only as accents (D-242, #392).
 - 2026-11-10: The ground made a mixture of grass and soil in many hues, with a forest floor under the woods and scree about stone and gold, and softened (D-243, #392).
 - 2026-11-10: An atmosphere pass over the world: a colour grade, drifting haze, a vignette, bloom and fire light, in moods from data (D-244, #411).
+- 2026-11-10: late_afternoon becomes the default mood, and clear_noon gets a real sun and shadow, so no mood looks flat (D-245, #419).
