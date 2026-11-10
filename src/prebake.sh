@@ -1,5 +1,6 @@
 #!/bin/sh
-# The art a build ships: every prop and every architecture's buildings, baked once into baked/ (the game reads it
+# The art a build ships: every prop and every architecture's buildings, baked once into baked/ at the base density and at
+# a Retina screen's 2.4 (each keyed by its density: the game finds the set for its screen, #358; the game reads it
 # before bake_cache/, so a match start bakes only the races' own parts), its PNGs compressed. Remade when
 # BAKE_VERSION changes; otherwise only what's missing is baked. The Deck and Android builds run it.
 #   src/prebake.sh
@@ -13,6 +14,7 @@ if [ "$(cat baked/version 2>/dev/null)" != "$version" ]; then
 	echo "$version" > baked/version
 fi
 "$LOBSTER" game.lobster -- none - prebake mute 2>&1 | grep '^prebake:'
+"$LOBSTER" game.lobster -- none - prebake density:2.4 mute 2>&1 | grep '^prebake:'
 # Recompressed in place (the game's PNG writer, model/build_mats.lobster bmat_png, stores the pixels uncompressed), only
 # what's new since the last run. Pixels unchanged.
 newer=""

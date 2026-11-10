@@ -84,7 +84,7 @@ SHADER terrain
         if (t.x < 0.0 || t.y < 0.0 || t.x > map_size.x || t.y > map_size.y) discard;
         vec4 m = texture(tex0, t / map_size);
         float n = vnoise(t * 2.3) * 0.6 + vnoise(t * 6.1) * 0.4;
-        float grain = vnoise(t * 9.0) * 0.55 + vnoise(t * 23.0) * 0.45;
+        float grain = vnoise(t * 14.0) * 0.55 + vnoise(t * 36.0) * 0.45;  // (fine: under a unit, #358)
         vec2 cell = floor(t * 22.0);
         float bay = bayer(ivec2(gl_FragCoord.xy / art_px));
         vec2 e = vec2(0.06, 0.0);
@@ -92,10 +92,10 @@ SHADER terrain
         float lit = clamp(0.5 + dot(grad, vec2(-0.8, -0.25)) * 1.1, 0.0, 1.0);
         float light = mix(0.8, 1.16, floor(clamp(lit + bay * 0.3, 0.0, 0.999) * 5.0) / 4.0);
         float lush = smoothstep(0.04, 0.35, m.r);
-        float dry = smoothstep(0.5, 0.78, vnoise(t * 0.45 + 17.0)) * (1.0 - lush);
+        float dry = smoothstep(0.5, 0.78, vnoise(t * 1.0 + 17.0)) * (1.0 - lush);  // (patches smaller than a group of units, #358)
         float g = clamp(grain + bay * 0.22, 0.0, 0.999);
         vec3 col = ramp4(vec3(0.24, 0.36, 0.14), vec3(0.30, 0.43, 0.17), vec3(0.36, 0.50, 0.20), vec3(0.43, 0.56, 0.24), g);
-        vec3 dry_col = ramp4(vec3(0.36, 0.38, 0.16), vec3(0.44, 0.45, 0.19), vec3(0.52, 0.51, 0.24), vec3(0.60, 0.57, 0.30), g);
+        vec3 dry_col = mix(col, ramp4(vec3(0.36, 0.38, 0.16), vec3(0.44, 0.45, 0.19), vec3(0.52, 0.51, 0.24), vec3(0.60, 0.57, 0.30), g), 0.55);  // (and softer)
         vec3 lush_col = ramp4(vec3(0.16, 0.30, 0.13), vec3(0.20, 0.36, 0.15), vec3(0.24, 0.42, 0.18), vec3(0.30, 0.48, 0.20), g);
         if (dry + bay * 0.3 > 0.45) col = dry_col;
         if (lush + bay * 0.3 > 0.5) col = lush_col;
@@ -105,9 +105,9 @@ SHADER terrain
         if (vnoise(t * 3.1 + 40.0) > 0.78 && hash(cell + 21.0) > 0.4) col = mix(col, vec3(0.28, 0.48, 0.20), 0.6);
         float drift = vnoise(t * 0.17 + 61.0);
         col *= mix(vec3(1.06, 1.02, 0.84), vec3(0.9, 1.0, 1.06), drift);
-        float clump = vnoise(t * 4.3 + 7.0) * 0.7 + vnoise(t * 11.0) * 0.3;
-        if (clump > 0.66) col *= (hash(cell + 31.0) > 0.7 ? 1.12 : 0.8);
-        float worn = vnoise(t * 0.7 + 33.0) * 0.8 + vnoise(t * 5.0 + 3.0) * 0.2;
+        float clump = vnoise(t * 7.0 + 7.0) * 0.7 + vnoise(t * 18.0) * 0.3;
+        if (clump > 0.66) col *= (hash(cell + 31.0) > 0.7 ? 1.07 : 0.88);
+        float worn = vnoise(t * 1.3 + 33.0) * 0.8 + vnoise(t * 5.0 + 3.0) * 0.2;
         if (worn > 0.7 && hash(cell + 41.0) > 0.45) col = mix(col, vec3(0.42, 0.34, 0.22), 0.55 + 0.2 * hash(cell + 43.0));
         float reed = clamp(m.b * 1.3 + (n - 0.5) * 0.5, 0.0, 1.0);
         col = mix(col, col * vec3(0.8, 0.86, 0.72), floor(reed * 3.0) / 3.0 * 0.8);

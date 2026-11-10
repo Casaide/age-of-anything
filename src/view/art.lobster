@@ -10,10 +10,11 @@ class Bake:
     scale:float
 
 // The art scale (D-173, "heroic at 2x"): art pixels a canvas unit. The world stays in the art pixels it had before
-// (ART_BASE: a tile is 96 x 48), so sprites baked at ART_SCALE draw at 1 / ART_K of their texture's size.
-let ART_SCALE = 3.0
+// (ART_BASE: a tile is 96 x 48), so sprites baked at ART_SCALE draw at 1 / ART_K of their texture's size. On a high-DPI
+// screen the game raises both at its start, so a baked pixel is a device pixel (art_density in game.lobster, #358).
 let ART_BASE = 1.5
-let ART_K = ART_SCALE / ART_BASE
+var ART_SCALE = 3.0
+var ART_K = ART_SCALE / ART_BASE
 
 let bakes = dictionary<string, Bake>(8191)
 
