@@ -238,7 +238,10 @@ def steer_to(i:int, x:int, y:int, s:int, mc:int, gx:int, gy:int, pace:int, brake
         vy = vy * s / vv
     let o = isqrt(u_vx[i] * u_vx[i] + u_vy[i] * u_vy[i])
     let m = isqrt(vx * vx + vy * vy)
-    if o >= TURN_FREE and m >= TURN_FREE:  // (walking: it turns by at most TURN_SIN a tick; slowed right down, it turns on the spot)
+    // (walking: it turns by at most TURN_SIN a tick; slowed right down, it turns on the spot; and stopping at a place inside its
+    // turning circle, dd < 2 (o / TURN_SIN) sin(off), it turns for it at once, or it circles it for ever, #420)
+    let inside = brake and pace == 0 and dd * dd * TURN_SIN < 2 * ONE * abs(u_vx[i] * ey - u_vy[i] * ex)
+    if o >= TURN_FREE and m >= TURN_FREE and not inside:
         let ox = u_vx[i]
         let oy = u_vy[i]
         let dot = ox * vx + oy * vy
