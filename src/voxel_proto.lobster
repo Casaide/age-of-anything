@@ -11,6 +11,7 @@ import gen.rng
 import gen.sha256
 import gen.datalib
 import gen.identity
+import view.vox
 import view.voxel
 
 class row:
