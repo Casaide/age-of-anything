@@ -981,6 +981,25 @@
       "mat": "metal",
       "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
      }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze"
+      },
+      "_doc": "the Roman body: a montefortino, roman_montefortino.vox"
+     }
     ]
    }
   },
@@ -1592,6 +1611,25 @@
       "r": 0.425,
       "mat": "team"
      }
+    ],
+    "roman": [
+     {
+      "model": "roman_galea.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.25,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze"
+      },
+      "_doc": "the Roman body (#417): roman_galea.vox, from the concept sheet"
+     }
     ]
    }
   },
@@ -1618,6 +1656,25 @@
       "fit": 0.0,
       "mat": "hide"
      }
+    ],
+    "roman": [
+     {
+      "model": "roman_leather.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -3.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze"
+      },
+      "_doc": "the Roman body: a leather jerkin with pteruges, roman_leather.vox"
+     }
     ]
    }
   },
@@ -1632,6 +1689,25 @@
       "fit": 0.0,
       "mat": "bronze"
      }
+    ],
+    "roman": [
+     {
+      "model": "roman_mail.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -3.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze"
+      },
+      "_doc": "the Roman body: mail doubled over the shoulders, roman_mail.vox"
+     }
     ]
    }
   },
@@ -1645,6 +1721,25 @@
      {
       "fit": 0.0,
       "mat": "metal"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_segmentata.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -4.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze"
+      },
+      "_doc": "the Roman body: the segmentata and its apron, roman_segmentata.vox"
      }
     ]
    }
