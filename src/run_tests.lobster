@@ -81,6 +81,9 @@ import gl
 import game.window_mode
 import game.topbar_fit
 import game.fog_look
+import color
+import texture
+import view.atmosphere
 
 let DATA = "../data"
 let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings",
@@ -1070,7 +1073,36 @@ def g_topbar():
 
 // ------------------------------------------------------------------ the run
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look", "topbar" ]
+// The atmosphere's data (#411, view/atmosphere.lobster): data/atmosphere.json loads, every mood and glow is sound and
+// can be set, the default and the maps' moods are moods, an unknown mood is reported, a broken one is caught, the
+// mood of zeros leaves the frame, and a mod's file merges over the game's.
+def g_atmosphere():
+    let j = lib_data("atmosphere.json")
+    let problems = atmo_problems(j)
+    expect(not problems.length, "atmosphere: the game\'s atmosphere.json is sound ({problems})")
+    let moods = filter(sorted_strs(gobj(j, "moods").keys)) k: not starts_with(k, "_")
+    expect(moods.length >= 3, "atmosphere: at least three moods ({moods})")
+    for(moods) m: expect(atmo_set(j, m) == "" and atmo_on, "atmosphere: the mood {m} can be set ({atmo_set(j, m)})")
+    expect(has_s(moods, atmo_mood_for(j, "flat_test", "")), "atmosphere: a map with no mood of its own gets the default")
+    for(gobj(j, "maps").keys) id: expect(has_s(map_ids_on_disk(), id), "atmosphere: the map {id} it names exists")
+    expect(atmo_mood_for(j, "reed_meadow", "misty_morning") == "misty_morning", "atmosphere: atmosphere:<mood> wins over the map\'s")
+    let unknown = atmo_set(j, "purple_haze")
+    expect(contains_text(unknown, "no mood \'purple_haze\'") and not atmo_on, "atmosphere: an unknown mood is reported ({unknown})")
+    expect(atmo_set(j, "off") == "" and not atmo_on, "atmosphere: off sets no mood")
+    expect(atmo_set(j, "none") == "" and all_of(atmo_nums) v: v == 0.0 or v == 1.0, "atmosphere: the mood none is all zeros (the frame as drawn)")
+    let broken = parse_json("\{ \"moods\": \{ \"clear_noon\": \{ \"haze\": 3, \"sparkle\": 1 \} \}, \"default\": \"dusk\", \"glows\": \{ \"lava\": \{ \} \} \}")
+    let found = atmo_problems(data_merge(j, broken))
+    for([ "\'haze\' must be", "no knob \'sparkle\'", "the default \'dusk\'", "no glow source \'lava\'" ]) want:
+        expect(exists(found) p: contains_text(p, want), "atmosphere: a broken file is caught: {want} ({found})")
+    let modded = data_merge(j, parse_json("\{ \"moods\": \{ \"red_dusk\": \{ \"extends\": \"golden_evening\", \"highlight_tint\": \"#ff4020\" \} \}, \"default\": \"red_dusk\" \}"))
+    expect(not atmo_problems(modded).length and atmo_mood_for(modded, "flat_test", "") == "red_dusk", "atmosphere: a mod\'s mood merges over the game\'s and becomes the default ({atmo_problems(modded)})")
+    atmo_set(j, "off")
+
+def map_ids_on_disk() -> [string]:
+    let names = scan_folder("../data/maps", false)
+    return if names: map(filter(names) n: ends_with(n, ".json")) n: substring(n, 0, n.length - 5) else: []
+
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look", "topbar", "atmosphere" ]
 
 def run_group(name:string):
     switch name:
@@ -1093,6 +1125,7 @@ def run_group(name:string):
         case "window": g_window()
         case "fog_look": g_fog_look()
         case "topbar": g_topbar()
+        case "atmosphere": g_atmosphere()
         default: assert false
 
 var shard = 0
