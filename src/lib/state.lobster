@@ -433,10 +433,6 @@ var f_side = []::int
 // Separation scratch.
 var s_pushx = []::int
 var s_pushy = []::int
-var s_settle = []::int
-var s_stood = []::int
-var s_yields = []::int
-var s_role = []::int
 var s_planted = []::int
 def remove_building(b:int):
     for(building_columns()) col: col.remove(b)
