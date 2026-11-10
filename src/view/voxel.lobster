@@ -797,10 +797,10 @@ def vx_vox_body(b:vx_body_spec, file:string, mats:JV):
     if arm.length:
         b.sh = arm[0] - rest(b.sh_pt)
         b.arm = (magnitude(arm[1] - arm[0]) + magnitude(arm[2] - arm[1])) * 0.5
-    // the parts
+    // the parts (body, not gear: soft, so the legs set the ground and the joints blend)
     for(pieces) q:
         let nd = f.nodes[q.node]
-        let s = vx_spec { vx_k_model, true, false, "", float3_0, "", float3_0, 1.0 / vx_RES, 0.0, 0, 0, float3_0, float3_0, [], [], 0.0, 0.0,
+        let s = vx_spec { vx_k_model, false, false, "", float3_0, "", float3_0, 1.0 / vx_RES, 0.0, 0, 0, float3_0, float3_0, [], [], 0.0, 0.0,
                           [], [], model: vx_model_in(f, file, nd.model, mats), ax: vx_vox_axis(nd.r, 0), ay: vx_vox_axis(nd.r, 1),
                           az: vx_vox_axis(nd.r, 2) }
         let bone = find(vx_VOX_BONES) n: n == q.name

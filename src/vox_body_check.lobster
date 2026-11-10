@@ -133,6 +133,15 @@ vx_stand = true
 let sp = vx_body_points(b, 0.0, float3_0)
 let standing = []::vx_prim
 vx_legs(standing, u, b, sp, 0.0, [])
+// filled, the drawn legs stand on the ground: the body's lowest cells are the shins', and it is as tall as drawn (feet
+// at 3, the head's top at 37.5: 69 voxels). (Hard parts don't set the ground: as gear, the legs were cut off below the hands.)
+let filled = vx_fill(vx_unit_prims(u, 0.0), 1.0)
+var top = 0
+var bottom = 1000
+for(filled.pos) v:
+    top = max(top, v.z)
+    bottom = min(bottom, v.z)
+expect(bottom <= 1 and top - bottom >= 66, "the filled body stands on its drawn legs: voxels {bottom} to {top}")
 vx_stand = false
 let st = filter(standing) q: q.model == thigh and q.a.x > 0.0
 let ss = filter(standing) q: q.model == shin and q.a.x > 0.0
