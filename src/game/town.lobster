@@ -147,8 +147,6 @@ def town_dust():
                 let hit = me + (if magnitude(d) > 0.0: normalize(d) * min(10.0, magnitude(d)) else: float2_0)
                 for(3): town_puffs.push(Puff { hit + float2 { rnd_range(-2.0, 2.0), rnd_range(-1.0, 1.0) }, 0.0, float2 { rnd_range(-7.0, 7.0), rnd_range(-6.0, -2.0) } })
 
-let DAMAGE_FIRE = 0.6
-
 def rnd_dir(dir:float2, spread:float, lo:float, hi:float) -> float2:
     let a = atan2(normalize(dir)) + rnd_range(-spread, spread)
     return float2 { cos(a), sin(a) } * rnd_range(lo, hi)
