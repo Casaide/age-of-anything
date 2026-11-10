@@ -23,7 +23,7 @@ let VX_LOADS = [ "food", "wood", "stone", "gold" ]
 let VX_MODES = 12
 let VX_STEPS = [ 1, 8, 8, 8, 6, 8, 8, 8, 8, 8, 8, 8 ]                    // steps in each mode (a fall's last step is lying)
 let VX_JOB_TOOL = [ "", "", "axe", "", "", "hammer", "pick", "basket" ]  // a work mode's tool
-let VX_DRAW_K = 1.1 / ART_K                                              // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
+var VX_DRAW_K = 1.1 / vx_RES                                             // world art px a voxel (a body unit is 1.1 world px: the composed units' size)
 
 // A look: a unit def, drawn the same by every type and step that has it.
 class vx_lk:
@@ -163,7 +163,7 @@ var vx_doing:vx_job? = nil
 
 def vx_new_job(lk:int, v:int, modes:[int]) -> vx_job:
     let l = vx_lks[lk]
-    let stem = bake_cache_dir + "/vx_" + sha256_text("{vx_source}|{l.key}|look {v}|modes {modes}").substring(0, 20)
+    let stem = bake_cache_dir + "/vx_" + sha256_text("{vx_source}|{l.key}|look {v}|modes {modes}|res {vx_RES}").substring(0, 20)
     let poses = []::int2
     // (a body with a gait shifts its weight standing; the rest stand on one frame, and vx_frame falls back to it)
     let stirs = vx_body_of(l.u.body).gait != nil and l.u.mount == ""
