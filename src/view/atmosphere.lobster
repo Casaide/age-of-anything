@@ -59,7 +59,21 @@ SHADER atmo_glow
         INPUTS itc:2 icolor:4
         float d = length(itc * 2.0 - 1.0);
         float f = clamp(1.0 - d, 0.0, 1.0);
-        frag_color = vec4(icolor.rgb * icolor.a * 4.0 * f * f, 1.0);
+        frag_color = vec4(icolor.rgb * icolor.a * 4.0 * f * f, 0.0);
+SHADER atmo_air
+    VERTEX
+        INPUTS apos:4
+        UNIFORMS mvp
+        gl_Position = mvp * apos;
+    PIXEL
+        UNIFORM vec2 screen
+        UNIFORM vec2 cam
+        UNIFORM float zoom
+        UNIFORM float time
+        vec2 sp = gl_FragCoord.xy * 4.0;
+        vec2 wp = (vec2(sp.x, screen.y - sp.y) - screen * 0.5) / zoom + cam;
+        float n = atmo_noise(wp / 520.0 + vec2(time * 0.021, time * 0.008)) * 0.65 + atmo_noise(wp / 190.0 - vec2(time * 0.034, -time * 0.012)) * 0.35;
+        frag_color = vec4(0.0, 0.0, 0.0, n);
 SHADER atmo_bright
     VERTEX
         INPUTS apos:4
@@ -98,9 +112,6 @@ SHADER atmo_pass
     PIXEL
         UNIFORMS tex0 tex1 tex2
         UNIFORM vec2 screen
-        UNIFORM vec2 cam
-        UNIFORM float zoom
-        UNIFORM float time
         UNIFORM float exposure
         UNIFORM float contrast
         UNIFORM float saturation
@@ -132,8 +143,7 @@ SHADER atmo_pass
         c = (c - 0.45) * (1.0 + contrast) + 0.45;
         y = dot(c, LUM);
         c = mix(vec3(y), c, 1.0 + saturation);
-        vec2 wp = (vec2(gl_FragCoord.x, screen.y - gl_FragCoord.y) - screen * 0.5) / zoom + cam;
-        float n = atmo_noise(wp / 520.0 + vec2(time * 0.021, time * 0.008)) * 0.65 + atmo_noise(wp / 190.0 - vec2(time * 0.034, -time * 0.012)) * 0.35;
+        float n = texture(tex2, uv).a;
         float h = haze * mix(0.12, 1.0, pow(smoothstep(haze_start, 1.0, uv.y), 1.4)) * (1.0 + haze_drift * (n * 2.0 - 1.0));
         c = mix(c, haze_colour, clamp(h, 0.0, 1.0));
         vec2 d = (uv - 0.5) * vec2(screen.x / screen.y, 1.0);
@@ -294,7 +304,14 @@ def atmo_end(cam:float2, zoom:float, canvas:float):
     let was = gl.blend(blend_none)
     gl.switch_to_framebuffer(atmo_light)
     gl.ortho()
-    gl.clear(float4 { 0.0, 0.0, 0.0, 1.0 })
+    gl.clear(float4 { 0.0, 0.0, 0.0, 0.5 })                      // (alpha: the haze's drift, 0.5 where it doesn't drift)
+    if atmo_num("haze") > 0.0 and atmo_num("haze_drift") > 0.0:  // (the drift is low in detail: worked out here, at a quarter of the pixels)
+        gl.set_shader("atmo_air")
+        gl.set_uniform("screen", float(atmo_size))
+        gl.set_uniform("cam", cam)
+        gl.set_uniform("zoom", zoom)
+        gl.set_uniform("time", gl.time())
+        atmo_quad(q)
     if atmo_gidx.length:
         gl.blend(blend_add)
         gl.set_shader("atmo_glow")
@@ -329,9 +346,6 @@ def atmo_end(cam:float2, zoom:float, canvas:float):
     gl.blend(blend_none)
     gl.set_shader("atmo_pass")
     gl.set_uniform("screen", float(atmo_size))
-    gl.set_uniform("cam", cam)
-    gl.set_uniform("zoom", zoom)
-    gl.set_uniform("time", gl.time())
     for(ATMO_NUMS) k, i: gl.set_uniform(k, atmo_nums[i])
     for(ATMO_COLS) k, i: gl.set_uniform(k, atmo_cols[i])
     gl.set_primitive_texture(0, assert atmo_world)
