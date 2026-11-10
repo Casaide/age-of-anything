@@ -75,3 +75,29 @@ them along the edges of rock and dirt.
 - 2,000 units: main 57.9 and 58.2 fps, new 58.0 and 58.1; work 6.7 to 7.4 ms median for both.
 - GPU watts in a normal match over four rounds each: main 1.21, 1.36, 1.29, 0.74; new 3.03, 1.05, 1.13, 1.62. Noisy,
   medians about 1.25 against 1.4 W.
+
+## Evening: a mixture, ground under props, softer
+Dominic on the second try: "it looks good", but an all-green palette isn't real ground. Grass and soil are a mixture,
+and the old shader had that better at lower detail. Two shades of green covering everything read as tiled. Rocks and
+trees should have ground of their own. Then: "may need softening a little so not so crisp".
+
+- Every grass tile is now soil with grass on it: blue-, mid- and yellow-greens, olive and straw clumps over brown soil
+  that shows in spots of a few texels and in thin patches (`gt_grass`, `gt_cover`). Two more grasses (olive, worn) are
+  mixed in over a few tiles by noise, and the hue drifts region to region, so no field is one tone.
+- The ground under props comes from a second mask (`prop_tex`, built with the masks: R trees and stumps, G stone,
+  gold and rubble), so it follows the map. Woods get a forest floor (dark soil, leaves, needles, moss, roots). Stone
+  and gold get scree (gravel over rocky soil) with a ragged edge into the grass.
+- Softer: each tile is blurred part way (`gt_soften`), with height blurred more, so the splat edges soften too. The
+  splat band is wider and the voxel accents' faces less contrasty. Picture 69 is the 1:1 before and after.
+- The zones moved to a two-octave noise (`zn`), to win back some GPU time.
+
+### Pictures (third try)
+`images/2026-11-10/68-ground-mixed-close.jpg` to `78-ground-atlas-mixed.jpg`: close, the 1:1 softening before and
+after, scree under gold, zoomed out, the forest floor, shore, swamp, trail, road, 1080p and the atlas.
+
+### Numbers (third try, turn about with main)
+- 2,000 units: main 58.1, 58.2, 58.1 fps; new 58.0, 58.0, 57.8.
+- GPU watts in a still normal match: main 1.34, 1.35, 1.39 W; new 1.52, 2.00, 1.99 W. The ground redraws at 15 Hz
+  while the camera is still, so this is about a third to two thirds of a watt more. Scaled by D-209's numbers (live
+  ground at 60 Hz cost about 2.65 W more than cached), that's an estimated 0.5 ms or so of GPU time a full-screen
+  frame more than main. That is an estimate, not a measurement.

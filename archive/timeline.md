@@ -239,3 +239,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-10: The haidut, the first unit drawn as a MagicaVoxel model, in an example mod with three cloaks (D-240, #381).
 - 2026-11-10: The ground repainted from scratch: fine grain and blades sized on the screen, height-blended edges, voxel tufts and stones, a new shore (D-241, #392).
 - 2026-11-10: The ground repainted again, as textures: ten painted tiles overlapped by height along ragged edges, grass in zones over many tiles, voxel tufts only as accents (D-242, #392).
+- 2026-11-10: The ground made a mixture of grass and soil in many hues, with a forest floor under the woods and scree about stone and gold, and softened (D-243, #392).
