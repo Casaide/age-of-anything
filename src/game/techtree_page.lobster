@@ -83,7 +83,8 @@ var tt_pad = false
 var tt_res = []::JV  // data/resources.json: names and colours
 var tt_arch = ""
 var tt_arch_age = 1
-var tt_want_buildings = false
+var tt_want_buildings = false  // the lobby's building pictures still coming (tt_building_todo: one a frame)
+var tt_building_todo = []::string
 let tt_widths = dictionary<string, float>(512)
 
 // The pictures' page: each node's picture painted once at its size on the screen, drawn from here as one mesh.
@@ -157,7 +158,8 @@ def tt_open(race:JV, ident:JV, rules:JV, owner:int, in_match:bool):
     tt_page_k = 0.0  // (the pictures painted again: another race, another age)
     tt_arch = architecture(race)
     tt_arch_age = if in_match: ages[ME] else: 1
-    tt_want_buildings = not in_match  // (the lobby has no buildings baked yet: the shipped bakes are read once it's open)
+    tt_want_buildings = not in_match  // (the lobby has no buildings baked yet: each read from the bakes, or made, a frame at a time once it's open)
+    tt_building_todo = map(filter(tree_page.nodes) n: n.kind == "building" and not n.planned) n: n.id
     if not tt_res.length: tt_res = glist(lib_data("resources.json"), "resources")
 
 // ---- the layout (design px), made again when the window's scale changes
@@ -340,8 +342,9 @@ def tt_figure_ready(key:int, recipe:JV) -> bool: return vx_figure(recipe) >= 0
 
 // A building's bake for the race's architecture (its age's look in a match).
 def tt_building_frame(id:string) -> int:
-    let lk = looks.get(building_key(tt_arch, id, tt_arch_age, 0))
-    return if lk: frame_index(lk.body) else: -1
+    let key = building_key(tt_arch, id, tt_arch_age, 0)
+    let lk = looks.get(key)
+    return if lk: frame_index(lk.body) else: frame_index(key + ":picture")  // (else its picture alone: akb_picture)
 
 class TtTodo:  // a picture to paint: its node, its side (px), its portrait's key
     n:TNode
@@ -600,14 +603,12 @@ def tree_tick() -> bool:
     if tt_state_t < 0.0 or gl.time() - tt_state_t > 0.25:  // (the match goes on: what's built, researched, under way)
         tt_state_t = gl.time()
         tt_refresh(t)
-    // the pictures: the lobby's buildings read from their bakes once, the portraits as their looks are baked
-    if tt_want_buildings:
-        tt_want_buildings = false
-        let live = bake_live
-        bake_live = false
-        bake_buildings_for([ tt_arch ])
-        bake_live = live
-        gl.ortho()
+    // the pictures: the lobby's buildings from their bakes or made, one a frame, the portraits as their looks are baked
+    if tt_want_buildings and tt_page_k == k:  // (one a frame, the page drawn first and answering between: a whole bake was minutes of a hung window, #430)
+        if tt_building_todo.length:
+            akb_picture(tt_arch, tt_building_todo.remove(0))
+            gl.ortho()
+        else: tt_want_buildings = false
     vx_bake_tick(0.012)  // (the portraits' voxel looks)
     let waiting = tt_paint(t, k)
     tree_waiting = waiting
