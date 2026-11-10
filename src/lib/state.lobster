@@ -122,6 +122,8 @@ var u_pace = []::int
 var u_block = []::int  // the marching block it keeps its place in (+1; 0: none), and that place from the block's centre
 var u_bx = []::int
 var u_by = []::int
+var u_vx = []::int  // its velocity: milli-tiles a tick (#346)
+var u_vy = []::int
 var u_hp = []::int
 var u_foe = []::int
 var u_cooldown = []::int
@@ -164,7 +166,7 @@ def unit_columns() -> [[int]]:
              u_hp, u_foe, u_cooldown, u_stance, u_posture, u_gx, u_gy, u_amx, u_amy, u_amc,
              u_task, u_target, u_home, u_gspot, u_carry_kind, u_carry, u_work, u_reach, u_rx0, u_ry0, u_rx1, u_ry1, u_patient,
              u_route, u_ready, u_perch, u_wgoal, u_wnext, u_wexit, u_wtime, u_hull, u_lx, u_ly,
-             u_owner, u_kind, u_speed, u_radius, u_mclass, u_block, u_bx, u_by ]
+             u_owner, u_kind, u_speed, u_radius, u_mclass, u_block, u_bx, u_by, u_vx, u_vy ]
 
 // What hooks keep (hooks/active.lobster's hook_declare): saved and hashed like the sim's own. A column per name; a unit's
 // by its id, so it stays with the unit through a garrison and needn't change when units come and go.
@@ -450,7 +452,7 @@ def insert_unit(uid:int, owner:int, k:int, x:int, y:int, speed:int, radius:int, 
               hp, 0, 0, 0, 0, x, y, 0, 0, -1,
               0, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
               0, 0, 0, 0, 0, 0, 0, 0, x, y,
-              owner, k, speed, radius, 0, 0, 0, 0 ]
+              owner, k, speed, radius, 0, 0, 0, 0, 0, 0 ]
     unit_changes++
     for(unit_columns()) col, n: col.insert(at, v[n])
     u_orders.insert(at, [])
