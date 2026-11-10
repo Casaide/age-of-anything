@@ -86,10 +86,32 @@ let vx_PATTERNS = [ "", "blocks", "planks", "ripples", "tiles", "wear", "mottle"
 var vx_mat_team = 0  // the team colour's material (the sprite shader's key)
 var vx_fur = 0.07    // how strongly fur is flecked (the body's)
 
+// A material scorched: its colour darkened towards soot, in soot patches (a wreck, #332). Made for every material when they're read.
+let vx_BURNT_MIX = 0.5
+let vx_SOOT = float3 { 0.13, 0.12, 0.11 }
+var vx_burnt_of = []::int
+
 def vx_mat(name:string) -> int:
     let m = find(vx_mat_names) n: n == name
     assert m >= 0
     return m
+
+def vx_make_burnt():
+    let n = vx_mat_names.length
+    let mottle = find(vx_PATTERNS) p: p == "mottle"
+    for(n) m:
+        vx_burnt_of.push(vx_mat_names.length)
+        vx_mat_names.push(vx_mat_names[m] + "#burnt")
+        vx_MAT_BASE.push(vx_SOOT + (vx_MAT_BASE[m] - vx_SOOT) * vx_BURNT_MIX)
+        vx_MAT_FUR.push(0)
+        vx_MAT_PAT.push(mottle)
+        vx_MAT_PSIZE.push(float2 { 3.0, 3.0 })
+        vx_MAT_PDEPTH.push(0.1)
+        vx_MAT_PMIX.push(0.45)
+        vx_MAT_C2.push(vx_SOOT)
+        vx_MAT_GLOW.push(0)
+        vx_MAT_SHINE.push(0.0)
+        vx_MAT_PROUND.push(0)
 
 def vx_hex(h:string) -> float3:
     let s = if h.length and h[0] == '#': h.substring(1, h.length - 1) else: h
@@ -768,6 +790,7 @@ def vx_load(dirs:[string]):
                     vx_MAT_PMIX[m] = gfloat(po, "mix", 0.0)
                     vx_MAT_C2[m] = vx_hex(gstr(po, "color2", "#000000"))
                     vx_MAT_PROUND[m] = if gbool(po, "round", false): 1 else: 0
+    vx_make_burnt()
     vx_mat_cols = copy(vx_MAT_BASE)
     vx_mat_team = vx_mat("team")
     for(dirs) d:
@@ -1423,11 +1446,10 @@ def vx_crashed(parts:[vx_prim], t:float) -> [vx_prim]:
     let a = vx_CRASH_PITCH * sin(180.0 * t) * t
     let c, s = cos(a), sin(a)
     let drop = low * t * t
-    let burnt, rust = vx_mat("wreck"), vx_mat("wreck_rust")
     def turn(q:float3) -> float3:
         let z = q.z - low
         return float3 { q.x, q.y * c + z * s, z * c - q.y * s + low - drop }
-    return map(parts) p, n: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, if n % 7 == 0: rust else: burnt, p.hard, p.disc, p.box, model: p.model, mx: turn(p.a + p.mx) - turn(p.a), mz: turn(p.a + p.mz) - turn(p.a) }
+    return map(parts) p: vx_prim { turn(p.a), turn(p.b), p.ra, p.rb, vx_burnt_mat(p.mat), p.hard, p.disc, p.box, model: p.model, mx: turn(p.a + p.mx) - turn(p.a), mz: turn(p.a + p.mz) - turn(p.a) }
 
 // A unit dying, at t (0 alive .. 1 lying): what its body's `death` says, else it falls over.
 def vx_dying(u:vx_unit_def, parts:[vx_prim], t:float) -> [vx_prim]:
@@ -1446,20 +1468,21 @@ def vx_flies(u:vx_unit_def) -> bool: return vx_body_of(u.body).flies > 0.0 or (u
 
 // Is the unit's ground its body's z 0 (a flier's: not under its lowest point; an engine's or a war beast's: under its
 // wheels and feet, not its crew's)? A fall lies on the ground (not a flier's).
+// What a material is on a wreck: scorched; team colour burns off to rust, so a wreck is nobody's.
+def vx_burnt_mat(m:int) -> int: return if m == vx_mat_team: vx_mat("wreck_rust") else: vx_burnt_of[m]
+
 // A vehicle knocked out (a body's "death": "knocked_out", #186): it stays where it stood, burnt, its parts knocked askew.
 def vx_knocked_out(u:vx_unit_def, b:vx_body_spec) -> [vx_prim]:
     let out = []::vx_prim
-    let team, burnt, rust = vx_mat("team"), vx_mat("wreck"), vx_mat("wreck_rust")
-    def burn(p:vx_prim, n:int) -> vx_prim:
-        return vx_prim { p.a, p.b, p.ra, p.rb, if n % 7 == 0 or p.mat == team: rust else: burnt, p.hard, p.disc, p.box, model: p.model, mx: p.mx, mz: p.mz }
+    def burn(p:vx_prim) -> vx_prim: return vx_prim { p.a, p.b, p.ra, p.rb, vx_burnt_mat(p.mat), p.hard, p.disc, p.box, model: p.model, mx: p.mx, mz: p.mz }
     def body_of(id:string) -> vx_unit_def: return vx_unit_def { u.label, id, u.skin, u.pale, u.mark, [], "", false, u.coat, u.mane, u.coat_mark, nil }
-    for(vx_unit_prims(body_of(if b.hull != "": b.hull else: b.id), 0.0)) p, n: out.push(burn(p, n))
+    for(vx_unit_prims(body_of(if b.hull != "": b.hull else: b.id), 0.0)) p: out.push(burn(p))
     for(b.parts) part, k:
         let yaw = 24.0 + 13.0 * float(k)
         def turned(v:float3) -> float3:
             return float3 { v.x * cos(yaw) - v.y * sin(yaw) + part.pivot.x, v.x * sin(yaw) + v.y * cos(yaw) + part.pivot.y, v.z - 0.6 }
-        for(vx_unit_prims(body_of(part.body), 0.0)) p, n:
-            let q = burn(p, n)
+        for(vx_unit_prims(body_of(part.body), 0.0)) p:
+            let q = burn(p)
             out.push(vx_prim { turned(q.a), turned(q.b), q.ra, q.rb, q.mat, q.hard, q.disc, q.box, model: q.model, mx: turned(q.a + q.mx) - turned(q.a), mz: turned(q.a + q.mz) - turned(q.a) })
     return out
 

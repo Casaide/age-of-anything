@@ -341,3 +341,13 @@ def stringify(v:JV) -> string:
             let parts = []::string
             for(order) k: parts.push("\"" + json_escape(k) + "\":" + stringify(at(v, k)))
             return "\{" + concat_string(parts, ",") + "\}"
+
+def starts_with(s:string, pre:string) -> bool: return s.length >= pre.length and substring(s, 0, pre.length) == pre
+def ends_with(s:string, post:string) -> bool: return s.length >= post.length and substring(s, s.length - post.length, post.length) == post
+def has_char(s:string, c:int) -> bool:
+    for(s.length) n:
+        if s[n] == c: return true
+    return false
+
+def rstr(r:JV, k:string) -> string: return as_str(at(r, k))
+def prompt_words(s:string) -> [string]: return filter(tokenize(s, " ", "")) w: w.length > 0

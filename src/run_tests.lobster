@@ -65,7 +65,10 @@ import lib.expand
 import lib.bot
 import lib.walls_ai
 import lib.world
+import hooks.active
+import hooks.rules
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -75,6 +78,7 @@ import vec
 import game.cursor_images
 import gl
 import game.window_mode
+import game.fog_look
 
 let DATA = "../data"
 let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings",
@@ -157,7 +161,7 @@ def fresh_lib():
 // A world to read the sim's loaders from (World.new): one match set up on flat_test.
 def fresh_world(races:[JV], rules:JV):
     reset_world()
-    setup_world(20261013, "flat_test", races, rules, [])
+    setup_match(20261013, "flat_test", races, rules, [])
 
 // ---- colours (the skins against the team colours)
 
@@ -980,9 +984,26 @@ def g_window():
     let game = read_file("game.lobster")
     expect(game and find_string(game, "window_flags(no_vsync, window_fullscreen)") >= 0, "window: the game opens with those flags")
 
+// ------------------------------------------------------------------ the fog's look (#334)
+
+def g_fog_look():
+    // One grey fog: land never seen looks like land seen before, never black.
+    expect(fog_ground_shade(0) == fog_ground_shade(1), "fog: never-seen ground is as bright as ground seen before ({fog_ground_shade(0)} vs {fog_ground_shade(1)})")
+    expect(fog_dark(0) == fog_dark(1), "fog: the fog over never-seen ground is the grey of seen-before ground ({fog_dark(0)} vs {fog_dark(1)})")
+    expect(fog_prop_shade(0) == fog_prop_shade(1), "fog: resources never seen are as bright as ones seen before")
+    expect(fog_ground_shade(2) > fog_ground_shade(1) and fog_dark(2) < fog_dark(1) and fog_prop_shade(2) > fog_prop_shade(1), "fog: what\'s in sight is brighter than what isn\'t")
+    for([ 0, 1, 2 ]) f: expect(fog_shows_land(f), "fog: trees, gold, stone, bushes and doodads show under fog {f}")
+    // The view uses them: no fog state of its own, no resource hidden by the fog.
+    let game = read_file("game.lobster")
+    let ground = read_file("game/ground.lobster")
+    expect(game and find_string(game, "if fg[c] == 0: 0.12") < 0 and find_string(game, "fog_ground_shade(fg[c])") >= 0, "fog: the ground\'s shade is fog_ground_shade")
+    expect(ground and find_string(ground, "if fg[c] == 0: 0.88") < 0 and find_string(ground, "fog_dark(fg[c])") >= 0, "fog: the fog mesh\'s darkness is fog_dark")
+    expect(game and find_string(game, "tr_names[tt] == \"tree\") and") < 0, "fog: not just trees show where never seen")
+    expect(game and find_string(game, "fog_shows_land(fog[ME][c])") >= 0, "fog: resources and doodads show by fog_shows_land")
+
 // ------------------------------------------------------------------ the run
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window" ]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look" ]
 
 def run_group(name:string):
     switch name:
@@ -1003,6 +1024,7 @@ def run_group(name:string):
         case "ground_path": g_ground_path()
         case "cursors": g_cursors()
         case "window": g_window()
+        case "fog_look": g_fog_look()
         default: assert false
 
 var shard = 0

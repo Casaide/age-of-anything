@@ -8,6 +8,10 @@
     "landser_1944": {
       "size": 0.79,
       "h": 58
+    },
+    "siege.beast.fighter": {
+      "size": 0.6,
+      "h": 148
     }
   }
 }

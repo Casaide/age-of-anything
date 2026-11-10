@@ -31,6 +31,8 @@ let AIM_KICK_MIN = 0.5  // body units the recoil throws it back
 let AIM_KICK_MAX = 2.5
 let CRUMPLE_SPAN = 0.8    // of its standing length a soldier halfway through falling may still be
 let WRECK_KEEPS_PCT = 90  // how much of its standing outline a knocked-out vehicle covers (its turret is knocked askew)
+let WRECK_LUM_SHARE = 0.65
+let WRECK_CONTRAST_SHARE = 0.55
 let vx_dirs = [ "../data/voxel" ]
 for(command_line_arguments()) a:
     if starts_with(a, "voxels:"): vx_dirs.push(a.substring(7, a.length - 7))  // (more data, a mod's)
@@ -372,6 +374,25 @@ elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (t
                 print "bodies: {id} knocked out keeps {as_wreck}% of its outline (the old fall keeps {as_fallen}%), {WRECK_KEEPS_PCT}% wanted"
                 if as_wreck < WRECK_KEEPS_PCT:
                     print "bodies: {id} does not stay where it stood"
+                    bad++
+            if b.death == "knocked_out" or b.death == "crash":  // (a wreck is scorched, not a black block: still lit, still its own shape, #332)
+                let live = vx_fill(vx_unit_prims(u, 0.0), b.size, vx_on_zero(u, false))
+                let dead = vx_fill(vx_dying(u, vx_unit_prims(u, 0.0), 1.0), b.size, vx_on_zero(u, true))
+                def tones(sh:vx_shape) -> float, float:
+                    var cnt, sum, sq = 0.0, 0.0, 0.0
+                    for(vx_cell(sh, 3)) c:
+                        if c.w > 0.9:
+                            let l = 0.3 * c.x + 0.6 * c.y + 0.1 * c.z
+                            cnt += 1.0
+                            sum += l
+                            sq += l * l
+                    let mean = sum / max(cnt, 1.0)
+                    return mean, sqrt(max(0.0, sq / max(cnt, 1.0) - mean * mean))
+                let live_m, live_s = tones(live)
+                let dead_m, dead_s = tones(dead)
+                print "bodies: {id} wreck brightness {dead_m} (alive {live_m}), contrast {dead_s} (alive {live_s})"
+                if dead_m < live_m * WRECK_LUM_SHARE or dead_s < live_s * WRECK_CONTRAST_SHARE:
+                    print "bodies: {id} is a black block when wrecked (at least {WRECK_LUM_SHARE} of its brightness and {WRECK_CONTRAST_SHARE} of its contrast)"
                     bad++
             if b.track:  // (a vehicle's `skin` is its crew's skin colour: a tank painted in it comes out flesh coloured, #167)
                 let flesh = vx_mat("skin")
