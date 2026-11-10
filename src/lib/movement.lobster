@@ -268,8 +268,6 @@ def move():
     let st = u_stuck
     let wxs = u_wx
     let wys = u_wy
-    let mw = W
-    let mh = H
     for(n) i:
         if mv[i] == 0:
             u_vx[i] = 0
@@ -349,49 +347,13 @@ def move():
                 continue
             wxs[i] = wx
             wys[i] = wy
-        if u_foe[i] == 0:  // (walking, not at a foe: steering for its waypoint like everyone in a block, #351)
-            steer_to(i, x, y, s, mc, wxs[i], wys[i], 0, wxs[i] == u_tx[i] and wys[i] == u_ty[i])
-            if xs[i] == x and ys[i] == y and u_reach[i] == 0:  // (held right by its target: it has arrived; anywhere else the progress checks above decide)
-                let near = u_arrive[i] * ARRIVE_SETTLE
-                if dist2(x, y, u_tx[i], u_ty[i]) <= near * near:
-                    mv[i] = 0
-                    st[i] = 0
-            continue
-        let dx = wxs[i] - x
-        let dy = wys[i] - y
-        let d = isqrt(dx * dx + dy * dy)
-        var nx = x
-        var ny = y
-        if d > 0:
-            nx = x + dx * min(s, d) / d
-            ny = y + dy * min(s, d) / d
-        let wk = walks[mc]
-        let ok_xy = nx >= 0 and ny >= 0 and nx / TILE < mw and ny / TILE < mh and wk[ny / TILE * mw + nx / TILE] == 1
-        let ok_x = nx >= 0 and y >= 0 and nx / TILE < mw and y / TILE < mh and wk[y / TILE * mw + nx / TILE] == 1
-        let ok_y = x >= 0 and ny >= 0 and x / TILE < mw and ny / TILE < mh and wk[ny / TILE * mw + x / TILE] == 1
-        if ok_xy and (nx / TILE == x / TILE or ny / TILE == y / TILE or (ok_x and ok_y)):
-            pass()
-        elif ok_x:
-            ny = y
-        elif ok_y:
-            nx = x
-        else:
-            nx = x
-            ny = y
-        u_vx[i] = nx - x
-        u_vy[i] = ny - y
-        if nx == x and ny == y:
-            st[i]++
-            if st[i] >= STUCK_LIMIT:
+        // Every walker steers for its waypoint, like everyone in a block; one chasing a foe too (#351).
+        steer_to(i, x, y, s, mc, wxs[i], wys[i], 0, wxs[i] == u_tx[i] and wys[i] == u_ty[i])
+        if u_foe[i] == 0 and xs[i] == x and ys[i] == y and u_reach[i] == 0:  // (held right by its target: it has arrived; anywhere else the progress checks above decide)
+            let near = u_arrive[i] * ARRIVE_SETTLE
+            if dist2(x, y, u_tx[i], u_ty[i]) <= near * near:
                 mv[i] = 0
-            else:
-                var wx, wy = plan(i, x, y, st[i])
-                if wx == -3: wx, wy = rect_near(i, x, y)
-                wxs[i] = if wx >= 0: wx else: x
-                wys[i] = if wx >= 0: wy else: y
-            continue
-        xs[i] = nx
-        ys[i] = ny
+                st[i] = 0
 
 // The nearest walkable point for a centre on blocked ground (World._step_out).
 def step_out(x:int, y:int, mc:int) -> int, int:
