@@ -242,3 +242,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-10: The ground made a mixture of grass and soil in many hues, with a forest floor under the woods and scree about stone and gold, and softened (D-243, #392).
 - 2026-11-10: An atmosphere pass over the world: a colour grade, drifting haze, a vignette, bloom and fire light, in moods from data (D-244, #411).
 - 2026-11-10: Human units redesigned in 2D for nine cultures, then the Romans drawn in .vox on a culture body of their own: tunic and caligae, galea, montefortino, leather, mail, segmentata (D-245, #417, #418).
+- 2026-11-10: Walk cycles measured from the legs: every body's planted feet now keep to the ground at its drawn size, mounted or not, and go back at a steady speed (walk_check, #422).
