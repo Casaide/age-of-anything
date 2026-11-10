@@ -48,7 +48,7 @@ class AkFrame:
     ax:int
     ay:int
 
-def ak_stem_in(dir:string, name:string) -> string: return dir + "/d" + sha256_text("{BAKE_VERSION}|prop|{name}").substring(0, 20)
+def ak_stem_in(dir:string, name:string) -> string: return dir + "/d" + sha256_text("{BAKE_VERSION}|prop|{name}|k {ART_K}").substring(0, 20)
 def ak_stem(name:string) -> string: return ak_stem_in(bake_cache_dir, name)
 
 // Frames from the cache (a prop's, a building look's), on sheets of their own: whether they were all there.
