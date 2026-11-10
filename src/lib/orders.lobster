@@ -41,7 +41,7 @@ def slot_ok(i:int, apx:int, apy:int, x:int, y:int) -> int, int:
         if walkable(qx, qy, ln):
             qx, qy = off_walls(qx, qy, u_radius[i], ln)
             if clear_line(cx, cy, qx, qy, ln): return qx, qy
-    return cx, cy
+    return off_walls(cx, cy, u_radius[i], ln)  // (a body's width off the rock, or it can't get there, #347)
 
 // Sorts ints ascending (bottom-up merge sort; the keys are unique, so any sort gives this order).
 def sort_ints(xs:[int]):
@@ -141,7 +141,7 @@ def block_formation(army:int, idx:[int], x:int, y:int, cx:int, cy:int, ux:int, u
     // the march's pace: the middling block's, so the slowest engines fall behind instead of holding everyone up
     let paces = map(chunks) c: block_speed(c)
     sort_ints(paces)
-    let spare = if idx.length < BLOCK_ARMY: 19 else: 16  // (twentieths of their walk: a little under it, so whoever falls behind can catch up; a small group
+    let spare = if idx.length < BLOCK_ARMY: 19 else: 16   // (twentieths of their walk: a little under it, so whoever falls behind can catch up; a small group
     let army_pace = paces[paces.length / 2] * spare / 20  // starts in its places, so it needs less)
     // whoever can't keep it goes at the back, the slowest last: in front, the blocks behind would walk through it (#253)
     def lags(c:[int]) -> bool: return block_speed(c) * spare / 20 < army_pace
@@ -365,7 +365,7 @@ def block_march(b:int):
             let cell = cell_of(x, y)
             if f.dist[cell] < INF:
                 let best = ahead(f, cell, x, y, LOOKAHEAD, 100, ln)
-                if best >= 0:
+                if best >= 0 and best != cell:  // (in its target's own cell already: straight on)
                     let wx, wy = centre(best)
                     fb_wx[b] = wx
                     fb_wy[b] = wy
@@ -593,7 +593,7 @@ def resume_attack_move(i:int):
 // Is unit i marching on that order already (a bot gives the same one again and again: it mustn't stop to form up each time)?
 def block_same_order(i:int, attack:bool, x:int, y:int) -> bool:
     let b = u_block[i] - 1
-    if b < 0 or fb_state[b] == 0 or attack != (u_stance[i] == ATTACK_MOVE): return false
+    if b < 0 or fb_state[b] == 0 or (attack != (u_stance[i] == ATTACK_MOVE) and not (attack and t_harmless[u_kind[i]])): return false  // (the harmless walk an attack-move)
     return dist2(fb_gx[b], fb_gy[b], x, y) <= 25 * TILE * TILE
 
 // Its formation's block, if it has one: its place there. (It walks at its own speed: the centre sets the pace.)

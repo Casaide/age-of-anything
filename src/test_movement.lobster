@@ -251,8 +251,16 @@ def run_settle(name:string, w:MoveWatch, ids:[int], limit:int):
     print "{name}: settled at {if done >= 0: string(done / 20) + " s" else: "never"}; {moved} still moving {SETTLE_SECS} s later"
     check(moved == 0, "{name}: everyone stands still once there ({moved} moving)")
 
+// The other side's start units taken off: a move, not a fight (by an enemy, a group doesn't form up, #347).
+def no_foes():
+    var k = u_x.length
+    while k > 0:
+        k--
+        if u_owner[k] == 1: remove_unit(k)
+
 def flat(races:[JV], rules:JV):
     new_world(SEED, "flat_test", races, rules, [])
+    no_foes()  // (they stand by where the head-on group starts)
 
 // 1. A small group crosses open ground and stops.
 def scene_small(rules:JV, races:[JV]):
@@ -294,10 +302,7 @@ def scene_through(rules:JV, races:[JV]):
 // 5. Cavalry funnel through the pass (choke_test: a 2-tile gap in a rock wall).
 def scene_funnel(rules:JV, races:[JV]):
     new_world(SEED, "choke_test", races, rules, [])
-    var k = u_x.length  // (the other side's start units stand 5 tiles past the gap: a move, not a fight)
-    while k > 0:
-        k--
-        if u_owner[k] == 1: remove_unit(k)
+    no_foes()  // (the other side's start units stand 5 tiles past the gap)
     let a = group(0, "large", 16, 12000, 16000)
     let w = watch_new(a)
     issue_cmd(0, CMD_MOVE, a, 36000, 16000, 0, 0)
