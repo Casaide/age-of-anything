@@ -568,6 +568,14 @@ def separate():
                     let job_j = own and mv[j] == 1 and u_task[j] != T_NONE and mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and not placed_i
                     let hi = idle_i or job_i or (si and own and not sj and u_foe[j] == 0) or s_planted[i] == 1 or (own and s_planted[i] == 2) or (u_block[i] > 0 and t_animal[u_kind[j]] != 0) or (own and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and (placed_j or (mv[j] == 1 and homing(j))))
                     let hj = idle_j or job_j or (sj and own and not si and u_foe[i] == 0) or s_planted[j] == 1 or (own and s_planted[j] == 2) or (u_block[j] > 0 and t_animal[u_kind[i]] != 0) or (own and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and (placed_i or (mv[i] == 1 and homing(i))))
+                    let hit_i = u_foe[j] == ids[i] and u_foe[i] == 0  // (one attacked and not fighting, a sheep for the knife, holds its ground: the one hitting it gives way, #414)
+                    let hit_j = u_foe[i] == ids[j] and u_foe[j] == 0
+                    if (hit_i and not hj) or (hit_j and not hi):
+                        let push = (rr - d) / SEPARATION_DIV + 1
+                        let sg = if hit_i: 1 else: -1
+                        s_pushx[if hit_i: j else: i] += sg * ux * push * 2 / ONE
+                        s_pushy[if hit_i: j else: i] += sg * uy * push * 2 / ONE
+                        continue
                     if hi and hj: continue
                     let stand_i = mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0 and t_animal[u_kind[j]] != 0
                     let stand_j = mv[j] == 0 and u_task[j] == T_NONE and u_foe[j] == 0 and t_worker[u_kind[j]] == 0 and t_animal[u_kind[j]] == 0 and t_animal[u_kind[i]] != 0
