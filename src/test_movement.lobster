@@ -80,6 +80,8 @@ let FACE_OFF = 50.0       // degrees
 let FACE_WINDOW = 10      // ticks over which "where it walks" is taken
 let FACE_WALKED = 300     // milli-tiles it must cover in that window to count as walking
 let OVERLAP_MAX = 0.02    // share of watched units, a sample, standing within half their summed radii of another unit
+let HERD_TICKS = 2400     // two minutes for the herd to get through
+let HERD_PAST = 30000     // milli-tiles: the far side of the gap
 let SETTLE_SECS = 2       // after the last one arrives, nobody still moving this long after
 let SHOVED_MAX = 1500     // milli-tiles a standing group's units may be pushed from where they stood
 let ZIGZAG_MAX = 0.1      // swerves one way then the other within ZIGZAG_TICKS, a unit, a second (a sway as it walks)
@@ -316,6 +318,21 @@ def scene_funnel(rules:JV, races:[JV]):
     issue_cmd(0, CMD_MOVE, a, 36000, 16000, 0, 0)
     run_settle("funnel", w, a, 2400)
 
+// 5b. A crowd of loose units, each on its own way (workers, a herd: no group, no block), through the same gap (#382): nobody
+// held up behind the others gives up short of the far side.
+def scene_herd(rules:JV, races:[JV]):
+    new_world(SEED, "choke_test", races, rules, [])
+    no_foes()
+    let a = group(0, "spear", 30, 12000, 16000)
+    for(a) id, n: order_move(index_of(id), 36000 + (n % 4) * 1000, 14500 + (n / 4) * 1000, u_radius[index_of(id)], 0, -1, -1, 0)
+    let t0 = tick
+    while tick < t0 + HERD_TICKS and any_moving(a): wstep()
+    var short = 0
+    for(a) id:
+        if u_x[index_of(id)] < HERD_PAST: short++
+    print "herd: {short} of {a.length} stopped short of the far side after {(tick - t0) / 20} s"
+    check(short == 0, "herd: every loose unit gets through the gap ({short} short)")
+
 // 6. Two enemy lines ordered at each other meet (#293): most of the front is fighting within the time it takes to walk there.
 def scene_meet(rules:JV, races:[JV]):
     flat(races, rules)
@@ -501,6 +518,7 @@ if on("crossing"): scene_cross(rules, races, false)
 if on("head_on"): scene_cross(rules, races, true)
 if on("through"): scene_through(rules, races)
 if on("funnel"): scene_funnel(rules, races)
+if on("herd"): scene_herd(rules, races)
 if on("meet"): scene_meet(rules, races)
 if on("queue"): scene_queue(rules, races)
 if on("blocks"): scene_blocks(rules, races)
