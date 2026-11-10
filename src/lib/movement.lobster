@@ -225,6 +225,27 @@ def queued(i:int, x:int, y:int) -> bool:
         yy++
     return false
 
+// A herd animal driven somewhere with its flock all round it going too (#398): held up among them, not stuck, it's as
+// patient as a group (on its own it gave up for good in the jostle at a wall's gap, its flock gone on).
+def in_flock(i:int, x:int, y:int) -> bool:
+    if t_behave[u_kind[i]] != B_HERD: return false
+    let cx = x / TILE
+    let cy = y / TILE
+    let reach = u_radius[i] * 3
+    for(3) oy:
+        let ny = cy + oy - 1
+        if ny >= 0 and ny < H:
+            for(3) ox:
+                let nx = cx + ox - 1
+                if nx >= 0 and nx < W:
+                    let c = ny * W + nx
+                    var k = sp_start[c]
+                    while k < sp_end[c]:
+                        let j = sp_items[k]
+                        k++
+                        if j != i and o_moving[j] == 1 and u_owner[j] == u_owner[i] and t_behave[u_kind[j]] == B_HERD and dist2(o_x[j], o_y[j], x, y) <= reach * reach: return true
+    return false
+
 def passed(i:int, x:int, y:int) -> bool:
     if u_arrive[i] != SLOT_ARRIVE or dist2(x, y, u_tx[i], u_ty[i]) > RETURN_YIELD * RETURN_YIELD: return false
     let cx = x / TILE
@@ -315,7 +336,7 @@ def move():
             if u_prog[i] >= 0 and px > u_prog[i] - py and u_reach[i] == 0 and (queued(i, x, y) or (u_group[i] > 0 and passed(i, x, y))):  // (held up behind its own side going its way: not stuck, #382)
                 pass()
             elif u_prog[i] >= 0 and px > u_prog[i] - py:
-                st[i] += STUCK_LIMIT / (if u_group[i] > 0 and u_reach[i] == 0: 6 else: 2)
+                st[i] += STUCK_LIMIT / (if (u_group[i] > 0 or in_flock(i, x, y)) and u_reach[i] == 0: 6 else: 2)
                 if st[i] >= STUCK_LIMIT:
                     let near = u_arrive[i] * ARRIVE_SETTLE + RETURN_SLACK
                     if u_reach[i] != 1 and dist2(x, y, u_tx[i], u_ty[i]) <= near * near: st[i] = 0
