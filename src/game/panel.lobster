@@ -19,11 +19,10 @@ let P_QFIRST = 60.0
 let P_QSLOT = 28.0
 let P_QCOLS = 7
 let P_GROUP_COLS = 4
-let PANEL_GOLD = float4 { 0.95, 0.79, 0.3, 1.0 }    // #f2c94c
-let PANEL_SHORT = float4 { 0.88, 0.44, 0.38, 1.0 }  // #e07060: a cost you can\'t pay
-let HP_GOOD = float4 { 0.36, 0.72, 0.29, 1.0 }      // #5cb84a
-let HP_HURT = float4 { 0.88, 0.66, 0.23, 1.0 }      // #e0a83a
-let HP_LOW = float4 { 0.85, 0.31, 0.24, 1.0 }       // #d8503c
+let PANEL_GOLD = float4 { 0.95, 0.79, 0.3, 1.0 }  // #f2c94c
+let HP_GOOD = float4 { 0.36, 0.72, 0.29, 1.0 }    // #5cb84a
+let HP_HURT = float4 { 0.88, 0.66, 0.23, 1.0 }    // #e0a83a
+let HP_LOW = float4 { 0.85, 0.31, 0.24, 1.0 }     // #d8503c
 let STANCE_NAMES = [ "Aggressive", "Defensive", "Stand ground", "No attack" ]
 let STANCE_ICONS = [ "stance_aggressive", "stance_defensive", "stance_stand", "stance_passive" ]
 let STANCE_TIPS = [ "Go for any foe in sight and keep chasing it.", "Fight foes that come near, chase them a short way, then walk back.",
@@ -548,56 +547,6 @@ def draw_building_icon(k:int, owner:int, at:float2, size:float):
 
 // ---- pieces of the look
 
-// A well (theme.gd's well_box: a thin frame round a dark sunk face), as the top bar's plaques.
-def hud_well(at:float2, size:float2): tb_plaque(at, size)
-
-// A carved groove down the panel (command_panel.gd's Groove): a dark cut with a light lip; a major one runs
-// the height with a bronze diamond at its middle, a minor one starts under the captions and is fainter.
-def groove(x:float, top:float, bottom:float, major:bool):
-    let s = hud_s()
-    let a = if major: 1.0 else: 0.55
-    let y0 = top + (if major: 2.0 else: 22.0) * s
-    let y1 = bottom - 2.0 * s
-    let gx = floor(x + 5.0 * s)
-    ui_fill(float2 { gx, y0 }, float2 { max(1.0, s), y1 - y0 }, float4 { 0.0, 0.0, 0.0, 0.6 * a })
-    ui_fill(float2 { gx + max(1.0, s), y0 }, float2 { max(1.0, s), y1 - y0 }, float4 { 0.54, 0.45, 0.31, 0.5 * a })
-    if major:
-        let m = float2 { gx + 0.5 * s, floor((y0 + y1) * 0.5) }
-        let d = 4.0 * s
-        ui_batch_flush()
-        gl.set_shader("color_attr")
-        let c = float4 { 0.63, 0.53, 0.35, 1.0 }
-        gl.draw_mesh("PC", [ float3 { m.x, m.y - d, 0.0 }, float3 { m.x + d, m.y, 0.0 }, float3 { m.x, m.y + d, 0.0 }, float3 { m.x - d, m.y, 0.0 } ],
-                     [ c, c, c, c ], []::float3, []::float2, []::float2, [ 0, 1, 2, 0, 2, 3 ])
-        gl.set_shader("color")
-
-// A slim bar (theme.gd's bar_back and bar_fill): a dark sunk track, the fill raised.
-def hud_bar(at:float2, size:float2, frac:float, col:float4):
-    ui_fill(at, size, float4 { 0.0, 0.0, 0.0, 0.6 })
-    ui_outline(at, size, 1.0, float4 { 0.0, 0.0, 0.0, 0.7 })
-    let w = size.x * clamp(frac, 0.0, 1.0)
-    if w > 0.0:
-        ui_fill(at, float2 { w, size.y }, col)
-        ui_fill(at, float2 { w, max(1.0, size.y * 0.3) }, float4 { 1.0, 1.0, 1.0, 0.3 })
-        ui_fill(at + float2 { 0.0, size.y - max(1.0, size.y * 0.25) }, float2 { w, max(1.0, size.y * 0.25) }, float4 { 0.0, 0.0, 0.0, 0.3 })
-
-// Text with a dark edge (queued).
-def edged_text(at:float2, s:string, size:int, col:float4, font:int): tb_text_edged(at, s, size, col, font)
-
-// Lines of text no wider than w (word wrap, by the text's estimated width).
-def wrap(s:string, size:int, font:int, w:float) -> [string]:
-    let out = []::string
-    for(tokenize(s, "\n", "")) para:
-        var line = ""
-        for(tokenize(para, " ", "")) word:
-            let next = if line == "": word else: line + " " + word
-            if line != "" and tb_text_w(next, size, font) > w:
-                out.push(line)
-                line = word
-            else: line = next
-        out.push(line)
-    return out
-
 // The card's first lines (unit_card.gd short): attack, damage, range and hp; armour and speed.
 def card_lines(k:int) -> [string]:
     let e = su_units[k]
@@ -888,25 +837,6 @@ def draw_panel():
     tb_flush()
     ui_flush()
 
-// The cost along a button's foot: each part a number and the resource's icon, shrunk to fit; red when short.
-def cost_row(c:[int], at:float2, w:float):
-    let s = hud_s()
-    let parts = filter(c.length) n: c[n] > 0
-    if not parts.length: return
-    var fs = 13.0 * s
-    def row_w(f:float) -> float:
-        var t = 0.0
-        for(parts) n: t += tb_text_w(string(c[n]), int(f), 1) + f * 1.15 + 2.0 * s
-        return t
-    while row_w(fs) > w - 6.0 * s and fs > 7.0 * s: fs -= 1.0
-    var x = at.x + (w - row_w(fs)) / 2.0
-    for(parts) n:
-        let txt = string(c[n])
-        let tw = tb_text_w(txt, int(fs), 1)
-        edged_text(float2 { x, at.y }, txt, int(fs), if stock[n][ME] < c[n]: PANEL_SHORT else: float4_1, 1)
-        tb_icon("res_" + resource_names[n], float2 { x + tw + 1.0 * s, at.y + 1.0 * s }, fs * 1.15, 1.0)
-        x += tw + fs * 1.15 + 2.0 * s
-
 // ---- the pad's wheel (D-133; also touch's): the panel's own buttons, bigger, in a ring round the screen's middle
 // (a page a group when there are many), over the battle dimmed; the one pointed at lifted, its card beside the ring.
 let WHEEL_BIG = 1.35
@@ -1064,61 +994,3 @@ def build_button():
             selected = [ u_id[best] ]
             sel_building = 0
         wheel_open()
-
-// A tooltip card (theme.gd's tip_card): the name in bold, the cost (each part a number and its icon, red when
-// short), then the tip's lines, wrapped. A line can start with a mark: "!" red (what stops it), "+" green (what it
-// gives), "~" dim (an aside). A disabled button's plain tip, with no marks at all, shows red. Drawn after everything
-// queued under it, so the panel's own words don't show through (Dominic, 2026-11-04).
-let TIP_GOOD = float4 { 0.56, 0.82, 0.45, 1.0 }
-let TIP_TEXT = float4 { 0.94, 0.89, 0.78, 1.0 }
-
-def tip_line_marked(l:string) -> bool:
-    if l == "": return false
-    let mark = l.substring(0, 1)
-    return mark == "!" or mark == "+" or mark == "~"
-
-def tip_card(m:float2, name:string, costv:[int], tip:string, ok:bool):
-    tb_flush()
-    ui_flush()
-    let s = hud_s()
-    let fs = int(14.0 * s)
-    let lh = 19.0 * s
-    let maxw = 360.0 * s
-    let rows = []::string
-    let cols = []::float4
-    let tiplines = tokenize(tip, "\n", "")
-    let has_marks = exists(tiplines): tip_line_marked(_)
-    for(tiplines) raw:
-        if raw == "": continue
-        let mark = raw.substring(0, 1)
-        let col = if mark == "!": PANEL_SHORT elif mark == "+": TIP_GOOD elif mark == "~": ui_look.dim elif not ok and not has_marks: PANEL_SHORT else: TIP_TEXT
-        let body = if tip_line_marked(raw): raw.substring(1, raw.length - 1) else: raw
-        for(wrap(body, fs, 0, maxw)) l:
-            rows.push(l)
-            cols.push(col)
-    let parts = filter(costv.length) r: costv[r] > 0
-    let ifs = 14.0 * s
-    var cost_w = 0.0
-    for(parts) r: cost_w += tb_text_w(string(costv[r]), int(ifs), 1) + ifs * 1.2 + 10.0 * s
-    var w = tb_text_w(name, int(16.0 * s), 1)
-    w = max(w, cost_w)
-    for(rows) l: w = max(w, tb_text_w(l, fs, 0))
-    w += 28.0 * s
-    let cost_h = if parts.length: lh + 2.0 * s else: 0.0
-    let h = 16.0 * s + 22.0 * s + cost_h + float(rows.length) * lh + 8.0 * s
-    let at = float2 { clamp(m.x - w * 0.3, 4.0, float(gl.window_size().x) - w - 4.0), max(4.0, m.y - h - 14.0 * s) }
-    hud_box(at, float2 { w, h }, 3.0, ui_look.face * float4 { 1.08, 1.08, 1.08, 1.0 }, false, 4.0)
-    tb_text(at + float2 { 14.0 * s, 9.0 * s }, name, int(16.0 * s), ui_look.title, 1)
-    var y = at.y + 9.0 * s + 22.0 * s
-    if parts.length:
-        var x = at.x + 14.0 * s
-        for(parts) r:
-            let txt = string(costv[r])
-            let tw = tb_text_w(txt, int(ifs), 1)
-            edged_text(float2 { x, y }, txt, int(ifs), if stock[r][ME] < costv[r]: PANEL_SHORT else: float4_1, 1)
-            tb_icon("res_" + resource_names[r], float2 { x + tw + 2.0 * s, y + 1.0 * s }, ifs * 1.15, 1.0)
-            x += tw + ifs * 1.2 + 10.0 * s
-        y += cost_h
-    for(rows) l, n: tb_text(float2 { at.x + 14.0 * s, y + float(n) * lh }, l, fs, cols[n], 0)
-    tb_flush()
-    ui_flush()
