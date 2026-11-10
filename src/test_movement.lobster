@@ -370,6 +370,7 @@ def scene_rally(rules:JV, races:[JV]):
     check(not any_moving(ids), "rally point: they all stand in the end")
     check(worst <= RALLY_SHOVE, "rally point: nobody standing is pushed about by those arriving ({worst})")
     check(ov <= OVERLAP_MAX, "rally point: they stand beside each other, not inside ({fixed_str(ov, 3)})")
+
 // 4c. Spearmen sent at a building past their own archers, who stand shooting it in their way (#391): they get round them.
 def scene_past_archers(rules:JV, races:[JV]):
     flat(races, rules)
