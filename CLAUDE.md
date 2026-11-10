@@ -59,6 +59,21 @@ and tracking `fork/master` (Dominic, 2026-11-06, #256; the old `game` branch is 
 - A PR upstream only for what's committed on the fork's `master` and tested with our game (Dominic, 2026-11-04): no loose files, nothing that
   has only been tried on its own. Each PR is then made on its own branch from upstream master, one change only.
 
+## Creel, the engine, is its own repo (Dominic, 2026-11-10, #428, D-248)
+
+The engine is `Casaide/creel` (public, Apache 2.0), here as the git submodule `creel/`, pinned to a commit. After a clone:
+`git submodule update --init`. Its `src/` has the same folder names as ours (`lib`, `gen`, `view`, `model`, `game`, `net`, `audio`,
+`testkit`), and every program in our `src/` starts with `import from "../creel/src"`, which puts it on Lobster's search path:
+`import lib.world`, `read_file("lib/world.lobster")` and `scan_folder("lib")` all find Creel's files. A new program needs that line too.
+
+- **Which repo a file is in:** a module that compiles without the game is Creel's (`creel/check.sh` proves it); what names our content
+  or `game.lobster`'s state is ours. Never keep a file at the same path in both: ours would hide Creel's.
+- **An engine change** is made in `creel/` on a branch there, with its issue and PR in `Casaide/creel`, tested here by the batch
+  before it's pushed. The game's PR then moves the submodule to the merged commit (`git add creel`), stacked on nothing: Creel's PR
+  merges first. Never point the submodule at a commit that isn't on Creel's `main`.
+- **Creel is public.** Nothing of the game's content, no private notes, and the Originality rules below apply to it in full.
+- `creel/docs/roadmap.md` has what's still to move (the window and match loop in `game.lobster` first) and the lighting to-do.
+
 ## Status
 
 - **The game is Lobster (2026-10-28, D-184).** The Godot game was ported whole (sim, bots, generator, models, bakers,
@@ -111,7 +126,8 @@ data/            the data contract; mods are just more of this
   maps/*.json      maps: ASCII rows + legend into terrain.json, start tiles
   voxel/           the voxel units: bodies, gear, holds, materials, the part-to-gear rules (a mod adds its own);
                    bodies/siege.*.json written by src/voxel_engines_gen.lobster; buildings/ an experiment (not loaded)
-src/             the game, in Lobster; run everything from here (paths are ../data, ../assets)
+creel/           the engine (a git submodule, Casaide/creel): the sim and bots, packs, the voxel builder, drawing, net, the synth
+src/             the game, in Lobster, on Creel (the lib/, view/, net/ named below are in creel/src/, as are parts of gen/, model/, game/); run everything from here (paths are ../data, ../assets)
   game.lobster     the game: the window, the match, the view, input; game/ its pieces (lobby: title, battle setup,
                    Race Lab, saves, network, the loader; panel, topbar, tech tree, pad, town life, fx, ground, art kit)
   lib/             the simulation: integers only, a fixed 20 Hz tick, driven only by commands (no randomness but its

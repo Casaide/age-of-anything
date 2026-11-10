@@ -6,6 +6,7 @@
 //   slide    from one baked step to the next, a planted foot moves against the ground by at most SLIDE_OFF of the
 //            ground covered in a step (a foot that speeds up and slows down skates, even at the right cycle)
 //   lobster walk_check.lobster -- [report]   (report: the numbers only, no failing)
+import from "../creel/src"
 import std
 import vec
 import dictionary

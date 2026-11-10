@@ -11,6 +11,7 @@
 // age-up barred by a missing building. Tech.bpct's building percents are read where the sim keeps them
 // (bm_research_time, bm_age_time, a farm's food in bm_food). SPAWN (a debug command the Lobster sim
 // doesn't have) is the same jittered placing done by the test at the tick the command would run.
+import from "../creel/src"
 import std
 import dictionary
 import gen.json

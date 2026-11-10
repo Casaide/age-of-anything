@@ -2,6 +2,7 @@
 // units wear its parts. Exit 1 on a refusal. (Its parts' looks are the voxel kit's, by data/voxel/'s rules; its
 // prices: calibrate.lobster mod <id>.)
 //   ./mod_check.sh <mod id>
+import from "../creel/src"
 import game.deps
 
 let args = command_line_arguments()

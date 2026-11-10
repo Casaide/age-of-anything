@@ -1,5 +1,6 @@
 // Each culture crest's colours, a line per crest: <ornament> <light> <metal> <dark>. The look's metal, lightened 0.55
 // and darkened 0.6. icons.sh casts them into the crests (assets/art/ui/crest_<ornament>.svg).
+import from "../creel/src"
 import std
 import dictionary
 import gen.json

@@ -20,8 +20,11 @@ echo "== The code, with its paths for the APK (../data -> data: the APK's assets
 stage="$out/stage"
 rm -rf "$stage"
 mkdir -p "$stage"
+[ -f "$root/creel/src/lib/world.lobster" ] || { echo "creel/ is empty: git submodule update --init"; exit 1; }
+rsync -a "$root/creel/src/" "$stage/"   # (the engine's modules, with the game's files over them: one folder to compile)
 rsync -a --exclude 'bake_cache' --exclude 'baked' --exclude 'deck' --exclude 'android' --exclude 'golden' --exclude 'model/mods/*' \
 	--exclude '*.sav' --exclude 'memory_leaks.txt' --exclude 'saves' --exclude 'races' "$here/" "$stage/"
+find "$stage" -maxdepth 1 -name '*.lobster' -exec sed -i '' '/^import from "\.\.\/creel\/src"$/d' {} +
 find "$stage" -name '*.lobster' -exec sed -E -i '' 's#"\.\./(data|assets|mods|mods_private|docs)#"\1#g' {} +
 
 generated="$LOBSTER_SRC/dev/compiled_lobster/src/compiled_lobster.cpp"
@@ -112,7 +115,7 @@ sed 's/^int main(int argc, char \*argv\[\]) {/extern "C" __attribute__((visibili
 	"$generated" > "$out/dev/compiled_lobster/src/compiled_lobster.cpp"
 grep -q 'int SDL_main(' "$out/dev/compiled_lobster/src/compiled_lobster.cpp"
 rm "$generated"   # (Lobster's tree left as it was)
-sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' "$here/view/bake_cache.lobster" > "$assets/bake_version"
+sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' "$here/../creel/src/view/bake_cache.lobster" > "$assets/bake_version"
 
 echo "== The buildings and props, baked once on this machine (src/prebake.sh) and shipped: nothing of them bakes on a phone"
 "$here/prebake.sh"

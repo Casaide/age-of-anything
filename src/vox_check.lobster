@@ -2,6 +2,7 @@
 // A model, a palette, MATL materials, the scene graph (named objects on named layers, moved and turned),
 // files with no scene graph, and broken files (an error, never a crash).
 //   lobster vox_check.lobster
+import from "../creel/src"
 import std
 import vec
 import view.vox
