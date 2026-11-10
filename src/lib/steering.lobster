@@ -50,6 +50,7 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
     let ri = u_radius[i]
     let me = u_owner[i]
     let air = t_air[u_kind[i]]
+    let ln = lane(i)
     let cx = clamp(x / TILE, 0, W - 1)
     let cy = clamp(y / TILE, 0, H - 1)
     for(3) oy:
@@ -95,7 +96,8 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
                         var sy = uy
                         if h > 0:
                             let side = (ux * -hy + uy * hx) / h  // (its offset across its own heading)
-                            let sgn = if abs(side) < ONE / 4 and lean_sgn != 0: lean_sgn elif side > 0: 1 elif side < 0: -1 elif u_id[i] < u_id[j]: 1 else: -1
+                            var sgn = if abs(side) < ONE / 4 and lean_sgn != 0: lean_sgn elif side > 0: 1 elif side < 0: -1 elif u_id[i] < u_id[j]: 1 else: -1
+                            if not walkable(x - hy * rr * sgn / h, y + hx * rr * sgn / h, ln): sgn = -sgn  // (not into a wall or the water: the other side)
                             sx = -hy * ONE / h * sgn
                             sy = hx * ONE / h * sgn
                             if (ux * hx + uy * hy) / h < 0 or same:  // (already past it, or its own block: off to the side and away)
@@ -202,10 +204,12 @@ def steer_group(i:int, x:int, y:int, s:int, mc:int):
         let was = u_prog[i]
         u_prog[i] = dd
         if was < 0: return
-        if fb_state[b] == BLOCK_THERE and dd <= 2 * TILE and dd > was - s * PROGRESS_EVERY / 8:
-            u_moving[i] = 0  // (its place in a crowd, or against a wall: it stops as near as it gets)
+        let poor = dd > was - s * PROGRESS_EVERY / 8  // (hardly nearer)
+        let clear = clear_path(x, y, px, py, u_radius[i], mc)
+        if u_stuck[i] < 6 and poor and not clear:
+            u_stuck[i] = 6  // (ground in the way, not a crowd: by the flow field)
+        elif fb_state[b] == BLOCK_THERE and dd <= 2 * TILE and poor:
+            u_moving[i] = 0  // (its place in a crowd: it stops as near as it gets)
             u_stuck[i] = 0
-        elif u_stuck[i] < 6 and dd > was - s * PROGRESS_EVERY / 8 and not clear_path(x, y, px, py, u_radius[i], mc):  // (ground in the way, not a crowd: hardly nearer)
-            u_stuck[i] = 6
-        elif u_stuck[i] >= 6 and clear_path(x, y, px, py, u_radius[i], mc):
+        elif u_stuck[i] >= 6 and clear:
             u_stuck[i] = 0
