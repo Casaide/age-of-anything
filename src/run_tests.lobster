@@ -81,6 +81,7 @@ import game.cursor_images
 import gl
 import game.window_mode
 import game.topbar_fit
+import game.text_field
 import game.fog_look
 import color
 import texture
@@ -1108,11 +1109,38 @@ def g_atmosphere():
     expect(not atmo_problems(modded).length and atmo_mood_for(modded, "flat_test", "") == "red_dusk", "atmosphere: a mod\'s mood merges over the game\'s and becomes the default ({atmo_problems(modded)})")
     atmo_set(j, "off")
 
+// ------------------------------------------------------------------ typing into a box (#431)
+
+def g_text_field():
+    expect(tf_drop_last("romans") == "roman", "text field: backspace takes the last letter off ({tf_drop_last("romans")})")
+    expect(tf_drop_last("") == "", "text field: backspace on an empty box leaves it empty")
+    expect(tf_drop_last("a") == "", "text field: backspace takes the only letter")
+    expect(tf_drop_last("caf\xc3\xa9") == "caf", "text field: backspace takes a whole two-byte letter ({tf_drop_last("caf\xc3\xa9").length} bytes left)")
+    expect(tf_drop_last("x\xe2\x82\xac") == "x", "text field: and a whole three-byte one")
+    var s = "sewer rats"
+    for(4): s = tf_drop_last(s)
+    expect(s == "sewer ", "text field: four backspaces take four letters ({s})")
+    // a held backspace: once on the press, nothing more until the delay, then repeating
+    expect(tf_repeats(-1.0, 0.016) == 1, "text field: a key fires once when pressed ({tf_repeats(-1.0, 0.016)})")
+    expect(tf_repeats(0.016, 0.032) == 0, "text field: a held key doesn\'t fire every frame")
+    var fired = 0
+    var held = -1.0
+    for(60):  // a second at 60 fps
+        let now = max(0.0, held) + 1.0 / 60.0
+        fired += tf_repeats(held, now)
+        held = now
+    expect(fired >= 12 and fired <= 16, "text field: a second\'s hold takes about a dozen letters ({fired})")
+    // the caret: lit straight after a click or a key, then blinking
+    expect(tf_caret_on(0.0) and tf_caret_on(0.3), "text field: the caret is lit right after a click")
+    var lit = 0
+    for(40) k: if tf_caret_on(1.0 + float(k) * 0.05): lit++
+    expect(lit > 10 and lit < 30, "text field: then it blinks ({lit} of 40 lit)")
+
 def map_ids_on_disk() -> [string]:
     let names = scan_folder("../data/maps", false)
     return if names: map(filter(names) n: ends_with(n, ".json")) n: substring(n, 0, n.length - 5) else: []
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look", "topbar", "atmosphere" ]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look", "topbar", "atmosphere", "text_field" ]
 
 def run_group(name:string):
     switch name:
@@ -1136,6 +1164,7 @@ def run_group(name:string):
         case "fog_look": g_fog_look()
         case "topbar": g_topbar()
         case "atmosphere": g_atmosphere()
+        case "text_field": g_text_field()
         default: assert false
 
 var shard = 0
