@@ -9,6 +9,7 @@ let vx_ELEV = 30.0                                                      // the c
 var vx_RES = 2.0                                                        // voxels a body unit (a body unit is about a world pixel; a voxel a baked pixel)
 var vx_CELL = int2 { int(100.0 * vx_RES), int(170.0 * vx_RES) }         // a sprite cell (room for a siege tower; each is cropped to what's drawn)
 var vx_ANCHOR = int2 { vx_CELL.x / 2, vx_CELL.y - int(40.0 * vx_RES) }  // the ground under the unit, in its cell (room in front: a cart's puller, a trunk)
+let vx_VOX_RES = 2.0                                                    // a .vox model's voxels a body unit (the base's: a model is one size on every screen, #358)
 let vx_BLEND = 0.8                                                      // how far body parts melt into each other, body units (round 1's 2.2 made muscles)
 
 class vx_prim:
@@ -353,7 +354,7 @@ def vx_parse_shape(o:JV, hard_by_default:bool) -> vx_spec:
         s.model = vx_model_of(as_str(at(o, "model")), gobj(o, "mats"))
         s.pa, s.a = vx_pt(at(o, "at"))
         if has(o, "to"): s.pb, s.b = vx_pt(at(o, "to"))
-        s.ra = gfloat(o, "scale", 1.0) / vx_RES
+        s.ra = gfloat(o, "scale", 1.0) / vx_VOX_RES
         s.hard = gbool(o, "hard", not gbool(o, "soft", false))
     else: assert false
     return s
@@ -727,7 +728,7 @@ def vx_vox_body(b:vx_body_spec, file:string, mats:JV):
     for(2) pass:
         for(f.nodes) nd:
             if nd.layer == "points":
-                let at = (float(vox_world(f, nd, 0)) + float3_1 * 0.5) / vx_RES
+                let at = (float(vox_world(f, nd, 0)) + float3_1 * 0.5) / vx_VOX_RES
                 let k = find(b.pnames) n: n == nd.name
                 let special = nd.name == "hip.r" or nd.name == "foot.r" or nd.name == "shoulder.r" or nd.name == "helm"
                 if pass == 0 and not special:
@@ -748,8 +749,8 @@ def vx_vox_body(b:vx_body_spec, file:string, mats:JV):
             let md = f.models[nd.model]
             let half = float(md.size - int3_1) * 0.5 - float(md.size / 2)
             let ax, ay, az = vx_vox_axis(nd.r, 0), vx_vox_axis(nd.r, 1), vx_vox_axis(nd.r, 2)
-            let centre = (ax * half.x + ay * half.y + az * half.z + float(nd.t) + float3_1 * 0.5) / vx_RES
-            let s = vx_spec { vx_k_model, true, false, "", float3_0, "", float3_0, 1.0 / vx_RES, 0.0, 0, 0, float3_0, float3_0, [], [], 0.0, 0.0,
+            let centre = (ax * half.x + ay * half.y + az * half.z + float(nd.t) + float3_1 * 0.5) / vx_VOX_RES
+            let s = vx_spec { vx_k_model, true, false, "", float3_0, "", float3_0, 1.0 / vx_VOX_RES, 0.0, 0, 0, float3_0, float3_0, [], [], 0.0, 0.0,
                               [], [], model: vx_model_in(f, file, nd.model, mats), ax: ax, ay: ay, az: az }
             let dot_at = find(nd.name) c: c == '.'
             let bone = find(vx_VOX_BONES) n: dot_at > 0 and n == substring(nd.name, 0, dot_at)
