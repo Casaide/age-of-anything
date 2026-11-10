@@ -59,6 +59,7 @@ import view.facing
 import view.shot_look
 import view.node
 import view.art
+import view.png
 import view.bake_cache
 import game.audio
 import game.pack
