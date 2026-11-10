@@ -228,7 +228,6 @@ class UiText:
 
 var ui_texts = []::UiText
 let UI_FONTS = [ "data/fonts/Droid_Sans/DroidSans.ttf", "data/fonts/Droid_Sans/DroidSans-Bold.ttf", "../assets/fonts/display.ttf", "data/fonts/Droid_Sans/DroidSans-Bold.ttf" ]
-def ui_caps_gap(size:int) -> float: return float(size) * 0.14  // a caption's room between letters (Godot's 2 px at 14)
 
 // A caption's letters' x from its start, measured once by size and words (each measure switches the font: per frame
 // it cost more than all the other text, perf:).
