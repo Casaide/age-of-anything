@@ -156,8 +156,8 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
                     // Its own side: round them, to the side it's already on, more than away (a standing one hardest; its own
                     // block only once they press into each other, as their places keep them apart).
                     let same = u_block[j] == u_block[i]
-                    let army = not same and u_block[j] > 0 and u_group[j] == u_group[i]  // (its army's other blocks: slipped through to its place)
-                    let close = if same or army: rr * 3 / 4 elif u_moving[j] == 0: rr else: look  // (one standing: right up to it, so it eases aside)
+                    let army = not same and u_block[j] > 0 and u_group[j] == u_group[i]                                                             // (its army's other blocks: slipped through to its place)
+                    let close = if same or army or (u_stuck[i] >= 6 and u_group[j] != u_group[i]): rr * 3 / 4 elif u_moving[j] == 0: rr else: look  // (one standing: right up to it, so it eases aside)
                     if d < close:
                         let w = if same: 3 elif u_moving[j] == 0 and not army: 2 else: 1
                         var sx = ux
@@ -279,7 +279,7 @@ def steer_group(i:int, x:int, y:int, s:int, mc:int):
             if fb_state[b] == BLOCK_THERE: u_fkey[i] = cell_field(cell_of(u_tx[i], u_ty[i]), false, mc)
         elif poor and swap_place(i, x, y):
             u_prog[i] = -1  // (a groupmate stood between it and its place: they swapped)
-        elif fb_state[b] == BLOCK_THERE and dd <= 2 * TILE and poor:
+        elif fb_state[b] == BLOCK_THERE and dd <= u_arrive[i] * ARRIVE_SETTLE + TILE and poor and not place_free(i):
             u_moving[i] = 0  // (its place in a crowd: it stops as near as it gets)
             u_stuck[i] = 0
         elif u_stuck[i] >= 6 and clear:

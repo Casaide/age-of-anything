@@ -149,7 +149,7 @@ lobster test_sim.lobster -- [part:a,b] [shard:i/n]                 # the sim: de
 lobster test_ai.lobster -- [map] [quick|piece:<name>|levels] [shard:i/n]   # the AI: scenario checks and whole bot matches
 lobster test_2v2.lobster                                           # four bots, a 2v2 match
 lobster test_formations.lobster                                    # big armies in formation, headless: drift, jitter, facing, overlap, the framed map
-lobster test_movement.lobster -- [scene ...]                       # group moves, headless: sway, reversals, facing, overlap, settling (#345; the scenes made green so far are in the batch)
+lobster test_movement.lobster -- [scene ...]                       # group moves, headless: sway, reversals, facing, overlap, settling (#345; in the batch)
 lobster test_heroes.lobster; lobster test_race_identity.lobster
 lobster voxel_check.lobster -- [report]                            # the voxel units' art: knees, skins, kit, look-alikes, specks; must pass before a unit change is shown
 lobster voxel_proto.lobster -- <out.ppm> [creatures|legs <body> [gear,..]|skins|deaths|animals|engines|check]   # sheets of voxel units; check: feet on their shadow
