@@ -623,9 +623,12 @@ def fe_turf(at:float2, size:float2, k:float, side:int):
     let o = float2 { float(side) * 200.0 - 300.0, 1400.0 }  // (world px: well inside the 128 x 128 map it says)
     gl.set_shader("terrain")
     gl.set_uniform("map_size", float2 { 128.0, 128.0 })
-    gl.set_uniform("art_px", max(1.0, k))
+    gl.set_uniform("art_px", k / ART_K)  // (screen px an art px, as the match passes it)
+    gl.set_uniform("dev_px", k)
     gl.set_uniform("time", 0.0)
     for(4) u: gl.set_primitive_texture(u, tex)
+    gl.set_primitive_texture(4, ground_atlas())
+    gl.set_primitive_texture(5, tex)
     gl.translate(at):
         gl.scale(k):
             gl.translate(-o):
