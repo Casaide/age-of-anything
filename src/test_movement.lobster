@@ -87,6 +87,7 @@ let HERD_PAST = 30000     // milli-tiles: the far side of the gap
 let SETTLE_SECS = 2       // after the last one arrives, nobody still moving this long after
 let RALLY_SHOVE = 300     // milli-tiles a unit standing at a rally point may be pushed about, all told, as more arrive
 let WORKED_SHOVE = 600    // milli-tiles a soldier standing on the workers' way may end up from where it stood: a body's width, stepping aside for one held up by it
+let IDLE_TICKS = 600      // 30 s an idle crowd is watched once settled
 let SHOVED_MAX = 1500     // milli-tiles a standing group's units may be pushed from where they stood
 let ZIGZAG_MAX = 0.1      // swerves one way then the other within ZIGZAG_TICKS, a unit, a second (a sway as it walks)
 let ZIGZAG_TICKS = 20
@@ -610,6 +611,83 @@ def scene_one_spot(rules:JV, races:[JV]):
     for(ids) id, n: issue_cmd(0, if n == 1: CMD_MOVE else: CMD_ATTACK_MOVE, [ id ], (bx - 1) * TILE + 500, 10500, 0, 0)
     run_settle("one spot", w, ids, 600)
 
+// 4e. A packed crowd of big-bodied centaurs with their spearmen, sent in by several orders to one spot, then left idle (#420): once
+// they've settled nobody shifts at all, not a few pixels back and forth for ever. On open ground, and pressed up against a gold
+// mine and a lake shore.
+// Where on map_id: (tx, ty) the spot they're sent to, (sx, sy) round where they start; by the nearest gold mine to the start on a map with mines.
+def gold_by_start(p:int) -> int, int:
+    var best = -1
+    var best_d2 = 1 << 62
+    for(resource_cells) c:
+        let r = tr_res[terrain[c]]
+        if r > 0 and resource_names[r - 1] == "gold":
+            let cx, cy = centre(c)
+            let d2 = dist2(start_x[p], start_y[p], cx, cy)
+            if d2 < best_d2:
+                best_d2 = d2
+                best = c
+    return centre(best)
+
+def idle_crowd(name:string, map_id:string, races:[JV], rules:JV, where:[int]):
+    new_world(SEED, map_id, races, rules, [])
+    var k = u_x.length
+    while k > 0:
+        k--
+        if u_owner[k] == 0 or (u_owner[k] == 1 and t_worker[u_kind[k]] == 0): remove_unit(k)
+    let p = 1  // (the centaurs)
+    var tx = where[0]
+    var ty = where[1]
+    var sx = where[2]
+    var sy = where[3]
+    if where[0] < 0:
+        tx, ty = gold_by_start(p)
+        sx = (tx + start_x[p]) / 2
+        sy = (ty + start_y[p]) / 2
+    let spears = group(p, "spear", 10, sx - 6000, sy - 3000)
+    let heavies = group(p, "large", 6, sx - 6000, sy + 3000)
+    let more = group(p, "spear", 8, sx + 6000, sy)
+    let ids = spears.append(heavies).append(more)
+    issue_cmd(p, CMD_MOVE, spears.append(heavies), tx, ty, 0, 0)
+    issue_cmd(p, CMD_MOVE, more, tx, ty, 0, 0)
+    let loose = []::int
+    for(4) n:  // (and a few sent on their own, one after another)
+        let kk = kind_of(p, if n % 2 == 0: "large" else: "spear")
+        let id = u_id[add_unit(p, kk, sx - 3000 + n * 1500, sy + 6000)]
+        loose.push(id)
+        issue_cmd(p, CMD_MOVE, [ id ], tx, ty, 0, 0)
+        for(40): wstep()
+    let all = ids.append(loose)
+    let t0 = tick
+    while tick < t0 + 2400 and any_moving(all): wstep()
+    for(SETTLE_SECS * 20): wstep()
+    let moved = map(all): 0
+    let woke = map(all): 0
+    for(IDLE_TICKS):
+        let ox = map(all) id: u_x[index_of(id)]
+        let oy = map(all) id: u_y[index_of(id)]
+        let om = map(all) id: u_moving[index_of(id)]
+        wstep()
+        for(all) id, a:
+            let i = index_of(id)
+            moved[a] += isqrt(dist2(ox[a], oy[a], u_x[i], u_y[i]))
+            if om[a] == 0 and u_moving[i] == 1: woke[a]++
+    var shifted = 0
+    for(moved) m: if m > 0: shifted++
+    let total = fold(moved, 0) m, v: m + v
+    let worst = fold(moved, 0) m, v: max(m, v)
+    let woken = fold(woke, 0) m, v: m + v
+    for(all) id, a:
+        let i = index_of(id)
+        if moved[a] > 0: print "  u{id} {t_slot[u_kind[i]]} at {u_x[i]},{u_y[i]} t {u_tx[i]},{u_ty[i]} mv{u_moving[i]} grp{u_group[i]} blk{u_block[i]} st{u_stuck[i]} moved {moved[a]} woke {woke[a]}"
+    print "{name}: settled after {(tick - t0 - IDLE_TICKS) / 20} s; then in {IDLE_TICKS / 20} s {shifted} of {all.length} shifted, {total} milli-tiles in all, {worst} at worst, {woken} times one set off again; overlap {fixed_str(overlap_of(all), 3)}"
+    check(not any_moving(all), "{name}: they all stand in the end")
+    check(shifted == 0, "{name}: nobody settled shifts about ({shifted} did, {total} milli-tiles)")
+
+def scene_idle_crowd(rules:JV, races:[JV]):
+    idle_crowd("idle crowd", "flat_test", races, rules, [ 42000, 41000, 32000, 47000 ])
+    idle_crowd("idle crowd by the shore", "flat_test", races, rules, [ 33500, 37500, 33000, 46000 ])
+    idle_crowd("idle crowd by a gold mine", "reed_meadow", races, rules, [ -1, -1, -1, -1 ])
+
 // 4d. Workers carrying wood home walk by soldiers standing about in town (#395): they go round them, and nobody standing
 // is pushed along their way (armies parked in town got smeared along the workers' paths).
 def scene_workers_by(rules:JV, races:[JV]):
@@ -670,6 +748,7 @@ if on("town"): scene_town(rules, races)
 if on("rally"): scene_rally(rules, races)
 if on("workers_by"): scene_workers_by(rules, races)
 if on("one_spot"): scene_one_spot(rules, races)
+if on("idle_crowd"): scene_idle_crowd(rules, races)
 if on("past_archers"): scene_past_archers(rules, races)
 if on("funnel"): scene_funnel(rules, races)
 if on("herd"): scene_herd(rules, races)
