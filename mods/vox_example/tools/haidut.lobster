@@ -83,7 +83,7 @@ pieces.push(head)
 let torso = piece { "chest", 0 }
 fill(torso, int3 { -11, -6, 44 }, int3 { 11, 6, 62 }) c:
     let body = in_taper(c, 44.0, 57.0, float2 { 0.0, 0.0 }, float2 { 0.0, -0.3 }, float2 { 7.0, 4.4 }, float2 { 9.4, 5.0 }) or
-               in_taper(c, 57.0, 61.5, float2 { 0.0, -0.3 }, float2 { 0.0, -0.6 }, float2 { 9.4, 5.0 }, float2 { 7.0, 3.8 })
+        in_taper(c, 57.0, 61.5, float2 { 0.0, -0.3 }, float2 { 0.0, -0.6 }, float2 { 9.4, 5.0 }, float2 { 7.0, 3.8 })
     if not body: 0
     elif c.z < 48.0: SASH
     elif c.y > 2.0 and abs(c.x) < 2.6 + (c.z - 48.0) * 0.12: LINEN  // the shirt, in the coat's opening
@@ -177,7 +177,7 @@ for(256) i:
     let c = if i < COLOURS.length: COLOURS[i] else: 0
     rgba += u8s([ (c >> 16) & 255, (c >> 8) & 255, c & 255, 255 ])
 let layers = chunk("LAYR", le32(0) + vdict([ "_name", "body" ]) + le32(-1)) +
-             chunk("LAYR", le32(1) + vdict([ "_name", "points", "_hidden", "1" ]) + le32(-1))
+    chunk("LAYR", le32(1) + vdict([ "_name", "points", "_hidden", "1" ]) + le32(-1))
 let content = models + root + chunk("nGRP", grp) + nodes + chunk("RGBA", rgba) + layers
 let out = "../data/voxel/models/haidut.vox"  // (beside this tool: the mod's models)
 launch_subprocess([ "/bin/mkdir", "-p", "../mods/vox_example/data/voxel/models" ])
