@@ -79,7 +79,9 @@ def vx_style_of(body:string, body_id:string) -> float3, float3, float3:
 // A recipe as a voxel body and gear: its body (bodies/<body id>.json), the race's colours, each part's gear by
 // gear.json's rules, its mount (its mount body, in its own colours).
 def vx_def_of(r:JV) -> vx_unit_def:
-    let body = vx_body_for(rstr(r, "body"), gstr(r, "creature", ""))
+    let cid = gstr(r, "creature", "")
+    let fid = gstr(r, "family", "")
+    let body = vx_culture_body(vx_body_for(rstr(r, "body"), cid), cid, if has(lib_families, fid): family(fid) else: jobj())
     var skin, pale, mark = vx_palette(gstr(r, "skin", ""))
     var crew:vx_unit_def? = nil
     if has(r, "crew"):  // an engine or a war beast: its frame in its style, its crew in their own colours
