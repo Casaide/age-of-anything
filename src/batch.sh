@@ -46,6 +46,7 @@ add test_heroes "$L" test_heroes.lobster
 add race_identity "$L" test_race_identity.lobster
 add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand in their shadows as drawn (the voxels option)
 add test_formations "$L" test_formations.lobster  # big armies in formation, headless: drift, jitter, facing, overlap, the framed map
+add test_movement "$L" test_movement.lobster -- small crossing head_on through  # group moves, headless: sway, flicker, overlap, settling (the scenes #344 has made green so far)
 add test_shot_look "$L" test_shot_look.lobster  # shots look faster and land when they always did
 add voxel_check "$L" voxel_check.lobster                # the voxel units' art: straight standing knees, skins that never clip or grey, kit that keeps the creature's shape, no look-alikes, no specks
 add size_check "$L" size_check.lobster                  # the one size table (data/voxel/sizes.json): every body as tall as it says, every mount at its ratio
