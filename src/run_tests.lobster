@@ -1000,7 +1000,7 @@ def g_fog_look():
     expect(fog_ground_shade(2) > fog_ground_shade(1) and fog_dark(2) < fog_dark(1) and fog_prop_shade(2) > fog_prop_shade(1), "fog: what\'s in sight is brighter than what isn\'t")
     for([ 0, 1, 2 ]) f: expect(fog_shows_land(f), "fog: trees, gold, stone, bushes and doodads show under fog {f}")
     // The view uses them: no fog state of its own, no resource hidden by the fog.
-    let game = read_file("game.lobster")
+    let game = (read_file("game.lobster") or "") + (read_file("game/world_view.lobster") or "") + (read_file("game/world_draw.lobster") or "")  // (the view: ours and Creel's, #433)
     let ground = read_file("game/ground.lobster")
     expect(game and find_string(game, "if fg[c] == 0: 0.12") < 0 and find_string(game, "fog_ground_shade(fg[c])") >= 0, "fog: the ground\'s shade is fog_ground_shade")
     expect(ground and find_string(ground, "if fg[c] == 0: 0.88") < 0 and find_string(ground, "fog_dark(fg[c])") >= 0, "fog: the fog mesh\'s darkness is fog_dark")
