@@ -220,6 +220,7 @@ var b_col = []::float4
 var b_tc = []::float2
 var b_idx = []::int
 var b_sheet = -1
+var sprite_snap = 1.0  // device px a world art px while the world is drawn: a sprite lands on a whole one (#358)
 
 def flush_sprites():
     ui_batch_flush()  // (fills batched before these sprites go under them; and out before a bust's framebuffer)
@@ -334,8 +335,8 @@ def sprite_sheet(fr:Frame) -> float2:
 def sprite(f:int, x:float, y:float, col:float4):
     let fr = frames[f]
     let at = sprite_sheet(fr)
-    let x0 = floor(x) - float(fr.ox) * fr.k
-    let y0 = floor(y) - float(fr.oy) * fr.k
+    let x0 = floor(x * sprite_snap) / sprite_snap - float(fr.ox) * fr.k
+    let y0 = floor(y * sprite_snap) / sprite_snap - float(fr.oy) * fr.k
     let x1 = x0 + float(fr.w) * fr.k
     let y1 = y0 + float(fr.h) * fr.k
     let s = sheet_dims[b_sheet]
