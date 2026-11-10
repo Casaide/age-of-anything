@@ -87,7 +87,7 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
                     // Its own side: round them, to the side it's already on, more than away (a standing one hardest; its own
                     // block only once they press into each other, as their places keep them apart).
                     let same = u_block[j] == u_block[i]
-                    let army = not same and u_block[j] > 0 and u_group[j] == u_group[i]  // (its army's other blocks: slipped through to its place)
+                    let army = not same and u_block[j] > 0 and u_group[j] == u_group[i]           // (its army's other blocks: slipped through to its place)
                     let close = if same or army: rr * 3 / 4 elif u_moving[j] == 0: rr else: look  // (one standing: right up to it, so it eases aside)
                     if d < close:
                         let w = if same: 3 elif u_moving[j] == 0 and not army: 2 else: 1
