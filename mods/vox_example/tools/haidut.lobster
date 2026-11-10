@@ -3,16 +3,17 @@
 // the body's `size` brings him to a human's height), in pieces named for what they ride: head, chest (shirt, sleeveless
 // coat, sash), hip (the coat's skirt and the belt), thigh.r (breeches), shin.r (black wraps tied with crossed cords),
 // foot.r (opanci), upper_arm.r and forearm.r (shirt sleeves), hand.r. The left limbs are the right ones mirrored.
-// A hidden `points` layer puts the body's hip, chest and head. With `cape`, he wears a sheepskin cape over his shoulders
-// (haidut_cape.vox).
-//   cd src && lobster ../mods/vox_example/tools/haidut.lobster -- [cape]
+// A hidden `points` layer puts the body's hip, chest and head. Over it he can wear `fleece` (a big shaggy sheepskin over
+// his shoulders and chest, haidut_fleece.vox) or a `yamurluk` (a long dark wool cloak, piped, open in front,
+// haidut_yamurluk.vox).
+//   cd src && lobster ../mods/vox_example/tools/haidut.lobster -- [fleece|yamurluk]
 import std
 import vec
 
 // the palette (the body's `mats` names the indexes that are our materials: skin, hair, team, leather, metal)
-let SKIN, HAIR, FUR, LINEN, COAT, TRIM, SASH, BELT, SILVER, WRAP, CORD, SHOE, MOUSTACHE, WOOD, FLEECE = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+let SKIN, HAIR, FUR, LINEN, COAT, TRIM, SASH, BELT, SILVER, WRAP, CORD, SHOE, MOUSTACHE, WOOD, FLEECE, FLEECE2, WOOL, PIPING, EYE = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
 let COLOURS = [ 0xd9a27c, 0x3a2a20, 0x2b2420, 0xe6dfcd, 0x2e2925, 0xb03228, 0xa8302a, 0x6b4a2e, 0xc8c8c0, 0x1f1d1b,
-                0xcfc6b0, 0x7a5236, 0x7a5a40, 0x5a3a22, 0x8a7560 ]
+                0xcfc6b0, 0x7a5236, 0x7a5a40, 0x5a3a22, 0xdccfb2, 0xb9aa8a, 0x4a3628, 0xd8cfb8, 0x2a1d16 ]
 
 def le32(i:int) -> string:
     let s, at = write_int32_le("", 0, i)
@@ -62,22 +63,31 @@ def in_taper(c:float3, z0:float, z1:float, a0:float2, a1:float2, r0:float2, r1:f
 
 def in_ball(c:float3, at:float3, r:float3) -> bool: return sq((c.x - at.x) / r.x) + sq((c.y - at.y) / r.y) + sq((c.z - at.z) / r.z) <= 1.0
 
-let cape = (find(command_line_arguments()) a: a == "cape") >= 0
+let args = command_line_arguments()
+let cape = if args.length: args[0] else: ""
+assert cape == "" or cape == "fleece" or cape == "yamurluk"
+
+// a small hash for the fleece's locks: 0..1 for a column of voxels
+def lock(x:int, y:int) -> float: return float(((x * 73856093) ^ (y * 19349663)) & 1023) / 1023.0
 let pieces = []::piece
 
-// the head: a long oval face over a firm jaw, ears, a moustache (a slim bar under the nose, its ends drooping past the
-// mouth), and the kalpak (a fur cap a little wider than the head, a red band at its foot); no eyes (at game size they
-// read as holes)
+// the head: a long oval face over a firm jaw, ears, the eyes (a dark voxel each under a brow), a handlebar moustache
+// that stands out from the face (a bar under the nose, its ends drooping past the mouth), and the kalpak (a fur cap a
+// little wider than the head, a red band at its foot)
 let head = piece { "head", 0 }
-fill(head, int3 { -6, -5, 61 }, int3 { 6, 6, 79 }) c:
+fill(head, int3 { -6, -5, 61 }, int3 { 6, 7, 79 }) c:
     let ax = abs(c.x)
-    let face = in_ball(c, float3 { 0.0, 0.3, 67.5 }, float3 { 3.6, 4.0, 5.0 }) or
+    let face = in_ball(c, float3 { 0.0, 0.3, 67.8 }, float3 { 3.7, 4.1, 5.3 }) or
         in_taper(c, 62.0, 65.0, float2 { 0.0, 0.2 }, float2 { 0.0, 0.6 }, float2 { 2.6, 3.0 }, float2 { 3.0, 3.4 })
-    let bar = c.y > 3.0 and ax < 2.6 and c.z > 64.8 and c.z < 65.8
-    let ends = c.y > 2.2 and c.y < 5.2 and ax >= 2.0 and ax < 4.4 and abs(c.z - (65.3 - (ax - 2.0) * 0.9)) < 0.6
-    if in_taper(c, 71.0, 77.5, float2 { 0.0, -0.3 }, float2 { 0.0, -0.6 }, float2 { 4.0, 4.3 }, float2 { 3.8, 4.0 }):
-        if c.z < 72.4: TRIM else: FUR
-    elif bar or ends: MOUSTACHE
+    let bar = c.y > 3.2 and c.y < 5.4 and ax < 3.0 and c.z > 65.0 and c.z < 66.2
+    let ends = c.y > 2.4 and c.y < 5.0 and ax >= 2.6 and ax < 4.6 and abs(c.z - (65.6 - (ax - 2.6) * 1.0)) < 0.7
+    let eye = c.y > 2.4 and ax > 0.8 and ax < 2.6 and c.z > 68.4 and c.z < 69.4
+    let brow = c.y > 2.4 and ax > 0.6 and ax < 3.0 and c.z > 69.6 and c.z < 70.6
+    if in_taper(c, 71.6, 78.0, float2 { 0.0, -0.6 }, float2 { 0.0, -0.8 }, float2 { 4.0, 4.3 }, float2 { 3.8, 4.0 }) and c.z > 71.6 + max(0.0, c.y) * 0.25:
+        if c.z < 73.0 + max(0.0, c.y) * 0.25: TRIM else: FUR
+    elif bar or ends: HAIR
+    elif face and eye: EYE
+    elif face and brow: HAIR
     elif face: SKIN
     elif in_ball(c, float3 { 3.8, -0.2, 67.5 }, float3 { 0.8, 1.2, 1.6 }) or in_ball(c, float3 { -3.8, -0.2, 67.5 }, float3 { 0.8, 1.2, 1.6 }): SKIN
     elif in_ball(c, float3 { 0.0, 4.4, 67.4 }, float3 { 0.8, 0.9, 1.4 }): SKIN  // the nose
@@ -88,18 +98,26 @@ pieces.push(head)
 // the black coat over it without sleeves, red along its edges; the sash (team colour) round the waist, two pistols'
 // butts standing out of it, and a bandolier from the right shoulder to the left hip, its cartridges in silver
 let torso = piece { "chest", 0 }
-fill(torso, int3 { -13, -9, 36 }, int3 { 13, 8, 63 }) c:
+fill(torso, int3 { -15, -14, 10 }, int3 { 15, 9, 64 }) c:
     let ax = abs(c.x)
     let butt = in_ball(c, float3 { 2.6 * sign(c.x), 5.4, 49.4 }, float3 { 0.9, 1.5, 1.0 }) or
         in_taper(c, 45.0, 49.0, float2 { 2.6 * sign(c.x), 4.0 }, float2 { 2.6 * sign(c.x), 4.8 }, float2 { 0.8, 0.9 }, float2 { 0.8, 0.9 })
     let strap = c.z >= 48.0 and abs(c.x - (c.z - 54.5)) < 1.3
     let body = in_taper(c, 44.0, 57.0, float2 { 0.0, 0.0 }, float2 { 0.0, -0.3 }, float2 { 7.0, 4.4 }, float2 { 9.4, 5.0 }) or
         in_taper(c, 57.0, 61.5, float2 { 0.0, -0.3 }, float2 { 0.0, -0.6 }, float2 { 9.4, 5.0 }, float2 { 7.0, 3.8 })
-    // (the cape: a thick fleece over the shoulders and down the back to the hips, a collar round the neck)
-    let fleece = in_taper(c, 38.0, 61.4, float2 { 0.0, -2.2 }, float2 { 0.0, -0.6 }, float2 { 11.6, 7.4 }, float2 { 10.6, 5.4 }) and
-        not in_taper(c, 37.0, 60.2, float2 { 0.0, -2.2 }, float2 { 0.0, -0.4 }, float2 { 10.2, 6.0 }, float2 { 9.4, 4.4 }) and
-        (c.y < 1.0 + (c.z - 38.0) * 0.12 or c.z > 59.0)
-    if cape and fleece and c.z > 38.0 and (c.z > 59.0 or ax > 3.0 or c.y < 0.0): FLEECE
+    // the fleece: thick locks over the shoulders and round the chest to the waist, longer at the hem, a ruff at the
+    // neck, parted in front; the yamurluk: a cloak from the shoulders to the shin, flaring, open in front, its edges piped
+    let around = atan2(float2 { c.x, c.y + 1.0 })  // (90 at the back)
+    let shag = lock(int(floor(around / 9.0)), int(floor(c.z / 3.0)))
+    let fl_out = in_taper(c, 42.0 - shag * 4.0, 63.0, float2 { 0.0, -1.0 }, float2 { 0.0, -0.4 }, float2 { 12.8 + shag * 1.2, 8.4 + shag }, float2 { 9.4, 6.2 })
+    let fl_in = in_taper(c, 30.0, 61.0, float2 { 0.0, -1.0 }, float2 { 0.0, -0.4 }, float2 { 10.0, 5.8 }, float2 { 7.6, 4.2 })
+    let fl_open = c.y > 2.0 and ax < 1.5 + (62.0 - c.z) * 0.18
+    let ya_out = in_taper(c, 12.0, 62.4, float2 { 0.0, -3.2 }, float2 { 0.0, -0.6 }, float2 { 14.0, 10.0 }, float2 { 10.4, 5.6 })
+    let ya_in = in_taper(c, 11.0, 61.2, float2 { 0.0, -3.2 }, float2 { 0.0, -0.6 }, float2 { 12.8, 8.8 }, float2 { 9.2, 4.4 })
+    let ya_open = c.y > 0.5 and ax < 3.0 + (62.0 - c.z) * 0.16
+    if cape == "fleece" and fl_out and not fl_in and not fl_open: (if shag > 0.55: FLEECE2 else: FLEECE)
+    elif cape == "yamurluk" and ya_out and not ya_in and not ya_open:
+        if c.z < 13.2 or (c.y > 0.0 and ax < 4.2 + (62.0 - c.z) * 0.16): PIPING else: WOOL
     elif ax > 1.4 and ax < 3.8 and butt: (if c.y > 6.0 and c.z > 49.6: SILVER else: WOOD)
     elif not body: 0
     elif strap: (if c.y > 0.0 and int(floor(c.z)) % 2 == 0 and abs(c.x - (c.z - 54.5)) < 0.6: SILVER else: BELT)
@@ -197,7 +215,7 @@ for(256) i:
 let layers = chunk("LAYR", le32(0) + vdict([ "_name", "body" ]) + le32(-1)) +
     chunk("LAYR", le32(1) + vdict([ "_name", "points", "_hidden", "1" ]) + le32(-1))
 let content = models + root + chunk("nGRP", grp) + nodes + chunk("RGBA", rgba) + layers
-let out = if cape: "../data/voxel/models/haidut_cape.vox" else: "../data/voxel/models/haidut.vox"  // (beside this tool: the mod's models)
+let out = if cape == "": "../data/voxel/models/haidut.vox" else: "../data/voxel/models/haidut_{cape}.vox"  // (beside this tool: the mod's models)
 launch_subprocess([ "/bin/mkdir", "-p", "../mods/vox_example/data/voxel/models" ])
 assert write_file(out, "VOX " + le32(150) + "MAIN" + le32(0) + le32(content.length) + content)
 let total = fold(pieces, 0) n, p: n + p.vs.length
