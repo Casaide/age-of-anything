@@ -80,6 +80,8 @@ let FACE_OFF = 50.0       // degrees
 let FACE_WINDOW = 10      // ticks over which "where it walks" is taken
 let FACE_WALKED = 300     // milli-tiles it must cover in that window to count as walking
 let OVERLAP_MAX = 0.02    // share of watched units, a sample, standing within half their summed radii of another unit
+let PAST_SETTLE = 200     // ticks for the archers to stand and shoot
+let PAST_TICKS = 600      // the spearmen's time to get to the building
 let HERD_TICKS = 2400     // two minutes for the herd to get through
 let HERD_PAST = 30000     // milli-tiles: the far side of the gap
 let SETTLE_SECS = 2       // after the last one arrives, nobody still moving this long after
@@ -309,6 +311,29 @@ def scene_through(rules:JV, races:[JV]):
     print "through a standing group: the standing ones pushed up to {worst}"
     check(worst <= SHOVED_MAX, "through a standing group: the standing ones aren\'t shoved about ({worst})")
 
+// 4c. Spearmen sent at a building past their own archers, who stand shooting it in their way (#391): they get round them.
+def scene_past_archers(rules:JV, races:[JV]):
+    flat(races, rules)
+    let hk = btype_index("town_center")
+    let hb = place(1, hk, 40, 30)
+    b_done[hb] = 1
+    b_hp[hb] = bm_hp[1][hk] * 50  // (it stands the whole scene)
+    let sk = btype_index("house")
+    let sb = place(0, sk, 35, 31)  // (their own house in the way)
+    b_done[sb] = 1
+    let bows = group(0, "archer", 16, 36500, 32000)
+    issue_cmd(0, CMD_ATTACK, bows, b_id[hb], 0, 0, 0)
+    for(PAST_SETTLE): wstep()
+    let a = group(0, "spear", 6, 32500, 32000)
+    issue_cmd(0, CMD_ATTACK, a, b_id[hb], 0, 0, 0)
+    for(PAST_TICKS): wstep()
+    var there = 0
+    for(a) id:
+        let i = index_of(id)
+        if gap_b(i, hb) <= t_reach[u_kind[i]] + REACH: there++
+    print "past archers: {there} of {a.length} spearmen at the building after {PAST_TICKS / 20} s"
+    check(there == a.length, "past archers: every spearman gets past its own archers to the building ({there} of {a.length})")
+
 // 5. Cavalry funnel through the pass (choke_test: a 2-tile gap in a rock wall).
 def scene_funnel(rules:JV, races:[JV]):
     new_world(SEED, "choke_test", races, rules, [])
@@ -517,6 +542,7 @@ if on("duel"): scene_duel(rules, races)
 if on("crossing"): scene_cross(rules, races, false)
 if on("head_on"): scene_cross(rules, races, true)
 if on("through"): scene_through(rules, races)
+if on("past_archers"): scene_past_archers(rules, races)
 if on("funnel"): scene_funnel(rules, races)
 if on("herd"): scene_herd(rules, races)
 if on("meet"): scene_meet(rules, races)
