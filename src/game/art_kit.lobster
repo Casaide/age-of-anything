@@ -66,9 +66,11 @@ def ak_cache_frame(stem:string, n:int, name:string, sprite:string, w:int, h:int,
     return AkFrame { name, file, w, h, int(anchor.x + 0.5), int(anchor.y + 0.5) }
 
 var ak_dump = ""  // propframes dump:<folder>: every prop as a PNG (art review)
-def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
+
+// Whether a prop needn't be baked: it's in the pack, or its frames were in the shipped bakes or the cache (now loaded).
+def ak_have(name:string) -> bool:
     bake_pulse()
-    if bake_quit or (not ak_rebake and frame_index(name) >= 0): return
+    if bake_quit or (not ak_rebake and frame_index(name) >= 0): return true
     let stem = if bake_cache_dir != "": ak_stem(name) else: ""
     if stem != "" and not ak_rebake:
         let shipped = if bake_shipped_dir != "": read_file(ak_stem_in(bake_shipped_dir, name) + ".bin", true) else: nil
@@ -76,9 +78,13 @@ def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
         if data:
             let rec, err = flexbuffers_binary_to_value(typeof [AkFrame], data)
             let fs = rec
-            if not err and fs and ak_load_frames(fs): return
+            if not err and fs and ak_load_frames(fs): return true
     bake_breath()
-    let sprite, w, h, anchor = voxel_bake(model, shadow)  // (D-203: as voxels)
+    return false
+
+// A prop's sprite into the pack and the cache (reach > 1: its long ground shadow kept apart, to lie under everything).
+def ak_keep(name:string, sprite:string, w:int, h:int, anchor:float2, reach:float):
+    let stem = if bake_cache_dir != "": ak_stem(name) else: ""
     if ak_dump != "" and w > 0 and h > 0: write_file("{ak_dump}/{ak_baked}_{name}.png", bmat_png(map(sprite.length) i: sprite[i], w, h), 0, 1)
     let kept = []::AkFrame
     if reach > 1.0:
@@ -94,6 +100,18 @@ def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
     if stem != "" and kept.length: write_file(stem + ".bin", flexbuffers_value_to_binary(kept, 1000))
     ak_baked++
 
+// A prop from its model, as voxels (D-203).
+def ak_bake(name:string, model:MNode, shadow:bool, reach:float = 1.0):
+    if ak_have(name): return
+    let sprite, w, h, anchor = voxel_bake(model, shadow)
+    ak_keep(name, sprite, w, h, anchor, reach)
+
+// A prop built voxel by voxel (view/voxel_grid.lobster, #410): the grid made only when it has to be baked.
+def ak_grid(name:string, shadow:bool, reach:float, gridf):
+    if ak_have(name): return
+    let sprite, w, h, anchor = vg_sprite(gridf(), shadow)
+    ak_keep(name, sprite, w, h, anchor, reach)
+
 // Every doodad and town prop the pack lacks. Returns how many were baked.
 def bake_doodads() -> int:
     ak_baked = 0
@@ -104,19 +122,18 @@ def bake_doodads() -> int:
         for(AK_STAGES) st: ak_bake(staged("reeds", v, st), reed_clump(300 + v, 1.0, st), true)
     for(ak_count("bush")) v:
         for(AK_STAGES) st: ak_bake(staged("bush", v, st), bug_bush(400 + v, st), true)
-    for(ak_count("rock")) v: ak_bake("rock{v}", boulders(1000 + v), true)
+    for(ak_count("rock")) v: ak_grid("rock{v}", true, 1.0): boulders(1000 + v)
     for(ak_count("quarry")) v:
         for(AK_STAGES) st:
-            ak_bake(staged("quarry", v, st), quarry(1300 + v, st, "stone"), true)
-            ak_bake(staged("gold", v, st), quarry(1300 + v, st, "gold"), true)
+            ak_grid(staged("quarry", v, st), true, 1.0): deposit(1300 + v, st, "stone")
+            ak_grid(staged("gold", v, st), true, 1.0): deposit(1300 + v, st, "gold")
     for([ "broadleaf", "pine", "swamp" ]) sp:
         let kind = "tree_" + sp
-        let style = if sp == "swamp": 1 else: 0
         for(ak_count(kind)) v:
-            for(AK_STAGES) st: ak_bake(staged(kind, v, st), tree(1500 + v, sp, style, st), true, 2.0)
+            for(AK_STAGES) st: ak_grid(staged(kind, v, st), true, 2.0): tree(1500 + v, sp, v % 3, st)
     for(ak_count("carcass")) v:
         for(AK_STAGES) st: ak_bake(staged("carcass", v, st), carcass(1400 + v, st), true)
-    for(ak_count("stones")) v: ak_bake("stones{v}", field_stones(500 + v), false)
+    for(ak_count("stones")) v: ak_grid("stones{v}", false, 1.0): field_stones(500 + v)
     for(ak_count("tuft")) v: ak_bake("tuft{v}", grass_tuft(600 + v), false)
     for(ak_count("shore")) v: ak_bake("shore{v}", reed_clump(700 + v, 0.55, 0), false)
     for(ak_count("lily")) v: ak_bake("lily{v}", lily_pads(900 + v), false)
