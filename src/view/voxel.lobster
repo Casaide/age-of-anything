@@ -1086,6 +1086,16 @@ def vx_body_of(id:string) -> vx_body_spec:
     assert b
     return b
 
+// A culture's own body for a creature (#418): the family's `bodies` (creature -> voxel body, families.json), drawn
+// wherever a unit has that creature's own body (not an engine, a role's body or a body part of its own). Only the
+// look changes: the recipe, its stats and the race key are the creature's.
+def vx_culture_body(body:string, creature:string, fam:JV) -> string:
+    if body != creature: return body
+    let own = gstr(gobj(fam, "bodies"), creature, "")
+    if own == "": return body
+    assert vx_bodies.get(own)
+    return own
+
 // The gear for a recipe's part in a slot (the rules' first match), or "".
 def vx_gear_for(part_id:string, tags:[string], slot:string) -> string:
     for(vx_rules) r:
@@ -1295,8 +1305,9 @@ def vx_flags_of(u:vx_unit_def) -> [string]:
         for(gs.flags) x: f.push(x)
     return f
 
-// Where a foot is at walk phase ph, and its pitch (degrees, toes up). With a gait, a planted foot goes back at the
-// ground's own speed (a sine would skate), its heel rises as it leaves; the swing lifts it early, behind, so the knee bends.
+// Where a foot is at walk phase ph, and its pitch (degrees, toes up). A planted foot goes back at the ground's own
+// speed (a sine would skate, #422); it swings forward on a sine, lifted. With a gait, its heel rises as it leaves, and
+// the swing lifts it early, behind, so the knee bends.
 def vx_foot(b:vx_body_spec, l:vx_leg_spec, side:float, ph:float) -> float3, float:
     let rest = l.foot * float3 { side, 1.0, 1.0 }
     let g = b.gait
@@ -1304,21 +1315,20 @@ def vx_foot(b:vx_body_spec, l:vx_leg_spec, side:float, ph:float) -> float3, floa
         if g and vx_act == "attack": return rest + float3 { 0.0, if side > 0.0: -g.back else: g.front, 0.0 }, 0.0
         return rest, 0.0
     let w = ph + l.phase
-    if not g: return rest + float3 { 0.0, sin(w) * side * l.stride, max(0.0, cos(w) * side) * l.lift }, 0.0
     let u = if side > 0.0: w else: w + 180.0
     var y, up, pitch = 0.0, 0.0, 0.0
     if cos(u) > 0.0:
         y = sin(u) * l.stride
-        up = cos(u) * (1.0 - 0.5 * sin(u)) * l.lift
-        pitch = -g.heel + (g.heel + g.toe) * (sin(u) + 1.0) * 0.5
+        up = if g: cos(u) * (1.0 - 0.5 * sin(u)) * l.lift else: cos(u) * l.lift
+        if g: pitch = -g.heel + (g.heel + g.toe) * (sin(u) + 1.0) * 0.5
     else:
         var a = u - 90.0
         while a < 0.0: a += 360.0
         while a >= 360.0: a -= 360.0
         let v = a / 180.0
         y = (1.0 - 2.0 * v) * l.stride
-        pitch = if v < 0.35: g.toe * (1.0 - v / 0.35) elif v > 0.65: -g.heel * (v - 0.65) / 0.35 else: 0.0
-    return rest + float3 { 0.0, y, up + max(0.0, sin(-pitch)) * g.toes }, pitch
+        if g: pitch = if v < 0.35: g.toe * (1.0 - v / 0.35) elif v > 0.65: -g.heel * (v - 0.65) / 0.35 else: 0.0
+    return rest + float3 { 0.0, y, up + (if g: max(0.0, sin(-pitch)) * g.toes else: 0.0) }, pitch
 
 // A body's points at walk phase ph (its bob), raised by lift.
 // A body that would have to stretch a leg past its bones to reach its foot (a long stride on short legs) is lowered
@@ -1712,6 +1722,18 @@ def vx_on_zero(u:vx_unit_def, falling:bool) -> bool: return (vx_flies(u) and (no
 
 // The unit's size: its body's (a mount is scaled to it).
 def vx_size_of(u:vx_unit_def) -> float: return vx_body_of(u.body).size
+
+// How far a unit goes along the ground in one walk cycle, milli-tiles (its 8 walk steps go by the ground covered, #422):
+// a belt's link; else four strides of the legs that walk (its mount's, at the size it's ridden): a planted foot goes back
+// two strides a half cycle. A body unit is about 1/62 of a tile along the ground at size 1 (1.1 world px).
+def vx_walk_cycle(u:vx_unit_def) -> float:
+    let b = vx_body_of(u.body)
+    let pitch = vx_track_cycle(b)  // (a belt goes by its links, so it doesn't slide on the ground)
+    if pitch > 0.0: return pitch * b.size * 1000.0 / 62.0
+    let w = if u.mount != "": vx_body_of(u.mount) else: b
+    let size = if u.mount != "": vx_mount_size(b, w) else: b.size
+    if not w.legs.length: return 4.0 * w.reach * 1000.0 / 62.0  // (a flier's wings, a cart's wheels: their own beat)
+    return 4.0 * w.legs[0].stride * size * 1000.0 / 62.0
 
 // ---- the voxel grid
 
