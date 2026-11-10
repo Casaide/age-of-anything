@@ -83,7 +83,7 @@ let OVERLAP_MAX = 0.02    // share of watched units, a sample, standing within h
 let HERD_TICKS = 2400     // two minutes for the herd to get through
 let HERD_PAST = 30000     // milli-tiles: the far side of the gap
 let SETTLE_SECS = 2       // after the last one arrives, nobody still moving this long after
-let RALLY_SHOVED_MAX = 300  // milli-tiles a unit standing at a rally point may be pushed about, all told, as more arrive
+let RALLY_SHOVE = 300     // milli-tiles a unit standing at a rally point may be pushed about, all told, as more arrive
 let SHOVED_MAX = 1500     // milli-tiles a standing group's units may be pushed from where they stood
 let ZIGZAG_MAX = 0.1      // swerves one way then the other within ZIGZAG_TICKS, a unit, a second (a sway as it walks)
 let ZIGZAG_TICKS = 20
@@ -339,8 +339,7 @@ def scene_rally(rules:JV, races:[JV]):
     var was = []::int
     for(14) n:
         let k = kinds[n % 2]
-        let c = spawn_cell(b, k)
-        let i = add_unit(0, k, (c % W) * TILE + 500, (c / W) * TILE + 500)
+        let i = trained(b, k)
         ids.push(u_id[i])
         pushed.push(0)
         go_to_rally(b, i)
@@ -362,7 +361,7 @@ def scene_rally(rules:JV, races:[JV]):
     let ov = overlap_of(ids)
     print "rally point: standing units pushed about {total} milli-tiles in all, {worst} at worst; overlap {fixed_str(ov, 3)}"
     check(not any_moving(ids), "rally point: they all stand in the end")
-    check(worst <= RALLY_SHOVED_MAX, "rally point: nobody standing is pushed about by those arriving ({worst})")
+    check(worst <= RALLY_SHOVE, "rally point: nobody standing is pushed about by those arriving ({worst})")
     check(ov <= OVERLAP_MAX, "rally point: they stand beside each other, not inside ({fixed_str(ov, 3)})")
 
 // 5. Cavalry funnel through the pass (choke_test: a 2-tile gap in a rock wall).
