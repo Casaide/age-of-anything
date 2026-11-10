@@ -84,13 +84,15 @@ let LIMIT = 20 * 60 * 30  // 30 minutes: a match must end, however slowly
 let LEAD_PCT = 150
 let LEAD_WORKERS = 20
 let PRESS_WITHIN = 20 * 60 * 12
+let TURN_TICKS = 400  // turn_on_foes: 20 s with the enemy next to them
+let TURN_NEAR = 2000  // turn_on_foes: "next to them": two tiles apart
 
 // The pieces in test_ai.gd's order: name, tier.
-let PIECES = [ "pick", "wonder", "respond", "shelter", "walled_fords", "rams", "hills", "guard", "age3", "surrender",
+let PIECES = [ "pick", "wonder", "respond", "shelter", "walled_fords", "rams", "hills", "guard", "age3", "surrender", "turn_on_foes",
                "easy", "siege_bot", "trade_bot", "walls_bot",
                "passive_frogs", "passive_rats", "bvb", "bvb_again", "centaurs_frogs", "rats_centaurs", "hard",
                "walled_palisade", "walled_wall", "walled_gap", "land", "siege_mode" ]
-let SLOW_FROM = 14  // PIECES from here on are slow
+let SLOW_FROM = 15  // PIECES from here on are slow
 let GROUPS = [ [ "age3", "age3" ], [ "levels", "levels_easy,levels_normal,levels_hard" ], [ "rams", "rams,siege_bot" ],
                [ "walls", "rams,walled_palisade,walled_wall,walled_gap,walls_bot" ], [ "pick", "pick" ], [ "hills", "hills,guard" ],
                [ "land", "land,guard,hills" ], [ "reach", "respond,shelter,walled_fords" ] ]
@@ -824,6 +826,57 @@ def test_land(a:JV, b:JV):
         check(roads >= 1, "land: a road is felled through the thin woods ({roads})")
     check(winner >= 0, "land: the match ends ({clock(tick)})")
 
+def soldiers_of(p:int) -> [int]:
+    let out = []::int
+    for(u_owner) o, i:
+        if o == p and is_soldier(u_kind[i]): out.push(u_id[i])
+    return out
+
+// The bot's soldiers sent at a Town Center turn on enemy soldiers who walk right up to them, not hit it to the end
+// (#408). Only a few of an army that big go in on attack-move (2 x the defenders); the rest are ordered at it.
+def test_turn_on_foes(a:JV, b:JV):
+    world([ a, b ], rules)
+    let side = full_side(0)
+    let f = side.full
+    let tc = town_center(1)
+    let tx = b_cx[tc] * 1000
+    let ty = b_cy[tc] * 1000
+    spawn(0, "spear", 12, tx - 1500, ty + 1000)
+    for(TICKS_PER_TURN * 3): wstep()
+    let mine = soldiers_of(0)
+    issue_cmd(0, CMD_ATTACK, mine, b_id[tc], 0, 0, 0)
+    if f: f.assault = true
+    for(100):
+        think(side)
+        wstep()
+    spawn(1, "spear", 2, tx - 800, ty + 1500)  // (up against the building, among the ones hitting it)
+    for(TICKS_PER_TURN * 3):
+        think(side)
+        wstep()
+    let theirs = soldiers_of(1)
+    for(theirs) id:
+        let i = index_of(id)
+        u_posture[i] = PASSIVE  // (walked up, not fighting: they don't start it)
+        u_hp[i] = 1 << 24       // (they stand the whole scene)
+    for(TURN_TICKS):
+        think(side)
+        wstep()
+    var near = 0
+    var turned = 0
+    let r = TURN_NEAR
+    for(mine) id:
+        let i = index_of(id)
+        if i < 0: continue
+        var close = false
+        for(theirs) e:
+            let j = index_of(e)
+            if j >= 0 and gap(i, j) <= r: close = true
+        if close:
+            near++
+            if index_of(u_foe[i]) >= 0: turned++
+    print "turn on foes: {turned} of {near} soldiers with an enemy within {r} turned on one"
+    check(theirs.length > 0 and near > 0 and turned == near, "turn on foes: the bot\'s soldiers on a Town Center turn on the enemy next to them ({turned} of {near})")
+
 // A level that guards (Normal), on the back foot, left to build up against a passive side (its stock
 // topped up from 6:00), puts a Watchtower on the key crossing by 16 minutes.
 def test_guard(a:JV, b:JV):
@@ -1291,6 +1344,7 @@ def run_piece(name:string):
     elif name == "age3": test_age_three(frogs, rats)
     elif name == "land": test_land(frogs, rats)
     elif name == "guard": test_guard(frogs, rats)
+    elif name == "turn_on_foes": test_turn_on_foes(rats, frogs)
     elif name == "hills": test_hills(frogs, rats)
     elif name == "levels_easy": test_level(frogs, rats, "easy")
     elif name == "levels_normal": test_level(frogs, rats, "normal")

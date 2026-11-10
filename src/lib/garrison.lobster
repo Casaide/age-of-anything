@@ -98,8 +98,8 @@ def come_out(b:int, k:int) -> int:
     let kind = rec[REC_KIND]
     var cell = spawn_cell_loose(b, kind)
     if cell < 0: cell = nearest_walkable(b_cy[b] * W + b_cx[b], lane_base[b_owner[b]] + t_mclass[kind])
-    let i = insert_unit(rec[REC_ID], b_owner[b], kind, (cell % W) * TILE + TILE / 2, (cell / W) * TILE + TILE / 2,
-                        t_speed[kind], t_radius[kind], rec[REC_HP])
+    let x, y = clear_point(b_owner[b], kind, (cell % W) * TILE + TILE / 2, (cell / W) * TILE + TILE / 2)  // (not on top of the one out before it, #394)
+    let i = insert_unit(rec[REC_ID], b_owner[b], kind, x, y, t_speed[kind], t_radius[kind], rec[REC_HP])
     u_mclass[i] = t_mclass[kind]
     u_posture[i] = rec[REC_POSTURE]
     u_carry_kind[i] = rec[REC_CARRY_KIND]

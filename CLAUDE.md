@@ -20,6 +20,7 @@ macOS and the Steam Deck.
 | `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools
 | `docs/milestones/lobster-port.md` | The move from Godot to Lobster: what was ported, how it was checked, what's left |
 | `docs/audio.md` | How the sound is made: the offline synth (`src/audio/`), effects, creature voices, the theme in stems by age |
+| `docs/movement-charts.md` | How to show a movement fix: before/after path charts from a headless scene, frame strips and traces from a real match |
 
 Before starting a milestone, read `docs/milestones/<its file>.md` (and the related parts of
 `docs/mvp-plan.md`), write the plan into the milestone file, and keep its checklist current. If you postpone something,
