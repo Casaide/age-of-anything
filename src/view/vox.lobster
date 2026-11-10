@@ -224,9 +224,9 @@ def vox_parse(s:string) -> vox_file:
                 let child = body.i32()
                 body.i32()  // (reserved)
                 let layer = body.i32()
-                let frames = body.i32()
+                let nframes = body.i32()
                 var frame = []::string
-                for(frames) k:
+                for(nframes) k:
                     let fr = body.dict()
                     if k == 0: frame = fr
                 scene.push(vox_scene_node { 0, attrs, [ child ], layer, frame })
