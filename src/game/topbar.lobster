@@ -9,16 +9,13 @@
 // Sizes are Godot's (UI px) times hud_s(), its HUD scale (ui_scale.gd), the same for the command panel and the minimap.
 // Imported by game.lobster after the panel (the tech tree page, go_to, team_col).
 
-// The HUD's scale: the player's size (hud_size, game/audio.lobster: Ctrl/Cmd + and - in a match), smaller only where
-// the HUD wouldn't fit the window (HUD_NEEDS: 1480 x 760).
-def hud_s() -> float:
-    let ws = float(gl.window_size())
-    return min(float(hud_size) / 100.0, min(ws.x / 1480.0, ws.y / 760.0))  // (the player's size, as far as the window fits it)
-let TB_FULL = float4 { 1.0, 0.54, 0.44, 1.0 }                              // #ff8a70: the pop at its cap
-let TB_WORK = float4 { 0.85, 0.78, 0.63, 1.0 }                             // #d8c8a0: the worker counts
-let TB_IDLE = float4 { 1.0, 0.69, 0.44, 1.0 }                              // #ffb070: idle workers waiting
-let TB_GOLD = float4 { 0.96, 0.84, 0.48, 1.0 }                             // #f6d77a: ageing up
-let TB_DISPLAY = "../assets/fonts/display.ttf"                             // the display font (headings), as theme.gd
+// The HUD's scale: the player's size (hud_size, game/audio.lobster: Ctrl/Cmd + and - in a match) in this window.
+def hud_s() -> float: return hud_scale(hud_size, float(gl.window_size()))
+let TB_FULL = float4 { 1.0, 0.54, 0.44, 1.0 }   // #ff8a70: the pop at its cap
+let TB_WORK = float4 { 0.85, 0.78, 0.63, 1.0 }  // #d8c8a0: the worker counts
+let TB_IDLE = float4 { 1.0, 0.69, 0.44, 1.0 }   // #ffb070: idle workers waiting
+let TB_GOLD = float4 { 0.96, 0.84, 0.48, 1.0 }  // #f6d77a: ageing up
+let TB_DISPLAY = "../assets/fonts/display.ttf"  // the display font (headings), as theme.gd
 let TB_BOLD = "data/fonts/Droid_Sans/DroidSans-Bold.ttf"
 let TB_TEXT = "data/fonts/Droid_Sans/DroidSans.ttf"  // (game.lobster's font, put back after)
 
@@ -77,11 +74,6 @@ def tb_text(at:float2, s:string, size:int, col:float4, font:int):
 
 def tb_text_edged(at:float2, s:string, size:int, col:float4, font:int):
     tb_texts.push(TbText { at, s, size, col, font, true })
-
-// About the room text takes (gl.text_size doesn't match what's drawn at every scale).
-def tb_text_w(s:string, size:int, font:int) -> float:
-    let gaps = if font == 3: ui_caps_gap(size) * float(max(0, s.length - 1)) else: 0.0
-    return (if font == 2: 0.72 elif font >= 1: 0.58 else: 0.52) * float(size) * float(s.length) + gaps
 
 def tb_flush():
     ui_batch_flush()
@@ -205,19 +197,8 @@ def tb_cap(s:string) -> string: return if s.length: s.substring(0, 1).uppercase(
 
 // The bar (draw_hud draws it; clicks on it don't reach the world: panel_click).
 def draw_topbar(speed:float, paused:bool):
-    let s = hud_s()
-    let pad = float2 { 16.0, 9.0 } * s
-    let at = float2 { 10.0, 8.0 } * s
-    let ph = 48.0 * s  // a plaque's height (a 20 px number over a worker line)
-    let sep = 10.0 * s
-    let light = ui_look.text
-    tb_tip = ""
-    // Lay the row out first: each piece's width.
-    let res_w = map(num_resources) r: 8.0 * s + 28.0 * s + 6.0 * s + max(50.0 * s, tb_text_w(string(stock[r][ME]), int(20.0 * s), 1)) + 8.0 * s
+    // The texts first, then the row laid out to fit the window (game/topbar_fit: the name cut, or the scale, if not).
     let pop_txt = "{pop[ME]}/{pop_cap[ME]}"
-    let pop_w = 8.0 * s + 28.0 * s + 6.0 * s + max(66.0 * s, tb_text_w(pop_txt, int(20.0 * s), 1)) + 8.0 * s
-    let title = rstr(su_races[ME], "name")  // (as typed: the display face sets the rest as small capitals, as Godot's)
-    let title_w = tb_text_w(title, int(22.0 * s), 2)
     // The age: under way wherever it's queued (0 while it waits its turn).
     var next = ""
     var frac = 0.0
@@ -226,19 +207,31 @@ def draw_topbar(speed:float, paused:bool):
             next = tb_age_name(ages_list[next_age(ME)].age)
             frac = if head_tech(b) == AGE_UP_ENTRY: float(b_train[b]) / float(head_ticks(b)) else: 0.0
     let age_txt = if next == "": tb_age_name(ages[ME]) else: "{tb_age_name(ages[ME])}  ->  {next}  {int(frac * 100.0)}%"
-    let age_w = 8.0 * s + 26.0 * s + 6.0 * s + tb_text_w(string(ages[ME]), int(24.0 * s), 2) + 6.0 * s + tb_text_w(age_txt, int(17.0 * s), 1) + 8.0 * s
-    let idle = tb_idle()
-    let idle_w = 74.0 * s
-    let tree_w = 12.0 * s + 22.0 * s + 6.0 * s + tb_text_w("Tech tree", int(17.0 * s), 1) + 12.0 * s
     let secs = tick / 20
     let clock_txt = "{secs / 60}:{if secs % 60 < 10: "0" else: ""}{secs % 60}"
-    let clock_w = 8.0 * s + max(52.0 * s, tb_text_w(clock_txt, int(18.0 * s), 1)) + 8.0 * s
     let pace = if paused: "Paused" elif speed != 1.0: "x{speed}" else: ""
-    let pace_w = if pace != "": 8.0 * s + tb_text_w(pace, int(16.0 * s), 1) + 8.0 * s else: 0.0
-    var w = pad.x * 2.0
-    for(res_w) rw: w += rw + sep
-    w += pop_w + sep + 8.0 * s + sep + title_w + sep + age_w + sep + idle_w + sep + tree_w + sep + clock_w
-    if pace != "": w += sep + pace_w
+    let stocks = map(num_resources) r: string(stock[r][ME])
+    // (the name as typed: the display face sets the rest as small capitals, as Godot's)
+    let texts = TbTexts { stocks, pop_txt, rstr(su_races[ME], "name"), string(ages[ME]), age_txt, clock_txt, pace }
+    let lay = tb_layout(texts, float(gl.window_size().x), hud_s())
+    let s = lay.s
+    let pad = float2 { 16.0, 9.0 } * s
+    let at = float2 { 10.0, 8.0 } * s
+    let ph = 48.0 * s  // a plaque's height (a 20 px number over a worker line)
+    let sep = 10.0 * s
+    let light = ui_look.text
+    tb_tip = ""
+    let res_w = lay.res_w
+    let pop_w = lay.pop_w
+    let title = lay.title
+    let title_w = lay.title_w
+    let age_w = lay.age_w
+    let idle = tb_idle()
+    let idle_w = lay.idle_w
+    let tree_w = lay.tree_w
+    let clock_w = lay.clock_w
+    let pace_w = lay.pace_w
+    let w = lay.w
     let h = ph + pad.y * 2.0
     tb_rect = float4 { at.x, at.y, w, h }
     // The beam: the frame's metal, studs on the corners (theme.gd's Bar: frame_box at weight 6).
@@ -272,9 +265,10 @@ def draw_topbar(speed:float, paused:bool):
     tb_text(float2 { x + 42.0 * s, y + (ph - 20.0 * s) / 2.0 - 3.0 * s }, pop_txt, int(20.0 * s), if pop[ME] >= pop_cap[ME]: TB_FULL else: light, 1)
     if tb_over(float2 { x, y }, float2 { pop_w, ph }): tb_tip = "Population / room (build houses for more)"
     x += pop_w + sep + 8.0 * s + sep
-    // The race's name.
-    tb_text(float2 { x, y + (ph - 22.0 * s) / 2.0 - 3.0 * s }, title, int(22.0 * s), ui_look.title, 2)
-    x += title_w + sep
+    // The race's name (cut, or gone, where the window has no room for it).
+    if title != "":
+        tb_text(float2 { x, y + (ph - 22.0 * s) / 2.0 - 3.0 * s }, title, int(22.0 * s), ui_look.title, 2)
+        x += title_w + sep
     // The age badge.
     tb_plaque(float2 { x, y }, float2 { age_w, ph })
     let line_y = y + (ph - (if next != "": 30.0 else: 26.0) * s) / 2.0
