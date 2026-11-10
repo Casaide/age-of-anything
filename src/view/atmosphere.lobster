@@ -33,6 +33,7 @@ var atmo_light:resource<texture>? = nil
 var atmo_bloom_a:resource<texture>? = nil
 var atmo_bloom_b:resource<texture>? = nil
 var atmo_size = int2_0
+var atmo_light_used = true  // the light buffer had something in it last frame
 var atmo_gpos = []::float3  // this frame's glows, as quads
 var atmo_gcol = []::float4
 var atmo_gtc = []::float2
@@ -279,6 +280,7 @@ def atmo_begin(col:float4) -> bool:
         atmo_world = atmo_target(ws, true)
         let q = atmo_quarter()
         atmo_light = atmo_target(q, false)
+        atmo_light_used = true  // (a new buffer: cleared before it's read)
         atmo_bloom_a = atmo_target(q, false)
         atmo_bloom_b = atmo_target(q, false)
         gl.switch_to_framebuffer(atmo_bloom_a)  // (read with bloom 0: black)
@@ -302,10 +304,14 @@ def atmo_rebind():
 def atmo_end(cam:float2, zoom:float, canvas:float):
     let q = atmo_quarter()
     let was = gl.blend(blend_none)
-    gl.switch_to_framebuffer(atmo_light)
-    gl.ortho()
-    gl.clear(float4 { 0.0, 0.0, 0.0, 0.5 })                      // (alpha: the haze's drift, 0.5 where it doesn't drift)
-    if atmo_num("haze") > 0.0 and atmo_num("haze_drift") > 0.0:  // (the drift is low in detail: worked out here, at a quarter of the pixels)
+    let drift = atmo_num("haze") > 0.0 and atmo_num("haze_drift") > 0.0
+    let lit = drift or atmo_gidx.length > 0
+    if lit or atmo_light_used:  // (nothing to light and nothing lit last frame: the buffer stays as it is, a switch saved)
+        gl.switch_to_framebuffer(atmo_light)
+        gl.ortho()
+        gl.clear(float4 { 0.0, 0.0, 0.0, 0.5 })  // (alpha: the haze's drift, 0.5 where it doesn't drift)
+    atmo_light_used = lit
+    if drift:  // (the drift is low in detail: worked out here, at a quarter of the pixels)
         gl.set_shader("atmo_air")
         gl.set_uniform("screen", float(atmo_size))
         gl.set_uniform("cam", cam)
@@ -328,19 +334,18 @@ def atmo_end(cam:float2, zoom:float, canvas:float):
         gl.set_uniform("bloom_threshold", atmo_num("bloom_threshold"))
         gl.set_primitive_texture(0, assert atmo_world)
         atmo_quad(q)
-        for(2):
-            gl.switch_to_framebuffer(atmo_bloom_b)
-            gl.ortho()
-            gl.set_shader("atmo_blur")
-            gl.set_uniform("size", float(q))
-            gl.set_uniform("dir", float2 { 1.5, 0.0 })
-            gl.set_primitive_texture(0, assert atmo_bloom_a)
-            atmo_quad(q)
-            gl.switch_to_framebuffer(atmo_bloom_a)
-            gl.ortho()
-            gl.set_uniform("dir", float2 { 0.0, 1.5 })
-            gl.set_primitive_texture(0, assert atmo_bloom_b)
-            atmo_quad(q)
+        gl.switch_to_framebuffer(atmo_bloom_b)  // (one blur, across then down, its taps spread wide: each switch makes and frees a framebuffer)
+        gl.ortho()
+        gl.set_shader("atmo_blur")
+        gl.set_uniform("size", float(q))
+        gl.set_uniform("dir", float2 { 2.5, 0.0 })
+        gl.set_primitive_texture(0, assert atmo_bloom_a)
+        atmo_quad(q)
+        gl.switch_to_framebuffer(atmo_bloom_a)
+        gl.ortho()
+        gl.set_uniform("dir", float2 { 0.0, 2.5 })
+        gl.set_primitive_texture(0, assert atmo_bloom_b)
+        atmo_quad(q)
     gl.switch_to_framebuffer(nil)
     gl.ortho()
     gl.blend(blend_none)
