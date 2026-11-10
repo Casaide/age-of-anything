@@ -1,15 +1,15 @@
 // The Roman body's worn kit (#417), drawn around roman.vox in its voxels (2 a body unit) from the approved concept
 // sheet, one model each, worn on the body point it rides (its offset printed for gear.json's `roman` fits):
-//   roman_galea.vox        helm.galea: iron bowl, a brass band over the brow, cheek guards, a flared neck guard, a knob
-//   roman_montefortino.vox helm.cap: a plain bronze bowl with a tall knob and a short neck lip
+//   roman_galea.vox        helm.galea: iron bowl, a brass band over the brow, cheek guards, a flared neck guard, a crest
+//   roman_montefortino.vox helm.cap: a bronze bowl, a tall knob with a horsehair tuft, a short neck lip
 //   roman_leather.vox      armour.leather: a leather jerkin to the waist, strips (pteruges) at the shoulders and hips
 //   roman_mail.vox         armour.bronze: mail to the hip, doubled over the shoulders
 //   roman_segmentata.vox   armour.lorica: iron bands round the body and over the shoulders, a studded apron below
 //   lobster tools/vox/roman_gear.lobster
 import .voxwrite
 
-let METAL, BRASS, HIDE, LEATHER, BRONZE = 1, 2, 3, 4, 5
-let COLOURS = [ 0, 0x8e9298, 0xc9a24a, 0x8a6a48, 0x5e4029, 0xb8893a ]
+let METAL, BRASS, HIDE, LEATHER, BRONZE, TEAM = 1, 2, 3, 4, 5, 6
+let COLOURS = [ 0, 0x8e9298, 0xc9a24a, 0x8a6a48, 0x5e4029, 0xb8893a, 0x9b2f2f ]
 let HEAD = float3 { 0.0, 1.0, 67.0 }
 let CHEST = float3 { 0.0, 0.0, 57.0 }
 
@@ -40,12 +40,15 @@ def save(name:string, p:vw_piece, pt:float3, pt_name:string):
 def bowl(c:float3) -> bool: return vw_ball(c, float3 { 0.0, -0.5, 69.6 }, float3 { 4.9, 5.3, 5.1 }) and not face_cut(c)
 
 let galea = vw_piece { "galea", 0 }
-vw_fill(galea, int3 { -6, -8, 63 }, int3 { 6, 5, 76 }) c:
+vw_fill(galea, int3 { -6, -8, 63 }, int3 { 6, 5, 79 }) c:
     let ax = abs(c.x)
     let nape = c.y < -3.0 and c.y > -7.2 and c.z > 64.6 and c.z < 66.2 and ax < 4.6 - (c.y + 3.0) * -0.3
     let cheek = ax > 3.8 and ax < 4.8 and c.y > 0.0 and c.y < 2.6 and c.z > 64.6 and c.z < 68.3
     let knob = vw_ball(c, float3 { 0.0, -0.5, 75.0 }, float3 { 0.8, 0.8, 0.9 })
-    if knob: BRASS
+    // a crest of horsehair fore and aft in team colour, standing on the knob: what makes it a galea at game size
+    let crest = abs(c.x) < 1.0 and vw_ball(c, float3 { 0.0, -0.8, 74.0 }, float3 { 1.0, 4.6, 4.4 }) and c.z > 73.2
+    if crest: TEAM
+    elif knob: BRASS
     elif bowl(c): (if c.z < 71.9 and c.y > -1.0 and c.z > 70.0: BRASS else: METAL)
     elif nape: (if c.y < -6.0: BRASS else: METAL)
     elif cheek: BRASS
@@ -53,10 +56,12 @@ vw_fill(galea, int3 { -6, -8, 63 }, int3 { 6, 5, 76 }) c:
 save("roman_galea", galea, HEAD, "head")
 
 let monte = vw_piece { "montefortino", 0 }
-vw_fill(monte, int3 { -6, -8, 64 }, int3 { 6, 5, 78 }) c:
+vw_fill(monte, int3 { -6, -8, 64 }, int3 { 6, 5, 81 }) c:
     let lip = c.y < -3.0 and c.y > -6.4 and c.z > 65.6 and c.z < 66.8 and abs(c.x) < 4.0
     let knob = vw_taper(c, 74.0, 77.0, float2 { 0.0, -0.5 }, float2 { 0.0, -0.5 }, float2 { 1.2, 1.2 }, float2 { 0.6, 0.6 })
-    if knob or lip: BRONZE
+    let plume = vw_ball(c, float3 { 0.0, -1.2, 78.4 }, float3 { 1.4, 2.4, 1.8 }) and c.z > 76.8  // a horsehair tuft on the knob
+    if plume: TEAM
+    elif knob or lip: BRONZE
     elif bowl(c) and c.z > 67.0: BRONZE
     else: 0
 save("roman_montefortino", monte, HEAD, "head")
