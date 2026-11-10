@@ -9,6 +9,7 @@ import gen.rng
 import gen.sha256
 import gen.datalib
 import gen.identity
+import view.vox
 import view.voxel
 
 let dirs = [ "../data/voxel", "../mods/scifi_test/data/voxel", "../mods/ww2/data/voxel" ]
