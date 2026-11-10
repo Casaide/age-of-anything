@@ -55,6 +55,7 @@ add vox_body_check "$L" vox_body_check.lobster          # a body from a .vox (#3
 add vox_mod_check "$L" vox_mod_check.lobster            # the example .vox mod (#381): loads with its model, its word gives its creature, its body from the .vox
 add size_check "$L" size_check.lobster                  # the one size table (data/voxel/sizes.json): every body as tall as it says, every mount at its ratio
 add rider_check "$L" rider_check.lobster                # riders and crews as drawn: every pair a race can field, showing, one on a seat, in the size table's ratios
+add walk_check "$L" walk_check.lobster                  # feet against the ground (#422): a planted foot goes back as far as the walk cycle covers, at a steady speed, for every body and mount
 add voxel_parts "$L" voxel_proto.lobster -- - parts test.turret voxels:../tests/voxel/parts   # a part stays on its hull in every pair of facings
 add voxel_parts_twin "$L" voxel_proto.lobster -- - parts test.twin voxels:../tests/voxel/parts   # two turrets on one hull
 add voxel_bodies "$L" voxel_proto.lobster -- - bodies voxels:../tests/voxel/parts $(for d in ../mods/*/data/voxel; do [ -d "$d" ] && printf "voxels:%s " "$d"; done)   # every body in every pack draws, its parts stay on it
