@@ -384,6 +384,28 @@ def foe_near(player:int, x:int, y:int) -> bool:
         if u_owner[i] < num_players and is_enemy(player, u_owner[i]) and dist2(u_x[i], u_y[i], x, y) <= BLOCK_FOE_NEAR * BLOCK_FOE_NEAR: return true
     return false
 
+// Where a small group ordered to (x, y) forms: there, or if another of the side's groups is to stand there, the nearest
+// free ground beside it across the way (ux, uy) it walks, so two formations don't stand in each other (#347).
+def free_spot(player:int, idx:[int], x:int, y:int, ux:int, uy:int) -> int, int:
+    let mine = map(u_x.length): 0
+    for(idx) i: mine[i] = 1
+    let r = (isqrt(2 * idx.length) + 1) * form_space(idx) / 2
+    def busy(px:int, py:int) -> bool:
+        if not walkable(px, py, lane(idx[0])): return true
+        for(u_x.length) j:
+            if mine[j] == 0 and u_owner[j] == player and u_group[j] > 0 and u_foe[j] == 0:
+                let reach = r + u_radius[j]
+                if dist2(u_tx[j], u_ty[j], px, py) < reach * reach: return true
+        return false
+    if not busy(x, y): return x, y
+    for(4) k:
+        for(2) side:
+            let off = (k + 1) * 2 * r * (if side == 0: 1 else: -1)
+            let px = x - uy * off / ONE
+            let py = y + ux * off / ONE
+            if not busy(px, py): return px, py
+    return x, y
+
 // A group move's formation (World._formation): every unit's slot into slot_x / slot_y.
 // Returns the group, its centre (fx, fy) and pace.
 def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
@@ -415,8 +437,9 @@ def formation(player:int, ids:[int], ax:int, ay:int) -> int, int, int, int:
         ux = dx * ONE / d
         uy = dy * ONE / d
     if n >= BLOCK_FROM and not foe_near(player, cx, cy):
-        block_formation(group, idx, x, y, cx, cy, ux, uy)
-        return group, x, y, pace
+        let fx, fy = if n < BLOCK_ARMY: free_spot(player, idx, x, y, ux, uy) else: (x, y)
+        block_formation(group, idx, fx, fy, cx, cy, ux, uy)
+        return group, fx, fy, pace
     let bands = [ []::int, []::int, []::int ]
     var flank = []::int
     for(idx) i:
