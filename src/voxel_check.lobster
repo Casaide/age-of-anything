@@ -7,6 +7,7 @@
 //   apart     no two creatures' silhouettes alike (beetles "look too much like spiders")
 //   whole     the filled body is one piece (nothing floating free)
 //   lobster voxel_check.lobster -- [report]   (report: the numbers only, no failing)
+import from "../creel/src"
 import std
 import vec
 import dictionary

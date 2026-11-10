@@ -1,6 +1,7 @@
 // A body traced from drawings: each view scaled to the published dimensions, a voxel kept only if it's inside the side, top and
 // front outlines. `carve -- <spec> build` writes the body, `carve -- <spec> check <dir>` measures it against the outlines and draws
 // the overlays. tools/trace/refs.sh fetches the drawings; a spec (mods/ww2/trace/) says what to read from them.
+import from "../creel/src"
 import std
 import vec
 import dictionary

@@ -1,5 +1,6 @@
 // The OS cursors in a real window (#222): every kind makes a cursor and takes over, hiding it leaves the mouse free.
 // Run from src: lobster cursor_check.lobster
+import from "../creel/src"
 import std
 import vec
 import color

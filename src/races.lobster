@@ -1,5 +1,6 @@
 // The races the Lobster generator makes, one line of sorted JSON each (compared with race_dump.gd).
 // Run: lobster races.lobster -- [mods:a,b] rules "prompt" ...  (prints them)
+import from "../creel/src"
 import std
 import dictionary
 import gen.json

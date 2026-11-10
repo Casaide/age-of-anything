@@ -29,6 +29,7 @@
 //       what each soldiers' research does to the lines it reaches (with it, one side only, vs without, against the
 //       panel), and the counters it flips; castle: the cultures' and creatures' own research (measured, not fitted).
 // Under D-193 this belongs with the generator in the race-generation toolkit module (modules/racegen), not the engine.
+import from "../creel/src"
 import std
 import vec
 import dictionary

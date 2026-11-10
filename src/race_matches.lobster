@@ -8,6 +8,7 @@
 // A prompt's underscores read as spaces (swamp_frogs), for shell scripts. With shard:<i>/<n> it plays every
 // n-th match and prints them as "@@" lines; `combine <logs>` (shards.sh) makes the tables from them.
 
+import from "../creel/src"
 import std
 import vec
 import dictionary
