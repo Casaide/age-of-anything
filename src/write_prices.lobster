@@ -5,6 +5,7 @@
 // set (replaced in place, or added right after its points, with the same spacing). A slot's go on that line of the
 // roster in every data/rules/*.json (added after its "slot"), "size:giant" and "size:tiny" in their cost as
 // giant_price_points and tiny_price_points (what a tiny one takes off).
+import from "../creel/src"
 import std
 import dictionary
 import gen.json

@@ -9,6 +9,7 @@
 //   shards.sh mass_battle.lobster [age] [budget] ... [jobs=N]        the matches side by side, printed in order
 // (age 2 and budget 1500 by default; beasts / heroes: just those matches)
 
+import from "../creel/src"
 import std
 import vec
 import dictionary

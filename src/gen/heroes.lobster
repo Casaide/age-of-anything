@@ -32,13 +32,6 @@ def hero_chosen(race:JV) -> string:
     let r = new_rng(hash_text(as_str(at(race, "key")) + "|hero"))
     return rpick(r, roster_for(as_str(at(race, "creature")), as_str(at(race, "family"))))
 
-def strip_edges(s:string) -> string:
-    var a = 0
-    var b = s.length
-    while a < b and s[a] <= ' ': a++
-    while b > a and s[b - 1] <= ' ': b--
-    return substring(s, a, b - a)
-
 // {signature, name, given}
 def hero_pick(key:string, cid:string, fid:string, sid:string) -> JV:
     let r = new_rng(hash_text(key + "|hero|" + sid))
