@@ -51,7 +51,7 @@ add test_shot_look "$L" test_shot_look.lobster  # shots look faster and land whe
 add voxel_check "$L" voxel_check.lobster                # the voxel units' art: straight standing knees, skins that never clip or grey, kit that keeps the creature's shape, no look-alikes, no specks
 add vox_check "$L" vox_check.lobster                    # the .vox reader (#313): models, palette, MATL, the scene graph, broken files
 add vox_model_check "$L" vox_model_check.lobster        # .vox models as a shape (#313): placement, mirror, facings, materials, the bake key
-add vox_body_check "$L" vox_body_check.lobster          # a body from a .vox (#313): its points layer, parts on points, limbs on their bones through a walk, mirrored
+add vox_body_check "$L" vox_body_check.lobster          # a body from a .vox (#313): joints from the drawing, points layer, the walk, standing on its legs, bad files named
 add size_check "$L" size_check.lobster                  # the one size table (data/voxel/sizes.json): every body as tall as it says, every mount at its ratio
 add rider_check "$L" rider_check.lobster                # riders and crews as drawn: every pair a race can field, showing, one on a seat, in the size table's ratios
 add voxel_parts "$L" voxel_proto.lobster -- - parts test.turret voxels:../tests/voxel/parts   # a part stays on its hull in every pair of facings
