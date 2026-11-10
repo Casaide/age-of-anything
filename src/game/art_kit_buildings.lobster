@@ -289,12 +289,12 @@ def akb_keep(name:string, model:MNode, shadow:bool, pivot:float3 = float3_0, sha
 
 def akb_keep_frame(name:string, sprite:string, w:int, h:int, at:float2):
     if akb_check_dump != "" and w > 0 and h > 0:  // (sheet: every frame of a look as a PNG)
-        write_file("{akb_check_dump}/{tokenize(name, ":", "")[tokenize(name, ":", "").length - 1]}.png", bmat_png(map(sprite.length) i: sprite[i], w, h), 0, 1)
+        write_file("{akb_check_dump}/{tokenize(name, ":", "")[tokenize(name, ":", "").length - 1]}.png", png_bytes(map(sprite.length) i: sprite[i], w, h), 0, 1)
     keep_frame(name, sprite, w, h, at)
     bake_pulse()
     if akb_cache_stem != "" and w > 0 and h > 0:
         let file = "{akb_cache_stem}_{akb_cache_frames.length}.png"
-        write_file(file, bmat_png(map(sprite.length) i: sprite[i], w, h))
+        write_file(file, png_bytes(map(sprite.length) i: sprite[i], w, h))
         bake_pulse()
         akb_cache_frames.push(AkbFrame { name, file, w, h, int(at.x + 0.5), int(at.y + 0.5) })
 
@@ -509,7 +509,7 @@ def akb_check(archs:[string]) -> int:
                     if tv > 0:
                         print "NOTE {name}: its model\'s team colour ({tv} voxels) doesn\'t show from the game\'s view"
                         hidden++
-                        if akb_check_dump != "": write_file("{akb_check_dump}/{arch}_{type}{ml[1]}.png", bmat_png(map(sprite.length) i: sprite[i], w, h), 0, 1)
+                        if akb_check_dump != "": write_file("{akb_check_dump}/{arch}_{type}{ml[1]}.png", png_bytes(map(sprite.length) i: sprite[i], w, h), 0, 1)
         print "vbcheck {arch}: looks checked in {int(seconds_elapsed() - t0)} s"
     print "vbcheck: {looks_n} looks, {failed} failed, {hidden} with their team colour out of sight (NOTE lines)"
     return failed
