@@ -143,7 +143,9 @@ class vx_model:
 
 let vx_MODEL_PAD = 3
 let vx_models = []::vx_model
-let vx_model_keys = []::string    // per model: its file and material map
+let vx_model_keys = []::string  // per model: its file and material map
+var vx_creel = []::int          // the creel.vox palette's colours, index 1 first: each a base material's swatch (vox_palette.lobster)
+var vx_creel_mats = []::int
 var vx_cur_dir = "../data/voxel"  // the data folder being loaded: a shape's model is in its models/
 
 // A palette index's material: the shape's `mats` names it, else a material of exactly its colour, else a fixed
@@ -155,6 +157,8 @@ def vx_vox_mat(f:vox_file, file:string, index:int, mats:JV) -> int:
     let c = float3 { float((rgb >> 16) & 255), float((rgb >> 8) & 255), float(rgb & 255) } / 255.0
     let same = find(vx_MAT_BASE) b: magnitude(b - c) < 0.001
     if same >= 0: return same
+    let swatch = find(vx_creel) k: k == rgb  // (a creel.vox swatch a step off its colour, where two materials share one)
+    if swatch >= 0: return vx_creel_mats[swatch]
     let name = "vox:{file}:{index}"
     var m = find(vx_mat_names) n: n == name
     if m < 0:
@@ -198,9 +202,16 @@ def vx_model_of(file:string, mats:JV) -> int:
 
 // A .vox file in the data folder's models/ (a broken one stops the load).
 def vx_vox_file(file:string) -> vox_file:
-    let f = vox_parse(assert read_file(vx_cur_dir + "/models/" + file))
-    assert f.error == ""
+    let bytes = read_file(vx_cur_dir + "/models/" + file)
+    if not bytes: vx_vox_stop(file, [ "no such file in {vx_cur_dir}/models" ])
+    let f = vox_parse(bytes)
+    if f.error != "": vx_vox_stop(file, [ f.error ])
     return f
+
+// A broken .vox stops the load, saying what's wrong with it ("file: why", one line each).
+def vx_vox_stop(file:string, why:[string]):
+    for(why) w: print "{file}: {w}"
+    assert false
 
 // Model n of a .vox file, its palette mapped to materials (loaded once per file, model and map).
 def vx_model_in(f:vox_file, file:string, mi:int, mats:JV) -> int:
@@ -753,8 +764,42 @@ def vx_vox_piece_of(f:vox_file, nd:vox_node, i:int) -> vx_vox_piece:
     let side = if dot_at > 0: substring(nd.name, dot_at + 1, nd.name.length - dot_at - 1) else: ""
     return vx_vox_piece { name, side, i, centre, end(a0), end(a1) }
 
+// What's wrong with a .vox body for body b, or nothing: each shown object a limb piece (thigh, shin, upper_arm,
+// forearm, foot, hand; .r or .l, a limb's two pieces together, the .r drawn) or named after one of b's points; mats
+// mapping a palette index to one of our materials.
+def vx_vox_problems(f:vox_file, b:vx_body_spec, mats:JV) -> [string]:
+    let out = []::string
+    let shown = []::string
+    for(f.nodes) nd:
+        if nd.layer != "points" and not nd.hidden:
+            shown.push(nd.name)
+            let dot_at = find(nd.name) c: c == '.'
+            let name = if dot_at > 0: substring(nd.name, 0, dot_at) else: nd.name
+            let side = if dot_at > 0: substring(nd.name, dot_at + 1, nd.name.length - dot_at - 1) else: ""
+            let limb = (find(vx_VOX_BONES) n: n == name) >= 0 or name == "foot" or name == "hand"
+            if nd.name == "": out.push("an object without a name (name it after a body point or a limb piece)")
+            elif limb and side != "r" and side != "l": out.push("{nd.name}: a limb piece ends .r or .l")
+            elif not limb and (find(b.pnames) n: n == nd.name) < 0:
+                let known = concat_string(b.pnames, ", ")
+                out.push("{nd.name}: not a body point ({known}) or a limb piece")
+    for(2) limb: for([ "r", "l" ]) side:
+        let up = "{vx_VOX_BONES[limb * 2]}.{side}"
+        let low = "{vx_VOX_BONES[limb * 2 + 1]}.{side}"
+        let has_up = (find(shown) n: n == up) >= 0
+        let has_low = (find(shown) n: n == low) >= 0
+        if has_up != has_low: out.push(if has_up: "{up} without {low}" else: "{low} without {up}")
+        if side == "l" and has_up and (find(shown) n: n == "{vx_VOX_BONES[limb * 2]}.r") < 0:
+            out.push("{up} without {vx_VOX_BONES[limb * 2]}.r (the right side sets the joints)")
+    for(mats.keys) k, i:
+        let n = string_to_int(k)
+        if n < 1 or n > 255 or string(n) != k: out.push("mats: {k} isn\'t a palette index (1 to 255)")
+        if (find(vx_mat_names) m: m == as_str(mats.a[i])) < 0: out.push("mats: {k} names {as_str(mats.a[i])}, not one of our materials")
+    return out
+
 def vx_vox_body(b:vx_body_spec, file:string, mats:JV):
     let f = vx_vox_file(file)
+    let wrong = vx_vox_problems(f, b, mats)
+    if wrong.length: vx_vox_stop(file, wrong)
     def rest(name:string) -> float3:
         let k = find(b.pnames) n: n == name
         assert k >= 0
@@ -928,6 +973,13 @@ def vx_load(dirs:[string]):
                     vx_MAT_PMIX[m] = gfloat(po, "mix", 0.0)
                     vx_MAT_C2[m] = vx_hex(gstr(po, "color2", "#000000"))
                     vx_MAT_PROUND[m] = if gbool(po, "round", false): 1 else: 0
+    let creel = read_file(dirs[0] + "/creel.vox")
+    if creel:
+        let cf = vox_parse(creel)
+        assert cf.error == ""
+        let base = filter(vx_mat_names.length) m: (find(vx_mat_names[m]) c: c == '#') < 0
+        vx_creel = map(base.length) i: vox_rgb(cf, i + 1)
+        vx_creel_mats = base
     vx_make_burnt()
     vx_mat_cols = copy(vx_MAT_BASE)
     vx_mat_team = vx_mat("team")
