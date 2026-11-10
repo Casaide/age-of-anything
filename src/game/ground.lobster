@@ -5,7 +5,8 @@
 // standing pools, rock, trails worn by walkers, each meeting the next along a height noise per
 // pixel, and water with sand, a wet edge, depth, the sky and ripples. The fog is drawn over it, per tile. Each culture's paths come from game/paths.lobster.
 
-let MASK_K = 4  // mask samples per tile
+let MASK_K = 4   // mask samples per tile
+let MASK_CH = 6  // build_masks' channels: the masks' four and the props' two
 let OCCLUDE_BACK = 2
 let OCCLUDE_SORT = 6.0
 var relief_faces = []::resource<mesh>?  // per level group 1..3
@@ -28,6 +29,7 @@ PIXELFUNCTIONS
         return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
     }
     float fbm(vec2 p) { return vnoise(p) * 0.5 + vnoise(p * 2.03 + 5.2) * 0.3 + vnoise(p * 4.1 + 9.7) * 0.2; }
+    float zn(vec2 p) { return vnoise(p) * 0.65 + vnoise(p * 2.03 + 5.2) * 0.35; }  // (two octaves: enough for zones over many tiles)
     // A pixel's own number: an integer hash (sin's loses its way on device px far from the origin).
     float hs(vec2 p, uint s) {
         uvec2 q = uvec2(ivec2(floor(p))) * uvec2(1597334673u, 3812015801u);
@@ -75,8 +77,8 @@ PIXELFUNCTIONS
         return 0.0;
     }
     vec3 tufted(vec3 col, float k) {
-        return k == 1.0 ? col * 1.34 + vec3(0.03, 0.04, 0.0) : k == 2.0 ? col * 1.1 + vec3(0.0, 0.02, 0.0) : k == 3.0 ? col * 0.64
-             : k == 4.0 ? col * 1.5 + vec3(0.07, 0.07, 0.0) : k == 5.0 ? col * 0.8 : col;
+        return k == 1.0 ? col * 1.18 + vec3(0.02, 0.025, 0.0) : k == 2.0 ? col * 1.06 + vec3(0.0, 0.01, 0.0) : k == 3.0 ? col * 0.8
+             : k == 4.0 ? col * 1.26 + vec3(0.04, 0.04, 0.0) : k == 5.0 ? col * 0.9 : col;
     }
     // A voxel stone, in a cell of 5 art px: 2 by 2, its top lit, its left side mid and its right dark, its shadow down
     // to the right. 0 none, 1 top, 2 left, 3 right, 4 shadow.
@@ -90,7 +92,7 @@ PIXELFUNCTIONS
         return d.x > 0.0 ? 4.0 : 0.0;
     }
     vec3 stoned(vec3 col, vec3 rock, float k) {
-        return k == 1.0 ? rock * 1.18 + vec3(0.03) : k == 2.0 ? rock * 0.92 : k == 3.0 ? rock * 0.66 : k == 4.0 ? col * 0.8 : col;
+        return k == 1.0 ? rock * 1.1 + vec3(0.02) : k == 2.0 ? rock * 0.94 : k == 3.0 ? rock * 0.8 : k == 4.0 ? col * 0.9 : col;
     }
 
     // A texel of the ground atlas (data/ground/atlas.png, src/ground_textures.lobster): tile k, at p art px, wrapping.
@@ -116,7 +118,7 @@ PIXELFUNCTIONS
     // A layer laid over the ground where its weight w passes 0.5, its edge ragged by the two heights: the higher shows
     // through near the line (blades over dirt, stones through grass), in a band a few texels wide.
     void splat(inout vec3 col, inout float h, vec4 s, float w) {
-        float t = smoothstep(-0.05, 0.05, (s.a - h) * 0.8 + (w - 0.5) * 2.2);
+        float t = smoothstep(-0.09, 0.09, (s.a - h) * 0.8 + (w - 0.5) * 2.2);
         col = mix(col, s.rgb, t);
         h = mix(h, s.a, t);
     }
@@ -131,7 +133,7 @@ SHADER terrain
         iworld = vec3(apos.xy / 1.5 + vec2(0.0, atc.x), 1.0 + atc.y);   // canvas units (64 x 32 a tile) on the base plane (raised ground says how far it was lifted), and a shade
     PIXEL
         INPUTS iworld:3
-        UNIFORMS tex0 tex1 tex2 tex3 tex4
+        UNIFORMS tex0 tex1 tex2 tex3 tex4 tex5
         UNIFORM vec2 map_size
         UNIFORM float art_px
         UNIFORM float dev_px
@@ -146,8 +148,9 @@ SHADER terrain
         // on a Retina Mac, and never less than one when zoomed out), so the ground stays fine at every zoom.
         vec2 ap = floor(world * 1.5 * dev_px / max(1.0, floor(art_px + 0.5)));
         vec4 m = texture(tex0, t / map_size);
+        vec4 pm = texture(tex5, t / map_size);  // (the ground under props: R woods, G stone and gold)
         float n = vnoise(t * 2.3) * 0.6 + vnoise(t * 6.1) * 0.4;
-        float edge_n = fbm(t * 1.1 + 3.0) - 0.5 + (vnoise(t * 3.7 + 11.0) - 0.5) * 0.4 + (vnoise(t * 9.0 + 5.0) - 0.5) * 0.25 + (vnoise(t * 21.0 + 2.0) - 0.5) * 0.12;  // (ragged edges, at a few scales)
+        float edge_n = zn(t * 1.1 + 3.0) - 0.5 + (vnoise(t * 3.7 + 11.0) - 0.5) * 0.4 + (vnoise(t * 9.0 + 5.0) - 0.5) * 0.25 + (vnoise(t * 21.0 + 2.0) - 0.5) * 0.12;  // (ragged edges, at a few scales)
         // the grass in zones over many tiles: lush by water, darker by woods and reeds, dry and yellow on open and
         // raised ground, flowered meadows, patches of bare earth; each laid over the last along its own ragged edge
         float lush = smoothstep(0.04, 0.35, m.r);
@@ -155,24 +158,39 @@ SHADER terrain
         vec4 s = ground(tex4, 0, ap);
         vec3 col = s.rgb;
         float h = s.a;
-        float w_dark = max(m.b * 1.3, smoothstep(0.62, 0.8, fbm(t * 0.05 + 7.0)) * 0.9) + edge_n * 0.35;
+        float w_olive = (zn(t * 0.22 + 80.0) - 0.5) * 1.6 + 0.5 + edge_n * 0.3;  // (a second and third grass mixed in over a few tiles)
+        if (w_olive > 0.35) splat(col, h, ground(tex4, 12, ap), w_olive);
+        float w_worn = (zn(t * 0.45 + 95.0) - 0.5) * 1.6 + 0.24 + edge_n * 0.3;
+        if (w_worn > 0.35) splat(col, h, ground(tex4, 13, ap), w_worn);
+        float w_dark = max(m.b * 1.3, smoothstep(0.62, 0.8, zn(t * 0.05 + 7.0)) * 0.9) + edge_n * 0.35;
         if (w_dark > 0.35) splat(col, h, ground(tex4, 2, ap), w_dark);
-        float dry_zone = smoothstep(0.42, 0.68, fbm(t * 0.06 + 17.0));
+        float dry_zone = smoothstep(0.42, 0.68, zn(t * 0.06 + 17.0));
         float w_dry = dry_zone * (1.0 - lush) * (1.0 - m.b) + raised * 0.35 + edge_n * 0.35;
         if (w_dry > 0.35) splat(col, h, ground(tex4, 1, ap), w_dry);
-        float w_meadow = smoothstep(0.6, 0.75, fbm(t * 0.09 + 30.0)) * (1.0 - m.b) + edge_n * 0.3;
+        float w_meadow = smoothstep(0.6, 0.75, zn(t * 0.09 + 30.0)) * (1.0 - m.b) + edge_n * 0.3;
         if (w_meadow > 0.35) splat(col, h, ground(tex4, 3, ap), w_meadow);
-        float w_earth = smoothstep(0.56, 0.84, fbm(t * 0.16 + 50.0)) * (0.55 + 0.45 * dry_zone) * (1.0 - lush) * (1.0 - m.b) + edge_n * 0.3;
+        float w_earth = smoothstep(0.6, 0.88, zn(t * 0.16 + 50.0)) * (0.55 + 0.45 * dry_zone) * (1.0 - lush) * (1.0 - m.b) + edge_n * 0.3;
         if (w_earth > 0.35) splat(col, h, ground(tex4, 9, ap), w_earth);
-        col *= mix(vec3(1.03, 1.01, 0.94), vec3(0.97, 1.0, 1.03), vnoise(t * 0.08 + 61.0));  // (a faint drift of hue)
-        col *= 0.94 + 0.12 * fbm(t * 0.35 + 70.0);  // (and of tone, within a zone)
+        col *= mix(vec3(1.06, 1.0, 0.86), vec3(0.92, 1.0, 1.08), zn(t * 0.12 + 61.0));  // (a drift of hue from region to region)
+        col *= 0.94 + 0.12 * zn(t * 0.35 + 70.0);  // (and of tone, within a zone)
         float grass = 1.0;  // (how much of the top is grass, for the tufts)
+        // the ground under props: a forest floor under the woods, scree about stone and gold
+        float w_forest = pm.r * 1.5 - 0.1 + edge_n * 0.35;
+        if (w_forest > 0.35) {
+            splat(col, h, ground(tex4, 10, ap), w_forest);
+            grass *= 1.0 - smoothstep(0.45, 0.55, w_forest);
+        }
+        float w_scree = pm.g * 1.7 - 0.05 + edge_n * 0.6;
+        if (w_scree > 0.35) {
+            splat(col, h, ground(tex4, 11, ap), w_scree);
+            grass *= 1.0 - smoothstep(0.45, 0.55, w_scree);
+        }
         // swamp: mud with standing pools between reeds
         float w_mud = m.g + (n - 0.5) * 0.3 + edge_n * 0.3;
         bool pool_here = false;
         if (w_mud > 0.35) {
             splat(col, h, ground(tex4, 8, ap), w_mud);
-            float hummock = (fbm(t * 0.7 + 90.0) - 0.5) * 1.4 + 0.5 + edge_n * 0.3;  // (tussocks of bog grass in the mud)
+            float hummock = (zn(t * 0.7 + 90.0) - 0.5) * 1.4 + 0.5 + edge_n * 0.3;  // (tussocks of bog grass in the mud)
             if (hummock > 0.35) splat(col, h, ground(tex4, 2, ap) * vec4(0.9, 0.92, 0.8, 1.0), hummock);
             float pool = vnoise(t * 0.55 + 13.0) * 0.75 + vnoise(t * 2.0 + 3.0) * 0.25 + (h - 0.4) * 0.05;
             if (w_mud > 0.5 && pool > 0.6) {
@@ -253,8 +271,8 @@ SHADER terrain
             }
         }
         // light: a soft roll over several tiles
-        float macro = fbm(t * 0.21);
-        float lit = clamp(0.5 + (macro - fbm(t * 0.21 + vec2(0.35, 0.12))) * 2.2, 0.0, 1.0);
+        float macro = zn(t * 0.21);
+        float lit = clamp(0.5 + (macro - zn(t * 0.21 + vec2(0.35, 0.12))) * 2.2, 0.0, 1.0);
         col *= 0.93 + 0.13 * lit;
         // the shore: a sand fringe, a darker wet band, then water (deep to shallow), its foam, the sky and fine ripples
         float water = m.r + (n - 0.5) * 0.3 + edge_n * 0.06;
@@ -340,7 +358,8 @@ SHADER cliff
 """
 
 var mask_tex:resource<texture>? = nil
-var mask_bytes = []::int  // the masks as Godot's image holds them (RGBA bytes, MASK_K a tile)
+var prop_tex:resource<texture>? = nil  // the ground under props (prop_channel)
+var mask_bytes = []::int               // the masks as Godot's image holds them (RGBA bytes, MASK_K a tile)
 var paths_tex:resource<texture>? = nil
 var arc_tex:resource<texture>? = nil
 var wear_tex:resource<texture>? = nil
@@ -368,6 +387,20 @@ def mask_channel(name:string) -> int:
         case "rock": 3
         default: -1
 
+// The ground under the props (D-242), blurred as the masks are into prop_tex: R woods (a forest floor), G stone, gold and
+// rubble (scree). Channels 4 and 5 of build_masks' samples.
+def prop_channel(name:string) -> int:
+    return switch name:
+        case "tree", "stump": 4
+        case "stone", "gold", "rubble": 5
+        default: -1
+
+def prop_weight(name:string) -> float:
+    return switch name:
+        case "stump": 0.6
+        case "rubble": 0.7
+        default: 1.0
+
 def mask_weight(name:string) -> float:
     return switch name:
         case "shallows": 0.62
@@ -382,27 +415,30 @@ def mask_weight(name:string) -> float:
 def build_masks():
     let w = W * MASK_K
     let h = H * MASK_K
-    let a = map(w * h * 4): 0.0
+    let a = map(w * h * MASK_CH): 0.0
     for(h) y:
         for(w) x:
             let name = tr_names[terrain[(y / MASK_K) * W + x / MASK_K]]
             let ch = mask_channel(name)
-            if ch >= 0: a[(y * w + x) * 4 + ch] = mask_weight(name)
-    let b = map(w * h * 4): 0.0
+            if ch >= 0: a[(y * w + x) * MASK_CH + ch] = mask_weight(name)
+            let pc = prop_channel(name)
+            if pc >= 0: a[(y * w + x) * MASK_CH + pc] = prop_weight(name)
+    let b = map(w * h * MASK_CH): 0.0
     for(5):
         for(h) y:
             for(w) x:
                 let x0 = max(x - 1, 0)
                 let x1 = min(x + 1, w - 1)
-                for(4) ch: b[(y * w + x) * 4 + ch] = (a[(y * w + x0) * 4 + ch] + a[(y * w + x) * 4 + ch] + a[(y * w + x1) * 4 + ch]) / 3.0
+                for(MASK_CH) ch: b[(y * w + x) * MASK_CH + ch] = (a[(y * w + x0) * MASK_CH + ch] + a[(y * w + x) * MASK_CH + ch] + a[(y * w + x1) * MASK_CH + ch]) / 3.0
         for(h) y:
             let y0 = max(y - 1, 0)
             let y1 = min(y + 1, h - 1)
             for(w) x:
-                for(4) ch: a[(y * w + x) * 4 + ch] = (b[(y0 * w + x) * 4 + ch] + b[(y * w + x) * 4 + ch] + b[(y1 * w + x) * 4 + ch]) / 3.0
-    mask_bytes = map(w * h * 4) i: clamp(int(a[i] * 255.0 + 0.5), 0, 255)
-    let rows = map(h) y: map(w) x: float4 { byte_of(a[(y * w + x) * 4]), byte_of(a[(y * w + x) * 4 + 1]), byte_of(a[(y * w + x) * 4 + 2]), byte_of(a[(y * w + x) * 4 + 3]) }
-    mask_tex = gl.create_texture(rows, texture_format_clamp | texture_format_nomipmap)
+                for(MASK_CH) ch: a[(y * w + x) * MASK_CH + ch] = (b[(y0 * w + x) * MASK_CH + ch] + b[(y * w + x) * MASK_CH + ch] + b[(y1 * w + x) * MASK_CH + ch]) / 3.0
+    mask_bytes = map(w * h * 4) i: clamp(int(a[(i / 4) * MASK_CH + i % 4] * 255.0 + 0.5), 0, 255)
+    def texel(k:int, c:int) -> float4: return float4 { byte_of(a[k * MASK_CH + c]), byte_of(a[k * MASK_CH + c + 1]), byte_of(a[k * MASK_CH + c + 2]), byte_of(a[k * MASK_CH + c + 3]) }
+    mask_tex = gl.create_texture(map(h) y: map(w) x: texel(y * w + x, 0), texture_format_clamp | texture_format_nomipmap)
+    prop_tex = gl.create_texture(map(h) y: map(w) x: float4 { byte_of(a[(y * w + x) * MASK_CH + 4]), byte_of(a[(y * w + x) * MASK_CH + 5]), 0.0, 0.0 }, texture_format_clamp | texture_format_nomipmap)
     ground_stale = true
     if not paths_tex:  // (until the paths are painted: game/paths.lobster)
         let zero = map(4): map(4): float4_0
@@ -659,6 +695,7 @@ def draw_terrain_mesh(m:resource<mesh>, art_px:float):
     gl.set_mesh_texture(m, 0, 2, wt)
     gl.set_mesh_texture(m, 0, 3, at)
     gl.set_mesh_texture(m, 0, 4, ground_atlas())
+    gl.set_mesh_texture(m, 0, 5, assert prop_tex)
     gl.render_mesh(m)
 
 def draw_occluder(o:Occluder, art_px:float):
@@ -686,6 +723,7 @@ def draw_ground(art_px:float):
     gl.set_mesh_texture(gq, 0, 2, wt)
     gl.set_mesh_texture(gq, 0, 3, at)
     gl.set_mesh_texture(gq, 0, 4, ground_atlas())
+    gl.set_mesh_texture(gq, 0, 5, assert prop_tex)
     gl.render_mesh(gq)
 
 // The time the terrain shader sees: in steps, so the water moves only when the still ground is redrawn.
