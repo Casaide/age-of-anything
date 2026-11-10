@@ -104,7 +104,7 @@ def block_place(i:int) -> int, int:
 
 // The velocity unit i at (x, y) bends by to keep off its neighbours, at its speed s.
 // (ex, ey): the way to its place. Round its own side it keeps to the side it has started to lean to, so it doesn't weave.
-def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
+def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int, still:bool) -> int, int:
     var ax = 0
     let vx = u_vx[i]
     let vy = u_vy[i]
@@ -119,6 +119,9 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
     let me = u_owner[i]
     let air = t_air[u_kind[i]]
     let ln = lane(i)
+    var need_pos = 0  // (after a foe: how far across its heading it must go to pass every standing one on each side)
+    var need_neg = 0
+    var still_m = 0
     let cx = clamp(x / TILE, 0, W - 1)
     let cy = clamp(y / TILE, 0, H - 1)
     for(3) oy:
@@ -134,6 +137,7 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
                 let j = sp_items[k]
                 k++
                 if j == i or u_perch[j] != 0 or t_air[u_kind[j]] != air: continue
+                if still and (u_owner[j] != me or u_moving[j] != 0): continue  // (after a foe: only round its own that stand, #391)
                 let rr = ri + u_radius[j]
                 let look = rr * AVOID_LOOK / 2
                 let dx = x - u_x[j]
@@ -157,8 +161,10 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
                     // Its own side: round them, to the side it's already on, more than away (a standing one hardest; its own
                     // block only once they press into each other, as their places keep them apart).
                     let same = u_block[i] > 0 and u_block[j] == u_block[i]
-                    let army = not same and u_block[j] > 0 and u_group[j] == u_group[i]                                                             // (its army's other blocks: slipped through to its place)
-                    let close = if same or army or (u_stuck[i] >= 6 and u_group[j] != u_group[i]): rr * 3 / 4 elif u_moving[j] == 0: rr else: look  // (one standing: right up to it, so it eases aside)
+                    let army = not same and u_block[j] > 0 and u_group[j] == u_group[i]                                                                              // (its army's other blocks: slipped through to its place)
+                    let close = if still: look elif same or army or (u_stuck[i] >= 6 and u_group[j] != u_group[i]): rr * 3 / 4 elif u_moving[j] == 0: rr else: look  // (one standing: right up to it, so it eases aside)
+                    // (after a foe: only one ahead, in its way)
+                    if still and (h == 0 or ux * hx + uy * hy >= 0 or abs(ux * -hy + uy * hx) / h * d / ONE >= rr): continue
                     if d < close:
                         let w = if same: 3 elif u_moving[j] == 0 and not army: 2 else: 1
                         var sx = ux
@@ -167,13 +173,23 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
                             let side = (ux * -hy + uy * hx) / h  // (its offset across its own heading)
                             var sgn = if abs(side) < ONE / 4 and lean_sgn != 0: lean_sgn elif side > 0: 1 elif side < 0: -1 elif u_id[i] < u_id[j]: 1 else: -1
                             if not walkable(x - hy * rr * sgn / h, y + hx * rr * sgn / h, ln): sgn = -sgn  // (not into a wall or the water: the other side)
+                            if still:
+                                let lj = -side * d / ONE  // (its offset across the heading)
+                                need_pos = max(need_pos, lj + rr)
+                                need_neg = max(need_neg, rr - lj)
                             sx = -hy * ONE / h * sgn
                             sy = hx * ONE / h * sgn
                             if (ux * hx + uy * hy) / h < 0 or same:  // (already past it, or its own block: off to the side and away)
                                 sx = sx + ux
                                 sy = sy + uy
-                        ax += sx * s * (close - d) * w / (close * ONE)
-                        ay += sy * s * (close - d) * w / (close * ONE)
+                        if still: still_m += s * (close - d) * w / close
+                        else:
+                            ax += sx * s * (close - d) * w / (close * ONE)
+                            ay += sy * s * (close - d) * w / (close * ONE)
+    if still and h > 0:  // (round them all by the shorter way: two standing a gap too narrow apart don't cancel out, #391)
+        let sgn = if need_pos < need_neg: 1 elif need_neg < need_pos: -1 elif lean_sgn != 0: lean_sgn elif u_id[i] % 2 == 0: 1 else: -1
+        ax = -hy * still_m * sgn / h
+        ay = hx * still_m * sgn / h
     return ax, ay
 
 // Unit i at (x, y), speed s this tick, in lane mc: one tick's steering for (gx, gy), its turns and speed-ups scaled by `pace`
@@ -186,8 +202,11 @@ def steer_to(i:int, x:int, y:int, s:int, mc:int, gx:int, gy:int, pace:int, brake
     if u_block[i] == 0 and u_vx[i] * ex + u_vy[i] * ey < 0 and dd > s:  // (on its own, its way back against where it walks, a load dropped or a new order: it turns where it stands, #373)
         u_vx[i] = 0
         u_vy[i] = 0
+    // After a foe: straight at it, but round its own side standing in the way (shooting, working: they don't give way, #391);
+    // the rest of the crowd round it is bodies, separate()'s.
+    let avx, avy = avoid(i, x, y, s, ex, ey, u_foe[i] != 0)
     let v = isqrt(u_vx[i] * u_vx[i] + u_vy[i] * u_vy[i])
-    if u_foe[i] != 0 and dd > 0 and v > 0:  // (after a foe: it turns to it at once, keeping its pace, #351)
+    if u_foe[i] != 0 and dd > 0 and v > 0 and avx == 0 and avy == 0:  // (after a foe: it turns to it at once, keeping its pace, #351)
         u_vx[i] = ex * v / dd
         u_vy[i] = ey * v / dd
     if brake and dd <= PLACE_SETTLE and v <= acc and pace == 0:
@@ -200,10 +219,8 @@ def steer_to(i:int, x:int, y:int, s:int, mc:int, gx:int, gy:int, pace:int, brake
         let want = if brake: min(min(s, isqrt(2 * acc * dd)), dd) else: s  // (slowing to stop there, never past it in a tick; a marching place it trails a little)
         dvx = ex * want / dd
         dvy = ey * want / dd
-    if u_foe[i] == 0:  // (after a foe: straight at it; the crowd round it is bodies, separate()'s)
-        let avx, avy = avoid(i, x, y, s, ex, ey)
-        dvx += avx
-        dvy += avy
+    dvx += avx
+    dvy += avy
     var vx = u_vx[i]
     var vy = u_vy[i]
     var cx = dvx - vx
