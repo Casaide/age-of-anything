@@ -1789,6 +1789,7 @@ def art_density(zoom0:float):
     FX_ART_PX = ART_SCALE
     vx_set_res(1.1 * z)
     VX_DRAW_K = 1.1 / vx_RES
+    VX_ATLAS = 4096
 
 // Screen px per canvas unit: the diamond (48 (W + H) canvas units wide) MM_SIZE wide.
 def mm_scale() -> float: return MM_SIZE * hud_s() / (48.0 * float(W + H))

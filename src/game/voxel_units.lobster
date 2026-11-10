@@ -138,7 +138,7 @@ def vx_look_of(u:vx_unit_def, worker:bool) -> int:
 // ---- the bakes: a job is one look's poses in some modes, into an atlas of its own (its cells cropped to what's
 // drawn, packed in rows VX_ATLAS wide), baked a pose at a time: filled (in slices), then drawn in 8 facings
 
-let VX_ATLAS = 2048
+var VX_ATLAS = 2048  // (4096 at a high-DPI density: its frames are larger, #358)
 let VX_FORMATS = texture_format_clamp | texture_format_nomipmap | texture_format_nearest_mag | texture_format_nearest_min
 
 class vx_job:
