@@ -155,7 +155,7 @@ def avoid(i:int, x:int, y:int, s:int, ex:int, ey:int) -> int, int:
                 else:
                     // Its own side: round them, to the side it's already on, more than away (a standing one hardest; its own
                     // block only once they press into each other, as their places keep them apart).
-                    let same = u_block[j] == u_block[i]
+                    let same = u_block[i] > 0 and u_block[j] == u_block[i]
                     let army = not same and u_block[j] > 0 and u_group[j] == u_group[i]                                                             // (its army's other blocks: slipped through to its place)
                     let close = if same or army or (u_stuck[i] >= 6 and u_group[j] != u_group[i]): rr * 3 / 4 elif u_moving[j] == 0: rr else: look  // (one standing: right up to it, so it eases aside)
                     if d < close:
@@ -182,6 +182,9 @@ def steer_to(i:int, x:int, y:int, s:int, mc:int, gx:int, gy:int, pace:int, brake
     let ex = gx - x
     let ey = gy - y
     let dd = isqrt(ex * ex + ey * ey)
+    if u_block[i] == 0 and u_vx[i] * ex + u_vy[i] * ey < 0 and dd > s:  // (on its own, its way back against where it walks, a load dropped or a new order: it turns where it stands, #373)
+        u_vx[i] = 0
+        u_vy[i] = 0
     let v = isqrt(u_vx[i] * u_vx[i] + u_vy[i] * u_vy[i])
     if brake and dd <= PLACE_SETTLE and v <= acc and pace == 0:
         u_vx[i] = 0
