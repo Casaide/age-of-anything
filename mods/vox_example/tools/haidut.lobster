@@ -72,11 +72,11 @@ def lock(x:int, y:int) -> float: return float(((x * 73856093) ^ (y * 19349663)) 
 let pieces = []::piece
 
 // the head: a long oval face over a firm jaw, ears, the eyes (a dark voxel each, apart), a small nose, a handlebar moustache
-// that stands out from the face (thick under the nose, swept out to the cheeks, its tips curled up), and the kalpak (a fur cap a
+// that stands out from the face (thick under the nose, its ends drooping past the corners of the mouth), and the kalpak (a fur cap a
 // little wider than the head, a red band at its foot)
 // the moustache, column by column out from the middle: its lowest and highest voxel, and its depth
-let mous_lo = [65, 65, 65, 66, 67]
-let mous_hi = [66, 66, 66, 67, 67]
+let mous_lo = [65, 65, 65, 64, 63]
+let mous_hi = [66, 66, 66, 65, 64]
 let mous_y0 = [4.0, 4.0, 2.0, 2.0, 1.0]
 let mous_y1 = [5.0, 5.0, 4.0, 4.0, 3.0]
 let head = piece { "head", 0 }
