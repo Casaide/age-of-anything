@@ -24,3 +24,6 @@ Mods are folders in `mods/` (how to make one: `docs/modding.md`). Each loads onl
   `./play.sh lobby mods:ww2 rules:ww2_duel "races:sherman|panzer" army:6`
   To watch both sides' tanks fight:
   `./play.sh lobby mods:ww2 rules:ww2_duel "races:sherman|panzer" skirmish army:6 watch`
+- **Haiduts** (`vox_example`): 18th-century Bulgarian haiduts drawn in MagicaVoxel, the example of a unit made as a `.vox`
+  model (`mods/vox_example/tools/haidut.lobster` writes them). Type "haiduts" or "bulgarians":
+  `./play.sh lobby mods:vox_example "races:haiduts|romans" skirmish army:6`
