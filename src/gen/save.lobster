@@ -158,6 +158,8 @@ class WorldSave:
     u_block:[int]
     u_bx:[int]
     u_by:[int]
+    u_vx:[int]
+    u_vy:[int]
     u_hp:[int]
     u_foe:[int]
     u_cooldown:[int]
@@ -660,6 +662,8 @@ def world_bytes(bots:[Bot]) -> string:
         u_block,
         u_bx,
         u_by,
+        u_vx,
+        u_vy,
         u_hp,
         u_foe,
         u_cooldown,
@@ -1175,6 +1179,8 @@ def load_world_bytes(data:string) -> [Bot]:
     u_block = s.u_block
     u_bx = s.u_bx
     u_by = s.u_by
+    u_vx = s.u_vx
+    u_vy = s.u_vy
     u_hp = s.u_hp
     u_foe = s.u_foe
     u_cooldown = s.u_cooldown
