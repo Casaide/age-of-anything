@@ -107,6 +107,7 @@ def tree_pine(rng:Pcg, look:vglook, k:float, style:int) -> vgrid:
         let reach = (6.0 + 22.0 * pow(f, 0.9)) * wide
         let nb = 5 + int(3.0 * f)
         let off = randf_range(rng, 0.0, TAU)
+        let whorl = randf_range(rng, -1.0, 0.3)  // (each whorl its own tone: the tiers read apart)
         for(nb) i:
             let a = off + float(i) / float(nb) * TAU + vg_gauss(rng) * 0.25
             let d = float3 { rcos(a), rsin(a), 0.0 }
@@ -115,8 +116,8 @@ def tree_pine(rng:Pcg, look:vglook, k:float, style:int) -> vgrid:
             for(4) j:
                 let s = 0.35 + 0.65 * float(j) / 3.0
                 let c = at + d * reach * s + float3 { 0.0, 0.0, -reach * 0.35 * s + 1.5 }
-                vg_blob(g, c, 3.2 + 3.0 * s * f + 0.8, 2.3, 0.8, nz, VG_LEAF, randf_range(rng, -1.0, 0.3), 0.15, nil, 1.0)
-        z += randf_range(rng, 9.0, 12.0)
+                vg_blob(g, c, 2.8 + 3.0 * s * f + 0.6, 2.8, 0.8, nz, VG_LEAF, whorl + randf_range(rng, -0.25, 0.25), 0.15, nil, 1.0)
+        z += randf_range(rng, 12.0, 15.0)
     return g
 
 // The willow: a buttressed trunk, a dome of leaves, curtains of leaf strands hanging from it (style 1 taller, style 2
