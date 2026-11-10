@@ -278,7 +278,7 @@ def fe_box(id:int, at:float2, size:float2, text:string, placeholder:string, fs:i
     fe_well(at, size)
     if fe_field == id: ui_outline(at + float2_1 * 2.0, size - float2_1 * 4.0, 2.0 * fe_k, float4 { ui_look.accent.x, ui_look.accent.y, ui_look.accent.z, 0.6 })
     if ui_clicked() and fe_over(at, size): fe_focus(id, text)
-    let caret = if fe_field == id and (int(seconds_elapsed() * 2.0) % 2) == 0: "|" else: ""
+    let caret = if fe_field == id and (int(fe_clock() * 2.0) % 2) == 0: "|" else: ""
     let s = if text == "": placeholder else: text + caret  // (empty: the placeholder stays, the caret before it)
     let col = if text == "": ui_look.dim else: ui_look.text
     var f = fs
@@ -448,13 +448,17 @@ def fe_random_words() -> string:
     if rnd(2) == 0 and ki.length: words.push("with " + ki[rnd(ki.length)])
     return concat_string(words, " ")
 
+// The clock the army waits on: a recording's frames take far longer than they play for.
+def rec_frames(s:float) -> int: return int(s * rec_fps)  // (the typing's waits in frames of the take, at any fps:)
+def fe_clock() -> float: return if rec_dir != "": float(rec_n) / rec_fps else: seconds_elapsed()
+
 // A prompt changed: the name, roster and traits at once (generation is instant), the army once typing stops.
 def fe_regen(i:int):
     let s = fe_sides[i]
     let race = generate(fe_prompt(i), fe_rules, s.reroll)
     s.race = race
     s.gen++
-    s.dirty_at = seconds_elapsed()
+    s.dirty_at = fe_clock()
     let words = race_words_of(race, identity_of(rstr(race, "creature"), rstr(race, "family")), fe_rules)
     s.traits = [ words.bonuses, words.own, words.lacks,
                  map(glist(race, "heroes")) h: "{gstr(h, "name", "?")}: {gstr(h, "temper", "")} ({gstr(h, "aura", "")})",
@@ -1338,7 +1342,7 @@ def run_front(page0:string, typed:[string]) -> string:
         if fe_page == "net" and not fe_scanned and fe_frames > 1:
             fe_hosts = lan_scan(1.5)
             fe_scanned = true
-        if fe_page != "lab": fe_muster(seconds_elapsed())
+        if fe_page != "lab": fe_muster(fe_clock())
         gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
         gl.blend(1)
         if tree_open and tree_lobby:
@@ -1390,6 +1394,26 @@ def run_front(page0:string, typed:[string]) -> string:
             go = "start"
         // captures: the page once its armies stand
         if shot != "" and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and (not fe_looks_waiting() or fe_frames > 900) and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
+        if rec_dir != "" and rec_type.length > 0:  // (filming: the prompts typed in, side by side, each given time to muster)
+            if rec_n == 0:
+                gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
+                rec_wait = rec_frames(1.0)
+            if fe_page == "setup":
+                let rs = rec_side
+                if rec_wait > 0: rec_wait--
+                elif rs < rec_type.length:
+                    if rec_char == 0: fe_focus(rs, "")
+                    rec_char++
+                    gl.set_text_input(rec_type[rs].substring(0, min(rec_char, rec_type[rs].length)))
+                    if rec_char >= rec_type[rs].length:
+                        rec_side++
+                        rec_char = 0
+                        rec_wait = rec_frames(2.5)
+                    else: rec_wait = rec_frames(0.07)
+                gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
+                rec_n++
+                if rec_side >= rec_type.length and rec_wait == 0:
+                    return ""
         if shot != "" and fe_frames == shot_frame:
             gl.screenshot(shot)
             if fe_page == "setup" and has_s(args, "loadershot"):

@@ -41,7 +41,10 @@ import lib.expand
 import lib.bot
 import lib.walls_ai
 import lib.world
+import hooks.active
+import hooks.rules
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.scenario_out
@@ -110,7 +113,7 @@ if role == "host":
     set(rules, "animals", jbool(true))
     let prompts = [ "sewer rats with cheese hammers", "frogs with spears", "moonbears", "tiny vikings" ]
     let races = map(people) k: generate(prompts[k % prompts.length], rules, 0)
-    setup_world(20261010, if people > 2: "reed_meadow_2v2" else: "reed_meadow", races, rules, if people > 2: map(people) k: k / 2 else: [])
+    setup_match(20261010, if people > 2: "reed_meadow_2v2" else: "reed_meadow", races, rules, if people > 2: map(people) k: k / 2 else: [])
     bots = map(num_players) p: new_bot(p)
     let bytes = world_bytes(bots)
     net_send(link, 'S', bytes)

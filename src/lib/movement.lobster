@@ -306,6 +306,26 @@ def sidestep(i:int, x:int, y:int, ux:int, uy:int, s:int) -> int, int:
     if not walkable(x + vx * s / (2 * ONE), y + vy * s / (2 * ONE), lane(i)): return 0, 0
     return vx, vy
 
+// Where unit i goes this tick when it wants to go from (x, y) to (nx, ny): its velocity turns towards that by at most a
+// share of its speed s a tick, so a push one way then the other evens out instead of swaying it (#346).
+def steer(i:int, x:int, y:int, nx:int, ny:int, s:int) -> int, int:
+    var vx = u_vx[i]
+    var vy = u_vy[i]
+    var ex = nx - x - vx
+    var ey = ny - y - vy
+    let e = isqrt(ex * ex + ey * ey)
+    let acc = max(1, s / ACCEL_DIV)
+    if e > acc:
+        ex = ex * acc / e
+        ey = ey * acc / e
+    vx += ex
+    vy += ey
+    let v = isqrt(vx * vx + vy * vy)
+    if v > s:
+        vx = vx * s / v
+        vy = vy * s / v
+    return x + vx, y + vy
+
 def move():
     let n = u_x.length
     // World._move means these as the tick's start, but Godot's packed arrays are shared, not copied
@@ -327,6 +347,8 @@ def move():
     let mh = H
     for(n) i:
         if mv[i] == 0:
+            u_vx[i] = 0
+            u_vy[i] = 0
             if u_group[i] == 0 or u_foe[i] != 0 or (tick + u_id[i]) % REPLAN_EVERY != 0: continue
             let back = u_arrive[i] * ARRIVE_SETTLE + (if u_arrive[i] == SLOT_ARRIVE: SLOT_SLACK else: RETURN_SLACK)
             if dist2(xs[i], ys[i], u_tx[i], u_ty[i]) <= back * back:
@@ -371,7 +393,7 @@ def move():
             let there = dist2(x, y, bx, by)
             if there <= 400: continue  // (in its place: stands, no stuck count)
             let dd = isqrt(there)
-            let nx = x + (bx - x) * min(s, dd) / dd
+            let nx = x + (bx - x) * min(s, dd) / dd  // (marching blocks keep their own stepping until #347 replaces them)
             let ny = y + (by - y) * min(s, dd) / dd
             let wk = walks[mc]
             def on(cx:int, cy:int) -> bool: return cx >= 0 and cy >= 0 and cx / TILE < mw and cy / TILE < mh and wk[cy / TILE * mw + cx / TILE] == 1
@@ -380,6 +402,8 @@ def move():
                 ys[i] = ny
             elif on(nx, y): xs[i] = nx  // (a place on a tree or past the edge: along it, until the place is clear)
             elif on(x, ny): ys[i] = ny
+            u_vx[i] = xs[i] - x
+            u_vy[i] = ys[i] - y
             if (tick + u_id[i]) % PROGRESS_EVERY == 0:  // not getting nearer its place: by the flow field for a while
                 if dd > 2 * TILE and u_prog[i] >= 0 and dd >= u_prog[i]: st[i] = 6
                 u_prog[i] = dd
@@ -424,17 +448,20 @@ def move():
         var dx = wxs[i] - x
         var dy = wys[i] - y
         var d = isqrt(dx * dx + dy * dy)
+        var stepping = false
         if d > u_radius[i] and u_foe[i] == 0:
             let vx, vy = sidestep(i, x, y, dx * ONE / d, dy * ONE / d, s)
             if vx != 0 or vy != 0:
                 dx = vx
                 dy = vy
                 d = isqrt(dx * dx + dy * dy)
+                stepping = true
         var nx = x
         var ny = y
         if d > 0:
             nx = x + dx * min(s, d) / d
             ny = y + dy * min(s, d) / d
+            if not stepping and u_foe[i] == 0: nx, ny = steer(i, x, y, nx, ny, s)  // (a sidestep or a foe: straight)
         let wk = walks[mc]
         let ok_xy = nx >= 0 and ny >= 0 and nx / TILE < mw and ny / TILE < mh and wk[ny / TILE * mw + nx / TILE] == 1
         let ok_x = nx >= 0 and y >= 0 and nx / TILE < mw and y / TILE < mh and wk[y / TILE * mw + nx / TILE] == 1
@@ -448,6 +475,8 @@ def move():
         else:
             nx = x
             ny = y
+        u_vx[i] = nx - x
+        u_vy[i] = ny - y
         if nx == x and ny == y:
             st[i]++
             if st[i] >= STUCK_LIMIT:

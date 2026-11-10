@@ -46,6 +46,7 @@ add test_heroes "$L" test_heroes.lobster
 add race_identity "$L" test_race_identity.lobster
 add voxel_contact "$L" voxel_proto.lobster -- - check   # the voxel units stand in their shadows as drawn (the voxels option)
 add test_formations "$L" test_formations.lobster  # big armies in formation, headless: drift, jitter, facing, overlap, the framed map
+add test_movement "$L" test_movement.lobster -- small crossing head_on through queue  # group moves, headless: sway, flicker, overlap, settling (the scenes #344 has made green so far)
 add test_shot_look "$L" test_shot_look.lobster  # shots look faster and land when they always did
 add voxel_check "$L" voxel_check.lobster                # the voxel units' art: straight standing knees, skins that never clip or grey, kit that keeps the creature's shape, no look-alikes, no specks
 add vox_check "$L" vox_check.lobster                    # the .vox reader (#313): models, palette, MATL, the scene graph, broken files
@@ -65,6 +66,8 @@ else
 	for i in 0 1 2 3; do add test_ai.$i "$L" test_ai.lobster -- shard:$i/4; done
 	add test_2v2 "$L" test_2v2.lobster
 	add test_mod_match "$L" test_mod_match.lobster
+	add test_units_plain "$L" test_units_plain.lobster
+	add test_hooks "$L" test_hooks.lobster
 	add air_click ./air_check.sh "$bakes" novsync   # a click takes an aircraft where it's drawn
 	add golden ./golden.sh
 	for i in 0 1 2 3; do add vbcheck.$i "$L" --background game.lobster -- none - vbcheck mute novsync shard:$i/4; done   # every building look as voxels: no specks (a window each, behind the others; no vsync, which never comes with the display asleep, #294)

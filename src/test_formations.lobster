@@ -43,7 +43,10 @@ import lib.expand
 import lib.bot
 import lib.walls_ai
 import lib.world
+import hooks.active
+import hooks.rules
 import gen.setup
+import gen.race_to_types
 import gen.modes
 import gen.start
 import gen.reset
@@ -81,7 +84,7 @@ def army(p:int, n:int, x:int, y:int) -> [int]:
     var round = 0
     while ids.length < n:
         for(kinds) k:
-            if ids.length < n and (round % 8 == 0 or not has(su_type_recipe[k], "crew")):
+            if ids.length < n and (round % 8 == 0 or not has(gobj(su_units[k], "look"), "crew")):
                 let at = ids.length
                 let w = side / 700
                 ids.push(u_id[add_unit(p, k, x - side / 2 + (at % w) * 700, y - side / 2 + (at / w) * 700)])
@@ -351,7 +354,7 @@ def vx_id_of(body_id:string) -> string:
     return body_id.substring(0, find_string_reverse(body_id, "."))
 
 def foot_of(k:int) -> Foot:
-    let r = su_type_recipe[k]
+    let r = gobj(su_units[k], "look")
     if not has(r, "crew"): return Foot { -u_r_of(k), u_r_of(k), -u_r_of(k), u_r_of(k) }
     let cr = at(r, "crew")
     let plain = float3 { 0.5, 0.3, 0.2 }
@@ -389,15 +392,15 @@ def scene_footprints(rules:JV, races:[JV], n:int):
     let name = "footprints {n}"
     let feet = map(t_slot.length) k: foot_of(k)
     for(t_slot.length) k:
-        if has(su_type_recipe[k], "crew"):
+        if has(gobj(su_units[k], "look"), "crew"):
             let f = feet[k]
-            print "{name}: p{t_player[k]} {t_slot[k]} {rstr(su_type_recipe[k], "body")}: {f.hi_ac - f.lo_ac} across, {f.hi_al - f.lo_al} along, {f.px_tall} px tall, form_radius {t_form_r[k]}"
+            print "{name}: p{t_player[k]} {t_slot[k]} {rstr(gobj(su_units[k], "look"), "body")}: {f.hi_ac - f.lo_ac} across, {f.hi_al - f.lo_al} along, {f.px_tall} px tall, form_radius {t_form_r[k]}"
     let overlaps = map(t_slot.length): 0
     let engines = map(t_slot.length): 0
     for([ one, two ]) side:
         let idx = filter(map(side) id: index_of(id)) i: i >= 0 and u_block[i] > 0
         for(idx) i:
-            if has(su_type_recipe[u_kind[i]], "crew"):
+            if has(gobj(su_units[u_kind[i]], "look"), "crew"):
                 engines[u_kind[i]]++
                 let bi = u_block[i] - 1
                 let px = fb_x[bi] + u_bx[i]
@@ -436,7 +439,7 @@ def scene_footprints(rules:JV, races:[JV], n:int):
         for([ one, two ]) side:
             let idx = filter(map(side) id: index_of(id)) i: i >= 0 and u_block[i] > 0
             for(idx) i:
-                if has(su_type_recipe[u_kind[i]], "crew"):
+                if has(gobj(su_units[u_kind[i]], "look"), "crew"):
                     samples++
                     let b = u_block[i] - 1
                     let fi = feet[u_kind[i]]

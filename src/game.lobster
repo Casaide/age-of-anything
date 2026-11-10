@@ -56,7 +56,10 @@ import .gen.mods
 import .gen.pricing
 import .gen.heroes
 import .gen.generator
+import .hooks.active
+import .hooks.rules
 import .gen.setup
+import .gen.race_to_types
 import .gen.modes
 import .gen.start
 import .view.facing
@@ -73,6 +76,7 @@ import .net.lan
 import .game.audio
 import .game.pack
 import .game.relief
+import .game.fog_look
 import .game.ground
 import .game.doodads
 import .game.paths
@@ -108,26 +112,39 @@ var mode_arg = ""             // mode:<id>: the lobby's game mode (data/modes.js
 var map_arg = ""              // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""            // races:<A>|<B>: the lobby's prompts, as if typed (then played)
 var look_y = -1
-var fort_gate = int2 { -1, -1 }  // place:fort's gate (captures: army: walks through it)
-var place_arg = ""               // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
-var skirmish = false             // the lobby's Skirmish: both armies on the map at once, marching on each other
-var army_n = 0                   // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
-var army_snap = false            // a skirmish's armies start in their blocks, once the first order has made them
-let ARMY_GAP = 600               // milli-tiles between them, in ranks
-var zoom_arg = 0.0               // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
-var reveal = false               // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
-var hurt_pct = -1                // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
-var raze_at = -1.0               // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
-var page_arg = ""                // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
-var lab_arg = false              // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
-var tree_arg = false             // tree: the tech tree page open from the start (captures)
-var tree_hover_arg = ""          // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
-var padtest = false              // padtest: a fake pad plays a few seconds, then quit
-var net_people = 2               // people in a network match (host:<n>)
-var net_others = []::Link        // a host's joiners after the first
-var hosting = false              // host: a network match, waiting for a player to join (net/lockstep.lobster)
-var join_ip = ""                 // join:<ip>: play the second side of the match a host there sets up
-var reload_at = -1.0             // reload:<seconds>: save then, load 5 s later (tests and captures)
+var rec_dir = ""  // record:<dir>: from:<seconds> of play on, for:<seconds>, one PNG a frame at 30 fps, then quit (a clip of the game)
+var rec_from = 0.0
+var rec_for = 10.0
+var rec_n = 0
+var rec_fps = 30.0         // fps:<n>: frames a second of play
+var rec_clean = false      // clean: nothing over the world: no top bar, panel, minimap, groups, health bars or banner (a clip for showing)
+var rec_type = []::string  // typein:A|B: (filming the lobby)
+var rec_side = 0
+var rec_char = 0
+var rec_wait = 30
+var rec_push = 1.0                    // push:<k>: a record:'s camera closes in, its zoom k times by the end (1.15 is a slow push)
+var rec_pan = float2_0                // pan:<x>,<y>: a record:'s camera drifts that many tiles by the end (no follow then)
+var window_arg = int2 { 1600, 1000 }  // window:<w>,<h>: the window's size in points (filming: 1280,720 is 16:9, 2560x1440 frames on a Mac)
+var fort_gate = int2 { -1, -1 }       // place:fort's gate (captures: army: walks through it)
+var place_arg = ""                    // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
+var skirmish = false                  // the lobby's Skirmish: both armies on the map at once, marching on each other
+var army_n = 0                        // army:<n>: n of each of your soldier types by your Town Center at the start (captures)
+var army_snap = false                 // a skirmish's armies start in their blocks, once the first order has made them
+let ARMY_GAP = 600                    // milli-tiles between them, in ranks
+var zoom_arg = 0.0                    // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
+var reveal = false                    // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
+var hurt_pct = -1                     // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
+var raze_at = -1.0                    // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
+var page_arg = ""                     // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
+var lab_arg = false                   // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
+var tree_arg = false                  // tree: the tech tree page open from the start (captures)
+var tree_hover_arg = ""               // treehover:<node key>: that node hovered on it (captures: "r:fletching", "u:hero.<id>@3")
+var padtest = false                   // padtest: a fake pad plays a few seconds, then quit
+var net_people = 2                    // people in a network match (host:<n>)
+var net_others = []::Link             // a host's joiners after the first
+var hosting = false                   // host: a network match, waiting for a player to join (net/lockstep.lobster)
+var join_ip = ""                      // join:<ip>: play the second side of the match a host there sets up
+var reload_at = -1.0                  // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
 var touch_play = false  // touch: play by touch, through the pad's controls (game/touch.lobster; the Android build)
 // A mod can say how it starts (its manifest's `launch`): those options, as if typed after the rest.
@@ -145,6 +162,19 @@ for(args) a, k:
         if key == "fsat": window_toggles = map(tokenize(val, ",", " ")) t: string_to_float(t)
         if key == "fsreport": window_report = val
         if key == "at": shot_at = string_to_float(val)
+        if key == "record": rec_dir = val
+        if key == "typein": rec_type = tokenize(val, "|", " ")
+        if key == "from": rec_from = string_to_float(val)
+        if key == "for": rec_for = string_to_float(val)
+        if key == "fps": rec_fps = string_to_float(val)
+        if key == "push": rec_push = string_to_float(val)
+        if key == "pan":
+            let px, py = split_string(val, ",")
+            rec_pan = float2 { string_to_float(px), string_to_float(py) }
+        if key == "window":
+            let wx, wy = split_string(val, ",")
+            window_arg = int2 { string_to_int(wx), string_to_int(wy) }
+        if a == "clean": rec_clean = true
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
         if a == "reveal": reveal = true
@@ -190,7 +220,7 @@ for(args) a, k:
             look_y = string_to_int(ly)
 
 // Tests and captures are silent (Dominic: no sound from testing); `mute` silences a game too.
-if has_s(args, "mute") or shot != "" or selftest or airtest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
+if has_s(args, "mute") or shot != "" or rec_dir != "" or selftest or airtest or padtest or has_s(args, "labtest") or reload_at >= 0.0 or perf_for > 0.0:
     sound_on = false
     pace_background = false  // (tests and captures keep their pace with the window in the background, game/pace.lobster)
 
@@ -220,6 +250,7 @@ def mouse_milli() -> float2: return pick_milli(from_screen(mouse_px()))  // (on 
 
 var ground_mesh:resource<mesh>? = nil
 var ground_tick = -1000
+var paths_tick = -1000  // when the paths were last re-planned (#335: never in a frame that rebuilt the ground)
 var relief_built = false
 var mask_version = -1
 var mask_tick = -1000
@@ -233,7 +264,7 @@ def build_ground():
     let cols = map(W * H) c:
         let t = terrain[c]
         let k = 0.35 + 0.65 * cell_noise(c)
-        let shade = if fg[c] == 0: 0.12 elif fg[c] == 1: 0.55 else: 1.0
+        let shade = fog_ground_shade(fg[c])
         (ground_a[t] * k + ground_b[t] * (1.0 - k)) * shade
     let corner = map((W + 1) * (H + 1)) v:
         let vx = v % (W + 1)
@@ -943,12 +974,12 @@ def refresh_paths() -> bool:
 def collect_doodads():
     for(doodad_list) d:
         let c = clamp(int(d.t.y), 0, H - 1) * W + clamp(int(d.t.x), 0, W - 1)
-        if fog[ME][c] != 0 and near_view(iso(d.t.x * 1000.0, d.t.y * 1000.0)):
+        if fog_shows_land(fog[ME][c]) and near_view(iso(d.t.x * 1000.0, d.t.y * 1000.0)):
             let f = frame_index(d.name)
             if f >= 0:
                 let at = iso(d.t.x * 1000.0, d.t.y * 1000.0)
                 let ay = at.y - lift_at(d.t.x * 1000.0, d.t.y * 1000.0) * 1.5
-                let shade = if fog[ME][c] == 2: 1.0 else: 0.6
+                let shade = fog_prop_shade(fog[ME][c])
                 if d.scale == 1.0: add(f, at.x, ay, at.y, float4 { 1.0, 1.0, 1.0, shade })
                 else:
                     let fr = frames[f]
@@ -960,8 +991,8 @@ def collect_props():
         // (under the fog, the ground as you last saw it: a farm sown in the dark stays grass until you look, Fog's memory)
         let now = fog[ME][c] == 2 or fog_ground.length <= ME
         let tt = if now: terrain[c] else: fog_ground[ME][c]
-        // (trees show even where never explored, as the map was made: the land's lie is no secret; the rest waits to be seen)
-        if (fog[ME][c] != 0 or tr_names[tt] == "tree") and (tr_res[tt] != 0 or species[c] != "-") and near_view(iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))):
+        // (the land is no secret, #334: trees, gold, stone and bushes show where never explored, as the map was made)
+        if fog_shows_land(fog[ME][c]) and (tr_res[tt] != 0 or species[c] != "-") and near_view(iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))):
             let tname = tr_names[tt]
             var kind = prop_of.get(tname, "")
             if kind == "tree": kind = species[c]
@@ -974,7 +1005,7 @@ def collect_props():
                 let name = staged(kind, pick % doodads.get(kind, 1), stage)
                 let at = iso(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500))
                 let up = lift_at(float((c % W) * 1000 + 500), float((c / W) * 1000 + 500)) * 1.5
-                let shade = if fog[ME][c] == 2: 1.0 elif fog[ME][c] == 1: 0.6 else: 0.3
+                let shade = fog_prop_shade(fog[ME][c])
                 let flat = pool[c] >= 0
                 add(frame_index(name), at.x, at.y - up, if flat: -100000.0 + at.y else: at.y, float4 { 1.0, 1.0, 1.0, shade })
                 let sh = frame_index(name + "~shadow")
@@ -982,13 +1013,16 @@ def collect_props():
 
 def draw_world(alpha:float):
     atlas_pack()
-    if tick - ground_tick >= 10 or not ground_mesh:
+    let ground_now = tick - ground_tick >= 10 or not ground_mesh
+    if ground_now:
         build_ground()
         build_fog(ME)
         build_wear()
         ground_tick = tick
-    if not ground_quad or (map_version != mask_version and tick - mask_tick >= 50):
+    let masks_now = not ground_quad or (map_version != mask_version and tick - mask_tick >= 50)
+    if masks_now:
         build_masks()
+        perf_masks_now = true
         if not relief_built:
             build_relief()
             relief_built = true
@@ -996,7 +1030,10 @@ def draw_world(alpha:float):
             build_doodads(map_name_now, doodads) t: keep_clear(t) or on_path(t)
         mask_version = map_version
         mask_tick = tick
-    if relief_built and tick % 20 == 0: refresh_paths()
+    // (a frame that rebuilt the ground or the masks leaves the paths to the next: one heavy job a frame, #335)
+    if relief_built and tick - paths_tick >= 20 and not ground_now and not masks_now:
+        paths_tick = tick
+        if refresh_paths(): perf_built_now = true
     let ws = float(gl.window_size())
     draw_ground_cached(gl.window_size(), float2 { floor(cam.x), floor(cam.y) }, zoom, zoom / ART_K)  // (screen px an art px: finer art, D-173)
     gl.translate(ws / 2.0):
@@ -1045,7 +1082,7 @@ def draw_world(alpha:float):
                     draw_town()
                     draw_shots(alpha)
                     fx_draw() id: unit_anchor(id)
-                draw_marks(alpha)
+                if not rec_clean: draw_marks(alpha)
                 perf_lap(5)
 
 // ------------------------------------------------------------------ the lobby (type your races; Lobster makes and sets them up)
@@ -1128,9 +1165,9 @@ def race_facts(races:[JV]):
     voice_of = map(races) r: rstr(creature(rstr(r, "creature")), "voice")
     arch_of = map(races) r: architecture(r)
     for(t_slot.length) k:
-        let r = su_type_recipe[k]
+        let r = at(su_units[k], "look")
         unit_names.set(k, gstr(r, "name", t_slot[k]))
-        let tags = eval_tags(su_type_eval[k])
+        let tags = unit_tags(su_units[k])
         unit_blow.set(k, if has_s(tags, "ram"): "ram_hit" elif has_s(tags, "blade"): "hit_blade" elif has_s(tags, "blunt"): "hit_blunt" else: "hit_pierce")
         let kind = shot_kind_of(tags)
         unit_shotk.set(k, kind)
@@ -1545,7 +1582,7 @@ def selected_soldiers() -> [int]: return filter(selected_units()) id: t_worker[u
 
 // Our race's ability (data: its name, desc, hotkey...), or nil; and the selected units that may use it.
 def my_ability() -> JV?:
-    let ab = get(su_idents[ME], "ability")
+    let ab = get(su_sides[ME], "ability")
     return if ab and ab.kind == J_OBJ and gstr(ab, "kind", "") != "": ab else: nil
 def ability_hotkey() -> string:
     let ab = my_ability()
@@ -1598,8 +1635,8 @@ def scroll():
     if gl.button("right") >= 1 or gl.button("d") >= 1: d.x += 1.0
     if gl.button("up") >= 1 or gl.button("w") >= 1: d.y -= 1.0
     if gl.button("down") >= 1 or gl.button("s") >= 1: d.y += 1.0
-    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y  // (outside the window the mouse reads 0, 0)
-    if inside and shot == "" and gl.window_focused():                   // (the mouse is free now: not while it works in another app)
+    let inside = m.x > 0.0 and m.y > 0.0 and m.x < ws.x and m.y < ws.y   // (outside the window the mouse reads 0, 0)
+    if inside and shot == "" and rec_dir == "" and gl.window_focused():  // (the mouse is free now: not while it works in another app)
         if m.x <= 3.0: d.x -= 1.0
         if m.y <= 3.0: d.y -= 1.0
         if m.x >= ws.x - 4.0: d.x += 1.0
@@ -1707,7 +1744,7 @@ def draw_rings(alpha:float, raised:bool):
 
 def draw_marks(alpha:float):
     gl.set_shader("color")
-    draw_bars(alpha)
+    if not rec_clean: draw_bars(alpha)
     for(selected_units()) id:
         let i = index_of(id)
         let px, py = prev_pos(i)
@@ -2198,10 +2235,10 @@ def note(s:string):
 note("start")
 // (a capture runs without vsync: with the display asleep or the screen locked, vsync never lets a frame through;
 // novsync: the same for a measure, the frame cap still pacing it)
-let no_vsync = shot != "" or selftest or padtest or has_s(args, "novsync")
+let no_vsync = shot != "" or rec_dir != "" or selftest or padtest or has_s(args, "novsync")
 volume_load()
 window_fullscreen = starts_fullscreen(args, windowed_setting)
-fatal(gl.window("Age of Anything (Lobster)", 1600, 1000, window_flags(no_vsync, window_fullscreen)))
+fatal(gl.window("Age of Anything (Lobster)", window_arg.x, window_arg.y, window_flags(no_vsync, window_fullscreen)))
 pace(PACE_MATCH)                           // (a 120 Hz display would draw twice as often for nothing: the laptop runs hot)
 gl.window_icon("icons/game_icon_mac.png")  // (the Dock's icon on the Mac)
 note("window")
@@ -2401,7 +2438,7 @@ def make_match() -> bool:
         let picked = args[1] == "lobby" and lobby_teams.length == races.length and races.length > 2  // (a team game picked in the lobby: its map and teams)
         let four = races.length > 2 and not picked                                                   // (host:<n> with more people: the 2v2 map)
         let real_map = if four: "reed_meadow_2v2" else: map_id
-        setup_world(20261010, real_map, races, rules, if picked: lobby_teams elif four: map(races.length) k: k % 2 else: [])
+        setup_match(20261010, real_map, races, rules, if picked: lobby_teams elif four: map(races.length) k: k % 2 else: [])
         load_species(real_map)
         map_name_now = real_map
         if pack_library: race_facts(races)
@@ -2410,18 +2447,14 @@ def make_match() -> bool:
         // a scenario has no recipes: set its races up (as export.gd did) for the units' looks, then load it over a clean world
         let rules = load_rules(rules_id())
         let races = map(if pack_prompts.length >= 2: pack_prompts else: [ "sewer rats with cheese hammers", "angry swamp frogs with reed spears" ]) pr: generate(pr, rules, 0)
-        setup_world(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
-        let keep_recipe = su_type_recipe
-        let keep_line = su_type_line
-        let keep_eval = su_type_eval
+        setup_match(20261010, if pack_map != "": pack_map else: "flat_test", races, rules, [])
+        let keep_units = su_units
         let keep_btypes = su_btypes
         let keep_races = su_races
         let keep_rules = su_rules
         reset_world()
         start_world(args[1])
-        su_type_recipe = keep_recipe
-        su_type_line = keep_line
-        su_type_eval = keep_eval
+        su_units = keep_units
         su_btypes = keep_btypes
         su_races = keep_races
         su_rules = keep_rules
@@ -2504,7 +2537,7 @@ def make_match() -> bool:
                 let side = int(ceiling(sqrt(float(slots.length * army_n))))  // (in ranks, not all on one spot)
                 for(slots) slot:
                     let kind = type_of_slot(p, slot)
-                    for(if has(su_type_recipe[kind], "crew"): max(1, army_n / 8) else: army_n):  // (engines: a few, not as many as soldiers)
+                    for(if has(gobj(su_units[kind], "look"), "crew"): max(1, army_n / 8) else: army_n):  // (engines: a few, not as many as soldiers)
                         let at = ids.length
                         let x = clamp(start_x[p] + 4000 + (at % side - side / 2) * ARMY_GAP, TILE, (W - 1) * TILE)
                         let y = clamp(start_y[p] + 4000 + (at / side - side / 2) * ARMY_GAP, TILE, (H - 1) * TILE)
@@ -2529,7 +2562,7 @@ def make_match() -> bool:
                 let mid_x = (start_x[0] + start_x[1]) / 2
                 let mid_y = (start_y[0] + start_y[1]) / 2
                 cam = iso(float(mid_x), float(mid_y))
-                follow = true  // (watching: the camera goes where they fight)
+                if look_x < 0: follow = true  // (watching: the camera goes where they fight, unless look: says where)
             else: look_at_army = true
     if hurt_pct >= 0:
         for(b_id.length) b:
@@ -2577,10 +2610,13 @@ def view_reset():
     path_used = []
     path_done.clear()
     path_out = []
+    path_painted = 0
+    path_raw = []
     path_anchor_hub.clear()
     path_anchor_res.clear()
     path_count = -1
     ground_tick = -1000
+    paths_tick = -1000
     mask_version = -1
     mask_tick = -1000
     selected = []
@@ -2766,12 +2802,16 @@ def play_match():
     end_watching = false
     note("loop")
     pace(PACE_MATCH)
+    if rec_dir != "":  // (as fast as it goes up to from:)
+        gl.set_fixed_delta_time(0.2, 0.0)
+        speed = 8.0
     while gl.frame() and not quit_game and not bake_quit:
         ui_click_tick()
         window_tick()
         if perf_for > 0.0:  // (the Town Center selected: its panel and queue drawn, the HUD full)
             perf_begin()
             if tc0 >= 0 and tc0 < b_id.length: sel_building = b_id[tc0]
+            perf_finish_house(clock_s, ME)
         drop_lost_selection()
         if gl.button("escape") == 1 and placing < 0 and not build_menu and not typing_race and not tree_open and not pad_wheel.length and not arming_attack and not arming_ability: menu_open = not menu_open
         if gl.button("controller_start") == 1 and not typing_race and not tree_open: menu_open = not menu_open
@@ -2903,11 +2943,11 @@ def play_match():
             cam += shake
             draw_world(acc / 0.05)
             cam -= shake
-            ui_batch(): draw_panel()
+            if not rec_clean: ui_batch(): draw_panel()
             perf_lap(6)
-            draw_hud(paused, speed)
+            if not rec_clean: draw_hud(paused, speed)
             perf_lap(7)
-            draw_groups()
+            if not rec_clean: draw_groups()
             perf_lap(8)
             pad_draw()
             if touch_play: build_button()
@@ -2916,7 +2956,7 @@ def play_match():
             tree_tick()
             if menu_open: pause_menu()
             elif end_screen_up(): end_screen()
-            draw_banner()
+            if not rec_clean: draw_banner()
             if typing_race: typing_tick()
             os_cursor_tick()
         perf_lap(9)
@@ -2948,6 +2988,24 @@ def play_match():
             print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
             quit_app = true
             return
+        if rec_dir != "" and winner >= 0 and clock_s < rec_from:  // (the match was over before from:, and play has stopped)
+            print "record: match over at {clock_s} s, before from:"
+            quit_app = true
+            return
+        if rec_dir != "" and clock_s >= rec_from:
+            if rec_n == 0:
+                gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
+                speed = start_speed
+                if rec_pan != float2_0: follow = false  // (a pan is the take's own camera move; the follow would pull against it)
+            gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
+            rec_n++
+            let take_frames = rec_for * rec_fps
+            if float(rec_n) >= take_frames:
+                quit_app = true
+                return
+            // the camera's move over the take, a frame of it at a time: the push in and the drift (iso: tiles are 1000 art units)
+            zoom *= pow(rec_push, 1.0 / take_frames)
+            cam += (iso(rec_pan.x * 1000.0, rec_pan.y * 1000.0) - iso(0.0, 0.0)) / take_frames
         if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return
