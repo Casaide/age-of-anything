@@ -14,20 +14,20 @@
     },
     "clear_noon": {
       "exposure": 0.02, "contrast": 0.06, "saturation": 0.04,
-      "shadow_tint": "#6f86b8", "shadow": 0.22, "highlight_tint": "#ffe2b0", "highlight": 0.14,
-      "haze_colour": "#b9c8d6", "haze": 0.12, "haze_start": 0.45, "haze_drift": 0.35,
+      "shadow_tint": "#6f86b8", "shadow": 0.24, "highlight_tint": "#ffe2b0", "highlight": 0.22,
+      "haze_colour": "#b9c8d6", "haze": 0.16, "haze_start": 0.4, "haze_drift": 0.35,
       "vignette": 0.22, "vignette_radius": 0.55, "bloom": 0.18, "bloom_threshold": 0.78, "glow": 0.6, "glow_air": 0.08
     },
     "golden_evening": {
-      "exposure": -0.04, "contrast": 0.1, "saturation": 0.06,
-      "shadow_tint": "#4f62a8", "shadow": 0.38, "highlight_tint": "#ffb867", "highlight": 0.4,
-      "haze_colour": "#e3a46e", "haze": 0.2, "haze_start": 0.35, "haze_drift": 0.4,
-      "vignette": 0.36, "vignette_radius": 0.5, "bloom": 0.35, "bloom_threshold": 0.66, "glow": 1.6, "glow_air": 0.18
+      "exposure": -0.02, "contrast": 0.12, "saturation": 0.08,
+      "shadow_tint": "#4a5aa8", "shadow": 0.45, "highlight_tint": "#ffb46a", "highlight": 0.48,
+      "haze_colour": "#dca27a", "haze": 0.24, "haze_start": 0.3, "haze_drift": 0.4,
+      "vignette": 0.4, "vignette_radius": 0.5, "bloom": 0.4, "bloom_threshold": 0.6, "glow": 1.8, "glow_air": 0.18
     },
     "misty_morning": {
-      "exposure": 0.03, "contrast": -0.06, "saturation": -0.14,
+      "exposure": 0.03, "contrast": -0.02, "saturation": -0.08,
       "shadow_tint": "#7b8fa8", "shadow": 0.25, "highlight_tint": "#f2ead8", "highlight": 0.1,
-      "haze_colour": "#c6d0d4", "haze": 0.34, "haze_start": 0.2, "haze_drift": 0.6,
+      "haze_colour": "#d2dce2", "haze": 0.5, "haze_start": 0.22, "haze_drift": 0.75,
       "vignette": 0.18, "vignette_radius": 0.6, "bloom": 0.25, "bloom_threshold": 0.7, "glow": 0.9, "glow_air": 0.14
     }
   },
