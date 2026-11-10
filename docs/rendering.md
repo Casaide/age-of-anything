@@ -14,6 +14,8 @@ subject read, colour, checks, review) is the voxel-art skill (`.claude/skills/vo
 
 Sizes live in one table, `data/voxel/sizes.json` (a mod has its own): each body's `size` and its height `h` in voxels (a human 58, 32 art px), and each mount's `ride`, its size under a rider of the human's height, scaled by the rider's height. `size_check.lobster` (quick batch) fails when the drawings and the table part. A mod body not in a table keeps its own `size`.
 
+Models drawn in MagicaVoxel (`.vox`, #313): `view/vox.lobster` reads the file; a `model` shape samples it as a distance grid like any other part, and a body with `"vox"` takes its posed limbs, parts and points from it (`docs/modding.md`, "Drawing it in MagicaVoxel"). Checks: `vox_check` (the reader), `vox_model_check` (placement, facings, materials, the bake key, the `creel.vox` palette), `vox_body_check` (joints from the drawing, the walk, bad files).
+
 Every unit is a procedural voxel body (D-201; Dominic, 2026-11-03: "replace all units with voxels"; the composed
 units of parts were removed after it). Everything about how a unit looks is data in `data/voxel/`; `src/view/voxel.lobster` is a small
 builder that reads it, fills a voxel grid at a voxel a baked pixel, and draws 8 facings with banded light,
