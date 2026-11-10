@@ -160,16 +160,56 @@ def closest_on_segment(q:float2, a:float2, b:float2) -> float2:
     if l2 == 0.0: return a
     return a + ab * clamp(vdot(q - a, ab) / l2, 0.0, 1.0)
 
-// Paths.mask, then the blur (two passes) TerrainView gives it: the textures the terrain shader reads.
+// What paint_paths keeps between calls (#335): a building finished paints only the paths laid since, not the map again.
+var path_painted = 0      // path_out's paths painted so far
+var path_raw = []::float  // the path mask before the blur (RGBA, MASK_K a tile)
+var path_h1 = []::float   // the blur's passes, kept to blur a part of the map
+var path_v1 = []::float
+var path_h2 = []::float
+var path_best = []::float  // per fine cell: the nearest path's distance, and its distance along (arc_tex)
+var path_arc = []::float
+
+// Grows the rectangle lo..hi (inclusive) to take in x0..x1, y0..y1 (exclusive ends), when that isn't empty.
+def path_grow(lo:int2, hi:int2, x0:int, x1:int, y0:int, y1:int) -> int2, int2:
+    if x1 <= x0 or y1 <= y0: return lo, hi
+    return min(lo, int2 { x0, y0 }), max(hi, int2 { x1 - 1, y1 - 1 })
+
+// One pass of the blur over x0..x1, y0..y1 (inclusive): the mean of a cell and its neighbours along x (dy 0) or y.
+def path_blur(src:[float], dst:[float], w:int, h:int, along_y:bool, x0:int, x1:int, y0:int, y1:int):
+    var y = max(y0, 0)
+    while y <= min(y1, h - 1):
+        var x = max(x0, 0)
+        while x <= min(x1, w - 1):
+            let a = if along_y: max(y - 1, 0) * w + x else: y * w + max(x - 1, 0)
+            let b = if along_y: min(y + 1, h - 1) * w + x else: y * w + min(x + 1, w - 1)
+            let o = y * w + x
+            for(4) c: dst[o * 4 + c] = (src[a * 4 + c] + src[o * 4 + c] + src[b * 4 + c]) / 3.0
+            x++
+        y++
+
+// Paths.mask, then the blur (two passes) TerrainView gives it: the textures the terrain shader reads. Only the paths
+// laid since the last call are painted, and only around them blurred again (#335: the whole map took 35 to 48 ms).
 def paint_paths():
     let w = W * MASK_K
     let h = H * MASK_K
-    let a = map(w * h * 4): 0.0
     let fw = W * PATH_FINE
     let fh = H * PATH_FINE
-    let best = map(fw * fh): 1000000.0
-    let arc = map(fw * fh): 0.0
-    for(path_out) p:
+    let first = path_raw.length != w * h * 4 or path_bytes.length != w * h * 4  // (a new match: view_reset empties path_raw)
+    if first:
+        path_painted = 0
+        path_raw = map(w * h * 4): 0.0
+        path_h1 = map(w * h * 4): 0.0
+        path_v1 = map(w * h * 4): 0.0
+        path_h2 = map(w * h * 4): 0.0
+        path_best = map(fw * fh): 1000000.0
+        path_arc = map(fw * fh): 0.0
+        path_bytes = map(w * h * 4): 0
+    var lo = int2 { w, h }  // the mask cells painted
+    var hi = int2 { -1, -1 }
+    var flo = int2 { fw, fh }  // and the fine cells
+    var fhi = int2 { -1, -1 }
+    for(path_out.length - path_painted) j:
+        let p = path_out[path_painted + j]
         let ch = str_index(PATH_STYLES, p.style)
         let pts = p.points
         let r = p.width
@@ -178,47 +218,86 @@ def paint_paths():
         while i < pts.length:
             let pa = pts[i - 1]
             let pb = pts[i]
-            let lo = float2 { min(pa.x, pb.x), min(pa.y, pb.y) } - float2_1 * (r + 0.3)
-            let hi = float2 { max(pa.x, pb.x), max(pa.y, pb.y) } + float2_1 * (r + 0.3)
-            var y = max(int(lo.y * float(MASK_K)), 0)
-            while y < min(int(hi.y * float(MASK_K)) + 1, h):
-                var x = max(int(lo.x * float(MASK_K)), 0)
-                while x < min(int(hi.x * float(MASK_K)) + 1, w):
+            let plo = float2 { min(pa.x, pb.x), min(pa.y, pb.y) } - float2_1 * (r + 0.3)
+            let phi = float2 { max(pa.x, pb.x), max(pa.y, pb.y) } + float2_1 * (r + 0.3)
+            let mx0 = max(int(plo.x * float(MASK_K)), 0)
+            let mx1 = min(int(phi.x * float(MASK_K)) + 1, w)
+            let my0 = max(int(plo.y * float(MASK_K)), 0)
+            let my1 = min(int(phi.y * float(MASK_K)) + 1, h)
+            lo, hi = path_grow(lo, hi, mx0, mx1, my0, my1)
+            var y = my0
+            while y < my1:
+                var x = mx0
+                while x < mx1:
                     let q = (float2 { float(x), float(y) } + float2 { 0.5, 0.5 }) / float(MASK_K)
-                    if vlen(closest_on_segment(q, pa, pb) - q) < r: a[(y * w + x) * 4 + ch] = 1.0
+                    if vlen(closest_on_segment(q, pa, pb) - q) < r: path_raw[(y * w + x) * 4 + ch] = 1.0
                     x++
                 y++
-            y = max(int(lo.y * float(PATH_FINE)), 0)
-            while y < min(int(hi.y * float(PATH_FINE)) + 1, fh):
-                var x = max(int(lo.x * float(PATH_FINE)), 0)
-                while x < min(int(hi.x * float(PATH_FINE)) + 1, fw):
+            let fx0 = max(int(plo.x * float(PATH_FINE)), 0)
+            let fx1 = min(int(phi.x * float(PATH_FINE)) + 1, fw)
+            let fy0 = max(int(plo.y * float(PATH_FINE)), 0)
+            let fy1 = min(int(phi.y * float(PATH_FINE)) + 1, fh)
+            flo, fhi = path_grow(flo, fhi, fx0, fx1, fy0, fy1)
+            y = fy0
+            while y < fy1:
+                var x = fx0
+                while x < fx1:
                     let q = (float2 { float(x), float(y) } + float2 { 0.5, 0.5 }) / float(PATH_FINE)
                     let on = closest_on_segment(q, pa, pb)
                     let d = vlen(on - q)
                     let idx = y * fw + x
-                    if d < r + 0.3 and d < best[idx]:
-                        best[idx] = d
-                        arc[idx] = along + vlen(on - pa)
+                    if d < r + 0.3 and d < path_best[idx]:
+                        path_best[idx] = d
+                        path_arc[idx] = along + vlen(on - pa)
                     x++
                 y++
             along += vlen(pb - pa)
             i++
-    let b = map(w * h * 4): 0.0
-    for(2):
-        for(h) y:
-            for(w) x:
-                let x0 = max(x - 1, 0)
-                let x1 = min(x + 1, w - 1)
-                for(4) c: b[(y * w + x) * 4 + c] = (a[(y * w + x0) * 4 + c] + a[(y * w + x) * 4 + c] + a[(y * w + x1) * 4 + c]) / 3.0
-        for(h) y:
-            let y0 = max(y - 1, 0)
-            let y1 = min(y + 1, h - 1)
-            for(w) x:
-                for(4) c: a[(y * w + x) * 4 + c] = (b[(y0 * w + x) * 4 + c] + b[(y * w + x) * 4 + c] + b[(y1 * w + x) * 4 + c]) / 3.0
-    path_bytes = map(w * h * 4) k: clamp(int(a[k] * 255.0 + 0.5), 0, 255)
+    path_painted = path_out.length
+    if first:
+        lo, hi = int2_0, int2 { w - 1, h - 1 }
+        flo, fhi = int2_0, int2 { fw - 1, fh - 1 }
+    let fmt = texture_format_clamp | texture_format_nomipmap
+    if hi.x >= lo.x:
+        // The blur reaches two cells: what's painted changes the mask two cells about it, and each pass reads one further.
+        let o0 = max(lo - int2_1 * 2, int2_0)
+        let o1 = min(hi + int2_1 * 2, int2 { w - 1, h - 1 })
+        path_blur(path_raw, path_h1, w, h, false, o0.x - 1, o1.x + 1, o0.y - 2, o1.y + 2)
+        path_blur(path_h1, path_v1, w, h, true, o0.x - 1, o1.x + 1, o0.y - 1, o1.y + 1)
+        path_blur(path_v1, path_h2, w, h, false, o0.x, o1.x, o0.y - 1, o1.y + 1)
+        let out = path_h1  // (free again: the last pass needs only path_h2)
+        path_blur(path_h2, out, w, h, true, o0.x, o1.x, o0.y, o1.y)
+        for(o1.y - o0.y + 1) dy:
+            for(o1.x - o0.x + 1) dx:
+                let k = ((o0.y + dy) * w + o0.x + dx) * 4
+                for(4) c: path_bytes[k + c] = clamp(int(out[k + c] * 255.0 + 0.5), 0, 255)
+        def px(x:int, y:int) -> float4:
+            let k = (y * w + x) * 4
+            return float4 { float(path_bytes[k]) / 255.0, float(path_bytes[k + 1]) / 255.0, float(path_bytes[k + 2]) / 255.0, float(path_bytes[k + 3]) / 255.0 }
+        let rows = map(o1.y - o0.y + 1) dy: map(o1.x - o0.x + 1) dx: px(o0.x + dx, o0.y + dy)
+        if first: paths_tex = gl.create_texture(rows, fmt)
+        else: path_patch(assert paths_tex, gl.create_texture(rows, fmt | texture_format_nearest_mag | texture_format_nearest_min), o0, o1, h)
+    if fhi.x >= flo.x:
+        let rows = map(fhi.y - flo.y + 1) dy: map(fhi.x - flo.x + 1) dx: path_arc[(flo.y + dy) * fw + flo.x + dx]
+        if first: arc_tex = gl.create_texture_single_channel(rows, fmt | texture_format_float)
+        else: path_patch(assert arc_tex, gl.create_texture_single_channel(rows, fmt | texture_format_float | texture_format_nearest_mag | texture_format_nearest_min), flo, fhi, fh)
     ground_stale = true
-    paths_tex = gl.create_texture(map(h) y: map(w) x: float4 { path_bytes[(y * w + x) * 4] / 255.0, path_bytes[(y * w + x) * 4 + 1] / 255.0,
-                                                               path_bytes[(y * w + x) * 4 + 2] / 255.0, path_bytes[(y * w + x) * 4 + 3] / 255.0 },
-                                  texture_format_clamp | texture_format_nomipmap)
-    arc_tex = gl.create_texture(map(fh) y: map(fw) x: float4 { arc[y * fw + x], 0.0, 0.0, 0.0 },
-                                texture_format_clamp | texture_format_nomipmap | texture_format_float)
+
+// Draws a patch into a texture, its cells lo..hi (inclusive): the GPU updates that part, nothing else is sent again
+// (#335: the distance-along texture of a 160-tile map is 26 MB). A framebuffer's rows run bottom up, as in
+// draw_ground_cached: the patch goes in upside down.
+def path_patch(tex:resource<texture>, patch:resource<texture>, lo:int2, hi:int2, rows:int):
+    gl.switch_to_framebuffer(tex)
+    gl.ortho()
+    let was = gl.blend(blend_none)
+    gl.set_shader("sprite_copy")
+    gl.set_primitive_texture(0, patch)
+    let x0 = float(lo.x)
+    let x1 = float(hi.x + 1)
+    let top = float(rows - hi.y - 1)
+    let bottom = float(rows - lo.y)
+    gl.draw_mesh("PT", [ float3 { x0, top, 0.0 }, float3 { x1, top, 0.0 }, float3 { x1, bottom, 0.0 }, float3 { x0, bottom, 0.0 } ], []::float4,
+                 []::float3, [ float2 { 0.0, 1.0 }, float2 { 1.0, 1.0 }, float2 { 1.0, 0.0 }, float2 { 0.0, 0.0 } ], []::float2, [ 0, 2, 1, 0, 3, 2 ])
+    gl.blend(was)
+    gl.switch_to_framebuffer(nil)
+    gl.ortho()
