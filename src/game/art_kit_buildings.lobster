@@ -246,7 +246,7 @@ class AkbCached:
 var akb_cache_frames = []::AkbFrame
 var akb_cache_stem = ""  // the look being baked ("" while not recording)
 
-def akb_stem_in(dir:string, name:string) -> string: return dir + "/b" + sha256_text("{BAKE_VERSION}|building|{name}").substring(0, 20)
+def akb_stem_in(dir:string, name:string) -> string: return dir + "/b" + sha256_text("{BAKE_VERSION}|building|{name}|k {ART_K}").substring(0, 20)
 def akb_stem(name:string) -> string: return akb_stem_in(bake_cache_dir, name)
 
 // A look from the shipped bakes or the cache, if it's there (its frames, Look and BFx in place): whether it was.

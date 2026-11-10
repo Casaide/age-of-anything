@@ -113,3 +113,7 @@ the ram and the spiders at the great sling (C4: the bake decides per socket with
 engine's depth round each socket and the member's own silhouette at compose time); the eight_eyes human hero at 160%
 (its thigh through the tunic hem in 3D, 15 px over the allowance in 2D); humans have no arm swing walking (the rat
 does); the Deck build.
+
+**2026-11-10, the screen's density (#358, D-239).** On a Retina Mac the art bakes at 2.4 texture px a world px, so a
+voxel is one device px, and desktops start a quarter further out (zoom 3 to 2.4). Sprites and the camera land on whole
+device px. The ground's patches are about a tile across and softer. 1080p, the Deck and headless checks keep the base, 2.
