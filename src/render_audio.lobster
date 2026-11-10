@@ -1,6 +1,7 @@
 // Renders one job of the game's audio (render_audio.sh runs them all): an effect's takes, a creature's voice, or a music
 // stem as a WAV, which the script turns into Ogg. Deterministic: the same files every time.
 //   lobster render_audio.lobster -- <out dir> sfx <name> | voice <creature> | music <piece> <stem> | list
+import from "../creel/src"
 import std
 import audio.synth
 import audio.instruments

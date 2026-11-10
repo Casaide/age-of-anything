@@ -10,6 +10,7 @@
 // run, Heroes.why_not's reasons are hero_barred (a yes or no) with the state behind each reason checked
 // ("on the way": in a queue; "revives in": the revival wait), and the hero_fell / hero_up events (the
 // Lobster sim has none for heroes) are read from hero_id and hero_fell.
+import from "../creel/src"
 import std
 import dictionary
 import gen.json

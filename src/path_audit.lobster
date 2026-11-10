@@ -12,6 +12,7 @@
 // Run from src:  lobster path_audit.lobster -- [minutes] [map|bushes|hunt|farms|reeds ...] [seeds:7,8,9]
 // (8 minutes on flat_test and choke_test by default; seeds: each map once per seed, AUDIT_SEEDS in GDScript)
 
+import from "../creel/src"
 import std
 import vec
 import dictionary

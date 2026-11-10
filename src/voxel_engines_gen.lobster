@@ -3,6 +3,7 @@
 // its crew's spots; and the war beasts (elephant, boar, heron, mantis, tarantula) with their howdahs and seats. The
 // crew is the race's own creature in its own kit (the recipe's `crew`). Body units: z up, y to the front, x across.
 //   lobster voxel_engines_gen.lobster
+import from "../creel/src"
 import std
 import vec
 import dictionary

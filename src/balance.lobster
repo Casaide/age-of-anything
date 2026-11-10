@@ -7,6 +7,7 @@
 //       `shards.sh balance.lobster rr <age> ... [jobs=N]` to put the table together (combine <logs>).
 //   lobster balance.lobster -- auto <age> <rounds> ["prompt" ...]   auto-balance: prices from the fights
 // With no prompts: tests/balance.gd's five races.
+import from "../creel/src"
 import std
 import vec
 import dictionary
