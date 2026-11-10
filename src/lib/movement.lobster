@@ -225,6 +225,48 @@ def queued(i:int, x:int, y:int) -> bool:
         yy++
     return false
 
+// Unit i at (x, y), nearly at its target: one of its own side standing on that point already (sent there first)?
+def spot_taken(i:int, x:int, y:int) -> bool:
+    let tx = u_tx[i]
+    let ty = u_ty[i]
+    let near = u_radius[i] * 8  // (before it walks into the ring round it, so the free place there is ahead or beside, not behind)
+    if dist2(x, y, tx, ty) > near * near: return false
+    let cx = clamp(tx / TILE, 0, W - 1)
+    let cy = clamp(ty / TILE, 0, H - 1)
+    for(3) oy:
+        let ny = cy + oy - 1
+        if ny >= 0 and ny < H:
+            for(3) ox:
+                let nx = cx + ox - 1
+                if nx >= 0 and nx < W:
+                    let c = ny * W + nx
+                    var k = sp_start[c]
+                    while k < sp_end[c]:
+                        let j = sp_items[k]
+                        k++
+                        let rr = (u_radius[i] + u_radius[j]) / 2
+                        if j != i and u_moving[j] == 0 and u_owner[j] == u_owner[i] and t_air[u_kind[j]] == t_air[u_kind[i]] and dist2(u_x[j], u_y[j], tx, ty) < rr * rr: return true
+    return false
+
+// Room for unit i to stand at (x, y): nobody pressed into it more than a quarter of their bodies (separate() eases that).
+def room_here(i:int, x:int, y:int) -> bool:
+    let cx = clamp(x / TILE, 0, W - 1)
+    let cy = clamp(y / TILE, 0, H - 1)
+    for(3) oy:
+        let ny = cy + oy - 1
+        if ny >= 0 and ny < H:
+            for(3) ox:
+                let nx = cx + ox - 1
+                if nx >= 0 and nx < W:
+                    let c = ny * W + nx
+                    var k = sp_start[c]
+                    while k < sp_end[c]:
+                        let j = sp_items[k]
+                        k++
+                        let rr = (u_radius[i] + u_radius[j]) * 3 / 4
+                        if j != i and t_air[u_kind[j]] == t_air[u_kind[i]] and dist2(u_x[j], u_y[j], x, y) < rr * rr: return false
+    return true
+
 // A herd animal driven somewhere with its flock all round it going too (#398): held up among them, not stuck, it's as
 // patient as a group (on its own it gave up for good in the jostle at a wall's gap, its flock gone on).
 def in_flock(i:int, x:int, y:int) -> bool:
@@ -267,6 +309,7 @@ def passed(i:int, x:int, y:int) -> bool:
                 k++
                 if j == i or o_moving[j] == 0 or u_owner[j] != oi or u_group[j] == gi or u_group[j] == 0: continue
                 let reach = ri + u_radius[j] + QUEUE_GAP
+                if dist2(u_tx[j], u_ty[j], u_tx[i], u_ty[i]) <= reach * reach: continue  // (sent to the same spot: neither is passing, each would excuse the other for ever, #396)
                 if dist2(o_x[j], o_y[j], x, y) <= reach * reach: return true
             xx++
         yy++
@@ -328,7 +371,16 @@ def move():
             if found: pct = pct * slow_pcts[at] / 100  // in an enemy web, or hit by sticky silk
         if pct != 100: s = s * pct / 100
         if tr_speed_pct != 0 and mci != 2: s = s * trail_pct(here) / 100  // quicker on a worn trail (a rule, off by default)
-        if steered(i):                                                    // in a formation block: steering for its place (lib/steering.lobster, #355)
+        if u_block[i] == 0 and u_reach[i] == 0 and u_foe[i] == 0 and t_animal[u_kind[i]] == 0 and (tick + u_id[i]) % REPLAN_EVERY == 0 and spot_taken(i, x, y):
+            var fx, fy = clear_point(u_owner[i], u_kind[i], u_tx[i], u_ty[i], i)
+            if room_here(i, x, y) and dist2(x, y, u_tx[i], u_ty[i]) <= dist2(fx, fy, u_tx[i], u_ty[i]):  // (already as near, with room where it is: it stops there, not walking back)
+                fx = x
+                fy = y
+            u_tx[i] = fx  // (one of its own already standing on the spot it was sent to: it takes the nearest one free beside it, #396)
+            u_ty[i] = fy
+            wxs[i] = fx
+            wys[i] = fy
+        if steered(i):  // in a formation block: steering for its place (lib/steering.lobster, #355)
             steer_group(i, x, y, s, mc)
             continue
         if (tick + u_id[i]) % PROGRESS_EVERY == 0 and u_foe[i] == 0:

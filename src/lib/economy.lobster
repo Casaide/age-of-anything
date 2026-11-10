@@ -693,26 +693,38 @@ def spawn_cell(b:int, k:int) -> int:
 
 // Where a unit of kind k (radius r) coming out at (x, y) for side p stands: there if no one's body is in the way, or else
 // the nearest point round it clear of everyone, rings a body apart (#394: on top of the last one out, the two were
-// shoved apart and every new one pushed the crowd at the rally point further out).
-def clear_point(p:int, k:int, x:int, y:int) -> int, int:
+// shoved apart and every new one pushed the crowd at the rally point further out). For unit `skip` itself, retargeting
+// beside a spot taken (#396), also clear of where its side's others on their way are going.
+def clear_point(p:int, k:int, x:int, y:int, skip:int = -1) -> int, int:
     let r = t_radius[k]
     let ln = lane_base[p] + t_mclass[k]
     let air = t_air[k]
     def free(px:int, py:int) -> bool:
         if not walkable(px, py, ln): return false
         for(u_x.length) j:
-            if t_air[u_kind[j]] == air:
+            if j != skip and t_air[u_kind[j]] == air:
                 let rr = r + u_radius[j]
                 if dist2(px, py, u_x[j], u_y[j]) < rr * rr: return false
+                if skip >= 0 and u_moving[j] == 1 and u_owner[j] == p and u_reach[j] == 0 and dist2(px, py, u_tx[j], u_ty[j]) < rr * rr: return false  // (nor where another on its way is going)
         return true
     if free(x, y): return x, y
     for(CLEAR_RINGS) rg:
         let d = (rg + 1) * r * 2
         let n = (rg + 1) * 8
+        var bx = -1
+        var by = -1
+        var bd = -1
         for(n) a:
             let ang = a * 256 / n
             let px, py = off_walls(x + cos_a(ang) * d / ONE, y + sin_a(ang) * d / ONE, r, ln)
-            if free(px, py) and clear_path(x, y, px, py, r, ln): return px, py  // (on its own side of a wall or the water)
+            if free(px, py) and clear_path(x, y, px, py, r, ln):  // (on its own side of a wall or the water)
+                if skip < 0: return px, py
+                let dd = dist2(px, py, u_x[skip], u_y[skip])  // (the one beside the spot nearest where it is)
+                if bd < 0 or dd < bd:
+                    bd = dd
+                    bx = px
+                    by = py
+        if bd >= 0: return bx, by
     return x, y
 
 // The walkable cell beside building b nearest its rally point (or its front corner), or -1.
