@@ -56,17 +56,17 @@ vw_fill(thigh, int3 { 0, -5, 20 }, int3 { 8, 5, 37 }) c:
     if vw_taper(c, 20.0, 37.0, float2 { 3.8, 0.0 }, float2 { 4.0, 0.0 }, float2 { 2.0, 2.2 }, float2 { 2.9, 3.1 }): SKIN else: 0
 pieces.push(thigh)
 let shin = vw_piece { "shin.r", 0 }
-vw_fill(shin, int3 { 0, -4, 3 }, int3 { 7, 4, 19 }) c:
+vw_fill(shin, int3 { 0, -4, 1 }, int3 { 7, 4, 19 }) c:
     // the calf swells below the knee, then the shin tapers to the ankle
-    let calf = vw_taper(c, 3.0, 12.0, float2 { 3.8, -0.2 }, float2 { 3.8, -0.4 }, float2 { 1.3, 1.4 }, float2 { 2.0, 2.3 }) or
+    let calf = vw_taper(c, 1.5, 12.0, float2 { 3.8, -0.2 }, float2 { 3.8, -0.4 }, float2 { 1.3, 1.4 }, float2 { 2.0, 2.3 }) or
         vw_taper(c, 12.0, 19.0, float2 { 3.8, -0.4 }, float2 { 3.8, 0.0 }, float2 { 2.0, 2.3 }, float2 { 1.8, 2.0 })
     if not calf: 0
     elif c.z < 6.0 and (int(floor(c.z)) % 2 == 0): STRAP  // the straps wound up the ankle
     else: SKIN
 pieces.push(shin)
 let foot = vw_piece { "foot.r", 0 }
-vw_fill(foot, int3 { 1, -3, 0 }, int3 { 7, 6, 2 }) c:
-    if not vw_taper(c, 0.0, 2.6, float2 { 3.9, 1.0 }, float2 { 3.9, 0.6 }, float2 { 2.0, 4.2 }, float2 { 1.6, 3.2 }): 0
+vw_fill(foot, int3 { 1, -3, 0 }, int3 { 7, 6, 3 }) c:
+    if not (vw_taper(c, 0.0, 2.6, float2 { 3.9, 1.0 }, float2 { 3.9, 0.6 }, float2 { 2.0, 4.2 }, float2 { 1.6, 3.2 }) or vw_taper(c, 2.6, 4.0, float2 { 3.8, -0.2 }, float2 { 3.8, -0.2 }, float2 { 1.5, 1.6 }, float2 { 1.4, 1.5 })): 0  // (the ankle reaches into the shin, so they join at every size)
     elif c.z < 1.0: LEATHER  // the sole
     elif (int(floor(c.x)) + int(floor(c.y))) % 2 == 0: STRAP
     else: SKIN
