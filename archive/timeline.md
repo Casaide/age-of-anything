@@ -244,3 +244,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-10: late_afternoon becomes the default mood, and clear_noon gets a real sun and shadow, so no mood looks flat (D-245, #419).
 - 2026-11-10: Human units redesigned in 2D for nine cultures, then the Romans drawn in .vox on a culture body of their own: tunic and caligae, galea, montefortino, leather, mail, segmentata (D-246, #417, #418).
 - 2026-11-10: Walk cycles measured from the legs: every body's planted feet now keep to the ground at its drawn size, mounted or not, and go back at a steady speed (walk_check, #422).
+- 2026-11-10: Trees, rocks, stone and gold rebuilt voxel by voxel at the screen's density, as the approved mockup: oak, pine and willow in three styles with their felled and stump stages, granite boulders, limestone and gold deposits as they're mined (D-247, #410).
