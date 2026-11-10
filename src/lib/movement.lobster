@@ -417,6 +417,10 @@ def step_out(x:int, y:int, mc:int) -> int, int:
 let GUN_SHOT_SPEED = 800  // milli-tiles a tick: a shot this fast is a gun's
 
 // Push overlapping pairs apart (World._separate; nobody is at a job or fighting here).
+// Is unit i (walking) coming back to its own place in its group, nearly there?
+def homing(i:int) -> bool:
+    return u_group[i] > 0 and u_arrive[i] == SLOT_ARRIVE and u_reach[i] == 0 and u_foe[i] == 0 and dist2(u_x[i], u_y[i], u_tx[i], u_ty[i]) <= RETURN_YIELD * RETURN_YIELD
+
 def separate():
     let n = u_x.length
     let xs = u_x
@@ -425,33 +429,14 @@ def separate():
     let ids = u_id
     let mv = u_moving
     let grp = u_group
-    let txs = u_tx
-    let tys = u_ty
-    let ar = u_arrive
     let owners = u_owner
     let w = W
     let h = H
     for(n) i:
-        s_settle[i] = 0
         s_pushx[i] = 0
         s_pushy[i] = 0
-        s_stood[i] = 0
-        s_yields[i] = 0
-        if grp[i] > 0 and ar[i] == SLOT_ARRIVE and u_reach[i] == 0:
-            if mv[i] == 0:
-                s_stood[i] = 1
-                s_yields[i] = 1
-            elif u_foe[i] == 0 and dist2(xs[i], ys[i], txs[i], tys[i]) <= RETURN_YIELD * RETURN_YIELD:
-                s_yields[i] = 1
-        // 1: standing idle (gives way), 2: walking to or from a job, 3: making for its own gather
-        // spot or carrying home from it (it won't stop in the crowd).
-        let task = u_task[i]
-        s_role[i] = 0
-        if mv[i] == 0 and task == T_NONE and u_foe[i] == 0 and s_stood[i] == 0: s_role[i] = 1
-        elif mv[i] == 1 and u_gspot[i] >= 0 and (task == GATHER or task == T_RETURN): s_role[i] = 3
-        elif mv[i] == 1 and task != T_NONE: s_role[i] = 2
         // Workers standing at their job are planted: nobody moves them. (Hitting a building, too: none here.)
-        s_planted[i] = if mv[i] == 0 and (task == GATHER or task == BUILD): 1 else: 0
+        s_planted[i] = if mv[i] == 0 and (u_task[i] == GATHER or u_task[i] == BUILD): 1 else: 0
         if mv[i] == 0 and s_planted[i] == 0 and u_foe[i] != 0:
             // So is a unit hitting a building: the crowd round a wall walks round it.
             let b = b_index_of(u_foe[i])
@@ -489,10 +474,6 @@ def separate():
                         j = u
                         dx = -dx
                         dy = -dy
-                    if grp[i] == grp[j] and grp[i] > 0 and mv[i] != mv[j]:
-                        let m = if mv[i] == 1: i else: j
-                        let near = ar[m] * (if ar[m] == SLOT_ARRIVE: 2 else: ARRIVE_SETTLE)
-                        if dist2(xs[m], ys[m], txs[m], tys[m]) <= near * near and not steered(m): s_settle[m] = 1  // (steering, it brakes into its place itself)
                     let d = isqrt(d2)
                     var ux = 0
                     var uy = 0
@@ -527,21 +508,21 @@ def separate():
                             s_pushx[o] += ex * ease / ONE
                             s_pushy[o] += ey * ease / ONE
                             continue
-                    if grp[i] == grp[j] and ((s_stood[i] == 1 and mv[j] == 1) or (s_stood[j] == 1 and mv[i] == 1)): continue
-                    if s_stood[i] == 1 and s_stood[j] == 1: continue
-                    if owners[i] == owners[j] and grp[i] != grp[j] and ((s_stood[i] == 1 and s_yields[j] == 1 and mv[j] == 1) or (s_stood[j] == 1 and s_yields[i] == 1 and mv[i] == 1)): continue
-                    // (a marching block doesn't give way to a sheep)
-                    // (a soldier standing idle holds its ground against its own side just walking through, #262)
+                    // Of a side's own: one standing in its place isn't shoved by its group walking by, nor by one coming home to its own
+                    // place nearby; a soldier standing idle holds its ground (#262) but makes way for one on a job; one steering in its
+                    // block goes before the rest; one at work or set to fire stays put. Anyone else's is a body, shoved apart evenly (#351).
                     let own = owners[i] == owners[j]
-                    let idle_i = own and s_role[i] == 1 and mv[j] == 1 and s_role[j] < 2 and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
-                    let idle_j = own and s_role[j] == 1 and mv[i] == 1 and s_role[i] < 2 and t_worker[u_kind[j]] == 0 and t_animal[u_kind[j]] == 0
-                    let hi = (si and own and not sj and u_foe[j] == 0) or s_planted[i] == 1 or (own and s_planted[i] == 2) or idle_i or (u_block[i] > 0 and t_animal[u_kind[j]] != 0) or (s_role[i] >= 2 and s_role[j] == 1) or
-                        (s_yields[j] == 1 and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and owners[i] == owners[j])
-                    let hj = (sj and own and not si and u_foe[i] == 0) or s_planted[j] == 1 or (own and s_planted[j] == 2) or idle_j or (u_block[j] > 0 and t_animal[u_kind[i]] != 0) or (s_role[j] >= 2 and s_role[i] == 1) or
-                        (s_yields[i] == 1 and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and owners[i] == owners[j])
+                    let placed_i = grp[i] > 0 and u_arrive[i] == SLOT_ARRIVE and u_reach[i] == 0 and mv[i] == 0
+                    let placed_j = grp[j] > 0 and u_arrive[j] == SLOT_ARRIVE and u_reach[j] == 0 and mv[j] == 0
+                    if placed_i and placed_j: continue
+                    if (placed_i and mv[j] == 1 and (grp[j] == grp[i] or (own and homing(j)))) or (placed_j and mv[i] == 1 and (grp[i] == grp[j] or (own and homing(i)))): continue
+                    let idle_i = own and mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and not placed_i and mv[j] == 1 and u_task[j] == T_NONE and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
+                    let idle_j = own and mv[j] == 0 and u_task[j] == T_NONE and u_foe[j] == 0 and not placed_j and mv[i] == 1 and u_task[i] == T_NONE and t_worker[u_kind[j]] == 0 and t_animal[u_kind[j]] == 0
+                    let job_i = own and mv[i] == 1 and u_task[i] != T_NONE and mv[j] == 0 and u_task[j] == T_NONE and u_foe[j] == 0 and not placed_j
+                    let job_j = own and mv[j] == 1 and u_task[j] != T_NONE and mv[i] == 0 and u_task[i] == T_NONE and u_foe[i] == 0 and not placed_i
+                    let hi = idle_i or job_i or (si and own and not sj and u_foe[j] == 0) or s_planted[i] == 1 or (own and s_planted[i] == 2) or (u_block[i] > 0 and t_animal[u_kind[j]] != 0) or (own and mv[i] == 1 and grp[i] > 0 and grp[i] != grp[j] and (placed_j or (mv[j] == 1 and homing(j))))
+                    let hj = idle_j or job_j or (sj and own and not si and u_foe[i] == 0) or s_planted[j] == 1 or (own and s_planted[j] == 2) or (u_block[j] > 0 and t_animal[u_kind[i]] != 0) or (own and mv[j] == 1 and grp[j] > 0 and grp[j] != grp[i] and (placed_i or (mv[i] == 1 and homing(i))))
                     if hi and hj: continue
-                    // One of the side's own at work and a gatherer making for its spot: the walker slips past.
-                    if owners[i] == owners[j] and ((s_planted[i] == 1 and s_role[j] == 3) or (s_planted[j] == 1 and s_role[i] == 3)): continue
                     let push = (rr - d) / SEPARATION_DIV + 1
                     let px = ux * push / ONE
                     let py = uy * push / ONE
@@ -555,7 +536,6 @@ def separate():
     let mw = W
     let mh = H
     for(n) i:
-        if s_settle[i] == 1: mv[i] = 0
         if u_perch[i] == 0:  // (up on a wall: the walkway places it)
             let mc = lane_base[owners[i]] + u_mclass[i]
             let wk = walks[mc]
