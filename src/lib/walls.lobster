@@ -588,7 +588,7 @@ def pour():
                     if u_x[j] >= x0 and u_x[j] < x1 and u_y[j] >= y0 and u_y[j] < y1 and u_perch[j] == 0 and is_foe(u_owner[j], b_owner[b]) and t_animal[u_kind[j]] == 0:
                         let kj = u_kind[j]
                         let d = damage(atk, t_arm[kj], t_cls[kj], r_min_damage)
-                        c_hurt[j] += d
+                        c_hurt[j] += hook_on_hit(b_id[b], j, d)
                         c_hurt_by[j] = b_id[b]
                         hit = true
                         if events_on: events.push(Event { EV_HIT, b_id[b], u_id[j], d, u_x[j], u_y[j] })

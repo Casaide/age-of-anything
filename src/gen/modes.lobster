@@ -15,7 +15,7 @@ def setup_mode():
     let m = at(modes, id)
     let lift = gstrs(m, "lift_lacks")
     if lift.length:  // every side can build and repair what the mode lists, whatever its race lacks
-        su_idents = map(su_idents) ident:
+        su_sides = map(su_sides) ident:
             let own = deep_copy(ident)
             set(own, "lacks", jarr(filter(glist(own, "lacks")) x: not (x.kind == J_STR and has_s(lift, x.s))))
             own
