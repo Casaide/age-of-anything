@@ -82,6 +82,7 @@ import .game.ground
 import .game.doodads
 import .game.paths
 import .game.fx
+import .game.topbar_fit
 import .game.ui
 import .game.text_cache
 import .game.levels
