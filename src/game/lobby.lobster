@@ -17,6 +17,7 @@ let FE_SIZE = 0.76                                  // the share of filling the 
 let FE_UNIT_INCHES = 0.6                            // the setup page's stage: a unit for each this much of its width on the screen
 let FE_GRASS = float4 { 0.306, 0.431, 0.165, 1.0 }  // #4e6e2a
 let FE_LEVELS = [ "Easy", "Normal", "Hard" ]
+let TREECHECK_MS = 1000                                        // treecheck: the longest a frame of the lobby's tech tree may take while its pictures are made (#430)
 let FE_NOT_MAPS = [ "choke_test", "river_test", "hill_test" ]  // test maps (the debug view lists them)
 let FE_STAGE_ROLES = [ "spear", "infantry", "archer", "large", "skirmisher", "worker", "catapult", "healer" ]
 let FE_BAKE_AFTER = 0.6                             // seconds of no typing before a side's army is made again
@@ -1320,6 +1321,9 @@ def run_front(page0:string, typed:[string]) -> string:
     fe_field = if page0 == "setup": 0 elif page0 == "lab": 10 else: -1  // (as the title's buttons do: side 1's box has the keyboard)
     var typing = false                                                  // text input on: only while a box has the keyboard (on a phone it brings up the keyboard)
     var shot_frame = -1
+    var tc_at = -1.0  // (treecheck: when the last frame of the open tech tree began, the longest, how many)
+    var tc_worst = 0.0
+    var tc_frames = 0
     pace(PACE_MENU)
     while gl.frame():
         ui_click_tick()
@@ -1373,6 +1377,15 @@ def run_front(page0:string, typed:[string]) -> string:
             tree_tick()
             ui_flush()
             fe_frames++
+            if tc_at >= 0.0:  // (treecheck: the page answers every frame while its pictures come, #430)
+                let now = seconds_elapsed()
+                tc_worst = max(tc_worst, now - tc_at)
+                tc_at = now
+                tc_frames++
+                if (tree_waiting == 0 and tc_frames > 2) or tc_frames > 3000:
+                    print "treecheck: the longest frame {int(tc_worst * 1000.0)} ms (at most {TREECHECK_MS}), {tc_frames} frames, {tree_waiting} pictures left"
+                    if tc_worst * 1000.0 > float(TREECHECK_MS) or tree_waiting > 0: set_exit_code(1)
+                    return ""
             if shot != "" and fe_frames >= shot_frame + 5 and (tree_waiting == 0 or fe_frames > shot_frame + 600):  // (captures: lobbytree, once its pictures are painted)
                 gl.screenshot(shot)
                 return ""
@@ -1402,6 +1415,11 @@ def run_front(page0:string, typed:[string]) -> string:
         ui_label_px = 0
         vx_bake_tick(0.025)  // (the armies' voxel looks, as they're asked for)
         fe_frames++
+        // (treecheck: the AI's tech tree opened with nothing baked, each frame timed till its pictures are all painted)
+        if has_s(args, "treecheck") and fe_page == "setup" and fe_frames == 10:
+            fe_open_tree(1)
+            tc_at = seconds_elapsed()
+            continue
         // (captures: lobbytree opens the AI's tech tree; loadfirst plays on from the newest save)
         if has_s(args, "lobbytree") and fe_page == "setup" and shot_frame > 0 and fe_frames == shot_frame - 1:
             fe_open_tree(1)
