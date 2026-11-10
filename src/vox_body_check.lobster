@@ -79,19 +79,19 @@ launch_subprocess([ "/bin/mkdir", "-p", dir + "/models" ])
 vx_load([ "../data/voxel" ])
 vx_cur_dir = dir
 
-// the models: a point; a head 4 wide; a thigh 2 x 2 x 18 with a third column at its middle (so a mirror shows); a shin
+// the models: a point; a head 6 wide (3 body units, on the neck); a thigh 2 x 2 x 18 with a third column at its middle (so a mirror shows); a shin
 let head_v = []::int3
-for(4) z: for(4) y: for(4) x: head_v.push(int3 { x, y, z })
+for(6) z: for(6) y: for(6) x: head_v.push(int3 { x, y, z })
 let thigh_v = []::int3
 for(18) z: for(2) y: for(if z == 8 or z == 9: 3 else: 2) x: thigh_v.push(int3 { x, y, z })
 let shin_v = []::int3
 for(18) z: for(2) y: for(2) x: shin_v.push(int3 { x, y, z })
-let models = model(int3_1, [ int3_0 ], [ 1 ]) + model(int3 { 4, 4, 4 }, head_v, map(head_v): 1) + model(int3 { 3, 2, 18 }, thigh_v, map(thigh_v): 1) +
+let models = model(int3_1, [ int3_0 ], [ 1 ]) + model(int3 { 6, 6, 6 }, head_v, map(head_v): 1) + model(int3 { 3, 2, 18 }, thigh_v, map(thigh_v): 1) +
     model(int3 { 2, 2, 18 }, shin_v, map(shin_v): 1)
 // the scene (MagicaVoxel voxels: 2 a body unit), the right leg drawn standing: the thigh's voxels at x 3..4 (and 5
 // in the middle), z 24..41; the shin's at x 3..4, z 6..23. The head part, and the head point in layer 1, "points", hidden.
-let nodes = ntrn(0, "", 1, -1, int3_0) + ngrp(1, [ 2, 4, 6, 8 ]) + ntrn(2, "head", 3, 0, int3 { 0, 2, 78 }) + nshp(3, 1) +
-    ntrn(4, "head", 5, 1, int3 { 0, 2, 78 }) + nshp(5, 0) + ntrn(6, "thigh.r", 7, 0, int3 { 4, 0, 33 }) + nshp(7, 2) +
+let nodes = ntrn(0, "", 1, -1, int3_0) + ngrp(1, [ 2, 4, 6, 8 ]) + ntrn(2, "head", 3, 0, int3 { 0, 2, 72 }) + nshp(3, 1) +
+    ntrn(4, "head", 5, 1, int3 { 0, 2, 72 }) + nshp(5, 0) + ntrn(6, "thigh.r", 7, 0, int3 { 4, 0, 33 }) + nshp(7, 2) +
     ntrn(8, "shin.r", 9, 0, int3 { 4, 0, 15 }) + nshp(9, 3)
 assert write_file(dir + "/models/body.vox", vox_of(models + nodes + rgba([ 0xb04020 ]) + layr(0, "body", false) + layr(1, "points", true)), 0, 1)
 
@@ -111,7 +111,7 @@ expect(near(l.foot, float3 { 2.0, 0.0, 3.25 }, 0.001), "the foot stands where th
 // the points layer, and a part on a point
 let rest = vx_points { b.pnames, b.pat }
 let head_at = vx_where(rest, "head")
-expect(near(head_at, float3 { 0.25, 1.25, 39.25 }, 0.001), "the points layer moves the head: {head_at}")
+expect(near(head_at, float3 { 0.25, 1.25, 36.25 }, 0.001), "the points layer moves the head: {head_at}")
 let chest_at = vx_where(rest, "chest")
 expect(near(chest_at, float3 { 0.0, 0.3, 29.6 }, 0.001), "a point not in the file keeps its JSON place: {chest_at}")
 let heads = filter(b.shapes) q: q.kind == vx_k_model and q.pa == "head"
@@ -119,7 +119,7 @@ expect(heads.length == 1, "the head part rides the head point")
 if heads.length == 1:
     let hpr = []::vx_prim
     vx_emit(hpr, heads[0], rest, vx_X, vx_Y, vx_Z, [], b)
-    expect(near(hpr[0].a, float3 { 0.0, 1.0, 39.0 }, 0.001), "the head part is centred where it was drawn: {hpr[0].a}")
+    expect(near(hpr[0].a, float3 { 0.0, 1.0, 36.0 }, 0.001), "the head part is centred where it was drawn: {hpr[0].a}")
 
 // thigh and shin: drawn by the .vox, right and mirrored left, where they were drawn standing, on their bones walking
 expect((find(b.vox_bones) n: n == "thigh") >= 0 and (find(b.vox_bones) n: n == "shin") >= 0, "thigh and shin are drawn by the .vox")
