@@ -1316,7 +1316,7 @@ def run_front(page0:string, typed:[string]) -> string:
     fe_page = page0
     front_shown = true
     fe_frames = 0
-    fe_field = -1
+    fe_field = if page0 == "setup": 0 elif page0 == "lab": 10 else: -1  // (as the title's buttons do: side 1's box has the keyboard)
     var typing = false  // text input on: only while a box has the keyboard (on a phone it brings up the keyboard)
     var shot_frame = -1
     pace(PACE_MENU)
