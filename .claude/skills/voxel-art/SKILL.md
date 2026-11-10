@@ -62,12 +62,75 @@ This file, `blank_body.json`, `rat.json`, and the gear entries you touch. Don't 
   fit for helmets and armour.
 
 ## Design rules
-- **Humans:** about 7 heads, small head, legs half the height, shoulders 2 heads wide over narrower hips, thighs
-  tapering hard to knee and ankle. No eye pixels. Team colour on the tunic.
+- **Humans:** about 7 to 7.5 heads, small head, legs half the height, shoulders 2 heads wide over narrower hips, thighs
+  tapering hard to knee and ankle. Team colour on the tunic (or a sash). Eyes: at the old density none; at screen density
+  (a .vox head about 9 px across) one dark voxel per eye, apart, with no dark brow (see "Faces" below).
 - **Gear contrasts with what it covers** (a grey helmet reads as grey hair: use bronze, a rim, a crest) and follows
   the real object (a scutum is curved: panels round an arc).
 - Exaggerate the defining feature and drop anything under a voxel. One light from the upper left. Colour ramps, never
   white or grey by accident. Team colour on one clear region.
+
+## Units drawn as .vox (the haidut method, #381)
+A detailed unit, especially a human, is best drawn as a `.vox` body (`docs/modding.md`, "Drawing it in MagicaVoxel"),
+written voxel by voxel by a Lobster script so every change is reviewable and rebuildable. The worked example is
+`mods/vox_example/tools/haidut.lobster` (an 18th-century Bulgarian rebel, three cloaks); copy its file-writing tail.
+- **Concept first, in 2D.** Before any voxel, draw a flat concept sheet of the real subject from reference photos
+  (Dominic sent a photo of the dress): front, side and back, square-on, on a grid of head heights (7.5 heads), the
+  palette as named chips. The haidut's is `archive/images/2026-11-10/79-haidut-concept-sheet.png`, drawn as an SVG
+  from a short script (outline points per head height, mirrored for front and back). It fixes the proportions, what
+  each garment is and where it ends, and the colours, and it is what Dominic reviews before the 3D work. The voxel
+  script then follows the sheet: each piece's heights come from the sheet's head lines (1 head = 10 voxels), its
+  colours from the chips. The clothes were right first time this way; everything that went wrong was something the
+  sheet couldn't show at game size (the face, the hold).
+- **Pieces:** `head`, `chest`, `hip`, `thigh.r`, `shin.r`, `foot.r`, `upper_arm.r`, `forearm.r`, `hand.r`, drawn standing
+  and touching (the joints are where they meet). The left is mirrored. A hidden `points` layer sets hip, chest, head.
+  Name a piece after a body point (`chest`, not `torso`) or the load stops. Pieces are soft: the legs set the ground.
+- **Size:** draw about 79 voxels tall with a 10-voxel head, then set the body `size` (the haidut 0.73). That is about one
+  device px a voxel on a Retina screen, so render checks at `vx_RES = 2.64`, never at the old density (a face that
+  reads there reads as mush at 2).
+- **The body JSON** keeps the behaviour: copy a human body (gait, legs, arms, `reach`), add `"vox"` and `"mats"` (palette
+  indexes that are our materials: team, metal, hair, skin). A fixed colour stays as painted. `bare: true` keeps generic
+  caps and armour off, since the clothes are drawn. A creature finds its body through its body part, so the mod needs
+  a `body.<id>` part and a creature that `extends` human.
+- **Riding:** any body a race can mount needs a `seat` (`z` about the hip, `astride`: thigh, shin, foot materials), or
+  the first lancer crashes the bake. `vox_mod_check` holds it.
+- **Variants** (cloaks, looks) are the same script with an argument, each its own `.vox` and body JSON.
+
+### Faces (about 9 px across, so every voxel counts)
+- Eyes: one dark voxel each, a voxel apart. Two-voxel eyes under a dark brow read as one stern line, and dark grooves
+  or dots near eye level read as a second pair of eyes.
+- A moustache is ONE layer thick at the face surface. Deeper, the view from above stretches it into a black block. Leave
+  a row of skin between it and the collar. Drooping handlebar tips read as a moustache; upturned tips read as a "giant
+  black smile". A beard needs a skin chin under it or the head has no chin; a goatee joined to the moustache in a ring
+  reads best.
+- Small nose (a voxel proud). Forehead detail (ridges, a crest) in light colour on skin, standing out, never dark grooves.
+- Look at every head at 8 to 16x, front-on and 3/4, from above as the game sees it. Front-on is where faces fail.
+
+### Clothes
+- Contrast is the readability: a white shirt under a black coat, a team sash, a silver bandolier on dark. Black on black
+  disappears; silver on white disappears (short blades vanish against a white shirt, #389).
+- Big shapes read: a kalpak, a fleece over the shoulders, a long cloak, a wide checked baldric. Under a voxel, drop it.
+- Clothes Dominic liked: drawn from a concept sheet of the real dress, then kept unchanged across face fixes.
+
+### Held gear and holds
+- A gear shape's frame is `["hand", along the hold, up out of its top, to the right]`. Getting an axis wrong puts the
+  thing on the side of the hand, along the arm.
+- Holds are data (`holds` in a mod's `gear.json`: `rest`, `dir`, `wind`, `hit` and their `_dir`s). Make a new one rather
+  than bend a weapon to fit an old hold.
+- Look at real photos of the object being held before drawing it. Where the hand goes is part of the object: a small
+  hand weapon lies across the fist with its nose past the knuckles, not in line past the hand (where the hand shows as
+  a band cutting through it), and not on a pistol grip it doesn't have.
+- Render the attack too (`vx_act = "attack"` at about 0.65 of the cycle), at 15x on the hand, side and 3/4.
+
+### A recognisable character
+A likeness (Dominic's private benchmark) is built the same way, from photos: the costume's exact layout and colours,
+the signature kit, the face's one or two defining features exaggerated. Third-party characters stay in gitignored
+`mods_private/`, never committed or shipped; keep a copy in the project's files, since a cloud container is wiped.
+
+### Done means played
+Run `vox_mod_check` (or the mod's own check), then play it in a real match on the Mac: `./play.sh lobby mods:<mod>
+"races:<word>|romans" skirmish army:6`, so soldiers and riders are on screen. Look at every unit type of the race at
+game size. Fixes found there get a failing check first.
 
 ## Build, check, look
 - `lobster voxel_proto.lobster -- out.ppm solo <body> [gear,...]` (from `src/`): that one body alone at 3x, in four
