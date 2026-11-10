@@ -79,6 +79,7 @@ import vec
 import game.cursor_images
 import gl
 import game.window_mode
+import game.topbar_fit
 import game.fog_look
 
 let DATA = "../data"
@@ -1002,9 +1003,74 @@ def g_fog_look():
     expect(game and find_string(game, "tr_names[tt] == \"tree\") and") < 0, "fog: not just trees show where never seen")
     expect(game and find_string(game, "fog_shows_land(fog[ME][c])") >= 0, "fog: resources and doodads show by fog_shows_land")
 
+// ------------------------------------------------------------------ the top bar fits the window (#370)
+
+def g_topbar():
+    let names = [ "Gutterkin", "Third Armored Division", "Fourth Armored Division of the Very Long Name Brigade" ]
+    let age_txts = [ "Mud Age", "Mud Age  ->  Bronze Age  45%" ]
+    let paces = [ "", "Paused", "x10.0" ]
+    var tried = 0
+    var off = 0
+    var bad_name = 0
+    var worst = ""
+    for([ 640, 800, 1024, 1280, 1600, 1920, 2560, 3024, 3840 ]) ww:
+        for([ 70, 100, 115, 150, 200 ]) hs:
+            let ws = float2 { float(ww), float(ww) * 0.625 }
+            let s = hud_scale(hs, ws)
+            for(names) name:
+                for(age_txts) age:
+                    for(paces) pace:
+                        let t = TbTexts { [ "99999", "99999", "99999", "99999" ], "200/200", name, "4", age, "59:59", pace }
+                        let l = tb_layout(t, ws.x, s)
+                        tried++
+                        if l.w + 10.0 * l.s > ws.x - 10.0 * l.s:
+                            off++
+                            if worst == "": worst = "{ww} px, hud {hs}: {name} / {age} / {pace}: the bar ends at {l.w + 10.0 * l.s}"
+                        let whole = l.title == name
+                        let cut = l.title == "" or ends_with(l.title, "...") and starts_with(name, l.title.substring(0, l.title.length - 3))
+                        if not (whole or cut) or tb_text_w(l.title, int(22.0 * l.s), 2) > l.title_w: bad_name++
+    expect(off == 0, "top bar: inside the window ({off} of {tried} off it; {worst})")
+    expect(bad_name == 0, "top bar: the name shown is the race\'s, whole or cut with ..., inside its room ({bad_name} of {tried})")
+    // Where there's room the name isn't cut and the scale is the player's.
+    let t = TbTexts { [ "300", "200", "0", "0" ], "3/5", "Third Armored Division", "1", "Mud Age  ->  Bronze Age  45%", "0:05", "x10.0" }
+    let l = tb_layout(t, 2560.0, hud_scale(115, float2 { 2560.0, 1600.0 }))
+    expect(l.title == "Third Armored Division" and l.s == 1.15, "top bar: a long name whole at 2560 px ({l.title}, {l.s})")
+    // The plaques' lines in the middle of their insides (#376): clear of the frame, as much room over as under.
+    var rows_bad = 0
+    var rows_first = ""
+    for(17) k:
+        let s = 0.4 + 0.1 * float(k)
+        for([ false, true ]) ageing:
+            let r = tb_rows(s, ageing)
+            let ph = 48.0 * s
+            let fw = max(1.0, 2.0 * s)
+            def ink2(a:float2, b:float2) -> float2: return float2 { min(a.x, b.x), max(a.y, b.y) }
+            let icon = float2 { r.age_icon, r.age_icon + 26.0 * s }
+            var age = ink2(icon, ink2(tb_ink(r.age_num, int(24.0 * s), 2), tb_ink(r.age_txt, int(17.0 * s), 1)))
+            if ageing: age = ink2(age, float2 { r.age_bar, r.age_bar + 5.0 * s })
+            let blocks = [ ink2(tb_ink(r.stock, int(20.0 * s), 1), tb_ink(r.work, int(15.0 * s), 1)), tb_ink(r.pop, int(20.0 * s), 1),
+                           tb_ink(r.clock, int(18.0 * s), 1), tb_ink(r.pace, int(16.0 * s), 1), age ]
+            let what = [ "stock and workers", "population", "clock", "pace", "age" ]
+            for(blocks) b, i:
+                let over = b.x - fw
+                let under = ph - fw - b.y
+                if over < 3.0 * s or abs(over - under) > 1.5:
+                    rows_bad++
+                    if rows_first == "": rows_first = "s {s}{if ageing: " ageing" else: ""}: {what[i]} {over} px over, {under} under"
+            // The age's number and name on its icon's middle, the workers on the small worker's.
+            let mid = (icon.x + icon.y) / 2.0
+            let num = tb_ink(r.age_num, int(24.0 * s), 2)
+            let txt = tb_ink(r.age_txt, int(17.0 * s), 1)
+            let wk = tb_ink(r.work, int(15.0 * s), 1)
+            for([ (num.x + num.y) / 2.0 - mid, (txt.x + txt.y) / 2.0 - mid, (wk.x + wk.y) / 2.0 - (r.work_icon + 7.0 * s) ]) d, i:
+                if abs(d) > 1.5:
+                    rows_bad++
+                    if rows_first == "": rows_first = "s {s}: {[ "age number", "age name", "worker count" ][i]} {d} px off its icon\'s middle"
+    expect(rows_bad == 0, "top bar: the plaques\' lines in their middles ({rows_bad} off; {rows_first})")
+
 // ------------------------------------------------------------------ the run
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look" ]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look", "topbar" ]
 
 def run_group(name:string):
     switch name:
@@ -1026,6 +1092,7 @@ def run_group(name:string):
         case "cursors": g_cursors()
         case "window": g_window()
         case "fog_look": g_fog_look()
+        case "topbar": g_topbar()
         default: assert false
 
 var shard = 0
