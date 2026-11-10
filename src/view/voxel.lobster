@@ -191,15 +191,23 @@ def vx_sq(v:int3) -> int: return v.x * v.x + v.y * v.y + v.z * v.z
 
 // A model shape's model: the first model in data/<folder>/models/<file>, with its palette mapped to materials.
 def vx_model_of(file:string, mats:JV) -> int:
-    let path = vx_cur_dir + "/models/" + file
-    var key = path
+    let f = vx_vox_file(file)
+    assert f.models.length
+    return vx_model_in(f, file, 0, mats)
+
+// A .vox file in the data folder's models/ (a broken one stops the load).
+def vx_vox_file(file:string) -> vox_file:
+    let f = vox_parse(assert read_file(vx_cur_dir + "/models/" + file))
+    assert f.error == ""
+    return f
+
+// Model n of a .vox file, its palette mapped to materials (loaded once per file, model and map).
+def vx_model_in(f:vox_file, file:string, mi:int, mats:JV) -> int:
+    var key = "{vx_cur_dir}/models/{file} {mi}"
     for(mats.keys) k, i: key += " {k}={as_str(mats.a[i])}"
     let had = find(vx_model_keys) k: k == key
     if had >= 0: return had
-    let f = vox_parse(assert read_file(path))
-    assert f.error == ""
-    assert f.models.length
-    let md = f.models[0]
+    let md = f.models[mi]
     let pad = int3_1 * vx_MODEL_PAD
     let dims = md.size + pad * 2
     let idx = map(dims.x * dims.y * dims.z): 0
@@ -278,7 +286,12 @@ class vx_spec:
     taper:float
     need:[string]  // flags that must be there (if) and mustn't (unless)
     avoid:[string]
-    model:int = -1  // a model shape's model (vx_models)
+    model:int = -1        // a model shape's model (vx_models)
+    flip:bool = false     // the model drawn mirrored (a left limb's part from the right one's)
+    ax:float3 = float3_0  // not zero: the model's own axes in the body (a part placed in a .vox body), else the frame's
+    ay:float3 = float3_0
+    az:float3 = float3_0
+    bone:bool = false  // a limb's part: centred between pa and pb, its own down turned along the bone
 
 def vx_v3(v:JV) -> float3: return float3 { as_float(v.a[0]), as_float(v.a[1]), as_float(v.a[2]) }
 def vx_pt(v:JV) -> string, float3: return as_str(v.a[0]), float3 { as_float(v.a[1]), as_float(v.a[2]), as_float(v.a[3]) }
@@ -560,7 +573,12 @@ class vx_body_spec:
     gait:vx_gait? = nil
     tool_jobs:[string] = []  // gear it uses in place of the kit's (a robot's laser cutter for the axe and the pick)
     tool_gear:[string] = []
-    bare:bool = false  // it wears nothing (a robot: no caps or armour on it)
+    bare:bool = false     // it wears nothing (a robot: no caps or armour on it)
+    leg_r:[vx_spec] = []  // a .vox body's limb parts (thigh, shin; upper_arm, forearm), right and left, on every pair of legs
+    leg_l:[vx_spec] = []
+    arm_r:[vx_spec] = []
+    arm_l:[vx_spec] = []
+    vox_bones:[string] = []  // the bones its .vox draws (their capsules aren't drawn)
 
 class vx_hold_spec:
     rest:float3
@@ -687,7 +705,74 @@ def vx_parse_body(id:string, o:JV) -> vx_body_spec:
     b.wheels = map(glist(o, "wheels")) w: vx_parse_wheel(w, if tr: tr.pitch else: 0.0)
     b.death = gstr(o, "death", "")
     vx_parse_parts(b, glist(o, "parts"))
+    if has(o, "vox"): vx_vox_body(b, as_str(at(o, "vox")), gobj(o, "mats"))
     return b
+
+// ---- a body from a .vox file (#313): its `points` layer places the body's points (one voxel each, named after the
+// point, or hip.r, foot.r, shoulder.r, helm), and every other shown object is a part named after what it rides: a
+// point (head, chest ...) or a bone (thigh, shin, upper_arm, forearm; .r, and .l or the .r mirrored). Limbs are drawn
+// hanging straight down; each is centred on its bone as it moves. Its JSON keeps the behaviour (legs' bones, gait, size).
+let vx_VOX_BONES = [ "thigh", "shin", "upper_arm", "forearm" ]
+let vx_VOX_ENDS = [ "hip", "knee", "knee", "ankle", "shoulder", "elbow", "elbow", "hand" ]
+
+def vx_vox_axis(r:[int3], k:int) -> float3: return float3 { float(r[0][k]), float(r[1][k]), float(r[2][k]) }
+
+def vx_vox_body(b:vx_body_spec, file:string, mats:JV):
+    let f = vx_vox_file(file)
+    def rest(name:string) -> float3:
+        let k = find(b.pnames) n: n == name
+        assert k >= 0
+        return b.pat[k]
+    // the points: the body's own first (the rest are placed from them), then the limbs' and the helmet's
+    for(2) pass:
+        for(f.nodes) nd:
+            if nd.layer == "points":
+                let at = (float(vox_world(f, nd, 0)) + float3_1 * 0.5) / vx_RES
+                let k = find(b.pnames) n: n == nd.name
+                let special = nd.name == "hip.r" or nd.name == "foot.r" or nd.name == "shoulder.r" or nd.name == "helm"
+                if pass == 0 and not special:
+                    if k >= 0: b.pat[k] = at
+                    else:
+                        b.pnames.push(nd.name)
+                        b.pat.push(at)
+                        for([ b.pbob, b.pflap, b.plean, b.psway, b.pdrive ]) l: l.push(0.0)
+                elif pass == 1:
+                    if nd.name == "hip.r": for(b.legs) l: l.a = at - rest(l.pa)
+                    if nd.name == "foot.r": for(b.legs) l: l.foot = at
+                    if nd.name == "shoulder.r": b.sh = at - rest(b.sh_pt)
+                    if nd.name == "helm": b.helm = at - rest(b.helm_pt)
+    // the parts
+    let lefts = []::string
+    for(f.nodes) nd:
+        if nd.layer != "points" and not nd.hidden:
+            let md = f.models[nd.model]
+            let half = float(md.size - int3_1) * 0.5 - float(md.size / 2)
+            let ax, ay, az = vx_vox_axis(nd.r, 0), vx_vox_axis(nd.r, 1), vx_vox_axis(nd.r, 2)
+            let centre = (ax * half.x + ay * half.y + az * half.z + float(nd.t) + float3_1 * 0.5) / vx_RES
+            let s = vx_spec { vx_k_model, true, false, "", float3_0, "", float3_0, 1.0 / vx_RES, 0.0, 0, 0, float3_0, float3_0, [], [], 0.0, 0.0,
+                              [], [], model: vx_model_in(f, file, nd.model, mats), ax: ax, ay: ay, az: az }
+            let dot_at = find(nd.name) c: c == '.'
+            let bone = find(vx_VOX_BONES) n: dot_at > 0 and n == substring(nd.name, 0, dot_at)
+            if bone >= 0:
+                let side = substring(nd.name, dot_at + 1, nd.name.length - dot_at - 1)
+                assert side == "r" or side == "l"
+                s.bone = true
+                s.pa, s.pb = vx_VOX_ENDS[bone * 2], vx_VOX_ENDS[bone * 2 + 1]
+                if (find(b.vox_bones) n: n == vx_VOX_BONES[bone]) < 0: b.vox_bones.push(vx_VOX_BONES[bone])
+                if side == "l": lefts.push(vx_VOX_BONES[bone])
+                (if bone < 2: (if side == "r": b.leg_r else: b.leg_l) else: (if side == "r": b.arm_r else: b.arm_l)).push(s)
+            else:
+                s.pa = nd.name
+                s.a = centre - rest(nd.name)
+                b.shapes.push(s)
+    // a limb drawn only on the right is mirrored on the left
+    for(f.nodes) nd:
+        let dot_at = find(nd.name) c: c == '.'
+        let bone = find(vx_VOX_BONES) n: dot_at > 0 and n == substring(nd.name, 0, dot_at)
+        if bone >= 0 and nd.layer != "points" and not nd.hidden and ends_with(nd.name, ".r") and (find(lefts) n: n == vx_VOX_BONES[bone]) < 0:
+            let rs = if bone < 2: b.leg_r else: b.arm_r
+            let s = rs[find(rs) q: q.pa == vx_VOX_ENDS[bone * 2] and q.pb == vx_VOX_ENDS[bone * 2 + 1]]
+            (if bone < 2: b.leg_l else: b.arm_l).push(vx_mirrored(s))
 
 // The gear body b uses for gear g (its own in its place, or g).
 def vx_tool_for(b:vx_body_spec, tool:string) -> string:
@@ -1055,14 +1140,40 @@ def vx_emit(out:[vx_prim], s:vx_spec, p:vx_points, fx:float3, fy:float3, fz:floa
                 let b = body
                 if b: out.push(vx_hard(vx_where(p, b.fit_pa) + b.fit_a, vx_where(p, b.fit_pb) + b.fit_b, b.fit_r.x + s.ra, b.fit_r.y + s.ra, s.mat))
             case vx_k_model:
-                let c = vx_where(p, s.pa) + tr(s.a)
-                let x0 = fx * m.x
-                var y = fy
-                if s.pb != "": y = normalize(vx_where(p, s.pb) + tr(s.b) - c)
-                let x = normalize(x0 - y * dot(x0, y))
-                let z = cross(fx, y)  // (from the unmirrored x: a mirrored model keeps its up)
-                out.push(vx_prim { c, c + y, s.ra, s.ra, s.mat, s.hard, false, float3_0, model: s.model, mx: x, mz: normalize(z - y * dot(z, y)) })
+                if s.bone or s.ax != float3_0: out.push(vx_part_prim(s, p, fx * m.x, fy, fz))
+                else:
+                    let c = vx_where(p, s.pa) + tr(s.a)
+                    let x0 = fx * m.x * (if s.flip: -1.0 else: 1.0)
+                    var y = fy
+                    if s.pb != "": y = normalize(vx_where(p, s.pb) + tr(s.b) - c)
+                    let x = normalize(x0 - y * dot(x0, y))
+                    let z = cross(fx, y)  // (from the unmirrored x: a mirrored model keeps its up)
+                    out.push(vx_prim { c, c + y, s.ra, s.ra, s.mat, s.hard, false, float3_0, model: s.model, mx: x, mz: normalize(z - y * dot(z, y)) })
             default: assert false
+
+// A .vox body's part: on its point, its own axes turned by the frame; or a limb's, centred on its bone and turned from
+// hanging straight down (as it's drawn) to along the bone. (Mirrored, its axes are: a left-handed set draws it flipped.)
+def vx_part_prim(s:vx_spec, p:vx_points, fx:float3, fy:float3, fz:float3) -> vx_prim:
+    def tr(o:float3) -> float3: return fx * o.x + fy * o.y + fz * o.z
+    if not s.bone:
+        let c = vx_where(p, s.pa) + tr(s.a)
+        return vx_prim { c, c + tr(s.ay), s.ra, s.ra, s.mat, s.hard, false, float3_0, model: s.model, mx: tr(s.ax), mz: tr(s.az) }
+    let a = vx_where(p, s.pa)
+    let b = vx_where(p, s.pb)
+    let d = normalize(b - a)
+    def turn(v:float3) -> float3: return vx_turned_to(float3 { 0.0, 0.0, -1.0 }, d, v)
+    let c = (a + b) * 0.5 + turn(s.a)
+    return vx_prim { c, c + turn(s.ay), s.ra, s.ra, s.mat, s.hard, false, float3_0, model: s.model, mx: turn(s.ax), mz: turn(s.az) }
+
+// v turned by the least turn that takes direction a to direction b.
+def vx_turned_to(a:float3, b:float3, v:float3) -> float3:
+    let ax = cross(a, b)
+    let sn = magnitude(ax)
+    let cs = dot(a, b)
+    if sn < 0.000001:
+        return if cs > 0.0: v else: float3 { -v.x, v.y, -v.z }  // (straight back up: half a turn round y)
+    let k = ax / sn
+    return v * cs + cross(k, v) * sn + k * dot(k, v) * (1.0 - cs)
 
 let vx_X = float3 { 1.0, 0.0, 0.0 }
 let vx_Y = float3 { 0.0, 1.0, 0.0 }
@@ -1139,9 +1250,10 @@ def vx_legs(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, ph:float,
             let fy = float3 { 0.0, cos(pitch), sin(pitch) }  // (the foot's shapes, rolled with it)
             let fz = float3 { 0.0, -sin(pitch), cos(pitch) }
             let knee, ankle = vx_ik(hip, foot, l.l1, l.l2, l.pole * m)
-            out.push(vx_cap(hip, knee, l.r[0], l.r[1], l.mats[0]))
-            out.push(vx_cap(knee, ankle, l.r[2], l.r[3], l.mats[1]))
+            if (find(b.vox_bones) n: n == "thigh") < 0: out.push(vx_cap(hip, knee, l.r[0], l.r[1], l.mats[0]))
+            if (find(b.vox_bones) n: n == "shin") < 0: out.push(vx_cap(knee, ankle, l.r[2], l.r[3], l.mats[1]))
             let lp = vx_points { [ "hip", "knee", "ankle" ], [ hip, knee, ankle ] }
+            for(if side > 0.0: b.leg_r else: b.leg_l) s: vx_emit(out, s, lp, vx_X, vx_Y, vx_Z, flags, nil)
             for(l.shapes) s:
                 let s2 = s  // (the left one mirrored: its offsets' x turned)
                 if side > 0.0: vx_emit(out, s2, lp, vx_X, fy, fz, flags, nil)
@@ -1160,7 +1272,8 @@ def vx_limb_gear(out:[vx_prim], u:vx_unit_def, leg:bool, side:float, lp:vx_point
 def vx_mirrored(s:vx_spec) -> vx_spec:
     let m = float3 { -1.0, 1.0, 1.0 }
     return vx_spec { s.kind, s.hard, false, s.pa, s.a * m, s.pb, s.b * m, s.ra, s.rb, s.mat, s.mat2, s.n * m, s.half,
-                     s.pts, map(s.offs) o: o * m, s.step, s.taper, s.need, s.avoid }
+                     s.pts, map(s.offs) o: o * m, s.step, s.taper, s.need, s.avoid, model: s.model, flip: not s.flip,
+                     ax: s.ax * m, ay: s.ay * m, az: s.az * m, bone: s.bone }
 
 def vx_worn_gear(g:string) -> bool:
     let gs = vx_gears.get(g)
@@ -1229,10 +1342,13 @@ def vx_arms(out:[vx_prim], u:vx_unit_def, b:vx_body_spec, p:vx_points, swing:flo
         let sh = if side > 0.0: sh_r else: sh_l
         let target = if side > 0.0: hr else: hl
         let elbow, hand = vx_ik(sh, target, b.arm, b.arm, float3 { side * 0.5, -1.0, -0.4 })
-        out.push(vx_cap(sh, elbow, b.thick, b.thick * 0.8, b.sleeve))
-        out.push(vx_cap(elbow, hand, b.thick * 0.75, b.thick * 0.6, b.hand))
-        out.push(vx_ball(hand, b.thick * 0.8, b.hand))
-        vx_limb_gear(out, u, false, side, vx_points { [ "shoulder", "elbow", "hand" ], [ sh, elbow, hand ] }, vx_Y, vx_Z, flags)
+        if (find(b.vox_bones) n: n == "upper_arm") < 0: out.push(vx_cap(sh, elbow, b.thick, b.thick * 0.8, b.sleeve))
+        if (find(b.vox_bones) n: n == "forearm") < 0:
+            out.push(vx_cap(elbow, hand, b.thick * 0.75, b.thick * 0.6, b.hand))
+            out.push(vx_ball(hand, b.thick * 0.8, b.hand))
+        let ap = vx_points { [ "shoulder", "elbow", "hand" ], [ sh, elbow, hand ] }
+        for(if side > 0.0: b.arm_r else: b.arm_l) s: vx_emit(out, s, ap, vx_X, vx_Y, vx_Z, flags, nil)
+        vx_limb_gear(out, u, false, side, ap, vx_Y, vx_Z, flags)
         if side > 0.0: hr = hand
         else: hl = hand
     if pushed != "":
