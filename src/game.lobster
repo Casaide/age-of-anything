@@ -133,6 +133,7 @@ var army_n = 0                        // army:<n>: n of each of your soldier typ
 var army_snap = false                 // a skirmish's armies start in their blocks, once the first order has made them
 let ARMY_GAP = 600                    // milli-tiles between them, in ranks
 var zoom_arg = 0.0                    // zoom:<n>: the camera at that zoom at the start, 1 the farthest out (filming)
+var density_arg = 0.0                 // density:<z>: prebake at that art density (prebake.sh: the base, then a Retina Mac's 2.4, #358)
 var reveal = false                    // reveal: the view shows the whole map, the fog off (view only: filming, and perf: sees every unit)
 var hurt_pct = -1                     // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
 var raze_at = -1.0                    // raze:<seconds>: your buildings but the Town Center and walls fall then (captures of ruins)
@@ -178,6 +179,7 @@ for(args) a, k:
         if a == "clean": rec_clean = true
         if key == "perf": perf_for = string_to_float(val)  // (game/perf.lobster: the drawing's cost in the window)
         if key == "zoom": zoom_arg = string_to_float(val)
+        if key == "density": density_arg = string_to_float(val)
         if a == "reveal": reveal = true
         if a == "perflive": perf_live = true
         if a == "oldtext": text_off = true  // (measuring: text drawn as before game/text_cache.lobster)
@@ -2290,7 +2292,7 @@ zoom = 2.0 * floor(ui() + 0.5)  // two screen points an art pixel, as the game's
 // Desktops start one zoom step further out, and then a quarter further again (#358); Steam Deck-sized screens (800 px
 // tall or less) and touch keep the closer view
 if not touch_play and gl.framebuffer_size().y > 800: zoom = max(1.0, (zoom - 1.0) * 0.8)
-if not has_s(args, "prebake"): art_density(zoom)  // (the shipped bakes are at the base density)
+art_density(if has_s(args, "prebake"): density_arg else: zoom)  // (prebake: the density it's asked for, the base by default)
 if zoom_arg > 0.0: zoom = zoom_arg
 // The tables come from data (game/pack_data.lobster); units are voxel bodies (game/voxel_units.lobster); buildings and
 // props are baked once (src/baked/) or at the start. (A Godot art pack, args[0], is gone with Godot: D-184.)
