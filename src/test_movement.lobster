@@ -52,6 +52,7 @@ import gen.start
 import gen.reset
 import testkit.kit
 import view.facing
+import view.vox
 import view.voxel
 
 // Group movement, headless and seeded (#345, for the rewrite in #344): small groups and formations crossing, passing, going
