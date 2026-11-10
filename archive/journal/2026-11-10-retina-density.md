@@ -49,3 +49,19 @@ the builds ship both. The game reads the set that matches its screen, so a first
 - Launch to the first frame of a match on an empty cache: 2.4: 5.0 s (2.6 s of it the first unit bakes), base 3.5 s
   (1.6 s). It was over 6 minutes at 2.4 before the second set.
 - The rest of the units (341 bakes) bake during play, 6 ms a frame and only when calm: 58.7 fps at 2.4, 59.6 at base.
+
+## Later: the haidut (#381)
+With `.vox` support merged, the first real `.vox` unit is an 18th-century Bulgarian haidut, in an example mod. A Lobster
+script draws him piece by piece (head, chest, hip, limbs), so the model can be reviewed like code. Dominic liked the
+clothes from the first pass and asked for a bandolier, pistols, a smaller kalpak and a cloak; he kept all three cloaks
+(plain, fleece, yamurluk).
+
+The face took five rounds. At about 9 px across, two eye voxels under a dark brow looked stern, a moustache several
+voxels deep became a black block from the front (looking down stretches depth into height), and upturned tips became
+"a giant black smile". One dark voxel per eye and a drooping handlebar one layer thick did it: "perfect".
+
+Funny bug: the first real match crashed a minute in, baking "Lancer Haidut on a Pony": the body had no seat, so the
+rider had no legs to sit with. In the camera-facing frames, short weapons point at the camera and vanish against
+the white shirt (#389).
+
+Pictures: `images/2026-11-10/26` to `36`.

@@ -1,0 +1,9 @@
+{
+ "_doc": "The haidut: humans, drawn as an 18th-century Bulgarian man (#381).",
+ "haidut": {
+  "extends": "human",
+  "body": "body.haidut",
+  "noun": "Haidut",
+  "plural": "Haiduts"
+ }
+}
