@@ -68,6 +68,7 @@ let T_RETURN = 2
 let BUILD = 3
 let REACH = 250  // milli-tiles between a body's edge and what it works on
 let SEARCH_TILES = 8
+let FAR_SEARCH_TILES = 20  // a gatherer's patch ran out and there's none within SEARCH_TILES: how far it looks (#336)
 let SPREAD_TILES = 2
 let BUSY_COST = 4000000
 let GIVE_UP = 60
