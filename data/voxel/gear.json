@@ -989,14 +989,15 @@
        "head",
        0.0,
        -1.0,
-       2.25
+       3.0
       ],
       "mats": {
        "1": "metal",
        "2": "bronze",
        "3": "hide",
        "4": "leather",
-       "5": "bronze"
+       "5": "bronze",
+       "6": "team"
       },
       "_doc": "the Roman body: a montefortino, roman_montefortino.vox"
      }
@@ -1619,14 +1620,15 @@
        "head",
        0.0,
        -1.25,
-       1.75
+       2.25
       ],
       "mats": {
        "1": "metal",
        "2": "bronze",
        "3": "hide",
        "4": "leather",
-       "5": "bronze"
+       "5": "bronze",
+       "6": "team"
       },
       "_doc": "the Roman body (#417): roman_galea.vox, from the concept sheet"
      }
@@ -1671,7 +1673,8 @@
        "2": "bronze",
        "3": "hide",
        "4": "leather",
-       "5": "bronze"
+       "5": "bronze",
+       "6": "team"
       },
       "_doc": "the Roman body: a leather jerkin with pteruges, roman_leather.vox"
      }
@@ -1704,7 +1707,8 @@
        "2": "bronze",
        "3": "hide",
        "4": "leather",
-       "5": "bronze"
+       "5": "bronze",
+       "6": "team"
       },
       "_doc": "the Roman body: mail doubled over the shoulders, roman_mail.vox"
      }
@@ -1737,7 +1741,8 @@
        "2": "bronze",
        "3": "hide",
        "4": "leather",
-       "5": "bronze"
+       "5": "bronze",
+       "6": "team"
       },
       "_doc": "the Roman body: the segmentata and its apron, roman_segmentata.vox"
      }
