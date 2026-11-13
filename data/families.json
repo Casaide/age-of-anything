@@ -2065,5 +2065,246 @@
   "war_beast": "boar",
   "pour": "boiling pitch",
   "unique": "berserker"
+ },
+ "bulgar": {
+  "kits": {
+   "_doc": "what each line wears from an age on (#477, from the concept sheet: human-redesign/bulgar-foot.png and bulgar-riders.png); as the imperial kits",
+   "spear": {
+    "1": {
+     "hand_r": "weapon.spear.wood",
+     "hand_l": "shield.round",
+     "head_gear": "hat.fur"
+    },
+    "2": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.round",
+     "head_gear": "hat.fur"
+    },
+    "3": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.round",
+     "head_gear": "helm.spike",
+     "torso": "armour.lamellar"
+    }
+   },
+   "infantry": {
+    "1": {
+     "hand_r": "weapon.club.bone",
+     "head_gear": "hat.fur"
+    },
+    "2": {
+     "hand_r": "weapon.sword.bronze",
+     "hand_l": "shield.round",
+     "head_gear": "helm.spike",
+     "torso": "armour.lamellar"
+    },
+    "3": {
+     "hand_r": "weapon.sword.flared_sabre",
+     "hand_l": "shield.round",
+     "head_gear": "helm.steppe_spike",
+     "torso": "armour.lamellar_iron"
+    }
+   },
+   "archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "hat.felt"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "hat.felt",
+     "torso": "armour.lamellar"
+    }
+   },
+   "skirmisher": {
+    "2": {
+     "hand_r": "weapon.sling",
+     "head_gear": "hat.fur"
+    },
+    "3": {
+     "hand_r": "weapon.sling",
+     "torso": "armour.sheepskin"
+    }
+   },
+   "healer": {
+    "2": {
+     "hand_r": "tool.staff.lantern",
+     "hand_l": "tool.satchel",
+     "head_gear": "hat.kamilavka"
+    }
+   },
+   "large": {
+    "2": {
+     "hand_r": "weapon.lance",
+     "hand_l": "shield.round",
+     "head_gear": "helm.spike",
+     "torso": "armour.lamellar"
+    },
+    "3": {
+     "hand_r": "weapon.lance",
+     "hand_l": "shield.round",
+     "head_gear": "helm.steppe_spike",
+     "torso": "armour.lamellar_iron"
+    }
+   },
+   "scout": {
+    "1": {
+     "torso": "armour.sheepskin"
+    }
+   },
+   "mounted_archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "hat.felt"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "hat.felt",
+     "torso": "armour.lamellar"
+    }
+   }
+  },
+  "bodies": {
+   "_doc": "the culture's own body for a creature, in the view only (#477)",
+   "human": "bulgar"
+  },
+  "skins": [
+   "human_light",
+   "human_tan"
+  ],
+  "cloth": [
+   "#2e2620",
+   "#a8322b"
+  ],
+  "mounts": [
+   "pony"
+  ],
+  "adjective": "Bulgar",
+  "bonuses": [
+   {
+    "text": "Boyar horse: cavalry +1 melee armour",
+    "effects": [
+     {
+      "tag": "mounted",
+      "not": [
+       "ranged",
+       "worker",
+       "heal"
+      ],
+      "stat": "armour.melee",
+      "add": 1
+     }
+    ],
+    "price_points": 1,
+    "alt": {
+     "text": "Boyar horse: cavalry +5 hit points",
+     "effects": [
+      {
+       "tag": "mounted",
+       "not": [
+        "ranged",
+        "worker",
+        "heal"
+       ],
+       "stat": "hp",
+       "add": 5
+      }
+     ],
+     "price_points": 1
+    }
+   },
+   {
+    "text": "Hill forts: Castles 25% cheaper",
+    "effects": [
+     {
+      "building": "castle",
+      "stat": "cost",
+      "pct": -25
+     }
+    ],
+    "alt": {
+     "text": "Hill forts: Watchtowers 25% cheaper",
+     "effects": [
+      {
+       "building": [
+        "watchtower",
+        "bastion"
+       ],
+       "stat": "cost",
+       "pct": -25
+      }
+     ]
+    }
+   },
+   {
+    "text": "Mountain shepherds: food gathered 5% faster (allies' too)",
+    "team": true,
+    "effects": [
+     {
+      "gather": "food",
+      "pct": 5
+     }
+    ],
+    "alt": {
+     "text": "Haidut lookouts: units +1 sight (allies' too)",
+     "effects": [
+      {
+       "tag": "all",
+       "stat": "sight",
+       "add": 1
+      }
+     ]
+    }
+   }
+  ],
+  "research": [
+   "cheta"
+  ],
+  "lacks": [
+   "fortified_walls"
+  ],
+  "prefixes": [
+   "Danube",
+   "Balkan",
+   "Haemus",
+   "Rhodope"
+  ],
+  "suffixes": [
+   " Khanate",
+   "-Boyars",
+   " Cheta",
+   " Host"
+  ],
+  "paths": {
+   "style": "trail",
+   "width": 0.38
+  },
+  "architecture": "thatch",
+  "ranks": [
+   "Sworn",
+   "Elder"
+  ],
+  "ui": {
+   "frame": "iron",
+   "frame_colour": "#4a3d33",
+   "panel": "felt",
+   "colour": "#2e2620",
+   "button": "wood",
+   "button_colour": "#3c2e26",
+   "primary": "felt",
+   "primary_colour": "#a8322b",
+   "accent": "#e8dcc0",
+   "metal": "#c8c8c0",
+   "ornament": "stitch",
+   "banner": "fringe"
+  },
+  "siege": "timber",
+  "war_beast": "boar",
+  "pour": "boiling pitch",
+  "unique": "haidut"
  }
 }
