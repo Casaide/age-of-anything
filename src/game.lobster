@@ -99,7 +99,6 @@ import .game.window_switch
 let args = command_line_arguments()
 // Options after the two paths: watch (the bot plays you too), speed:<x>, shot:<png> with at:<seconds>
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
-var watch = false
 var follow = false        // the camera follows the fighting (captures)
 var look_at_army = false  // a skirmish you play: the camera starts on your army and stays yours
 var selftest = false      // play a few orders through the controls, check the sim took them, quit
@@ -118,16 +117,10 @@ var mode_arg = ""             // mode:<id>: the lobby's game mode (data/modes.js
 var map_arg = ""              // map:<id>: the lobby's map (tests and captures)
 var races_arg = ""            // races:<A>|<B>: the lobby's prompts, as if typed (then played)
 var look_y = -1
-var rec_from = 0.0
-var rec_for = 10.0
-var rec_n = 0
-var rec_fps = 30.0         // fps:<n>: frames a second of play
 var rec_type = []::string  // typein:A|B: (filming the lobby)
 var rec_side = 0
 var rec_char = 0
 var rec_wait = 30
-var rec_push = 1.0                    // push:<k>: a record:'s camera closes in, its zoom k times by the end (1.15 is a slow push)
-var rec_pan = float2_0                // pan:<x>,<y>: a record:'s camera drifts that many tiles by the end (no follow then)
 var window_arg = int2 { 1600, 1000 }  // window:<w>,<h>: the window's size in points (filming: 1280,720 is 16:9, 2560x1440 frames on a Mac)
 var fort_gate = int2 { -1, -1 }       // place:fort's gate (captures: army: walks through it)
 var place_arg = ""                    // place:<building>: one finished by your Town Center at the start; fort, palisade_fort: a wall line (captures)
@@ -256,6 +249,7 @@ import .game.voxel_units
 import .game.town  // (here: it uses the views)
 import .game.glows
 import .game.world_draw
+import .game.match_loop
 
 // Each side's paths (sim_debug._refresh_paths): from its biggest finished building's door to its other
 // finished buildings and the nearest food and wood; the hub and resource ends picked once. An
@@ -878,11 +872,7 @@ def net_wait_frame(msg:string) -> bool:
     lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } - float2 { half, 0.0 }, msg, float4 { 0.95, 0.85, 0.6, 1.0 })
     return false
 
-var link = Link {}
 var joined_bots = []::Bot
-var bots = []::Bot
-var net_on = false
-var lockstep = Lockstep { Link {}, 0, [ 0 ], [] }
 var back_to_lobby = false  // the pause menu's Back to the menu (or the match won or lost from the lobby)
 var quit_app = false
 var next_choice = ""   // the next match without the lobby (the pause menu's Load game)
@@ -1182,12 +1172,9 @@ def load_from(path:string):
     banner = "Loaded ({int((seconds_elapsed() - t0) * 1000.0)} ms)"
     banner_t = gl.time()
 var tc0 = -1
-var acc = 0.0
 var paused = false
 var speed = start_speed
-var steps = 0
 var frame_no = 0
-var step_time = 0.0
 var menu_saves = false     // ...showing the saved games (Load game)
 var menu_settings = false  // ...showing Settings (game/lobby.lobster)
 var quit_game = false
@@ -1325,12 +1312,10 @@ def play_match():
         let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
         if mine.length: cam = iso(float(fold(mine, 0) a, i: a + u_x[i]) / float(mine.length), float(fold(mine, 0) a, i: a + u_y[i]) / float(mine.length))
     if look_x >= 0: cam = iso(float(look_x * 1000 + 500), float(look_y * 1000 + 500))
-    acc = 0.0
+    sim_reset()
     paused = false
     speed = start_speed
-    steps = 0
     frame_no = 0
-    step_time = 0.0
     menu_open = false
     menu_saves = false
     menu_settings = false
@@ -1419,53 +1404,17 @@ def play_match():
         if swap_arg != "" and clock_s >= swap_at:
             become(swap_arg)
             swap_arg = ""
-        if not paused and not test_pause and winner < 0 and not typing_text and ((not tree_open and not menu_open) or net_on): acc += dt * speed
-        acc = min(acc, 0.5)
+        if not paused and not test_pause and winner < 0 and not typing_text and ((not tree_open and not menu_open) or net_on): sim_owe(dt * speed)
         if net_on:
             ls_receive(lockstep)
             if lockstep.desync != "": banner = "Out of step with the other player: {lockstep.desync}"
             elif link.closed: banner = "The other player has left"
             if lockstep.desync != "" or link.closed: banner_t = gl.time()
-        while acc >= 0.05:
-            if net_on and tick % TICKS_PER_TURN == 0 and not may_run(lockstep, tick / TICKS_PER_TURN):
-                acc = min(acc, 0.05)  // (waiting on the other player: don't save up time to rush through after)
-                break
-            p_id = copy(u_id)
-            p_x = copy(u_x)
-            p_y = copy(u_y)
-            let t0 = seconds_elapsed()
-            for(bots) bot, p:
-                if not skirmish and (p != ME or watch) and not (net_on and p != ME and contains(lockstep.players, p)):  // (a skirmish: the armies' orders alone)
-                    ai_level_for(p)
-                    full_bot_think(bot)  // (watch: your own bot plays your side)
-            let t1 = seconds_elapsed()
-            step()
-            if net_on: ls_after_step(lockstep)
+        sim_run(skirmish):  // (a skirmish: the armies' orders alone, no bots)
             if army_snap and (find(fb_state) s: s != 0) >= 0:
                 blocks_snap()
                 army_snap = false
-            step_time += seconds_elapsed() - t0
-            perf_tick(t1 - t0, seconds_elapsed() - t1)
-            steps++
-            clock_s += 0.05
-            after_step()
-            acc -= 0.05
-        if follow:
-            var fx = 0
-            var fy = 0
-            var nf = 0
-            for(u_x.length) i:
-                if u_foe[i] != 0:
-                    fx += u_x[i]
-                    fy += u_y[i]
-                    nf++
-            if nf == 0:  // (no fighting yet: the armies)
-                for(u_x.length) i:
-                    if t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0:
-                        fx += u_x[i]
-                        fy += u_y[i]
-                        nf++
-            if nf > 0: cam = cam + (iso(float(fx / nf), float(fy / nf)) - cam) * 0.05
+        if follow: cam_follow_fight(0.05)
         if not typing_text and not tree_open and not menu_open and not end_screen_up():
             let padded = (touch_play and touch_tick(dt)) or pad_tick(if padtest: pad_script() else: read_pad(), dt)
             if touch_wants_menu:
@@ -1478,13 +1427,7 @@ def play_match():
         if drawing():  // (minimised: the sim plays on, nothing is drawn)
             gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
             gl.blend(1)
-            let shake = fx_shake_off()
-            cam += shake
-            draw_world(acc / 0.05)
-            if atmo_on:
-                collect_glows()
-                atmo_end(float2 { floor(cam.x * zoom), floor(cam.y * zoom) } / zoom, zoom, 1.5)
-            cam -= shake
+            draw_world_lit()
             if not rec_clean: ui_batch(): draw_panel()
             perf_lap(6)
             if not rec_clean: draw_hud(paused, speed)
@@ -1527,7 +1470,7 @@ def play_match():
             return
         if shot != "" and clock_s >= shot_at and not selftest and not padtest and not has_s(args, "tillend") and (not tree_arg or (frame_no > 4 and tree_waiting == 0)) and (not has_s(args, "menu") or frame_no > 4):
             gl.screenshot(shot)
-            print "shot {shot} at {clock_s} s, tick {tick}; sim {step_time * 1000.0 / max(1, steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
+            print "shot {shot} at {clock_s} s, tick {tick}; sim {sim_step_time * 1000.0 / max(1, sim_steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
             quit_app = true
             return
         if rec_dir != "" and winner >= 0 and clock_s < rec_from:  // (the match was over before from:, and play has stopped)
@@ -1536,18 +1479,12 @@ def play_match():
             return
         if rec_dir != "" and clock_s >= rec_from:
             if rec_n == 0:
-                gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
+                record_begin()
                 speed = start_speed
                 if rec_pan != float2_0: follow = false  // (a pan is the take's own camera move; the follow would pull against it)
-            gl.screenshot("{rec_dir}/{100000 + rec_n}.png")
-            rec_n++
-            let take_frames = rec_for * rec_fps
-            if float(rec_n) >= take_frames:
+            if record_frame():
                 quit_app = true
                 return
-            // the camera's move over the take, a frame of it at a time: the push in and the drift (iso: tiles are 1000 art units)
-            zoom *= pow(rec_push, 1.0 / take_frames)
-            cam += (iso(rec_pan.x * 1000.0, rec_pan.y * 1000.0) - iso(0.0, 0.0)) / take_frames
         if perf_for > 0.0 and perf_end(clock_s, army_n > 0):
             quit_app = true
             return
