@@ -466,6 +466,32 @@ def g_siege():
     let ram = at(unit_of(generate("romans", d, 0), "ram"), "eval")
     expect(gstr(ram, "targets", "") == "buildings" and ival(ram, "armour.pierce") > ival(ram, "armour.melee"), "the ram hits buildings only, shrugs off arrows, not blows")
 
+// Culture kits (#444): a Roman line wears its culture's kit in every age, under every rules; a part the prompt asked for
+// (cheese) keeps its slot.
+def g_kits():
+    let kits = gobj(family("imperial"), "kits")
+    expect(kits.keys.length > 1, "imperial has culture kits")
+    for(RULE_IDS) rid:
+        let r = load_rules(rid)
+        for(3) reroll:
+            let race = generate("romans", r, reroll)
+            for(kits.keys) slot:
+                if slot != "_doc":
+                    for(line_of(unit_of(race, slot))) l:
+                        let lr = at(l, "recipe")
+                        var want = jobj()
+                        for(gint(l, "age", 1)) a:
+                            let k = get(at(kits, slot), string(a + 1))
+                            if k: want = k
+                        let rp = at(lr, "parts")
+                        for(want.keys) s, i:
+                            let id = as_str(want.a[i])
+                            let ok = gint(part(id), "tier", 1) <= gint(l, "age", 1) and exists(candidates(s, gstrs(r, "era"))) p: rstr(p, "id") == id
+                            if ok: expect(gstr(rp, s, "") == id, "{rid}/romans/{reroll}: {rstr(lr, "name")} (age {gint(l, "age", 1)}) wears its kit\'s {id} ({gstr(rp, s, "")})")
+                        for(rp.keys) s: expect(has(want, s) or s == "hand_r", "{rid}/romans/{reroll}: {rstr(lr, "name")} wears only its kit ({s})")
+    let cheese = recipe_of(unit_of(generate("cheese romans", load_rules("default"), 0), "infantry"))
+    expect(part_at(cheese, "hand_r") == "weapon.cheese_hammer", "cheese romans keep the cheese hammer they asked for ({part_at(cheese, "hand_r")})")
+
 // The swordsman line at the Barracks (milestone 13).
 def g_swordsmen():
     for(RULE_IDS) rid:
@@ -1140,7 +1166,7 @@ def map_ids_on_disk() -> [string]:
     let names = scan_folder("../data/maps", false)
     return if names: map(filter(names) n: ends_with(n, ".json")) n: substring(n, 0, n.length - 5) else: []
 
-let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look", "topbar", "atmosphere", "text_field" ]
+let GROUPS = [ "data", "determinism", "bounds", "prompts", "healers", "siege", "swordsmen", "kits", "new_lines", "cat", "audio", "tech_tree", "identity", "heroes", "mods", "ground_path", "cursors", "window", "fog_look", "topbar", "atmosphere", "text_field" ]
 
 def run_group(name:string):
     switch name:
@@ -1151,6 +1177,7 @@ def run_group(name:string):
         case "healers": g_healers()
         case "siege": g_siege()
         case "swordsmen": g_swordsmen()
+        case "kits": g_kits()
         case "new_lines": g_new_lines()
         case "cat": g_cat()
         case "audio": g_audio()

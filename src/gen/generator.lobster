@@ -395,6 +395,7 @@ def make_unit(sd:JV) -> JV?:
             if picks_score[n] > 0 or chance(rng, 45):
                 set(rparts(recipe), picks_slot[n], at(p, "id"))
                 spent += pts(p)
+    if wear_kit(recipe, rstr(sd, "slot"), g_age): set(recipe, "name", jstr(unit_name(recipe, part(rstr(rparts(recipe), "hand_r")), c)))
     return recipe
 
 // A siege engine: its culture's (or creature's) take on the engine, the weapon made for the role,
@@ -714,8 +715,50 @@ def upgrade(prev:JV, sd:JV) -> JV:
                 if spent + pts(b) <= budget:
                     spent += pts(b)
                     set(rp, slot, at(b, "id"))
+    wear_kit(r, rstr(sd, "slot"), age)
     set(r, "name", jstr(step_name(prev, r)))
     return r
+
+// ---- culture kits (#444): what the race's culture says a line wears from an age on (families.json `kits`)
+
+// The latest kit entry for a roster slot at or before an age (an empty object when there's none).
+def kit_for(slot:string, age:int) -> JV:
+    let kits = gobj(gobj(family(g_family), "kits"), slot)
+    var out = jobj()
+    for(age) a:
+        let k = get(kits, string(a + 1))
+        if k: out = k
+    return out
+
+// A unit's gear swapped for its culture's kit: each kit part that the rules' eras and the age allow, the rest of its slots empty. But a
+// generated part the prompt asked for keeps its slot: one with a signature tag the prompt named that none of the culture's
+// kits carry (cheese romans keep their cheese; "romans" asks for roman kit, which the kit is). Mount, scale and elite stay.
+// True when the unit has a kit.
+def wear_kit(r:JV, slot:string, age:int) -> bool:
+    let kit = kit_for(slot, age)
+    if not kit.keys.length: return false
+    let own = []::string
+    let kits = gobj(family(g_family), "kits")
+    for(kits.keys) line:
+        if line != "_doc":
+            for(at(kits, line).a) entry:
+                for(entry.a) id:
+                    for(ptags(part(as_str(id)))) t: own.push(t)
+    let rp = rparts(r)
+    let out = jobj()
+    for(rp.keys) s, i:
+        let p = part(as_str(rp.a[i]))
+        let asked = exists(ptags(p)) t: has_s(SIGNATURE_TAGS, t) and tget(g_brief.tags, t) > 0 and not has_s(own, t)
+        if asked: set(out, s, rp.a[i])
+    for(kit.keys) s, i:
+        let id = as_str(kit.a[i])
+        if not has(out, s):
+            let ok = ptier(part(id)) <= age and exists(candidates(s, g_eras)) p: rstr(p, "id") == id
+            if ok: set(out, s, jstr(id))
+            elif has(rp, s): set(out, s, at(rp, s))  // (a kit part of a later age, or one these rules' eras don't have: the generated one stays)
+    if not has(out, "hand_r"): set(out, "hand_r", at(rp, "hand_r"))
+    set(r, "parts", out)
+    return true
 
 def step_name(prev:JV, r:JV) -> string:
     let c = creature(rstr(r, "creature"))
