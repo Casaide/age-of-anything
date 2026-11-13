@@ -226,5 +226,16 @@
  },
  "wing": {
   "rgb": "#a8b4b8"
+ },
+ "wolf": {
+  "rgb": "#8a8276",
+  "fur": true
+ },
+ "lion_mane": {
+  "rgb": "#6b4423",
+  "fur": true
+ },
+ "mantle": {
+  "rgb": "#cdb98a"
  }
 }
