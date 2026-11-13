@@ -1672,3 +1672,10 @@ line stay the same. Then the kit replaces the unit's gear. A part the prompt ask
 culture's kits carry, like cheese) keeps its slot. A kit part of a later age than the unit, or outside the rules' eras,
 leaves the generated part in its slot, so the age tiers hold. Romans first: spearman, swordsman, archer and skirmisher. It
 closes the "cultural knowledge" gap for the cultures that have kits, as data rather than code. Claude, on Dominic's call.
+
+**D-250, 2026-11-13: A culture's kit-only parts are kept to its own prompts, and asked-for wings outlast a kit (#451).**
+Adding the Greek kit's parts (fox cap, band, wreath, pelte, oval shield, javelins, muscle cuirass) reshuffled every other
+race's random draws, since a new part is a candidate everywhere its slot and tags allow. Norse frogs drew differently and
+a movement test failed on the new mix. Those parts now carry `only_if: ["greek"]`: the generator offers them only when the
+prompt says greek, and the kits put them on hellenic lines whatever the prompt. So a new kit part leaves every other race
+as it was. And wings are only ever there when asked for, so a kitted unit keeps them ("flying greeks" still fly). Claude.
