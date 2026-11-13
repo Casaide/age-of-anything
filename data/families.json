@@ -425,7 +425,66 @@
   "siege": "timber",
   "war_beast": "elephant",
   "pour": "hot oil",
-  "unique": "testudo"
+  "unique": "testudo",
+  "kits": {
+   "_doc": "what each line wears from an age on (#444, from the concept sheets: human-redesign/romans-ages.png). The generator's own picks are replaced, but a part the prompt asked for keeps its slot, and a part of a later age than the unit (or outside the rules' eras) leaves the generated one in its slot",
+   "spear": {
+    "1": {
+     "hand_r": "weapon.spear.wood",
+     "head_gear": "helm.cap"
+    },
+    "2": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.scutum",
+     "head_gear": "helm.cap",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.scutum",
+     "head_gear": "helm.cap",
+     "torso": "armour.bronze"
+    }
+   },
+   "infantry": {
+    "1": {
+     "hand_r": "weapon.club.bone",
+     "head_gear": "helm.cap"
+    },
+    "2": {
+     "hand_r": "weapon.gladius",
+     "hand_l": "shield.scutum",
+     "head_gear": "helm.galea",
+     "torso": "armour.bronze"
+    },
+    "3": {
+     "hand_r": "weapon.gladius",
+     "hand_l": "shield.scutum",
+     "head_gear": "helm.galea",
+     "torso": "armour.lorica"
+    }
+   },
+   "archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "torso": "armour.bronze"
+    }
+   },
+   "skirmisher": {
+    "2": {
+     "hand_r": "weapon.pilum"
+    },
+    "3": {
+     "hand_r": "weapon.pilum",
+     "torso": "armour.leather"
+    }
+   }
+  }
  },
  "hellenic": {
   "cloth": [
