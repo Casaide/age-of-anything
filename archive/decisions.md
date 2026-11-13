@@ -1679,3 +1679,10 @@ race's random draws, since a new part is a candidate everywhere its slot and tag
 a movement test failed on the new mix. Those parts now carry `only_if: ["greek"]`: the generator offers them only when the
 prompt says greek, and the kits put them on hellenic lines whatever the prompt. So a new kit part leaves every other race
 as it was. And wings are only ever there when asked for, so a kitted unit keeps them ("flying greeks" still fly). Claude.
+
+**D-251, 2026-11-13: New kit parts of a culture in the movement tests are kit-only, and the Norse large keeps its shield and armour (#473).**
+`only_if: ["norse"]` (D-250) keeps new parts out of other races, but still reshuffles draws inside the culture, and Norse frogs
+are in the movement tests. So the Norse kit's new parts (shield.norse, armour.fur_cape, hat.seer) carry `only_if:
+["kit_only"]`, a tag no prompt gives: the generator never draws them, and the kits still put them on. The same goes for any
+later culture whose races the tests use. The Norse large keeps shield.round and armour.bronze (drawn as mail on this body),
+since a kit that empties slots changes the unit's stats and its size in a crowd. Claude.
