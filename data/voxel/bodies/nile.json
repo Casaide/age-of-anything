@@ -1,0 +1,131 @@
+{
+ "_doc": "A man of the Nile kingdom of about 1300 BC in the base dress every Nile unit wears (#467), drawn as nile.vox (written by tools/vox/nile.lobster) from the approved concept sheet: the Roman body's build and points, a short black wig, kohl round the eyes, a bare chest under a broad bead collar, a white linen kilt with a team sash and front panel, bare legs, sandals. Headcloths, armour, shields and weapons are gear over it. The behaviour is the Roman body's.",
+ "skin": "#a86a44",
+ "pale": "#bc8058",
+ "size": 0.73,
+ "fur": 0.0,
+ "reach": 5.0,
+ "points": {
+  "hip": {
+   "at": [
+    0,
+    0,
+    21.0
+   ],
+   "bob": 0.5
+  },
+  "chest": {
+   "at": [
+    0,
+    0.3,
+    29.6
+   ],
+   "bob": 0.5
+  },
+  "head": {
+   "at": [
+    0,
+    0.7,
+    37.1
+   ]
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "hip",
+    1.75,
+    0,
+    0
+   ],
+   "foot": [
+    1.9,
+    0,
+    1.9
+   ],
+   "stride": 5.0,
+   "lift": 2.2,
+   "bones": [
+    9.58,
+    9.58
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    2.0,
+    1.4,
+    1.3,
+    0.85
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": []
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "chest",
+   4.3,
+   -0.2,
+   1.2
+  ],
+  "bone": 6.7,
+  "thick": 1.3,
+  "sleeve": "skin",
+  "hand": "skin"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.3,
+   1.0
+  ],
+  "r": 2.75
+ },
+ "armour": {
+  "a": [
+   "hip",
+   0,
+   0.1,
+   2.6
+  ],
+  "b": [
+   "chest",
+   0,
+   0,
+   0.4
+  ],
+  "r": [
+   2.7,
+   3.2
+  ]
+ },
+ "seat": {
+  "z": 21.5,
+  "astride": [
+   "skin",
+   "skin",
+   "hide"
+  ]
+ },
+ "shapes": [],
+ "vox": "nile.vox",
+ "mats": {
+  "1": "skin",
+  "2": "hair",
+  "3": "white",
+  "4": "team",
+  "5": "gold",
+  "6": "faience",
+  "7": "sash",
+  "8": "hide",
+  "9": "eye"
+ },
+ "bare": false
+}

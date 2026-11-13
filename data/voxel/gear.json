@@ -1558,6 +1558,110 @@
     "armour"
    ],
    "fits": {
+    "norse": [
+     {
+      "model": "norse_jerkin.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -4.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "sash",
+       "4": "lion_mane",
+       "5": "leather",
+       "6": "kilt",
+       "7": "slate",
+       "8": "white",
+       "9": "beak",
+       "10": "team",
+       "11": "wood"
+      },
+      "_doc": "the Norse body: a leather jerkin, norse_jerkin.vox (#473)"
+     }
+    ],
+    "mexica": [
+     {
+      "model": "mexica_quilted.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -4.5
+      ],
+      "mats": {
+       "1": "white",
+       "2": "mantle",
+       "3": "team",
+       "4": "trim",
+       "5": "teal",
+       "6": "sash",
+       "7": "laurel",
+       "8": "leather",
+       "9": "kilt",
+       "10": "gold",
+       "11": "lacquer_black",
+       "12": "wood",
+       "13": "obsidian",
+       "14": "white"
+      },
+      "_doc": "the Mexica body: quilted cotton armour, mexica_quilted.vox (#471)"
+     }
+    ],
+    "han": [
+     {
+      "model": "han_black.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -4.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "lacquer_black",
+       "6": "sash",
+       "7": "straw",
+       "8": "wicker",
+       "9": "slate",
+       "10": "gold",
+       "11": "laurel",
+       "12": "lacquer"
+      },
+      "_doc": "the Han body: black lacquered lamellar laced in red, han_black.vox (#469)"
+     }
+    ],
+    "nile": [
+     {
+      "model": "nile_cuirass.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -2.0
+      ],
+      "mats": {
+       "1": "white",
+       "2": "team",
+       "3": "gold",
+       "4": "bronze",
+       "5": "trim",
+       "6": "lacquer",
+       "7": "white",
+       "8": "kilt",
+       "9": "lacquer",
+       "10": "kilt",
+       "11": "white"
+      },
+      "_doc": "the Nile body: a red leather cuirass, nile_cuirass.vox (#467)"
+     }
+    ],
     "steppe": [
      {
       "model": "steppe_quilted.vox",
@@ -1669,6 +1773,55 @@
    ],
    "_doc": "a bronze cuirass, leather shoulder guards",
    "fits": {
+    "norse": [
+     {
+      "model": "royal_mail.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -7.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Norse body: armour.bronze drawn as the mail shirt, the Royal body's royal_mail.vox (#473)"
+     }
+    ],
+    "nile": [
+     {
+      "model": "nile_scale.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -2.0
+      ],
+      "mats": {
+       "1": "white",
+       "2": "team",
+       "3": "gold",
+       "4": "bronze",
+       "5": "trim",
+       "6": "lacquer",
+       "7": "white",
+       "8": "kilt",
+       "9": "lacquer",
+       "10": "kilt",
+       "11": "white"
+      },
+      "_doc": "the Nile body: a bronze scale corselet, nile_scale.vox (#467)"
+     }
+    ],
     "*": [
      {
       "fit": 0.0,
@@ -2880,6 +3033,30 @@
    ],
    "_doc": "a mail hauberk (armour.mail); the Royal body's to the knee, belted (#462)",
    "fits": {
+    "norse": [
+     {
+      "model": "royal_mail.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -7.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Norse body: the mail shirt, the Royal body's royal_mail.vox (#473)"
+     }
+    ],
     "*": [
      {
       "fit": 0.0,
@@ -3549,6 +3726,2117 @@
      }
     ]
    }
+  },
+  "khat": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.nile_khat: the Nile body's plain white headcloth (#467); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "nile": [
+     {
+      "model": "nile_khat.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       0.25
+      ],
+      "mats": {
+       "1": "white",
+       "2": "team",
+       "3": "gold",
+       "4": "bronze",
+       "5": "trim",
+       "6": "lacquer",
+       "7": "white",
+       "8": "kilt",
+       "9": "lacquer",
+       "10": "kilt",
+       "11": "white"
+      },
+      "_doc": "nile_khat.vox"
+     }
+    ]
+   }
+  },
+  "headcloth": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.nile_headcloth: the Nile body's striped headcloth (#467); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "nile": [
+     {
+      "model": "nile_headcloth.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       -0.75
+      ],
+      "mats": {
+       "1": "white",
+       "2": "team",
+       "3": "gold",
+       "4": "bronze",
+       "5": "trim",
+       "6": "lacquer",
+       "7": "white",
+       "8": "kilt",
+       "9": "lacquer",
+       "10": "kilt",
+       "11": "white"
+      },
+      "_doc": "nile_headcloth.vox"
+     }
+    ]
+   }
+  },
+  "war_crown": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.nile_bronze: the Nile body's war crown (#467); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "nile": [
+     {
+      "model": "nile_crown.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.25,
+       2.75
+      ],
+      "mats": {
+       "1": "white",
+       "2": "team",
+       "3": "gold",
+       "4": "bronze",
+       "5": "trim",
+       "6": "lacquer",
+       "7": "white",
+       "8": "kilt",
+       "9": "lacquer",
+       "10": "kilt",
+       "11": "white"
+      },
+      "_doc": "nile_crown.vox"
+     }
+    ]
+   }
+  },
+  "bands": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "linen bands crossed over the chest (armour.bands, #467)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "white"
+     }
+    ],
+    "nile": [
+     {
+      "model": "nile_bands.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -3.0
+      ],
+      "mats": {
+       "1": "white",
+       "2": "team",
+       "3": "gold",
+       "4": "bronze",
+       "5": "trim",
+       "6": "lacquer",
+       "7": "white",
+       "8": "kilt",
+       "9": "lacquer",
+       "10": "kilt",
+       "11": "white"
+      },
+      "_doc": "nile_bands.vox"
+     }
+    ]
+   }
+  },
+  "feather": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a team headband and an ostrich feather (hat.feather, #467)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "team"
+     }
+    ],
+    "nile": [
+     {
+      "model": "nile_feather.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       6.75
+      ],
+      "mats": {
+       "1": "white",
+       "2": "team",
+       "3": "gold",
+       "4": "bronze",
+       "5": "trim",
+       "6": "lacquer",
+       "7": "white",
+       "8": "kilt",
+       "9": "lacquer",
+       "10": "kilt",
+       "11": "white"
+      },
+      "_doc": "nile_feather.vox"
+     }
+    ]
+   }
+  },
+  "priest": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "the priest's robe and leopard skin (hat.priest, #467)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "white"
+     }
+    ],
+    "nile": [
+     {
+      "model": "nile_priest.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       -17.25
+      ],
+      "mats": {
+       "1": "white",
+       "2": "team",
+       "3": "gold",
+       "4": "bronze",
+       "5": "trim",
+       "6": "lacquer",
+       "7": "white",
+       "8": "kilt",
+       "9": "lacquer",
+       "10": "kilt",
+       "11": "white"
+      },
+      "_doc": "nile_priest.vox"
+     }
+    ]
+   }
+  },
+  "cowhide": {
+   "hand": "left",
+   "hold": "shield_tall",
+   "foot": true,
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "the tall cowhide shield, spotted, a red-brown rim (nile_cowhide.vox, #467)",
+   "shapes": [
+    {
+     "model": "nile_cowhide.vox",
+     "at": [
+      "hand",
+      -1.75,
+      0.0,
+      0.0
+     ],
+     "mats": {
+      "1": "white",
+      "2": "team",
+      "3": "gold",
+      "4": "bronze",
+      "5": "trim",
+      "6": "lacquer",
+      "7": "mantle",
+      "8": "kilt",
+      "9": "lacquer",
+      "10": "kilt",
+      "11": "white"
+     },
+     "_doc": "nile_cowhide.vox (tools/vox/nile_gear.lobster)"
+    }
+   ]
+  },
+  "khopesh": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "the sickle sword (nile_khopesh.vox, #467)",
+   "shapes": [
+    {
+     "model": "nile_khopesh.vox",
+     "at": [
+      "hand",
+      5.5,
+      0.25,
+      0.0
+     ],
+     "mats": {
+      "1": "white",
+      "2": "team",
+      "3": "gold",
+      "4": "bronze",
+      "5": "trim",
+      "6": "lacquer",
+      "7": "mantle",
+      "8": "kilt",
+      "9": "lacquer",
+      "10": "kilt",
+      "11": "white"
+     },
+     "_doc": "nile_khopesh.vox (tools/vox/nile_gear.lobster)"
+    }
+   ]
+  },
+  "han_wrap": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.han_topknot: the Han body's white headwrap (#469); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "han": [
+     {
+      "model": "han_wrap.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       2.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "lacquer_black",
+       "6": "sash",
+       "7": "straw",
+       "8": "wicker",
+       "9": "slate",
+       "10": "gold",
+       "11": "laurel",
+       "12": "lacquer"
+      },
+      "_doc": "han_wrap.vox"
+     }
+    ]
+   }
+  },
+  "han_cap": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.han_cap: the Han body's iron cap (#469); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "han": [
+     {
+      "model": "han_cap.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       2.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "lacquer_black",
+       "6": "sash",
+       "7": "straw",
+       "8": "wicker",
+       "9": "slate",
+       "10": "gold",
+       "11": "laurel",
+       "12": "lacquer"
+      },
+      "_doc": "han_cap.vox"
+     }
+    ]
+   }
+  },
+  "han_hood": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.han_lamellar: the Han body's iron cap and lamellar hood (#469); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "han": [
+     {
+      "model": "han_hood.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       1.0
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "lacquer_black",
+       "6": "sash",
+       "7": "straw",
+       "8": "wicker",
+       "9": "slate",
+       "10": "gold",
+       "11": "laurel",
+       "12": "lacquer"
+      },
+      "_doc": "han_hood.vox"
+     }
+    ]
+   }
+  },
+  "red_wrap": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a dark red headwrap (hat.headwrap, #469)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "lacquer"
+     }
+    ],
+    "han": [
+     {
+      "model": "han_red_wrap.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       2.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "lacquer_black",
+       "6": "sash",
+       "7": "straw",
+       "8": "wicker",
+       "9": "slate",
+       "10": "gold",
+       "11": "laurel",
+       "12": "lacquer"
+      },
+      "_doc": "han_red_wrap.vox"
+     }
+    ]
+   }
+  },
+  "han_iron": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "iron lamellar (armour.han_iron, #469)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "metal"
+     }
+    ],
+    "han": [
+     {
+      "model": "han_iron.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -4.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "lacquer_black",
+       "6": "sash",
+       "7": "straw",
+       "8": "wicker",
+       "9": "slate",
+       "10": "gold",
+       "11": "laurel",
+       "12": "lacquer"
+      },
+      "_doc": "han_iron.vox"
+     }
+    ]
+   }
+  },
+  "straw": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a conical straw hat (hat.straw, #469)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.3,
+      "mat": "straw"
+     }
+    ],
+    "han": [
+     {
+      "model": "han_straw.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       3.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "lacquer_black",
+       "6": "sash",
+       "7": "straw",
+       "8": "wicker",
+       "9": "slate",
+       "10": "gold",
+       "11": "laurel",
+       "12": "lacquer"
+      },
+      "_doc": "han_straw.vox"
+     }
+    ]
+   }
+  },
+  "daoist": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "the Daoist's cap and robe (hat.daoist, #469)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "lacquer_black"
+     }
+    ],
+    "han": [
+     {
+      "model": "han_daoist.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       -12.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "lacquer_black",
+       "6": "sash",
+       "7": "straw",
+       "8": "wicker",
+       "9": "slate",
+       "10": "gold",
+       "11": "laurel",
+       "12": "lacquer"
+      },
+      "_doc": "han_daoist.vox"
+     }
+    ]
+   }
+  },
+  "lacquer_shield": {
+   "hand": "left",
+   "hold": "shield_tall",
+   "foot": true,
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "the tall lacquered shield (han_lacquer.vox, #469)",
+   "shapes": [
+    {
+     "model": "han_lacquer.vox",
+     "at": [
+      "hand",
+      -1.75,
+      0.25,
+      0.0
+     ],
+     "mats": {
+      "1": "metal",
+      "2": "frame2",
+      "3": "white",
+      "4": "team",
+      "5": "lacquer_black",
+      "6": "sash",
+      "7": "straw",
+      "8": "wicker",
+      "9": "slate",
+      "10": "gold",
+      "11": "laurel",
+      "12": "lacquer"
+     },
+     "_doc": "han_lacquer.vox (tools/vox/han_gear.lobster)"
+    }
+   ]
+  },
+  "rattan": {
+   "hand": "left",
+   "hold": "shield",
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "a round rattan shield (han_rattan.vox, #469)",
+   "shapes": [
+    {
+     "model": "han_rattan.vox",
+     "at": [
+      "hand",
+      0.0,
+      0.0,
+      0.0
+     ],
+     "mats": {
+      "1": "metal",
+      "2": "frame2",
+      "3": "white",
+      "4": "team",
+      "5": "lacquer_black",
+      "6": "sash",
+      "7": "straw",
+      "8": "wicker",
+      "9": "slate",
+      "10": "gold",
+      "11": "laurel",
+      "12": "lacquer"
+     },
+     "_doc": "han_rattan.vox (tools/vox/han_gear.lobster)"
+    }
+   ]
+  },
+  "ji": {
+   "hand": "right",
+   "hold": "thrust",
+   "_doc": "the ji: a spear with a side blade and a red tassel (weapon.ji, #469)",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -8,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      18.5,
+      0,
+      0
+     ],
+     "r": [
+      0.5,
+      0.5
+     ],
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      18.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      22.5,
+      0,
+      0
+     ],
+     "r": [
+      0.95,
+      0.1
+     ],
+     "mat": "metal"
+    },
+    {
+     "cap": [
+      "hand",
+      17.8,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      17.2,
+      0,
+      3.4
+     ],
+     "r": [
+      0.7,
+      0.15
+     ],
+     "mat": "metal"
+    },
+    {
+     "cap": [
+      "hand",
+      16.8,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      15.2,
+      0,
+      -0.9
+     ],
+     "r": [
+      0.6,
+      0.6
+     ],
+     "mat": "sash"
+    }
+   ]
+  },
+  "aztec_band": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.aztec_band: the Mexica body's red headband and green feather (#471); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "mexica": [
+     {
+      "model": "mexica_band.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       5.0
+      ],
+      "mats": {
+       "1": "white",
+       "2": "mantle",
+       "3": "team",
+       "4": "trim",
+       "5": "teal",
+       "6": "sash",
+       "7": "laurel",
+       "8": "leather",
+       "9": "kilt",
+       "10": "gold",
+       "11": "lacquer_black",
+       "12": "wood",
+       "13": "obsidian",
+       "14": "white"
+      },
+      "_doc": "mexica_band.vox"
+     }
+    ]
+   }
+  },
+  "aztec_cap": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.aztec_quilted: the Mexica body's tall pointed cap (#471); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "mexica": [
+     {
+      "model": "mexica_cap.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       5.5
+      ],
+      "mats": {
+       "1": "white",
+       "2": "mantle",
+       "3": "team",
+       "4": "trim",
+       "5": "teal",
+       "6": "sash",
+       "7": "laurel",
+       "8": "leather",
+       "9": "kilt",
+       "10": "gold",
+       "11": "lacquer_black",
+       "12": "wood",
+       "13": "obsidian",
+       "14": "white"
+      },
+      "_doc": "mexica_cap.vox"
+     }
+    ]
+   }
+  },
+  "aztec_eagle": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.aztec_eagle: the Mexica body's eagle helmet (#471); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "mexica": [
+     {
+      "model": "mexica_eagle.vox",
+      "at": [
+       "head",
+       0.0,
+       0.25,
+       1.0
+      ],
+      "mats": {
+       "1": "white",
+       "2": "mantle",
+       "3": "team",
+       "4": "trim",
+       "5": "teal",
+       "6": "sash",
+       "7": "laurel",
+       "8": "leather",
+       "9": "kilt",
+       "10": "gold",
+       "11": "lacquer_black",
+       "12": "wood",
+       "13": "obsidian",
+       "14": "white"
+      },
+      "_doc": "mexica_eagle.vox"
+     }
+    ]
+   }
+  },
+  "feather_suit": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "the feather suit in team colour (armour.feather_suit, #471)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "team"
+     }
+    ],
+    "mexica": [
+     {
+      "model": "mexica_suit.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -6.0
+      ],
+      "mats": {
+       "1": "white",
+       "2": "mantle",
+       "3": "team",
+       "4": "trim",
+       "5": "teal",
+       "6": "sash",
+       "7": "laurel",
+       "8": "leather",
+       "9": "kilt",
+       "10": "gold",
+       "11": "lacquer_black",
+       "12": "wood",
+       "13": "obsidian",
+       "14": "white"
+      },
+      "_doc": "mexica_suit.vox"
+     }
+    ]
+   }
+  },
+  "priest_black": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "the Mexica priest's matted hair and black tunic (hat.priest_black, #471)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "lacquer_black"
+     }
+    ],
+    "mexica": [
+     {
+      "model": "mexica_priest.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       -9.25
+      ],
+      "mats": {
+       "1": "white",
+       "2": "mantle",
+       "3": "team",
+       "4": "trim",
+       "5": "teal",
+       "6": "sash",
+       "7": "laurel",
+       "8": "leather",
+       "9": "kilt",
+       "10": "gold",
+       "11": "lacquer_black",
+       "12": "wood",
+       "13": "obsidian",
+       "14": "white"
+      },
+      "_doc": "mexica_priest.vox"
+     }
+    ]
+   }
+  },
+  "chimalli": {
+   "hand": "left",
+   "hold": "shield",
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "the round chimalli with its feather fringe (mexica_chimalli.vox, #471)",
+   "shapes": [
+    {
+     "model": "mexica_chimalli.vox",
+     "at": [
+      "hand",
+      -1.25,
+      0.0,
+      0.0
+     ],
+     "mats": {
+      "1": "white",
+      "2": "mantle",
+      "3": "team",
+      "4": "trim",
+      "5": "teal",
+      "6": "sash",
+      "7": "laurel",
+      "8": "leather",
+      "9": "kilt",
+      "10": "gold",
+      "11": "lacquer_black",
+      "12": "wood",
+      "13": "obsidian",
+      "14": "white"
+     },
+     "_doc": "mexica_chimalli.vox (tools/vox/mexica_gear.lobster)"
+    }
+   ]
+  },
+  "macuahuitl": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "the obsidian-edged club (mexica_club.vox, #471)",
+   "shapes": [
+    {
+     "model": "mexica_club.vox",
+     "at": [
+      "hand",
+      5.25,
+      0.0,
+      0.0
+     ],
+     "mats": {
+      "1": "white",
+      "2": "mantle",
+      "3": "team",
+      "4": "trim",
+      "5": "teal",
+      "6": "sash",
+      "7": "laurel",
+      "8": "leather",
+      "9": "kilt",
+      "10": "gold",
+      "11": "lacquer_black",
+      "12": "wood",
+      "13": "obsidian",
+      "14": "white"
+     },
+     "_doc": "mexica_club.vox (tools/vox/mexica_gear.lobster)"
+    }
+   ]
+  },
+  "norse_cap": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.norse_fur: the Norse body's red fur-trimmed cap (#473); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "norse": [
+     {
+      "model": "norse_cap.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       3.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "sash",
+       "4": "lion_mane",
+       "5": "leather",
+       "6": "kilt",
+       "7": "slate",
+       "8": "white",
+       "9": "beak",
+       "10": "team",
+       "11": "wood"
+      },
+      "_doc": "norse_cap.vox"
+     }
+    ]
+   }
+  },
+  "norse_iron": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.norse_conical: the Norse body's plain iron cap (#473); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "norse": [
+     {
+      "model": "norse_iron.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       3.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "sash",
+       "4": "lion_mane",
+       "5": "leather",
+       "6": "kilt",
+       "7": "slate",
+       "8": "white",
+       "9": "beak",
+       "10": "team",
+       "11": "wood"
+      },
+      "_doc": "norse_iron.vox"
+     }
+    ]
+   }
+  },
+  "norse_spectacle": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.norse_spectacle: the Norse body's helmet with an eye-and-nose guard (#473); other bodies keep the cap's fits",
+   "fits": {
+    "royal": [
+     {
+      "model": "royal_kettle.vox",
+      "at": [
+       "head",
+       0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "gold",
+       "3": "mantle",
+       "4": "team",
+       "5": "leather",
+       "6": "wood",
+       "7": "habit",
+       "8": "rope",
+       "9": "white",
+       "10": "skin"
+      },
+      "_doc": "the Royal body: an iron kettle hat, royal_kettle.vox (#462)"
+     }
+    ],
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "norse": [
+     {
+      "model": "norse_spectacle.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.5,
+       2.0
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "sash",
+       "4": "lion_mane",
+       "5": "leather",
+       "6": "kilt",
+       "7": "slate",
+       "8": "white",
+       "9": "beak",
+       "10": "team",
+       "11": "wood"
+      },
+      "_doc": "norse_spectacle.vox"
+     }
+    ]
+   }
+  },
+  "fur_cape": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a short fur cape over the shoulders (armour.fur_cape, #473)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "lion_mane"
+     }
+    ],
+    "norse": [
+     {
+      "model": "norse_cape.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -1.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "sash",
+       "4": "lion_mane",
+       "5": "leather",
+       "6": "kilt",
+       "7": "slate",
+       "8": "white",
+       "9": "beak",
+       "10": "team",
+       "11": "wood"
+      },
+      "_doc": "norse_cape.vox"
+     }
+    ]
+   }
+  },
+  "seer": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "the seer's hood, cloak and white beard (hat.seer, #473)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "slate"
+     }
+    ],
+    "norse": [
+     {
+      "model": "norse_seer.vox",
+      "at": [
+       "head",
+       0.0,
+       0.25,
+       -13.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "sash",
+       "4": "lion_mane",
+       "5": "leather",
+       "6": "kilt",
+       "7": "slate",
+       "8": "white",
+       "9": "beak",
+       "10": "team",
+       "11": "wood"
+      },
+      "_doc": "norse_seer.vox"
+     }
+    ]
+   }
+  },
+  "norse_shield": {
+   "hand": "left",
+   "hold": "shield",
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "a round shield painted in halves (norse_shield.vox, #473)",
+   "shapes": [
+    {
+     "model": "norse_shield.vox",
+     "at": [
+      "hand",
+      0.0,
+      0.25,
+      0.0
+     ],
+     "mats": {
+      "1": "metal",
+      "2": "frame2",
+      "3": "sash",
+      "4": "lion_mane",
+      "5": "leather",
+      "6": "kilt",
+      "7": "slate",
+      "8": "white",
+      "9": "beak",
+      "10": "team",
+      "11": "wood"
+     },
+     "_doc": "norse_shield.vox (tools/vox/norse_gear.lobster)"
+    }
+   ]
   }
  },
  "parts": [
@@ -3743,6 +6031,130 @@
   {
    "part": "hat.shaman",
    "gear": "shaman"
+  },
+  {
+   "part": "helm.nile_khat",
+   "gear": "khat"
+  },
+  {
+   "part": "helm.nile_headcloth",
+   "gear": "headcloth"
+  },
+  {
+   "part": "helm.nile_bronze",
+   "gear": "war_crown"
+  },
+  {
+   "part": "armour.bands",
+   "gear": "bands"
+  },
+  {
+   "part": "hat.feather",
+   "gear": "feather"
+  },
+  {
+   "part": "hat.priest",
+   "gear": "priest"
+  },
+  {
+   "part": "shield.cowhide",
+   "gear": "cowhide"
+  },
+  {
+   "part": "weapon.khopesh",
+   "gear": "khopesh"
+  },
+  {
+   "part": "helm.han_topknot",
+   "gear": "han_wrap"
+  },
+  {
+   "part": "helm.han_cap",
+   "gear": "han_cap"
+  },
+  {
+   "part": "helm.han_lamellar",
+   "gear": "han_hood"
+  },
+  {
+   "part": "hat.headwrap",
+   "gear": "red_wrap"
+  },
+  {
+   "part": "armour.han_iron",
+   "gear": "han_iron"
+  },
+  {
+   "part": "hat.straw",
+   "gear": "straw"
+  },
+  {
+   "part": "hat.daoist",
+   "gear": "daoist"
+  },
+  {
+   "part": "shield.lacquer",
+   "gear": "lacquer_shield"
+  },
+  {
+   "part": "shield.rattan",
+   "gear": "rattan"
+  },
+  {
+   "part": "weapon.ji",
+   "gear": "ji"
+  },
+  {
+   "part": "helm.aztec_band",
+   "gear": "aztec_band"
+  },
+  {
+   "part": "helm.aztec_quilted",
+   "gear": "aztec_cap"
+  },
+  {
+   "part": "helm.aztec_eagle",
+   "gear": "aztec_eagle"
+  },
+  {
+   "part": "armour.feather_suit",
+   "gear": "feather_suit"
+  },
+  {
+   "part": "hat.priest_black",
+   "gear": "priest_black"
+  },
+  {
+   "part": "shield.chimalli",
+   "gear": "chimalli"
+  },
+  {
+   "part": "weapon.macuahuitl",
+   "gear": "macuahuitl"
+  },
+  {
+   "part": "helm.norse_fur",
+   "gear": "norse_cap"
+  },
+  {
+   "part": "helm.norse_conical",
+   "gear": "norse_iron"
+  },
+  {
+   "part": "helm.norse_spectacle",
+   "gear": "norse_spectacle"
+  },
+  {
+   "part": "armour.fur_cape",
+   "gear": "fur_cape"
+  },
+  {
+   "part": "hat.seer",
+   "gear": "seer"
+  },
+  {
+   "part": "shield.norse",
+   "gear": "norse_shield"
   },
   {
    "tag": "spear",

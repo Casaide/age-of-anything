@@ -1,0 +1,129 @@
+{
+ "_doc": "A Mexica man of about 1500 in the base dress every Mexica unit wears (#471), drawn as mexica.vox (written by tools/vox/mexica.lobster) from the approved concept sheet: the Roman body's build and points, long black hair with a straight fringe, a bare chest, a team cloak knotted on the right shoulder and hanging to the knee behind, a white loincloth with a team flap, sandals. Headbands, helmets, armour, shields and weapons are gear over it. The behaviour is the Roman body's.",
+ "skin": "#b07a50",
+ "pale": "#c48e62",
+ "size": 0.73,
+ "fur": 0.0,
+ "reach": 5.0,
+ "points": {
+  "hip": {
+   "at": [
+    0,
+    0,
+    21.0
+   ],
+   "bob": 0.5
+  },
+  "chest": {
+   "at": [
+    0,
+    0.3,
+    29.6
+   ],
+   "bob": 0.5
+  },
+  "head": {
+   "at": [
+    0,
+    0.7,
+    37.1
+   ]
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "hip",
+    1.75,
+    0,
+    0
+   ],
+   "foot": [
+    1.9,
+    0,
+    1.9
+   ],
+   "stride": 5.0,
+   "lift": 2.2,
+   "bones": [
+    9.58,
+    9.58
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    2.0,
+    1.4,
+    1.3,
+    0.85
+   ],
+   "mats": [
+    "skin",
+    "skin"
+   ],
+   "shapes": []
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "chest",
+   4.3,
+   -0.2,
+   1.2
+  ],
+  "bone": 6.7,
+  "thick": 1.3,
+  "sleeve": "skin",
+  "hand": "skin"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.3,
+   1.0
+  ],
+  "r": 2.75
+ },
+ "armour": {
+  "a": [
+   "hip",
+   0,
+   0.1,
+   2.6
+  ],
+  "b": [
+   "chest",
+   0,
+   0,
+   0.4
+  ],
+  "r": [
+   2.7,
+   3.2
+  ]
+ },
+ "seat": {
+  "z": 21.5,
+  "astride": [
+   "skin",
+   "skin",
+   "hide"
+  ]
+ },
+ "shapes": [],
+ "vox": "mexica.vox",
+ "mats": {
+  "1": "skin",
+  "2": "hair",
+  "3": "white",
+  "4": "team",
+  "5": "teal",
+  "6": "hide",
+  "7": "eye"
+ },
+ "bare": false
+}
