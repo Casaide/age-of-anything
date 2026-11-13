@@ -1824,6 +1824,35 @@
   "blackbears": {
    "creature": "bear_black",
    "mount": "bear_black"
+  },
+  "bulgar": {
+   "family": "bulgar",
+   "tags": {
+    "bulgar": 4
+   },
+   "default_creature": "human"
+  },
+  "bulgarian": {
+   "family": "bulgar",
+   "tags": {
+    "bulgar": 4
+   },
+   "default_creature": "human"
+  },
+  "slav": {
+   "family": "bulgar",
+   "tags": {
+    "bulgar": 4
+   },
+   "default_creature": "human"
+  },
+  "hajduk": {
+   "family": "bulgar",
+   "tags": {
+    "hajduk": 4,
+    "bulgar": 2
+   },
+   "default_creature": "human"
   }
  }
 }
