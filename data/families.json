@@ -1630,6 +1630,93 @@
   "unique": "repeater"
  },
  "aztec": {
+  "kits": {
+   "_doc": "what each line wears from an age on (#471, from the concept sheet: human-redesign/mexica-foot.png); as the imperial kits",
+   "spear": {
+    "1": {
+     "hand_r": "weapon.spear.wood"
+    },
+    "2": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.chimalli",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.chimalli",
+     "head_gear": "helm.aztec_quilted",
+     "torso": "armour.leather"
+    }
+   },
+   "infantry": {
+    "1": {
+     "hand_r": "weapon.club.bone",
+     "hand_l": "shield.chimalli"
+    },
+    "2": {
+     "hand_r": "weapon.macuahuitl",
+     "hand_l": "shield.chimalli",
+     "head_gear": "helm.aztec_quilted",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.macuahuitl",
+     "hand_l": "shield.chimalli",
+     "head_gear": "helm.aztec_eagle",
+     "torso": "armour.feather_suit"
+    }
+   },
+   "archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.aztec_band"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.aztec_band",
+     "torso": "armour.leather"
+    }
+   },
+   "skirmisher": {
+    "2": {
+     "head_gear": "helm.aztec_band"
+    },
+    "3": {
+     "head_gear": "helm.aztec_band",
+     "torso": "armour.leather"
+    }
+   },
+   "healer": {
+    "2": {
+     "hand_r": "tool.staff.feather",
+     "hand_l": "tool.satchel.woven",
+     "head_gear": "hat.priest_black"
+    }
+   },
+   "large": {
+    "2": {
+     "hand_r": "weapon.macuahuitl",
+     "head_gear": "helm.aztec_quilted",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.macuahuitl",
+     "head_gear": "helm.aztec_eagle",
+     "torso": "armour.feather_suit"
+    }
+   },
+   "scout": {
+    "1": {
+     "head_gear": "helm.aztec_band"
+    }
+   }
+  },
+  "bodies": {
+   "_doc": "the culture's own body for a creature, in the view only (#471)",
+   "human": "mexica"
+  },
   "skins": [
    "human_tan",
    "human_dark"
