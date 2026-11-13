@@ -57,6 +57,10 @@
   "norse": [
    "steppe",
    "royal"
+  ],
+  "bulgar": [
+   "steppe",
+   "royal"
   ]
  },
  "hero_names": {
@@ -295,6 +299,18 @@
     ],
     "titles": [
      "Jarl"
+    ]
+   },
+   "bulgar": {
+    "names": [
+     "Krum",
+     "Elena",
+     "Asen",
+     "Desislava",
+     "Kaloyan"
+    ],
+    "titles": [
+     "Voivode"
     ]
    }
   }
@@ -1142,6 +1158,37 @@
      {
       "tag": "all",
       "stat": "armour.melee",
+      "add": 1
+     }
+    ]
+   }
+  },
+  "redcloak": {
+   "who": {
+    "family": [
+     "bulgar"
+    ]
+   },
+   "parts": {
+    "head_gear": "hat.fur",
+    "back": "hero.cape_long"
+   },
+   "scale": 120,
+   "epithets": [
+    "Redcloak",
+    "the Mountain Wolf"
+   ],
+   "formats": [
+    "named",
+    "titled"
+   ],
+   "temper": "Rides down from the mountains to fix what the boyars broke, then rides back up before anyone can thank him.",
+   "aura": {
+    "text": "The cheta follows: friends nearby +1 pierce armour",
+    "effects": [
+     {
+      "tag": "all",
+      "stat": "armour.pierce",
       "add": 1
      }
     ]
