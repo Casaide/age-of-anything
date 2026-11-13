@@ -413,6 +413,30 @@
    "price_points": 4,
    "noun": "Berserker",
    "desc": "In fur caps and a battle-fury: hits very hard (+3 attack, +10 HP) and quick; no armour, so archers cut them down"
+  },
+  "haidut": {
+   "asked": [
+    "hajduk",
+    "bulgar"
+   ],
+   "role": "infantry",
+   "light": true,
+   "parts": [
+    "weapon.axe.bearded",
+    "armour.fur_cape",
+    "hat.fur"
+   ],
+   "wants": {
+    "hajduk": 3,
+    "bulgar": 2
+   },
+   "stats": {
+    "attack": 2,
+    "hp": 15
+   },
+   "price_points": 4,
+   "noun": "Haidut",
+   "desc": "Outlaws of the mountain forests in a fleece and silver chains, a long axe: hit hard (+2 attack, +15 HP); no armour, so archers and cavalry cut them down"
   }
  }
 }
