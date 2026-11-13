@@ -98,7 +98,9 @@ Put the file in the mod's `data/voxel/models/`. One voxel is one baked pixel at 
   `creature`, `default_creature`, `family`.
 - `data/rules/<rule>.json`: `{"+era": ["<your era>"]}` opens your era under that host rule.
 - Cultures and creatures: `data/families.json` / `creatures.json`; `"extends": "imperial"` copies a
-  game one and changes only what you name.
+  game one and changes only what you name. A culture's `kits` say what its lines wear: roster slot, then age, then
+  `{slot: part id}`, worn from that age on (the Romans' in `families.json`). They replace the generator's own picks, except
+  a part the prompt asked for, or one the age or the rules' eras don't allow yet (#444).
 - `pack.json` `check.prompts`: the prompts that show your parts (they drive the checks).
 
 - Buildings: `data/buildings.json` in your mod changes them (below). The sim and the
