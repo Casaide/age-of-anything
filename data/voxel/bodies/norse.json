@@ -1,0 +1,131 @@
+{
+ "_doc": "A Norseman of about 900 in the base dress every Norse unit wears (#473), drawn as norse.vox (written by tools/vox/norse.lobster) from the approved concept sheet: the Roman body's build and points, long blond hair, a full braided beard, a knee-length team tunic with a red-and-gold border, a belt, trousers with white leg wraps, leather shoes. Helmets, armour, shields and weapons are gear over it. The behaviour is the Roman body's.",
+ "skin": "#e0b090",
+ "pale": "#ecc4a4",
+ "size": 0.73,
+ "fur": 0.0,
+ "reach": 5.0,
+ "points": {
+  "hip": {
+   "at": [
+    0,
+    0,
+    21.0
+   ],
+   "bob": 0.5
+  },
+  "chest": {
+   "at": [
+    0,
+    0.3,
+    29.6
+   ],
+   "bob": 0.5
+  },
+  "head": {
+   "at": [
+    0,
+    0.7,
+    37.1
+   ]
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "hip",
+    1.75,
+    0,
+    0
+   ],
+   "foot": [
+    1.9,
+    0,
+    1.9
+   ],
+   "stride": 5.0,
+   "lift": 2.2,
+   "bones": [
+    9.58,
+    9.58
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    2.0,
+    1.4,
+    1.3,
+    0.85
+   ],
+   "mats": [
+    "trousers",
+    "trousers"
+   ],
+   "shapes": []
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "chest",
+   4.3,
+   -0.2,
+   1.2
+  ],
+  "bone": 6.7,
+  "thick": 1.3,
+  "sleeve": "team",
+  "hand": "skin"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.3,
+   1.0
+  ],
+  "r": 2.75
+ },
+ "armour": {
+  "a": [
+   "hip",
+   0,
+   0.1,
+   2.6
+  ],
+  "b": [
+   "chest",
+   0,
+   0,
+   0.4
+  ],
+  "r": [
+   2.7,
+   3.2
+  ]
+ },
+ "seat": {
+  "z": 21.5,
+  "astride": [
+   "trousers",
+   "trousers",
+   "leather"
+  ]
+ },
+ "shapes": [],
+ "vox": "norse.vox",
+ "mats": {
+  "1": "skin",
+  "2": "blond",
+  "3": "team",
+  "4": "sash",
+  "5": "gold",
+  "6": "trousers",
+  "7": "white",
+  "8": "leather",
+  "9": "eye"
+ },
+ "bare": false
+}
