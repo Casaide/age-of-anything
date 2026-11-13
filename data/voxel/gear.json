@@ -1942,6 +1942,281 @@
      }
     ]
    }
+  },
+  "petasus": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a broad sun hat (hat.petasus)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.2,
+      "mat": "leather"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_petasus.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       3.0
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane",
+       "9": "wolf",
+       "10": "white",
+       "11": "lion_mane",
+       "12": "mantle"
+      },
+      "_doc": "roman_petasus.vox"
+     }
+    ]
+   }
+  },
+  "pectoral": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a bronze plate on the chest (armour.pectoral)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "bronze"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_pectoral.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -0.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane",
+       "9": "wolf",
+       "10": "white",
+       "11": "lion_mane",
+       "12": "mantle"
+      },
+      "_doc": "roman_pectoral.vox"
+     }
+    ]
+   }
+  },
+  "scutum_oval": {
+   "hand": "left",
+   "hold": "shield_tall",
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "the oval scutum: team colour, a pale spine and boss (roman_scutum_oval.vox)",
+   "shapes": [
+    {
+     "model": "roman_scutum_oval.vox",
+     "at": [
+      "hand",
+      0.5,
+      1.0,
+      0
+     ],
+     "mats": {
+      "1": "metal",
+      "2": "bronze",
+      "3": "hide",
+      "4": "wood",
+      "5": "bronze",
+      "6": "team",
+      "7": "gold",
+      "8": "mane",
+      "9": "wolf",
+      "10": "white",
+      "11": "lion_mane",
+      "12": "mantle"
+     }
+    }
+   ]
+  },
+  "cone": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "the archer's cone helmet (helm.cone); the Roman body's comes with a beard",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "metal"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_cone.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.5,
+       1.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane",
+       "9": "wolf",
+       "10": "white",
+       "11": "lion_mane",
+       "12": "mantle"
+      },
+      "_doc": "roman_cone.vox: the helmet and the beard"
+     }
+    ]
+   }
+  },
+  "wolf": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a wolf pelt over the head (hood.wolf)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.2,
+      "mat": "wolf"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_wolf.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.25,
+       -0.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane",
+       "9": "wolf",
+       "10": "white",
+       "11": "lion_mane",
+       "12": "mantle"
+      },
+      "_doc": "roman_wolf.vox"
+     }
+    ]
+   }
+  },
+  "veil": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a mantle over the head (hat.veil); the Roman body's comes with a long white beard",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.2,
+      "mat": "mantle"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_veil.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.5,
+       -0.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane",
+       "9": "wolf",
+       "10": "white",
+       "11": "lion_mane",
+       "12": "mantle"
+      },
+      "_doc": "roman_veil.vox"
+     }
+    ]
+   }
+  },
+  "lion_hood": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a lion's scalp over the head, its mane to the shoulders (hero.lion_hood)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.2,
+      "mat": "hide"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_lion.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       0.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane",
+       "9": "wolf",
+       "10": "white",
+       "11": "lion_mane",
+       "12": "mantle"
+      },
+      "_doc": "roman_lion.vox"
+     }
+    ]
+   }
   }
  },
  "parts": [
@@ -1968,6 +2243,38 @@
   {
    "part": "shield.scutum",
    "gear": "scutum"
+  },
+  {
+   "part": "hat.petasus",
+   "gear": "petasus"
+  },
+  {
+   "part": "armour.pectoral",
+   "gear": "pectoral"
+  },
+  {
+   "part": "shield.scutum_oval",
+   "gear": "scutum_oval"
+  },
+  {
+   "part": "helm.cone",
+   "gear": "cone"
+  },
+  {
+   "part": "hood.wolf",
+   "gear": "wolf"
+  },
+  {
+   "part": "hat.veil",
+   "gear": "veil"
+  },
+  {
+   "part": "hero.lion_hood",
+   "gear": "lion_hood"
+  },
+  {
+   "part": "hero.lion_hood_low",
+   "gear": "lion_hood"
   },
   {
    "part": "hero.helm_transverse",
