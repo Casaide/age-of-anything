@@ -1686,3 +1686,10 @@ are in the movement tests. So the Norse kit's new parts (shield.norse, armour.fu
 ["kit_only"]`, a tag no prompt gives: the generator never draws them, and the kits still put them on. The same goes for any
 later culture whose races the tests use. The Norse large keeps shield.round and armour.bronze (drawn as mail on this body),
 since a kit that empties slots changes the unit's stats and its size in a crowd. Claude.
+
+**D-252, 2026-11-13: The Bulgars are a culture, asked for by name only, and their coat carries the team colour (#477).**
+Dominic chose to add the Bulgars (the ninth approved sheet) as a playable culture. No creature lists the family, so only a
+prompt that names them (bulgar, bulgarian, slav, hajduk) makes one, and no other race changes. Their bonuses, research
+(Cheta), unique unit (the Haidut) and hero (Redcloak) are Claude's draft for Dominic to judge. The sheet's black coat is drawn in
+team colour instead, so a Bulgar reads as its side's in a fight; the sash stays red. The body takes the human body's 20% limit
+for voxel_check's "the creature still shows", as it is mostly clothes. New research goes at the end of tech.json. Claude.
