@@ -84,9 +84,8 @@ The engine is `Casaide/creel` (public, Apache 2.0), here as the git submodule `c
   and test options, and calls Creel's `game/match_loop`: `sim_reset`, `sim_owe(dt * speed)`, `sim_run(bots_idle): <after each
   tick>`, `cam_follow_fight`, `draw_world_lit`, `record_begin`, `record_frame`. `bots`, `link`, `net_on`, `lockstep`, `watch` and the
   `rec_*` settings are declared in Creel. `collect_glows` is a hook we define (`game/glows.lobster`).
-- **The pin is behind Creel's main on purpose (2026-11-13):** `creel/` is at the loop steps on top of `e6184cb`. Creel's `main`
-  has later engine work for the next game (relief, cliffs, fog, shade); with it our tests pass but lint has 5 warnings
-  (`ground_atlas_next`, two asserts in `view/atmosphere`) and the look may change. Moving the pin there is its own piece of work.
+- **The pin follows Creel's main (2026-11-13, #461):** it was held back for a day while main took the next game's engine
+  work (relief, cliffs, fog, shade, paint, smoother units); it moved once lint was clean on it (Casaide/creel#35).
 
 ## Status
 
