@@ -72,7 +72,7 @@ The engine is `Casaide/creel` (public, Apache 2.0), here as the git submodule `c
   before it's pushed. The game's PR then moves the submodule to the merged commit (`git add creel`), stacked on nothing: Creel's PR
   merges first. Never point the submodule at a commit that isn't on Creel's `main`.
 - **Creel is public.** Nothing of the game's content, no private notes, and the Originality rules below apply to it in full.
-- `creel/docs/roadmap.md` has what's still to move (the frame loop and the panels) and the lighting to-do.
+- `creel/docs/roadmap.md` has what's still to move (pad and touch play, the options) and the lighting to-do.
 - **The view is Creel's too (#433):** the controls' shared state (`game/view_state`), the world's drawing (`game/world_view`,
   `world_draw`, `voxel_units`), selection, orders, marks and the minimap (`game/controls`) left `game.lobster`, which imports them
   at the places the code was. What they call of ours: `akb_tile_name`, `akb_wall_tile`, `refresh_paths`, `on_path`, `collect_town`,
@@ -82,6 +82,13 @@ The engine is `Casaide/creel` (public, Apache 2.0), here as the git submodule `c
   stay in `src/game/`. What they're drawn with is Creel's `game/hud_kit` (`hud_s`, `tb_icon`, `tb_text`, `tb_flush`, `tb_plaque`,
   `hud_box`, `hud_button`, `hud_well`, `groove`, `hud_bar`, `wrap`, `cost_row`, `tip_card`). A new drawing helper that names
   nothing of ours goes there; a panel never does.
+- **The frame loop is ours, its steps are Creel's (#433):** `play_match` in `game.lobster` keeps the menus, panels, saves, sound
+  and test options, and calls Creel's `game/match_loop`: `sim_reset`, `sim_owe(dt * speed)`, `sim_run(bots_idle): <after each
+  tick>`, `cam_follow_fight`, `draw_world_lit`, `record_begin`, `record_frame`. `bots`, `link`, `net_on`, `lockstep`, `watch` and the
+  `rec_*` settings are declared in Creel. `collect_glows` is a hook we define (`game/glows.lobster`).
+- **The pin is behind Creel's main on purpose (2026-11-13):** `creel/` is at the loop steps on top of `e6184cb`. Creel's `main`
+  has later engine work for the next game (relief, cliffs, fog, shade); with it our tests pass but lint has 5 warnings
+  (`ground_atlas_next`, two asserts in `view/atmosphere`) and the look may change. Moving the pin there is its own piece of work.
 
 ## Status
 
