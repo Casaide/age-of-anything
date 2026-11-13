@@ -279,5 +279,8 @@
  "blond": {
   "rgb": "#c8a060",
   "fur": true
+ },
+ "linen": {
+  "rgb": "#d9d2c0"
  }
 }

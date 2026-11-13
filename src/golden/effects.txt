@@ -55,3 +55,4 @@ woodsmen: Workers carry +2
 chivalry: Mounted units (not worker, heal) +20 HP
 creeping_dread: 
 war_drums: Every unit (not worker, heal) train 30% faster
+cheta: Foot melee units (not worker, heal) +1 pierce armour

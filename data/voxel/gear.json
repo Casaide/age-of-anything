@@ -3405,6 +3405,33 @@
    ],
    "_doc": "lacquered lamellar (armour.lamellar, #465)",
    "fits": {
+    "bulgar": [
+     {
+      "model": "bulgar_lamellar.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -4.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "hair",
+       "4": "lacquer",
+       "5": "sash",
+       "6": "team",
+       "7": "gold",
+       "8": "leather",
+       "9": "boar_hide",
+       "10": "trousers",
+       "11": "mantle",
+       "12": "lacquer_black",
+       "13": "heron"
+      },
+      "_doc": "the Bulgar body: iron lamellar over the coat, bulgar_lamellar.vox (#477)"
+     }
+    ],
     "*": [
      {
       "fit": 0.0,
@@ -3445,6 +3472,33 @@
    ],
    "_doc": "iron lamellar (armour.lamellar_iron, #465)",
    "fits": {
+    "bulgar": [
+     {
+      "model": "bulgar_lamellar_gilt.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -4.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "hair",
+       "4": "lacquer",
+       "5": "sash",
+       "6": "team",
+       "7": "gold",
+       "8": "leather",
+       "9": "boar_hide",
+       "10": "trousers",
+       "11": "mantle",
+       "12": "lacquer_black",
+       "13": "heron"
+      },
+      "_doc": "the Bulgar body: gilt-edged lamellar, bulgar_lamellar_gilt.vox (#477)"
+     }
+    ],
     "*": [
      {
       "fit": 0.0,
@@ -3485,6 +3539,33 @@
    ],
    "_doc": "a sheepskin over the shoulders (armour.sheepskin, #465)",
    "fits": {
+    "bulgar": [
+     {
+      "model": "bulgar_yamurluk.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.5,
+       -2.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "hair",
+       "4": "lacquer",
+       "5": "sash",
+       "6": "team",
+       "7": "gold",
+       "8": "leather",
+       "9": "boar_hide",
+       "10": "trousers",
+       "11": "mantle",
+       "12": "lacquer_black",
+       "13": "heron"
+      },
+      "_doc": "the Bulgar body: the hooded goat-hair yamurluk, bulgar_yamurluk.vox (#477)"
+     }
+    ],
     "*": [
      {
       "fit": 0.0,
@@ -3525,6 +3606,33 @@
    ],
    "_doc": "helm.spike and helm.steppe_spike: the Steppe body's spiked helmet (#465); other bodies keep the cap's fits",
    "fits": {
+    "bulgar": [
+     {
+      "model": "bulgar_spike.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       2.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "hair",
+       "4": "lacquer",
+       "5": "sash",
+       "6": "team",
+       "7": "gold",
+       "8": "leather",
+       "9": "boar_hide",
+       "10": "trousers",
+       "11": "mantle",
+       "12": "lacquer_black",
+       "13": "heron"
+      },
+      "_doc": "the Bulgar body: the tall pointed helmet with a mail drop, bulgar_spike.vox (#477)"
+     }
+    ],
     "*": [
      {
       "helm": 0,
@@ -3613,6 +3721,33 @@
    ],
    "_doc": "a red crown in a fur brim (hat.fur, #465)",
    "fits": {
+    "bulgar": [
+     {
+      "model": "bulgar_kalpak.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       3.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "hair",
+       "4": "lacquer",
+       "5": "sash",
+       "6": "team",
+       "7": "gold",
+       "8": "leather",
+       "9": "boar_hide",
+       "10": "trousers",
+       "11": "mantle",
+       "12": "lacquer_black",
+       "13": "heron"
+      },
+      "_doc": "the Bulgar body: the black fur kalpak, bulgar_kalpak.vox (#477)"
+     }
+    ],
     "*": [
      {
       "helm": 0.2,
@@ -3653,6 +3788,33 @@
    ],
    "_doc": "the archer's white felt hat (hat.felt, #465)",
    "fits": {
+    "bulgar": [
+     {
+      "model": "bulgar_kalpak_red.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       4.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "hair",
+       "4": "lacquer",
+       "5": "sash",
+       "6": "team",
+       "7": "gold",
+       "8": "leather",
+       "9": "boar_hide",
+       "10": "trousers",
+       "11": "mantle",
+       "12": "lacquer_black",
+       "13": "heron"
+      },
+      "_doc": "the Bulgar body: the archer's red-crowned kalpak, bulgar_kalpak_red.vox (#477)"
+     }
+    ],
     "*": [
      {
       "helm": 0.2,
@@ -5731,6 +5893,33 @@
    ],
    "_doc": "a short fur cape over the shoulders (armour.fur_cape, #473)",
    "fits": {
+    "bulgar": [
+     {
+      "model": "bulgar_fleece.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -3.0
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "hair",
+       "4": "lacquer",
+       "5": "sash",
+       "6": "team",
+       "7": "gold",
+       "8": "leather",
+       "9": "boar_hide",
+       "10": "trousers",
+       "11": "mantle",
+       "12": "lacquer_black",
+       "13": "heron"
+      },
+      "_doc": "the Bulgar body: the haidut's fleece and silver chains, bulgar_fleece.vox (#477)"
+     }
+    ],
     "*": [
      {
       "fit": 0.0,
@@ -5837,6 +6026,47 @@
      "_doc": "norse_shield.vox (tools/vox/norse_gear.lobster)"
     }
    ]
+  },
+  "kamilavka": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "the Orthodox priest's tall hat, grey beard and black cassock (hat.kamilavka, #477)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "lacquer_black"
+     }
+    ],
+    "bulgar": [
+     {
+      "model": "bulgar_priest.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       -12.0
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "hair",
+       "4": "lacquer",
+       "5": "sash",
+       "6": "team",
+       "7": "gold",
+       "8": "leather",
+       "9": "boar_hide",
+       "10": "trousers",
+       "11": "mantle",
+       "12": "lacquer_black",
+       "13": "heron"
+      },
+      "_doc": "bulgar_priest.vox"
+     }
+    ]
+   }
   }
  },
  "parts": [
@@ -6155,6 +6385,10 @@
   {
    "part": "shield.norse",
    "gear": "norse_shield"
+  },
+  {
+   "part": "hat.kamilavka",
+   "gear": "kamilavka"
   },
   {
    "tag": "spear",
