@@ -7,6 +7,7 @@
 //   fit       how much of the crew hangs outside the deck the table gives (a bear on a howdah)
 //   contrast  every skin a crew comes in against the deck under it (a brown rat on a brown crate)
 //   bulk      a rider against its mount, in pixels drawn (a frog bigger than its newt)
+//   shield    how much of a held shield lies inside the mount (a scutum cut through a cavalryman, #455)
 //   lobster rider_check.lobster -- [report]   (report: the numbers only, no failing)
 import from "../creel/src"
 import std
@@ -33,6 +34,7 @@ let MIN_RIM = 6
 let MAX_OVER = 0.1
 let MIN_CONTRAST = 0.14
 let MAX_BULK = 0.85
+let MAX_SHIELD_IN = 0.05  // of a held shield's voxels, inside the mount
 var fails = 0
 
 def fail(what:string):
@@ -179,6 +181,62 @@ for(creatures.keys) name, k:
         let beasts = if has(c, "war_beast"): [ gstr(c, "war_beast", "") ] else: map(gstrs(c, "families")) f: gstr(at(families, f), "war_beast", "")
         for(beasts) w: crewed(name, "siege.beast." + w, if has(c, "fused_mount"): "human" else: rb)
         for(beasts) w: contrast(name, "siege.beast." + w, c)
+
+// shield: every shield a rider can hold, on each culture's human body (and the plain one), on a pony: how much of it lies
+// inside the mount (inside the rider is mostly the arm that holds it). A foot soldier's tall shield (gear "foot") is never
+// ridden: no culture's kit gives one to a mounted line (#455).
+def in_shape(g:vx_shape, p:int3) -> bool:
+    let q = p - g.lo
+    if q.x < 0 or q.y < 0 or q.z < 0 or q.x >= g.dims.x or q.y >= g.dims.y or q.z >= g.dims.z: return false
+    return g.grid[(q.z * g.dims.y + q.y) * g.dims.x + q.x] >= 0
+
+def shield_in(body:string, mount:string, gear:string) -> float:
+    still()
+    let bare = plain(body, mount)
+    let held = vx_unit_def { body, body, float3_0, float3_0, float3_0, [ gear ], mount, false, float3_0, float3_0, float3_0, nil }
+    vx_set_look(bare, 0)
+    let a = vx_unit_prims(bare, 0.0)
+    vx_set_look(held, 0)
+    // (its prims: the held one's that the bare one hasn't, less the arm that moved to hold it, which isn't gear)
+    let own = filter(vx_unit_prims(held, 0.0)) p: (p.model >= 0 or p.disc or p.hard) and not exists(a) q: q.a == p.a and q.b == p.b and q.mat == p.mat
+    let m = []::vx_prim
+    vx_whole_body(m, plain(mount, ""), vx_body_of(mount), vx_body_points(vx_body_of(mount), 0.0, float3_0), 0.0, 0.0, [])
+    let size = vx_body_of(body).size
+    let sg = vx_fill(own, size, true)
+    let mg = vx_fill(a.slice(0, m.length), size, true)  // (the mount's prims come first)
+    var n, inside = 0, 0
+    for(sg.grid) v, i:
+        if v >= 0:
+            n++
+            if in_shape(mg, sg.lo + int3 { i % sg.dims.x, (i / sg.dims.x) % sg.dims.y, i / (sg.dims.x * sg.dims.y) }): inside++
+    return float(inside) / float(max(n, 1))
+
+let gear_json = parse_json(assert read_file("../data/voxel/gear.json"))
+let all_gear = at(gear_json, "gear")
+let shields = filter(all_gear.keys) g: has_s([ "shield", "shield_tall" ], gstr(at(all_gear, g), "hold", ""))
+let rider_bodies = [ "human" ]
+for(families.keys) f:
+    let fb = at(families, f)
+    if fb.kind == J_OBJ and has(fb, "bodies") and has(at(fb, "bodies"), "human"): rider_bodies.push(gstr(at(fb, "bodies"), "human", ""))
+for(rider_bodies) rb:
+    for(shields) g:
+        if not gbool(at(all_gear, g), "foot", false):
+            let v = shield_in(rb, "pony", g)
+            if report: print "shield {g} on {rb} riding: {v} inside the mount"
+            if not report and v > MAX_SHIELD_IN: fail("{g} on {rb} riding a pony: {int(v * 100.0)}% of the shield inside the mount (at most {int(MAX_SHIELD_IN * 100.0)}%)")
+// (a part's gear: the first part rule naming it)
+def gear_of_part(id:string) -> string:
+    for(at(gear_json, "parts").a) r:
+        if gstr(r, "part", "") == id: return gstr(r, "gear", "")
+    return ""
+for(families.keys) f:
+    let kits = gobj(at(families, f), "kits")
+    for([ "large", "scout", "mounted_archer" ]) line:
+        if has(kits, line):
+            for(at(kits, line).a) age:
+                for(age.a) id:
+                    let g = gear_of_part(as_str(id))
+                    if g != "" and gbool(at(all_gear, g), "foot", false): fail("{f}\'s {line} kit rides with {as_str(id)}, a foot soldier\'s shield ({g})")
 
 if not report and fails == 0: print "riders hold"
 if not report: assert fails == 0
