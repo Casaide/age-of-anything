@@ -74,8 +74,12 @@ The engine is `Casaide/creel` (public, Apache 2.0), here as the git submodule `c
 - **The view is Creel's too (#433):** the controls' shared state (`game/view_state`), the world's drawing (`game/world_view`,
   `world_draw`, `voxel_units`), selection, orders, marks and the minimap (`game/controls`) left `game.lobster`, which imports them
   at the places the code was. What they call of ours: `akb_tile_name`, `akb_wall_tile`, `refresh_paths`, `on_path`, `collect_town`,
-  `draw_town`, `draw_cracks_of`, `draw_topbar`, `hud_s`. A global that moves earlier in the import order can shadow a local in a
+  `draw_town`, `draw_cracks_of`, `draw_topbar`. A global that moves earlier in the import order can shadow a local in a
   file imported after it; lint catches it.
+- **Panels are ours, the kit is Creel's (Dominic, 2026-11-10):** the top bar, command panel and tech tree are this game's UI and
+  stay in `src/game/`. What they're drawn with is Creel's `game/hud_kit` (`hud_s`, `tb_icon`, `tb_text`, `tb_flush`, `tb_plaque`,
+  `hud_box`, `hud_button`, `hud_well`, `groove`, `hud_bar`, `wrap`, `cost_row`, `tip_card`). A new drawing helper that names
+  nothing of ours goes there; a panel never does.
 
 ## Status
 
