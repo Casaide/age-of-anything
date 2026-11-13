@@ -501,13 +501,18 @@ def fe_draw_units(units:[JV], spots:[float2], z:float, p:int, alpha:float, right
     let tc = team_rgb[p % team_rgb.length]
     let order = map(units.length) k: k
     insertion_sort(order) a, b: spots[a].y < spots[b].y
+    let figs = map(units) u: vx_figure_facing(at(u, "recipe"), float2 { if right: -1.0 else: 1.0, 0.45 })
+    def draw(f:int, k:int, col:float4):
+        let fr = frames[f]
+        let sc = z * 1.5 * fr.k
+        sprite_xf(f, [ sc, 0.0, 0.0, sc, spots[k].x - float(fr.ox) * sc, spots[k].y - float(fr.oy) * sc ], col)
     b_sheet = -1
+    for(order) k:  // the shadows first, on the ground under every figure (as in a match: world_draw)
+        if figs[k] >= 0:
+            let sf = vx_shadow_for(figs[k])
+            if sf >= 0: draw(sf, k, float4 { 1.0, 1.0, 1.0, alpha })
     for(order) k:
-        let f = vx_figure_facing(at(units[k], "recipe"), float2 { if right: -1.0 else: 1.0, 0.45 })
-        if f >= 0:
-            let fr = frames[f]
-            let sc = z * 1.5 * fr.k
-            sprite_xf(f, [ sc, 0.0, 0.0, sc, spots[k].x - float(fr.ox) * sc, spots[k].y - float(fr.oy) * sc ], float4 { tc.x, tc.y, tc.z, alpha })
+        if figs[k] >= 0: draw(figs[k], k, float4 { tc.x, tc.y, tc.z, alpha })
     flush_sprites()
 
 // The roster in words: each line's name, the creature's noun left off when most share it; a line the race lacks
