@@ -268,5 +268,12 @@
  },
  "slate": {
   "rgb": "#3a5a7a"
+ },
+ "teal": {
+  "rgb": "#2a7a6a"
+ },
+ "obsidian": {
+  "rgb": "#1c1a24",
+  "shine": 0.8
  }
 }
