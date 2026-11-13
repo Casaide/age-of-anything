@@ -854,6 +854,31 @@
       },
       "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
      }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.0,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
     ]
    }
   },
@@ -1535,6 +1560,31 @@
       },
       "_doc": "the Roman body: a leather jerkin with pteruges, roman_leather.vox"
      }
+    ],
+    "greek": [
+     {
+      "model": "greek_linen.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a linen corslet, greek_linen.vox"
+     }
     ]
    }
   },
@@ -1570,6 +1620,31 @@
        "8": "mane"
       },
       "_doc": "the Roman body: mail doubled over the shoulders, roman_mail.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_scale.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: the corslet faced with scales, greek_scale.vox"
      }
     ]
    }
@@ -2215,8 +2290,481 @@
       },
       "_doc": "roman_lion.vox"
      }
+    ],
+    "greek": [
+     {
+      "model": "roman_lion.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       0.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane",
+       "9": "wolf",
+       "10": "white",
+       "11": "lion_mane",
+       "12": "mantle"
+      },
+      "_doc": "roman_lion.vox: the Greek head is the Roman's shape"
+     }
     ]
    }
+  },
+  "thracian": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a bronze helmet, its peak curling forward (helm.bronze)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_thracian.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.25,
+       1.75
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "greek_thracian.vox"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ]
+   }
+  },
+  "corinthian": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a closed bronze helmet, a tall crest (helm.corinthian)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_corinthian.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.5,
+       2.25
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "greek_corinthian.vox"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ]
+   }
+  },
+  "attic": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "an open bronze helmet, a crest on a stand (helm.attic)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_attic.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.5,
+       3.0
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "greek_attic.vox"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ]
+   }
+  },
+  "band": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a band round the head (hat.band)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "team"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_band.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       0.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "greek_band.vox"
+     }
+    ]
+   }
+  },
+  "fox": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a fox-skin cap (hood.fox)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.2,
+      "mat": "fox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_fox.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.25,
+       2.25
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "greek_fox.vox"
+     }
+    ]
+   }
+  },
+  "wreath": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a laurel wreath (hat.wreath)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "laurel"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_wreath.vox",
+      "at": [
+       "head",
+       -1.5,
+       -0.5,
+       -4.0
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "greek_wreath.vox"
+     }
+    ]
+   }
+  },
+  "cuirass": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a bronze muscle cuirass (armour.cuirass)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "bronze"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_cuirass.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -3.75
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "greek_cuirass.vox"
+     }
+    ]
+   }
+  },
+  "hoplon": {
+   "hand": "left",
+   "hold": "shield",
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "a big round dished shield: team colour, a white lambda, a bronze rim (greek_hoplon.vox)",
+   "shapes": [
+    {
+     "model": "greek_hoplon.vox",
+     "at": [
+      "hand",
+      0.5,
+      1.0,
+      0
+     ],
+     "mats": {
+      "1": "bronze",
+      "2": "gold",
+      "3": "white",
+      "4": "team",
+      "5": "wood",
+      "6": "metal",
+      "7": "wicker",
+      "8": "fox",
+      "9": "laurel",
+      "10": "mantle",
+      "11": "white"
+     },
+     "_doc": "greek_hoplon.vox (tools/vox/greek_gear.lobster)"
+    }
+   ]
+  },
+  "thureos": {
+   "hand": "left",
+   "hold": "shield_tall",
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "a tall white oval, a team rim, an iron spine and boss (greek_thureos.vox)",
+   "shapes": [
+    {
+     "model": "greek_thureos.vox",
+     "at": [
+      "hand",
+      0.5,
+      1.0,
+      0
+     ],
+     "mats": {
+      "1": "bronze",
+      "2": "gold",
+      "3": "white",
+      "4": "team",
+      "5": "wood",
+      "6": "metal",
+      "7": "wicker",
+      "8": "fox",
+      "9": "laurel",
+      "10": "mantle",
+      "11": "white"
+     },
+     "_doc": "greek_thureos.vox (tools/vox/greek_gear.lobster)"
+    }
+   ]
+  },
+  "pelte": {
+   "hand": "left",
+   "hold": "shield",
+   "face": [
+    -0.3,
+    1,
+    0
+   ],
+   "_doc": "a wicker crescent with a team rim (greek_pelte.vox)",
+   "shapes": [
+    {
+     "model": "greek_pelte.vox",
+     "at": [
+      "hand",
+      0.0,
+      0.8,
+      0
+     ],
+     "mats": {
+      "1": "bronze",
+      "2": "gold",
+      "3": "white",
+      "4": "team",
+      "5": "wood",
+      "6": "metal",
+      "7": "wicker",
+      "8": "fox",
+      "9": "laurel",
+      "10": "mantle",
+      "11": "white"
+     },
+     "_doc": "greek_pelte.vox (tools/vox/greek_gear.lobster)"
+    }
+   ]
   }
  },
  "parts": [
@@ -2255,6 +2803,50 @@
   {
    "part": "shield.scutum_oval",
    "gear": "scutum_oval"
+  },
+  {
+   "part": "weapon.akontia",
+   "gear": "pilum"
+  },
+  {
+   "part": "shield.hoplon",
+   "gear": "hoplon"
+  },
+  {
+   "part": "shield.thureos",
+   "gear": "thureos"
+  },
+  {
+   "part": "shield.pelte",
+   "gear": "pelte"
+  },
+  {
+   "part": "hat.band",
+   "gear": "band"
+  },
+  {
+   "part": "hood.fox",
+   "gear": "fox"
+  },
+  {
+   "part": "hat.wreath",
+   "gear": "wreath"
+  },
+  {
+   "part": "helm.bronze",
+   "gear": "thracian"
+  },
+  {
+   "part": "helm.corinthian",
+   "gear": "corinthian"
+  },
+  {
+   "part": "helm.attic",
+   "gear": "attic"
+  },
+  {
+   "part": "armour.cuirass",
+   "gear": "cuirass"
   },
   {
    "part": "helm.cone",

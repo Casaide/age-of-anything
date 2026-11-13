@@ -237,5 +237,12 @@
  },
  "mantle": {
   "rgb": "#cdb98a"
+ },
+ "fox": {
+  "rgb": "#b86a32",
+  "fur": true
+ },
+ "wicker": {
+  "rgb": "#a88a52"
  }
 }
