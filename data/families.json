@@ -696,6 +696,104 @@
   }
  },
  "royal": {
+  "kits": {
+   "_doc": "what each line wears from an age on (#462, from the concept sheet: human-redesign/royal-foot.png and royal-riders.png); as the imperial kits",
+   "spear": {
+    "1": {
+     "hand_r": "weapon.spear.wood",
+     "head_gear": "helm.cap",
+     "torso": "armour.leather"
+    },
+    "2": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.heater",
+     "head_gear": "helm.cap",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.heater",
+     "head_gear": "helm.nasal",
+     "torso": "armour.mail"
+    }
+   },
+   "infantry": {
+    "1": {
+     "hand_r": "weapon.club.bone",
+     "head_gear": "helm.cap"
+    },
+    "2": {
+     "hand_r": "weapon.sword.arming",
+     "hand_l": "shield.heater",
+     "head_gear": "helm.nasal",
+     "torso": "armour.mail"
+    },
+    "3": {
+     "hand_r": "weapon.sword.iron",
+     "hand_l": "shield.heater",
+     "head_gear": "helm.iron",
+     "torso": "armour.surcoat"
+    }
+   },
+   "archer": {
+    "2": {
+     "hand_r": "weapon.bow.long",
+     "back": "quiver",
+     "head_gear": "hat.hood"
+    },
+    "3": {
+     "hand_r": "weapon.bow.long",
+     "back": "quiver",
+     "head_gear": "hat.hood",
+     "torso": "armour.leather"
+    }
+   },
+   "skirmisher": {
+    "2": {
+     "hand_r": "weapon.sling",
+     "head_gear": "hood.coif"
+    },
+    "3": {
+     "hand_r": "weapon.sling",
+     "head_gear": "hood.coif",
+     "torso": "armour.leather"
+    }
+   },
+   "healer": {
+    "2": {
+     "hand_r": "tool.staff.lantern",
+     "hand_l": "tool.satchel",
+     "head_gear": "hat.cowl"
+    }
+   },
+   "large": {
+    "2": {
+     "hand_r": "weapon.lance",
+     "hand_l": "shield.heater",
+     "head_gear": "helm.nasal",
+     "torso": "armour.mail"
+    },
+    "3": {
+     "hand_r": "weapon.lance",
+     "hand_l": "shield.heater",
+     "head_gear": "helm.iron",
+     "torso": "armour.surcoat"
+    }
+   },
+   "scout": {
+    "1": {
+     "head_gear": "helm.cap",
+     "torso": "armour.leather"
+    }
+   },
+   "mounted_archer": {
+    "2": {
+     "hand_r": "weapon.crossbow",
+     "head_gear": "helm.cap",
+     "torso": "armour.leather"
+    }
+   }
+  },
   "cloth": [
    "#5a3f8f",
    "#f2c94c"
@@ -791,7 +889,11 @@
   "siege": "timber",
   "war_beast": "elephant",
   "pour": "boiling pitch",
-  "unique": "sworn_knight"
+  "unique": "sworn_knight",
+  "bodies": {
+   "_doc": "the culture's own body for a creature, in the view only (#462)",
+   "human": "royal"
+  }
  },
  "steppe": {
   "cloth": [
