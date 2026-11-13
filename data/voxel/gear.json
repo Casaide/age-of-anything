@@ -1558,6 +1558,32 @@
     "armour"
    ],
    "fits": {
+    "steppe": [
+     {
+      "model": "steppe_quilted.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -5.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "lacquer",
+       "7": "kilt",
+       "8": "sash",
+       "9": "hair",
+       "10": "lion_mane",
+       "11": "boar_hide",
+       "12": "trim"
+      },
+      "_doc": "the Steppe body: a quilted team coat, steppe_quilted.vox (#465)"
+     }
+    ],
     "royal": [
      {
       "model": "royal_gambeson.vox",
@@ -3195,6 +3221,334 @@
      "_doc": "royal_heater.vox (tools/vox/royal_gear.lobster)"
     }
    ]
+  },
+  "lamellar": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "lacquered lamellar (armour.lamellar, #465)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "lacquer"
+     }
+    ],
+    "steppe": [
+     {
+      "model": "steppe_lamellar.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -5.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "lacquer",
+       "7": "kilt",
+       "8": "sash",
+       "9": "hair",
+       "10": "lion_mane",
+       "11": "boar_hide",
+       "12": "trim"
+      },
+      "_doc": "steppe_lamellar.vox"
+     }
+    ]
+   }
+  },
+  "lamellar_iron": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "iron lamellar (armour.lamellar_iron, #465)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "metal"
+     }
+    ],
+    "steppe": [
+     {
+      "model": "steppe_lamellar_iron.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -5.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "lacquer",
+       "7": "kilt",
+       "8": "sash",
+       "9": "hair",
+       "10": "lion_mane",
+       "11": "boar_hide",
+       "12": "trim"
+      },
+      "_doc": "steppe_lamellar_iron.vox"
+     }
+    ]
+   }
+  },
+  "sheepskin": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a sheepskin over the shoulders (armour.sheepskin, #465)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "boar_hide"
+     }
+    ],
+    "steppe": [
+     {
+      "model": "steppe_sheepskin.vox",
+      "at": [
+       "chest",
+       0.0,
+       -0.25,
+       -1.0
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "lacquer",
+       "7": "kilt",
+       "8": "sash",
+       "9": "hair",
+       "10": "lion_mane",
+       "11": "boar_hide",
+       "12": "trim"
+      },
+      "_doc": "steppe_sheepskin.vox"
+     }
+    ]
+   }
+  },
+  "spike": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.spike and helm.steppe_spike: the Steppe body's spiked helmet (#465); other bodies keep the cap's fits",
+   "fits": {
+    "*": [
+     {
+      "helm": 0,
+      "mat": "metal",
+      "_doc": "a cap over the crown at the skull's size, no brim (Dominic: helmets head sized)"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_montefortino.vox",
+      "at": [
+       "head",
+       0,
+       -1.5,
+       1.75
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
+     }
+    ],
+    "greek": [
+     {
+      "model": "greek_pilos.vox",
+      "at": [
+       "head",
+       0,
+       -1,
+       3.5
+      ],
+      "mats": {
+       "1": "bronze",
+       "2": "gold",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "metal",
+       "7": "wicker",
+       "8": "fox",
+       "9": "laurel",
+       "10": "mantle",
+       "11": "white"
+      },
+      "_doc": "the Greek body: a bronze pilos, greek_pilos.vox"
+     }
+    ],
+    "steppe": [
+     {
+      "model": "steppe_spike.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       3.0
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "lacquer",
+       "7": "kilt",
+       "8": "sash",
+       "9": "hair",
+       "10": "lion_mane",
+       "11": "boar_hide",
+       "12": "trim"
+      },
+      "_doc": "steppe_spike.vox"
+     }
+    ]
+   }
+  },
+  "fur": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a red crown in a fur brim (hat.fur, #465)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.2,
+      "mat": "lion_mane"
+     }
+    ],
+    "steppe": [
+     {
+      "model": "steppe_fur.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       2.0
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "lacquer",
+       "7": "kilt",
+       "8": "sash",
+       "9": "hair",
+       "10": "lion_mane",
+       "11": "boar_hide",
+       "12": "trim"
+      },
+      "_doc": "steppe_fur.vox"
+     }
+    ]
+   }
+  },
+  "felt": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "the archer's white felt hat (hat.felt, #465)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.2,
+      "mat": "white"
+     }
+    ],
+    "steppe": [
+     {
+      "model": "steppe_felt.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       4.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "lacquer",
+       "7": "kilt",
+       "8": "sash",
+       "9": "hair",
+       "10": "lion_mane",
+       "11": "boar_hide",
+       "12": "trim"
+      },
+      "_doc": "steppe_felt.vox"
+     }
+    ]
+   }
+  },
+  "shaman": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "the shaman's headdress (hat.shaman, #465)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "sash"
+     }
+    ],
+    "steppe": [
+     {
+      "model": "steppe_shaman.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.5,
+       3.25
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "frame2",
+       "3": "white",
+       "4": "team",
+       "5": "leather",
+       "6": "lacquer",
+       "7": "kilt",
+       "8": "sash",
+       "9": "hair",
+       "10": "lion_mane",
+       "11": "boar_hide",
+       "12": "trim"
+      },
+      "_doc": "steppe_shaman.vox"
+     }
+    ]
+   }
   }
  },
  "parts": [
@@ -3357,6 +3711,38 @@
   {
    "part": "shield.heater",
    "gear": "heater"
+  },
+  {
+   "part": "armour.lamellar_iron",
+   "gear": "lamellar_iron"
+  },
+  {
+   "part": "armour.lamellar",
+   "gear": "lamellar"
+  },
+  {
+   "part": "armour.sheepskin",
+   "gear": "sheepskin"
+  },
+  {
+   "part": "helm.spike",
+   "gear": "spike"
+  },
+  {
+   "part": "helm.steppe_spike",
+   "gear": "spike"
+  },
+  {
+   "part": "hat.fur",
+   "gear": "fur"
+  },
+  {
+   "part": "hat.felt",
+   "gear": "felt"
+  },
+  {
+   "part": "hat.shaman",
+   "gear": "shaman"
   },
   {
    "tag": "spear",
