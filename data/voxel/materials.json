@@ -275,5 +275,9 @@
  "obsidian": {
   "rgb": "#1c1a24",
   "shine": 0.8
+ },
+ "blond": {
+  "rgb": "#c8a060",
+  "fur": true
  }
 }
