@@ -731,7 +731,7 @@ def kit_for(slot:string, age:int) -> JV:
     return out
 
 // A unit's gear swapped for its culture's kit: each kit part that the rules' eras and the age allow, the rest of its slots empty. But a
-// generated part the prompt asked for keeps its slot: one with a signature tag the prompt named that none of the culture's
+// generated part the prompt asked for keeps its slot: wings, or one with a signature tag the prompt named that none of the culture's
 // kits carry (cheese romans keep their cheese; "romans" asks for roman kit, which the kit is). Mount, scale and elite stay.
 // True when the unit has a kit.
 def wear_kit(r:JV, slot:string, age:int) -> bool:
@@ -748,7 +748,8 @@ def wear_kit(r:JV, slot:string, age:int) -> bool:
     let out = jobj()
     for(rp.keys) s, i:
         let p = part(as_str(rp.a[i]))
-        let asked = exists(ptags(p)) t: has_s(SIGNATURE_TAGS, t) and tget(g_brief.tags, t) > 0 and not has_s(own, t)
+        // (wings are only ever there when asked for, so they always keep their slot: winged greeks fly in their kit, #451)
+        let asked = has_s(ptags(p), "wings") or exists(ptags(p)) t: has_s(SIGNATURE_TAGS, t) and tget(g_brief.tags, t) > 0 and not has_s(own, t)
         if asked: set(out, s, rp.a[i])
     for(kit.keys) s, i:
         let id = as_str(kit.a[i])
