@@ -1219,6 +1219,108 @@
   "unique": "gloom_stalker"
  },
  "nile": {
+  "kits": {
+   "_doc": "what each line wears from an age on (#467, from the concept sheet: human-redesign/nile-foot.png and nile-riders.png); as the imperial kits",
+   "spear": {
+    "1": {
+     "hand_r": "weapon.spear.wood",
+     "hand_l": "shield.cowhide"
+    },
+    "2": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.cowhide",
+     "head_gear": "helm.nile_khat"
+    },
+    "3": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.cowhide",
+     "head_gear": "helm.nile_headcloth",
+     "torso": "armour.leather"
+    }
+   },
+   "infantry": {
+    "1": {
+     "hand_r": "weapon.club.bone",
+     "hand_l": "shield.cowhide"
+    },
+    "2": {
+     "hand_r": "weapon.khopesh",
+     "hand_l": "shield.cowhide",
+     "head_gear": "helm.nile_headcloth",
+     "torso": "armour.bronze"
+    },
+    "3": {
+     "hand_r": "weapon.khopesh",
+     "hand_l": "shield.cowhide",
+     "head_gear": "helm.nile_bronze",
+     "torso": "armour.bronze"
+    }
+   },
+   "archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "torso": "armour.bands"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.nile_headcloth",
+     "torso": "armour.leather"
+    }
+   },
+   "skirmisher": {
+    "2": {
+     "head_gear": "hat.feather"
+    },
+    "3": {
+     "head_gear": "hat.feather",
+     "torso": "armour.bands"
+    }
+   },
+   "healer": {
+    "2": {
+     "hand_r": "tool.staff.papyrus",
+     "hand_l": "tool.satchel.linen",
+     "head_gear": "hat.priest"
+    }
+   },
+   "large": {
+    "2": {
+     "hand_r": "weapon.khopesh",
+     "head_gear": "helm.nile_headcloth",
+     "torso": "armour.bronze"
+    },
+    "3": {
+     "hand_r": "weapon.khopesh",
+     "head_gear": "helm.nile_bronze",
+     "torso": "armour.bronze"
+    }
+   },
+   "scout": {
+    "1": {
+     "head_gear": "helm.nile_khat"
+    }
+   },
+   "mounted_archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.nile_khat",
+     "torso": "armour.bands"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.nile_headcloth",
+     "torso": "armour.leather"
+    }
+   }
+  },
+  "bodies": {
+   "_doc": "the culture's own body for a creature, in the view only (#467)",
+   "human": "nile"
+  },
   "skins": [
    "human_tan",
    "human_dark"
