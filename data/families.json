@@ -1815,6 +1815,110 @@
   "unique": "obsidian"
  },
  "norse": {
+  "kits": {
+   "_doc": "what each line wears from an age on (#473, from the concept sheet: human-redesign/norse-foot.png and norse-riders.png); as the imperial kits",
+   "spear": {
+    "1": {
+     "hand_r": "weapon.spear.wood",
+     "hand_l": "shield.norse",
+     "head_gear": "helm.norse_fur"
+    },
+    "2": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.norse",
+     "head_gear": "helm.norse_conical",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.norse",
+     "head_gear": "helm.norse_conical",
+     "torso": "armour.mail"
+    }
+   },
+   "infantry": {
+    "1": {
+     "hand_r": "weapon.club.bone",
+     "hand_l": "shield.norse"
+    },
+    "2": {
+     "hand_r": "weapon.axe.bearded",
+     "hand_l": "shield.norse",
+     "head_gear": "helm.norse_conical",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.sword.iron",
+     "hand_l": "shield.norse",
+     "head_gear": "helm.norse_spectacle",
+     "torso": "armour.mail"
+    }
+   },
+   "archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.norse_fur"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.norse_fur",
+     "torso": "armour.leather"
+    }
+   },
+   "skirmisher": {
+    "2": {
+     "torso": "armour.fur_cape"
+    },
+    "3": {
+     "head_gear": "helm.norse_fur",
+     "torso": "armour.fur_cape"
+    }
+   },
+   "healer": {
+    "2": {
+     "hand_r": "tool.staff.rune",
+     "hand_l": "tool.satchel",
+     "head_gear": "hat.seer"
+    }
+   },
+   "large": {
+    "2": {
+     "hand_l": "shield.round",
+     "head_gear": "helm.norse_conical",
+     "torso": "armour.bronze"
+    },
+    "3": {
+     "hand_l": "shield.round",
+     "head_gear": "helm.norse_spectacle",
+     "torso": "armour.mail"
+    }
+   },
+   "scout": {
+    "1": {
+     "head_gear": "helm.norse_fur"
+    }
+   },
+   "mounted_archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.norse_fur",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.norse_conical",
+     "torso": "armour.mail"
+    }
+   }
+  },
+  "bodies": {
+   "_doc": "the culture's own body for a creature, in the view only (#473)",
+   "human": "norse"
+  },
   "skins": [
    "human_light"
   ],
