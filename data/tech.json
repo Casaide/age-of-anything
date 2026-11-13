@@ -1329,6 +1329,32 @@
      "pct": -30
     }
    ]
+  },
+  {
+   "id": "cheta",
+   "name": "Cheta",
+   "desc": "The outlaw band: foot melee +1 pierce armour.",
+   "cost": {
+    "food": 200,
+    "gold": 150
+   },
+   "time": 50,
+   "building": "castle",
+   "age": 3,
+   "own": "culture",
+   "icon": "culture_research",
+   "effects": [
+    {
+     "tag": "melee",
+     "not": [
+      "mounted",
+      "worker",
+      "heal"
+     ],
+     "stat": "armour.pierce",
+     "add": 1
+    }
+   ]
   }
  ],
  "line_upgrades": {
