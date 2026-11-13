@@ -9,6 +9,19 @@ Written in [Lobster](https://github.com/aardappel/lobster). With Lobster built a
 - Tests: `./tests/batch.sh --quick` (the whole batch without `--quick`)
 - How it's made and where things are: `CLAUDE.md`, then `docs/`
 
+## Building
+
+`make` lists the targets. Each one runs that platform's own script (it says what it needs at its top):
+
+- `make mac`: `build/mac/Age of Anything.app`, a dev build that runs this checkout (macOS Game Mode, Dock icon)
+- `make deck`: the Steam Deck build in `build/lobster_linux` (Linux x86_64, built in podman or docker)
+- `make mobile`: the Android APK, `build/android/age-of-anything.apk`
+- `make all`: all three
+- `make serve`: serves what is built on the local network (port 8080, `PORT=` to change) and prints the line to run on
+  the Deck, in Desktop mode's Konsole: `curl -fsSL http://<your-mac>:8080/deck.sh | sh`. That downloads the build,
+  installs it to `~/Games/age_of_anything_lobster` and adds the launcher ("Add to Steam" from Desktop mode's menu).
+  The APK is served too, if built. `make deck serve` builds and serves in one go.
+
 ## Try the mods
 
 Mods are folders in `mods/` (how to make one: `docs/modding.md`). Each loads only when asked for:
