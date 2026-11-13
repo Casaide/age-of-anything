@@ -496,6 +496,27 @@
      "hand_l": "tool.satchel",
      "head_gear": "hat.veil"
     }
+   },
+   "large": {
+    "2": {
+     "hand_r": "weapon.lance",
+     "hand_l": "shield.parma",
+     "head_gear": "helm.galea",
+     "torso": "armour.bronze"
+    }
+   },
+   "scout": {
+    "1": {
+     "head_gear": "hat.petasus"
+    }
+   },
+   "mounted_archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.cone",
+     "torso": "armour.bronze"
+    }
    }
   }
  },

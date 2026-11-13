@@ -251,3 +251,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-13: Culture kits: a culture says in data what each line wears in each age, and the Romans now field the concept sheets' legionaries instead of whatever the generator picked (#444).
 - 2026-11-13: The Roman sheet's markers as parts: sun hat, pectoral, oval scutum, the archer's cone helmet and beard, the skirmisher's wolf pelt, the priest's veil and white beard, the hero's lion hood (#448).
 - 2026-11-13: The Greeks in their kit: linen and scale corslets, the muscle cuirass, the pilos, Thracian, Corinthian and Attic helmets, the hoplon with its lambda, the white oval and the wicker crescent, the Cretan band, the fox cap and the priest's wreath (#451).
+- 2026-11-13: The Roman cavalry in their sheet kit, with a flat oval shield that stays clear of the horse; rider_check catches a shield cut into a mount (#455).
