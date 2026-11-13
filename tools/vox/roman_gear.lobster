@@ -14,6 +14,7 @@
 //   roman_wolf.vox         hood.wolf: the skirmisher's wolf pelt, its muzzle on his brow, down his back (#448)
 //   roman_veil.vox         hat.veil: the healer priest's mantle drawn over his head, and his long white beard (#448)
 //   roman_lion.vox         hero.lion_hood: a lion's scalp over the head, its mane to the shoulders (#448)
+//   roman_parma.vox        shield.parma: the cavalryman's flat oval, smaller than the scutum, clear of his horse (#455)
 //   lobster tools/vox/roman_gear.lobster
 import .voxwrite
 import .worn
@@ -209,3 +210,16 @@ vw_fill(lion, int3 { -9, -10, 55 }, int3 { 9, 9, 80 }) c:
     elif mane and c.z > 57.0: MANE
     else: 0
 save("roman_lion", lion, HEAD, "head")
+
+// the cavalryman's shield (#455): a flat oval, short enough to ride clear of the horse; team colour, a bronze rim, a boss
+let parma = vw_piece { "parma", 0 }
+vw_fill(parma, int3 { -16, -2, -11 }, int3 { 16, 6, 11 }) c:
+    let e = vw_sq(c.x / 15.5) + vw_sq(c.z / 10.5)
+    let d = c.y - 1.2 * (1.0 - vw_sq(c.z / 11.0))
+    let boss = vw_ball(c, float3 { 0.0, 2.4, 0.0 }, float3 { 2.6, 1.8, 2.6 })
+    if boss: BRASS
+    elif e > 1.0 or d > 0.0 or d < -1.6: 0
+    elif d < -0.8: LEATHER
+    elif e > 0.82: BRONZE
+    else: TEAM
+save("roman_parma", parma, float3_0, "hand")
