@@ -431,17 +431,18 @@
    "spear": {
     "1": {
      "hand_r": "weapon.spear.wood",
-     "head_gear": "helm.cap"
+     "hand_l": "shield.scutum_oval",
+     "head_gear": "hat.petasus"
     },
     "2": {
      "hand_r": "weapon.spear.bronze",
-     "hand_l": "shield.scutum",
+     "hand_l": "shield.scutum_oval",
      "head_gear": "helm.cap",
-     "torso": "armour.leather"
+     "torso": "armour.pectoral"
     },
     "3": {
      "hand_r": "weapon.spear.bronze",
-     "hand_l": "shield.scutum",
+     "hand_l": "shield.scutum_oval",
      "head_gear": "helm.cap",
      "torso": "armour.bronze"
     }
@@ -467,21 +468,33 @@
    "archer": {
     "2": {
      "hand_r": "weapon.bow.short",
-     "back": "quiver"
+     "back": "quiver",
+     "head_gear": "helm.cone",
+     "torso": "armour.leather"
     },
     "3": {
      "hand_r": "weapon.bow.short",
      "back": "quiver",
+     "head_gear": "helm.cone",
      "torso": "armour.bronze"
     }
    },
    "skirmisher": {
     "2": {
-     "hand_r": "weapon.pilum"
+     "hand_r": "weapon.pilum",
+     "head_gear": "hood.wolf"
     },
     "3": {
      "hand_r": "weapon.pilum",
+     "head_gear": "hood.wolf",
      "torso": "armour.leather"
+    }
+   },
+   "healer": {
+    "2": {
+     "hand_r": "tool.staff.laurel",
+     "hand_l": "tool.satchel",
+     "head_gear": "hat.veil"
     }
    }
   }
