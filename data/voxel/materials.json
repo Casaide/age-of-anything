@@ -258,5 +258,15 @@
  "faience": {
   "rgb": "#3a7ab0",
   "shine": 0.5
+ },
+ "lacquer_black": {
+  "rgb": "#2a2422",
+  "shine": 0.3
+ },
+ "straw": {
+  "rgb": "#d8bc6c"
+ },
+ "slate": {
+  "rgb": "#3a5a7a"
  }
 }
