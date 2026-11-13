@@ -16,37 +16,11 @@
 //   roman_lion.vox         hero.lion_hood: a lion's scalp over the head, its mane to the shoulders (#448)
 //   lobster tools/vox/roman_gear.lobster
 import .voxwrite
+import .worn
 
 let METAL, BRASS, HIDE, LEATHER, BRONZE, TEAM, GOLD, HAIR, WOLF, WHITE, MANE, MANTLE = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 let COLOURS = [ 0, 0x8e9298, 0xc9a24a, 0x8a6a48, 0x5e4029, 0xb8893a, 0x9b2f2f, 0xe8c86a, 0x1e1b19, 0x8a8276, 0xf0ebe0, 0x6b4423, 0xcdb98a ]
-let HEAD = float3 { 0.0, 1.0, 67.0 }
-let CHEST = float3 { 0.0, 0.0, 57.0 }
-
-// (the head's own cut, as roman.vox: the face below the brow in front, the ears and cheeks at the sides)
-def face_cut(c:float3) -> bool: return (c.y > 1.0 and c.z < 70.8) or (c.y > -1.8 and c.z < 68.2)
-
-// the torso's outline, `out` voxels out from roman.vox's
-def torso(c:float3, out:float) -> bool:
-    return vw_taper(c, 44.0, 57.0, float2 { 0.0, 0.0 }, float2 { 0.0, -0.3 }, float2 { 7.0 + out, 4.4 + out }, float2 { 9.4 + out, 5.0 + out }) or
-        vw_taper(c, 57.0, 61.5 + out * 0.5, float2 { 0.0, -0.3 }, float2 { 0.0, -0.6 }, float2 { 9.4 + out, 5.0 + out }, float2 { 7.0 + out, 3.8 + out })
-
-def neck(c:float3) -> bool: return c.z > 59.0 and abs(c.x) < 3.2 and c.y > -2.0
-
-// the skirt's outline below the belt (z 23.5 to 44), `out` voxels out
-def skirt(c:float3, z0:float, out:float) -> bool:
-    return vw_taper(c, z0, 44.0, float2 { 0.0, -0.4 }, float2 { 0.0, 0.0 }, float2 { 8.4 + out, 5.6 + out }, float2 { 7.2 + out, 4.6 + out })
-
-def around(c:float3) -> float: return atan2(float2 { c.x, c.y })
-
-def save(name:string, p:vw_piece, pt:float3, pt_name:string):
-    let lo = fold(p.vs, p.vs[0]) a, v: min(a, v)
-    let hi = fold(p.vs, p.vs[0]) a, v: max(a, v)
-    let centre = (float(lo) + float(hi - lo + int3_1) / 2.0 - pt) / 2.0  // (its box's centre from the point, in body units)
-    vw_write("../../data/voxel/models/" + name + ".vox", [ p ], COLOURS)
-    print "  {name}: at [\"{pt_name}\", {centre.x}, {centre.y}, {centre.z}]"
-
-// helmets: a bowl over the hair, open in front below the brow
-def bowl(c:float3) -> bool: return vw_ball(c, float3 { 0.0, -0.5, 69.6 }, float3 { 4.9, 5.3, 5.1 }) and not face_cut(c)
+def save(name:string, p:vw_piece, pt:float3, pt_name:string): worn_save(name, p, pt, pt_name, COLOURS)
 
 let galea = vw_piece { "galea", 0 }
 vw_fill(galea, int3 { -6, -8, 63 }, int3 { 6, 5, 79 }) c:
