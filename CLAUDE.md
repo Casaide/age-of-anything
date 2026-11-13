@@ -150,7 +150,7 @@ src/             the game, in Lobster, on Creel (the lib/, view/, net/ named bel
 assets/          SVG icons and textures, audio (rendered), fonts
 tests/           batch.sh (the tests side by side), sheets/*.json (concept sheet specs), mods/ (bad-mod fixtures)
 mods/            mods (docs/modding.md): data + Lobster models; scifi_test is the example. mods_private/ is gitignored
-tools/           mods/ (new_mod.sh, pack.sh), perf/, deck/pull_lobster.sh
+tools/           mods/ (new_mod.sh, pack.sh), perf/, deck/ (pull_lobster.sh, install_http.sh), serve.sh (make serve)
 ```
 
 ## Commands
@@ -183,6 +183,7 @@ lobster race_matches.lobster -- reed_meadow; lobster mass_battle.lobster -- 2; l
 ./shards.sh <tool.lobster> [args] [jobs=N]                         # any sharded tool side by side
 ./gen_reset.sh                                      # after adding a sim global: reset and save code
 ./textures.sh; ./icons.sh                                          # SVG textures and icons as PNGs (rsvg-convert), after one changes
+make [mac|deck|mobile|all|serve]                                   # every platform's build by its script below; serve: the Deck fetches it (#446)
 src/deck/build.sh                                                  # the Deck build (podman machine `aoa-build` running)
 src/android/build.sh                                               # the Android APK (build/android/age-of-anything.apk; adb install -r it)
 src/prebake.sh                                                     # every building and prop baked once into src/baked/ (the builds ship it, D-185)
