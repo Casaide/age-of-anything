@@ -850,15 +850,26 @@ if has_s(args, "vbcheck"):
     if akb_check(checked) > 0: set_exit_code(1)
     bake_quit = true
 // prebake: every prop and every architecture's buildings baked into the shipped folder (src/prebake.sh), then quit.
+// shard:<i>/<n>: the props are the first piece, each architecture one more, and this bakes every n-th piece from the
+// i-th, for n processes side by side (each thing is its own files, so they never write the same one, #456). `pieces`:
+// how many pieces there are.
 if has_s(args, "prebake"):
     bake_cache_dir = bake_shipped_dir
     bake_shipped_dir = ""
     bake_live = false  // (no progress drawn: the window's frames aren't needed, and a hidden one can stop the bake)
-    let t0 = seconds_elapsed()
-    print "prebake: {bake_doodads()} prop frames in {int(seconds_elapsed() - t0)} s"
-    let archs = all_architectures()
-    let t1 = seconds_elapsed()
-    print "prebake: {bake_buildings_for(archs)} building frames ({concat_string(archs, ", ")}) in {int(seconds_elapsed() - t1)} s"
+    var shard, shards = 0, 1
+    for(args) a:
+        if starts_with(a, "shard:"):
+            let i, n = split_string(a.substring(6, a.length - 6), "/")
+            shard, shards = string_to_int(i), string_to_int(n)
+    let pieces = all_architectures()
+    pieces.insert(0, "")
+    if has_s(args, "pieces"): print "prebake: {pieces.length} pieces"  // (how many, for prebake.sh's shards)
+    else: for(pieces) arch, n:
+        if n % shards == shard:
+            let t0 = seconds_elapsed()
+            if arch == "": print "prebake: {bake_doodads()} prop frames in {int(seconds_elapsed() - t0)} s"
+            else: print "prebake: {bake_buildings_for([ arch ])} building frames ({arch}) in {int(seconds_elapsed() - t0)} s"
     bake_quit = true
 
 // A line in the middle of an empty screen while the link is made (true: the window was closed).
