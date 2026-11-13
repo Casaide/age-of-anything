@@ -247,3 +247,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-10: Trees, rocks, stone and gold rebuilt voxel by voxel at the screen's density, as the approved mockup: oak, pine and willow in three styles with their felled and stump stages, granite boulders, limestone and gold deposits as they're mined (D-247, #410).
 - 2026-11-10: Creel, the engine, split into its own public repo (`Casaide/creel`): 79 modules that compile without the game; the game uses it as a submodule (D-248, #428).
 - 2026-11-10: The lobby's tech tree no longer hangs the game for two minutes on a race not yet baked. It makes one building picture a frame instead (#430).
+- 2026-11-13: The Roman kit: a curved scutum with gold wings, a tall bronze montefortino with a black horsehair tail, and the centurion's silvered helmet with a crest across it for the hero (#442).

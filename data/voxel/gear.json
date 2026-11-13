@@ -693,175 +693,26 @@
     1,
     0
    ],
-   "_doc": "a tall curved shield: three panels in team colour on a wooden back, a boss, a gold bar",
+   "_doc": "a tall curved shield: team colour, a bronze rim and spina, a boss, gold wings (roman_scutum.vox)",
    "shapes": [
     {
-     "box": [
+     "model": "roman_scutum.vox",
+     "at": [
       "hand",
-      1.8,
-      0.75,
-      0
-     ],
-     "n": [
-      0,
-      1,
-      0
-     ],
-     "half": [
-      3.0,
-      0.3,
-      9.1
-     ],
-     "round": 0.15,
-     "mat": "wood"
-    },
-    {
-     "box": [
-      "hand",
-      1.8,
+      0.5,
       1.0,
       0
      ],
-     "n": [
-      0,
-      1,
-      0
-     ],
-     "half": [
-      2.8,
-      0.3,
-      8.8
-     ],
-     "round": 0.1,
-     "mat": "team"
-    },
-    {
-     "box": [
-      "hand",
-      1.8,
-      0.03,
-      -4.22
-     ],
-     "n": [
-      0,
-      0.87,
-      0.5
-     ],
-     "half": [
-      1.5,
-      0.3,
-      9.1
-     ],
-     "round": 0.15,
-     "mat": "wood"
-    },
-    {
-     "box": [
-      "hand",
-      1.8,
-      0.25,
-      -4.1
-     ],
-     "n": [
-      0,
-      0.87,
-      0.5
-     ],
-     "half": [
-      1.4,
-      0.3,
-      8.8
-     ],
-     "round": 0.1,
-     "mat": "team"
-    },
-    {
-     "box": [
-      "hand",
-      1.8,
-      0.03,
-      4.22
-     ],
-     "n": [
-      0,
-      0.87,
-      -0.5
-     ],
-     "half": [
-      1.5,
-      0.3,
-      9.1
-     ],
-     "round": 0.15,
-     "mat": "wood"
-    },
-    {
-     "box": [
-      "hand",
-      1.8,
-      0.25,
-      4.1
-     ],
-     "n": [
-      0,
-      0.87,
-      -0.5
-     ],
-     "half": [
-      1.4,
-      0.3,
-      8.8
-     ],
-     "round": 0.1,
-     "mat": "team"
-    },
-    {
-     "bead": [
-      "hand",
-      1.8,
-      1.5,
-      0
-     ],
-     "r": 1.4,
-     "mat": "metal"
-    },
-    {
-     "cap": [
-      "hand",
-      4.4,
-      1.45,
-      0
-     ],
-     "to": [
-      "hand",
-      9.4,
-      1.45,
-      0
-     ],
-     "r": [
-      0.35,
-      0.35
-     ],
-     "mat": "gold"
-    },
-    {
-     "cap": [
-      "hand",
-      -0.8,
-      1.45,
-      0
-     ],
-     "to": [
-      "hand",
-      -5.8,
-      1.45,
-      0
-     ],
-     "r": [
-      0.35,
-      0.35
-     ],
-     "mat": "gold"
+     "mats": {
+      "1": "metal",
+      "2": "bronze",
+      "3": "hide",
+      "4": "wood",
+      "5": "bronze",
+      "6": "team",
+      "7": "gold"
+     },
+     "_doc": "roman_scutum.vox (tools/vox/roman_gear.lobster)"
     }
    ]
   },
@@ -988,8 +839,8 @@
       "at": [
        "head",
        0.0,
-       -1.0,
-       3.0
+       -1.5,
+       1.75
       ],
       "mats": {
        "1": "metal",
@@ -997,9 +848,11 @@
        "3": "hide",
        "4": "leather",
        "5": "bronze",
-       "6": "team"
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
       },
-      "_doc": "the Roman body: a montefortino, roman_montefortino.vox"
+      "_doc": "the Roman body: a tall bronze montefortino with a black horsehair tail, roman_montefortino.vox"
      }
     ]
    }
@@ -1619,7 +1472,7 @@
       "at": [
        "head",
        0.0,
-       -1.25,
+       -1.5,
        2.25
       ],
       "mats": {
@@ -1628,7 +1481,9 @@
        "3": "hide",
        "4": "leather",
        "5": "bronze",
-       "6": "team"
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
       },
       "_doc": "the Roman body (#417): roman_galea.vox, from the concept sheet"
      }
@@ -1674,7 +1529,9 @@
        "3": "hide",
        "4": "leather",
        "5": "bronze",
-       "6": "team"
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
       },
       "_doc": "the Roman body: a leather jerkin with pteruges, roman_leather.vox"
      }
@@ -1708,7 +1565,9 @@
        "3": "hide",
        "4": "leather",
        "5": "bronze",
-       "6": "team"
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
       },
       "_doc": "the Roman body: mail doubled over the shoulders, roman_mail.vox"
      }
@@ -1742,7 +1601,9 @@
        "3": "hide",
        "4": "leather",
        "5": "bronze",
-       "6": "team"
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
       },
       "_doc": "the Roman body: the segmentata and its apron, roman_segmentata.vox"
      }
@@ -2044,6 +1905,43 @@
      "mat": "gold"
     }
    ]
+  },
+  "centurion": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "the Roman hero's helmet (hero.helm_transverse): a silvered galea, a crest across it",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "metal",
+      "_doc": "a metal cap over the crown"
+     }
+    ],
+    "roman": [
+     {
+      "model": "roman_centurion.vox",
+      "at": [
+       "head",
+       0.0,
+       -1.5,
+       2.5
+      ],
+      "mats": {
+       "1": "metal",
+       "2": "bronze",
+       "3": "hide",
+       "4": "leather",
+       "5": "bronze",
+       "6": "team",
+       "7": "gold",
+       "8": "mane"
+      },
+      "_doc": "the Roman body: roman_centurion.vox"
+     }
+    ]
+   }
   }
  },
  "parts": [
@@ -2070,6 +1968,14 @@
   {
    "part": "shield.scutum",
    "gear": "scutum"
+  },
+  {
+   "part": "hero.helm_transverse",
+   "gear": "centurion"
+  },
+  {
+   "part": "hero.helm_transverse_low",
+   "gear": "centurion"
   },
   {
    "part": "helm.galea",

@@ -1,15 +1,17 @@
 // The Roman body's worn kit (#417), drawn around roman.vox in its voxels (2 a body unit) from the approved concept
 // sheet, one model each, worn on the body point it rides (its offset printed for gear.json's `roman` fits):
 //   roman_galea.vox        helm.galea: iron bowl, a brass band over the brow, cheek guards, a flared neck guard, a crest
-//   roman_montefortino.vox helm.cap: a bronze bowl, a tall knob with a horsehair tuft, a short neck lip
+//   roman_montefortino.vox helm.cap: a tall bronze bowl, a knob with a black horsehair tail down the back, a short neck lip
 //   roman_leather.vox      armour.leather: a leather jerkin to the waist, strips (pteruges) at the shoulders and hips
 //   roman_mail.vox         armour.bronze: mail to the hip, doubled over the shoulders
 //   roman_segmentata.vox   armour.lorica: iron bands round the body and over the shoulders, a studded apron below
+//   roman_scutum.vox       shield.scutum: a tall curved shield in team colour, rim, spina, boss, gold wings (#442)
+//   roman_centurion.vox    hero.helm_transverse: a silvered galea, a team crest across it (#442)
 //   lobster tools/vox/roman_gear.lobster
 import .voxwrite
 
-let METAL, BRASS, HIDE, LEATHER, BRONZE, TEAM = 1, 2, 3, 4, 5, 6
-let COLOURS = [ 0, 0x8e9298, 0xc9a24a, 0x8a6a48, 0x5e4029, 0xb8893a, 0x9b2f2f ]
+let METAL, BRASS, HIDE, LEATHER, BRONZE, TEAM, GOLD, HAIR = 1, 2, 3, 4, 5, 6, 7, 8
+let COLOURS = [ 0, 0x8e9298, 0xc9a24a, 0x8a6a48, 0x5e4029, 0xb8893a, 0x9b2f2f, 0xe8c86a, 0x1e1b19 ]
 let HEAD = float3 { 0.0, 1.0, 67.0 }
 let CHEST = float3 { 0.0, 0.0, 57.0 }
 
@@ -42,7 +44,7 @@ def bowl(c:float3) -> bool: return vw_ball(c, float3 { 0.0, -0.5, 69.6 }, float3
 let galea = vw_piece { "galea", 0 }
 vw_fill(galea, int3 { -6, -8, 63 }, int3 { 6, 5, 79 }) c:
     let ax = abs(c.x)
-    let nape = c.y < -3.0 and c.y > -7.2 and c.z > 64.6 and c.z < 66.2 and ax < 4.6 - (c.y + 3.0) * -0.3
+    let nape = c.y < -3.0 and c.y > -7.6 and c.z > 64.6 and c.z < 66.2 and ax < 5.0 - (c.y + 3.0) * -0.4
     let cheek = ax > 3.8 and ax < 4.8 and c.y > 0.0 and c.y < 2.6 and c.z > 64.6 and c.z < 68.3
     let knob = vw_ball(c, float3 { 0.0, -0.5, 75.0 }, float3 { 0.8, 0.8, 0.9 })
     // a crest of horsehair fore and aft in team colour, standing on the knob: what makes it a galea at game size
@@ -56,13 +58,18 @@ vw_fill(galea, int3 { -6, -8, 63 }, int3 { 6, 5, 79 }) c:
 save("roman_galea", galea, HEAD, "head")
 
 let monte = vw_piece { "montefortino", 0 }
-vw_fill(monte, int3 { -6, -8, 64 }, int3 { 6, 5, 81 }) c:
+vw_fill(monte, int3 { -6, -12, 60 }, int3 { 6, 5, 80 }) c:
     let lip = c.y < -3.0 and c.y > -6.4 and c.z > 65.6 and c.z < 66.8 and abs(c.x) < 4.0
-    let knob = vw_taper(c, 74.0, 77.0, float2 { 0.0, -0.5 }, float2 { 0.0, -0.5 }, float2 { 1.2, 1.2 }, float2 { 0.6, 0.6 })
-    let plume = vw_ball(c, float3 { 0.0, -1.2, 78.4 }, float3 { 1.4, 2.4, 1.8 }) and c.z > 76.8  // a horsehair tuft on the knob
-    if plume: TEAM
-    elif knob or lip: BRONZE
-    elif bowl(c) and c.z > 67.0: BRONZE
+    // a taller bowl than the galea's, rising to a point under the knob: its shape tells it at game size
+    let tall = vw_ball(c, float3 { 0.0, -0.5, 70.4 }, float3 { 4.8, 5.2, 6.0 }) and not face_cut(c)
+    let knob = vw_taper(c, 75.6, 77.6, float2 { 0.0, -0.5 }, float2 { 0.0, -0.5 }, float2 { 1.1, 1.1 }, float2 { 0.7, 0.7 })
+    // the black horsehair tail from the knob, hanging down the back
+    let t = (77.0 - c.z) / 14.0  // 0 at the knob, 1 at the shoulders
+    let tail = t > 0.0 and t < 1.0 and abs(c.x) < 1.6 - t * 0.6 and abs(c.y - (-1.5 - 5.5 * sqrt(t) - 1.0 * t)) < 1.1
+    if knob: BRONZE
+    elif tail and not tall: HAIR
+    elif lip: BRONZE
+    elif tall and c.z > 67.0: (if c.z < 68.4: BRASS else: BRONZE)
     else: 0
 save("roman_montefortino", monte, HEAD, "head")
 
@@ -100,3 +107,36 @@ vw_fill(seg, int3 { -13, -8, 33 }, int3 { 13, 8, 64 }) c:
     elif apron: (if (int(floor(c.z)) % 3 == 0): BRASS else: LEATHER)
     else: 0
 save("roman_segmentata", seg, CHEST, "chest")
+
+// the scutum: a tall rectangle curved round the bearer (the face bowed out in front, +y), team colour, a bronze rim and
+// spina, a boss in the middle, gold wings and bolts out from it; held on the hand at its middle
+let scutum = vw_piece { "scutum", 0 }
+// (drawn lying on its side: the hand's frame holds it with its x up, so the shield's height runs along x, its width along z)
+vw_fill(scutum, int3 { -22, -2, -14 }, int3 { 22, 8, 14 }) c:
+    let ax = abs(c.z)
+    let az = abs(c.x)
+    let face = 5.0 * (1.0 - vw_sq(c.z / 14.0))  // the curve: the face's y across the shield
+    let d = c.y - face
+    let boss = vw_ball(c, float3 { 0.0, 5.6, 0.0 }, float3 { 3.0, 2.4, 3.0 })
+    if boss: BRASS
+    elif ax > 13.0 or az > 21.0 or d > 0.0 or d < -1.6: 0
+    elif d < -0.8: LEATHER                           // the wooden back
+    elif ax > 12.0 or az > 20.0 or ax < 0.8: BRONZE  // the rim and the spina
+    // the wings: two rays up and out, two down and out, one straight out, each side
+    elif ax > 3.0 and ax < 11.5 and (abs(az - (ax - 3.0) * 0.7 - 1.5) < 0.8 or az < 0.8): GOLD
+    else: TEAM
+save("roman_scutum", scutum, float3_0, "hand")
+
+// the centurion's helmet (the hero): a silvered galea with a tall crest across it, ear to ear, in team colour
+let cent = vw_piece { "centurion", 0 }
+vw_fill(cent, int3 { -10, -8, 63 }, int3 { 10, 5, 81 }) c:
+    let ax = abs(c.x)
+    let nape = c.y < -3.0 and c.y > -7.6 and c.z > 64.6 and c.z < 66.2 and ax < 5.0 - (c.y + 3.0) * -0.4
+    let cheek = ax > 3.8 and ax < 4.8 and c.y > 0.0 and c.y < 2.6 and c.z > 64.6 and c.z < 68.3
+    let crest = abs(c.y + 0.6) < 1.6 and vw_sq(c.x / 9.0) + vw_sq((c.z - 72.0) / 7.0) <= 1.0 and c.z > 72.6  // (3 voxels thick end to end: thinner, the bake loses its tips)
+    if crest: TEAM
+    elif bowl(c): (if c.z < 71.9 and c.y > -1.0 and c.z > 70.0: GOLD else: METAL)
+    elif nape: (if c.y < -6.0: GOLD else: METAL)
+    elif cheek: GOLD
+    else: 0
+save("roman_centurion", cent, HEAD, "head")
