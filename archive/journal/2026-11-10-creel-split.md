@@ -43,3 +43,12 @@ Still here: the frame loop with its options, the panels, pad, touch and cursors.
 ## Pictures
 
 None: nothing visible changed.
+
+## Later the same day: panels are the game's, the kit is Creel's (#433)
+
+Claude moved the top bar, command panel, tech tree, pad, touch and cursors to Creel because they compiled there.
+Dominic, 2026-11-10: "Not sure top bars and all belong in engine. Surely the tooling and libs to render them do,
+maybe easy to copy, but logically UI like this is game specific?" He's right, and "it compiles without the game"
+is the wrong test for UI. The move was undone before it merged. What went to Creel instead is `game/hud_kit`: the
+drawing pieces the top bar and panel were built from (scale, icons, text, wells, frames, buttons, bars, the cost
+row, the tooltip card). Pad and touch stay here until their calls into the panel are hooks.
