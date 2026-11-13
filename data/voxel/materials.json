@@ -254,5 +254,9 @@
  "lacquer": {
   "rgb": "#7a2e1e",
   "shine": 0.4
+ },
+ "faience": {
+  "rgb": "#3a7ab0",
+  "shine": 0.5
  }
 }
