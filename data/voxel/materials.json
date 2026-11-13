@@ -247,5 +247,12 @@
  },
  "habit": {
   "rgb": "#3a2e26"
+ },
+ "sash": {
+  "rgb": "#a83228"
+ },
+ "lacquer": {
+  "rgb": "#7a2e1e",
+  "shine": 0.4
  }
 }

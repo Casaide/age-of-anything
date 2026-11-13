@@ -254,3 +254,4 @@ One line per moment worth remembering. Newest at the bottom.
 - 2026-11-13: The Roman cavalry in their sheet kit, with a flat oval shield that stays clear of the horse; rider_check catches a shield cut into a mount (#455).
 - 2026-11-13: The Royal kingdom in its kit: a high-medieval body in a long-sleeved tunic and hose, the gambeson and kettle hat, mail and the nasal helmet, the knight's surcoat and great helm, the heater shield, the archer's hood, the slinger's coif and the monk's habit (#462).
 - 2026-11-13: The game moves onto Creel's main: riders' legs hang down their mount's sides, and the next game's engine work comes along (#461).
+- 2026-11-13: The Steppe in its kit: a body in a long team deel with a red sash, braids and a drooping moustache, felt boots; the quilted coat, lacquered and iron lamellar, the spiked helmet, the fur hat, the archer's white felt hat, the skirmisher's sheepskin and the shaman's feathers (#465).

@@ -896,6 +896,111 @@
   }
  },
  "steppe": {
+  "kits": {
+   "_doc": "what each line wears from an age on (#465, from the concept sheet: human-redesign/steppe-foot.png and steppe-riders.png); as the imperial kits",
+   "spear": {
+    "1": {
+     "hand_r": "weapon.spear.wood",
+     "head_gear": "hat.fur",
+     "torso": "armour.leather"
+    },
+    "2": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.round",
+     "head_gear": "helm.spike",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.spear.bronze",
+     "hand_l": "shield.round",
+     "head_gear": "helm.spike",
+     "torso": "armour.lamellar"
+    }
+   },
+   "infantry": {
+    "1": {
+     "hand_r": "weapon.club.bone",
+     "head_gear": "hat.fur"
+    },
+    "2": {
+     "hand_r": "weapon.sword.bronze",
+     "hand_l": "shield.round",
+     "head_gear": "helm.spike",
+     "torso": "armour.lamellar"
+    },
+    "3": {
+     "hand_r": "weapon.sword.flared_sabre",
+     "hand_l": "shield.round",
+     "head_gear": "helm.steppe_spike",
+     "torso": "armour.lamellar_iron"
+    }
+   },
+   "archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "hat.felt"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "hat.felt",
+     "torso": "armour.leather"
+    }
+   },
+   "skirmisher": {
+    "2": {
+     "torso": "armour.sheepskin"
+    },
+    "3": {
+     "head_gear": "hat.fur",
+     "torso": "armour.sheepskin"
+    }
+   },
+   "healer": {
+    "2": {
+     "hand_r": "tool.staff.horsehair",
+     "hand_l": "tool.satchel.felt",
+     "head_gear": "hat.shaman"
+    }
+   },
+   "large": {
+    "2": {
+     "hand_r": "weapon.lance",
+     "head_gear": "helm.spike",
+     "torso": "armour.lamellar"
+    },
+    "3": {
+     "hand_r": "weapon.lance",
+     "head_gear": "helm.spike",
+     "torso": "armour.lamellar_iron"
+    }
+   },
+   "scout": {
+    "1": {
+     "head_gear": "hat.fur",
+     "torso": "armour.leather"
+    }
+   },
+   "mounted_archer": {
+    "2": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "hat.fur",
+     "torso": "armour.leather"
+    },
+    "3": {
+     "hand_r": "weapon.bow.short",
+     "back": "quiver",
+     "head_gear": "helm.spike",
+     "torso": "armour.lamellar"
+    }
+   }
+  },
+  "bodies": {
+   "_doc": "the culture's own body for a creature, in the view only (#465)",
+   "human": "steppe"
+  },
   "cloth": [
    "#c8a165",
    "#8a6a3c"
