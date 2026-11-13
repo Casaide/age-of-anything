@@ -1,4 +1,4 @@
 flat_test  sewer rats with cheese hammers | romans: 3d3990cd1ccaa0a8 8f141a7d77fb0a29
 reed_meadow  angry swamp frogs | moonbears: a80893ee79d849f0 8f141a7d77fb0a29
-siege_vale siege centaur romans | tiny vikings: 19f29327e4d781aa 8f141a7d77fb0a29
-reed_meadow_2v2  spiders | aztecs: 38c6d0e40644cde6 8f141a7d77fb0a29
+siege_vale siege centaur romans | tiny vikings: a9530e0e90ad4b02 8f141a7d77fb0a29
+reed_meadow_2v2  spiders | aztecs: 6045c4c62050b15f 8f141a7d77fb0a29

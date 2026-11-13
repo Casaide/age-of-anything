@@ -254,5 +254,30 @@
  "lacquer": {
   "rgb": "#7a2e1e",
   "shine": 0.4
+ },
+ "faience": {
+  "rgb": "#3a7ab0",
+  "shine": 0.5
+ },
+ "lacquer_black": {
+  "rgb": "#2a2422",
+  "shine": 0.3
+ },
+ "straw": {
+  "rgb": "#d8bc6c"
+ },
+ "slate": {
+  "rgb": "#3a5a7a"
+ },
+ "teal": {
+  "rgb": "#2a7a6a"
+ },
+ "obsidian": {
+  "rgb": "#1c1a24",
+  "shine": 0.8
+ },
+ "blond": {
+  "rgb": "#c8a060",
+  "fur": true
  }
 }
