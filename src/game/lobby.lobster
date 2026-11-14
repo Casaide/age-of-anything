@@ -1013,7 +1013,9 @@ def fe_net_page() -> string:
         y += 60.0 * fe_k
     if not fe_hosts.length: y += 60.0 * fe_k
     if fe_scanned and lan_scan_note() != "":  // what the scan saw (#506): this machine's address, who took the call
-        ui_text(float2 { x, y - 18.0 * fe_k }, lan_scan_note(), fz(13.0), lk.dim)
+        let note = fe_wrap(lan_scan_note(), fz(13.0), w)
+        for(note) line, k: ui_text(float2 { x, y - 18.0 * fe_k + float(k) * 17.0 * fe_k }, line, fz(13.0), lk.dim)
+        y += float(note.length - 1) * 17.0 * fe_k
     y += 10.0 * fe_k
     fe_box(20, float2 { x, y }, float2 { w - 160.0 * fe_k, 48.0 * fe_k }, fe_address, "or an address: 192.168.1.20", fz(19.0), false)
     if ui_button(float2 { x + w - 150.0 * fe_k, y }, float2 { 150.0 * fe_k, 48.0 * fe_k }, "Join", false) and fe_address.fe_trim() != "": go = "join"
