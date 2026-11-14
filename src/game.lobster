@@ -952,7 +952,11 @@ def make_match() -> bool:
         link = net_join(join_ip, NET_PORT)
         var msg = "Joining {join_ip}..."
         var said = false
+        var said_why = false
         while not joined_bots.length:
+            if link.error != "" and not said_why:
+                print "net: could not join {join_ip}: {link.error}"  // (in the log too: #506)
+                said_why = true
             if net_wait_frame(if link.error != "": "Could not join {join_ip}: {link.error}" else: msg): return false
             if link.error == "" and net_ready(link):
                 if not said:
