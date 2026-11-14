@@ -25,7 +25,7 @@ def keep_frame(name:string, sprite:string, w:int, h:int, anchor:float2):
     let rows = map(h) y: map(w) x: float4 { float(sprite[(y * w + x) * 4]) / 255.0, float(sprite[(y * w + x) * 4 + 1]) / 255.0,
                                             float(sprite[(y * w + x) * 4 + 2]) / 255.0, float(sprite[(y * w + x) * 4 + 3]) / 255.0 }
     add_sheet(gl.create_texture(rows, pack_formats), float2 { float(w), float(h) }, pack_formats)
-    frame_at.set(name, frames.length)
+    frame_named(name)
     frames.push(Frame { sheet_tex.length - 1, 0, 0, w, h, int(anchor.x + 0.5), int(anchor.y + 0.5), 1.0 / ART_K })
 
 // ArtKit._split_shadow: the opaque art, and the see-through ground shadow, as two sprites the same size.
@@ -55,7 +55,7 @@ def ak_stem(name:string) -> string: return ak_stem_in(bake_cache_dir, name)
 def ak_load_frames(fs:[AkFrame]) -> bool:
     for(fs) f:
         add_sheet_later(f.file, float2 { float(f.w), float(f.h) }, pack_formats)
-        frame_at.set(f.name, frames.length)
+        frame_named(f.name)
         frames.push(Frame { sheet_tex.length - 1, 0, 0, f.w, f.h, f.ax, f.ay, 1.0 / ART_K })
     return true
 

@@ -86,6 +86,7 @@ import game.fog_look
 import color
 import texture
 import view.atmosphere
+import game.mood
 
 let DATA = "../data"
 let PROMPTS = [ "angry swamp frogs with reed spears", "sewer rats with cheese hammers", "centaur romans", "flying greeks with wings",
@@ -1122,6 +1123,39 @@ def g_atmosphere():
             atmo_set(j, m)
             for([ "shadow", "highlight", "haze", "bloom" ]) knob:
                 expect(atmo_nums[find(ATMO_NUMS) k: k == knob] > 0.0, "atmosphere: the mood {m} has some {knob}, not a flat frame")
+    // The shade buffer (#481): every mood shades, lightly and cool, warms what's lit a little, and keeps its units
+    // readable (Dominic: units must never get lost in shade); the knobs we haven't adopted stay off.
+    for(moods) m:
+        if m != "none":
+            atmo_set(j, m)
+            let shade = atmo_opt_num("sun_shade")
+            expect(shade > 0.0 and atmo_shading(), "atmosphere: the mood {m} shades ({shade})")
+            let sc = atmo_opt_cols[find(ATMO_OPT_COLS) k: k == "shade_colour"]
+            // (how much light the shade leaves, as the pass works it out: lit * mix(1, shade_colour, sun_shade))
+            let left = 1.0 - shade * (1.0 - (sc.x * 0.299 + sc.y * 0.587 + sc.z * 0.114))
+            expect(left >= 0.55 and left <= 0.85, "atmosphere: the mood {m}\'s shade is light: it leaves {left} of the light")
+            expect(sc.z > sc.x, "atmosphere: the mood {m}\'s shade is cool ({sc})")
+            expect(atmo_opt_num("sun") > 0.0 and atmo_opt_num("sun") <= 0.3, "atmosphere: the mood {m}\'s sun warms a little ({atmo_opt_num("sun")})")
+            expect(atmo_opt_num("unit_lift") >= 0.5 and atmo_opt_num("unit_rim") >= 0.3, "atmosphere: the mood {m} keeps its units readable in shade (lift {atmo_opt_num("unit_lift")}, rim {atmo_opt_num("unit_rim")})")
+            for([ "paint", "shafts", "low_fog", "deep", "woods", "mist" ]) off:
+                expect(atmo_opt_num(off) == 0.0, "atmosphere: the mood {m} leaves {off} off (not adopted, #481)")
+    expect(atmo_set(j, "none") == "" and not atmo_shading(), "atmosphere: the mood none doesn\'t shade (the frame as drawn)")
+    // Between two moods (atmo_set_between): its ends are the moods, its middle halfway between in every knob.
+    atmo_set(j, "late_afternoon")
+    let na, oa, ca = atmo_nums, atmo_opt, atmo_opt_cols
+    atmo_set(j, "golden_evening")
+    let nb, ob, cb = atmo_nums, atmo_opt, atmo_opt_cols
+    expect(atmo_set_between(j, "late_afternoon", "golden_evening", 0.0) == "" and equal(atmo_nums, na) and equal(atmo_opt, oa), "atmosphere: between two moods at 0 is the first")
+    expect(atmo_set_between(j, "late_afternoon", "golden_evening", 1.0) == "" and equal(atmo_nums, nb) and equal(atmo_opt, ob), "atmosphere: between two moods at 1 is the second")
+    expect(atmo_set_between(j, "late_afternoon", "golden_evening", 0.5) == "" and atmo_on, "atmosphere: between two moods can be set")
+    for(atmo_nums) v, i: expect(abs(v - (na[i] + nb[i]) / 2.0) < 0.0001, "atmosphere: halfway between two moods, {ATMO_NUMS[i]} is halfway ({v})")
+    for(atmo_opt) v, i: expect(abs(v - (oa[i] + ob[i]) / 2.0) < 0.0001, "atmosphere: halfway between two moods, {ATMO_OPT[i]} is halfway ({v})")
+    for(atmo_opt_cols) v, i: expect(magnitude(v - (ca[i] + cb[i]) / 2.0) < 0.0001, "atmosphere: halfway between two moods, {ATMO_OPT_COLS[i]} is halfway ({v})")
+    let mid = atmo_opt
+    expect(atmo_set_asked(j, "late_afternoon~golden_evening@0.5") == "" and equal(atmo_opt, mid), "atmosphere: atmosphere:<a>~<b>@<t> sets the light between two moods")
+    expect(atmo_set_asked(j, "golden_evening") == "" and equal(atmo_opt, ob), "atmosphere: atmosphere:<mood> still sets a mood by name")
+    let unknown_b = atmo_set_between(j, "late_afternoon", "purple_haze", 0.5)
+    expect(contains_text(unknown_b, "no mood \'purple_haze\'"), "atmosphere: between a mood and an unknown one is reported ({unknown_b})")
     expect(atmo_mood_for(j, "reed_meadow", "misty_morning") == "misty_morning", "atmosphere: atmosphere:<mood> wins over the map\'s")
     let unknown = atmo_set(j, "purple_haze")
     expect(contains_text(unknown, "no mood \'purple_haze\'") and not atmo_on, "atmosphere: an unknown mood is reported ({unknown})")
