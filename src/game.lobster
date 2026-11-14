@@ -746,6 +746,22 @@ def pad_script() -> PadIn:
         return none
     if pad_step == 104:
         expect_ok(pad_cursor == "chop", "the reticle on a tree with a worker selected shows the chop cursor ({pad_cursor})")
+        if has_s(args, "reticleshot") and shot != "":  // (captures, with reveal: the reticle on the tree, then on a foe)
+            gl.screenshot(shot + ".tree.png")
+            let foes = filter(u_id.length) i: is_enemy(u_owner[i], ME) and t_animal[u_kind[i]] == 0
+            assert foes.length
+            cam = iso(float(u_x[foes[0]]), float(u_y[foes[0]]))
+            pad_off = float2_0
+            pad_step = 105
+            return none
+        test_pause = false
+        pad_step = 11
+        return PadIn { none.axes, [ "b" ] }
+    if pad_step == 105:
+        pad_step = 106
+        return none
+    if pad_step == 106:
+        gl.screenshot(shot + ".foe.png")
         test_pause = false
         pad_step = 11
         return PadIn { none.axes, [ "b" ] }
@@ -792,6 +808,7 @@ def pad_script() -> PadIn:
         return none
     if pad_step == 143:
         expect_ok(ui_focus == 0, "the pause menu opened on the pad has the focus on Resume, frames later ({ui_focus})")
+        if has_s(args, "reticleshot") and shot != "": gl.screenshot(shot + ".menu.png")  // (captures: the pause menu on the pad)
         menu_open = false
         pad_step = 15
         print test_log
