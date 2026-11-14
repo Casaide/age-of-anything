@@ -55,6 +55,7 @@ import gen.save
 import gen.mods
 import net.lockstep
 import net.lan
+import game.build_id
 // The lobby's home-network pieces (creel/src/net/lan.lobster), headless (#498):
 // - this machine's address read from what each OS's tool prints (the Deck's hostname has no -I: its scan found nobody)
 // - the network version: data the sim reads splits builds; files only the looks read (atmosphere, sound, tips) don't
@@ -80,6 +81,16 @@ def version_of(dir:string) -> string:
 let va = version_of("a")
 expect("look-only files keep the version", version_of("b"), va)
 if version_of("c") == va: expect("a unit file changes the version", va, "another version")
+
+// the menu's build line (#500): the Deck's build_id.txt, else git's short hash (+changes), and the network version
+expect("the build id file", build_label("1a2b3c4\n", "", "", "7f79e3ef717d"), "build 1a2b3c4, net 7f79e3ef717d")
+expect("git, clean", build_label("", "9e8d7c6\n", "", "abc"), "build 9e8d7c6, net abc")
+expect("git, local edits", build_label("", "9e8d7c6\n", " M src/game.lobster\n", "abc"), "build 9e8d7c6+changes, net abc")
+expect("no git, no file", build_label("", "", "", "abc"), "build unknown, net abc")
+
+// the real tools (launch_subprocess doesn't search PATH: a bare "git" or "ip" never ran, #500)
+if my_ipv4() == "": expect("this machine has a home-network address", "", "an address")
+if find_string(build_label_now("x"), "build unknown") >= 0: expect("git names this checkout", build_label_now("x"), "build <hash>, net x")
 
 if bad: set_exit_code(1)
 print if bad: "lan_check: {bad} failed" else: "lan_check: all pass"
