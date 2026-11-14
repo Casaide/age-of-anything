@@ -61,6 +61,11 @@ jobs:
           mkdir -p /out /lobster/bin
           sh src/deck/lobster_linux.sh
           cp /out/lobster /lobster/bin/lobster
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lobster-linux
+          path: /lobster/bin/lobster
+          retention-days: 14
       - name: Bake version
         id: bake
         run: echo "version=$(sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' creel/src/view/bake_cache.lobster)" >> "$GITHUB_OUTPUT"
@@ -78,11 +83,6 @@ jobs:
         with:
           name: age-of-anything-deck
           path: age-of-anything-deck.tar.gz
-          retention-days: 14
-      - uses: actions/upload-artifact@v4
-        with:
-          name: lobster-linux
-          path: /lobster/bin/lobster
           retention-days: 14
 
   # The Linux Lobster for `make deck` on the Mac: one release, an asset per fork commit (lobster-<sha>).
