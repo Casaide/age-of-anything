@@ -67,6 +67,10 @@ cat > "$out/run.sh" <<'EOF'
 #!/bin/sh
 # Age of Anything (the Lobster port): the lobby, with no pack (every picture baked by the game itself, the parts
 # kept in bake_cache/ after the first start). Extra words go to the game (watch, host, join:<ip>, mods:<id>...).
+# Started directly (a Steam shortcut made before #492 points here), it goes through the launcher make serve's deck.sh
+# installed beside the game first, so a newer build the Mac serves is pulled before the game starts (#502).
+launch="$(cd "$(dirname "$0")/.." && pwd)/age-of-anything.sh"
+if [ -z "${AOA_UPDATED:-}" ] && [ -f "$launch" ]; then AOA_UPDATED=1 exec sh "$launch" --run; fi
 cd "$(dirname "$0")/src"
 . ./bake_cache.sh
 ../lobster/bin/lobster game.lobster -- none lobby "$@" &
