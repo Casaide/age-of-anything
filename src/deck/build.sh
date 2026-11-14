@@ -58,6 +58,10 @@ rsync -a --delete --delete-excluded --exclude 'pack' --exclude 'pack6b' --exclud
 	--exclude 'deck' "$here/" "$out/src/"
 [ -f "$root/creel/src/lib/world.lobster" ] || { echo "creel/ is empty: git submodule update --init"; exit 1; }
 rsync -a --delete "$root/creel/src/" "$out/creel/src/"   # (the engine's modules, where the game's programs look for them)
+# which build this is, for the menu's foot (#500): the Deck has no .git to ask
+commit="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+[ -n "$(git -C "$root" status --porcelain --untracked-files=no 2>/dev/null)" ] && commit="$commit+changes"
+echo "$commit" > "$out/src/build_id.txt"
 rsvg-convert -w 512 -h 512 "$root/assets/art/ui/game_icon.svg" -o "$out/icon.png"
 cat > "$out/run.sh" <<'EOF'
 #!/bin/sh
