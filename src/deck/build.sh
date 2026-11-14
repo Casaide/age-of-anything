@@ -1,47 +1,57 @@
 #!/bin/sh
-# A Steam Deck build of the Lobster game: Lobster built for Linux x86_64 in a container (its libraries
-# are in its own tree: SDL, SDL_mixer, freetype...), then the game's folder assembled beside it:
+# A Steam Deck build of the Lobster game: Lobster for Linux x86_64 (CI's build of the fork commit, or one made in a
+# container; its libraries are in its own tree: SDL, SDL_mixer, freetype...), then the game's folder assembled beside it:
 #   <out>/lobster/{bin/lobster, data, modules}   the language and its own data (shaders, fonts)
-#   <out>/data, assets/audio, mods               the game's data and sounds
+#   <out>/data, assets/{audio,fonts}, mods       the game's data, sounds and display font
 #   <out>/src/...                                the game's code, and baked/ (its buildings and props, from prebake.sh;
 #                                                a race's own parts it bakes itself)
 #   <out>/run.sh                                 runs the game (the lobby)
 #   <out>/icon.png                               the game's icon (pull_lobster.sh makes a launcher with it)
-# Usage: src/deck/build.sh [out dir]   (default build/lobster_linux; needs podman or docker)
+# Usage: src/deck/build.sh [out dir]   (default build/lobster_linux; needs gh, or podman/docker for a fork commit CI hasn't built)
 # The Deck pulls it with tools/deck/pull_lobster.sh.
 set -e
 here="$(cd "$(dirname "$0")/.." && pwd)"
 root="$(cd "$here/.." && pwd)"
 out="${1:-$root/build/lobster_linux}"
 LOBSTER_SRC="${LOBSTER_SRC:-$HOME/Dev/lobster}"
-ENGINE="${ENGINE:-$(command -v podman || command -v docker)}"
+REPO="${REPO:-Casaide/age-of-whatever}"
+RELEASE="${RELEASE:-lobster-linux}"   # (one release; its assets are lobster-<fork commit>)
+PODMAN_MACHINE="${PODMAN_MACHINE:-aoa-build}"
 IMAGE="${IMAGE:-ubuntu:22.04}"   # (glibc 2.35: the Deck's SteamOS is newer, so it runs there)
 
-echo "== Lobster for Linux x86_64 ($ENGINE, $IMAGE)"
-mkdir -p "$out/lobster/bin"
-"$ENGINE" run --rm --platform linux/amd64 -v "$LOBSTER_SRC:/lobster:ro" -v "$out/lobster/bin:/out" "$IMAGE" sh -c '
-	set -e
-	apt-get update -qq && apt-get install -y -qq build-essential cmake libgl1-mesa-dev libx11-dev libxext-dev \
-		libxrandr-dev libxcursor-dev libxi-dev libxss-dev libxfixes-dev libxtst-dev libxkbcommon-dev libdbus-1-dev \
-		libasound2-dev libpulse-dev libudev-dev libegl1-mesa-dev libgles2-mesa-dev >/dev/null
-	cp -r /lobster/dev /tmp/dev
-	cd /tmp/dev && rm -rf build-linux && mkdir build-linux && cd build-linux
-	cmake -DCMAKE_BUILD_TYPE=Release .. > /tmp/cmake.log 2>&1 || { tail -30 /tmp/cmake.log; exit 1; }
-	make -j"$(nproc)" lobster > /tmp/make.log 2>&1 || { tail -40 /tmp/make.log; exit 1; }
-	found=$(find /tmp/bin /tmp/dev -name lobster -type f -perm -u+x -newer /tmp/cmake.log 2>/dev/null | head -1)
-	[ -n "$found" ] || { echo "no lobster binary built"; exit 1; }
-	cp "$found" /out/lobster
-	strip /out/lobster
-'
+# Only Lobster itself is Linux code: the game ships as source, data and baked/ (the same files on every platform). So the
+# binary is taken, in order, from LOBSTER_LINUX, this checkout's build/lobster-linux/<fork commit>/, the release CI
+# publishes for that commit (#486), and only then built in a container (the podman machine started if it's stopped).
+sha=$(git -C "$LOBSTER_SRC" rev-parse HEAD)
+have="$root/build/lobster-linux/$sha"
+mkdir -p "$out/lobster/bin" "$have"
+if [ -n "${LOBSTER_LINUX:-}" ]; then
+	echo "== Lobster for Linux x86_64: $LOBSTER_LINUX"
+	cp -f "$LOBSTER_LINUX" "$have/lobster"
+elif [ -f "$have/lobster" ]; then
+	echo "== Lobster for Linux x86_64: build/lobster-linux/$sha (have it)"
+elif command -v gh >/dev/null && gh release download "$RELEASE" -R "$REPO" -p "lobster-$sha" -O "$have/lobster.tmp" --clobber 2>/dev/null; then
+	echo "== Lobster for Linux x86_64: CI's release ($RELEASE, lobster-$sha)"
+	mv "$have/lobster.tmp" "$have/lobster"
+else
+	rm -f "$have/lobster.tmp"
+	ENGINE="${ENGINE:-$(command -v podman || command -v docker)}"
+	[ -n "$ENGINE" ] || { echo "no release for fork commit $sha, and no podman or docker to build it"; exit 1; }
+	echo "== Lobster for Linux x86_64: no release for $sha, building it ($ENGINE, $IMAGE)"
+	case "$ENGINE" in */podman) podman machine start "$PODMAN_MACHINE" 2>/dev/null || true ;; esac
+	"$ENGINE" run --rm --platform linux/amd64 -v "$LOBSTER_SRC:/lobster:ro" -v "$have:/out" "$IMAGE" sh -c "$(cat "$here/deck/lobster_linux.sh")"
+fi
+cp -f "$have/lobster" "$out/lobster/bin/lobster"
 cp -R "$LOBSTER_SRC/data" "$LOBSTER_SRC/modules" "$out/lobster/"
 
 echo "== The buildings and props, baked once here and shipped (src/prebake.sh)"
 "$here/prebake.sh"
 
 echo "== The game"
-mkdir -p "$out/assets" "$out/src"
+mkdir -p "$out/assets" "$out/src" "$out/creel"
 rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/data/" "$out/data/"
 rsync -a --delete --exclude '*.import' "$root/assets/audio/" "$out/assets/audio/"
+rsync -a --delete "$root/assets/fonts/" "$out/assets/fonts/"   # (the display font, ../assets/fonts: the lobby failed without it)
 rsync -a --delete --exclude '*.import' --exclude '*.uid' "$root/mods/" "$out/mods/"
 rsync -a --delete --delete-excluded --exclude 'pack' --exclude 'pack6b' --exclude 'pack_scifi' --exclude 'library' --exclude 'bake_cache' \
 	--exclude 'model/mods' --exclude 'textures/bmat*' --exclude '*.sav' --exclude 'memory_leaks.txt' \
