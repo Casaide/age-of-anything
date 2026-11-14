@@ -20,9 +20,63 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deck:
+  # Lobster for Linux, once per fork commit (cached): the bake below runs it, and `make deck` on the Mac downloads it.
+  lobster:
     runs-on: ubuntu-latest
     container: ubuntu:22.04   # (glibc 2.35: the Deck's SteamOS is newer, so it runs there)
+    outputs:
+      sha: ${{ steps.fork.outputs.sha }}
+    steps:
+      - run: apt-get update -qq && apt-get install -y -qq git ca-certificates >/dev/null
+      - uses: actions/checkout@v4
+      - name: The Lobster fork
+        id: fork
+        run: |
+          ref="${{ inputs.lobster_ref || 'master' }}"
+          git init -q /lobster
+          git -C /lobster fetch -q --depth 1 https://github.com/Drache93/lobster "$ref"
+          echo "sha=$(git -C /lobster rev-parse FETCH_HEAD)" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: /out/lobster
+          key: lobster-linux-${{ steps.fork.outputs.sha }}
+      - name: Build Lobster
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          GIT_LFS_SKIP_SMUDGE=1 git -C /lobster checkout -q FETCH_HEAD
+          mkdir -p /out
+          sh src/deck/lobster_linux.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lobster-linux
+          path: /out/lobster
+          retention-days: 14
+
+  # One release, an asset per fork commit (lobster-<sha>): src/deck/build.sh fetches it (#486).
+  publish-lobster:
+    needs: lobster
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lobster-linux
+      - run: |
+          mv lobster "lobster-${{ needs.lobster.outputs.sha }}"
+          gh release view lobster-linux >/dev/null 2>&1 || gh release create lobster-linux --prerelease --title "Lobster for Linux" \
+            --notes "Lobster built for Linux x86_64 from the Drache93/lobster fork, one asset per fork commit (lobster-<sha>). src/deck/build.sh fetches it (#486)."
+          gh release upload lobster-linux "lobster-${{ needs.lobster.outputs.sha }}" --clobber
+
+  deck:
+    needs: lobster
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
     timeout-minutes: 90
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -31,41 +85,27 @@ jobs:
       LOBSTER_LINUX: /lobster/bin/lobster
       SDL_AUDIODRIVER: dummy
       BAKE_JOBS: 4
-    outputs:
-      sha: ${{ steps.fork.outputs.sha }}
     steps:
       - name: Tools
         run: |
           apt-get update -qq
-          apt-get install -y -qq git ca-certificates xvfb xauth libgl1-mesa-dri imagemagick librsvg2-bin rsync >/dev/null
+          apt-get install -y -qq git ca-certificates xvfb xauth libgl1-mesa-dri imagemagick librsvg2-bin rsync \
+            libgl1 libegl1 libx11-6 libxext6 libxrandr2 libxcursor1 libxi6 libxss1 libxfixes3 libxtst6 libxkbcommon0 \
+            libasound2 libpulse0 libudev1 libdbus-1-3 >/dev/null
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: The Lobster fork
-        id: fork
+      - name: The Lobster fork (its data and modules), and its Linux build
         run: |
-          ref="${{ inputs.lobster_ref || 'master' }}"
           git init -q /lobster
-          git -C /lobster fetch -q --depth 1 https://github.com/Drache93/lobster "$ref"
+          git -C /lobster fetch -q --depth 1 https://github.com/Drache93/lobster "${{ needs.lobster.outputs.sha }}"
           GIT_LFS_SKIP_SMUDGE=1 git -C /lobster checkout -q FETCH_HEAD
-          echo "sha=$(git -C /lobster rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Lobster for Linux, cached by fork commit
-        id: lobster
-        uses: actions/cache@v4
-        with:
-          path: /lobster/bin/lobster
-          key: lobster-linux-${{ steps.fork.outputs.sha }}
-      - name: Build Lobster
-        if: steps.lobster.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p /out /lobster/bin
-          sh src/deck/lobster_linux.sh
-          cp /out/lobster /lobster/bin/lobster
-      - uses: actions/upload-artifact@v4
+          mkdir -p /lobster/bin
+      - uses: actions/download-artifact@v4
         with:
           name: lobster-linux
-          path: /lobster/bin/lobster
-          retention-days: 14
+          path: /lobster/bin
+      - run: chmod +x /lobster/bin/lobster
       - name: Bake version
         id: bake
         run: echo "version=$(sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' creel/src/view/bake_cache.lobster)" >> "$GITHUB_OUTPUT"
@@ -84,23 +124,3 @@ jobs:
           name: age-of-anything-deck
           path: age-of-anything-deck.tar.gz
           retention-days: 14
-
-  # The Linux Lobster for `make deck` on the Mac: one release, an asset per fork commit (lobster-<sha>).
-  publish-lobster:
-    needs: deck
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: lobster-linux
-      - run: |
-          mv lobster "lobster-${{ needs.deck.outputs.sha }}"
-          gh release view lobster-linux >/dev/null 2>&1 || gh release create lobster-linux --prerelease --title "Lobster for Linux" \
-            --notes "Lobster built for Linux x86_64 from the Drache93/lobster fork, one asset per fork commit (lobster-<sha>). src/deck/build.sh fetches it (#486)."
-          gh release upload lobster-linux "lobster-${{ needs.deck.outputs.sha }}" --clobber
