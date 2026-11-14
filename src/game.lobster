@@ -440,6 +440,7 @@ def screen_of_cell(c:int) -> float2: return to_screen(iso(float((c % W) * 1000 +
 
 def expect_ok(ok:bool, what:string):
     test_log += (if ok: "PASS " else: "FAIL ") + what + "\n"
+    if not ok: set_exit_code(1)  // (selftest, padtest: a failed check fails the run)
 
 // The nearest cell to (x, y) (tiles) whose test passes, or -1.
 def nearest_cell(x:int, y:int, test) -> int:
