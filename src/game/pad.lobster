@@ -66,7 +66,7 @@ var pad_lb_used = false      // LB was held as a modifier this press (so its rel
 var pad_cycle_all = []::int  // the selection before LB started cycling its kinds
 var pad_cycle_k = -1
 var pad_cursor = "pointer"  // the cursor shown by the reticle: what X would do there (cursor_kind)
-var pad_a_eaten = false  // this press of A chose on the wheel or laid a building: no circle, and its release does nothing (#507)
+var pad_a_eaten = false     // this press of A chose on the wheel or laid a building: no circle, and its release does nothing (#507)
 
 // LB tapped: only the next kind among what's selected (spears, then archers...), then all again (pad_play._cycle_kinds).
 def cycle_kinds():
