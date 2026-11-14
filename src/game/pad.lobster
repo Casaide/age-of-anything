@@ -65,6 +65,8 @@ var pad_rt = false
 var pad_lb_used = false      // LB was held as a modifier this press (so its release isn't a tap)
 var pad_cycle_all = []::int  // the selection before LB started cycling its kinds
 var pad_cycle_k = -1
+var pad_cursor = "pointer"  // the cursor shown by the reticle: what X would do there (cursor_kind)
+var pad_a_eaten = false  // this press of A chose on the wheel or laid a building: no circle, and its release does nothing (#507)
 
 // LB tapped: only the next kind among what's selected (spears, then archers...), then all again (pad_play._cycle_kinds).
 def cycle_kinds():
@@ -140,7 +142,10 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
         if magnitude(d) > 0.5:
             let a = atan2(d)
             pad_pick = (int(floor(((a + 90.0 + 360.0) % 360.0) / 360.0 * float(items.length) + 0.5))) % items.length
-        if pressed("a") and pad_pick < items.length: wheel_choose(items[pad_pick])
+        if pressed("a") and pad_pick < items.length:
+            wheel_choose(items[pad_pick])
+            pad_a_eaten = true
+        elif released("a"): pad_a_eaten = false  // (the wheel stays up: a train or research press)
         if pressed("b"): pad_wheel = []
         pad_prev = pin.down
         return true
@@ -160,8 +165,21 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
             arming_ability = false
         pad_prev = pin.down
         return true
-    // A: tap selects (or opens the wheel on what's selected, or lays what's being placed); held, the circle sweeps.
-    if has_s(pin.down, "a") and pad_held_t.get("a", 0.0) >= PAD_TAP and placing < 0:
+    // Placing (Godot's pad_play.gd, D-133): A lays it down as it's pressed, so the release of the A that chose it on
+    // the wheel lays nothing; walls and gates: A down at one end, up at the other. LB held: keep placing (#507).
+    if placing >= 0:
+        if bt_line[placing] != 0:
+            if pressed("a"):
+                wall_from = place_cell()
+                pad_a_eaten = true
+            elif released("a") and wall_from.x >= 0: place_wall(wall_from, place_cell(), add)
+        elif pressed("a"):
+            place_here(add)
+            pad_a_eaten = true
+    let eaten_up = released("a") and pad_a_eaten
+    if eaten_up: pad_a_eaten = false
+    // A: tap selects (or opens the wheel on what's selected); held, the circle sweeps.
+    if has_s(pin.down, "a") and pad_held_t.get("a", 0.0) >= PAD_TAP and placing < 0 and not pad_a_eaten:
         if pad_circle == 0.0:
             pad_circle = PAD_CIRCLE_START
             if not add: selected = []
@@ -172,9 +190,9 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
             if u_owner[i] == ME and t_animal[u_kind[i]] == 0 and not contains(selected, u_id[i]):
                 let s = to_screen(iso(float(u_x[i]), float(u_y[i])))
                 if magnitude((s - c) * float2 { 1.0, 2.0 }) <= pad_circle: selected.push(u_id[i])
-    if released("a"):
+    if released("a") and not eaten_up:
         if pad_circle > 0.0: pad_circle = 0.0
-        elif placing >= 0: place_here(false)
+        elif placing >= 0: pass()  // (laid as A went down)
         elif is_selected_here(reticle()): wheel_open()
         elif add:  // (LB held: what's under the reticle joins the selection)
             let before = selected_units()
@@ -234,7 +252,10 @@ def pad_draw():
     gl.set_shader("color")
     let u = ui()
     let c = reticle()
-    let rcol = float4 { 0.949, 0.914, 0.788, 0.9 }
+    // What X would do here (#508, as Godot's pad_play.gd did): the reticle goes red on a foe, and the mouse's cursor art for
+    // a job (chop, mine, forage, build, wall, attack) sits beside it, so a tree under it reads as wood for the workers.
+    pad_cursor = if pad_reticle_shown: cursor_kind(c) else: "pointer"
+    let rcol = if pad_cursor == "attack": float4 { 0.91, 0.376, 0.298, 0.95 } else: float4 { 0.949, 0.914, 0.788, 0.9 }
     if pad_reticle_shown:
         gl.color(rcol):
             gl.translate(c):
@@ -245,4 +266,6 @@ def pad_draw():
         gl.color(float4 { rcol.x, rcol.y, rcol.z, 0.6 }):
             gl.translate(c):
                 gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(pad_circle, 48, 2.0 * u / pad_circle)
+    if pad_cursor != "pointer" and pad_cursor != "move" and not pad_wheel.length:
+        tb_icon("os_cursor/" + pad_cursor + "@2x", c + float2 { 14.0, 4.0 } * u, 32.0 * u, 1.0)
     if pad_wheel.length: wheel_draw()  // (game/panel.lobster)

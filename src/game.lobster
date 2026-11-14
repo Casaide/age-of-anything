@@ -709,13 +709,44 @@ def pad_script() -> PadIn:
         test_pause = false
         pad_step++
         return none
-    if pad_step == 9:
-        pad_step++
-        return PadIn { none.axes, [ "x" ] }
-    if pad_step == 10 and t >= 9.0:
+    if pad_step == 9:  // (#507: the A that chose it on the wheel has been let go)
+        expect_ok(placing >= 0, "letting go of the A that chose the house lays nothing (still placing)")
+        pad_step = 100
+        return PadIn { none.axes, [ "a" ] }
+    if pad_step == 100:
+        expect_ok(placing < 0, "A lays the house as it's pressed, not on its release")
+        pad_step = 101
+    if pad_step == 101 and t < 9.0: return PadIn { none.axes, [ "a" ] }  // (A held on: it laid the house, so no circle)
+    if pad_step == 101:
         let houses = (filter(b_id.length) b: b_owner[b] == ME and bt_name[b_kind[b]] == "house").length
-        expect_ok(houses > pad_houses, "X lays the house down ({pad_houses} -> {houses})")
-        pad_step++
+        expect_ok(houses > pad_houses, "the house is laid down ({pad_houses} -> {houses})")
+        expect_ok(pad_circle == 0.0, "holding on the A that laid the house grows no circle")
+        pad_step = 102
+        return none
+    if pad_step == 102:
+        expect_ok(selected_workers().length > 0, "letting go of the A that laid the house keeps the worker selected")
+        var best = int2 { -1, -1 }  // (#508: the reticle on the tree nearest the Town Center)
+        var best_d = 1000000000
+        for(H) y:
+            for(W) x:
+                let r = res_at(cell_of(x * TILE + TILE / 2, y * TILE + TILE / 2))
+                let d = abs(x - b_cx[tc]) + abs(y - b_cy[tc])
+                if r != 0 and resource_names[r - 1] == "wood" and d < best_d:
+                    best_d = d
+                    best = int2 { x, y }
+        assert best.x >= 0
+        cam = iso(float(best.x * TILE + TILE / 2), float(best.y * TILE + TILE / 2))
+        pad_off = float2_0
+        test_pause = true
+        pad_step = 103
+        return none
+    if pad_step == 103:
+        pad_step = 104
+        return none
+    if pad_step == 104:
+        expect_ok(pad_cursor == "chop", "the reticle on a tree with a worker selected shows the chop cursor ({pad_cursor})")
+        test_pause = false
+        pad_step = 11
         return PadIn { none.axes, [ "b" ] }
     if pad_step == 11:
         expect_ok(not selected.length, "B lets the selection go")
