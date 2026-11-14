@@ -95,6 +95,14 @@ let ZIGZAG_TICKS = 20
 let ZIGZAG_SIN = 260   // a swerve: a turn between ticks over about 15 degrees (sin, of 1024)
 let WOBBLE_MAX = 0.05  // path walked over a FACE_WINDOW past the straight line, on average (0: dead straight)
 
+let CHASE_X = 44000  // where the foes stand (open ground in the map's middle)
+let CHASE_Y = 37500
+let CHASE_GAP = 700     // milli-tiles between the foes: their fighters stand shoulder to shoulder
+let CHASE_FOES = 5      // foes holding their ground, each already fought by one of the side
+let CHASE_NEAR = 1000   // milli-tiles past its reach: nearer its foe than this, it's at the fight
+let CHASE_OFF_MAX = 10  // percent of its looks there finding it walking over FACE_OFF from the way to its foe
+let CHASE_TICKS = 400
+
 class MoveWatch:
     ids:[int]
     last_x:[int] = []
@@ -399,6 +407,63 @@ def scene_past_archers(rules:JV, races:[JV]):
         if gap_b(i, hb) <= t_reach[u_kind[i]] + REACH: there++
     print "past archers: {there} of {a.length} spearmen at the building after {PAST_TICKS / 20} s"
     check(there == a.length, "past archers: the spearman gets round its own archers to the building ({there} of {a.length})")
+
+// 4d. A second line sent at foes its own side already fights hand to hand (#453): near the fight each walks at its foe,
+// pressing in behind the one fighting it, not circling round its own side's fighters for a second at a time.
+def scene_chase(rules:JV, races:[JV]):
+    flat(races, rules)
+    let fk = kind_of(1, "spear")
+    let foes = map(CHASE_FOES) n: u_id[add_unit(1, fk, CHASE_X, CHASE_Y + n * CHASE_GAP)]
+    for(foes) id: u_hp[index_of(id)] *= 50  // (they last the scene)
+    // (and they hold their ground, not shoved about: where the fight is stays put)
+    def hold():
+        for(foes) id, n:
+            let i = index_of(id)
+            u_x[i] = CHASE_X
+            u_y[i] = CHASE_Y + n * CHASE_GAP
+            u_vx[i] = 0
+            u_vy[i] = 0
+    let sk = kind_of(0, "spear")
+    let front = map(foes) id, n: u_id[add_unit(0, sk, CHASE_X - 1000, CHASE_Y + n * CHASE_GAP)]
+    for(front) id, n:
+        u_hp[index_of(id)] *= 50
+        issue_cmd(0, CMD_ATTACK, [ id ], foes[n], 0, 0, 0)
+    for(PAST_SETTLE):
+        wstep()
+        hold()
+    let a = group(0, "spear", 10, CHASE_X - 7000, CHASE_Y + 2000)
+    for(a) id, n: issue_cmd(0, CMD_ATTACK, [ id ], foes[n % CHASE_FOES], 0, 0, 0)  // (two to a foe)
+    let hist_x = map(a): map(FACE_WINDOW): -1
+    let hist_y = map(a): map(FACE_WINDOW): -1
+    var looks = 0
+    var off = 0
+    for(CHASE_TICKS):
+        wstep()
+        hold()
+        for(a) id, n:
+            let i = index_of(id)
+            let h = tick % FACE_WINDOW
+            let ox = hist_x[n][h]
+            let oy = hist_y[n][h]
+            hist_x[n][h] = u_x[i]
+            hist_y[n][h] = u_y[i]
+            let j = if u_foe[i] != 0: index_of(u_foe[i]) else: -1
+            if j >= 0 and u_moving[i] == 1 and ox >= 0 and dist2(ox, oy, u_x[i], u_y[i]) >= FACE_WALKED * FACE_WALKED:
+                let gap = isqrt(dist2(u_x[i], u_y[i], u_x[j], u_y[j])) - u_radius[i] - u_radius[j] - t_reach[u_kind[i]]
+                if gap <= CHASE_NEAR:
+                    looks++
+                    let way = atan2(normalize(float2 { float(u_x[i] - ox), float(u_y[i] - oy) }))
+                    let at = atan2(normalize(float2 { float(u_x[j] - u_x[i]), float(u_y[j] - u_y[i]) }))
+                    if abs((way - at + 540.0) % 360.0 - 180.0) > FACE_OFF: off++
+    var at_foe = 0
+    for(a) id:
+        let i = index_of(id)
+        if u_foe[i] != 0 and index_of(u_foe[i]) >= 0 and u_moving[i] == 0: at_foe++
+    let share = off * 100 / max(1, looks)
+    print "chase: {at_foe} of {a.length} at their foes; near the fight, {share}% of {looks} looks walking over {int(FACE_OFF)} degrees off the way to their foe"
+    check(looks > 0, "chase: they walk up to the fight")
+    check(at_foe > 0, "chase: they get to their foes ({at_foe} of {a.length})")
+    check(share <= CHASE_OFF_MAX, "chase: near the fight they walk at their foe, not round their own side ({share}% off)")
 
 // 5. Cavalry funnel through the pass (choke_test: a 2-tile gap in a rock wall).
 def scene_funnel(rules:JV, races:[JV]):
@@ -751,6 +816,7 @@ if on("workers_by"): scene_workers_by(rules, races)
 if on("one_spot"): scene_one_spot(rules, races)
 if on("idle_crowd"): scene_idle_crowd(rules, races)
 if on("past_archers"): scene_past_archers(rules, races)
+if on("chase"): scene_chase(rules, races)
 if on("funnel"): scene_funnel(rules, races)
 if on("herd"): scene_herd(rules, races)
 if on("meet"): scene_meet(rules, races)
