@@ -11,7 +11,7 @@ LOBSTER_SRC ?= $(HOME)/Dev/lobster
 PORT ?= 8080
 export LOBSTER LOBSTER_SRC PORT
 
-.PHONY: help all mac bake deck mobile android serve
+.PHONY: help all mac bake deck mobile android serve creel
 
 help:
 	@echo "make mac      macOS: build/mac/Age of Anything.app (a dev build that runs this checkout; tools/mac/make_app.sh)"
@@ -24,16 +24,20 @@ help:
 
 all: mac deck mobile
 
+# (creel/ at the game's pinned commit first: an old or missing one fails every build, #495)
+creel:
+	tools/creel_sync.sh
+
 mac: bake
 	tools/mac/make_app.sh
 
-bake:
+bake: creel
 	src/prebake.sh
 
-deck:
+deck: creel
 	src/deck/build.sh
 
-mobile android:
+mobile android: creel
 	src/android/build.sh
 
 serve:
