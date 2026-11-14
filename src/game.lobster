@@ -782,8 +782,17 @@ def pad_script() -> PadIn:
         cam = iso(float(fold(mine, 0) acc, i: acc + u_x[i]) / float(mine.length), float(fold(mine, 0) acc, i: acc + u_y[i]) / float(mine.length))
         pad_step = 14
         return PadIn { none.axes, [ "rightshoulder" ] }
-    if pad_step == 14:
+    if pad_step == 14:  // (#510: the pause menu, opened from the pad, sits on Resume and keeps the focus)
+        menu_open = true
+        pad_step = 140
+        return none
+    if pad_step == 140 or pad_step == 141 or pad_step == 142:
         pad_step++
+        return none
+    if pad_step == 143:
+        expect_ok(ui_focus == 0, "the pause menu opened on the pad has the focus on Resume, frames later ({ui_focus})")
+        menu_open = false
+        pad_step = 15
         print test_log
     return none
 
@@ -1237,8 +1246,12 @@ def end_screen_up() -> bool: return winner >= 0 and not end_watching and not men
 
 // The match's end: Victory or Defeat over the dimmed world, how long it was played, and the ways out.
 def end_screen():
+    menu_frame(true)
+    end_screen_body()
+    menu_frame_end()
+
+def end_screen_body():
     let ws = float(gl.window_size())
-    ui_frame(true)
     let k = hud_s()
     ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.6 })
     let from_lobby = args[1] == "lobby"
@@ -1269,11 +1282,32 @@ def end_screen():
         y += 54.0 * k
     ui_flush()
 
+// A menu over the match keeps its own buttons and pad focus (#510): the command panel, drawn first each frame, starts
+// the UI's frame with the pad off, which drops the focus and leaves its own buttons as the ones the d-pad walks.
+// Opened on the pad, a menu starts on its first button (Resume), as the Godot game's did.
+var menu_hits = []::UiHit
+var menu_focus = -1
+var menu_was_up = false
+def menu_frame(up:bool):
+    if up and not menu_was_up: menu_focus = if pad_on: 0 else: -1
+    menu_was_up = up
+    ui_hits = menu_hits
+    ui_focus = menu_focus
+    ui_frame(true)
+def menu_frame_end():
+    menu_hits = ui_hits
+    menu_focus = ui_focus
+
 // The pause menu (Esc, or Start on the pad): a panel of buttons over the dimmed match. In a network
 // match the world goes on (only you stop looking), and Load isn't offered.
 def pause_menu():
+    menu_frame(true)
+    pause_menu_body()
+    menu_frame_end()
+    if not menu_open and gl.button("controller_a") >= 1: pad_a_eaten = true  // (the A that chose Resume: it selects nothing on its way up)
+
+def pause_menu_body():
     let ws = float(gl.window_size())
-    ui_frame(true)
     if menu_saves:  // Load game: the saves (game/lobby.lobster)
         fe_fit()
         let picked = fe_saves_card("")
@@ -1494,6 +1528,8 @@ def play_match():
             tree_tick()
             if menu_open: pause_menu()
             elif end_screen_up(): end_screen()
+            else: menu_was_up = false
+            if padtest and menu_open: pad_script()  // (#510: the menu reads the real pad; the script only checks it)
             if not rec_clean: draw_banner()
             if typing_text: typing_tick()
             os_cursor_tick()
