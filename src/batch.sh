@@ -82,6 +82,7 @@ else
 	add saves "$L" save_check.lobster
 	add network ./net_check.sh 2000
 	add network_packs ./net_check_packs.sh
+	add lan "$L" lan_check.lobster   # the lobby's address lookup (the Deck's ip) and network version (#498)
 	# The drawing's cost in the real window, vsync on (game/perf.lobster): wall time, so it runs alone after the rest.
 	add perf ../play.sh lobby "\"races:sewer rats|romans\"" watch mute perf:20 "$bakes"
 	add perf_big ../play.sh lobby mods:big_battle mute perf:90 "$bakes"
