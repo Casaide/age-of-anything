@@ -69,7 +69,7 @@ cat > "$out/run.sh" <<'EOF'
 # kept in bake_cache/ after the first start). Extra words go to the game (watch, host, join:<ip>, mods:<id>...).
 cd "$(dirname "$0")/src"
 . ./bake_cache.sh
-../lobster/bin/lobster game.lobster -- none lobby "$@" &
+../lobster/bin/lobster game.lobster -- none lobby "$@" > ../last_run.log 2>&1 &   # (the log: a failed join says why, #506)
 game=$!
 trap 'kill -9 $game 2>/dev/null' INT TERM   # (Lobster's window never takes Ctrl-C: the script stops the game)
 wait $game
