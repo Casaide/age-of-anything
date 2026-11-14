@@ -261,7 +261,7 @@ def akb_load_cached(name:string) -> bool:
     if err or not c: return false
     for(c.frames) f:
         add_sheet_later(f.file, float2 { float(f.w), float(f.h) }, pack_formats)
-        frame_at.set(f.name, frames.length)
+        frame_named(f.name)
         frames.push(Frame { sheet_tex.length - 1, 0, 0, f.w, f.h, f.ax, f.ay, 1.0 / ART_K })
     looks.set(c.look.body, c.look)
     bfx.set(c.look.body, c.fx)
