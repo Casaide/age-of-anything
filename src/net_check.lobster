@@ -97,7 +97,7 @@ if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' bec
 else:
     lib_load("../data")
     use_mods()
-    let found = if has_s(args, "noscan"): []::LanHost else: lan_scan(1.5)
+    let found = if has_s(args, "noscan"): []::LanHost else: lan_scan(1.5, port)
     let names = map(found) h: h.name + "@" + h.ip
     print "join: found {found.length} host(s): {names}"
     link = net_join("127.0.0.1", port)
