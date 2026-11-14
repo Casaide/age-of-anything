@@ -30,7 +30,9 @@ done | xargs -P "$jobs" -L1 sh -c '"$LOBSTER" game.lobster -- none - prebake "$0
 # what's new since the last run. Pixels unchanged.
 newer=""
 if [ -f baked/squeezed ]; then newer="-newer baked/squeezed"; fi
-find baked -name '*.png' $newer -print0 | xargs -0 -P"$jobs" -n32 magick mogrify -define png:compression-level=9 \
+mogrify="magick mogrify"
+command -v magick >/dev/null || mogrify=mogrify   # (ImageMagick 6, as on Ubuntu: CI, #483)
+find baked -name '*.png' $newer -print0 | xargs -0 -P"$jobs" -n32 $mogrify -define png:compression-level=9 \
 	-define png:compression-filter=0 -define png:compression-strategy=0 -define png:color-type=6 -define png:exclude-chunks=all
 touch baked/squeezed
 echo "baked/: $(ls baked | wc -l | tr -d ' ') files, $(du -sh baked | cut -f1)"
