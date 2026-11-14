@@ -18,6 +18,7 @@ let FE_UNIT_INCHES = 0.6                            // the setup page's stage: a
 let FE_GRASS = float4 { 0.306, 0.431, 0.165, 1.0 }  // #4e6e2a
 let FE_LEVELS = [ "Easy", "Normal", "Hard" ]
 let TREECHECK_MS = 1000                                        // treecheck: the longest a frame of the lobby's tech tree may take while its pictures are made (#430)
+let FRAMECHECK_MS = 50                                         // framecheck: the longest the title page may spend on a frame while its armies bake (#494)
 let FE_NOT_MAPS = [ "choke_test", "river_test", "hill_test" ]  // test maps (the debug view lists them)
 let FE_STAGE_ROLES = [ "spear", "infantry", "archer", "large", "skirmisher", "worker", "catapult", "healer" ]
 let FE_BAKE_AFTER = 0.6                             // seconds of no typing before a side's army is made again
@@ -775,6 +776,9 @@ def fe_title_page(dt:float) -> string:
             let vs = map(n) k: s.picks[n - 1 - k]  // the big ones at the front
             let spots = map(n) k: float2 { (if i == 0: cw * (0.42 - 0.055 * float(k)) else: cw * (0.58 + 0.055 * float(k))) * zm, hill_at.y + hill_h * (if k % 2 == 0: 0.7 else: 0.86) }
             fe_draw_units(vs, spots, zm / 1.5, i, 1.0, i == 1)
+    def standing(s:FeSide) -> bool: return s.views_gen == s.gen and (find(s.picks) u: vx_engine_made(at(u, "recipe")) and not vx_ready(vx_look_for(at(u, "recipe")))) < 0
+    if (find(min(2, fe_sides.length)) i: not standing(fe_sides[i])) >= 0:  // (while they bake, so the hill isn't just empty, #494)
+        ui_text_c(ws.x / 2.0, hill_at.y + hill_h * 0.7, "Mustering the armies...", fz(20.0), lk.dim, 0, 0.0)
     // the column (match_setup.gd's _menu): crest, title, tag line, the plaque of buttons, the foot; centred
     // over the hill's upper half
     let cx = ws.x / 2.0
@@ -1334,8 +1338,13 @@ def run_front(page0:string, typed:[string]) -> string:
     var tc_at = -1.0  // (treecheck: when the last frame of the open tech tree began, the longest, how many)
     var tc_worst = 0.0
     var tc_frames = 0
+    var fc_worst = 0.0  // (framecheck: the longest title frame's work, how many frames, how many over, when the armies stood)
+    var fc_frames = 0
+    var fc_over = 0
+    var fc_stood = -1
     pace(PACE_MENU)
     while gl.frame():
+        let frame_t0 = seconds_elapsed()
         ui_click_tick()
         window_tick()
         if bake_quit: return ""
@@ -1345,6 +1354,7 @@ def run_front(page0:string, typed:[string]) -> string:
         let any_pad = gl.button("controller_a") == 1 or gl.button("controller_b") == 1 or gl.button("controller_x") == 1 or gl.button("controller_start") == 1 or gl.button("controller_dpup") == 1 or gl.button("controller_dpdown") == 1 or abs(gl.controller_axis(1)) > 0.6
         if any_pad or has_s(args, "padui"): fe_pad = true
         elif gl.button("mouse1") == 1 or magnitude(float(gl.mouse_delta(0))) > 4.0: fe_pad = false
+        for(args) a: if starts_with(a, "padfocus:") and fe_frames >= 5: ui_focus = string_to_int(a.substring(9, a.length - 9))  // (captures: the pad's focus on a button, #493)
         pace_menu(fe_page == "title", any_pad or gl.button("mouse1") >= 1 or gl.mouse_delta(0) != int2_0 or fe_field >= 0)
         if (fe_field >= 0) != typing:
             typing = fe_field >= 0
@@ -1423,8 +1433,24 @@ def run_front(page0:string, typed:[string]) -> string:
         fe_draw_tip()
         ui_flush()
         ui_label_px = 0
-        vx_bake_tick(0.025)  // (the armies' voxel looks, as they're asked for)
+        vx_bake_tick(0.025, true, false)  // (the armies' voxel looks, as they're asked for; kept on quitting or in a match: a PNG's save is a frame's time, #494)
         fe_frames++
+        if has_s(args, "framecheck") and fe_page == "title":  // (the title answers every frame while its armies bake from nothing, #494)
+            let work = seconds_elapsed() - frame_t0
+            fc_worst = max(fc_worst, work)
+            fc_frames++
+            if work * 1000.0 > float(FRAMECHECK_MS):
+                fc_over++
+                print "framecheck: frame {fe_frames} took {int(work * 1000.0)} ms ({vx_queue.length} bakes queued, {vx_unsaved.length} unsaved)"
+            let stood = fe_sides.length and (filter(fe_sides) s: s.views_gen != s.gen).length == 0 and not fe_looks_waiting()
+            if stood and fc_stood < 0: fc_stood = fe_frames
+            if shot != "" and fe_sides.length and (find(fe_sides) s: s.views_gen != s.gen) < 0:  // (a capture of the title as its armies are first asked for, then quit)
+                gl.screenshot(shot)
+                return ""
+            if (stood and not vx_queue.length and not vx_doing) or fc_frames > 6000:
+                print "framecheck: the longest frame {int(fc_worst * 1000.0)} ms (at most {FRAMECHECK_MS}), {fc_over} over, {fc_frames} frames, the armies stood at frame {fc_stood}, {vx_queue.length} bakes left"
+                if fc_over > 0 or fc_stood < 0: set_exit_code(1)
+                return ""
         // (treecheck: the AI's tech tree opened with nothing baked, each frame timed till its pictures are all painted)
         if has_s(args, "treecheck") and fe_page == "setup" and fe_frames == 10:
             fe_open_tree(1)
