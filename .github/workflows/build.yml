@@ -1,0 +1,106 @@
+# The game's builds, made by CI (#482). For now the Steam Deck folder (#483): Lobster for Linux built once per fork commit,
+# the shipped art baked under a virtual display (Mesa's software GL reads the bakes back like a real GPU), and the folder
+# uploaded. The Lobster binary is also published on the `lobster-linux` release, so `make deck` on the Mac needs no VM (#486).
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    paths: [".github/workflows/build.yml", "src/deck/**", "src/prebake.sh"]
+  workflow_dispatch:
+    inputs:
+      lobster_ref:
+        description: "Lobster fork branch or commit"
+        default: master
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deck:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04   # (glibc 2.35: the Deck's SteamOS is newer, so it runs there)
+    timeout-minutes: 90
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      LOBSTER_SRC: /lobster
+      LOBSTER: /lobster/bin/lobster
+      LOBSTER_LINUX: /lobster/bin/lobster
+      SDL_AUDIODRIVER: dummy
+      BAKE_JOBS: 4
+    outputs:
+      sha: ${{ steps.fork.outputs.sha }}
+    steps:
+      - name: Tools
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq git ca-certificates xvfb xauth libgl1-mesa-dri imagemagick librsvg2-bin rsync >/dev/null
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: The Lobster fork
+        id: fork
+        run: |
+          ref="${{ inputs.lobster_ref || 'master' }}"
+          git init -q /lobster
+          git -C /lobster fetch -q --depth 1 https://github.com/Drache93/lobster "$ref"
+          GIT_LFS_SKIP_SMUDGE=1 git -C /lobster checkout -q FETCH_HEAD
+          echo "sha=$(git -C /lobster rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Lobster for Linux, cached by fork commit
+        id: lobster
+        uses: actions/cache@v4
+        with:
+          path: /lobster/bin/lobster
+          key: lobster-linux-${{ steps.fork.outputs.sha }}
+      - name: Build Lobster
+        if: steps.lobster.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /out /lobster/bin
+          sh src/deck/lobster_linux.sh
+          cp /out/lobster /lobster/bin/lobster
+      - name: Bake version
+        id: bake
+        run: echo "version=$(sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' creel/src/view/bake_cache.lobster)" >> "$GITHUB_OUTPUT"
+      - name: The shipped bakes, cached by BAKE_VERSION
+        uses: actions/cache@v4
+        with:
+          path: src/baked
+          key: baked-${{ steps.bake.outputs.version }}-${{ github.run_id }}
+          restore-keys: baked-${{ steps.bake.outputs.version }}-
+      - name: Bake and build the Deck folder
+        run: xvfb-run -a -s "-screen 0 1280x720x24" src/deck/build.sh build/lobster_linux
+      - name: Pack
+        run: tar czf age-of-anything-deck.tar.gz -C build lobster_linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: age-of-anything-deck
+          path: age-of-anything-deck.tar.gz
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lobster-linux
+          path: /lobster/bin/lobster
+          retention-days: 14
+
+  # The Linux Lobster for `make deck` on the Mac: one release, an asset per fork commit (lobster-<sha>).
+  publish-lobster:
+    needs: deck
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lobster-linux
+      - run: |
+          mv lobster "lobster-${{ needs.deck.outputs.sha }}"
+          gh release view lobster-linux >/dev/null 2>&1 || gh release create lobster-linux --prerelease --title "Lobster for Linux" \
+            --notes "Lobster built for Linux x86_64 from the Drache93/lobster fork, one asset per fork commit (lobster-<sha>). src/deck/build.sh fetches it (#486)."
+          gh release upload lobster-linux "lobster-${{ needs.deck.outputs.sha }}" --clobber
