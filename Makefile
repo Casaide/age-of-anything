@@ -16,7 +16,7 @@ export LOBSTER LOBSTER_SRC PORT
 help:
 	@echo "make mac      macOS: build/mac/Age of Anything.app (a dev build that runs this checkout; tools/mac/make_app.sh)"
 	@echo "make bake     the shipped props and buildings, baked into src/baked/ for both densities (src/prebake.sh); make mac runs it"
-	@echo "make deck     Steam Deck: build/lobster_linux (Linux x86_64, needs podman or docker; src/deck/build.sh)"
+	@echo "make deck     Steam Deck: build/lobster_linux (Lobster for Linux from CI's release, else built in podman/docker; src/deck/build.sh)"
 	@echo "make mobile   Android: build/android/age-of-anything.apk (needs the SDK, NDK, JDK 17+; src/android/build.sh)"
 	@echo "make all      all three"
 	@echo "make serve    serve what is built on port $(PORT), and print the line to run on the Deck (tools/serve.sh)"

@@ -196,7 +196,7 @@ lobster race_matches.lobster -- reed_meadow; lobster mass_battle.lobster -- 2; l
 ./gen_reset.sh                                      # after adding a sim global: reset and save code
 ./textures.sh; ./icons.sh                                          # SVG textures and icons as PNGs (rsvg-convert), after one changes
 make [mac|deck|mobile|all|serve]                                   # every platform's build by its script below; serve: the Deck fetches it (#446)
-src/deck/build.sh                                                  # the Deck build (podman machine `aoa-build` running)
+src/deck/build.sh                                                  # the Deck build (Linux Lobster from CI's lobster-linux release; podman only for a fork commit CI hasn't built)
 src/android/build.sh                                               # the Android APK (build/android/age-of-anything.apk; adb install -r it)
 src/prebake.sh                                                     # every building and prop baked once into src/baked/ (the builds ship it, D-185)
 ./render_audio.sh [sfx|voices|music|<name>...]                     # re-render the sounds into assets/audio
