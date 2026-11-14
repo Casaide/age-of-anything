@@ -714,7 +714,7 @@ def pad_script() -> PadIn:
         pad_step = 100
         return PadIn { none.axes, [ "a" ] }
     if pad_step == 100:
-        expect_ok(placing < 0, "A lays the house as it's pressed, not on its release")
+        expect_ok(placing < 0, "A lays the house as it\'s pressed, not on its release")
         pad_step = 101
     if pad_step == 101 and t < 9.0: return PadIn { none.axes, [ "a" ] }  // (A held on: it laid the house, so no circle)
     if pad_step == 101:
