@@ -1350,6 +1350,7 @@ def run_front(page0:string, typed:[string]) -> string:
         let any_pad = gl.button("controller_a") == 1 or gl.button("controller_b") == 1 or gl.button("controller_x") == 1 or gl.button("controller_start") == 1 or gl.button("controller_dpup") == 1 or gl.button("controller_dpdown") == 1 or abs(gl.controller_axis(1)) > 0.6
         if any_pad or has_s(args, "padui"): fe_pad = true
         elif gl.button("mouse1") == 1 or magnitude(float(gl.mouse_delta(0))) > 4.0: fe_pad = false
+        for(args) a: if starts_with(a, "padfocus:") and fe_frames >= 5: ui_focus = string_to_int(a.substring(9, a.length - 9))  // (captures: the pad's focus on a button, #493)
         pace_menu(fe_page == "title", any_pad or gl.button("mouse1") >= 1 or gl.mouse_delta(0) != int2_0 or fe_field >= 0)
         if (fe_field >= 0) != typing:
             typing = fe_field >= 0
