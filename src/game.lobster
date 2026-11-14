@@ -142,7 +142,7 @@ var hosting = false                   // host: a network match, waiting for a pl
 var join_ip = ""                      // join:<ip>: play the second side of the match a host there sets up
 var reload_at = -1.0                  // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
-var atmo_arg = ""  // atmosphere:<mood>: the match in that mood (data/atmosphere.json), atmosphere:off: none (the frame drawn straight)
+var atmo_arg = ""  // atmosphere:<mood>: the match in that mood (data/atmosphere.json; <a>~<b>@<t>: between two, game/mood.lobster), atmosphere:off: none (the frame drawn straight)
 // A mod can say how it starts (its manifest's `launch`): those options, as if typed after the rest.
 for(copy(args)) a:
     if starts_with(a, "mods:"):
@@ -310,6 +310,8 @@ def map_ids() -> [string]:
             if ends_with(n, ".json"): out.push(substring(n, 0, n.length - 5))
     return sorted_strs(out)
 
+import .game.mood
+
 // The map's tree species per cell
 // (and every table the pack lacks, from data: game/pack_data.lobster; the species worked out as Godot's LandView
 // does, species_check.lobster)
@@ -317,7 +319,7 @@ def load_species(map_id:string):
     species = species_from_map(map_id)
     pack_from_data(map_id)
     let atmo = lib_data("atmosphere.json")  // (the mood: the asked one, the map's, else the default; an unknown one stops the game)
-    let bad = atmo_set(atmo, atmo_mood_for(atmo, map_id, atmo_arg))
+    let bad = atmo_set_asked(atmo, atmo_mood_for(atmo, map_id, atmo_arg))
     if bad != "": fatal_exit(bad)
 
 def lobby_text(p:float2, s:string, col:float4): text_label(p, s, gl.get_font_size(), col, TEXT_FACE, 0.0, float4_0)
