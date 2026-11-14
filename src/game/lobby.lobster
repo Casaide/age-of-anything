@@ -1016,6 +1016,10 @@ def fe_net_page() -> string:
             go = "join"
         y += 60.0 * fe_k
     if not fe_hosts.length: y += 60.0 * fe_k
+    if fe_scanned and lan_scan_note() != "":  // what the scan saw (#506): this machine's address, who took the call
+        let note = fe_wrap(lan_scan_note(), fz(13.0), w)
+        for(note) line, k: ui_text(float2 { x, y - 18.0 * fe_k + float(k) * 17.0 * fe_k }, line, fz(13.0), lk.dim)
+        y += float(note.length - 1) * 17.0 * fe_k
     y += 10.0 * fe_k
     fe_box(20, float2 { x, y }, float2 { w - 160.0 * fe_k, 48.0 * fe_k }, fe_address, "or an address: 192.168.1.20", fz(19.0), false)
     if ui_button(float2 { x + w - 150.0 * fe_k, y }, float2 { 150.0 * fe_k, 48.0 * fe_k }, "Join", false) and fe_address.fe_trim() != "": go = "join"
@@ -1383,7 +1387,7 @@ def run_front(page0:string, typed:[string]) -> string:
             elif fe_field == 20: fe_address = text
             if gl.button("tab") == 1 and fe_page == "setup": fe_focus((fe_field + 1) % fe_sides.length, fe_sides[(fe_field + 1) % fe_sides.length].typed)
         if fe_page == "net" and not fe_scanned and fe_frames > 1:
-            fe_hosts = lan_scan(1.5)
+            fe_hosts = lan_scan(4.0, NET_PORT)  // (Wi-Fi in power saving can take a while to answer: #506)
             fe_scanned = true
         if fe_page != "lab": fe_muster(fe_clock())
         gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
