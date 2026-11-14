@@ -14,17 +14,17 @@ def build_label(id_file:string, git_head:string, git_dirty:string, net:string) -
 
 var build_label_cache = ""
 
-// This build's line (asked once: git runs at most twice).
+// This build's line (asked once: git runs at most twice; tool_command, creel/src/net/lan.lobster: git by PATH).
 def build_label_now(net:string) -> string:
     if build_label_cache != "": return build_label_cache
     let id_file = read_file("build_id.txt") or ""
     var head = ""
     var dirty = ""
     if id_file == "":
-        let code, out = launch_subprocess([ "git", "rev-parse", "--short", "HEAD" ])
+        let code, out = launch_subprocess(tool_command("git rev-parse --short HEAD"))
         if code == 0:
             head = out
-            let c2, out2 = launch_subprocess([ "git", "status", "--porcelain", "--untracked-files=no" ])
+            let c2, out2 = launch_subprocess(tool_command("git status --porcelain --untracked-files=no"))
             if c2 == 0: dirty = out2
     build_label_cache = build_label(id_file, head, dirty, net)
     return build_label_cache
