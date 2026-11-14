@@ -19,3 +19,4 @@ __pycache__/
 *.bak
 src/builtin_functions_names.txt
 reference/
+src/build_id.txt
