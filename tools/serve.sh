@@ -29,6 +29,7 @@ if [ -x "$root/build/lobster_linux/run.sh" ]; then
 	# (COPYFILE_DISABLE: no macOS ._ files in the archive)
 	COPYFILE_DISABLE=1 tar -czf "$out/deck.tar.gz" -C "$root/build" lobster_linux
 	sed "s#@URL@#$url#" "$root/tools/deck/install_http.sh" > "$out/deck.sh"
+	cksum < "$out/deck.tar.gz" | cut -d' ' -f1 > "$out/version"   # (the Deck's launcher pulls a build whose version differs, #492)
 	served="deck"
 fi
 if [ -f "$root/build/android/age-of-anything.apk" ]; then
