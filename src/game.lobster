@@ -1583,6 +1583,7 @@ while not quit_app and not bake_quit:
         if vx_source == "":  // (the units' data on the boot screen: in the title's first frame it froze the menu for seconds, #494)
             startup_frame("Loading the armies...", 0.9)
             vx_init()
+            build_label_now(net_version())  // (git asked here too, not in the title's first frame)
         front_choice = run_front(if lab_arg: "lab" elif page_arg != "": page_arg else: "title", if races_arg != "": lobby_prompts else: [])
         if front_choice == "": break
     if not make_match():
