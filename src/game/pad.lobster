@@ -267,5 +267,6 @@ def pad_draw():
             gl.translate(c):
                 gl.scale(float2 { 1.0, 0.5 }): gl.open_circle(pad_circle, 48, 2.0 * u / pad_circle)
     if pad_cursor != "pointer" and pad_cursor != "move" and not pad_wheel.length:
-        tb_icon("os_cursor/" + pad_cursor + "@2x", c + float2 { 14.0, 4.0 } * u, 32.0 * u, 1.0)
+        // (clear of the ring, big enough to read at the Deck's size)
+        tb_icon("os_cursor/" + pad_cursor + "@2x", c + float2 { 22.0, 8.0 } * u, 42.0 * u, 1.0)
     if pad_wheel.length: wheel_draw()  // (game/panel.lobster)
