@@ -875,14 +875,22 @@ if has_s(args, "prebake"):
     bake_quit = true
 
 // A line in the middle of an empty screen while the link is made (true: the window was closed).
+// A waiting or failed join or host: B or Esc goes back to the menu (net_backed_out), never a dead end.
+var net_backed_out = false
 def net_wait_frame(msg:string) -> bool:
-    if not gl.frame() or gl.button("escape") == 1: return true
+    if not gl.frame(): return true
+    if gl.button("escape") == 1 or gl.button("controller_b") == 1:
+        net_backed_out = true
+        return true
     gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
     gl.blend(1)
     let u = ui()
     gl.set_font_size(int(22.0 * u))
     let half = float(gl.text_size(msg).x) * 0.5  // (a refusal can be long: centred, so it stays on screen)
     lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } - float2 { half, 0.0 }, msg, float4 { 0.95, 0.85, 0.6, 1.0 })
+    let hint = "B or Esc: back to the menu"
+    gl.set_font_size(int(16.0 * u))
+    lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } + float2 { float(gl.text_size(hint).x) * -0.5, 44.0 * u }, hint, float4 { 0.7, 0.68, 0.62, 1.0 })
     return false
 
 var joined_bots = []::Bot
@@ -1573,7 +1581,13 @@ while not quit_app and not bake_quit:
     elif front_first:
         front_choice = run_front(if lab_arg: "lab" elif page_arg != "": page_arg else: "title", if races_arg != "": lobby_prompts else: [])
         if front_choice == "": break
-    if not make_match(): break
+    if not make_match():
+        if not net_backed_out: break
+        net_backed_out = false  // (backed out of a join or a host: the menu again, nothing played)
+        link = Link {}
+        new_match_reset()
+        front_first = true
+        continue
     play_match()
     os_cursor_release()
     if quit_app or bake_quit or not back_to_lobby: break
