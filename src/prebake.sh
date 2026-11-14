@@ -9,15 +9,20 @@
 LOBSTER="${LOBSTER:-$HOME/Dev/lobster/bin/lobster}"
 cd "$(dirname "$0")"
 set -e
+[ -x "$LOBSTER" ] || { echo "prebake: no Lobster at $LOBSTER (set LOBSTER)"; exit 1; }
+[ -f ../creel/src/view/bake_cache.lobster ] || { echo "prebake: creel/ is empty: git submodule update --init"; exit 1; }
 version=$(sed -n 's/^let BAKE_VERSION = \([0-9]*\).*/\1/p' ../creel/src/view/bake_cache.lobster)
+[ -n "$version" ] || { echo "prebake: no BAKE_VERSION in creel/src/view/bake_cache.lobster"; exit 1; }
 mkdir -p baked
 if [ "$(cat baked/version 2>/dev/null)" != "$version" ]; then
 	find baked -mindepth 1 -delete
 	echo "$version" > baked/version
 fi
 jobs="${BAKE_JOBS:-$(($(sysctl -n hw.ncpu 2>/dev/null || nproc) - 1))}"
-pieces=$("$LOBSTER" game.lobster -- none - prebake pieces mute 2>&1 | sed -n 's/^prebake: \([0-9]*\) pieces$/\1/p')
-[ -n "$pieces" ]
+said=$("$LOBSTER" game.lobster -- none - prebake pieces mute 2>&1 || true)
+pieces=$(echo "$said" | sed -n 's/^prebake: \([0-9]*\) pieces$/\1/p')
+# (no count: the game didn't start, e.g. a compile error, or creel/ at a commit the game doesn't match; say what it said, #495)
+[ -n "$pieces" ] || { echo "prebake: the game didn't list its pieces. What it said:"; echo "$said" | grep -v ALSA | tail -25; exit 1; }
 export LOBSTER pieces
 for density in density:0 density:2.4; do
 	i=0
