@@ -1580,6 +1580,9 @@ while not quit_app and not bake_quit:
         front_choice = next_choice
         next_choice = ""
     elif front_first:
+        if vx_source == "":  // (the units' data on the boot screen: in the title's first frame it froze the menu for seconds, #494)
+            startup_frame("Loading the armies...", 0.9)
+            vx_init()
         front_choice = run_front(if lab_arg: "lab" elif page_arg != "": page_arg else: "title", if races_arg != "": lobby_prompts else: [])
         if front_choice == "": break
     if not make_match():
@@ -1594,5 +1597,10 @@ while not quit_app and not bake_quit:
     if quit_app or bake_quit or not back_to_lobby: break
     new_match_reset()
     front_first = true
+// The looks the lobby baked and didn't keep (a menu doesn't stop to save, #494): kept now, for the next start.
+let vx_left = vx_unsaved.length
+for(vx_left) i:
+    startup_frame("Keeping the armies for next time...", float(i) / float(vx_left))
+    vx_save(vx_unsaved.pop())
 view_reset()
 fe_free_views()
