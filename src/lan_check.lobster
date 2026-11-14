@@ -92,5 +92,15 @@ expect("no git, no file", build_label("", "", "", "abc"), "build unknown, net ab
 if my_ipv4() == "": expect("this machine has a home-network address", "", "an address")
 if find_string(build_label_now("x"), "build unknown") >= 0: expect("git names this checkout", build_label_now("x"), "build <hash>, net x")
 
+// a scan says what it reached (#506): a host listening here is reached on 127.0.0.1, and the note names this machine
+let test_port = 47829
+let door = door_open(test_port, "check", "meadow")
+if door.error != "": expect("a test host opens", door.error, "")
+lan_scan(0.6, test_port)
+if lan_seen.reached < 1: expect("the scan reaches the host on this machine", string(lan_seen.reached), ">= 1")
+if lan_seen.me != my_ipv4(): expect("the scan knows this machine", lan_seen.me, my_ipv4())
+if find_string(lan_scan_note(), "from {my_ipv4()}") < 0: expect("the note names this machine", lan_scan_note(), "... from {my_ipv4()} ...")
+print lan_scan_note()
+
 if bad: set_exit_code(1)
 print if bad: "lan_check: {bad} failed" else: "lan_check: all pass"
