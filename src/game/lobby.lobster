@@ -765,6 +765,7 @@ def fe_title_page(dt:float) -> string:
             let a = j * (nx + 1) + i
             for([ a, a + nx + 2, a + 1, a, a + nx + 1, a + nx + 2 ]) q: idx.push(q)
     ui_paint_poly(pts, cols, idx, ui_material("felt"))
+    ui_text_c(ws.x / 2.0, ws.y - 26.0 * fe_k, build_label_now(net_version()), fz(15.0), lk.dim, 0, 0.0)  // which build this is (#500)
     let zm = 3.0 * fe_k
     let cw = ws.x / zm
     for(min(2, fe_sides.length)) i:
