@@ -16,25 +16,33 @@
       "exposure": 0.05, "contrast": 0.13, "saturation": 0.12,
       "shadow_tint": "#5676c8", "shadow": 0.42, "highlight_tint": "#fff2d8", "highlight": 0.24,
       "haze_colour": "#c4d6ea", "haze": 0.12, "haze_start": 0.45, "haze_drift": 0.3,
-      "vignette": 0.16, "vignette_radius": 0.62, "bloom": 0.28, "bloom_threshold": 0.68, "glow": 0.8, "glow_air": 0.08
+      "vignette": 0.16, "vignette_radius": 0.62, "bloom": 0.28, "bloom_threshold": 0.68, "glow": 0.8, "glow_air": 0.08,
+      "sun_shade": 0.85, "shade_colour": "#7486b0", "shade_grey": 0.1, "sun": 0.08, "sun_colour": "#fff0d6",
+      "unit_lift": 0.55, "unit_rim": 0.35
     },
     "late_afternoon": {
       "exposure": 0.01, "contrast": 0.1, "saturation": 0.11,
       "shadow_tint": "#5464aa", "shadow": 0.36, "highlight_tint": "#ffd6a2", "highlight": 0.24,
       "haze_colour": "#d2c8b6", "haze": 0.08, "haze_start": 0.5, "haze_drift": 0.35,
-      "vignette": 0.2, "vignette_radius": 0.56, "bloom": 0.32, "bloom_threshold": 0.66, "glow": 1.3, "glow_air": 0.13
+      "vignette": 0.2, "vignette_radius": 0.56, "bloom": 0.32, "bloom_threshold": 0.66, "glow": 1.3, "glow_air": 0.13,
+      "sun_shade": 0.8, "shade_colour": "#6c7ca8", "shade_grey": 0.15, "sun": 0.14, "sun_colour": "#ffd8a8",
+      "unit_lift": 0.6, "unit_rim": 0.45
     },
     "golden_evening": {
       "exposure": -0.02, "contrast": 0.12, "saturation": 0.08,
       "shadow_tint": "#4a5aa8", "shadow": 0.45, "highlight_tint": "#ffb46a", "highlight": 0.48,
       "haze_colour": "#dca27a", "haze": 0.24, "haze_start": 0.3, "haze_drift": 0.4,
-      "vignette": 0.4, "vignette_radius": 0.5, "bloom": 0.4, "bloom_threshold": 0.6, "glow": 1.8, "glow_air": 0.18
+      "vignette": 0.4, "vignette_radius": 0.5, "bloom": 0.4, "bloom_threshold": 0.6, "glow": 1.8, "glow_air": 0.18,
+      "sun_shade": 0.8, "shade_colour": "#6670a8", "shade_grey": 0.2, "sun": 0.22, "sun_colour": "#ffb877",
+      "unit_lift": 0.65, "unit_rim": 0.55
     },
     "misty_morning": {
       "exposure": 0.03, "contrast": -0.02, "saturation": -0.08,
       "shadow_tint": "#7b8fa8", "shadow": 0.25, "highlight_tint": "#f2ead8", "highlight": 0.1,
       "haze_colour": "#d2dce2", "haze": 0.5, "haze_start": 0.22, "haze_drift": 0.75,
-      "vignette": 0.18, "vignette_radius": 0.6, "bloom": 0.25, "bloom_threshold": 0.7, "glow": 0.9, "glow_air": 0.14
+      "vignette": 0.18, "vignette_radius": 0.6, "bloom": 0.25, "bloom_threshold": 0.7, "glow": 0.9, "glow_air": 0.14,
+      "sun_shade": 0.6, "shade_colour": "#8494b0", "shade_grey": 0.25, "sun": 0.06, "sun_colour": "#f4ecdc",
+      "unit_lift": 0.6, "unit_rim": 0.3
     }
   },
   "glows": {
