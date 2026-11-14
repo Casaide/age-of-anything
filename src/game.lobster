@@ -440,6 +440,7 @@ def screen_of_cell(c:int) -> float2: return to_screen(iso(float((c % W) * 1000 +
 
 def expect_ok(ok:bool, what:string):
     test_log += (if ok: "PASS " else: "FAIL ") + what + "\n"
+    if not ok: set_exit_code(1)  // (selftest, padtest: a failed check fails the run)
 
 // The nearest cell to (x, y) (tiles) whose test passes, or -1.
 def nearest_cell(x:int, y:int, test) -> int:
@@ -709,13 +710,60 @@ def pad_script() -> PadIn:
         test_pause = false
         pad_step++
         return none
-    if pad_step == 9:
-        pad_step++
-        return PadIn { none.axes, [ "x" ] }
-    if pad_step == 10 and t >= 9.0:
+    if pad_step == 9:  // (#507: the A that chose it on the wheel has been let go)
+        expect_ok(placing >= 0, "letting go of the A that chose the house lays nothing (still placing)")
+        pad_step = 100
+        return PadIn { none.axes, [ "a" ] }
+    if pad_step == 100:
+        expect_ok(placing < 0, "A lays the house as it\'s pressed, not on its release")
+        pad_step = 101
+    if pad_step == 101 and t < 9.0: return PadIn { none.axes, [ "a" ] }  // (A held on: it laid the house, so no circle)
+    if pad_step == 101:
         let houses = (filter(b_id.length) b: b_owner[b] == ME and bt_name[b_kind[b]] == "house").length
-        expect_ok(houses > pad_houses, "X lays the house down ({pad_houses} -> {houses})")
-        pad_step++
+        expect_ok(houses > pad_houses, "the house is laid down ({pad_houses} -> {houses})")
+        expect_ok(pad_circle == 0.0, "holding on the A that laid the house grows no circle")
+        pad_step = 102
+        return none
+    if pad_step == 102:
+        expect_ok(selected_workers().length > 0, "letting go of the A that laid the house keeps the worker selected")
+        var best = int2 { -1, -1 }  // (#508: the reticle on the tree nearest the Town Center)
+        var best_d = 1000000000
+        for(H) y:
+            for(W) x:
+                let r = res_at(cell_of(x * TILE + TILE / 2, y * TILE + TILE / 2))
+                let d = abs(x - b_cx[tc]) + abs(y - b_cy[tc])
+                if r != 0 and resource_names[r - 1] == "wood" and d < best_d:
+                    best_d = d
+                    best = int2 { x, y }
+        assert best.x >= 0
+        cam = iso(float(best.x * TILE + TILE / 2), float(best.y * TILE + TILE / 2))
+        pad_off = float2_0
+        test_pause = true
+        pad_step = 103
+        return none
+    if pad_step == 103:
+        pad_step = 104
+        return none
+    if pad_step == 104:
+        expect_ok(pad_cursor == "chop", "the reticle on a tree with a worker selected shows the chop cursor ({pad_cursor})")
+        if has_s(args, "reticleshot") and shot != "":  // (captures, with reveal: the reticle on the tree, then on a foe)
+            gl.screenshot(shot + ".tree.png")
+            let foes = filter(u_id.length) i: is_enemy(u_owner[i], ME) and t_animal[u_kind[i]] == 0
+            assert foes.length
+            cam = iso(float(u_x[foes[0]]), float(u_y[foes[0]]))
+            pad_off = float2_0
+            pad_step = 105
+            return none
+        test_pause = false
+        pad_step = 11
+        return PadIn { none.axes, [ "b" ] }
+    if pad_step == 105:
+        pad_step = 106
+        return none
+    if pad_step == 106:
+        gl.screenshot(shot + ".foe.png")
+        test_pause = false
+        pad_step = 11
         return PadIn { none.axes, [ "b" ] }
     if pad_step == 11:
         expect_ok(not selected.length, "B lets the selection go")
@@ -751,8 +799,18 @@ def pad_script() -> PadIn:
         cam = iso(float(fold(mine, 0) acc, i: acc + u_x[i]) / float(mine.length), float(fold(mine, 0) acc, i: acc + u_y[i]) / float(mine.length))
         pad_step = 14
         return PadIn { none.axes, [ "rightshoulder" ] }
-    if pad_step == 14:
+    if pad_step == 14:  // (#510: the pause menu, opened from the pad, sits on Resume and keeps the focus)
+        menu_open = true
+        pad_step = 140
+        return none
+    if pad_step == 140 or pad_step == 141 or pad_step == 142:
         pad_step++
+        return none
+    if pad_step == 143:
+        expect_ok(ui_focus == 0, "the pause menu opened on the pad has the focus on Resume, frames later ({ui_focus})")
+        if has_s(args, "reticleshot") and shot != "": gl.screenshot(shot + ".menu.png")  // (captures: the pause menu on the pad)
+        menu_open = false
+        pad_step = 15
         print test_log
     return none
 
@@ -1210,8 +1268,12 @@ def end_screen_up() -> bool: return winner >= 0 and not end_watching and not men
 
 // The match's end: Victory or Defeat over the dimmed world, how long it was played, and the ways out.
 def end_screen():
+    menu_frame(true)
+    end_screen_body()
+    menu_frame_end()
+
+def end_screen_body():
     let ws = float(gl.window_size())
-    ui_frame(true)
     let k = hud_s()
     ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.6 })
     let from_lobby = args[1] == "lobby"
@@ -1242,11 +1304,32 @@ def end_screen():
         y += 54.0 * k
     ui_flush()
 
+// A menu over the match keeps its own buttons and pad focus (#510): the command panel, drawn first each frame, starts
+// the UI's frame with the pad off, which drops the focus and leaves its own buttons as the ones the d-pad walks.
+// Opened on the pad, a menu starts on its first button (Resume), as the Godot game's did.
+var menu_hits = []::UiHit
+var menu_focus = -1
+var menu_was_up = false
+def menu_frame(up:bool):
+    if up and not menu_was_up: menu_focus = if pad_on: 0 else: -1
+    menu_was_up = up
+    ui_hits = menu_hits
+    ui_focus = menu_focus
+    ui_frame(true)
+def menu_frame_end():
+    menu_hits = ui_hits
+    menu_focus = ui_focus
+
 // The pause menu (Esc, or Start on the pad): a panel of buttons over the dimmed match. In a network
 // match the world goes on (only you stop looking), and Load isn't offered.
 def pause_menu():
+    menu_frame(true)
+    pause_menu_body()
+    menu_frame_end()
+    if not menu_open and gl.button("controller_a") >= 1: pad_a_eaten = true  // (the A that chose Resume: it selects nothing on its way up)
+
+def pause_menu_body():
     let ws = float(gl.window_size())
-    ui_frame(true)
     if menu_saves:  // Load game: the saves (game/lobby.lobster)
         fe_fit()
         let picked = fe_saves_card("")
@@ -1467,6 +1550,8 @@ def play_match():
             tree_tick()
             if menu_open: pause_menu()
             elif end_screen_up(): end_screen()
+            else: menu_was_up = false
+            if padtest and menu_open: pad_script()  // (#510: the menu reads the real pad; the script only checks it)
             if not rec_clean: draw_banner()
             if typing_text: typing_tick()
             os_cursor_tick()
@@ -1584,6 +1669,10 @@ while not quit_app and not bake_quit:
         front_choice = next_choice
         next_choice = ""
     elif front_first:
+        if vx_source == "":  // (the units' data on the boot screen: in the title's first frame it froze the menu for seconds, #494)
+            startup_frame("Loading the armies...", 0.9)
+            vx_init()
+            build_label_now(net_version())  // (git asked here too, not in the title's first frame)
         front_choice = run_front(if lab_arg: "lab" elif page_arg != "": page_arg else: "title", if races_arg != "": lobby_prompts else: [])
         if front_choice == "": break
     if not make_match():
@@ -1598,5 +1687,10 @@ while not quit_app and not bake_quit:
     if quit_app or bake_quit or not back_to_lobby: break
     new_match_reset()
     front_first = true
+// The looks the lobby baked and didn't keep (a menu doesn't stop to save, #494): kept now, for the next start.
+let vx_left = vx_unsaved.length
+for(vx_left) i:
+    startup_frame("Keeping the armies for next time...", float(i) / float(vx_left))
+    vx_save(vx_unsaved.pop())
 view_reset()
 fe_free_views()
