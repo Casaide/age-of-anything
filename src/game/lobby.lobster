@@ -62,6 +62,12 @@ var fe_modes = []::[string]  // id, name, desc
 var fe_rules = jobj()
 var fe_tip_lines = []::string  // the hover card this frame
 var fe_hosting = false         // the battle setup is for hosting a network game
+var fe_rooms = []::Room        // the host's room while the battle setup hosts (#519): joiners take sides in it
+var fe_swarm = Swarm {}        // online play's sidecar for the room, or the guest page (#514)
+var fe_guests = []::Guest      // the guest page's link to a host's room
+var fe_join_what = ""          // what the guest page joins: a join code or an address
+var fe_guest_words = ""        // the guest's army, as typed
+var fe_code_copied = ""        // the join code last put on the clipboard
 var fe_note = ""               // a line at the foot (the saves page, the network page)
 var fe_frames = 0
 var fe_pad = false  // the pad was used last (its hints shown)
@@ -305,6 +311,7 @@ def fe_field_text() -> string:
     if fe_field >= 0 and fe_field < 4 and fe_field < fe_sides.length: return fe_sides[fe_field].typed
     if fe_field >= 10 and fe_field < 12: return fe_sides[fe_field - 10].typed
     if fe_field == 20: return fe_address
+    if fe_field == 21: return fe_guest_words
     return ""
 
 def fe_focus(id:int, text:string):
@@ -672,7 +679,7 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
     tb_icon("research", float2 { x + w - tw + 12.0 * fe_k, y + 7.0 * fe_k }, 22.0 * fe_k, 1.0)
     ui_text_f(float2 { x + w - tw + 40.0 * fe_k, y + 6.0 * fe_k }, "Tech tree", fz(18.0), lk.text, 1, 0.0)
     if fe_over(float2 { x + w - tw, y }, float2 { tw, top_h }): fe_tip([ "Everything this race can build, train and research, and its bonuses" ])
-    if compact and i > 0 and not (fe_hosting and i == 1):
+    if compact and i > 0 and not fe_player_side(i):
         var lx = x + w - tw - 8.0 * fe_k
         var k = FE_LEVELS.length - 1
         while k >= 0:
@@ -727,8 +734,12 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
     y = st_at.y + st_size.y + 12.0 * fe_k
     // the dice, then the prompt
     let ph = (if compact: 48.0 else: 68.0) * fe_k
-    if fe_dice(float2 { x, y }, ph): fe_roll(i)
-    fe_box(i, float2 { x + ph + 10.0 * fe_k, y }, float2 { w - ph - 10.0 * fe_k, ph }, s.typed, "...or describe your race", fz(if compact: 20.0 else: 25.0), false)
+    if fe_player_side(i):  // (a joiner's: its words come from the joiner)
+        fe_well(float2 { x, y }, float2 { w, ph })
+        ui_text_f(float2 { x + 14.0 * fe_k, y + ph / 2.0 - 12.0 * fe_k }, if s.typed != "": s.typed else: "the player is choosing...", fz(if compact: 18.0 else: 22.0), lk.dim, 1, 0.0)
+    else:
+        if fe_dice(float2 { x, y }, ph): fe_roll(i)
+        fe_box(i, float2 { x + ph + 10.0 * fe_k, y }, float2 { w - ph - 10.0 * fe_k, ph }, s.typed, "...or describe your race", fz(if compact: 20.0 else: 25.0), false)
     y += ph + 9.0 * fe_k
     fe_roster_text(s.race, float2 { x, y }, w, if compact: 1 else: 2, fz(if compact: 15.0 else: 17.0))
     if not compact: fe_traits(s, float2 { x, y + 57.0 * fe_k }, w, 26.0 * fe_k, fz(13.0))
@@ -849,6 +860,119 @@ def fe_settings_card() -> string:
     return go
 
 // The battle setup: a panel per player (your team on the left), the middle column, Start.
+// ---- the network lobby (#519): the host's room and the guest page
+
+// A side a joiner holds in the host's room.
+def fe_player_side(i:int) -> bool:
+    if not fe_hosting or not fe_rooms.length: return false
+    let r = fe_rooms[0]
+    return i < r.sides.length and r.sides[i].who == ROOM_PLAYER
+
+def fe_room_open():
+    fe_room_close()
+    fe_rooms = [ room_open(NET_PORT, "Battle", fe_maps[fe_map_k]) ]
+    fe_swarm = swarm_host(NET_PORT)
+    fe_code_copied = ""
+
+def fe_room_close():
+    swarm_stop(fe_swarm)
+    fe_swarm = Swarm {}
+    fe_rooms = []
+    fe_guests = []
+
+// The room each frame: our sides into it, joiners' words out of it into their sides, the code onto the clipboard.
+def fe_room_tick():
+    if not fe_rooms.length: return
+    let r = fe_rooms[0]
+    r.map_id = fe_maps[fe_map_k]
+    r.mode = lobby_mode
+    room_sides(r, map(fe_sides) side: side.team, map(fe_sides.length) i: fe_prompt(i))
+    room_tick(r)
+    for(r.sides) rs, i:
+        if rs.who == ROOM_PLAYER and i < fe_sides.length and fe_sides[i].typed != rs.prompt:
+            fe_sides[i].typed = rs.prompt
+            fe_sides[i].reroll = 0
+            fe_regen(i)
+    swarm_poll(fe_swarm)
+    if fe_swarm.code != "" and fe_swarm.code != fe_code_copied:
+        gl.set_clipboard(fe_swarm.code)
+        fe_code_copied = fe_swarm.code
+
+// The host's line under the title: how others join.
+def fe_room_line() -> string:
+    let here = my_ipv4()
+    let lan = if here != "": "on this network: {here}" else: ""
+    if fe_swarm.code != "": return "Join code: {fe_swarm.code} (copied; C or Y copies again)" + (if lan != "": "  ·  or " + lan else: "")
+    if fe_swarm.error != "": return "Online play is off ({fe_swarm.error})" + (if lan != "": "  ·  join " + lan else: "")
+    return "Opening the game to players..."
+
+// The guest page: from the network page's Join; connect (through the sidecar for a code), then the host's room.
+def fe_guest_start(what:string):
+    fe_room_close()
+    fe_join_what = what
+    let code = join_code_in(what)
+    if code != "": fe_swarm = swarm_join(code, 0)
+    else: fe_guests = [ guest_new(net_join(what, NET_PORT)) ]
+
+def fe_guest_status() -> string:
+    if fe_swarm.error != "": return "No online play: {fe_swarm.error}"
+    if not fe_guests.length: return "Starting online play..."
+    let g = fe_guests[0]
+    if g.error != "": return "Could not join: {g.error}"
+    if fe_swarm.out != "" and fe_swarm.peers == 0: return "Looking for the host of {fe_join_what}..."
+    if g.side < 0: return "Joining {fe_join_what}..."
+    return "In the host\'s lobby. Take a side, describe your army, and the host starts the battle."
+
+def fe_guest_page() -> string:
+    let ws = float(gl.window_size())
+    let lk = ui_look_of("")
+    ui_use(lk)
+    ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.5 })
+    if fe_swarm.out != "" and not fe_guests.length:
+        swarm_poll(fe_swarm)
+        if fe_swarm.port > 0: fe_guests = [ guest_new(net_join("127.0.0.1", fe_swarm.port)) ]
+    elif fe_swarm.out != "": swarm_poll(fe_swarm)
+    var go = ""
+    let sides = if fe_guests.length: glist(fe_guests[0].lobby, "sides") else: []
+    let size = D(820.0, 380.0 + float(max(2, sides.length)) * 62.0)
+    let at = (ws - size) / 2.0
+    fe_panel(at, size, lk, true)
+    let x = at.x + 40.0 * fe_k
+    let w = size.x - 80.0 * fe_k
+    var y = at.y + 26.0 * fe_k
+    ui_text_c(ws.x / 2.0, y, "Join a battle", fz(44.0), lk.title, 2, 2.0 * fe_k)
+    y += 62.0 * fe_k
+    ui_text_c(ws.x / 2.0, y, fe_guest_status(), fz(17.0), lk.dim, 0, 0.0)
+    y += 40.0 * fe_k
+    if fe_guests.length:
+        let g = fe_guests[0]
+        guest_tick(g)
+        guest_prompt(g, fe_guest_words.fe_trim())
+        if g.world != "": go = "join"
+        let map_id = gstr(g.lobby, "map", "")
+        if map_id != "":
+            ui_text(float2 { x, y }, "Battlefield: {gstr(load_json("../data/maps/{map_id}.json"), "name", map_id)}", fz(18.0), lk.text)
+            y += 34.0 * fe_k
+        for(sides) sd, i:
+            let who = gstr(sd, "who", "")
+            let mine = i == g.side
+            fe_gem(float2 { x + 9.0 * fe_k, y + 24.0 * fe_k }, 8.0 * fe_k, team_rgb[i % team_rgb.length])
+            let words = gstr(sd, "prompt", "")
+            let label = if mine: "You" elif who == ROOM_HOST: "The host" elif who == ROOM_PLAYER: "A player" else: "AI"
+            let team = gint(sd, "team", 0)
+            ui_text(float2 { x + 26.0 * fe_k, y + 12.0 * fe_k }, "Team {team + 1}  ·  {label}" + (if words != "" and not mine: ":  {words}" else: ""), fz(18.0), if mine: lk.accent else: lk.text)
+            if who == ROOM_AI and ui_button(float2 { x + w - 200.0 * fe_k, y + 2.0 * fe_k }, float2 { 200.0 * fe_k, 46.0 * fe_k }, "Take this side", false): guest_take(g, i)
+            y += 62.0 * fe_k
+        y += 6.0 * fe_k
+        ui_text(float2 { x, y }, "Your army", fz(18.0), lk.dim)
+        y += 28.0 * fe_k
+        fe_box(21, float2 { x, y }, float2 { w, 52.0 * fe_k }, fe_guest_words, "describe your race (left empty, the dice choose)", fz(21.0), false)
+        y += 70.0 * fe_k
+    if ui_button(float2 { x, at.y + size.y - 76.0 * fe_k }, float2 { w, 52.0 * fe_k }, "Back", false): go = "back"
+    if gl.button("controller_b") == 1 or (gl.button("escape") == 1 and fe_field != 21): go = "back"
+    if gl.button("escape") == 1: fe_field = -1
+    return go
+
 def fe_setup_page(dt:float) -> string:
     let ws = float(gl.window_size())
     let lk = ui_look_of("")
@@ -869,7 +993,7 @@ def fe_setup_page(dt:float) -> string:
         let x = 26.0 + float(c) * (col_w + 22.0 + centre_w + 22.0)
         let each = (row_h - 30.0 * float(col.length - 1)) / float(max(1, col.length))
         for(col) i, r:
-            let who = if i == 0: "You" elif fe_hosting and i == 1: "The other player" elif c == 0: "Ally (AI)" else: "The AI"
+            let who = if i == 0: "You" elif fe_player_side(i): "A player" elif fe_hosting and c == 0: "Ally (AI): a player can take it" elif fe_hosting: "The AI: a player can take it" elif c == 0: "Ally (AI)" else: "The AI"
             fe_side_panel(i, D(x, row_y + float(r) * (each + 30.0)), D(col_w, each), compact, who, dt)
     // the middle: the cast "vs", the map card, the AI's level, Start
     let cx = 26.0 + col_w + 22.0
@@ -905,7 +1029,7 @@ def fe_setup_page(dt:float) -> string:
     lobby_mode = fe_modes[fe_mode_k][0]
     // the AI's level (1v1; a team game has it in each AI's panel), Start, the hint
     let by = fe_h - 22.0 - 30.0 - 100.0
-    if not compact and not fe_hosting:
+    if not compact and not fe_player_side(1):
         let lc_y = by - 18.0 - 92.0
         ui_box(D(cx + 8.0, lc_y), D(card_w, 92.0), 1, lk.face, false)
         ui_text_c(mid * fe_k, (lc_y + 12.0) * fe_k, "THE AI PLAYS", fz(14.0), fe_caption(lk), 3, 0.0)
@@ -915,8 +1039,14 @@ def fe_setup_page(dt:float) -> string:
     let breathe = 1.0 + 0.06 * (0.5 + 0.5 * sin(seconds_elapsed() * 128.0))
     let start_k = ui_hits.length
     if ui_button(D(cx + 8.0, by), D(card_w, 100.0), "", true): go = "start"
-    ui_text_c(mid * fe_k, (by + 24.0) * fe_k, if fe_hosting: "Host the Battle" else: "Start Battle", fz(40.0), lk.title * float4 { breathe, breathe, breathe, 1.0 }, 2, 2.0 * fe_k)
-    ui_text_c(mid * fe_k, (by + 112.0) * fe_k, if fe_pad: "X: roll the dice  -  Start: start  -  B: back" elif fe_hosting: "Start: wait for the other player to join" else: "Esc in battle: pause and menu", fz(16.0), lk.dim, 0, 0.0)
+    let players = if fe_rooms.length: room_players(fe_rooms[0]) else: 0
+    ui_text_c(mid * fe_k, (by + 24.0) * fe_k, "Start Battle", fz(40.0), lk.title * float4 { breathe, breathe, breathe, 1.0 } * (if fe_hosting and not players: float4 { 0.6, 0.6, 0.6, 1.0 } else: float4_1), 2, 2.0 * fe_k)
+    ui_text_c(mid * fe_k, (by + 112.0) * fe_k, if fe_hosting and not players: "Waiting for a player to join" elif fe_hosting: "{players} player{if players == 1: "" else: "s"} in: Start when everyone is ready" elif fe_pad: "X: roll the dice  -  Start: start  -  B: back" else: "Esc in battle: pause and menu", fz(16.0), lk.dim, 0, 0.0)
+    if fe_hosting:
+        ui_text_c(ws.x / 2.0, 66.0 * fe_k, fe_room_line(), fz(18.0), lk.accent, 0, 0.0)
+        if (gl.button("c") == 1 and fe_field < 0) or gl.button("controller_y") == 1:
+            if fe_swarm.code != "": gl.set_clipboard(fe_swarm.code)
+        if go == "start" and not players: go = ""
     if fe_frames == 1 and fe_pad: ui_focus = start_k  // (a pad starts on Start)
     // the pad: X rolls the dice of the panel the focus is in (yours when it's elsewhere), Start starts, B goes back
     if gl.button("controller_x") == 1:
@@ -1335,6 +1465,14 @@ def run_front(page0:string, typed:[string]) -> string:
             if i < lobby_rerolls.length: fe_sides[i].reroll = lobby_rerolls[i]
             fe_regen(i)
     fe_page = page0
+    if page0 == "host":  // (captures: the battle setup, hosting; guest:<code or address>: the guest page, #519)
+        fe_hosting = true
+        fe_page = "setup"
+        fe_room_open()
+    elif starts_with(page0, "guest:"):
+        fe_guest_start(page0.substring(6, page0.length - 6))
+        fe_page = "guest"
+        if typed.length: fe_guest_words = typed[0]
     front_shown = true
     fe_frames = 0
     fe_field = if page0 == "setup": 0 elif page0 == "lab": 10 else: -1  // (as the title's buttons do: side 1's box has the keyboard)
@@ -1390,10 +1528,12 @@ def run_front(page0:string, typed:[string]) -> string:
                     s.reroll = 0
                     fe_regen(fe_field - 10)
             elif fe_field == 20: fe_address = text
+            elif fe_field == 21: fe_guest_words = text
             if gl.button("tab") == 1 and fe_page == "setup": fe_focus((fe_field + 1) % fe_sides.length, fe_sides[(fe_field + 1) % fe_sides.length].typed)
         if fe_page == "net" and not fe_scanned and fe_frames > 1:
             fe_hosts = lan_scan(4.0, NET_PORT)  // (Wi-Fi in power saving can take a while to answer: #506)
             fe_scanned = true
+        if fe_page == "setup" and fe_hosting: fe_room_tick()
         if fe_page != "lab": fe_muster(fe_clock())
         gl.clear(float4 { 0.07, 0.06, 0.05, 1.0 })
         gl.blend(1)
@@ -1432,6 +1572,7 @@ def run_front(page0:string, typed:[string]) -> string:
                     if why != "": fe_note = why
                     else: go = "load:" + picked
             elif fe_page == "net": go = fe_net_page()
+            elif fe_page == "guest": go = fe_guest_page()
             elif fe_page == "settings": go = fe_settings_card()
         if fe_page == "setup" or fe_page == "lab" or fe_page == "title":
             ui_flush()
@@ -1475,7 +1616,9 @@ def run_front(page0:string, typed:[string]) -> string:
             if loop_round > 0: fe_set_map(fe_map_k + 1)
             go = "start"
         // captures: the page once its armies stand
-        if shot != "" and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and (not fe_looks_waiting() or fe_frames > 900) and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
+        let room_waits = has_s(args, "roomshot") and not (if fe_page == "guest": fe_guests.length and fe_guests[0].side >= 0 and fe_guest_words != "" else: fe_rooms.length and room_players(fe_rooms[0]) > 0)  // (captures: a player in the room)
+        if shot != "" and has_s(args, "roomshot") and not room_waits and shot_frame < 0 and fe_page == "guest": shot_frame = fe_frames + 3  // (the host may start any moment)
+        if shot != "" and not room_waits and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and (not fe_looks_waiting() or fe_frames > 900) and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
         if rec_dir != "" and rec_type.length > 0:  // (filming: the prompts typed in, side by side, each given time to muster)
             if rec_n == 0:
                 gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
@@ -1511,8 +1654,10 @@ def run_front(page0:string, typed:[string]) -> string:
         if go == "": pass()
         elif go == "quit": return ""
         elif go == "back":
+            if fe_page == "guest" or (fe_page == "setup" and fe_hosting): fe_room_close()
+            if fe_page == "guest" or (fe_page == "setup" and fe_hosting): fe_back = "net"
             if fe_page == "net" or fe_page == "saves" or fe_page == "lab" or (fe_page == "setup" and fe_hosting): fe_hosting = false
-            fe_page = if (fe_page == "saves" or fe_page == "net") and fe_back != "title": fe_back else: "title"
+            fe_page = if (fe_page == "saves" or fe_page == "net" or fe_page == "guest" or fe_page == "setup") and fe_back != "title": fe_back else: "title"
             fe_back = "title"
             fe_field = -1
             fe_note = ""
@@ -1534,9 +1679,15 @@ def run_front(page0:string, typed:[string]) -> string:
             if fe_sides.length != 2: fe_set_map(max(0, str_index(fe_maps, "reed_meadow")))
             fe_page = "setup"
             fe_frames = 0
+            fe_room_open()
+        elif go == "join" and fe_page == "net":  // the host's lobby first: a side and an army, then the host starts (#519)
+            fe_guest_start(fe_address.fe_trim())
+            fe_page = "guest"
+            fe_frames = 0
+            fe_field = -1
         elif go == "join":
             gl.end_text_input()
-            join_ip = fe_address.fe_trim()
+            join_ip = fe_join_what
             return "join"
         elif starts_with(go, "load:"):
             gl.end_text_input()
@@ -1546,10 +1697,10 @@ def run_front(page0:string, typed:[string]) -> string:
             lobby_prompts = map(fe_sides.length) i: fe_prompt(i)
             lobby_rerolls = map(fe_sides) s: s.reroll
             lobby_teams = map(fe_sides) s: s.team
-            lobby_levels = map(fe_sides) s, i: if i == 0 or (fe_hosting and i == 1): "" else: FE_LEVELS[s.level].lowercase()
+            lobby_levels = map(fe_sides) s, i: if i == 0 or fe_player_side(i): "" else: FE_LEVELS[s.level].lowercase()
             if fe_hosting:
                 hosting = true
-                net_people = 2
+                net_people = 1 + (if fe_rooms.length: room_players(fe_rooms[0]) else: 1)
                 return "host"
             fe_loader("Setting up the battle", 0.02)  // (shown at once: the start's work comes before the next frame)
             gl.frame()
