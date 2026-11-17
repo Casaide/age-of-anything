@@ -11,12 +11,12 @@ LOBSTER_SRC ?= $(HOME)/Dev/lobster
 PORT ?= 8080
 export LOBSTER LOBSTER_SRC PORT
 
-.PHONY: help all mac bake deck mobile android serve creel
+.PHONY: help all mac mac_sidecar bake deck mobile android serve creel
 
 help:
-	@echo "make mac      macOS: build/mac/Age of Anything.app (a dev build that runs this checkout; tools/mac/make_app.sh)"
+	@echo "make mac      macOS: build/mac/Age of Anything.app (a dev build that runs this checkout; tools/mac/make_app.sh), with online play's sidecar"
 	@echo "make bake     the shipped props and buildings, baked into src/baked/ for both densities (src/prebake.sh); make mac runs it"
-	@echo "make deck     Steam Deck: build/lobster_linux (Lobster for Linux from CI's release, else built in podman/docker; src/deck/build.sh)"
+	@echo "make deck     Steam Deck: build/lobster_linux (Lobster for Linux from CI's release, else built in podman/docker; src/deck/build.sh), sidecar included"
 	@echo "make mobile   Android: build/android/age-of-anything.apk (needs the SDK, NDK, JDK 17+; src/android/build.sh)"
 	@echo "make all      all three"
 	@echo "make serve    serve what is built on port $(PORT), and print the line to run on the Deck (tools/serve.sh)"
@@ -28,8 +28,12 @@ all: mac deck mobile
 creel:
 	tools/creel_sync.sh
 
-mac: bake
+mac: bake mac_sidecar
 	tools/mac/make_app.sh
+
+# (online play's sidecar, #44: bare and Hyperswarm for this Mac, in creel/sidecar where the game looks; needs node and npm)
+mac_sidecar: creel
+	tools/sidecar_pack.sh darwin-$(shell uname -m | sed 's/x86_64/x64/') creel/sidecar
 
 bake: creel
 	src/prebake.sh

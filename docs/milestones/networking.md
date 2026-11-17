@@ -94,8 +94,9 @@ Lobster didn't change. Hosting starts it: the waiting screen shows a 10-characte
 bits, hashed into the topic) and copies it. The network page's box takes a join code or an address, with a Paste
 button. Creel's `net/swarm.lobster` starts the sidecar in the background (bash, with every fd past 2 closed, or
 `launch_subprocess` never returns) and reads its status file. `src/swarm_check.sh` plays `net_check` host to joiner
-by code on a local test DHT (needs node and `npm install` in `creel/sidecar`). Not yet: shipping `bare` in the builds.
-How to play it: `cd creel/sidecar && npm install` once; one player Hosts, the other pastes the code and Joins.
+by code on a local test DHT (needs node and `npm install` in `creel/sidecar`). Since #517 `make mac` and `make deck` pack the sidecar (`tools/sidecar_pack.sh`: bare and Hyperswarm for that
+platform only, about 56 MB), so nothing is installed on the Deck. How to play it: one player Hosts, the other pastes the code
+and Joins.
 
 ## Changes from the original plan
 
