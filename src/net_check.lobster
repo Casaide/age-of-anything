@@ -56,6 +56,8 @@ import gen.mods
 import net.lockstep
 import net.lan
 import net.swarm
+import net.room
+import game.levels
 
 // A network match, headless (src/net, tests/net_check.gd): two processes on one machine linked over
 // TCP. The host sets the match up and sends it whole; then each runs the same world in lockstep,
@@ -72,8 +74,13 @@ var port = NET_PORT  // port:<n>: another port, so these can run beside another 
 def use_mods():
     for(args) a:
         if starts_with(a, "mods:"): mods_use(tokenize(a.substring(5, a.length - 5), ",", " "))
-var code = ""  // code:<join code>: join through the sidecar (online play, #514)
+var code = ""                      // code:<join code>: join through the sidecar (online play, #514)
+let in_room = has_s(args, "room")  // room: through the lobby (#519): joiners take sides, type their army, then the host starts
+var sides = 2                      // sides:<n>: the room's sides (4: a 2v2, AIs in the sides no one takes)
+var want_side = -1                 // side:<n>: the side this joiner takes
 for(args) a:
+    if starts_with(a, "sides:"): sides = string_to_int(a.substring(6, a.length - 6))
+    if starts_with(a, "side:"): want_side = string_to_int(a.substring(5, a.length - 5))
     if starts_with(a, "code:"): code = a.substring(5, a.length - 5)
     if starts_with(a, "bootstrap:"): swarm_setup.extra = "--bootstrap " + a.substring(10, a.length - 10)  // (a local test DHT)
     if starts_with(a, "players:"): people = string_to_int(a.substring(8, a.length - 8))
@@ -82,11 +89,14 @@ var me = 0
 var bots = []::Bot
 var link = Link {}
 let others = []::Link  // the host's other joiners
+let hosted = []::Room  // the host's room
 let t_wait = seconds_elapsed()
 if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' becomes the match)
     lib_load("../data")
     use_mods()
-    let door = door_open(port, "net_check", "reed_meadow")
+    let room = room_open(port, "net_check", if sides > 2: "reed_meadow_2v2" else: "reed_meadow")
+    hosted.push(room)
+    let door = room.door
     if has_s(args, "swarm"):  // (online too: a join code through the sidecar)
         let sw = swarm_host(port)
         while sw.code == "" and sw.error == "":
@@ -96,16 +106,27 @@ if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' bec
         print "host: join code {sw.code}"
         for(args) a: if starts_with(a, "codefile:"): write_file(a.substring(9, a.length - 9), sw.code, 0, 1)  // (print waits in a buffer)
     let joined = []::Link
-    while joined.length < people - 1:
-        assert door.error == ""
-        assert seconds_elapsed() - t_wait < 60.0
-        let got = door_tick(door)
-        if got:
-            net_send(got, 'W', string(joined.length + 1))  // (your seat)
-            joined.push(got)
-        tcp.wait(door.listener, nil, false, 0.02)
-    link = joined[0]
-    for(joined.slice(1, -1)) l: others.push(l)
+    if in_room:  // (#519) the room: until every joiner holds a side and has typed its army
+        room_sides(room, map(sides) k: if sides > 2: k / 2 else: k, map(sides) k: "")
+        while room_players(room) < people - 1 or (filter(room.sides) rs: rs.who == ROOM_PLAYER and rs.prompt == "").length:
+            assert door.error == ""
+            assert seconds_elapsed() - t_wait < 60.0
+            room_tick(room)
+            tcp.wait(door.listener, nil, false, 0.02)
+        let seen = map(room.sides) rs: rs.who + ":" + rs.prompt
+        print "host: the room: {seen}"
+    else:
+        while joined.length < people - 1:
+            assert door.error == ""
+            assert seconds_elapsed() - t_wait < 60.0
+            let got = door_tick(door)
+            if got:
+                net_send(got, 'W', string(joined.length + 1))  // (your seat)
+                joined.push(got)
+            tcp.wait(door.listener, nil, false, 0.02)
+    if joined.length:
+        link = joined[0]
+        for(joined.slice(1, -1)) l: others.push(l)
 else:
     lib_load("../data")
     use_mods()
@@ -128,23 +149,51 @@ else:
         assert link.error == ""
         assert seconds_elapsed() - t_wait < 20.0
         tcp.wait(nil, link.sock, true, 0.05)
-    join_hello(link)
+    if not in_room: join_hello(link)
+var seats = map(people) k: k  // the people's sides (lockstep's players)
+let words = [ "sewer rats with cheese hammers", "frogs with spears", "moonbears", "tiny vikings" ]
+let levels = map(sides) k: if k % 2 == 1: "easy" else: "hard"  // (the AIs' levels: the joiner must hear them)
+if role != "host" and in_room:                                 // (#519) in the room: take the side asked for, type an army, wait for the start
+    let g = guest_new(link)
+    var asked = false
+    while g.world == "":
+        assert g.error == ""
+        assert seconds_elapsed() - t_wait < 60.0
+        guest_tick(g)
+        if g.side >= 0 and want_side >= 0 and g.side != want_side and not asked:
+            guest_take(g, want_side)
+            asked = true
+        if g.side >= 0 and (want_side < 0 or g.side == want_side): guest_prompt(g, words[g.side % words.length])
+        tcp.wait(nil, link.sock, false, 0.02)
+    me = g.side
+    seats = g.seats
+    ai_levels_set(g.levels)
+    bots = load_world_bytes(g.world)
+    net_unread(link, g.later)
+    print "join: took side {me} of {seats}, got the match at tick {tick}, {u_id.length} units"
 if role == "host":
     lib_load("../data")
     id_load("../data")
     use_mods()
     let rules = load_rules("default")
     set(rules, "animals", jbool(true))
-    let prompts = [ "sewer rats with cheese hammers", "frogs with spears", "moonbears", "tiny vikings" ]
-    let races = map(people) k: generate(prompts[k % prompts.length], rules, 0)
-    setup_match(20261010, if people > 2: "reed_meadow_2v2" else: "reed_meadow", races, rules, if people > 2: map(people) k: k / 2 else: [])
+    let n = if in_room: sides else: people
+    let races = map(n) k: generate(if in_room and hosted[0].sides[k].who == ROOM_PLAYER: hosted[0].sides[k].prompt else: words[k % words.length], rules, 0)
+    setup_match(20261010, if n > 2: "reed_meadow_2v2" else: "reed_meadow", races, rules, if n > 2: map(n) k: k / 2 else: [])
     bots = map(num_players) p: new_bot(p)
+    if in_room:
+        let lv = map(sides) k: if hosted[0].sides[k].who == ROOM_AI: levels[k] else: ""
+        ai_levels_set(lv)
+        let st, ls_links = room_start(hosted[0], lv)
+        seats = st
+        link = ls_links[0]
+        for(ls_links.slice(1, -1)) l: others.push(l)
     let bytes = world_bytes(bots)
     net_send(link, 'S', bytes)
     for(others) l: net_send(l, 'S', bytes)
     print "host: sent the match ({bytes.length / 1024} KB)"
 else:
-    while not bots.length:
+    while not bots.length and not in_room:
         let later = []::[string]
         for(net_poll(link)) f:
             if f[0] == "W": me = string_to_int(f[1])
@@ -157,9 +206,9 @@ else:
         net_unread(link, later)
         assert not link.closed
         tcp.wait(nil, link.sock, false, 0.05)
-    print "join: got the match at tick {tick}, {u_id.length} units"
+    if not in_room: print "join: got the match at tick {tick}, {u_id.length} units"
 events_on = true
-let ls = new_lockstep(link, me, map(people) k: k)
+let ls = new_lockstep(link, me, seats)
 ls.more = others
 ls.relay = role == "host"
 let t0 = seconds_elapsed()
@@ -170,7 +219,10 @@ while tick < ticks and ls.desync == "" and not link.closed:
         waits++
         tcp.wait(nil, link.sock, false, 0.002)
     else:
-        full_bot_think(bots[me])
+        for(bots) b, p:
+            if p == me or not contains(seats, p):  // (ours, and every AI: each machine runs the AIs)
+                ai_level_for(p)
+                full_bot_think(b)
         step()
         ls_after_step(ls)
 // The last turns' hashes: keep the link up until the other side's are in.
