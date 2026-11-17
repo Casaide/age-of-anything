@@ -3,11 +3,14 @@
 # container; its libraries are in its own tree: SDL, SDL_mixer, freetype...), then the game's folder assembled beside it:
 #   <out>/lobster/{bin/lobster, data, modules}   the language and its own data (shaders, fonts)
 #   <out>/data, assets/{audio,fonts}, mods       the game's data, sounds and display font
+#   <out>/creel/{src,sidecar}                    the engine's modules, and online play's sidecar (bare and Hyperswarm
+#                                                for Linux x86_64, nothing to install on the Deck: tools/sidecar_pack.sh)
 #   <out>/src/...                                the game's code, and baked/ (its buildings and props, from prebake.sh;
 #                                                a race's own parts it bakes itself)
 #   <out>/run.sh                                 runs the game (the lobby)
 #   <out>/icon.png                               the game's icon (pull_lobster.sh makes a launcher with it)
-# Usage: src/deck/build.sh [out dir]   (default build/lobster_linux; needs gh, or podman/docker for a fork commit CI hasn't built)
+# Usage: src/deck/build.sh [out dir]   (default build/lobster_linux; needs node and npm, and gh or podman/docker for a fork
+# commit CI hasn't built)
 # The Deck pulls it with tools/deck/pull_lobster.sh.
 set -e
 here="$(cd "$(dirname "$0")/.." && pwd)"
@@ -58,6 +61,7 @@ rsync -a --delete --delete-excluded --exclude 'pack' --exclude 'pack6b' --exclud
 	--exclude 'deck' "$here/" "$out/src/"
 [ -f "$root/creel/src/lib/world.lobster" ] || { echo "creel/ is empty: git submodule update --init"; exit 1; }
 rsync -a --delete "$root/creel/src/" "$out/creel/src/"   # (the engine's modules, where the game's programs look for them)
+"$root/tools/sidecar_pack.sh" linux-x64 "$out/creel/sidecar"   # (online play by join code, #44: ../creel/sidecar from src/)
 # which build this is, for the menu's foot (#500): the Deck has no .git to ask
 commit="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 [ -n "$(git -C "$root" status --porcelain --untracked-files=no 2>/dev/null)" ] && commit="$commit+changes"

@@ -8,7 +8,7 @@ on:
     branches: [main]
     tags: ["v*"]
   pull_request:
-    paths: [".github/workflows/build.yml", "src/deck/**", "src/prebake.sh"]
+    paths: [".github/workflows/build.yml", "src/deck/**", "src/prebake.sh", "tools/sidecar_pack.sh"]
   workflow_dispatch:
     inputs:
       lobster_ref:
@@ -115,6 +115,9 @@ jobs:
           path: src/baked
           key: baked-${{ steps.bake.outputs.version }}-${{ github.run_id }}
           restore-keys: baked-${{ steps.bake.outputs.version }}-
+      - uses: actions/setup-node@v4  # (src/deck/build.sh packs online play's sidecar with npm, #44)
+        with:
+          node-version: 22
       - name: Bake and build the Deck folder
         run: xvfb-run -a -s "-screen 0 1280x720x24" src/deck/build.sh build/lobster_linux
       - name: Pack
