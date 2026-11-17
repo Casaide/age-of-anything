@@ -55,6 +55,7 @@ import gen.save
 import gen.mods
 import net.lockstep
 import net.lan
+import net.swarm
 
 // A network match, headless (src/net, tests/net_check.gd): two processes on one machine linked over
 // TCP. The host sets the match up and sends it whole; then each runs the same world in lockstep,
@@ -71,7 +72,10 @@ var port = NET_PORT  // port:<n>: another port, so these can run beside another 
 def use_mods():
     for(args) a:
         if starts_with(a, "mods:"): mods_use(tokenize(a.substring(5, a.length - 5), ",", " "))
+var code = ""  // code:<join code>: join through the sidecar (online play, #514)
 for(args) a:
+    if starts_with(a, "code:"): code = a.substring(5, a.length - 5)
+    if starts_with(a, "bootstrap:"): swarm_setup.extra = "--bootstrap " + a.substring(10, a.length - 10)  // (a local test DHT)
     if starts_with(a, "players:"): people = string_to_int(a.substring(8, a.length - 8))
     if starts_with(a, "port:"): port = string_to_int(a.substring(5, a.length - 5))
 var me = 0
@@ -83,6 +87,14 @@ if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' bec
     lib_load("../data")
     use_mods()
     let door = door_open(port, "net_check", "reed_meadow")
+    if has_s(args, "swarm"):  // (online too: a join code through the sidecar)
+        let sw = swarm_host(port)
+        while sw.code == "" and sw.error == "":
+            assert seconds_elapsed() - t_wait < 20.0
+            swarm_poll(sw)
+        assert sw.error == ""
+        print "host: join code {sw.code}"
+        for(args) a: if starts_with(a, "codefile:"): write_file(a.substring(9, a.length - 9), sw.code, 0, 1)  // (print waits in a buffer)
     let joined = []::Link
     while joined.length < people - 1:
         assert door.error == ""
@@ -100,7 +112,17 @@ else:
     let found = if has_s(args, "noscan"): []::LanHost else: lan_scan(1.5, port)
     let names = map(found) h: h.name + "@" + h.ip
     print "join: found {found.length} host(s): {names}"
-    link = net_join("127.0.0.1", port)
+    var at = port
+    if code != "":
+        assert join_code_in(code) != ""
+        let sw = swarm_join(join_code_in(code), 0)
+        while sw.port == 0 and sw.error == "":
+            assert seconds_elapsed() - t_wait < 20.0
+            swarm_poll(sw)
+        assert sw.error == ""
+        at = sw.port
+        print "join: through the sidecar at {at} ({sw.out})"
+    link = net_join("127.0.0.1", at)
     while not net_ready(link):
         if link.error != "": print "join: {link.error}"
         assert link.error == ""
