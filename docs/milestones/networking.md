@@ -62,7 +62,7 @@ relays, Steam, the joiner choosing their own race in a shared lobby (the host se
   his 2v2 save, the joiner on the ally's seat, 600 ticks in step (archive `2026-10-17/03-`, `04-`)
 - [x] 5d. The shared lobby with seats: players join into open sides, 2v2, AIs on the network, Ready (D-156; built
   2026-10-17, its two-window test not yet run)
-- [ ] 6. Phase 2: HyperDHT sidecar, a join code, two networks
+- [ ] 6. Phase 2: HyperDHT sidecar, a join code, two networks (#44, #514; built and checked headless 2026-11-17, waiting on the Mac vs Deck try)
 - [ ] Archive: pictures taken along the way, journal, decisions, timeline
 
 ## Results
@@ -87,6 +87,15 @@ listens at once; players take sides (up to four people, AIs in the rest), Ready,
 now plays a 2v2 through it (the joiner moves to side 4, two AIs on both machines): written, not yet run.
 How to play it: on both machines (the same build) Play on the network; one Hosts (the battle setup opens), the
 other picks the game from the list, takes a side and types a race; both press Ready.
+
+**Online by join code (2026-11-17, #44, #514, Casaide/creel#45).** A Bare sidecar (`creel/sidecar/sidecar.js`) finds
+the other players over Hyperswarm and pipes bytes to the existing lockstep TCP link on localhost, so lockstep and
+Lobster didn't change. Hosting starts it: the waiting screen shows a 10-character join code (`abcde-fghij`, 50 random
+bits, hashed into the topic) and copies it. The network page's box takes a join code or an address, with a Paste
+button. Creel's `net/swarm.lobster` starts the sidecar in the background (bash, with every fd past 2 closed, or
+`launch_subprocess` never returns) and reads its status file. `src/swarm_check.sh` plays `net_check` host to joiner
+by code on a local test DHT (needs node and `npm install` in `creel/sidecar`). Not yet: shipping `bare` in the builds.
+How to play it: `cd creel/sidecar && npm install` once; one player Hosts, the other pastes the code and Joins.
 
 ## Changes from the original plan
 
