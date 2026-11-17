@@ -67,7 +67,7 @@ var fe_frames = 0
 var fe_pad = false  // the pad was used last (its hints shown)
 var fe_hosts = []::LanHost
 var fe_scanned = false
-var fe_address = "127.0.0.1"
+var fe_address = ""
 var fe_lab_rules = 0
 let fe_lab_scroll = [ 0.0, 0.0 ]
 var fe_lab_units = [ []::JV, []::JV ]  // the Race Lab's lineups: every unit of each side's race
@@ -981,8 +981,8 @@ def fe_saves_card(note:string) -> string:
     if gl.button("escape") == 1 or gl.button("controller_b") == 1: go = "back"
     return go
 
-// Play on the network: host (the battle setup, then wait for a player) or join a game on the home network (the
-// hosts found nearby, or an address).
+// Play on the network: host (the battle setup, then wait for a player) or join a game: on the home network (the
+// hosts found nearby, or an address), or anywhere with the host's join code (#514).
 def fe_net_page() -> string:
     let ws = float(gl.window_size())
     let lk = ui_look_of("")
@@ -997,7 +997,7 @@ def fe_net_page() -> string:
     var y = at.y + 26.0 * fe_k
     ui_text_c(ws.x / 2.0, y, "Play on the network", fz(44.0), lk.title, 2, 2.0 * fe_k)
     y += 62.0 * fe_k
-    ui_text_c(ws.x / 2.0, y, "Both machines on the same home network (Wi-Fi or cable).", fz(17.0), lk.dim, 0, 0.0)
+    ui_text_c(ws.x / 2.0, y, "On the same home network, or anywhere with the host\'s join code.", fz(17.0), lk.dim, 0, 0.0)
     y += 36.0 * fe_k
     var go = ""
     if ui_button(float2 { x, y }, float2 { w, 64.0 * fe_k }, "Host a game", true): go = "host"
@@ -1021,7 +1021,12 @@ def fe_net_page() -> string:
         for(note) line, k: ui_text(float2 { x, y - 18.0 * fe_k + float(k) * 17.0 * fe_k }, line, fz(13.0), lk.dim)
         y += float(note.length - 1) * 17.0 * fe_k
     y += 10.0 * fe_k
-    fe_box(20, float2 { x, y }, float2 { w - 160.0 * fe_k, 48.0 * fe_k }, fe_address, "or an address: 192.168.1.20", fz(19.0), false)
+    fe_box(20, float2 { x, y }, float2 { w - 300.0 * fe_k, 48.0 * fe_k }, fe_address, "a join code or an address", fz(19.0), false)
+    if ui_button(float2 { x + w - 290.0 * fe_k, y }, float2 { 130.0 * fe_k, 48.0 * fe_k }, "Paste", false):
+        let pasted = gl.get_clipboard().fe_trim()
+        if pasted != "":
+            fe_address = pasted
+            fe_focus(20, pasted)
     if ui_button(float2 { x + w - 150.0 * fe_k, y }, float2 { 150.0 * fe_k, 48.0 * fe_k }, "Join", false) and fe_address.fe_trim() != "": go = "join"
     y += 64.0 * fe_k
     if fe_note != "": ui_text_c(ws.x / 2.0, y, fe_note, fz(16.0), lk.accent, 0, 0.0)
