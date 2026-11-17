@@ -78,6 +78,7 @@ import .gen.save
 import .net.lockstep
 import .net.lan
 import .net.swarm
+import .net.room
 import .game.audio
 import .game.pack
 import .game.relief
@@ -139,6 +140,7 @@ var tree_hover_arg = ""               // treehover:<node key>: that node hovered
 var padtest = false                   // padtest: a fake pad plays a few seconds, then quit
 var net_people = 2                    // people in a network match (host:<n>)
 var net_others = []::Link             // a host's joiners after the first
+var net_seats = []::int               // the people's sides, from the lobby's room (#519); []: the first net_people
 var hosting = false                   // host: a network match, waiting for a player to join (net/lockstep.lobster)
 var join_ip = ""                      // join:<ip or join code>: play the second side of the match a host there sets up
 var reload_at = -1.0                  // reload:<seconds>: save then, load 5 s later (tests and captures)
@@ -1029,7 +1031,22 @@ def make_match() -> bool:
     if starts_with(front_choice, "load:"):
         if not load_saved(front_choice.substring(5, front_choice.length - 5)): return false
     net_swarm_stop()  // (the last match's)
-    if join_ip != "" and not joined_bots.length:
+    if join_ip != "" and fe_guests.length and fe_guests[0].world != "":  // joined in the host's lobby (#519): it sent the match
+        let g = fe_guests[0]
+        link = g.link
+        joined_bots = load_world_bytes(g.world)
+        net_unread(link, g.later)
+        ME = g.side
+        net_seats = g.seats
+        net_people = g.seats.length
+        if g.levels.length == num_players: ai_levels_set(g.levels)  // (the AIs think on every machine, each at its level)
+        net_swarm = fe_swarm
+        fe_swarm = Swarm {}
+        fe_guests = []
+        map_name_now = gstr(su_map, "id", "reed_meadow")
+        load_species(map_name_now)
+        if pack_library: race_facts(su_races)
+    elif join_ip != "" and not joined_bots.length:
         var at_ip = join_ip
         var at_port = NET_PORT
         let code = join_code_in(join_ip)
@@ -1119,7 +1136,18 @@ def make_match() -> bool:
     if args[1] == "lobby" and lobby_levels.length == num_players and not joined_bots.length: ai_levels_set(lobby_levels)  // (each AI at its level)
     bots = map(num_players) p: new_bot(p)
     if joined_bots.length: bots = joined_bots
-    if hosting:
+    if hosting and fe_rooms.length:  // the lobby's room (#519): its players are in, each on the side they took
+        let seats, links = room_start(fe_rooms[0], map(num_players) p: if p < lobby_levels.length: lobby_levels[p] else: "")
+        net_seats = seats
+        net_people = seats.length
+        link = links[0]
+        net_others = links.slice(1, -1)
+        net_swarm = fe_swarm
+        fe_swarm = Swarm {}
+        fe_rooms = []
+        let bytes = world_bytes(bots)
+        for(links) l: net_send(l, 'S', bytes)
+    elif hosting:
         let door = door_open(NET_PORT, rstr(su_races[0], "name"), map_name_now)
         let joined = []::Link
         let here = my_ipv4()
@@ -1233,7 +1261,7 @@ def make_match() -> bool:
         for(b_id.length) b:
             if b_owner[b] == ME: b_hp[b] = max(1, bm_hp[ME][b_kind[b]] * hurt_pct / 100)
     in_net_match = net_on
-    lockstep = new_lockstep(link, ME, if net_on: map(net_people) k: k else: [ ME ])
+    lockstep = new_lockstep(link, ME, if net_on and net_seats.length: net_seats elif net_on: map(net_people) k: k else: [ ME ])
     lockstep.more = net_others
     lockstep.relay = hosting
     return true
@@ -1697,6 +1725,7 @@ def new_match_reset():
     if in_net_match: link.closed = true
     hosting = false
     join_ip = ""
+    net_seats = []
     in_net_match = false
     net_on = false
     ME = 0

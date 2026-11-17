@@ -98,6 +98,14 @@ by code on a local test DHT (needs node and `npm install` in `creel/sidecar`). S
 platform only, about 56 MB), so nothing is installed on the Deck. How to play it: one player Hosts, the other pastes the code
 and Joins.
 
+**The lobby before the start (2026-11-17, #519, Casaide/creel#46).** Players used to join only after the host pressed
+Start, too late to choose their army. Now Host a game opens a room straight away (`creel/src/net/room.lobster`): the battle
+setup shows the join code and the address, a joiner's page (`page:guest:<code or address>`) lists every side, and the
+joiner takes any side an AI held, ally or enemy, and types their own army. The host sees that side become "A player"
+with the joiner's words, and Start waits for at least one player. At Start each joiner hears its side, the people's sides
+and every AI's level, so the AIs think alike on every machine. `src/room_check.sh` (in the batch) plays a 1v1, a joined ally
+and a joined enemy, each ending on the host's hash. Pictures: `archive/images/2026-11-17/03-*`, `04-*`.
+
 ## Changes from the original plan
 
 ## Links
