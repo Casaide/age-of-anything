@@ -77,6 +77,7 @@ import .gen.swap
 import .gen.save
 import .net.lockstep
 import .net.lan
+import .net.swarm
 import .game.audio
 import .game.pack
 import .game.relief
@@ -139,7 +140,7 @@ var padtest = false                   // padtest: a fake pad plays a few seconds
 var net_people = 2                    // people in a network match (host:<n>)
 var net_others = []::Link             // a host's joiners after the first
 var hosting = false                   // host: a network match, waiting for a player to join (net/lockstep.lobster)
-var join_ip = ""                      // join:<ip>: play the second side of the match a host there sets up
+var join_ip = ""                      // join:<ip or join code>: play the second side of the match a host there sets up
 var reload_at = -1.0                  // reload:<seconds>: save then, load 5 s later (tests and captures)
 var reload_tick = -1
 var atmo_arg = ""  // atmosphere:<mood>: the match in that mood (data/atmosphere.json; <a>~<b>@<t>: between two, game/mood.lobster), atmosphere:off: none (the frame drawn straight)
@@ -208,6 +209,7 @@ for(args) a, k:
         if key == "army": army_n = string_to_int(val)
         if key == "place": place_arg = val
         if key == "join": join_ip = val
+        if key == "dht": swarm_setup.extra = "--bootstrap " + val  // dht:<host:port>: online play on a local test DHT (creel/sidecar/test/testnet.js)
         if key == "swap":
             let sp, sa = split_string(val, "@")
             swap_arg = sp
@@ -936,6 +938,15 @@ if has_s(args, "prebake"):
 // A line in the middle of an empty screen while the link is made (true: the window was closed).
 // A waiting or failed join or host: B or Esc goes back to the menu (net_backed_out), never a dead end.
 var net_backed_out = false
+var net_code = ""         // the join code on the waiting screen (online play, #514)
+var net_swarm = Swarm {}  // the sidecar of this game's network match (an empty one: none)
+
+def net_swarm_stop():
+    swarm_stop(net_swarm)
+    net_swarm = Swarm {}
+
+def net_swarm_found() -> bool: return net_swarm.out == "" or net_swarm.peers > 0  // (no sidecar, or it reached the host)
+
 def net_wait_frame(msg:string) -> bool:
     if not gl.frame(): return true
     if gl.button("escape") == 1 or gl.button("controller_b") == 1:
@@ -950,6 +961,17 @@ def net_wait_frame(msg:string) -> bool:
     let hint = "B or Esc: back to the menu"
     gl.set_font_size(int(16.0 * u))
     lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } + float2 { float(gl.text_size(hint).x) * -0.5, 44.0 * u }, hint, float4 { 0.7, 0.68, 0.62, 1.0 })
+    if net_code != "":  // (the host's join code, big, above: the other player types or pastes it)
+        if gl.button("c") == 1 or gl.button("controller_y") == 1: gl.set_clipboard(net_code)
+        let title = "Join code: {net_code}"
+        gl.set_font_size(int(44.0 * u))
+        lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } + float2 { float(gl.text_size(title).x) * -0.5, -130.0 * u }, title, float4 { 1.0, 0.92, 0.7, 1.0 })
+        let how = "Copied. Send it to the other player; they join with it from anywhere. C or Y: copy again"
+        gl.set_font_size(int(16.0 * u))
+        lobby_text(float(gl.window_size()) * float2 { 0.5, 0.5 } + float2 { float(gl.text_size(how).x) * -0.5, -66.0 * u }, how, float4 { 0.7, 0.68, 0.62, 1.0 })
+        if shot != "" and has_s(args, "waitshot"):  // (captures: host waitshot shot:<png>, the waiting screen with its code, then quit)
+            gl.screenshot(shot)
+            return true
     return false
 
 var joined_bots = []::Bot
@@ -1006,8 +1028,22 @@ def make_match() -> bool:
     ai_levels = []
     if starts_with(front_choice, "load:"):
         if not load_saved(front_choice.substring(5, front_choice.length - 5)): return false
+    net_swarm_stop()  // (the last match's)
     if join_ip != "" and not joined_bots.length:
-        link = net_join(join_ip, NET_PORT)
+        var at_ip = join_ip
+        var at_port = NET_PORT
+        let code = join_code_in(join_ip)
+        if code != "":  // a join code (#514): through our own sidecar, which finds the host by it
+            let sw = swarm_join(code, 0)
+            net_swarm = sw
+            while sw.port == 0:
+                swarm_poll(sw)
+                if net_wait_frame(if sw.error != "": "No online play: {sw.error}" else: "Starting online play..."):
+                    net_swarm_stop()
+                    return false
+            at_ip = "127.0.0.1"
+            at_port = sw.port
+        link = net_join(at_ip, at_port)
         var msg = "Joining {join_ip}..."
         var said = false
         var said_why = false
@@ -1015,12 +1051,18 @@ def make_match() -> bool:
             if link.error != "" and not said_why:
                 print "net: could not join {join_ip}: {link.error}"  // (in the log too: #506)
                 said_why = true
-            if net_wait_frame(if link.error != "": "Could not join {join_ip}: {link.error}" else: msg): return false
+            if net_swarm.out != "":
+                swarm_poll(net_swarm)
+                if net_swarm.error != "": link.error = net_swarm.error
+                elif net_swarm.peers == 0: msg = "Looking for the host of {join_ip}..."
+            if net_wait_frame(if link.error != "": "Could not join {join_ip}: {link.error}" else: msg):
+                net_swarm_stop()
+                return false
             if link.error == "" and net_ready(link):
                 if not said:
                     join_hello(link)
                     said = true
-                msg = "Joined {join_ip}: the host is sending the match..."
+                if net_swarm_found(): msg = "Joined {join_ip}: the host is sending the match..."
                 let later = []::[string]
                 for(net_poll(link)) f:
                     if f[0] == "W": ME = string_to_int(f[1])  // (our seat)
@@ -1081,12 +1123,23 @@ def make_match() -> bool:
         let door = door_open(NET_PORT, rstr(su_races[0], "name"), map_name_now)
         let joined = []::Link
         let here = my_ipv4()
+        let sw = swarm_host(NET_PORT)  // (online too, #514: a join code, through the sidecar to this door)
+        net_swarm = sw
         while joined.length < net_people - 1:
-            if net_wait_frame(if door.error != "": "Could not host: {door.error}" else: "Hosting at {if here != "": here else: "this machine"}: {joined.length} of {net_people - 1} joined, waiting..."): return false
+            swarm_poll(sw)
+            if sw.code != "" and net_code == "":
+                net_code = sw.code
+                gl.set_clipboard(sw.code)
+            let online = if sw.error != "": "  (online is off: {sw.error})" elif sw.code != "" and not sw.announced: "  (going online...)" else: ""
+            if net_wait_frame(if door.error != "": "Could not host: {door.error}" else: "Hosting at {if here != "": here else: "this machine"}: {joined.length} of {net_people - 1} joined, waiting...{online}"):
+                net_code = ""
+                net_swarm_stop()
+                return false
             let got = door_tick(door)
             if got:
                 net_send(got, 'W', string(joined.length + 1))
                 joined.push(got)
+        net_code = ""
         link = joined[0]
         net_others = joined.slice(1, -1)
         let bytes = world_bytes(bots)
