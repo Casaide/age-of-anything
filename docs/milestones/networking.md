@@ -105,6 +105,9 @@ joiner takes any side an AI held, ally or enemy, and types their own army. The h
 with the joiner's words, and Start waits for at least one player. At Start each joiner hears its side, the people's sides
 and every AI's level, so the AIs think alike on every machine. `src/room_check.sh` (in the batch) plays a 1v1, a joined ally
 and a joined enemy, each ending on the host's hash. Pictures: `archive/images/2026-11-17/03-*`, `04-*`.
+Then (#521, Dominic: "each side should just have a button, we dont need a modal") the joiner's page became the
+normal battle setup: every side's army drawn from the host's words and reroll, a Join button on each side an AI holds,
+the joiner's own box editable, the map, mode and Start the host's. Picture: `05-*`.
 
 ## Changes from the original plan
 
