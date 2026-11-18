@@ -91,6 +91,7 @@ var link = Link {}
 let others = []::Link  // the host's other joiners
 let hosted = []::Room  // the host's room
 let t_wait = seconds_elapsed()
+let words = [ "sewer rats with cheese hammers", "frogs with spears", "moonbears", "tiny vikings" ]
 if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' becomes the match)
     lib_load("../data")
     use_mods()
@@ -107,10 +108,11 @@ if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' bec
         for(args) a: if starts_with(a, "codefile:"): write_file(a.substring(9, a.length - 9), sw.code, 0, 1)  // (print waits in a buffer)
     let joined = []::Link
     if in_room:  // (#519) the room: until every joiner holds a side and has typed its army
-        room_sides(room, map(sides) k: if sides > 2: k / 2 else: k, map(sides) k: "")
-        while room_players(room) < people - 1 or (filter(room.sides) rs: rs.who == ROOM_PLAYER and rs.prompt == "").length:
+        room_sides(room, map(sides) k: if sides > 2: k / 2 else: k, map(sides) k: words[k % words.length], map(sides) k: 0)
+        let hold = has_s(args, "hold")  // hold: never start (captures of a joiner's lobby)
+        while hold or room_players(room) < people - 1 or (filter(room.sides) rs: rs.who == ROOM_PLAYER and rs.prompt == "").length:
             assert door.error == ""
-            assert seconds_elapsed() - t_wait < 60.0
+            assert hold or seconds_elapsed() - t_wait < 60.0
             room_tick(room)
             tcp.wait(door.listener, nil, false, 0.02)
         let seen = map(room.sides) rs: rs.who + ":" + rs.prompt
@@ -150,8 +152,7 @@ else:
         assert seconds_elapsed() - t_wait < 20.0
         tcp.wait(nil, link.sock, true, 0.05)
     if not in_room: join_hello(link)
-var seats = map(people) k: k  // the people's sides (lockstep's players)
-let words = [ "sewer rats with cheese hammers", "frogs with spears", "moonbears", "tiny vikings" ]
+var seats = map(people) k: k                                   // the people's sides (lockstep's players)
 let levels = map(sides) k: if k % 2 == 1: "easy" else: "hard"  // (the AIs' levels: the joiner must hear them)
 if role != "host" and in_room:                                 // (#519) in the room: take the side asked for, type an army, wait for the start
     let g = guest_new(link)
@@ -163,7 +164,7 @@ if role != "host" and in_room:                                 // (#519) in the 
         if g.side >= 0 and want_side >= 0 and g.side != want_side and not asked:
             guest_take(g, want_side)
             asked = true
-        if g.side >= 0 and (want_side < 0 or g.side == want_side): guest_prompt(g, words[g.side % words.length])
+        if g.side >= 0 and (want_side < 0 or g.side == want_side): guest_prompt(g, words[g.side % words.length], 0)
         tcp.wait(nil, link.sock, false, 0.02)
     me = g.side
     seats = g.seats
