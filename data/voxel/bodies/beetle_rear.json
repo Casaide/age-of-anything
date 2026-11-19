@@ -458,5 +458,80 @@
    "mark",
    "mark"
   ]
- }
+ },
+ "plates": [
+  {
+   "box": [
+    "abd",
+    0,
+    1.0,
+    4.0
+   ],
+   "n": [
+    0,
+    -0.1,
+    1
+   ],
+   "half": [
+    1.4,
+    0.4,
+    1.2
+   ],
+   "round": 0.4,
+   "mat": "plate",
+   "_doc": "a saddle plate over the wing cases"
+  },
+  {
+   "box": [
+    "abd",
+    0.0,
+    1.035,
+    3.65
+   ],
+   "n": [
+    0,
+    -0.1,
+    1
+   ],
+   "half": [
+    1.6,
+    0.24,
+    1.4
+   ],
+   "round": 0.4,
+   "mat": "plate_edge"
+  },
+  {
+   "box": [
+    "abd",
+    0,
+    2.6,
+    4.2
+   ],
+   "n": [
+    0,
+    -0.1,
+    1
+   ],
+   "half": [
+    1.2,
+    0.3,
+    0.4
+   ],
+   "round": 0.4,
+   "mat": "team"
+  },
+  {
+   "ball": [
+    "thorax",
+    2.9,
+    1.3,
+    -0.2
+   ],
+   "r": 0.8,
+   "mat": "plate",
+   "mirror": true,
+   "_doc": "a pauldron over the weapon arm"
+  }
+ ]
 }
