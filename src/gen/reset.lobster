@@ -312,6 +312,7 @@ var stashed_pop_cap = []::int
 var stashed_stock = []::[int]
 var stashed_r_stocked = 0
 var stashed_r_carrier_load = 1
+var stashed_r_carrier_slots = []::string
 var stashed_gathered = []::[int]
 var stashed_gather_ticks = []::[int]
 var stashed_next_id = 0
@@ -841,6 +842,7 @@ def reset_world():
     stock = []::[int]
     r_stocked = 0
     r_carrier_load = 1
+    r_carrier_slots = []::string
     gathered = []::[int]
     gather_ticks = []::[int]
     next_id = 0
@@ -1360,6 +1362,7 @@ def stash_world():
     stashed_stock = stock
     stashed_r_stocked = r_stocked
     stashed_r_carrier_load = r_carrier_load
+    stashed_r_carrier_slots = r_carrier_slots
     stashed_gathered = gathered
     stashed_gather_ticks = gather_ticks
     stashed_next_id = next_id
@@ -1872,6 +1875,7 @@ def unstash_world():
     stock = stashed_stock
     r_stocked = stashed_r_stocked
     r_carrier_load = stashed_r_carrier_load
+    r_carrier_slots = stashed_r_carrier_slots
     gathered = stashed_gathered
     gather_ticks = stashed_gather_ticks
     next_id = stashed_next_id

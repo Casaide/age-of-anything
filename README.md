@@ -40,3 +40,8 @@ Mods are folders in `mods/` (how to make one: `docs/modding.md`). Each loads onl
 - **Haiduts** (`vox_example`): 18th-century Bulgarian haiduts drawn in MagicaVoxel, the example of a unit made as a `.vox`
   model (`mods/vox_example/tools/haidut.lobster` writes them). Type "haiduts" or "bulgarians":
   `./play.sh lobby mods:vox_example "races:haiduts|romans" skirmish army:6`
+- **Steading** (`steading`, working name): the first slice of the economy mod. Goods are real things in real buildings:
+  workers carry logs, planks and stone one at a time, a sawmill saws logs into planks, and a new building is paid for by
+  carrying its goods to the site. Gather wood and stone, then build a woodcutter's hut, a sawmill and a quarry. The
+  other side's bot doesn't know this economy yet, so it just sits there:
+  `./play.sh lobby mods:steading rules:steading "races:villagers|villagers"`
