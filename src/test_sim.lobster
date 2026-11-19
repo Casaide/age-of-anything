@@ -62,6 +62,7 @@ import lib.heroes
 import lib.match
 import lib.trade
 import lib.recipes
+import lib.homes
 import lib.carry
 import lib.animals
 import lib.bridges
@@ -612,6 +613,38 @@ def test_road_plans():
     let h2 = road_plans()
     check(h1 == h2, "road plans: the same twice")
 
+// Homes (Casaide/creel#73): a house with 2 beds and room for 3 food beside a store; every 5 s a free bed and food
+// make a worker at its door. How many of player 0's units were born there after 60 s, what its larder holds, the hash.
+def homes_run(food:int, every:int) -> int, int, int:
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    let f = res_of("food")
+    r_born_ticks = every * TICK_HZ
+    r_foods = [ f ]
+    let hk = btype_index("house")
+    bt_beds[hk] = 2
+    bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
+    make_store("town_center", 200)
+    put(0, "town_center", 10, 10, 0)
+    let h = b_index_of(put(0, "house", 18, 10, 0))
+    if food > 0: stock_add(f, 0, food)
+    t_carrier[type_of_slot(0, "worker")] = 1
+    for(2) n: spawn_at(0, "worker", 14000 + n * 600, 14000)
+    for(60 * TICK_HZ): tick_on()
+    var kids = 0
+    for(u_house) v:
+        if v == b_id[h]: kids++
+    return kids, b_hold[h][f], state_hash()
+
+def test_homes():
+    let kids, larder, h1 = homes_run(20, 5)
+    check(kids == 2, "homes: a house with food has a child per free bed and no more ({kids} born)")
+    check(larder == 3 and store_sum(res_of("food"), 0) == 20 - 2 - 3, "homes: each took a food, and carriers filled the larder again")
+    let kids2, larder2, h2 = homes_run(20, 5)
+    check(kids2 == kids and larder2 == larder and h1 == h2, "homes: the same twice")
+    let none, nl, nh = homes_run(0, 5)
+    check(none == 0 and nl == 0 and nh != h1, "homes: with no food nobody is born")
+    let off, empty, oh = homes_run(20, 0)
+    check(off == 0 and empty == 0 and oh != h1, "homes: with the rule off, no births and no larder")
 // ------------------------------------------------------------------ small pieces
 
 def test_fixed():
@@ -4954,7 +4987,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "doors_on_roads", "bridge_plans", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "doors_on_roads", "bridge_plans", "homes", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4982,6 +5015,7 @@ def run_part(name:string):
     elif name == "road_plans": test_road_plans()
     elif name == "doors_on_roads": test_doors_on_roads()
     elif name == "bridge_plans": test_bridge_plans()
+    elif name == "homes": test_homes()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()

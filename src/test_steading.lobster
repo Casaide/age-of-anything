@@ -33,6 +33,7 @@ import lib.heroes
 import lib.match
 import lib.trade
 import lib.recipes
+import lib.homes
 import lib.carry
 import lib.animals
 import lib.bridges
@@ -121,6 +122,7 @@ def play() -> int:
         if t == 40 and lay("lumber_camp", tx + 6, ty - 4, workers[3]): laid++
         if t == 60 and lay("sawmill", tx - 6, ty + 3, workers[4]): laid++
         if t == 80 and lay("mining_camp", tx + 5, ty + 6, workers[5]): laid++
+        if t == 100 and lay("house", tx - 5, ty - 6, workers[6]): laid++
         if t > 0 and t % 2400 == 0: gather_near(workers.slice(0, 2), "wood")  // (back to the trees once a hut is up)
         wstep()
         for(b_id.length) b:
@@ -129,8 +131,10 @@ def play() -> int:
     var built = 0
     for(b_id.length) b:
         if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center"): built++
-    print "steading: {MINUTES} min, {laid} laid, {built} built; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
-    check(laid == 3 and built == 3, "steading: the hut, the sawmill and the quarry are built ({built} of {laid})")
+    print "steading: {MINUTES} min, {laid} laid, {built} built, {(filter(u_house) v: v != 0).length} born; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
+    check(laid == 4 and built == 4, "steading: the hut, the sawmill, the quarry and a house are built ({built} of {laid})")
+    let born = filter(u_house) v: v != 0
+    check(born.length > 0 and born.length <= 2, "steading: children are born in the house, no more than its beds ({born.length})")
     check(sites_ok, "steading: no site was built ahead of its goods")
     check(produced[pl][0] > 0 and stock[pl][0] > plank0, "steading: the sawmill makes planks, more than the town started with ({plank0} -> {stock[pl][0]})")
     return h
