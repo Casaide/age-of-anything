@@ -230,6 +230,7 @@ class WorldSave:
     b_diag:[int]
     b_queue:[[int]]
     b_inside:[[int]]
+    b_hold:[[int]]
     bt_attacks:[int]
     bt_atk_class:[int]
     bt_atk:[int]
@@ -269,6 +270,8 @@ class WorldSave:
     bt_workers:[int]
     bt_special:[int]
     bt_drop:[[int]]
+    bt_hold:[[int]]
+    bt_store:[int]
     bt_reseed:[[int]]
     bm_hp:[[int]]
     bm_pop:[[int]]
@@ -288,6 +291,7 @@ class WorldSave:
     pop:[int]
     pop_cap:[int]
     stock:[[int]]
+    r_stocked:int
     gathered:[[int]]
     gather_ticks:[[int]]
     next_id:int
@@ -730,6 +734,7 @@ def world_bytes(bots:[Bot]) -> string:
         b_diag,
         b_queue,
         b_inside,
+        b_hold,
         bt_attacks,
         bt_atk_class,
         bt_atk,
@@ -769,6 +774,8 @@ def world_bytes(bots:[Bot]) -> string:
         bt_workers,
         bt_special,
         bt_drop,
+        bt_hold,
+        bt_store,
         bt_reseed,
         bm_hp,
         bm_pop,
@@ -788,6 +795,7 @@ def world_bytes(bots:[Bot]) -> string:
         pop,
         pop_cap,
         stock,
+        r_stocked,
         gathered,
         gather_ticks,
         next_id,
@@ -1243,6 +1251,7 @@ def load_world_bytes(data:string) -> [Bot]:
     b_diag = s.b_diag
     b_queue = s.b_queue
     b_inside = s.b_inside
+    b_hold = s.b_hold
     bt_attacks = s.bt_attacks
     bt_atk_class = s.bt_atk_class
     bt_atk = s.bt_atk
@@ -1282,6 +1291,8 @@ def load_world_bytes(data:string) -> [Bot]:
     bt_workers = s.bt_workers
     bt_special = s.bt_special
     bt_drop = s.bt_drop
+    bt_hold = s.bt_hold
+    bt_store = s.bt_store
     bt_reseed = s.bt_reseed
     bm_hp = s.bm_hp
     bm_pop = s.bm_pop
@@ -1301,6 +1312,7 @@ def load_world_bytes(data:string) -> [Bot]:
     pop = s.pop
     pop_cap = s.pop_cap
     stock = s.stock
+    r_stocked = s.r_stocked
     gathered = s.gathered
     gather_ticks = s.gather_ticks
     next_id = s.next_id
