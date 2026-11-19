@@ -3,6 +3,7 @@
  "menu": {
   "+civilian": [
    "road",
+   "school",
    "sawmill",
    "inn"
   ]
@@ -10,14 +11,12 @@
  "buildings": {
   "town_center": {
    "name": "Storehouse",
-   "desc": "Holds the town's goods; workers carry them in and out, and wait here when there's nothing to do. Room for the whole town.",
+   "desc": "Holds the town's goods; villagers carry them in and out, and wait here when there's nothing to do. Room for the whole town.",
    "store": true,
    "holds": {
     "*": 400
    },
-   "trains": [
-    "worker"
-   ],
+   "trains": [],
    "pop": 100,
    "roles": [
     "hub",
@@ -26,7 +25,7 @@
   },
   "lumber_camp": {
    "name": "Woodcutter's Hut",
-   "desc": "Woodcutters drop logs here; carriers take them where they're needed.",
+   "desc": "A woodcutter works here: fells the trees round it and leaves the logs for the carriers.",
    "cost": {
     "wood": 0,
     "plank": 6,
@@ -37,11 +36,14 @@
    },
    "offers": [
     "wood"
-   ]
+   ],
+   "staff": {
+    "woodcutter": 1
+   }
   },
   "mining_camp": {
    "name": "Quarry",
-   "desc": "Stone is dropped here; carriers take it where it's needed.",
+   "desc": "A stone cutter works here: cuts the stone round it and leaves it for the carriers.",
    "drop_off": [
     "stone"
    ],
@@ -54,7 +56,30 @@
    },
    "offers": [
     "stone"
-   ]
+   ],
+   "staff": {
+    "stonecutter": 1
+   }
+  },
+  "school": {
+   "extends": "house",
+   "name": "School",
+   "desc": "Teaches the town's people: new villagers, and woodcutters and stone cutters for the huts. Each goes to work where it's needed.",
+   "hotkey": "C",
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "note": "",
+   "trains": [
+    "worker",
+    "woodcutter",
+    "stonecutter"
+   ],
+   "cost": {
+    "wood": 0,
+    "plank": 10,
+    "stone": 4
+   }
   },
   "sawmill": {
    "extends": "lumber_camp",

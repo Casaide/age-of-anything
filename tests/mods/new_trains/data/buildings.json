@@ -1,0 +1,1 @@
+{"buildings": {"shed": {"extends": "house", "name": "Shed", "trains": ["laser_shark"]}}}
