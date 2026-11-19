@@ -235,6 +235,7 @@ class WorldSave:
     b_resv:[[int]]
     b_coming:[[int]]
     b_make:[int]
+    b_site:[[int]]
     produced:[[int]]
     jb_id:[int]
     jb_unit:[int]
@@ -760,6 +761,7 @@ def world_bytes(bots:[Bot]) -> string:
         b_resv,
         b_coming,
         b_make,
+        b_site,
         produced,
         jb_id,
         jb_unit,
@@ -1298,6 +1300,7 @@ def load_world_bytes(data:string) -> [Bot]:
     b_resv = s.b_resv
     b_coming = s.b_coming
     b_make = s.b_make
+    b_site = s.b_site
     produced = s.produced
     jb_id = s.jb_id
     jb_unit = s.jb_unit

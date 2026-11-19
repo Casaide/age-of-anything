@@ -234,6 +234,7 @@ var stashed_b_want = []::[int]
 var stashed_b_resv = []::[int]
 var stashed_b_coming = []::[int]
 var stashed_b_make = []::int
+var stashed_b_site = []::[int]
 var stashed_produced = []::[int]
 var stashed_jb_id = []::int
 var stashed_jb_unit = []::int
@@ -762,6 +763,7 @@ def reset_world():
     b_resv = []::[int]
     b_coming = []::[int]
     b_make = []::int
+    b_site = []::[int]
     produced = []::[int]
     jb_id = []::int
     jb_unit = []::int
@@ -1280,6 +1282,7 @@ def stash_world():
     stashed_b_resv = b_resv
     stashed_b_coming = b_coming
     stashed_b_make = b_make
+    stashed_b_site = b_site
     stashed_produced = produced
     stashed_jb_id = jb_id
     stashed_jb_unit = jb_unit
@@ -1791,6 +1794,7 @@ def unstash_world():
     b_resv = stashed_b_resv
     b_coming = stashed_b_coming
     b_make = stashed_b_make
+    b_site = stashed_b_site
     produced = stashed_produced
     jb_id = stashed_jb_id
     jb_unit = stashed_jb_unit
