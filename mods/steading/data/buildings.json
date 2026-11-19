@@ -2,6 +2,7 @@
  "_doc": "The first slice of the economy mod (#524): the Town Center is the storehouse, the lumber and mining camps are the woodcutter's hut and the quarry, and the sawmill is new. Buildings cost planks and stone, carried to the site. Everything for war and the late game goes.",
  "menu": {
   "+civilian": [
+   "road",
    "sawmill",
    "inn"
   ]
@@ -74,6 +75,28 @@
     "wood": 4,
     "plank": 6
    }
+  },
+  "road": {
+   "_doc": "extends the house only because a mod's new building must (mods.lobster); a road plan has no look (game/roads)",
+   "extends": "house",
+   "name": "Road",
+   "desc": "Drag to lay a road, a cell at a time. Workers walk faster on it. Each cell takes a stone, carried there, and a moment's work.",
+   "road": "road",
+   "size": 1,
+   "hp": 50,
+   "cost": {
+    "food": 0,
+    "wood": 0,
+    "stone": 1
+   },
+   "build_time": 3,
+   "age": 1,
+   "hotkey": "R",
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "note": "",
+   "water": false
   },
   "inn": {
    "extends": "house",

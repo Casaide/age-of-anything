@@ -414,7 +414,10 @@ def akb_types() -> [string]:
     let rest = []::string
     for(b.keys) t:
         if not has_s(types, t) and gstr(at(b, t), "status", "") != "planned": rest.push(t)
-    return filter(append(types, sorted_strs(rest))) t: has(b, t)  // (a mod can take out what the menus name)
+    return filter(append(types, sorted_strs(rest))) t: has(b, t) and not akb_road_plan(t)  // (a mod can take out what the menus name)
+
+// A road plan has no look: it's painted on the ground (game/roads, #68).
+def akb_road_plan(type:string) -> bool: return gstr(gobj(gobj(akb_bdata(), "buildings"), type), "road", "") != ""
 
 // Every look of a building in an architecture: [model, suffix] (the base, age looks, variants, a gate's ways).
 def akb_looks_of(arch:string, type:string) -> [[string]]:
@@ -437,7 +440,7 @@ def akb_breaks(type:string, lk:Look) -> bool:
 // (at AKB_PICTURE_K of the density: a page's frame is some 60 px, and a wonder at the whole was 3.5 s)
 def akb_picture(arch:string, type:string):
     let name = "{arch}:{type}"
-    if looks.get(name) or frame_index(name + ":picture") >= 0 or akb_load_cached(name): return
+    if akb_road_plan(type) or looks.get(name) or frame_index(name + ":picture") >= 0 or akb_load_cached(name): return
     bmat_matte = true
     let px = WB_PX
     WB_PX *= AKB_PICTURE_K

@@ -107,6 +107,25 @@ def lay(id:string, x:int, y:int, builder:int) -> bool:
                     return true
     return false
 
+// A road dragged along a row near x, y, a plan a cell as the road tool lays it (game/roads, #68): the first row of n free
+// cells, built in order by `builder`. How many plans were laid.
+def lay_road(x:int, y:int, n:int, builder:int) -> int:
+    let k = btype_index("road")
+    for(12) d:
+        for([ y + d, y - d ]) ry:
+            var free = true
+            for(n) j: free = free and can_place(0, k, x + j, ry, 0)
+            if free:
+                for(n) j: issue_cmd(0, CMD_BUILD, [ builder ], k, x + j, ry, 0, if j > 0: 1 else: 0)
+                return n
+    return 0
+
+def road_cells() -> int:
+    var n = 0
+    for(road) r:
+        if r > 0: n++
+    return n
+
 def gather_near(ids:[int], name:string):
     for(ids) uid:
         let i = index_of(uid)
@@ -128,12 +147,14 @@ def play() -> int:
     var h = 0
     var sites_ok = true
     let ate = []::int  // the workers that went to eat
+    var planned = 0
     for(MINUTES * 60 * TICK_HZ) t:
         if t == 40 and lay("lumber_camp", tx + 6, ty - 4, workers[3]): laid++
         if t == 60 and lay("sawmill", tx - 6, ty + 3, workers[4]): laid++
         if t == 80 and lay("mining_camp", tx + 5, ty + 6, workers[5]): laid++
         if t == 100 and lay("house", tx - 5, ty - 6, workers[6]): laid++
         if t == 120 and lay("inn", tx + 7, ty + 1, workers[7]): laid++
+        if t == 140: planned = lay_road(tx - 2, ty + 4, 5, workers[2])
         for(u_x.length) i:
             if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])
         if t > 0 and t % 2400 == 0: gather_near(workers.slice(0, 2), "wood")  // (back to the trees once a hut is up)
@@ -144,8 +165,9 @@ def play() -> int:
     var built = 0
     for(b_id.length) b:
         if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center"): built++
-    print "steading: {MINUTES} min, {laid} laid, {built} built, {born_alive()} born, {ate.length} ate; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
+    print "steading: {MINUTES} min, {laid} laid, {built} built, {born_alive()} born, {ate.length} ate, {road_cells()} road; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
     check(laid == 5 and built == 5, "steading: the hut, the sawmill, the quarry, a house and an inn are built ({built} of {laid})")
+    check(planned == 5 and road_cells() == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({road_cells()} of {planned})")
     check(ate.length >= 4, "steading: hungry workers go to eat ({ate.length} of them)")
     let born = born_alive()
     check(born > 0 and born <= 2, "steading: children are born in the house, no more than its beds ({born})")

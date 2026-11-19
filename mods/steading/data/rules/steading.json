@@ -4,6 +4,13 @@
  "animals": false,
  "economy": {
   "model": "stocked",
+  "roads": [
+   {
+    "name": "road",
+    "speed_pct": 150,
+    "style": "cobble"
+   }
+  ],
   "hunger": {
    "_doc": "every: seconds between meals; eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what a meal is (hooks/hunger, #47)",
    "every": 90,
