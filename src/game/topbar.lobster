@@ -77,7 +77,7 @@ def draw_topbar(speed:float, paused:bool):
     let secs = tick / 20
     let clock_txt = "{secs / 60}:{if secs % 60 < 10: "0" else: ""}{secs % 60}"
     let pace = if paused: "Paused" elif speed != 1.0: "x{speed}" else: ""
-    let stocks = map(num_resources) r: string(stock[r][ME])
+    let stocks = if gbool(su_rules, "topbar_stock", true): map(num_resources) r: string(stock[r][ME]) else: []::string  // (a town-builder's stock is in its storehouse: #98)
     // (the name as typed: the display face sets the rest as small capitals, as Godot's)
     let texts = TbTexts { stocks, pop_txt, rstr(su_races[ME], "name"), string(ages[ME]), age_txt, clock_txt, pace }
     let lay = tb_layout(texts, float(gl.window_size().x), hud_s())
@@ -113,7 +113,7 @@ def draw_topbar(speed:float, paused:bool):
         icons.push(name)
         icon_at.push(float4 { p.x, p.y, side, alpha })
     // Each resource: its icon, the stock, a small worker and how many work it.
-    for(num_resources) r:
+    for(stocks.length) r:
         tb_plaque(float2 { x, y }, float2 { res_w[r], ph })
         icon("res_" + resource_names[r], float2 { x + 8.0 * s, y + (ph - 28.0 * s) / 2.0 }, 28.0 * s, 1.0)
         let nx = x + 42.0 * s

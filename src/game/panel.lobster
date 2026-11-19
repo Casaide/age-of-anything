@@ -685,6 +685,7 @@ def draw_panel():
         if t_animal[k] == 0: info = append(info, card_lines(k))
     else:
         info.push("Select units or a building.")
+    let goods_r, goods_n = goods_of(bi)  // (a stocked economy: what the building holds, game/goods)
     panel_hp = hp_now
     if placing >= 0: info = [ "Placing {bname(placing)}: left-click to build, shift keeps placing, right-click/Esc cancels" ]
     // Lay it out (UI px times s): the who column, the button groups, the queue.
@@ -700,7 +701,7 @@ def draw_panel():
     let hp_h = if hp_now >= 0: 20.0 * s else: 0.0
     let tray_rows = (tray_k.length + 6) / 7
     let line_n = info_lines.length + (if has_queue and not b_queue[bi].length: 1 else: 0)  // (room for "Training ..." before it starts)
-    let who_h = title_h + 5.0 * s + hp_h + (if hp_now >= 0: 5.0 * s else: 0.0) + float(line_n) * 20.0 * s + (if tray_k.length: 5.0 * s + float(tray_rows) * 43.0 * s else: 0.0)
+    let who_h = title_h + 5.0 * s + hp_h + (if hp_now >= 0: 5.0 * s else: 0.0) + float(line_n) * 20.0 * s + (if tray_k.length: 5.0 * s + float(tray_rows) * 43.0 * s else: 0.0) + (if goods_r.length: 5.0 * s + float(goods_rows(goods_r.length)) * 43.0 * s else: 0.0)
     let show_pic = portrait >= 0 or b_pic >= 0
     // Button grps, in the order their captions first appear.
     let grps = []::string
@@ -752,6 +753,8 @@ def draw_panel():
     let info_y = wy
     let tray_y = info_y + float(info_lines.length) * 20.0 * s + 5.0 * s
     for(tray_k.length) n: hud_well(float2 { who_x + float(n % 7) * 43.0 * s, tray_y + float(n / 7) * 43.0 * s }, float2_1 * 40.0 * s)
+    let goods_y = tray_y + (if tray_k.length: float(tray_rows) * 43.0 * s + 5.0 * s else: 0.0)
+    goods_wells(float2 { who_x, goods_y }, goods_r, s)
     x += who_w
     let bottom = py + ph - pad_b
     if acts or has_queue:
@@ -828,6 +831,7 @@ def draw_panel():
         if tray_n[n] > 1:
             let ct = string(tray_n[n])
             edged_text(float2 { who_x + float(n % 7) * 43.0 * s + 38.0 * s - tb_text_w(ct, int(13.0 * s), 1), tray_y + float(n / 7) * 43.0 * s + 22.0 * s }, ct, int(13.0 * s), float4_1, 1)
+    let good_over = goods_texts(float2 { who_x, goods_y }, goods_r, goods_n, s, mpos)
     if acts:
         for(grps) g:  // each group's caption over its first button
             let first = filter(items) it: it.b.group == g
@@ -848,6 +852,7 @@ def draw_panel():
         if mpos.x >= it.at.x and mpos.y >= it.at.y and mpos.x <= it.at.x + it.side and mpos.y <= it.at.y + it.side: q_hover = n
     if hover >= 0: tip_card(mpos, items[hover].b.label, items[hover].b.costv, items[hover].b.tip, items[hover].b.enabled)
     elif q_hover >= 0: tip_card(mpos, q_items[q_hover].b.label, []::int, "Click to cancel.", true)
+    elif good_over >= 0: tip_card(mpos, good_look(good_over).title, []::int, "Held here: carriers bring it in and take it where it\'s wanted.", true)
     tb_flush()
     ui_flush()
 

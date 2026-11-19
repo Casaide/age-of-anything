@@ -3,6 +3,7 @@
  "extends": "default",
  "race": "villagers",
  "animals": false,
+ "topbar_stock": false,
  "tips": [
   {
    "text": "With nothing selected, press Build: Civilian and lay a School. Your villagers bring the goods and build it.",
