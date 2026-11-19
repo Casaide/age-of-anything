@@ -137,7 +137,12 @@ def interpret(prompt:string, rules:JV) -> Brief:
 
 def quoted(xs:[string], sep:string) -> string: return concat_string(map(xs) w: "\'" + w + "\'", sep)
 
-def generate(prompt:string, rules:JV, reroll:int) -> JV:
+// A race from a prompt, or from the rules' own (rules "race": a match that always plays one people, #70).
+def generate(typed:string, rules:JV, reroll:int) -> JV:
+    let fixed = gstr(rules, "race", "")
+    return generate_from(if fixed != "": fixed else: typed, rules, reroll)
+
+def generate_from(prompt:string, rules:JV, reroll:int) -> JV:
     let norm = normalize_prompt(prompt)
     let rules_id = rstr(rules, "id")
     let rng = new_rng(hash_text(norm + "|" + rules_id + "|" + string(reroll)))

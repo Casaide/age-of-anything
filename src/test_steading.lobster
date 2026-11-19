@@ -72,7 +72,10 @@ let MAP = "reed_meadow"
 let used = mods_use([ "steading" ])
 check(used.length == 1, "the mod loads ({map(mods_refused.get_keys()) id: id + ": " + mods_refused.get(id, "")})")
 let rules = load_rules("steading")
-let races = map([ "villagers", "villagers" ]) p: generate(p, rules, 0)
+let races = map([ "villagers", "sewer rats" ]) p: generate(p, rules, 0)
+// Every side plays villagers, whatever was typed (rules "race", #70).
+let typed_rats = gstr(races[1], "creature", "")
+check(gstr(races[0], "creature", "") == "human" and typed_rats == "human", "steading: every side is villagers, whatever was typed ({typed_rats})")
 // Every building is drawn with a model the game has: its own, or the one it extends (#58: the sawmill had none, and the
 // game stopped baking it at the start).
 let game_buildings = at(parse_json(read_file("../data/buildings.json") or ""), "buildings")
@@ -153,7 +156,7 @@ def play() -> int:
         if t == 60 and lay("sawmill", tx - 6, ty + 3, workers[4]): laid++
         if t == 80 and lay("mining_camp", tx + 5, ty + 6, workers[5]): laid++
         if t == 100 and lay("house", tx - 5, ty - 6, workers[6]): laid++
-        if t == 120 and lay("inn", tx + 7, ty + 1, workers[7]): laid++
+        if t == 2400 and lay("inn", tx + 7, ty + 1, workers[7]): laid++  // (once the sawmill is going: planks for it first)
         if t == 140: planned = lay_road(tx - 2, ty + 4, 5, workers[2])
         for(u_x.length) i:
             if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])

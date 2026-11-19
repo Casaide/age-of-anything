@@ -1,0 +1,26 @@
+{
+ "_doc": "Steading's people (#70): every side plays villagers (rules \"race\").",
+ "words": {
+  "villager": {
+   "creature": "human"
+  },
+  "villagers": {
+   "creature": "human"
+  },
+  "peasant": {
+   "creature": "human"
+  },
+  "peasants": {
+   "creature": "human"
+  },
+  "townsfolk": {
+   "creature": "human"
+  },
+  "townsman": {
+   "creature": "human"
+  },
+  "townsmen": {
+   "creature": "human"
+  }
+ }
+}

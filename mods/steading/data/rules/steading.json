@@ -1,6 +1,7 @@
 {
  "_doc": "The economy mod's match (#524): a stocked economy, workers who carry, a town of wood, planks and stone. One age; no soldiers.",
  "extends": "default",
+ "race": "villagers",
  "animals": false,
  "economy": {
   "model": "stocked",
