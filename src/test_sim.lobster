@@ -646,6 +646,42 @@ def test_gatherers():
     let w_not, b_not = gatherers_run("spear")
     check(not w_not and not b_not, "gatherers: with only spears named, a worker doesn\'t gather, told to or after a camp ({w_not}, {b_not})")
 
+// Hands off and town builds (Casaide/creel#94): with rules economy.hands_off a worker takes no orders from its player,
+// and with economy.town_builds a building is laid with no workers named. A worker is ordered to move, to gather and to
+// build; then a house is laid with nobody named. Whether the worker stayed put, and whether a second site was laid.
+def hands_off_run(on:bool) -> bool, int:
+    var r = bare0
+    if on:
+        r = eco_rule(r, "hands_off", jarr([ jstr("worker") ]))
+        r = eco_rule(r, "town_builds", jbool(true))
+    new_world("flat_test", races0, r, [])
+    put(0, "town_center", 10, 10, 0)
+    for(num_resources) res: stock_add(res, 0, 500)
+    let worker = spawn_at(0, "worker", 14000, 13000)
+    let wi = index_of(worker)
+    let x0 = u_x[wi]
+    let y0 = u_y[wi]
+    let tree = nearest_resource(u_x[wi], u_y[wi], kind_of("wood"), -1, false, false, false)
+    let hk = btype_index("house")
+    let sites0 = b_id.length
+    issue_cmd(0, CMD_MOVE, [ worker ], 30000, 30000, 0, 0)
+    for(40): tick_on()
+    issue_cmd(0, CMD_GATHER, [ worker ], tree, 0, 0, 0)
+    for(40): tick_on()
+    issue_cmd(0, CMD_BUILD, [ worker ], hk, 24, 24, 0)
+    for(40): tick_on()
+    issue_cmd(0, CMD_BUILD, []::int, hk, 30, 10, 0)
+    for(40): tick_on()
+    let i = index_of(worker)
+    let still = dist2(u_x[i], u_y[i], x0, y0) < 300 * 300 and u_task[i] == T_NONE
+    return still, b_id.length - sites0
+
+def test_hands_off():
+    let still, sites = hands_off_run(true)
+    check(still and sites == 2, "hands off: a hands-off worker takes no move, gather or build order; both houses are laid, the one it was named for too ({still}, {sites} laid)")
+    let moved, sites_off = hands_off_run(false)
+    check(not moved and sites_off == 1, "hands off: without the rules the worker goes, and a build with nobody named lays nothing ({moved}, {sites_off} laid: the worker\'s)")
+
 // A big Steading town against its Lua's step budget: 40 inns, 40 sites and 1,000 workers, every rule on, for 3 s.
 // Each look over the units is one pass, not one an inn or a site, so a tick stays far under the budget.
 def test_steading_big():
@@ -5225,7 +5261,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "walk_over_site", "gatherers", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "eating", "idle_wait", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "walk_over_site", "gatherers", "hands_off", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "eating", "idle_wait", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -5257,6 +5293,7 @@ def run_part(name:string):
     elif name == "abandoned_site": test_abandoned_site()
     elif name == "walk_over_site": test_walk_over_site()
     elif name == "gatherers": test_gatherers()
+    elif name == "hands_off": test_hands_off()
     elif name == "eating": test_eating()
     elif name == "steading_big": test_steading_big()
     elif name == "sapper_sling": test_sapper_sling()

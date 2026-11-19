@@ -33,6 +33,12 @@
     "food"
    ]
   },
+  "hands_off": [
+   "worker",
+   "woodcutter",
+   "stonecutter"
+  ],
+  "town_builds": true,
   "carriers": [
    "worker"
   ],

@@ -98,8 +98,8 @@ def all_of(r:int) -> int:  // player 0's r: in its buildings and in its units' h
         if u_owner[i] == 0 and u_carry_kind[i] == r + 1: n += u_carry[i]
     return n
 
-// Lay building `id` for player 0 near (x, y) in tiles, with `builder`: the first place it fits, spiralling out.
-def lay(id:string, x:int, y:int, builder:int) -> bool:
+// Lay building `id` for player 0 near (x, y) in tiles, from the town (no worker named): the first place it fits, spiralling out.
+def lay(id:string, x:int, y:int) -> bool:
     let k = btype_index(id)
     assert k >= 0
     for(12) d:
@@ -108,20 +108,20 @@ def lay(id:string, x:int, y:int, builder:int) -> bool:
                 let dx = ex - d
                 let dy = ey - d
                 if max(abs(dx), abs(dy)) == d and can_place(0, k, x + dx, y + dy, 0):
-                    issue_cmd(0, CMD_BUILD, [ builder ], k, x + dx, y + dy, 0)
+                    issue_cmd(0, CMD_BUILD, []::int, k, x + dx, y + dy, 0)
                     return true
     return false
 
 // A road dragged along a row near x, y, a plan a cell as the road tool lays it (game/roads, #68): the first row of n free
-// cells, built in order by `builder`. How many plans were laid.
-def lay_road(x:int, y:int, n:int, builder:int) -> int:
+// cells, built in order. How many plans were laid.
+def lay_road(x:int, y:int, n:int) -> int:
     let k = btype_index("road")
     for(12) d:
         for([ y + d, y - d ]) ry:
             var free = true
             for(n) j: free = free and can_place(0, k, x + j, ry, 0)
             if free:
-                for(n) j: issue_cmd(0, CMD_BUILD, [ builder ], k, x + j, ry, 0, if j > 0: 1 else: 0)
+                for(n) j: issue_cmd(0, CMD_BUILD, []::int, k, x + j, ry, 0, if j > 0: 1 else: 0)
                 return n
     return 0
 
@@ -151,7 +151,6 @@ def play() -> int:
         if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
     check(by_tc == 5, "steading: the villagers start round the storehouse ({by_tc} of 5)")
     let plank0 = stock[pl][0]
-    let workers = mine()
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
     var laid = 0
@@ -165,12 +164,12 @@ def play() -> int:
     var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
     for(MINUTES * 60 * TICK_HZ) t:
-        if t == 20 and lay("school", tx - 2, ty - 6, workers[0]): laid++
-        if t == 40 and lay("lumber_camp", tx + 6, ty - 4, workers[3]): laid++
-        if t == 60 and lay("sawmill", tx - 6, ty + 3, workers[4]): laid++
-        if t == 80 and lay("mining_camp", tx + 5, ty + 6, workers[3]): laid++
-        if t == 2400 and lay("inn", tx + 7, ty + 1, workers[4]): laid++  // (once the sawmill is going: planks for it first)
-        if t == 140: planned = lay_road(tx - 2, ty + 4, 5, workers[2])
+        if t == 20 and lay("school", tx - 2, ty - 6): laid++
+        if t == 40 and lay("lumber_camp", tx + 6, ty - 4): laid++
+        if t == 60 and lay("sawmill", tx - 6, ty + 3): laid++
+        if t == 80 and lay("mining_camp", tx + 5, ty + 6): laid++
+        if t == 2400 and lay("inn", tx + 7, ty + 1): laid++  // (once the sawmill is going: planks for it first)
+        if t == 140: planned = lay_road(tx - 2, ty + 4, 5)
         let school = done_of("school")
         if school != 0 and not trained:
             for([ "woodcutter", "stonecutter", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
@@ -204,7 +203,7 @@ def play() -> int:
     check(staffed == 2, "steading: a woodcutter and a stone cutter trained at the school each went to work at its hut ({staffed} of 2)")
     check(gatherers_ok and gathered[w][0] > 0 and gathered[st][0] > 0, "steading: wood and stone come in, cut only by the specialists ({gathered[w][0]} wood, {gathered[st][0]} stone)")
     check(planned == 5 and road_cells() == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({road_cells()} of {planned})")
-    check(most_builders >= 2 and most_builders <= 4, "steading: idle villagers help build a site, no more than 3 sent at once (and one the test ordered: {most_builders})")
+    check(most_builders >= 2 and most_builders <= 3, "steading: idle villagers help build a site, no more than 3 sent at once ({most_builders})")
     check(site_walked, "steading: villagers walk across a site while it goes up")
     check(ate.length >= 3, "steading: hungry workers go to eat ({ate.length} of them)")
     check(sites_ok, "steading: no site was built ahead of its goods")
@@ -224,11 +223,10 @@ def store_planks() -> int:
 def save_run(stop:bool) -> bool, bool:
     let path = "test_steading.sav"
     new_world(2026, MAP, races, rules, [])
-    let workers = mine()
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
     for(2 * 60 * TICK_HZ) t:
-        if t == 40: lay("lumber_camp", tx + 6, ty - 4, workers[4])
+        if t == 40: lay("lumber_camp", tx + 6, ty - 4)
         wstep()
     if stop:
         let pk = l_packs[find(l_packs) p: p.id == "steading"]
