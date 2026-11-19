@@ -15,7 +15,7 @@ macOS and the Steam Deck.
 | `docs/mvp-plan.md` | The 10-minute demo: scope, cut list, architecture, milestone overview, metrics, risks |
 | `docs/milestones/` | One file per milestone: plan, checklist, results, changes. Status lives here |
 | `docs/research.md` | Technical reference and sources (lockstep, pathing, Holepunch bridge) |
-| [Issues](https://github.com/Drache93/age-of-whatever/issues) | The backlog, bugs and upstream Lobster changes |
+| [Issues](https://github.com/Casaide/age-of-anything/issues) | The backlog, bugs and upstream Lobster changes |
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
 | `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools
 | `docs/milestones/lobster-port.md` | The move from Godot to Lobster: what was ported, how it was checked, what's left |
