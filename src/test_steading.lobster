@@ -10,6 +10,7 @@ import gen.identity
 import gen.pricing
 import gen.heroes
 import gen.generator
+import lua.parse
 import gen.mods
 import lib.consts
 import lib.fixed
@@ -53,8 +54,8 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
-import hooks.economy
-import hooks.hunger
+import lua.lua
+import lua.api
 import gen.reset
 import gen.save
 import testkit.kit
@@ -69,6 +70,7 @@ id_load("../data")
 
 let MINUTES = 15
 let MAP = "reed_meadow"
+let T_EAT = 100  // (the mod's hunger.lua: its own task, going to eat)
 let used = mods_use([ "steading" ])
 check(used.length == 1, "the mod loads ({map(mods_refused.get_keys()) id: id + ": " + mods_refused.get(id, "")})")
 let rules = load_rules("steading")
@@ -186,13 +188,17 @@ def play() -> int:
     var built = 0
     for(b_id.length) b:
         if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center") and b_cy[b] * W + b_cx[b] != start_house: built++
-    print "steading: {MINUTES} min, {laid} laid, {built} built, {born_alive()} born, {ate.length} ate, {road_cells()} road; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
-    check(laid == 5 and built == 5, "steading: the hut, the sawmill, the quarry, a house and an inn are built ({built} of {laid})")
-    check(planned == 5 and road_cells() == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({road_cells()} of {planned})")
-    check(ate.length >= 4, "steading: hungry workers go to eat ({ate.length} of them)")
+    let col_house = find(hook_unit_names) n: n == "house"  // (the mod's Lua: the home a worker was born in)
     var born = 0
     for(u_id.length) i:
         if u_owner[i] == 0 and hook_unit_get(col_house, i) != 0: born++
+    var born_all = 0
+    for(u_id.length) i:
+        if hook_unit_get(col_house, i) != 0: born_all++
+    print "steading: {MINUTES} min, {laid} laid, {built} built, {born_all} born, {ate.length} ate, {road_cells()} road; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
+    check(laid == 5 and built == 5, "steading: the hut, the sawmill, the quarry, a house and an inn are built ({built} of {laid})")
+    check(planned == 5 and road_cells() == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({road_cells()} of {planned})")
+    check(ate.length >= 4, "steading: hungry workers go to eat ({ate.length} of them)")
     check(born > 0 and born <= 4, "steading: children are born in the two houses, no more than their beds ({born})")
     check(sites_ok, "steading: no site was built ahead of its goods")
     check(produced[pl][0] > 0 and stock[pl][0] > plank0, "steading: the sawmill makes planks, more than the town started with ({plank0} -> {stock[pl][0]})")
@@ -204,9 +210,53 @@ def store_planks() -> int:
         if is_store(b, 0): n += b_hold[b][res("plank")]
     return n
 
+// Through a save (#75): the mod's Lua loads again with the saved match, and its state comes back in the hook columns.
+// A house goes up and workers cut wood for 2 minutes; then 2 minutes more, once straight on and once from a save made
+// there: the same hash every tick. Whether they matched, and whether anyone was hungry, ate or was born by then.
+// stop: the mod's rules stop before the save (as an error would stop them): they must stay stopped after the load.
+def save_run(stop:bool) -> bool, bool:
+    let path = "test_steading.sav"
+    new_world(2026, MAP, races, rules, [])
+    let workers = mine()
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    gather_near(workers.slice(0, 4), "wood")
+    for(2 * 60 * TICK_HZ) t:
+        if t == 40: lay("house", tx - 5, ty - 6, workers[6])
+        wstep()
+    if stop:
+        let pk = l_packs[find(l_packs) p: p.id == "steading"]
+        pk.error = "stopped by the test"
+        lx_note_stop(pk)
+    assert save_world(path, [])
+    let want = map(2 * 60 * TICK_HZ):
+        wstep()
+        state_hash()
+    let cols = map(hook_unit_names) n: n
+    var lively = false
+    for(u_id.length) i:
+        for([ "meal", "house" ]) name:
+            let c = find(cols) n: n == name
+            if c >= 0 and hook_unit_get(c, i) != 0: lively = true
+    reset_world()
+    lua_reset()  // (as a game started fresh to load it has no Lua yet)
+    lua_on = false
+    lua_rules = jobj()
+    load_world(path)
+    delete_file(path)
+    let got = map(2 * 60 * TICK_HZ):
+        wstep()
+        state_hash()
+    let off = l_packs[find(l_packs) p: p.id == "steading"].error != ""
+    return equal(want, got) and off == stop, lively
+
 let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
+let same, lively = save_run(false)
+check(lively and same, "steading: through a save, the mod\'s rules and their state play on the same (lively {lively}, same {same})")
+let same_off, _ = save_run(true)
+check(same_off, "steading: rules that stopped before a save stay stopped after it, the same on every machine")
 lib_packs = [ lib_packs[0] ]
 id_load(lib_root)
 print "\n{checks - failures} passed, {failures} failed"

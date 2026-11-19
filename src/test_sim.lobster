@@ -82,8 +82,8 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
-import hooks.economy
-import hooks.hunger
+import lua.lua
+import lua.api
 import gen.reset
 import gen.save
 import gen.effect_words
@@ -218,6 +218,25 @@ def stocked_rules(r:JV) -> JV:
     let s = deep_copy(r)
     set(at(s, "economy"), "model", jstr("stocked"))
     return s
+
+// Steading's rules (mods/steading's Lua, #75) in this world: its pack's Lua loads again as the match's, with these
+// economy rules set over the world's (a JSON object). Building types' own fields (beds, serves) are set before it.
+def steading_lua(economy:string):
+    let ec = rules_part("economy")
+    let more = parse_json(economy)
+    for(more.keys) k, j: set(ec, k, more.a[j])
+    let have = find(lib_packs) p: p.id == "steading"
+    if have < 0: lib_packs.push(pack_open("steading", "../mods/steading", jobj()))
+    lua_declare()
+    for(lua_errors()) e: check(false, "steading\'s Lua: {e}")
+
+let T_EAT = 100  // (Steading's hunger.lua: its own task, going to eat)
+
+// Back to no Steading: the next world loads no Lua of its.
+def steading_off(): lib_packs = filter(lib_packs) p: p.id != "steading"
+
+// A Lua unit column of Steading's, by its name.
+def lua_col(name:string) -> int: return find(hook_unit_names) n: n == name
 
 def store_sum(r:int, p:int) -> int:
     var n = 0
@@ -483,6 +502,76 @@ def test_sites():
     check(spent and b_site[bi].length == 0 and b_hold[a][res_of("wood")] == before[res_of("wood")] - cost[res_of("wood")],
           "sites: once built its goods are used up, and the stores hold that much less")
 
+// A site whose builder gave it up (#74): Creel's build_job drops a site its builder can't reach in GIVE_UP ticks, and
+// nobody is sent back. With rules economy.builders_come (mods/steading's economy.lua) an idle worker of its side takes
+// it up. The give-up is made here as the engine meets it: the builder on its way, stopped and stuck. Whether it gave
+// up, and whether the site was built.
+def abandoned_site(come:bool) -> bool, bool:
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_store("town_center", 200)
+    put(0, "town_center", 10, 10, 0)
+    for(num_resources) r: stock_add(r, 0, 200)
+    t_carrier[type_of_slot(0, "worker")] = 1
+    if come: steading_lua("{{\"builders_come\": true}}")
+    let builder = spawn_at(0, "worker", 25000, 12000)
+    for(3) n: spawn_at(0, "worker", 14000 + n * 600, 13000)
+    let hk = btype_index("house")
+    let nb = b_id.length
+    issue_cmd(0, CMD_BUILD, [ builder ], hk, 34, 10, 0)
+    for(40):
+        if b_id.length == nb: tick_on()
+    let site = b_id[b_id.length - 1]
+    var gave_up = false
+    for(8000):
+        let i = index_of(builder)
+        if not gave_up and u_task[i] == BUILD and u_target[i] == site and u_moving[i] != 0:
+            u_moving[i] = 0
+            u_stuck[i] = GIVE_UP
+            tick_on()
+            gave_up = u_task[index_of(builder)] != BUILD
+        else: tick_on()
+    let b = b_index_of(site)
+    steading_off()
+    return gave_up, b >= 0 and b_done[b] != 0
+
+// A big Steading town against its Lua's step budget: 40 homes, 40 sites and 1,000 workers, every rule on, for 3 s.
+// Each look over the units is one pass, not one a home or a site, so a tick stays far under the budget.
+def test_steading_big():
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    let f = res_of("food")
+    let hk = btype_index("house")
+    let house = shallow_copy(su_btypes[hk])
+    set(house, "serves", jint(3))
+    set(house, "beds", jint(2))
+    su_btypes[hk] = house
+    steading_lua("{{\"builders_come\": true, \"homes\": {{\"born_every\": 5, \"foods\": [\"food\"]}}, \"hunger\": {{\"every\": 2, \"eaters\": [\"worker\"], \"starving_pct\": 50, \"foods\": [\"food\"]}}}}")
+    bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
+    make_store("town_center", 2000)
+    put(0, "town_center", 30, 30, 0)
+    stock_add(f, 0, 2000)
+    for(40) n: put(0, "house", 4 + (n % 10) * 5, 4 + (n / 10) * 3, 0)
+    for(40) n: place(0, hk, 4 + (n % 10) * 5, 44 + (n / 10) * 3)
+    t_carrier[type_of_slot(0, "worker")] = 1
+    let wk = type_of_slot(0, "worker")
+    for(1000) n: add_unit(0, wk, 2000 + (n % 50) * 1200, 18000 + (n / 50) * 1200)  // (spawn_at's search for room is slow for 1,000)
+    let pk = l_packs[find(l_packs) p: p.id == "steading"]
+    var most = 0
+    var eating = 0
+    for(3 * TICK_HZ):
+        tick_on()
+        most = max(most, pk.spent)
+        eating = max(eating, (filter(u_task) t: t == T_EAT).length)
+    for(lua_errors()) e: check(false, "steading big: {e}")
+    check(eating >= 500, "steading big: most of the town went to eat at once ({eating})")
+    check(most > 0 and most < L_BUDGET_TICK / 10, "steading big: a tick\'s Lua is far under its budget ({most} of {L_BUDGET_TICK} steps)")
+    steading_off()
+
+def test_abandoned_site():
+    let gave_up, built = abandoned_site(true)
+    check(gave_up and built, "sites: a site its builder gave up is built by an idle worker sent to it (gave up {gave_up}, built {built})")
+    let gave_up_off, built_off = abandoned_site(false)
+    check(gave_up_off and not built_off, "sites: without builders_come nobody goes back to it (as the engine has it)")
+
 // Road plans (#51): a building type with `road` is a plan for road. Its cells are walked over while it is built (it asks for
 // its cost like any site), and once built they become that road and the plan goes. Its builder then takes the next plan.
 // The house stands in for a road plan here. The hash at the end.
@@ -589,7 +678,7 @@ def test_bridge_plans():
     let h2 = bridge_plans()
     check(h1 == h2, "bridge plans: the same twice")
 
-// doors_on_roads (hooks/economy, #62): with the rule on, a house goes up only with its door tile on a road or the player's road plan.
+// doors_on_roads (mods/steading's economy.lua, #62): with the rule on, a house goes up only with its door tile on a road or the player's road plan.
 def test_doors_on_roads():
     new_world("flat_test", races0, stocked_rules(bare0), [])
     rd_names = [ "dirt" ]
@@ -599,7 +688,7 @@ def test_doors_on_roads():
     bt_road[pk] = 0  // stands in as a road plan
     let builder = spawn_at(0, "worker", 25000, 12000)
     check(can_place(0, hk, 20, 10, 0), "doors on roads: off, a house goes up anywhere")
-    eco_doors = true
+    steading_lua("{{\"doors_on_roads\": true}}")
     let sx, sy = dims(hk, 0)
     check(not can_place(0, hk, 20, 10, 0), "doors on roads: on, a house off the road is refused")
     check(lay_foundation(0, [ builder ], hk, 20, 10, 0) == 0, "doors on roads: and its order lays nothing")
@@ -608,21 +697,22 @@ def test_doors_on_roads():
     check(not can_place(0, hk, 20 + sx, 10, 0), "doors on roads: road beside its door is not enough")
     let plan = lay_foundation(0, [ builder ], pk, 34 + sx / 2, 10 + sy, 0)
     check(plan != 0 and can_place(0, hk, 34, 10, 0), "doors on roads: a road plan at its door is enough")
-    eco_doors = false
+    steading_off()
 def test_road_plans():
     let h1 = road_plans()
     let h2 = road_plans()
     check(h1 == h2, "road plans: the same twice")
 
-// Homes (hooks/economy, #62): a house with 2 beds and room for 3 food beside a store; every 5 s a free bed and food
+// Homes (mods/steading's economy.lua, #62): a house with 2 beds and room for 3 food beside a store; every 5 s a free bed and food
 // make a worker at its door. How many of player 0's units were born there after 60 s, what its larder holds, the hash.
 def homes_run(food:int, every:int) -> int, int, int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
     let f = res_of("food")
-    eco_born_ticks = every * TICK_HZ
-    eco_foods = [ f ]
     let hk = btype_index("house")
-    eco_beds[hk] = 2
+    let house = shallow_copy(su_btypes[hk])  // (the data's own entry is left as it is)
+    set(house, "beds", jint(2))
+    su_btypes[hk] = house
+    steading_lua("{{\"homes\": {{\"born_every\": {every}, \"foods\": [\"food\"]}}}}")
     bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
     make_store("town_center", 200)
     put(0, "town_center", 10, 10, 0)
@@ -631,7 +721,12 @@ def homes_run(food:int, every:int) -> int, int, int:
     t_carrier[type_of_slot(0, "worker")] = 1
     for(2) n: spawn_at(0, "worker", 14000 + n * 600, 14000)
     for(60 * TICK_HZ): tick_on()
-    return residents(h), b_hold[h][f], state_hash()
+    var kids = 0
+    for(u_id.length) i:
+        if hook_unit_get(lua_col("house"), i) == b_id[h]: kids++
+    let hash = state_hash()
+    steading_off()
+    return kids, b_hold[h][f], hash
 
 def test_homes():
     let kids, larder, h1 = homes_run(20, 5)
@@ -644,6 +739,7 @@ def test_homes():
     let off, empty, oh = homes_run(20, 0)
     check(off == 0 and empty == 0 and oh != h1, "homes: with the rule off, no births and no larder")
 
+
 // All of player 0's food: in its buildings and in its units' hands.
 def food_held() -> int:
     let f = res_of("food")
@@ -654,32 +750,30 @@ def food_held() -> int:
         if u_owner[i] == 0 and u_carry_kind[i] == f + 1: n += u_carry[i]
     return n
 
-// Eating (hooks/hunger, #47): three workers who carry get hungry every `every` s, and one cuts wood. Beside the store,
+// Eating (mods/steading's hunger.lua, #47): three workers who carry get hungry every `every` s, and one cuts wood. Beside the store,
 // a house that serves as an inn (3 meals a food), or a house that is all three's home (a meal is a food), or neither;
 // 50 food in the store, or none. 90 s: the wood cut, the wood cut after 60 s, whether the woodcutter went to eat and came
 // back to its trees, the food eaten, the hash.
-def eating_run(every:int, starving:int, inn:bool, home:bool, food:bool) -> int, int, bool, int, int:
+// drain: the inn's food goes while the woodcutter walks there, so it eats at the store instead.
+def eating_run(every:int, starving:int, inn:bool, home:bool, food:bool, drain:bool = false) -> int, int, bool, int, int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
     let f = res_of("food")
-    hu_ticks = every * TICK_HZ
-    hu_eaters = [ "worker" ]
-    hu_starving = starving
-    hu_foods = [ f ]
     let hk = btype_index("house")
-    if inn: hu_serves[hk] = 3
+    let house = shallow_copy(su_btypes[hk])
+    if inn: set(house, "serves", jint(3))
+    if home: set(house, "beds", jint(1))  // (a home of three with one bed: full, so it keeps its larder and nobody is born)
+    su_btypes[hk] = house
+    let homes = if home: ", \"homes\": {{\"born_every\": 1000, \"foods\": [\"food\"]}}" else: ""
+    steading_lua("{{\"hunger\": {{\"every\": {every}, \"eaters\": [\"worker\"], \"starving_pct\": {starving}, \"foods\": [\"food\"]}}{homes}}}")
     bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
     make_store("town_center", 200)
     put(0, "town_center", 10, 10, 0)
     let hid = if inn or home: put(0, "house", 18, 10, 0) else: 0
-    if home:  // (a home of three with one bed: full, so it keeps its larder and nobody is born)
-        eco_born_ticks = 1000 * TICK_HZ
-        eco_foods = [ f ]
-        eco_beds[hk] = 1
     if food: stock_add(f, 0, 50)
     t_carrier[type_of_slot(0, "worker")] = 1
     let ids = map(3) n: spawn_at(0, "worker", 14000 + n * 600, 14000)
     if home:
-        for(ids) id: hook_unit_set(col_house, index_of(id), hid)
+        for(ids) id: hook_unit_set(lua_col("house"), index_of(id), hid)
     let uid = ids[0]
     let wi = index_of(uid)
     let wood = kind_of("wood")
@@ -688,14 +782,23 @@ def eating_run(every:int, starving:int, inn:bool, home:bool, food:bool) -> int, 
     var went = false
     var back = false
     var at60 = 0
+    var drained = false
     for(90 * TICK_HZ) t:
         tick_on()
         let i = index_of(uid)
+        if drain and not drained and u_task[i] == T_EAT and u_target[i] == hid:
+            let inn_b = b_index_of(hid)
+            b_hold[inn_b][f] = 0
+            hook_building_set(find(hook_building_names) n: n == "portions", inn_b, 0)
+            drained = true
         if u_task[i] == T_EAT: went = true
-        if went and u_task[i] == GATHER and meal_of(i) < hu_ticks: back = true
+        if went and u_task[i] == GATHER and hook_unit_get(lua_col("meal"), i) < every * TICK_HZ: back = true
         if t == 60 * TICK_HZ: at60 = gathered[wood - 1][0]
     let cut = gathered[wood - 1][0]
-    return cut, cut - at60, went and back, food0 - food_held(), state_hash()
+    let hash = state_hash()
+    steading_off()
+    if drain: check(drained, "eating: the inn was emptied on the way")
+    return cut, cut - at60, went and back, food0 - food_held(), hash
 
 def test_eating():
     let fed, fed_late, came_back, meals, h1 = eating_run(20, 50, true, false, true)
@@ -709,6 +812,8 @@ def test_eating():
     check(not went and none == 0 and starved < fed and starved_late == 0 and h3 != h1, "eating: hungry with nowhere to eat, less work, then none ({starved} wood, fed {fed})")
     let at_store, store_late, store_back, store_food, hs = eating_run(20, 50, false, false, true)
     check(store_back and store_food > meals and at_store > 0 and store_late > 0 and hs != h1, "eating: with no inn or home they eat at the store ({store_food} food)")
+    let r_cut, r_late, rerouted, r_food, r_hash = eating_run(20, 50, true, false, true, true)
+    check(rerouted and r_cut > 0 and r_late > 0 and r_food > 0 and r_hash != h1, "eating: a worker sent on from an empty inn to the store still goes back to its trees")
     let never, never_late, nw, nm, h4 = eating_run(0, 50, true, false, true)
     check(not nw and nm == 0 and never >= fed and never_late > 0 and h4 != h1, "eating: with hunger off nobody eats ({never} wood)")
 // ------------------------------------------------------------------ small pieces
@@ -5053,7 +5158,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "doors_on_roads", "bridge_plans", "homes", "eating", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "homes", "eating", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -5082,7 +5187,9 @@ def run_part(name:string):
     elif name == "doors_on_roads": test_doors_on_roads()
     elif name == "bridge_plans": test_bridge_plans()
     elif name == "homes": test_homes()
+    elif name == "abandoned_site": test_abandoned_site()
     elif name == "eating": test_eating()
+    elif name == "steading_big": test_steading_big()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()

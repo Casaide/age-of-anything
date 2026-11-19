@@ -11,6 +11,7 @@ import gen.identity
 import gen.pricing
 import gen.heroes
 import gen.generator
+import lua.parse
 import gen.mods
 
 var args = command_line_arguments()

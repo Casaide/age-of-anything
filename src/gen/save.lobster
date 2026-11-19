@@ -202,6 +202,8 @@ class WorldSave:
     hook_building_names:[string]
     hook_building_cols:[[int]]
     hook_tick_types:[int]
+    hook_stopped:[string]
+    hook_stopped_why:[string]
     t_tags:[[int]]
     t_damage:[int]
     events:[Event]
@@ -738,6 +740,8 @@ def world_bytes(bots:[Bot]) -> string:
         hook_building_names,
         hook_building_cols,
         hook_tick_types,
+        hook_stopped,
+        hook_stopped_why,
         t_tags,
         t_damage,
         events,
@@ -1287,6 +1291,8 @@ def load_world_bytes(data:string) -> [Bot]:
     hook_building_names = s.hook_building_names
     hook_building_cols = s.hook_building_cols
     hook_tick_types = s.hook_tick_types
+    hook_stopped = s.hook_stopped
+    hook_stopped_why = s.hook_stopped_why
     t_tags = s.t_tags
     t_damage = s.t_damage
     events = s.events

@@ -154,6 +154,16 @@ In a network match everyone needs the same mods: a joiner who differs is turned 
 mods it was made with: start the game with them, and the Load page says which. `mods/scifi_short` is the example: infantry only, two ages:
 `./play.sh lobby mods:scifi_test,scifi_short rules:short`. `src/test_mod_match.lobster` plays it to the end.
 
+## 4c. Rules of your own: Lua
+
+A mod's own rules go in `data/hooks/*.lua`: what happens each tick, whether a building may go where it's placed, what a
+hit does, and so on. They run in Creel's sandbox (`creel/docs/lua.md`: the language, the hooks and the API): integers
+only, a step budget, no files or clock, and state kept only in declared columns, so a match stays the same on every
+machine. Settings stay in the mod's data (its rules file), read by the Lua as the match starts. `mods/steading` is the
+example: homes and births, doors on roads and builders who come back in `economy.lua`, eating and the inn in
+`hunger.lua`, its tick in `rules.lua`; `test_sim -- part:homes,eating,doors_on_roads,abandoned_site` and
+`test_steading` check them.
+
 ## 5. Look at it
 
 Look at every picture close up (3x) and at game size (1x) before showing anyone: the sheets

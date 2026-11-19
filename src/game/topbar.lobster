@@ -188,6 +188,11 @@ def draw_topbar(speed:float, paused:bool):
         hud_box(cat, float2 { cw, 34.0 * s }, 3.0, ui_look.face * float4 { 1.08, 1.08, 1.08, 1.0 }, false, 4.0)
         tb_text(cat + float2 { 12.0 * s, (34.0 * s - float(fs)) / 2.0 - 2.0 * s }, tb_tip, fs, float4 { 0.94, 0.89, 0.78, 1.0 }, 0)
     let hint_h = tb_hints(at.y + h + 18.0 * s)
+    // A mod whose rules (its Lua) stopped this match: said where it's seen, not only in the log.
+    if hook_stopped.length:
+        let fs = int(15.0 * s)
+        let msg = "A mod\'s rules stopped ({concat_string(hook_stopped, ", ")}), so the match plays on without them. The log says why."
+        tb_text(float2 { at.x, at.y + h + hint_h + 12.0 * s }, msg, fs, TB_FULL, 0)
     // The icons over the shapes, then the text.
     for(icons) name, k:
         let ia2 = icon_at[k]
