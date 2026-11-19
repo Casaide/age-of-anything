@@ -1,0 +1,6 @@
+{
+ "_doc": "Planks: sawn at the sawmill from wood (logs). Wood, stone and food are the game's own.",
+ "resources": [
+  {"id": "plank", "name": "Planks", "short": "P", "colour": "#c9a066"}
+ ]
+}
