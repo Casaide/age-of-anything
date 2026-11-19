@@ -2,6 +2,8 @@
 
 _Instructions for AI coding agents, whatever the tool (`CLAUDE.md` imports this file). People: see [CONTRIBUTING.md](CONTRIBUTING.md)._
 
+_Skills (step-by-step guides any agent can follow) are in `.claude/skills/`: `voxel-art` (voxel units, gear, buildings and props) and `make-mod` (make, check and pack a mod). Read the matching one before that kind of work._
+
 A classic-style 2D RTS where your civ is whatever you can describe. Type "centaur romans" or
 "sewer rats with cheese hammers" and the game builds a race from a parts kit, prices every unit fairly,
 and you play a normal classic RTS match with it. Silly is fine; broken is not. Cost is the balancer.
