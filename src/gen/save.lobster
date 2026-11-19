@@ -314,6 +314,11 @@ class WorldSave:
     r_stocked:int
     r_carrier_load:int
     r_carrier_slots:[string]
+    rd_names:[string]
+    rd_pct:[int]
+    road:[int]
+    step_s:[int]
+    step_d:[int]
     gathered:[[int]]
     gather_ticks:[[int]]
     next_id:int
@@ -841,6 +846,11 @@ def world_bytes(bots:[Bot]) -> string:
         r_stocked,
         r_carrier_load,
         r_carrier_slots,
+        rd_names,
+        rd_pct,
+        road,
+        step_s,
+        step_d,
         gathered,
         gather_ticks,
         next_id,
@@ -1381,6 +1391,11 @@ def load_world_bytes(data:string) -> [Bot]:
     r_stocked = s.r_stocked
     r_carrier_load = s.r_carrier_load
     r_carrier_slots = s.r_carrier_slots
+    rd_names = s.rd_names
+    rd_pct = s.rd_pct
+    road = s.road
+    step_s = s.step_s
+    step_d = s.step_d
     gathered = s.gathered
     gather_ticks = s.gather_ticks
     next_id = s.next_id
