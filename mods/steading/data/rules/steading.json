@@ -1,0 +1,45 @@
+{
+ "_doc": "The economy mod's match (#524): a stocked economy, workers who carry, a town of wood, planks and stone. One age; no soldiers.",
+ "extends": "default",
+ "animals": false,
+ "economy": {
+  "model": "stocked",
+  "carriers": [
+   "worker"
+  ],
+  "start": {
+   "food": 300,
+   "wood": 20,
+   "stone": 20,
+   "plank": 40,
+   "workers": 8,
+   "buildings": [
+    "town_center"
+   ]
+  },
+  "gather_ticks": {
+   "plank": 24,
+   "_doc": "planks are sawn, never gathered; every resource needs a rate"
+  }
+ },
+ "-roster": [
+  "archer",
+  "large",
+  "healer",
+  "mounted_archer",
+  "scout",
+  "war_beast",
+  "ram",
+  "catapult",
+  "bolt_thrower",
+  "siege_tower",
+  "unique",
+  "sapper",
+  "great_sling",
+  "trader",
+  "hero",
+  "spear",
+  "infantry",
+  "skirmisher"
+ ]
+}

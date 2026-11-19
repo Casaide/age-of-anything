@@ -1,0 +1,153 @@
+{
+ "_doc": "The first slice of the economy mod (#524): the Town Center is the storehouse, the lumber and mining camps are the woodcutter's hut and the quarry, and the sawmill is new. Buildings cost planks and stone, carried to the site. Everything for war and the late game goes.",
+ "menu": {
+  "+civilian": [
+   "sawmill"
+  ]
+ },
+ "buildings": {
+  "town_center": {
+   "name": "Storehouse",
+   "desc": "Holds the town's goods; workers carry them in and out. Trains workers.",
+   "store": true,
+   "holds": {
+    "*": 400
+   },
+   "trains": [
+    "worker"
+   ]
+  },
+  "lumber_camp": {
+   "name": "Woodcutter's Hut",
+   "desc": "Woodcutters drop logs here; carriers take them where they're needed.",
+   "cost": {
+    "wood": 0,
+    "plank": 6,
+    "stone": 2
+   },
+   "holds": {
+    "wood": 8
+   },
+   "offers": [
+    "wood"
+   ]
+  },
+  "mining_camp": {
+   "name": "Quarry",
+   "desc": "Stone is dropped here; carriers take it where it's needed.",
+   "drop_off": [
+    "stone"
+   ],
+   "cost": {
+    "wood": 0,
+    "plank": 6
+   },
+   "holds": {
+    "stone": 8
+   },
+   "offers": [
+    "stone"
+   ]
+  },
+  "sawmill": {
+   "extends": "lumber_camp",
+   "name": "Sawmill",
+   "desc": "Saws one log into two planks.",
+   "hotkey": "S",
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "makes": {
+    "in": {
+     "wood": 1
+    },
+    "out": {
+     "plank": 2
+    },
+    "time": 4
+   },
+   "holds": {
+    "wood": 4,
+    "plank": 6
+   }
+  },
+  "house": {
+   "cost": {
+    "wood": 0,
+    "plank": 6
+   }
+  },
+  "farm": {
+   "remove": true
+  },
+  "pen": {
+   "remove": true
+  },
+  "mill": {
+   "remove": true
+  },
+  "market": {
+   "remove": true
+  },
+  "armoury": {
+   "remove": true
+  },
+  "university": {
+   "remove": true
+  },
+  "barracks": {
+   "remove": true
+  },
+  "archery_range": {
+   "remove": true
+  },
+  "stable": {
+   "remove": true
+  },
+  "watchtower": {
+   "remove": true
+  },
+  "outpost": {
+   "remove": true
+  },
+  "castle": {
+   "remove": true
+  },
+  "palisade": {
+   "remove": true
+  },
+  "palisade_gate": {
+   "remove": true
+  },
+  "wall": {
+   "remove": true
+  },
+  "stone_gate": {
+   "remove": true
+  },
+  "wall_tower": {
+   "remove": true
+  },
+  "ladder": {
+   "remove": true
+  },
+  "siege_workshop": {
+   "remove": true
+  },
+  "wonder": {
+   "remove": true
+  },
+  "bastion": {
+   "remove": true
+  },
+  "fortified_wall": {
+   "remove": true
+  },
+  "fortified_gate": {
+   "remove": true
+  }
+ }
+}

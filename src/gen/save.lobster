@@ -313,6 +313,7 @@ class WorldSave:
     stock:[[int]]
     r_stocked:int
     r_carrier_load:int
+    r_carrier_slots:[string]
     gathered:[[int]]
     gather_ticks:[[int]]
     next_id:int
@@ -839,6 +840,7 @@ def world_bytes(bots:[Bot]) -> string:
         stock,
         r_stocked,
         r_carrier_load,
+        r_carrier_slots,
         gathered,
         gather_ticks,
         next_id,
@@ -1378,6 +1380,7 @@ def load_world_bytes(data:string) -> [Bot]:
     stock = s.stock
     r_stocked = s.r_stocked
     r_carrier_load = s.r_carrier_load
+    r_carrier_slots = s.r_carrier_slots
     gathered = s.gathered
     gather_ticks = s.gather_ticks
     next_id = s.next_id
@@ -1587,9 +1590,9 @@ def load_world_bytes(data:string) -> [Bot]:
     s.ray_offs.forkv() k, v: ray_offs.set(k, v)
     s.ray_par.forkv() k, v: ray_par.set(k, v)
     pad_saved_columns()  // (a save from an older build: its missing per-unit and per-building columns, D-141)
-    roles_from_data()    // (... and its building types' roles, D-192)
+    roles_from_data()  // (... and its building types' roles, D-192)
     staples_from_data()  // (... and its staple resources)
-    spatial_clear()      // (... and its spatial buckets, which an older build filled over the whole map)
+    spatial_clear()  // (... and its spatial buckets, which an older build filled over the whole map)
     return s.bots
 
 // Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first. Format 1 needs none.
