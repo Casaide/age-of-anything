@@ -33,7 +33,6 @@ import lib.heroes
 import lib.match
 import lib.trade
 import lib.recipes
-import lib.homes
 import lib.carry
 import lib.animals
 import lib.bridges
@@ -54,6 +53,7 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
+import hooks.economy
 import gen.reset
 import gen.save
 import testkit.kit
@@ -139,10 +139,10 @@ def play() -> int:
     var built = 0
     for(b_id.length) b:
         if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center"): built++
-    print "steading: {MINUTES} min, {laid} laid, {built} built, {(filter(u_house) v: v != 0).length} born; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
+    print "steading: {MINUTES} min, {laid} laid, {built} built, {born_alive()} born; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
     check(laid == 4 and built == 4, "steading: the hut, the sawmill, the quarry and a house are built ({built} of {laid})")
-    let born = filter(u_house) v: v != 0
-    check(born.length > 0 and born.length <= 2, "steading: children are born in the house, no more than its beds ({born.length})")
+    let born = born_alive()
+    check(born > 0 and born <= 2, "steading: children are born in the house, no more than its beds ({born})")
     check(sites_ok, "steading: no site was built ahead of its goods")
     check(produced[pl][0] > 0 and stock[pl][0] > plank0, "steading: the sawmill makes planks, more than the town started with ({plank0} -> {stock[pl][0]})")
     return h
