@@ -116,6 +116,7 @@ def back_from_meal(i:int):
     let target = was / 16
     u_task[i] = T_NONE
     u_target[i] = -1
+    u_stuck[i] = 0  // (a crowd at the inn isn't the job's: a builder stuck there would give its site up, #70)
     if task == GATHER:
         let kind = u_carry_kind[i]
         let c = if res_at(target) == kind and amount[target] > 0: target else: nearest_resource(target % W * TILE + TILE / 2, target / W * TILE + TILE / 2, kind, i, false, false, true)
