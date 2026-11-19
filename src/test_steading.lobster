@@ -213,7 +213,8 @@ def store_planks() -> int:
 // Through a save (#75): the mod's Lua loads again with the saved match, and its state comes back in the hook columns.
 // A house goes up and workers cut wood for 2 minutes; then 2 minutes more, once straight on and once from a save made
 // there: the same hash every tick. Whether they matched, and whether anyone was hungry, ate or was born by then.
-def save_run() -> bool, bool:
+// stop: the mod's rules stop before the save (as an error would stop them): they must stay stopped after the load.
+def save_run(stop:bool) -> bool, bool:
     let path = "test_steading.sav"
     new_world(2026, MAP, races, rules, [])
     let workers = mine()
@@ -223,6 +224,10 @@ def save_run() -> bool, bool:
     for(2 * 60 * TICK_HZ) t:
         if t == 40: lay("house", tx - 5, ty - 6, workers[6])
         wstep()
+    if stop:
+        let pk = l_packs[find(l_packs) p: p.id == "steading"]
+        pk.error = "stopped by the test"
+        lx_note_stop(pk)
     assert save_world(path, [])
     let want = map(2 * 60 * TICK_HZ):
         wstep()
@@ -242,13 +247,16 @@ def save_run() -> bool, bool:
     let got = map(2 * 60 * TICK_HZ):
         wstep()
         state_hash()
-    return equal(want, got), lively
+    let off = l_packs[find(l_packs) p: p.id == "steading"].error != ""
+    return equal(want, got) and off == stop, lively
 
 let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
-let same, lively = save_run()
+let same, lively = save_run(false)
 check(lively and same, "steading: through a save, the mod\'s rules and their state play on the same (lively {lively}, same {same})")
+let same_off, _ = save_run(true)
+check(same_off, "steading: rules that stopped before a save stay stopped after it, the same on every machine")
 lib_packs = [ lib_packs[0] ]
 id_load(lib_root)
 print "\n{checks - failures} passed, {failures} failed"

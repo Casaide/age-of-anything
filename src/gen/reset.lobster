@@ -201,6 +201,8 @@ var stashed_hook_player_cols = []::[int]
 var stashed_hook_building_names = []::string
 var stashed_hook_building_cols = []::[int]
 var stashed_hook_tick_types = []::int
+var stashed_hook_stopped = []::string
+var stashed_hook_stopped_why = []::string
 var stashed_t_tags = []::[int]
 var stashed_t_damage = []::int
 var stashed_events = []::Event
@@ -740,6 +742,8 @@ def reset_world():
     hook_building_names = []::string
     hook_building_cols = []::[int]
     hook_tick_types = []::int
+    hook_stopped = []::string
+    hook_stopped_why = []::string
     t_tags = []::[int]
     t_damage = []::int
     events = []::Event
@@ -1269,6 +1273,8 @@ def stash_world():
     stashed_hook_building_names = hook_building_names
     stashed_hook_building_cols = hook_building_cols
     stashed_hook_tick_types = hook_tick_types
+    stashed_hook_stopped = hook_stopped
+    stashed_hook_stopped_why = hook_stopped_why
     stashed_t_tags = t_tags
     stashed_t_damage = t_damage
     stashed_events = events
@@ -1791,6 +1797,8 @@ def unstash_world():
     hook_building_names = stashed_hook_building_names
     hook_building_cols = stashed_hook_building_cols
     hook_tick_types = stashed_hook_tick_types
+    hook_stopped = stashed_hook_stopped
+    hook_stopped_why = stashed_hook_stopped_why
     t_tags = stashed_t_tags
     t_damage = stashed_t_damage
     events = stashed_events

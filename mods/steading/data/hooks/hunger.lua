@@ -60,18 +60,31 @@ local function take_meal(b)
   if n ~= 0 then building_set(col_portions, b, n - 1) end
 end
 
--- The nearest finished building of unit i's side that serves a meal (an inn), or with stores true the nearest of its
--- stores with food; -1 if there's none.
-local function nearest_meal(i, stores)
-  local best = -1
-  local best_d2 = 1 << 50
-  local p = u_owner(i)
-  local x, y = u_x(i), u_y(i)
+-- Each side's finished inns and stores that have a meal, as this tick starts (building slots, in order): one look over
+-- the buildings a tick, however many go looking for a meal. ([p + 1] = { inns, stores })
+local function meal_places()
+  local out = {}
   for b = 0, building_count() - 1 do
     local k = b_kind(b)
-    local fits
-    if stores then fits = bt_store(k) else fits = serves[k + 1] ~= 0 end
-    if fits and b_owner(b) == p and b_done(b) ~= 0 and has_meal(b) then
+    local inn = serves[k + 1] ~= 0
+    local store = bt_store(k)
+    if (inn or store) and b_done(b) ~= 0 and has_meal(b) then
+      local p = b_owner(b) + 1
+      if not out[p] then out[p] = { {}, {} } end
+      if inn then table.insert(out[p][1], b) end
+      if store then table.insert(out[p][2], b) end
+    end
+  end
+  return out
+end
+
+-- The nearest of these buildings that still has a meal (one may have run out this tick) to unit i; -1 if none does.
+local function nearest_meal(i, list)
+  local best = -1
+  local best_d2 = 1 << 50
+  local x, y = u_x(i), u_y(i)
+  for _, b in ipairs(list) do
+    if has_meal(b) then
       local d2 = mid_dist2(b, x, y)
       if d2 < best_d2 then
         best_d2 = d2
@@ -82,15 +95,18 @@ local function nearest_meal(i, stores)
   return best
 end
 
--- Where unit i eats: its home if that has food, else an inn, else a store; -1 if there's none.
-local function eat_place(i)
+-- Where unit i eats: its home if that has food, else the nearest inn of its side, else its nearest store; -1 if there's
+-- none. (places: meal_places())
+local function eat_place(i, places)
   local hid = unit_get(col_house, i)
   local home = -1
   if hid ~= 0 then home = building_index(hid) end
   if home >= 0 and b_done(home) ~= 0 and food_offered(home) >= 0 then return home end
-  local inn = nearest_meal(i, false)
+  local mine = places[u_owner(i) + 1]
+  if not mine then return -1 end
+  local inn = nearest_meal(i, mine[1])
   if inn >= 0 then return inn end
-  return nearest_meal(i, true)
+  return nearest_meal(i, mine[2])
 end
 
 -- A pause in its work: idle, building, gathering with nothing in hand, or carrying with nothing in hand yet (a carrier
@@ -102,9 +118,11 @@ end
 
 local function go_eat(i, b)
   local task = u_task(i)
-  local was = 0
-  if task ~= T_NONE and task ~= T_CARRY then was = u_target(i) * 16 + task end
-  unit_set(col_was, i, was)
+  if task ~= T_EAT then  -- (sent on to somewhere else to eat: the job it left is the one it had)
+    local was = 0
+    if task ~= T_NONE and task ~= T_CARRY and u_target(i) >= 0 then was = u_target(i) * 16 + task end
+    unit_set(col_was, i, was)
+  end
   set_u_task(i, T_EAT)
   set_u_target(i, b_id(b))
   set_u_work(i, 0)
@@ -121,7 +139,9 @@ local function back_from_meal(i)
   set_u_task(i, T_NONE)
   set_u_target(i, -1)
   set_u_stuck(i, 0)  -- (a crowd at the inn isn't the job's: a builder stuck there would give its site up)
-  if task == GATHER then
+  if was <= 0 then  -- (no job, or none with a target to go back to)
+    clear_task(i)
+  elseif task == GATHER then
     local kind = u_carry_kind(i)
     local c = -1
     if res_at(target) == kind and amount(target) > 0 then c = target
@@ -135,10 +155,10 @@ local function back_from_meal(i)
   end
 end
 
-local function eat(i)
+local function eat(i, places)
   local b = building_index(u_target(i))
   if b < 0 or not has_meal(b) then  -- gone, or eaten bare on the way: somewhere else, or back to work hungry
-    local other = eat_place(i)
+    local other = eat_place(i, places)
     if other >= 0 then go_eat(i, other) else back_from_meal(i) end
     return
   end
@@ -180,6 +200,7 @@ function hunger_tick()
       if b_done(b) ~= 0 and serves[b_kind(b) + 1] ~= 0 then stock_inn(b) end
     end
   end
+  local places = nil  -- (meal_places(), once a unit first needs it this tick)
   for i = 0, unit_count() - 1 do
     if eats[u_kind(i) + 1] then
       if u_task(i) == T_FAINT then
@@ -189,10 +210,15 @@ function hunger_tick()
       local meal = unit_get(col_meal, i)
       if meal < 2 * every then unit_set(col_meal, i, meal + 1) end
       if u_task(i) == T_EAT then
-        eat(i)
+        local b = building_index(u_target(i))
+        if b < 0 or not has_meal(b) then places = places or meal_places() end
+        eat(i, places)
       elseif meal >= every then
         local b = -1
-        if (now + i) % LOOK == 0 and at_a_pause(i) then b = eat_place(i) end
+        if (now + i) % LOOK == 0 and at_a_pause(i) then
+          places = places or meal_places()
+          b = eat_place(i, places)
+        end
         if b >= 0 then
           go_eat(i, b)
         elseif rests(i, meal, now) then

@@ -31,7 +31,7 @@ def draw_road_drag():
     if placing < 0 or not is_road_plan(placing) or road_from.x < 0: return
     gl.set_shader("color")
     for(wall_cells(road_from, place_cell())) g:
-        let ok = can_place(ME, placing, g.x, g.y)
+        let ok = view_can_place(ME, placing, g.x, g.y)
         let pts = map([ int2 { 0, 0 }, int2 { 1, 0 }, int2 { 1, 1 }, int2 { 0, 1 } ]) d: iso(float((g.x + d.x) * 1000), float((g.y + d.y) * 1000)) / 1.5
         gl.color(if ok: float4 { 0.3, 0.9, 0.3, 0.35 } else: float4 { 0.9, 0.2, 0.2, 0.35 }):
             gl.polygon(pts)

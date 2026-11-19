@@ -49,12 +49,12 @@ function can_place(p, k, cx, cy, sx, sy)
   return not doors or door_on_road(p, k, cx, cy, sx, sy)
 end
 
--- The units born in building b that are still alive.
-local function residents(b)
-  local id = b_id(b)
-  local n = 0
+-- The units alive born in each home, by its id: one look over the units, not one a home.
+local function residents_by_home()
+  local n = {}
   for i = 0, unit_count() - 1 do
-    if unit_get(col_house, i) == id then n = n + 1 end
+    local id = unit_get(col_house, i)
+    if id ~= 0 then n[id] = (n[id] or 0) + 1 end
   end
   return n
 end
@@ -74,66 +74,79 @@ local function stock_larder(b)
   end
 end
 
-local function can_be_born(b)
+local function can_be_born(b, residents)
   local p = b_owner(b)
   local k = worker_type(p)
-  return k >= 0 and larder_food(b) >= 0 and pop(p) + t_pop(k) <= pop_cap(p) and residents(b) < beds[b_kind(b) + 1]
+  return k >= 0 and larder_food(b) >= 0 and pop(p) + t_pop(k) <= pop_cap(p) and (residents[b_id(b)] or 0) < beds[b_kind(b) + 1]
 end
 
-local function born(b)
+local function born(b, residents)
   local p = b_owner(b)
   local k = worker_type(p)
   hold_take(b, larder_food(b), 1)
   local i = trained(b, k)
   unit_set(col_house, i, b_id(b))
+  residents[b_id(b)] = (residents[b_id(b)] or 0) + 1
   set_pop(p, pop(p) + t_pop(k))
 end
 
 local function homes_tick()
   local second = tick() % HOME_LOOK == 0
+  local residents = nil  -- (counted when a home first needs it this tick)
   for b = 0, building_count() - 1 do
     if b_done(b) ~= 0 and beds[b_kind(b) + 1] > 0 then
       local left = building_get(col_born, b)
       if left > 0 then
         building_set(col_born, b, left - 1)
-        if left == 1 and can_be_born(b) then born(b) end
+        if left == 1 then
+          residents = residents or residents_by_home()
+          if can_be_born(b, residents) then born(b, residents) end
+        end
       elseif second then
         stock_larder(b)
-        if can_be_born(b) then building_set(col_born, b, born_ticks) end
+        residents = residents or residents_by_home()
+        if can_be_born(b, residents) then building_set(col_born, b, born_ticks) end
       end
     end
   end
 end
 
-local function idle_worker(b)
+-- The nearest of these idle workers (unit slots) to building b, taken out of the list; -1 if there's none.
+local function take_nearest(idle, b)
   local best = -1
   local best_d2 = 1 << 50
-  local p = b_owner(b)
-  for i = 0, unit_count() - 1 do
-    if u_owner(i) == p and t_worker(u_kind(i)) and u_task(i) == T_NONE and u_orders(i) == 0 then
-      local d2 = mid_dist2(b, u_x(i), u_y(i))
-      if d2 < best_d2 then
-        best_d2 = d2
-        best = i
-      end
+  for j, i in ipairs(idle) do
+    local d2 = mid_dist2(b, u_x(i), u_y(i))
+    if d2 < best_d2 then
+      best_d2 = d2
+      best = j
     end
   end
-  return best
+  if best < 0 then return -1 end
+  return table.remove(idle, best)
 end
 
 local function builders_tick()
   if tick() % HOME_LOOK ~= 0 then return end
+  -- One look over the units: the sites being built, and each side's idle workers (in slot order).
   local building = {}
+  local idle = {}
   for i = 0, unit_count() - 1 do
-    if u_task(i) == BUILD then
+    local task = u_task(i)
+    if task == BUILD then
       local b = building_index(u_target(i))
       if b >= 0 then building[b + 1] = true end
+    elseif task == T_NONE and t_worker(u_kind(i)) and u_orders(i) == 0 then
+      local p = u_owner(i) + 1
+      if not idle[p] then idle[p] = {} end
+      table.insert(idle[p], i)
     end
   end
   for b = 0, building_count() - 1 do
     local k = b_kind(b)
-    if b_done(b) == 0 and not building[b + 1] and b_is_site(b) and b_progress(b) * 1000 < bt_build_ticks(k) * site_permille(b) then
-      local w = idle_worker(b)
+    local mine = idle[b_owner(b) + 1]
+    if mine and #mine > 0 and b_done(b) == 0 and not building[b + 1] and b_is_site(b) and b_progress(b) * 1000 < bt_build_ticks(k) * site_permille(b) then
+      local w = take_nearest(mine, b)
       if w >= 0 then start_build(w, b_id(b)) end
     end
   end
