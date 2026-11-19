@@ -75,6 +75,7 @@ else
 	add test_units_plain "$L" test_units_plain.lobster
 	add test_hooks "$L" test_hooks.lobster
 	add air_click ./air_check.sh "$bakes" novsync   # a click takes an aircraft where it's drawn
+	add mod_start ./mod_start_check.sh "$bakes"   # Steading's match starts in the real window, its buildings drawn (#64, #58)
 	add golden ./golden.sh
 	for i in 0 1 2 3; do add vbcheck.$i "$L" --background game.lobster -- none - vbcheck mute novsync shard:$i/4; done   # every building look as voxels: no specks (a window each, behind the others; no vsync, which never comes with the display asleep, #294)
 	add cursor_check "$L" cursor_check.lobster   # the OS cursors in a real window (#222)
