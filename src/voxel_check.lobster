@@ -68,6 +68,25 @@ for(sorted_strs(families.keys)) fid:
                     body_skins.push(gstrs(c, "skins"))
                     body_creature.push(cid)
 
+// ---- a culture's helmets on its other creatures (#505): a creature that wears the culture on a body of its own (a hellenic
+// bear, a steppe centaur) wears each of the culture's helmet models, not the plain cap every other body falls back to
+def gear_of(g:string) -> vx_gear_spec: return assert vx_gears.get(g)
+let helm_gears = filter(sorted_strs(at(parse_json(assert read_file("../data/voxel/gear.json")), "gear").keys)) g: g != "_doc" and (find(gear_of(g).flags) f: f == "helm") >= 0
+def models_in(u:vx_unit_def) -> int: return (filter(vx_unit_prims(u, 0.0)) x: x.model >= 0).length
+for(sorted_strs(families.keys)) fid:
+    let cb = gstr(gobj(at(families, fid), "bodies"), "human", "")
+    if cb != "":
+        for(ckeys.length) i:
+            let c = creatures.a[i]
+            if c.kind == J_OBJ and (find(gstrs(c, "families")) f: f == fid) >= 0:
+                let b = gstr(c, "body", "").substring(5, max(0, gstr(c, "body", "").length - 5))
+                if b != "human" or ckeys[i] != "human":
+                    for(helm_gears) g:
+                        if (find(gear_of(g).fit_ids) x: x == cb) >= 0:
+                            let u = vx_unit_def { b, b, float3_0, float3_0, float3_0, [ g ], "", false, float3_0, float3_0, float3_0, nil, culture: cb }
+                            let bare = vx_unit_def { b, b, float3_0, float3_0, float3_0, [], "", false, float3_0, float3_0, float3_0, nil, culture: cb }
+                            if models_in(u) <= models_in(bare): fail("{fid}: a {ckeys[i]} ({b}) doesn\'t wear the culture\'s {g} ({cb}\'s model)")
+
 // ---- knees: a standing leg's bend (180 - the knee's angle), degrees
 def knee_bend(b:vx_body_spec) -> float:
     vx_stand = true
@@ -170,6 +189,23 @@ def sat(c:float3) -> float:
 
 let KIT = [ "galea", "lorica" ]  // the heaviest worn kit
 
+// every material the kit's gear is drawn in, anywhere in its entries in gear.json
+def kit_mats_in(v:JV, out:[string]) -> void:
+    if v.kind == J_OBJ:
+        for(v.a) x, i:
+            let k = v.keys[i]
+            if k == "mat" and x.kind == J_STR: out.push(x.s)
+            elif k == "mats" and x.kind == J_OBJ: for(x.a) m: if m.kind == J_STR: out.push(m.s)
+            else: kit_mats_in(x, out)
+    elif v.kind == J_ARR:
+        for(v.a) x: kit_mats_in(x, out)
+
+def kit_materials() -> [string]:
+    let gear = gobj(parse_json(read_file("../data/voxel/gear.json") or "\{\}"), "gear")
+    let out = []
+    for(KIT) g: kit_mats_in(gobj(gear, g), out)
+    return out
+
 let OWN = [ "skin", "pale", "mark", "hair", "eye", "mouth", "pink", "tail" ]  // a creature's own materials
 let shapes = []::[bool]
 let shapes3 = []::[bool]  // three quarters on
@@ -208,6 +244,9 @@ for(bodies) id, bi:
         let file = parse_json(read_file("../data/voxel/bodies/" + vx_body_of(id).id + ".json") or "\{\}")
         let own_mats = OWN.copy()
         if (find(gobj(file, "mats").a) m: m.kind == J_STR and m.s == "team") >= 0: own_mats.push("team")
+        // (and so are its other drawn materials, the forest's moss and bark (#497), but never one the kit is drawn in)
+        let kit_mats = kit_materials()
+        for(gobj(file, "mats").a) m: if m.kind == J_STR and m.s != "team" and (find(kit_mats) n: n == m.s) < 0 and (find(own_mats) n: n == m.s) < 0: own_mats.push(m.s)
         var shows = 1.0
         for([ 1, 3, 5, 7 ]) f:
             mask(kit, f)
