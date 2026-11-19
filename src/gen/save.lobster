@@ -230,6 +230,23 @@ class WorldSave:
     b_diag:[int]
     b_queue:[[int]]
     b_inside:[[int]]
+    b_hold:[[int]]
+    b_want:[[int]]
+    b_resv:[[int]]
+    b_coming:[[int]]
+    b_make:[int]
+    b_site:[[int]]
+    produced:[[int]]
+    jb_id:[int]
+    jb_unit:[int]
+    jb_from:[int]
+    jb_to:[int]
+    jb_res:[int]
+    jb_n:[int]
+    jb_phase:[int]
+    jb_want:[int]
+    next_job:int
+    carry_dirty:[int]
     bt_attacks:[int]
     bt_atk_class:[int]
     bt_atk:[int]
@@ -269,6 +286,12 @@ class WorldSave:
     bt_workers:[int]
     bt_special:[int]
     bt_drop:[[int]]
+    bt_hold:[[int]]
+    bt_store:[int]
+    bt_in:[[int]]
+    bt_out:[[int]]
+    bt_offer:[[int]]
+    bt_make_ticks:[int]
     bt_reseed:[[int]]
     bm_hp:[[int]]
     bm_pop:[[int]]
@@ -288,6 +311,14 @@ class WorldSave:
     pop:[int]
     pop_cap:[int]
     stock:[[int]]
+    r_stocked:int
+    r_carrier_load:int
+    r_carrier_slots:[string]
+    rd_names:[string]
+    rd_pct:[int]
+    road:[int]
+    step_s:[int]
+    step_d:[int]
     gathered:[[int]]
     gather_ticks:[[int]]
     next_id:int
@@ -351,6 +382,7 @@ class WorldSave:
     t_bonus:[[int]]
     t_slot:[string]
     t_trader:[int]
+    t_carrier:[int]
     resource_names:[string]
     staple_resources:[int]
     tr_names:[string]
@@ -730,6 +762,23 @@ def world_bytes(bots:[Bot]) -> string:
         b_diag,
         b_queue,
         b_inside,
+        b_hold,
+        b_want,
+        b_resv,
+        b_coming,
+        b_make,
+        b_site,
+        produced,
+        jb_id,
+        jb_unit,
+        jb_from,
+        jb_to,
+        jb_res,
+        jb_n,
+        jb_phase,
+        jb_want,
+        next_job,
+        carry_dirty,
         bt_attacks,
         bt_atk_class,
         bt_atk,
@@ -769,6 +818,12 @@ def world_bytes(bots:[Bot]) -> string:
         bt_workers,
         bt_special,
         bt_drop,
+        bt_hold,
+        bt_store,
+        bt_in,
+        bt_out,
+        bt_offer,
+        bt_make_ticks,
         bt_reseed,
         bm_hp,
         bm_pop,
@@ -788,6 +843,14 @@ def world_bytes(bots:[Bot]) -> string:
         pop,
         pop_cap,
         stock,
+        r_stocked,
+        r_carrier_load,
+        r_carrier_slots,
+        rd_names,
+        rd_pct,
+        road,
+        step_s,
+        step_d,
         gathered,
         gather_ticks,
         next_id,
@@ -851,6 +914,7 @@ def world_bytes(bots:[Bot]) -> string:
         t_bonus,
         t_slot,
         t_trader,
+        t_carrier,
         resource_names,
         staple_resources,
         tr_names,
@@ -1243,6 +1307,23 @@ def load_world_bytes(data:string) -> [Bot]:
     b_diag = s.b_diag
     b_queue = s.b_queue
     b_inside = s.b_inside
+    b_hold = s.b_hold
+    b_want = s.b_want
+    b_resv = s.b_resv
+    b_coming = s.b_coming
+    b_make = s.b_make
+    b_site = s.b_site
+    produced = s.produced
+    jb_id = s.jb_id
+    jb_unit = s.jb_unit
+    jb_from = s.jb_from
+    jb_to = s.jb_to
+    jb_res = s.jb_res
+    jb_n = s.jb_n
+    jb_phase = s.jb_phase
+    jb_want = s.jb_want
+    next_job = s.next_job
+    carry_dirty = s.carry_dirty
     bt_attacks = s.bt_attacks
     bt_atk_class = s.bt_atk_class
     bt_atk = s.bt_atk
@@ -1282,6 +1363,12 @@ def load_world_bytes(data:string) -> [Bot]:
     bt_workers = s.bt_workers
     bt_special = s.bt_special
     bt_drop = s.bt_drop
+    bt_hold = s.bt_hold
+    bt_store = s.bt_store
+    bt_in = s.bt_in
+    bt_out = s.bt_out
+    bt_offer = s.bt_offer
+    bt_make_ticks = s.bt_make_ticks
     bt_reseed = s.bt_reseed
     bm_hp = s.bm_hp
     bm_pop = s.bm_pop
@@ -1301,6 +1388,14 @@ def load_world_bytes(data:string) -> [Bot]:
     pop = s.pop
     pop_cap = s.pop_cap
     stock = s.stock
+    r_stocked = s.r_stocked
+    r_carrier_load = s.r_carrier_load
+    r_carrier_slots = s.r_carrier_slots
+    rd_names = s.rd_names
+    rd_pct = s.rd_pct
+    road = s.road
+    step_s = s.step_s
+    step_d = s.step_d
     gathered = s.gathered
     gather_ticks = s.gather_ticks
     next_id = s.next_id
@@ -1364,6 +1459,7 @@ def load_world_bytes(data:string) -> [Bot]:
     t_bonus = s.t_bonus
     t_slot = s.t_slot
     t_trader = s.t_trader
+    t_carrier = s.t_carrier
     resource_names = s.resource_names
     staple_resources = s.staple_resources
     tr_names = s.tr_names
@@ -1509,9 +1605,9 @@ def load_world_bytes(data:string) -> [Bot]:
     s.ray_offs.forkv() k, v: ray_offs.set(k, v)
     s.ray_par.forkv() k, v: ray_par.set(k, v)
     pad_saved_columns()  // (a save from an older build: its missing per-unit and per-building columns, D-141)
-    roles_from_data()    // (... and its building types' roles, D-192)
+    roles_from_data()  // (... and its building types' roles, D-192)
     staples_from_data()  // (... and its staple resources)
-    spatial_clear()      // (... and its spatial buckets, which an older build filled over the whole map)
+    spatial_clear()  // (... and its spatial buckets, which an older build filled over the whole map)
     return s.bots
 
 // Brings a loaded save up to SAVE_FORMAT: each format change adds its step in gen_reset.lobster, oldest first. Format 1 needs none.

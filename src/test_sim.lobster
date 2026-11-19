@@ -61,6 +61,8 @@ import lib.heal
 import lib.heroes
 import lib.match
 import lib.trade
+import lib.recipes
+import lib.carry
 import lib.animals
 import lib.bridges
 import lib.walls
@@ -207,6 +209,277 @@ def fmt_ms(f:float) -> string:  // three decimals
     let us = int(f * 1000.0 + 0.5)
     let frac = string(us % 1000)
     return string(us / 1000) + "." + "000".substring(0, 3 - frac.length) + frac
+
+// ------------------------------------------------------------------ goods in buildings (Casaide/creel#48)
+
+def stocked_rules(r:JV) -> JV:
+    let s = deep_copy(r)
+    set(at(s, "economy"), "model", jstr("stocked"))
+    return s
+
+def store_sum(r:int, p:int) -> int:
+    var n = 0
+    for(b_id.length) b:
+        if is_store(b, p): n += b_hold[b][r]
+    return n
+
+def make_store(id:string, cap:int) -> int:  // (no building is a store in the game's data: the test makes one)
+    let k = btype_index(id)
+    bt_store[k] = 1
+    bt_hold[k] = map(num_resources): cap
+    return k
+
+def test_stocked():
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    let w = res_of("wood")
+    check(r_stocked == 1 and stock[w][0] == 0, "stocked: with no store at the start, the starting goods have nowhere to be")
+    make_store("town_center", 50)
+    let a = b_index_of(put(0, "town_center", 10, 10, 0))
+    let bb = b_index_of(put(0, "town_center", 30, 30, 0))
+    check(stock_add(w, 0, 80) == 80 and b_hold[a][w] == 50 and b_hold[bb][w] == 30 and stock[w][0] == 80,
+          "stocked: 80 wood fills the first store (50) and the rest goes in the second")
+    let cost = map(num_resources) r: if r == w: 70 else: 0
+    check(can_afford(0, cost), "stocked: 70 wood is affordable from two stores")
+    pay(0, cost)
+    check(b_hold[a][w] == 0 and b_hold[bb][w] == 10 and stock[w][0] == 10, "stocked: a cost is taken from the stores in order")
+    check(stock_add(w, 0, 200) == 90 and stock[w][0] == 100 and store_sum(w, 0) == 100, "stocked: full stores refuse the rest")
+    remove_building(bb)
+    check(stock[w][0] == 50 and store_sum(w, 0) == 50, "stocked: a store takes its goods with it")
+    // A worker drops its load into the store it walks to.
+    new_world("flat_test", races0, stocked_rules(rules0), [])
+    make_store("town_center", 500)
+    var tc = -1
+    for(b_owner) o, b:
+        if tc < 0 and o == 0: tc = b
+    let wood = kind_of("wood")
+    let wi = index_of(own_workers_of(0)[0])
+    let uid = u_id[wi]
+    issue_cmd(0, CMD_GATHER, [ uid ], nearest_resource(u_x[wi], u_y[wi], wood, -1, false, false, false), 0, 0, 0)
+    for(3000):
+        tick_on()
+        if b_hold[tc][wood - 1] > 0: break
+    check(b_hold[tc][wood - 1] > 0 and stock[wood - 1][0] == store_sum(wood - 1, 0) and gathered[wood - 1][0] == b_hold[tc][wood - 1],
+          "stocked: gathered wood lands in the Town Center ({b_hold[tc][wood - 1]}) and stock is what the stores hold")
+
+// The request queue (Casaide/creel#49): a store at (10, 10) with `wood` wood, a house at (30, 10) that holds wood,
+// `carriers` carriers by the store. The house's index.
+// Roads (#51): a worker walking from (8, 20) to (32, 20) on flat_test (an open row), with the given roads laid first
+// (cells, kind); the ticks it takes to pass x 30, how many rows it strays from row 20 on the way, and the hash at the end.
+def road_walk(roads:[[int]], pcts:[int]) -> int, int, int:
+    new_world("flat_test", races0, bare0, [])
+    rd_pct = pcts
+    for(roads) r: set_road(r[0], r[1])
+    let id = spawn_at(0, "worker", 8 * TILE + TILE / 2, 20 * TILE + TILE / 2)
+    issue_cmd(0, CMD_MOVE, [ id ], 32 * TILE + TILE / 2, 20 * TILE + TILE / 2, 0, 0)
+    let t0 = tick
+    var top = 0
+    for(3000):
+        tick_on()
+        let i = index_of(id)
+        top = max(top, abs(u_y[i] / TILE - 20))
+        if u_x[i] >= 30 * TILE: return tick - t0, top, state_hash()  // (timed to a line short of the end: not its settling)
+    return 3000, top, state_hash()
+
+def test_roads():
+    let plain, plain_top, h0 = road_walk([], [])
+    let strip = map(29) x: [ 20 * W + 6 + x, 0 ]
+    let fast, fast_top, h1 = road_walk(strip, [ 150 ])
+    check(plain < 3000 and fast < 3000, "roads: the worker gets there, with a road and without")
+    check(plain_top <= 1 and fast_top <= 1, "roads: with no road, or one straight along the way, it walks straight across")
+    check(h0 != h1, "roads: a road is in the hash of the world")
+    let ratio = plain * 100 / fast
+    check(ratio >= 130 and ratio <= 160, "roads: a 150% road takes it across about 1.5 times as fast ({ratio}%: {plain} ticks, {fast} on the road)")
+    let again, again_top, h2 = road_walk(strip, [ 150 ])
+    check(again == fast and h2 == h1 and again_top == fast_top, "roads: the same walk on the same road comes out the same")
+    // A quick road round a bend: down six rows, across, and up again. At twice the speed it beats the straight way.
+    let bend = []::[int]
+    for(7) n:
+        bend.push([ (20 + n) * W + 8, 0 ])
+        bend.push([ (20 + n) * W + 32, 0 ])
+    for(23) x: bend.push([ 26 * W + 9 + x, 0 ])
+    let round, round_top, h3 = road_walk(bend, [ 200 ])
+    check(round_top >= 5, "roads: the path takes the quick road round the bend ({round_top} rows out)")
+    check(round < plain, "roads: and gets there sooner ({round} ticks, {plain} straight across)")
+    let slow, slow_top, h4 = road_walk(bend, [ 110 ])
+    check(slow_top <= 1 and slow > round and h4 != h3, "roads: a road barely faster than the grass is not worth the bend ({slow_top} rows out, {slow} ticks)")
+
+def carry_world(wood:int, carriers:int) -> int:
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_store("town_center", 50)
+    let w = res_of("wood")
+    let hk = btype_index("house")
+    bt_hold[hk][w] = 20
+    let a = b_index_of(put(0, "town_center", 10, 10, 0))
+    stock_add(w, 0, wood)
+    let h = b_index_of(put(0, "house", 30, 10, 0))
+    let wk = type_of_slot(0, "worker")
+    t_carrier[wk] = 1
+    for(carriers) n: spawn_at(0, "worker", 14000 + n * 600, 13000)
+    check(b_hold[a][w] == min(wood, 50), "carry: the store starts with its wood")
+    return h
+
+def carry_until(h:int, n:int, ticks:int) -> int:  // ticks until the house holds n wood (or `ticks` if never)
+    let w = res_of("wood")
+    for(ticks) t:
+        tick_on()
+        if b_hold[h][w] >= n and jb_id.length == 0: return t
+    return ticks
+
+def test_carry():
+    var h = carry_world(10, 1)
+    let w = res_of("wood")
+    want(h, w, 3)
+    var jobs_max = 0
+    for(4000):
+        tick_on()
+        jobs_max = max(jobs_max, jb_id.length)
+        if b_hold[h][w] >= 3 and jb_id.length == 0: break
+    check(b_hold[h][w] == 3 and stock[w][0] == 7 and b_want[h][w] == 0 and jobs_max == 1,
+          "carry: one carrier brings 3 wood one at a time (house {b_hold[h][w]}, store {stock[w][0]}, jobs at once {jobs_max})")
+    let hash1 = state_hash()
+    h = carry_world(10, 1)
+    want(h, w, 3)
+    for(4000):
+        tick_on()
+        if b_hold[h][w] >= 3 and jb_id.length == 0: break
+    check(state_hash() == hash1, "carry: the same deliveries twice give the same hash")
+    // Ten wanted, three carriers: all brought, never more than three jobs at once.
+    h = carry_world(20, 3)
+    want(h, w, 10)
+    jobs_max = 0
+    for(8000):
+        tick_on()
+        jobs_max = max(jobs_max, jb_id.length)
+        if b_hold[h][w] >= 10 and jb_id.length == 0: break
+    check(b_hold[h][w] == 10 and stock[w][0] == 10 and jobs_max == 3, "carry: ten wood by three carriers (house {b_hold[h][w]}, jobs at once {jobs_max})")
+    // One log, two carriers, two wanted: one job, the log reserved once.
+    h = carry_world(1, 2)
+    want(h, w, 2)
+    tick_on()
+    let a = b_index_of(b_id[0])
+    check(jb_id.length == 1 and b_resv[a][w] == 1 and b_want[h][w] == 1, "carry: one log is fetched by one carrier only")
+    // Its carrier taken away: the reservation and the want come back.
+    remove_unit(index_of(jb_unit[0]))
+    tick_on()
+    check(jb_id.length == 0 and b_resv[a][w] == 0 and b_want[h][w] == 2 and b_hold[a][w] == 1,
+          "carry: a carrier gone gives its job back (reserved {b_resv[a][w]}, wanted {b_want[h][w]})")
+    let t = carry_until(h, 1, 4000)
+    check(t < 4000 and b_hold[h][w] == 1 and b_hold[a][w] == 0, "carry: ... and the other carrier brings the log ({t} ticks)")
+    // Cost: 300 carriers and 60 buildings asking, matcher and carrying together.
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_store("town_center", 500)
+    let hk = btype_index("house")
+    bt_hold[hk][w] = 20
+    for(6) n:
+        put(0, "town_center", 4 + n * 9, 4, 0)
+    for(6): stock_add(w, 0, 500)
+    let houses = []::int
+    for(54) n: houses.push(b_index_of(put(0, "house", 4 + (n % 9) * 6, 14 + (n / 9) * 5, 0)))
+    let wk = type_of_slot(0, "worker")
+    t_carrier[wk] = 1
+    for(300) n: spawn_at(0, "worker", 4000 + (n % 30) * 1700, 9500 + (n / 30) * 400)
+    for(houses) hb: want(hb, w, 20)
+    let t0 = seconds_elapsed()
+    for(400): tick_on()
+    let t1 = seconds_elapsed()
+    for(400):
+        carry_tick()
+    let per = (seconds_elapsed() - t1) * 1000.0 / 400.0
+    print("carry cost: 300 carriers, 60 buildings: {fmt_ms(per)} ms a tick for the carriers alone; whole ticks {fmt_ms((t1 - t0) * 1000.0 / 400.0)} ms")
+    var got = 0
+    for(houses) hb: got += b_hold[hb][w]
+    check(got > 0 and per < 1.0, "carry: 300 carriers cost under 1 ms a tick ({fmt_ms(per)} ms; {got} wood brought in 400 ticks)")
+
+// Recipes (Casaide/creel#50): building `id` made a workshop turning `nin` of resource `rin` into `nout` of `rout` in
+// `secs` seconds, holding `cap` of each. (No building has a recipe in the game's data: the test makes one.)
+def make_workshop(id:string, rin:int, nin:int, rout:int, nout:int, secs:int, cap:int) -> int:
+    let k = btype_index(id)
+    bt_in[k] = map(num_resources) r: if r == rin: nin else: 0
+    bt_out[k] = map(num_resources) r: if r == rout: nout else: 0
+    bt_offer[k] = map(num_resources) r: if r == rout: 1 else: 0
+    bt_make_ticks[k] = secs * TICK_HZ
+    bt_hold[k] = map(num_resources) r: if r == rin or r == rout: cap else: 0
+    return k
+
+def all_of(r:int) -> int:  // every r of player 0: in buildings and in carriers' hands
+    var n = 0
+    for(b_id.length) b: n += b_hold[b][r]
+    for(u_x.length) i:
+        if u_owner[i] == 0 and u_carry_kind[i] == r + 1: n += u_carry[i]
+    return n
+
+def test_recipes():
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    let w = res_of("wood")
+    let st = res_of("stone")
+    make_store("town_center", 50)
+    make_workshop("mill", w, 1, st, 2, 2, 4)
+    let a = b_index_of(put(0, "town_center", 10, 10, 0))
+    stock_add(w, 0, 10)
+    let m = b_index_of(put(0, "mill", 24, 10, 0))
+    tick_on()
+    check(b_make[m] == 0 and b_want[m][w] == 4, "recipes: a workshop with no inputs waits and asks for its in slots ({b_want[m][w]} wood)")
+    let wk = type_of_slot(0, "worker")
+    t_carrier[wk] = 1
+    for(2) n: spawn_at(0, "worker", 14000 + n * 600, 13000)
+    var started = -1
+    for(6000) t:
+        tick_on()
+        if started < 0 and b_make[m] > 0: started = t
+        if produced[st][0] >= 20 and jb_id.length == 0: break
+    let used = produced[st][0] / 2
+    check(started >= 0 and produced[st][0] == 20, "recipes: ten wood become twenty stone (made {produced[st][0]}; first round at tick {started})")
+    check(all_of(w) + used == 10 and all_of(st) == produced[st][0], "recipes: every good accounted for (wood {all_of(w)} + {used} used, stone {all_of(st)})")
+    check(stock[st][0] == 20 and b_hold[a][st] == 20, "recipes: the stone is carried to the store ({stock[st][0]} in stock)")
+    // Full out slots, nobody to carry: it stops.
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_workshop("mill", w, 1, st, 2, 1, 4)
+    let m2 = b_index_of(put(0, "mill", 24, 10, 0))
+    b_hold[m2][w] = 4
+    for(400): tick_on()
+    check(b_hold[m2][st] == 4 and b_hold[m2][w] == 2 and b_make[m2] == 0, "recipes: with its out slots full it stops (stone {b_hold[m2][st]}, wood {b_hold[m2][w]})")
+
+// Building sites (Casaide/creel#59): in a stocked economy a site asks for its cost and is built as it arrives.
+def test_sites():
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_store("town_center", 200)
+    let a = b_index_of(put(0, "town_center", 10, 10, 0))
+    for(num_resources) r: stock_add(r, 0, 200)
+    let wk = type_of_slot(0, "worker")
+    t_carrier[wk] = 1
+    let builder = spawn_at(0, "worker", 25000, 12000)
+    for(4) n: spawn_at(0, "worker", 14000 + n * 600, 13000)
+    let hk = btype_index("house")
+    let before = map(num_resources) r: stock[r][0]
+    let nb = b_id.length
+    issue_cmd(0, CMD_BUILD, [ builder ], hk, 28, 10, 0)
+    for(40):
+        if b_id.length == nb: tick_on()
+    let sb = b_index_of(b_id[b_id.length - 1])
+    let cost = copy(b_site[sb])
+    var total = 0
+    for(cost) c: total += c
+    check(b_kind[sb] == hk and total > 0 and stock[res_of("wood")][0] == before[res_of("wood")],
+          "sites: a house laid pays nothing at once; its site asks for {total} goods")
+    var ahead = false
+    var last_in = -1
+    var done_at = -1
+    for(12000) t:
+        tick_on()
+        let bi = b_index_of(b_id[sb])
+        if b_done[bi] == 0:
+            if b_progress[bi] * 1000 > bt_build_ticks[hk] * site_permille(bi) + bt_build_ticks[hk]: ahead = true
+            if site_permille(bi) == 1000 and last_in < 0: last_in = t
+        elif done_at < 0:
+            done_at = t
+            break
+    let bi = b_index_of(b_id[sb])
+    var spent = true
+    for(cost) c, r: spent = spent and stock[r][0] == before[r] - c and b_hold[bi][r] == 0
+    check(done_at >= 0 and not ahead and last_in >= 0 and done_at >= last_in,
+          "sites: carriers bring the cost and the builder never runs ahead of it (all in at {last_in}, built at {done_at})")
+    check(spent and b_site[bi].length == 0 and b_hold[a][res_of("wood")] == before[res_of("wood")] - cost[res_of("wood")],
+          "sites: once built its goods are used up, and the stores hold that much less")
 
 // ------------------------------------------------------------------ small pieces
 
@@ -4550,7 +4823,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4570,6 +4843,11 @@ def run_part(name:string):
     elif name == "shots": test_shots()
     elif name == "engines": test_engines()
     elif name == "trade": test_trade()
+    elif name == "stocked": test_stocked()
+    elif name == "carry": test_carry()
+    elif name == "recipes": test_recipes()
+    elif name == "sites": test_sites()
+    elif name == "roads": test_roads()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
