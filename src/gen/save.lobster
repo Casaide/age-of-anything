@@ -233,6 +233,9 @@ class WorldSave:
     b_hold:[[int]]
     b_want:[[int]]
     b_resv:[[int]]
+    b_coming:[[int]]
+    b_make:[int]
+    produced:[[int]]
     jb_id:[int]
     jb_unit:[int]
     jb_from:[int]
@@ -240,6 +243,7 @@ class WorldSave:
     jb_res:[int]
     jb_n:[int]
     jb_phase:[int]
+    jb_want:[int]
     next_job:int
     carry_dirty:[int]
     bt_attacks:[int]
@@ -283,6 +287,10 @@ class WorldSave:
     bt_drop:[[int]]
     bt_hold:[[int]]
     bt_store:[int]
+    bt_in:[[int]]
+    bt_out:[[int]]
+    bt_offer:[[int]]
+    bt_make_ticks:[int]
     bt_reseed:[[int]]
     bm_hp:[[int]]
     bm_pop:[[int]]
@@ -750,6 +758,9 @@ def world_bytes(bots:[Bot]) -> string:
         b_hold,
         b_want,
         b_resv,
+        b_coming,
+        b_make,
+        produced,
         jb_id,
         jb_unit,
         jb_from,
@@ -757,6 +768,7 @@ def world_bytes(bots:[Bot]) -> string:
         jb_res,
         jb_n,
         jb_phase,
+        jb_want,
         next_job,
         carry_dirty,
         bt_attacks,
@@ -800,6 +812,10 @@ def world_bytes(bots:[Bot]) -> string:
         bt_drop,
         bt_hold,
         bt_store,
+        bt_in,
+        bt_out,
+        bt_offer,
+        bt_make_ticks,
         bt_reseed,
         bm_hp,
         bm_pop,
@@ -1280,6 +1296,9 @@ def load_world_bytes(data:string) -> [Bot]:
     b_hold = s.b_hold
     b_want = s.b_want
     b_resv = s.b_resv
+    b_coming = s.b_coming
+    b_make = s.b_make
+    produced = s.produced
     jb_id = s.jb_id
     jb_unit = s.jb_unit
     jb_from = s.jb_from
@@ -1287,6 +1306,7 @@ def load_world_bytes(data:string) -> [Bot]:
     jb_res = s.jb_res
     jb_n = s.jb_n
     jb_phase = s.jb_phase
+    jb_want = s.jb_want
     next_job = s.next_job
     carry_dirty = s.carry_dirty
     bt_attacks = s.bt_attacks
@@ -1330,6 +1350,10 @@ def load_world_bytes(data:string) -> [Bot]:
     bt_drop = s.bt_drop
     bt_hold = s.bt_hold
     bt_store = s.bt_store
+    bt_in = s.bt_in
+    bt_out = s.bt_out
+    bt_offer = s.bt_offer
+    bt_make_ticks = s.bt_make_ticks
     bt_reseed = s.bt_reseed
     bm_hp = s.bm_hp
     bm_pop = s.bm_pop
