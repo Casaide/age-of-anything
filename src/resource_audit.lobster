@@ -62,6 +62,7 @@ import gen.race_to_types
 import gen.modes
 import gen.start
 import hooks.economy
+import hooks.hunger
 import gen.reset
 import testkit.kit
 

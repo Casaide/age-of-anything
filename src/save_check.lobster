@@ -52,6 +52,7 @@ import gen.race_to_types
 import gen.modes
 import gen.start
 import hooks.economy
+import hooks.hunger
 import gen.scenario_out
 import gen.reset
 import gen.save

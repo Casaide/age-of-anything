@@ -54,6 +54,7 @@ import gen.race_to_types
 import gen.modes
 import gen.start
 import hooks.economy
+import hooks.hunger
 import gen.reset
 import gen.save
 import testkit.kit
@@ -126,11 +127,15 @@ def play() -> int:
     var laid = 0
     var h = 0
     var sites_ok = true
+    let ate = []::int  // the workers that went to eat
     for(MINUTES * 60 * TICK_HZ) t:
         if t == 40 and lay("lumber_camp", tx + 6, ty - 4, workers[3]): laid++
         if t == 60 and lay("sawmill", tx - 6, ty + 3, workers[4]): laid++
         if t == 80 and lay("mining_camp", tx + 5, ty + 6, workers[5]): laid++
         if t == 100 and lay("house", tx - 5, ty - 6, workers[6]): laid++
+        if t == 120 and lay("inn", tx + 7, ty + 1, workers[7]): laid++
+        for(u_x.length) i:
+            if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])
         if t > 0 and t % 2400 == 0: gather_near(workers.slice(0, 2), "wood")  // (back to the trees once a hut is up)
         wstep()
         for(b_id.length) b:
@@ -139,8 +144,9 @@ def play() -> int:
     var built = 0
     for(b_id.length) b:
         if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center"): built++
-    print "steading: {MINUTES} min, {laid} laid, {built} built, {born_alive()} born; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
-    check(laid == 4 and built == 4, "steading: the hut, the sawmill, the quarry and a house are built ({built} of {laid})")
+    print "steading: {MINUTES} min, {laid} laid, {built} built, {born_alive()} born, {ate.length} ate; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
+    check(laid == 5 and built == 5, "steading: the hut, the sawmill, the quarry, a house and an inn are built ({built} of {laid})")
+    check(ate.length >= 4, "steading: hungry workers go to eat ({ate.length} of them)")
     let born = born_alive()
     check(born > 0 and born <= 2, "steading: children are born in the house, no more than its beds ({born})")
     check(sites_ok, "steading: no site was built ahead of its goods")

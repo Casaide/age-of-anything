@@ -83,6 +83,7 @@ import gen.race_to_types
 import gen.modes
 import gen.start
 import hooks.economy
+import hooks.hunger
 import gen.reset
 import gen.save
 import gen.effect_words
@@ -642,6 +643,74 @@ def test_homes():
     check(none == 0 and nl == 0 and nh != h1, "homes: with no food nobody is born")
     let off, empty, oh = homes_run(20, 0)
     check(off == 0 and empty == 0 and oh != h1, "homes: with the rule off, no births and no larder")
+
+// All of player 0's food: in its buildings and in its units' hands.
+def food_held() -> int:
+    let f = res_of("food")
+    var n = 0
+    for(b_id.length) b:
+        if b_owner[b] == 0: n += b_hold[b][f]
+    for(u_x.length) i:
+        if u_owner[i] == 0 and u_carry_kind[i] == f + 1: n += u_carry[i]
+    return n
+
+// Eating (hooks/hunger, #47): three workers who carry get hungry every `every` s, and one cuts wood. Beside the store,
+// a house that serves as an inn (3 meals a food), or a house that is all three's home (a meal is a food), or neither;
+// 50 food in the store, or none. 90 s: the wood cut, the wood cut after 60 s, whether the woodcutter went to eat and came
+// back to its trees, the food eaten, the hash.
+def eating_run(every:int, starving:int, inn:bool, home:bool, food:bool) -> int, int, bool, int, int:
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    let f = res_of("food")
+    hu_ticks = every * TICK_HZ
+    hu_eaters = [ "worker" ]
+    hu_starving = starving
+    hu_foods = [ f ]
+    let hk = btype_index("house")
+    if inn: hu_serves[hk] = 3
+    bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
+    make_store("town_center", 200)
+    put(0, "town_center", 10, 10, 0)
+    let hid = if inn or home: put(0, "house", 18, 10, 0) else: 0
+    if home:  // (a home of three with one bed: full, so it keeps its larder and nobody is born)
+        eco_born_ticks = 1000 * TICK_HZ
+        eco_foods = [ f ]
+        eco_beds[hk] = 1
+    if food: stock_add(f, 0, 50)
+    t_carrier[type_of_slot(0, "worker")] = 1
+    let ids = map(3) n: spawn_at(0, "worker", 14000 + n * 600, 14000)
+    if home:
+        for(ids) id: hook_unit_set(col_house, index_of(id), hid)
+    let uid = ids[0]
+    let wi = index_of(uid)
+    let wood = kind_of("wood")
+    issue_cmd(0, CMD_GATHER, [ uid ], nearest_resource(u_x[wi], u_y[wi], wood, -1, false, false, false), 0, 0, 0)
+    let food0 = food_held()
+    var went = false
+    var back = false
+    var at60 = 0
+    for(90 * TICK_HZ) t:
+        tick_on()
+        let i = index_of(uid)
+        if u_task[i] == T_EAT: went = true
+        if went and u_task[i] == GATHER and meal_of(i) < hu_ticks: back = true
+        if t == 60 * TICK_HZ: at60 = gathered[wood - 1][0]
+    let cut = gathered[wood - 1][0]
+    return cut, cut - at60, went and back, food0 - food_held(), state_hash()
+
+def test_eating():
+    let fed, fed_late, came_back, meals, h1 = eating_run(20, 50, true, false, true)
+    check(came_back, "eating: a hungry woodcutter goes to the inn, eats and goes back to its trees")
+    check(meals > 0 and fed_late > 0, "eating: what they ate is gone from the town ({meals} food), and the work goes on")
+    let fed2, late2, back2, meals2, h2 = eating_run(20, 50, true, false, true)
+    check(fed2 == fed and late2 == fed_late and back2 and meals2 == meals and h1 == h2, "eating: the same twice")
+    let at_home, home_late, home_back, home_food, hh = eating_run(20, 50, false, true, true)
+    check(home_back and home_food > meals and at_home > 0 and home_late > 0 and hh != h1, "eating: a home feeds them too, an inn for less ({meals} food at the inn, {home_food} at home)")
+    let starved, starved_late, went, none, h3 = eating_run(20, 25, false, false, false)
+    check(not went and none == 0 and starved < fed and starved_late == 0 and h3 != h1, "eating: hungry with nowhere to eat, less work, then none ({starved} wood, fed {fed})")
+    let at_store, store_late, store_back, store_food, hs = eating_run(20, 50, false, false, true)
+    check(store_back and store_food > meals and at_store > 0 and store_late > 0 and hs != h1, "eating: with no inn or home they eat at the store ({store_food} food)")
+    let never, never_late, nw, nm, h4 = eating_run(0, 50, true, false, true)
+    check(not nw and nm == 0 and never >= fed and never_late > 0 and h4 != h1, "eating: with hunger off nobody eats ({never} wood)")
 // ------------------------------------------------------------------ small pieces
 
 def test_fixed():
@@ -4984,7 +5053,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "doors_on_roads", "bridge_plans", "homes", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "doors_on_roads", "bridge_plans", "homes", "eating", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -5013,6 +5082,7 @@ def run_part(name:string):
     elif name == "doors_on_roads": test_doors_on_roads()
     elif name == "bridge_plans": test_bridge_plans()
     elif name == "homes": test_homes()
+    elif name == "eating": test_eating()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()

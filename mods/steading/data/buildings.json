@@ -2,7 +2,8 @@
  "_doc": "The first slice of the economy mod (#524): the Town Center is the storehouse, the lumber and mining camps are the woodcutter's hut and the quarry, and the sawmill is new. Buildings cost planks and stone, carried to the site. Everything for war and the late game goes.",
  "menu": {
   "+civilian": [
-   "sawmill"
+   "sawmill",
+   "inn"
   ]
  },
  "buildings": {
@@ -72,6 +73,26 @@
    "holds": {
     "wood": 4,
     "plank": 6
+   }
+  },
+  "inn": {
+   "extends": "house",
+   "name": "Inn",
+   "desc": "Feeds the town: hungry workers eat here when their home has no food. One food makes three meals, so it feeds more for less than homes do. Carriers keep it stocked.",
+   "hotkey": "D",
+   "beds": 0,
+   "serves": 3,
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "note": "",
+   "holds": {
+    "food": 12
+   },
+   "cost": {
+    "wood": 0,
+    "plank": 10,
+    "stone": 4
    }
   },
   "house": {
