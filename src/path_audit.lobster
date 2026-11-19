@@ -45,6 +45,7 @@ import lib.heal
 import lib.heroes
 import lib.match
 import lib.trade
+import lib.carry
 import lib.animals
 import lib.bridges
 import lib.walls

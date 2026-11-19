@@ -61,6 +61,7 @@ import lib.heal
 import lib.heroes
 import lib.match
 import lib.trade
+import lib.carry
 import lib.animals
 import lib.bridges
 import lib.walls
@@ -258,6 +259,95 @@ def test_stocked():
         if b_hold[tc][wood - 1] > 0: break
     check(b_hold[tc][wood - 1] > 0 and stock[wood - 1][0] == store_sum(wood - 1, 0) and gathered[wood - 1][0] == b_hold[tc][wood - 1],
           "stocked: gathered wood lands in the Town Center ({b_hold[tc][wood - 1]}) and stock is what the stores hold")
+
+// The request queue (Casaide/creel#49): a store at (10, 10) with `wood` wood, a house at (30, 10) that holds wood,
+// `carriers` carriers by the store. The house's index.
+def carry_world(wood:int, carriers:int) -> int:
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_store("town_center", 50)
+    let w = res_of("wood")
+    let hk = btype_index("house")
+    bt_hold[hk][w] = 20
+    let a = b_index_of(put(0, "town_center", 10, 10, 0))
+    stock_add(w, 0, wood)
+    let h = b_index_of(put(0, "house", 30, 10, 0))
+    let wk = type_of_slot(0, "worker")
+    t_carrier[wk] = 1
+    for(carriers) n: spawn_at(0, "worker", 14000 + n * 600, 13000)
+    check(b_hold[a][w] == min(wood, 50), "carry: the store starts with its wood")
+    return h
+
+def carry_until(h:int, n:int, ticks:int) -> int:  // ticks until the house holds n wood (or `ticks` if never)
+    let w = res_of("wood")
+    for(ticks) t:
+        tick_on()
+        if b_hold[h][w] >= n and jb_id.length == 0: return t
+    return ticks
+
+def test_carry():
+    var h = carry_world(10, 1)
+    let w = res_of("wood")
+    want(h, w, 3)
+    var jobs_max = 0
+    for(4000):
+        tick_on()
+        jobs_max = max(jobs_max, jb_id.length)
+        if b_hold[h][w] >= 3 and jb_id.length == 0: break
+    check(b_hold[h][w] == 3 and stock[w][0] == 7 and b_want[h][w] == 0 and jobs_max == 1,
+          "carry: one carrier brings 3 wood one at a time (house {b_hold[h][w]}, store {stock[w][0]}, jobs at once {jobs_max})")
+    let hash1 = state_hash()
+    h = carry_world(10, 1)
+    want(h, w, 3)
+    for(4000):
+        tick_on()
+        if b_hold[h][w] >= 3 and jb_id.length == 0: break
+    check(state_hash() == hash1, "carry: the same deliveries twice give the same hash")
+    // Ten wanted, three carriers: all brought, never more than three jobs at once.
+    h = carry_world(20, 3)
+    want(h, w, 10)
+    jobs_max = 0
+    for(8000):
+        tick_on()
+        jobs_max = max(jobs_max, jb_id.length)
+        if b_hold[h][w] >= 10 and jb_id.length == 0: break
+    check(b_hold[h][w] == 10 and stock[w][0] == 10 and jobs_max == 3, "carry: ten wood by three carriers (house {b_hold[h][w]}, jobs at once {jobs_max})")
+    // One log, two carriers, two wanted: one job, the log reserved once.
+    h = carry_world(1, 2)
+    want(h, w, 2)
+    tick_on()
+    let a = b_index_of(b_id[0])
+    check(jb_id.length == 1 and b_resv[a][w] == 1 and b_want[h][w] == 1, "carry: one log is fetched by one carrier only")
+    // Its carrier taken away: the reservation and the want come back.
+    remove_unit(index_of(jb_unit[0]))
+    tick_on()
+    check(jb_id.length == 0 and b_resv[a][w] == 0 and b_want[h][w] == 2 and b_hold[a][w] == 1,
+          "carry: a carrier gone gives its job back (reserved {b_resv[a][w]}, wanted {b_want[h][w]})")
+    let t = carry_until(h, 1, 4000)
+    check(t < 4000 and b_hold[h][w] == 1 and b_hold[a][w] == 0, "carry: ... and the other carrier brings the log ({t} ticks)")
+    // Cost: 300 carriers and 60 buildings asking, matcher and carrying together.
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_store("town_center", 500)
+    let hk = btype_index("house")
+    bt_hold[hk][w] = 20
+    for(6) n:
+        put(0, "town_center", 4 + n * 9, 4, 0)
+    for(6): stock_add(w, 0, 500)
+    let houses = []::int
+    for(54) n: houses.push(b_index_of(put(0, "house", 4 + (n % 9) * 6, 14 + (n / 9) * 5, 0)))
+    let wk = type_of_slot(0, "worker")
+    t_carrier[wk] = 1
+    for(300) n: spawn_at(0, "worker", 4000 + (n % 30) * 1700, 9500 + (n / 30) * 400)
+    for(houses) hb: want(hb, w, 20)
+    let t0 = seconds_elapsed()
+    for(400): tick_on()
+    let t1 = seconds_elapsed()
+    for(400):
+        carry_tick()
+    let per = (seconds_elapsed() - t1) * 1000.0 / 400.0
+    print("carry cost: 300 carriers, 60 buildings: {fmt_ms(per)} ms a tick for the carriers alone; whole ticks {fmt_ms((t1 - t0) * 1000.0 / 400.0)} ms")
+    var got = 0
+    for(houses) hb: got += b_hold[hb][w]
+    check(got > 0 and per < 1.0, "carry: 300 carriers cost under 1 ms a tick ({fmt_ms(per)} ms; {got} wood brought in 400 ticks)")
 
 // ------------------------------------------------------------------ small pieces
 
@@ -4601,7 +4691,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4622,6 +4712,7 @@ def run_part(name:string):
     elif name == "engines": test_engines()
     elif name == "trade": test_trade()
     elif name == "stocked": test_stocked()
+    elif name == "carry": test_carry()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
