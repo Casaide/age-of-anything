@@ -680,7 +680,7 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
     tb_icon("research", float2 { x + w - tw + 12.0 * fe_k, y + 7.0 * fe_k }, 22.0 * fe_k, 1.0)
     ui_text_f(float2 { x + w - tw + 40.0 * fe_k, y + 6.0 * fe_k }, "Tech tree", fz(18.0), lk.text, 1, 0.0)
     if fe_over(float2 { x + w - tw, y }, float2 { tw, top_h }): fe_tip([ "Everything this race can build, train and research, and its bonuses" ])
-    if fe_joining and fe_lobby_who(i) == ROOM_AI:  // (a joiner takes any side an AI holds, ally or enemy, #521)
+    if fe_joining and fe_lobby_who(i) == ROOM_AI:               // (a joiner takes any side an AI holds, ally or enemy, #521)
         let kw = ui_text_wf("Join", fz(18.0), 1) + 56.0 * fe_k  // (a call to arms, as the Tech tree button beside it)
         let kx = x + w - tw - 8.0 * fe_k - kw
         if ui_button(float2 { kx, y }, float2 { kw, top_h }, "", true): guest_take(fe_guests[0], i)
@@ -1639,7 +1639,7 @@ def run_front(page0:string, typed:[string]) -> string:
             go = "start"
         // captures: the page once its armies stand
         let room_waits = has_s(args, "roomshot") and not (if fe_joining: fe_guests.length and fe_guests[0].side >= 0 and glist(fe_guests[0].lobby, "sides").length > 0 else: fe_rooms.length and room_players(fe_rooms[0]) > 0)  // (captures: a player in the room)
-        if shot != "" and has_s(args, "roomshot") and not room_waits and shot_frame < 0 and fe_joining and (filter(fe_sides) sd: sd.views_gen != sd.gen).length == 0: shot_frame = fe_frames + 3  // (the host may start any moment)
+        if shot != "" and has_s(args, "roomshot") and not room_waits and shot_frame < 0 and fe_joining and (filter(fe_sides) sd: sd.views_gen != sd.gen).length == 0: shot_frame = fe_frames + 3                                 // (the host may start any moment)
         if shot != "" and not room_waits and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and (not fe_looks_waiting() or fe_frames > 900) and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
         if rec_dir != "" and rec_type.length > 0:  // (filming: the prompts typed in, side by side, each given time to muster)
             if rec_n == 0:

@@ -1,5 +1,5 @@
 {
- "_doc": "Voxel gear. `parts` maps a recipe's parts to gear, first rule that matches (part: an id or an id's prefix; tag: a tag the part has in parts.json; slot: its slot). A held item has a hand (right, left) and a hold (in holds); its shapes are in the hold's frame: [point, along, out, side] from the hand, along the held direction, out of the front, to the right. Worn gear has fits: shapes per body (bodies/<id>.json), * for any other, in the body's own frame; `helm` and `fit` are the body's helmet and armour spots. flags: what the gear tells body shapes (if / unless). foot: a foot soldier's tall shield, which reaches into a mount: no kit gives it to a rider (rider_check).",
+ "_doc": "Voxel gear. `parts` maps a recipe's parts to gear, first rule that matches (part: an id or an id's prefix; tag: a tag the part has in parts.json; slot: its slot). A held item has a hand (right, left) and a hold (in holds); its shapes are in the hold's frame: [point, along, out, side] from the hand, along the held direction, out of the front, to the right. Worn gear has fits: shapes per body (bodies/<id>.json), * for any other, in the body's own frame; `helm` and `fit` are the body's helmet and armour spots. flags: what the gear tells body shapes (if / unless). plates: worn armour on a body with no fit of its own that has `plates` (an animal) is drawn as that body's plates in this plate and edge mat (#505). foot: a foot soldier's tall shield, which reaches into a mount: no kit gives it to a rider (rider_check).",
  "holds": {
   "hang": {
    "rest": [
@@ -1541,6 +1541,7 @@
    }
   },
   "plate": {
+   "plates": {"plate": "metal", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -1554,6 +1555,7 @@
    }
   },
   "leather": {
+   "plates": {"plate": "leather", "edge": "metal"},
    "flags": [
     "armour"
    ],
@@ -1768,6 +1770,7 @@
    }
   },
   "bronze": {
+   "plates": {"plate": "bronze", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -1878,6 +1881,7 @@
    }
   },
   "lorica": {
+   "plates": {"plate": "metal", "edge": "bronze"},
    "flags": [
     "armour"
    ],
@@ -2287,6 +2291,7 @@
    }
   },
   "pectoral": {
+   "plates": {"plate": "bronze", "edge": "gold"},
    "flags": [
     "armour"
    ],
@@ -2852,6 +2857,7 @@
    }
   },
   "cuirass": {
+   "plates": {"plate": "bronze", "edge": "gold"},
    "flags": [
     "armour"
    ],
@@ -3028,6 +3034,7 @@
    ]
   },
   "mail": {
+   "plates": {"plate": "metal", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -3090,6 +3097,7 @@
    }
   },
   "surcoat": {
+   "plates": {"plate": "team", "edge": "gold"},
    "flags": [
     "armour"
    ],
@@ -3286,6 +3294,30 @@
       },
       "_doc": "royal_hood.vox"
      }
+    ],
+    "forest": [
+     {
+      "model": "forest_hood.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       -1.25
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: a hood of overlapping leaves, forest_hood.vox (#497)"
+     }
     ]
    }
   },
@@ -3400,6 +3432,7 @@
    ]
   },
   "lamellar": {
+   "plates": {"plate": "hide", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -3467,6 +3500,7 @@
    }
   },
   "lamellar_iron": {
+   "plates": {"plate": "metal", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -3534,6 +3568,7 @@
    }
   },
   "sheepskin": {
+   "plates": {"plate": "white", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -3886,6 +3921,30 @@
       },
       "_doc": "steppe_shaman.vox"
      }
+    ],
+    "forest": [
+     {
+      "model": "forest_druid.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       -0.75
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: the druid's moss hood, antler branches, white beard, forest_druid.vox (#497)"
+     }
     ]
    }
   },
@@ -4223,6 +4282,7 @@
    }
   },
   "bands": {
+   "plates": {"plate": "linen", "edge": "bronze"},
    "flags": [
     "armour"
    ],
@@ -4782,6 +4842,7 @@
    }
   },
   "han_iron": {
+   "plates": {"plate": "lacquer_black", "edge": "gold"},
    "flags": [
     "armour"
    ],
@@ -5400,6 +5461,7 @@
    }
   },
   "feather_suit": {
+   "plates": {"plate": "linen", "edge": "teal"},
    "flags": [
     "armour"
    ],
@@ -5888,6 +5950,7 @@
    }
   },
   "fur_cape": {
+   "plates": {"plate": "wolf", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -6067,9 +6130,138 @@
      }
     ]
    }
+  },
+  "acorn": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.acorn: an acorn's cap as the helmet (#497)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "acorn_cap",
+      "_doc": "a cap over the crown in the acorn's brown"
+     }
+    ],
+    "forest": [
+     {
+      "model": "forest_acorn.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: an acorn's scaly cap, its stalk, the nut's shell down the cheeks, forest_acorn.vox"
+     }
+    ]
+   }
+  },
+  "leaf_hat": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "hat.leaf: one broad leaf over the crown (#497)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "leaf",
+      "_doc": "a cap over the crown in leaf green"
+     }
+    ],
+    "forest": [
+     {
+      "model": "forest_leaf.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       2.5
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: a leaf from side to side over the crown, its stem up, forest_leaf.vox"
+     }
+    ]
+   }
+  },
+  "bark": {
+   "plates": {"plate": "leaf", "edge": "bark_light"},
+   "flags": [
+    "armour"
+   ],
+   "_doc": "armour.bark: bark plates (#497)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "bark_light"
+     }
+    ],
+    "forest": [
+     {
+      "model": "forest_bark.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -1.5
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: bark plates on the chest and back, rounded bark shoulders, forest_bark.vox"
+     }
+    ]
+   }
   }
  },
  "parts": [
+  {
+   "part": "helm.acorn",
+   "gear": "acorn"
+  },
+  {
+   "part": "hat.leaf",
+   "gear": "leaf_hat"
+  },
+  {
+   "part": "armour.bark",
+   "gear": "bark"
+  },
   {
    "part": "weapon.gladius",
    "gear": "gladius"
