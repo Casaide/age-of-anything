@@ -263,6 +263,46 @@ def test_stocked():
 
 // The request queue (Casaide/creel#49): a store at (10, 10) with `wood` wood, a house at (30, 10) that holds wood,
 // `carriers` carriers by the store. The house's index.
+// Roads (#51): a worker walking from (8, 20) to (32, 20) on flat_test (an open row), with the given roads laid first
+// (cells, kind); the ticks it takes to pass x 30, how many rows it strays from row 20 on the way, and the hash at the end.
+def road_walk(roads:[[int]], pcts:[int]) -> int, int, int:
+    new_world("flat_test", races0, bare0, [])
+    rd_pct = pcts
+    for(roads) r: set_road(r[0], r[1])
+    let id = spawn_at(0, "worker", 8 * TILE + TILE / 2, 20 * TILE + TILE / 2)
+    issue_cmd(0, CMD_MOVE, [ id ], 32 * TILE + TILE / 2, 20 * TILE + TILE / 2, 0, 0)
+    let t0 = tick
+    var top = 0
+    for(3000):
+        tick_on()
+        let i = index_of(id)
+        top = max(top, abs(u_y[i] / TILE - 20))
+        if u_x[i] >= 30 * TILE: return tick - t0, top, state_hash()  // (timed to a line short of the end: not its settling)
+    return 3000, top, state_hash()
+
+def test_roads():
+    let plain, plain_top, h0 = road_walk([], [])
+    let strip = map(29) x: [ 20 * W + 6 + x, 0 ]
+    let fast, fast_top, h1 = road_walk(strip, [ 150 ])
+    check(plain < 3000 and fast < 3000, "roads: the worker gets there, with a road and without")
+    check(plain_top <= 1 and fast_top <= 1, "roads: with no road, or one straight along the way, it walks straight across")
+    check(h0 != h1, "roads: a road is in the hash of the world")
+    let ratio = plain * 100 / fast
+    check(ratio >= 130 and ratio <= 160, "roads: a 150% road takes it across about 1.5 times as fast ({ratio}%: {plain} ticks, {fast} on the road)")
+    let again, again_top, h2 = road_walk(strip, [ 150 ])
+    check(again == fast and h2 == h1 and again_top == fast_top, "roads: the same walk on the same road comes out the same")
+    // A quick road round a bend: down six rows, across, and up again. At twice the speed it beats the straight way.
+    let bend = []::[int]
+    for(7) n:
+        bend.push([ (20 + n) * W + 8, 0 ])
+        bend.push([ (20 + n) * W + 32, 0 ])
+    for(23) x: bend.push([ 26 * W + 9 + x, 0 ])
+    let round, round_top, h3 = road_walk(bend, [ 200 ])
+    check(round_top >= 5, "roads: the path takes the quick road round the bend ({round_top} rows out)")
+    check(round < plain, "roads: and gets there sooner ({round} ticks, {plain} straight across)")
+    let slow, slow_top, h4 = road_walk(bend, [ 110 ])
+    check(slow_top <= 1 and slow > round and h4 != h3, "roads: a road barely faster than the grass is not worth the bend ({slow_top} rows out, {slow} ticks)")
+
 def carry_world(wood:int, carriers:int) -> int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
     make_store("town_center", 50)
@@ -4783,7 +4823,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4807,6 +4847,7 @@ def run_part(name:string):
     elif name == "carry": test_carry()
     elif name == "recipes": test_recipes()
     elif name == "sites": test_sites()
+    elif name == "roads": test_roads()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
