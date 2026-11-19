@@ -8,13 +8,14 @@
 
 let HOME_LOOK = 20  // ticks between an idle home's looks at its beds and larder (a second)
 
-var eco_seen = jobj()    // the rules the eco_ values were read from: a new match or a loaded save reads them again
-var eco_doors = false    // rules economy.doors_on_roads
-var eco_born_ticks = 0   // rules economy.homes.born_every, in ticks (0: no births)
-var eco_foods = []::int  // rules economy.homes.foods: the resources a larder keeps and a birth takes one of
-var eco_beds = []::int   // per building type: its beds (a home has some)
-var col_house = -1       // unit column: the id of the home it was born in, 0 for none
-var col_born = -1        // building column: a home's ticks to its next birth, 0 while it isn't counting
+var eco_seen = jobj()     // the rules the eco_ values were read from: a new match or a loaded save reads them again
+var eco_doors = false     // rules economy.doors_on_roads
+var eco_builders = false  // rules economy.builders_come
+var eco_born_ticks = 0    // rules economy.homes.born_every, in ticks (0: no births)
+var eco_foods = []::int   // rules economy.homes.foods: the resources a larder keeps and a birth takes one of
+var eco_beds = []::int    // per building type: its beds (a home has some)
+var col_house = -1        // unit column: the id of the home it was born in, 0 for none
+var col_born = -1         // building column: a home's ticks to its next birth, 0 while it isn't counting
 
 def eco_declare():
     hook_declare_unit("house")
@@ -25,6 +26,7 @@ def eco_load():
     eco_seen = su_rules
     let ec = rules_part("economy")
     eco_doors = gbool(ec, "doors_on_roads", false)
+    eco_builders = gbool(ec, "builders_come", false)
     let hc = gobj(ec, "homes")
     eco_born_ticks = gint(hc, "born_every", 0) * TICK_HZ
     eco_foods = map(gstrs(hc, "foods")) f: find(resource_names): _ == f
@@ -104,3 +106,32 @@ def born_alive() -> int:
     for(u_id.length) i:
         if hook_unit_get(col_house, i) != 0: n++
     return n
+
+// Builders come (#74): in a stocked economy with rules economy.builders_come, a site nobody is building, with goods
+// brought for more than is built, gets the nearest idle worker of its side, once a second. Creel's build_job drops a
+// site whose builder can't get to it; this sends someone back, so a town never waits on an order it doesn't know it
+// needs.
+def builders_tick():
+    eco_fresh()
+    if not r_stocked or not eco_builders or tick % HOME_LOOK != 0: return
+    let building = map(b_id.length): false
+    for(u_x.length) i:
+        if u_task[i] == BUILD:
+            let b = b_index_of(u_target[i])
+            if b >= 0: building[b] = true
+    for(b_id.length) b:
+        let k = b_kind[b]
+        if b_done[b] == 0 and not building[b] and b_site[b].length and b_progress[b] * 1000 < bt_build_ticks[k] * site_permille(b):
+            let w = idle_worker(b)
+            if w >= 0: start_build(w, b_id[b])
+
+def idle_worker(b:int) -> int:
+    var best = -1
+    var best_d2 = 1 << 62
+    for(u_x.length) i:
+        if u_owner[i] == b_owner[b] and t_worker[u_kind[i]] != 0 and u_task[i] == T_NONE and not u_orders[i].length:
+            let d2 = mid_dist2(b, u_x[i], u_y[i])
+            if d2 < best_d2:
+                best_d2 = d2
+                best = i
+    return best

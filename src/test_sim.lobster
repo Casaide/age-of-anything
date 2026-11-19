@@ -483,6 +483,43 @@ def test_sites():
     check(spent and b_site[bi].length == 0 and b_hold[a][res_of("wood")] == before[res_of("wood")] - cost[res_of("wood")],
           "sites: once built its goods are used up, and the stores hold that much less")
 
+// A site whose builder gave it up (#74): Creel's build_job drops a site its builder can't reach in GIVE_UP ticks, and
+// nobody is sent back. With rules economy.builders_come (hooks/economy) an idle worker of its side takes it up. The
+// give-up is made here as the engine meets it: the builder on its way, stopped and stuck. Whether it gave up, and
+// whether the site was built.
+def abandoned_site(come:bool) -> bool, bool:
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_store("town_center", 200)
+    put(0, "town_center", 10, 10, 0)
+    for(num_resources) r: stock_add(r, 0, 200)
+    t_carrier[type_of_slot(0, "worker")] = 1
+    eco_builders = come
+    let builder = spawn_at(0, "worker", 25000, 12000)
+    for(3) n: spawn_at(0, "worker", 14000 + n * 600, 13000)
+    let hk = btype_index("house")
+    let nb = b_id.length
+    issue_cmd(0, CMD_BUILD, [ builder ], hk, 34, 10, 0)
+    for(40):
+        if b_id.length == nb: tick_on()
+    let site = b_id[b_id.length - 1]
+    var gave_up = false
+    for(8000):
+        let i = index_of(builder)
+        if not gave_up and u_task[i] == BUILD and u_target[i] == site and u_moving[i] != 0:
+            u_moving[i] = 0
+            u_stuck[i] = GIVE_UP
+            tick_on()
+            gave_up = u_task[index_of(builder)] != BUILD
+        else: tick_on()
+    let b = b_index_of(site)
+    return gave_up, b >= 0 and b_done[b] != 0
+
+def test_abandoned_site():
+    let gave_up, built = abandoned_site(true)
+    check(gave_up and built, "sites: a site its builder gave up is built by an idle worker sent to it (gave up {gave_up}, built {built})")
+    let gave_up_off, built_off = abandoned_site(false)
+    check(gave_up_off and not built_off, "sites: without builders_come nobody goes back to it (as the engine has it)")
+
 // Road plans (#51): a building type with `road` is a plan for road. Its cells are walked over while it is built (it asks for
 // its cost like any site), and once built they become that road and the plan goes. Its builder then takes the next plan.
 // The house stands in for a road plan here. The hash at the end.
@@ -5053,7 +5090,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "doors_on_roads", "bridge_plans", "homes", "eating", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "roads", "road_plans", "doors_on_roads", "bridge_plans", "homes", "eating", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -5082,6 +5119,7 @@ def run_part(name:string):
     elif name == "doors_on_roads": test_doors_on_roads()
     elif name == "bridge_plans": test_bridge_plans()
     elif name == "homes": test_homes()
+    elif name == "abandoned_site": test_abandoned_site()
     elif name == "eating": test_eating()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()

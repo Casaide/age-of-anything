@@ -5,6 +5,7 @@
  "animals": false,
  "economy": {
   "model": "stocked",
+  "builders_come": true,
   "roads": [
    {
     "name": "road",

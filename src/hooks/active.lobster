@@ -20,9 +20,11 @@ def hook_on_death(i:int, killer:int): game_on_death(i, killer)
 // Each tick, for each unit whose type asks ("tick": true in its row of the table).
 def hook_unit_tick(i:int): return
 
-// Once a tick, after the economy's steps: births in homes (hooks/economy), eating (hooks/hunger).
+// Once a tick, after the economy's steps: births in homes and builders sent to sites (hooks/economy), eating
+// (hooks/hunger).
 def hook_tick():
     homes_tick()
+    builders_tick()
     hunger_tick()
 
 // Whether player p may put a building of type k at cx, cy (its size sx, sy), once the engine's own checks pass.
