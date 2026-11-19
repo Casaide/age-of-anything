@@ -1,6 +1,7 @@
 // The procedural voxel units on a sheet (view/voxel.lobster): every unit in 8 facings, walks and attacks, at a
 // voxel a baked pixel (the game draws them at 0.55 world px a pixel).
 //   lobster voxel_proto.lobster -- <out.ppm>   (then: magick out.ppm -filter box -resize 55% out.png)
+//   lobster voxel_proto.lobster -- <out.ppm> cultures [body,...]   (each culture's helmet and armour on its own body and on the animals)
 //   lobster voxel_proto.lobster -- <out.ppm> solo <body> [gear,...]   (one body alone at 3x: make it from scratch)
 //   lobster voxel_proto.lobster -- <out.ppm or -> parts <body> [voxels:<dir>]   (hull facing by part facing, 8 x 8; checks the part sits on the hull)
 import from "../creel/src"
@@ -406,6 +407,38 @@ elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (t
             if b.parts.length: bad += parts_faults(id, "-")
     print "bodies: {n} bodies, {bad} faults"
     assert bad == 0
+elif args.length > 1 and args[1] == "cultures":  // `cultures [body,...]`: each culture's age-3 helmet and armour on its own body and on the animals, two facings each (#505)
+    let kits = [ [ "roman", "galea,lorica" ], [ "greek", "attic,bronze" ], [ "royal", "greathelm,surcoat" ], [ "steppe", "spike,lamellar_iron" ],
+                 [ "nile", "war_crown,bronze" ], [ "han", "han_hood,han_iron" ], [ "mexica", "aztec_eagle,feather_suit" ],
+                 [ "norse", "norse_spectacle,mail" ], [ "bulgar", "spike,lamellar_iron" ], [ "forest", "acorn,bark" ] ]
+    let others = tokenize(if args.length > 2: args[2] else: "rat,frog,bear,beetle_rear,spider", ",", "")
+    vx_team_wear = "scarf"
+    vx_shadows = true
+    vx_act = ""
+    vx_stand = true
+    let cw, ch = 100, 100  // a figure's cell, cut from the bake's round its feet
+    let iw, ih = cw * (others.length + 1) * 2, ch * kits.length
+    let bg = float3 { 86.0, 120.0, 46.0 } / 255.0
+    let img = map(iw * ih): bg
+    let cell = map(vx_CELL.x * vx_CELL.y): bg
+    for(kits) kt, r:
+        for(others.length + 1) k:
+            let b = if k == 0: kt[0] else: others[k - 1]
+            let u = vx_unit_def { b, b, float3_0, float3_0, float3_0, tokenize(kt[1], ",", ""), "", false, float3_0, float3_0, float3_0, nil, culture: kt[0] }
+            vx_set_look(u, 0)
+            let f = vx_fill(vx_unit_prims(u, 0.0), vx_size_of(u), vx_on_zero(u, false))
+            for([ 5, 6 ]) facing, j:
+                for(cell.length) i: cell[i] = bg
+                vx_draw(f, facing, cell, vx_CELL.x, 0, 0)
+                let x0, y0 = 35, 175
+                for(ch) y: for(cw) x: img[(r * ch + y) * iw + (k * 2 + j) * cw + x] = cell[(y0 + y) * vx_CELL.x + x0 + x]
+    let Z = 3
+    let bytes = []::int
+    for(ih * Z) y: for(iw * Z) x:
+        let c = img[(y / Z) * iw + x / Z]
+        for(3) cc: bytes.push(clamp(int(c[cc] * 255.0), 0, 255))
+    write_file(out_path, "P6\n{iw * Z} {ih * Z}\n255\n" + vector_to_buffer(bytes, 1), 0, 1)
+    print "wrote {out_path} (each culture\'s helmet and armour on its own body, then on {others})"
 elif args.length > 2 and args[1] == "solo":  // `solo <body> [gear,...]`: one body alone, 3x, four facings standing then four walk steps (for making it from scratch)
     let kit = if args.length > 3 and not starts_with(args[3], "voxels:"): tokenize(args[3], ",", "") else: []
     let u = unit(args[2], args[2], float3_0, float3_0, kit, "", float3_0)
