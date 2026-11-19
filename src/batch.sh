@@ -71,6 +71,7 @@ else
 	for i in 0 1 2 3; do add test_ai.$i "$L" test_ai.lobster -- shard:$i/4; done
 	add test_2v2 "$L" test_2v2.lobster
 	add test_mod_match "$L" test_mod_match.lobster
+	add test_steading "$L" test_steading.lobster   # the economy mod: 15 minutes of a stocked town, twice (#524)
 	add test_units_plain "$L" test_units_plain.lobster
 	add test_hooks "$L" test_hooks.lobster
 	add air_click ./air_check.sh "$bakes" novsync   # a click takes an aircraft where it's drawn
