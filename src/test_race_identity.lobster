@@ -334,14 +334,17 @@ def g_kills():
     steps(400)
     expect(lost[1] == 1 and stock[gold][0] == g0 + 5, "aztec: a kill brought in 5 gold (lost {lost[1]}, gold {g0} -> {stock[gold][0]})")
 
-// The same walk (as in g_web) with no web: how far it gets in 120 ticks.
+// The walk through the web, in ticks: long enough to cross all of it (the web is 3 tiles across, 4.5 tiles ahead).
+let WEB_WALK = 200
+
+// The same walk (as in g_web) with no web: how far it gets in WEB_WALK ticks.
 def walk_without_web() -> int:
     new_world([ "forest spiders", "forest humans" ], bare())
     let walker = spawn(1, "spear", 14500, 14000, 1)[0]
     issue_cmd(1, CMD_STANCE, [ walker ], PASSIVE, 0, 0, 0)
     steps(36)
     issue_cmd(1, CMD_MOVE, [ walker ], 14500, 26000, 0, 0)
-    steps(120)
+    steps(WEB_WALK)
     return u_y[index_of(walker)] - 14000
 
 def web_run() -> [int]:
@@ -383,7 +386,7 @@ def g_web():
     issue_cmd(1, CMD_MOVE, [ walker ], 14500, 26000, 0, 0)    // straight through the web
     issue_cmd(1, CMD_MOVE, [ free_one ], 26000, 26000, 0, 0)  // the same walk in the open
     var slowed = false
-    for(120):
+    for(WEB_WALK):
         step()
         slowed = slowed or slowed_now(walker)
     let dw = u_y[index_of(walker)] - 14000
