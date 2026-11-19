@@ -439,8 +439,7 @@ Honest, plain, each one checkable against the kit:
 - Mods with code need the desktop builds; Android takes data-only mods.
 
 What we shouldn't say yet: that a whole new game is easy (it's "possible, with the template", until row 18 is done and
-someone outside has done it), or that the kit is large (it's small and growing, as `docs/business.md` says about
-public copy).
+someone outside has done it), or that the kit is large (it's small and growing).
 
 ## 5. Verdicts
 

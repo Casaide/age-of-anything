@@ -2,7 +2,7 @@
 
 The game had no icon (project.godot used Godot's default, no logo file anywhere). It needs one square mark for the
 favicon (16-32 px), the Discord server icon, the Godot app icon and the Steam Deck / library tile (128-512 px), and it
-mustn't depend on the name: "Age of Anything" is a working title until the trademark check (`docs/business.md` §4).
+mustn't depend on the name: "Age of Anything" is a working title until the trademark check.
 A wordmark comes later, once the name is settled. Nothing is wired into the game until Dominic picks (D-080).
 
 **The sheet:** `sheet_i1.png`: every option at 16, 32, 64, 128 and 512 px on dark and on light, the 16 and 32 again at

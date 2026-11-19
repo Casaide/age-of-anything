@@ -2,7 +2,7 @@
 
 Invite: https://discord.gg/TvNmm7pEd (on the website: header, the Discord section, the structured data).
 Written 2026-10-19 for Dominic to paste in; every field is within Discord's limits (checked by script). Plain words,
-same writing rules as the site (`docs/business.md` §5): no other games named, nothing "hand-made".
+same writing rules as the site: no other games named, nothing "hand-made".
 
 ## Server Settings → Overview
 

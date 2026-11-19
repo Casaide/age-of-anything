@@ -35,7 +35,7 @@ The engine needs its own name only when it's shown on its own (a "Made with" lin
 
 **Picked: Creel** (2026-11-03, D-208; mock site in `docs/engine/site-mockup/`). Claude's three were **Creel**, **Pincer**, **Ballast**. These were web searches only, not trademark searches. Before a
 pick goes public, check the trademark registers (USPTO, EUIPO, UK IPO), Steam, GitHub, npm and the domain, as the
-game's own name check in `docs/business.md` §4 asks.
+game's own name check does.
 
 ### Logo and wordmark ideas (in words)
 
@@ -54,8 +54,7 @@ with the game's own icon.
 
 - In the game: one small line on the boot screen under the game's icon (`src/game/boot.lobster`), "Made with
   &lt;name&gt;", and the engine and Lobster in the credits ("Lobster, by Wouter van Oortmerssen, Apache 2.0").
-- On the website (`~/Dev/casaide/age-of-anything-website`): nothing until the Modding page (Early Access in
-  `docs/business.md` §5). Then the Modding page says what the engine is and links its docs. A separate engine site
+- On the website (`~/Dev/casaide/age-of-anything-website`): nothing until the Modding page goes up. Then the Modding page says what the engine is and links its docs. A separate engine site
   only once the engine is public and has a user who isn't us.
 - On the Steam page: not needed. The players buy the game.
 - In the repo, code and docs: no commercial games named, as everywhere else; Spring and Recoil (open source) are fine.
@@ -241,7 +240,7 @@ A pack is a folder (in development) or a zip (to share), with a manifest. The ga
   docs). The signature `id@version#hash` already goes into race keys; the same string is what a lobby compares.
 - Multiplayer: the host's pack list (in load order, with signatures) is in the LAN answer and the lockstep handshake
   (`src/net/lan.lobster`, `src/net/lockstep.lobster`); a joiner with a different list is refused with which pack
-  differs. Every install ships every official pack (`docs/business.md`'s "the host owns it"), so era packs never
+  differs. Every install ships every official pack (the host owns it), so era packs never
   split a lobby.
 - Saves record the pack list; loading without one of them is refused with its name; a save from before packs loads
   as the base pack alone (D-141).
@@ -412,16 +411,8 @@ reserved). The options when it matters:
 | Source-available | our own terms, or a "free to read and mod, not to sell" licence, or one that opens after some years | Modders can see everything; we keep control. Less goodwill than a real open licence, and more to write |
 | Closed for now | none | Decide before Early Access, when the Modding page goes up |
 
-What `docs/business.md` implies:
-
-- The money is the game and its era packs (premium, bought once). The engine isn't sold, and an open engine doesn't
-  give away what's sold: the content is the product.
-- Every install ships every pack's data ("the host owns it"), so a pack's data isn't secret anyway; ownership is a
-  Steam check in the lobby. An open engine doesn't change that.
-- Mods, the Workshop and race sharing stay free; a readable engine helps the modders, which is how the genre's games
-  lived for decades.
-- Someone could ship a game on an open engine. With a permissive licence that's allowed; with MPL they must share
-  their engine changes. Neither costs us sales.
+Either way, every install ships every pack's data (the host owns it), and mods, the Workshop and race sharing stay
+free; a readable engine helps the modders.
 
 Third-party licences to keep straight either way: Lobster (Apache 2.0: keep its notice), SDL (zlib), the fonts
 (Cinzel, OFL), and the JIT's libtcc, which is LGPL: check how the Deck and Mac builds link it before a release.
@@ -494,8 +485,7 @@ from the command line. Real footage only, and no implying a finished second game
 Then, after Dominic picks: the name in the boot screen and credits, licence files, `engine/README.md`, and
 `docs/modding.md` split into the engine's pack format and the game's parts kit (about 1 day).
 
-In all, about 4 to 6 weeks of sessions. Steps 1 to 4 could come before the demo build (`docs/business.md`: December
-to January) if modding is to be in it; 5 to 8 can wait until after Next Fest without costing anything.
+In all, about 4 to 6 weeks of sessions. Steps 1 to 4 could come before the demo build if modding is to be in it; 5 to 8 can wait until after Next Fest without costing anything.
 
 ## 6. Risks, and what not to do yet
 
