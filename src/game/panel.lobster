@@ -225,7 +225,8 @@ def build_btn(k:int) -> Btn:
     b.tip = building_tip(k)
     return b
 
-def build_buttons(out:[Btn]):  // the build pages: a worker's, or the town's when the rules build from the town
+// The build pages: a worker's, or the town's when the rules build from the town.
+def build_buttons(out:[Btn]):
     if build_menu:  // (B: every building, on the number keys)
         for(buildable()) k:
             let b = build_btn(k)
