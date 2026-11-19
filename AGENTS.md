@@ -15,7 +15,7 @@ macOS and the Steam Deck.
 | `docs/mvp-plan.md` | The 10-minute demo: scope, cut list, architecture, milestone overview, metrics, risks |
 | `docs/milestones/` | One file per milestone: plan, checklist, results, changes. Status lives here |
 | `docs/research.md` | Technical reference and sources (lockstep, pathing, Holepunch bridge) |
-| [Issues](https://github.com/Drache93/age-of-whatever/issues) | The backlog, bugs and upstream Lobster changes |
+| [Issues](https://github.com/Casaide/age-of-anything/issues) | The backlog, bugs and upstream Lobster changes |
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
 | `docs/market-context.md` | Why this game, why now (industry, genres, engines) |
 | `docs/business.md` | How the game earns (Steam, Early Access, era packs) and the website plan; open questions |
