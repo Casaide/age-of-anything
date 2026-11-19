@@ -1032,7 +1032,7 @@ def make_match() -> bool:
     ai_levels = []
     if starts_with(front_choice, "load:"):
         if not load_saved(front_choice.substring(5, front_choice.length - 5)): return false
-    net_swarm_stop()  // (the last match's)
+    net_swarm_stop()                                                     // (the last match's)
     if join_ip != "" and fe_guests.length and fe_guests[0].world != "":  // joined in the host's lobby (#519): it sent the match
         let g = fe_guests[0]
         link = g.link
