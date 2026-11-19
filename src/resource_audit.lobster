@@ -171,7 +171,7 @@ def play(races:[JV], full:[bool], peace:bool, title:string):
     let idle_sum = map(players): 0
     let far_sum = map(players): 0
     var looks = 0
-    var step_s = 0.0
+    var sim_s = 0.0
     var bot_s = 0.0
     var worst = 0.0
     while tick < minutes * MIN and winner < 0:
@@ -180,7 +180,7 @@ def play(races:[JV], full:[bool], peace:bool, title:string):
         let t1 = seconds_elapsed()
         wstep()
         let t2 = seconds_elapsed()
-        step_s += t2 - t1
+        sim_s += t2 - t1
         bot_s += t1 - t0
         worst = max(worst, t2 - t1)
         for(players) p:
@@ -206,7 +206,7 @@ def play(races:[JV], full:[bool], peace:bool, title:string):
                 line += "  | P{p} a{ages[p]} " + pad_left(string(n), 2) + "w " + pad_left(string(idle), 2) + "i " + pad_left(string(far), 2) + "f  +" + slash(got) + "  left " + slash(left[p])
             line += "  | mid " + slash(left[players])
             print line
-    print "  ended {clock(tick)}, winner {winner}; sim tick avg " + fixed_str(step_s * 1000.0 / max(1, tick), 2) + " ms (worst " + fixed_str(worst * 1000.0, 1) +
+    print "  ended {clock(tick)}, winner {winner}; sim tick avg " + fixed_str(sim_s * 1000.0 / max(1, tick), 2) + " ms (worst " + fixed_str(worst * 1000.0, 1) +
         " ms), bots " + fixed_str(bot_s * 1000.0 / max(1, tick), 2) + " ms a tick"
     for(players) p:
         let outs = map(num_resources) r: resource_names[r] + " " + (if ran_out[p][r] >= 0: clock(ran_out[p][r]) elif start_left[p][r] > 0: "never" else: "none there")
