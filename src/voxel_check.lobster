@@ -189,6 +189,23 @@ def sat(c:float3) -> float:
 
 let KIT = [ "galea", "lorica" ]  // the heaviest worn kit
 
+// every material the kit's gear is drawn in, anywhere in its entries in gear.json
+def kit_mats_in(v:JV, out:[string]) -> void:
+    if v.kind == J_OBJ:
+        for(v.a) x, i:
+            let k = v.keys[i]
+            if k == "mat" and x.kind == J_STR: out.push(x.s)
+            elif k == "mats" and x.kind == J_OBJ: for(x.a) m: if m.kind == J_STR: out.push(m.s)
+            else: kit_mats_in(x, out)
+    elif v.kind == J_ARR:
+        for(v.a) x: kit_mats_in(x, out)
+
+def kit_materials() -> [string]:
+    let gear = gobj(parse_json(read_file("../data/voxel/gear.json") or "\{\}"), "gear")
+    let out = []
+    for(KIT) g: kit_mats_in(gobj(gear, g), out)
+    return out
+
 let OWN = [ "skin", "pale", "mark", "hair", "eye", "mouth", "pink", "tail" ]  // a creature's own materials
 let shapes = []::[bool]
 let shapes3 = []::[bool]  // three quarters on
@@ -227,6 +244,9 @@ for(bodies) id, bi:
         let file = parse_json(read_file("../data/voxel/bodies/" + vx_body_of(id).id + ".json") or "\{\}")
         let own_mats = OWN.copy()
         if (find(gobj(file, "mats").a) m: m.kind == J_STR and m.s == "team") >= 0: own_mats.push("team")
+        // (and so are its other drawn materials, the forest's moss and bark (#497), but never one the kit is drawn in)
+        let kit_mats = kit_materials()
+        for(gobj(file, "mats").a) m: if m.kind == J_STR and m.s != "team" and (find(kit_mats) n: n == m.s) < 0 and (find(own_mats) n: n == m.s) < 0: own_mats.push(m.s)
         var shows = 1.0
         for([ 1, 3, 5, 7 ]) f:
             mask(kit, f)

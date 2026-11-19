@@ -410,7 +410,7 @@ elif args.length > 1 and args[1] == "bodies":  // `bodies`: every body loaded (t
 elif args.length > 1 and args[1] == "cultures":  // `cultures [body,...]`: each culture's age-3 helmet and armour on its own body and on the animals, two facings each (#505)
     let kits = [ [ "roman", "galea,lorica" ], [ "greek", "attic,bronze" ], [ "royal", "greathelm,surcoat" ], [ "steppe", "spike,lamellar_iron" ],
                  [ "nile", "war_crown,bronze" ], [ "han", "han_hood,han_iron" ], [ "mexica", "aztec_eagle,feather_suit" ],
-                 [ "norse", "norse_spectacle,mail" ], [ "bulgar", "spike,lamellar_iron" ] ]
+                 [ "norse", "norse_spectacle,mail" ], [ "bulgar", "spike,lamellar_iron" ], [ "forest", "acorn,bark" ] ]
     let others = tokenize(if args.length > 2: args[2] else: "rat,frog,bear,beetle_rear,spider", ",", "")
     vx_team_wear = "scarf"
     vx_shadows = true
