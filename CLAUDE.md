@@ -24,15 +24,22 @@ macOS and the Steam Deck.
 
 Before starting a milestone, read `docs/milestones/<its file>.md` (and the related parts of
 `docs/mvp-plan.md`), write the plan into the milestone file, and keep its checklist current. If you postpone something,
-open an issue labelled `backlog` rather than deleting it.
+open an issue for it rather than deleting it.
 
 ## Issues, commits and pushes (Dominic, 2026-11-04)
 
 Things were getting out of hand: uncommitted work, overlapping engine changes, nothing to say why. These are not optional.
 
 **Issue first.** Everything we implement gets a GitHub issue before any code is written, saying the problem, the plan and how
-we'll know it's done. Find or open it first; a fix found while working gets its own issue. The backlog is issues (`backlog`), and
-so are bugs (`bug`). Commit messages name the issue (`#12`), and close it when it's actually done, with the evidence in it.
+we'll know it's done. Find or open it first; a fix found while working gets its own issue. The backlog is open issues. Labels:
+`type: bug`, `type: feature`, `type: chore`, `type: perf`, `type: docs`; `area: engine` for Creel work, `upstream: lobster` for Lobster
+changes; `status: needs-triage`, `status: needs-decision`, `status: blocked`; `platform: mac`, `platform: android`, `platform: deck`.
+Commit messages name the issue (`#12`), and close it when it's actually done, with the evidence in it.
+
+**Conventional Commits, branch names, no chat links** (Dominic, 2026-11-19, [CONTRIBUTING.md](CONTRIBUTING.md)). Commits and PR titles
+are `type(scope): summary` (the `PR title` check fails others). Branches are `type/<issue>-<short-description>`, e.g. `ci/540-fix-main`,
+never `claude/...`, even when a session names one. No links to Claude threads, sessions or projects in issues, PRs, commits or comments,
+and no `Claude-Session:` trailers. `main` is protected: everything lands through a PR.
 
 **Commit.** Commit each tested piece straight away, by file name, so nothing sits uncommitted: `git status` is clean at the end of
 every task. Run `src/lint.sh` and the piece's tests first. Scratch goes in `.gitignore`d places, never left lying around.
@@ -50,7 +57,7 @@ and tracking `fork/master` (Dominic, 2026-11-06, #256; the old `game` branch is 
   with `--force-with-lease` (the one allowed force push). Stop and report if anything is unpushed or uncommitted.
 - It's upstream master plus one commit per fix, however big, with a message detailed enough to split it into several commits or PRs
   later. `bin/lobster` is always built from a clean checkout of it. No stashes, no uncommitted changes, no patching the engine in a game build.
-- Every change to Lobster has its own `upstream-lobster` issue here, opened first and separate from the game issue that needed
+- Every change to Lobster has its own `upstream: lobster` issue here, opened first and separate from the game issue that needed
   it: what it does, whether it's Lobster's bug or ours, the evidence, and the plan to take it upstream (its PR once open).
   `reports/lobster-fork.md` gets a row for it in the same piece of work. The game issue and PR link to it.
 - Before changing Lobster, prove the fault is Lobster's and not our code. Reproduce it without the game if you can, measure with and
