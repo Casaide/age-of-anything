@@ -437,6 +437,7 @@ def lighten(c:float4, k:float) -> float4: return float4 { c.x + (1.0 - c.x) * k,
 // Dust and critters, in canvas units (under the 1.5 scale), a few art pixels each.
 def draw_town():
     draw_building_fx()
+    draw_road_drag()
     gl.set_shader("color")
     let px = 1.0 / 1.5
     for(town_puffs) p:

@@ -255,6 +255,7 @@ import .view.vox
 import .view.voxel
 import .game.voxel_units
 
+import .game.roads
 import .game.town  // (here: it uses the views)
 import .game.glows
 import .game.world_draw
@@ -264,9 +265,10 @@ import .game.match_loop
 // finished buildings and the nearest food and wood; the hub and resource ends picked once. An
 // enemy's only run between the buildings you've seen. Re-planned when the finished count changes.
 def refresh_paths() -> bool:
+    let roads_new = road_paths()  // (roads laid and planned, game/roads; a match with roads to lay has no worn paths)
     var count = 0
     let owners = []::PathOwner
-    for(su_races) race, p:
+    for(if rd_names.length: []::JV else: su_races) race, p:
         let mine = []::int
         for(b_id.length) b:
             if b_owner[b] == p and b_done[b] == 1 and not wall_like(b) and (teams[p] == teams[ME] or fog[ME][b_cy[b] * W + b_cx[b]] != 0):
@@ -290,7 +292,7 @@ def refresh_paths() -> bool:
             for(path_anchor_res.get(p, [])) t: targets.push(t)
             let w = get(st, "width")
             owners.push(PathOwner { gstr(st, "style", "trail"), if w: as_float(w) else: 0.36, hub, targets })
-    if count == path_count: return false
+    if count == path_count and not roads_new: return false
     path_count = count
     path_plan(owners)
     paint_paths()
@@ -1313,6 +1315,8 @@ def view_reset():
     path_anchor_hub.clear()
     path_anchor_res.clear()
     path_count = -1
+    road_painted = []
+    road_from = int2 { -1, -1 }
     ground_tick = -1000
     paths_tick = -1000
     mask_version = -1
@@ -1617,7 +1621,7 @@ def play_match():
                 touch_wants_menu = false
             if not padded and not touch_play and not typing_text: scroll()
             keys()
-            if not padded and not panel_click(mouse_px()): mouse()
+            if not padded and not panel_click(mouse_px()) and not road_mouse(): mouse()
         perf_lap(0)
         if drawing():  // (minimised: the sim plays on, nothing is drawn)
             gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
