@@ -1,4 +1,5 @@
 {
+ "_doc": "A bear as a storybook warrior (#504, Dominic picked option A, 2026-11-19): upright on two short thick legs like a person, a round plump body with a tan belly, a big round head about a third of its height, small round ears high on the crown, a short tan muzzle with a black nose, and real arms that hold a weapon and a shield. Soft and round everywhere; no hump, no forward lean. Team colour: the scarf.",
  "skin": "#6b4529",
  "pale": "#c79a62",
  "fur": 0.08,
@@ -7,46 +8,46 @@
   "pelvis": {
    "at": [
     0,
-    -1.2,
-    13.6
+    0,
+    11.3
    ],
-   "bob": 0.6
+   "bob": 0.5
   },
   "chest": {
    "at": [
     0,
-    5.0,
-    21.6
+    0.4,
+    18.5
    ],
-   "bob": 0.6
+   "bob": 0.5
   },
   "head": {
    "at": [
     0,
-    10.6,
+    0.9,
     25.4
    ],
-   "bob": 0.5
+   "bob": 0.4
   }
  },
  "legs": [
   {
    "hip": [
     "pelvis",
-    3.4,
+    2.7,
     0,
-    -1.4
+    -1.0
    ],
    "foot": [
-    4.0,
-    0.0,
-    1.9
+    3.0,
+    0.3,
+    1.7
    ],
-   "stride": 5.0,
-   "lift": 2.2,
+   "stride": 4.0,
+   "lift": 1.8,
    "bones": [
-    5.4,
-    5.4
+    4.29,
+    4.29
    ],
    "pole": [
     0,
@@ -54,10 +55,10 @@
     0
    ],
    "r": [
-    4.1,
-    2.7,
-    2.3,
-    1.8
+    3.4,
+    2.6,
+    2.4,
+    2.1
    ],
    "mats": [
     "skin",
@@ -68,41 +69,21 @@
      "cap": [
       "ankle",
       0,
-      0.2,
-      -0.6
+      0,
+      0
      ],
      "to": [
       "ankle",
       0,
-      3.2,
-      -1.2
+      2.5,
+      -0.9
      ],
      "r": [
-      1.9,
-      1.6
+      2.1,
+      1.8
      ],
      "mat": "skin",
-     "_doc": "a broad flat paw"
-    },
-    {
-     "cap": [
-      "ankle",
-      0,
-      3.5,
-      -1.5
-     ],
-     "to": [
-      "ankle",
-      0,
-      4.2,
-      -1.7999999999999998
-     ],
-     "r": [
-      0.9,
-      0.45
-     ],
-     "mat": "hair",
-     "_doc": "claws"
+     "_doc": "the foot, a round pad"
     }
    ]
   }
@@ -110,12 +91,12 @@
  "arms": {
   "shoulder": [
    "chest",
-   4.4,
-   1.0,
-   -1.4
+   7.3,
+   0.8,
+   0.2
   ],
-  "bone": 7.0,
-  "thick": 1.9,
+  "bone": 6.4,
+  "thick": 2.4,
   "sleeve": "skin",
   "hand": "skin"
  },
@@ -123,10 +104,10 @@
   "at": [
    "head",
    0,
-   -0.4,
-   1.6
+   -0.2,
+   1.8
   ],
-  "r": 3.2
+  "r": 4.6
  },
  "armour": {
   "a": [
@@ -139,151 +120,170 @@
    "chest",
    0,
    0.2,
-   0.0
+   1.0
   ],
   "r": [
-   5.6,
-   5.9
+   7.4,
+   6.8
   ]
  },
  "shapes": [
   {
    "cap": [
     "pelvis",
-    1.2,
+    1.4,
     0,
-    0
+    -0.5
    ],
    "to": [
     "chest",
     1.2,
     0,
-    0
+    0.5
    ],
    "r": [
-    4.75,
-    4.95
+    6.1,
+    5.4
    ],
    "mat": "skin",
    "mirror": true,
-   "_doc": "the barrel"
+   "_doc": "the round body, wider than deep: two capsules side by side"
+  },
+  {
+   "cap": [
+    "pelvis",
+    0,
+    2.7,
+    0.4
+   ],
+   "to": [
+    "chest",
+    0,
+    1.7,
+    -2.6
+   ],
+   "r": [
+    4.8,
+    3.8
+   ],
+   "mat": "pale",
+   "_doc": "the tan belly"
   },
   {
    "cap": [
     "chest",
     0,
-    2.4,
-    0.8
+    0,
+    2.0
    ],
    "to": [
     "head",
     0,
-    -1.4,
-    -0.2
+    -0.2,
+    -2.0
    ],
    "r": [
-    4.4,
-    3.2
+    4.6,
+    4.3
    ],
    "mat": "skin",
-   "_doc": "the thick neck"
+   "_doc": "no neck to speak of"
+  },
+  {
+   "ball": [
+    "head",
+    1.0,
+    0,
+    0
+   ],
+   "r": 4.5,
+   "mat": "skin",
+   "mirror": true,
+   "_doc": "the big round head"
   },
   {
    "cap": [
     "head",
     0,
-    -1.0,
-    0.3
-   ],
-   "to": [
-    "head",
-    0,
-    0.9,
-    0.2
-   ],
-   "r": [
-    3.1,
-    2.7
-   ],
-   "mat": "skin",
-   "_doc": "the broad skull"
-  },
-  {
-   "cap": [
-    "head",
-    0,
-    1.4,
-    -0.6
+    2.8,
+    -1.1
    ],
    "to": [
     "head",
     0,
     5.0,
-    -1.4
+    -1.5
    ],
    "r": [
-    1.9,
-    1.2
+    2.5,
+    2.0
    ],
    "mat": "pale",
-   "_doc": "the muzzle"
+   "_doc": "the short muzzle"
   },
   {
    "bead": [
     "head",
     0,
-    5.3,
-    -1.1
+    6.3,
+    -0.7
    ],
-   "r": 0.95,
+   "r": 1.05,
    "mat": "eye",
    "_doc": "the nose"
   },
   {
    "bead": [
     "head",
-    1.5,
-    1.6,
-    0.9
+    1.8,
+    4.0,
+    1.0
    ],
-   "r": 0.4,
+   "r": 0.5,
    "mat": "eye",
-   "mirror": true
+   "mirror": true,
+   "_doc": "an eye"
   },
   {
    "ball": [
     "head",
-    2.2,
-    -1.0,
-    2.4
+    3.3,
+    -0.5,
+    3.5
    ],
-   "r": 1.25,
+   "r": 1.8,
    "mat": "skin",
    "mirror": true,
-   "_doc": "small round ears"
+   "_doc": "a round ear high on the crown"
   },
   {
-   "ring": [
-    "chest",
+   "ball": [
+    "head",
+    3.45,
+    0.3,
+    3.6
+   ],
+   "r": 1.0,
+   "mat": "pale",
+   "mirror": true
+  },
+  {
+   "ball": [
+    "pelvis",
     0,
-    3.0,
-    1.4
+    -6.0,
+    -1.2
    ],
-   "r": [
-    4.5,
-    0.75
-   ],
-   "mat": "team",
+   "r": 1.6,
+   "mat": "skin",
    "unless": [
-    "armour"
+    "seated"
    ],
-   "_doc": "team scarf at the neck"
+   "_doc": "the stub tail"
   }
  ],
- "_doc": "A grizzly half-reared to fight: about 30 tall, the torso leaning forward about 45 degrees over short thick hind legs, weight back, forelegs free and of bear length (reaching to the knee), a broad head low and forward, small round ears, tan muzzle, black nose. Team colour: a cloth over the shoulders.",
  "check": {
-  "knees": 70,
-  "_doc": "half-reared on bent hind legs"
+  "_doc": "stands upright on short straight legs"
  },
  "also": [
   "bear_black",
@@ -291,7 +291,7 @@
  ],
  "mark": "#9c7450",
  "seat": {
-  "z": 13.5,
+  "z": 14.0,
   "astride": [
    "skin",
    "skin",
@@ -307,6 +307,133 @@
   },
   {
    "skin": 1.12
+  }
+ ],
+ "plates": [
+  {
+   "box": [
+    "chest",
+    0,
+    5.6,
+    -0.4
+   ],
+   "n": [
+    0,
+    1,
+    0.12
+   ],
+   "half": [
+    4.0,
+    0.6,
+    4.4
+   ],
+   "round": 0.4,
+   "mat": "plate",
+   "_doc": "chest plate"
+  },
+  {
+   "box": [
+    "chest",
+    0.0,
+    5.25,
+    -0.442
+   ],
+   "n": [
+    0,
+    1,
+    0.12
+   ],
+   "half": [
+    4.5,
+    0.36,
+    4.9
+   ],
+   "round": 0.4,
+   "mat": "plate_edge"
+  },
+  {
+   "box": [
+    "chest",
+    0,
+    6.0,
+    3.6
+   ],
+   "n": [
+    0,
+    1,
+    0.12
+   ],
+   "half": [
+    2.8,
+    0.42,
+    0.45
+   ],
+   "round": 0.4,
+   "mat": "team"
+  },
+  {
+   "box": [
+    "chest",
+    0,
+    -5.4,
+    1.2
+   ],
+   "n": [
+    0,
+    -1,
+    0.3
+   ],
+   "half": [
+    4.4,
+    0.6,
+    4.0
+   ],
+   "round": 0.4,
+   "mat": "plate",
+   "_doc": "back plate"
+  },
+  {
+   "box": [
+    "chest",
+    0.0,
+    -5.050000000000001,
+    1.095
+   ],
+   "n": [
+    0,
+    -1,
+    0.3
+   ],
+   "half": [
+    4.9,
+    0.36,
+    4.5
+   ],
+   "round": 0.4,
+   "mat": "plate_edge"
+  },
+  {
+   "ball": [
+    "chest",
+    6.6,
+    0.4,
+    1.4
+   ],
+   "r": 2.5,
+   "mat": "plate",
+   "mirror": true,
+   "_doc": "a pauldron, standing out"
+  },
+  {
+   "ball": [
+    "chest",
+    7.6,
+    0.4,
+    1.0
+   ],
+   "r": 1.9,
+   "mat": "plate_edge",
+   "mirror": true
   }
  ]
 }
