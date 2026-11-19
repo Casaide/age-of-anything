@@ -5,7 +5,8 @@
    "road",
    "school",
    "sawmill",
-   "inn"
+   "inn",
+   "bakery"
   ]
  },
  "buildings": {
@@ -64,7 +65,7 @@
   "school": {
    "extends": "house",
    "name": "School",
-   "desc": "Teaches the town's people: new villagers, and woodcutters and stone cutters for the huts. Each goes to work where it's needed.",
+   "desc": "Teaches the town's people: new villagers, and woodcutters, stone cutters, farmers, millers and bakers for the workplaces. Each goes to work where it's needed.",
    "hotkey": "C",
    "pop": 0,
    "house": false,
@@ -73,7 +74,11 @@
    "trains": [
     "worker",
     "woodcutter",
-    "stonecutter"
+    "stonecutter",
+    "sawyer",
+    "farmer",
+    "miller",
+    "baker"
    ],
    "cost": {
     "wood": 0,
@@ -84,7 +89,10 @@
   "sawmill": {
    "extends": "lumber_camp",
    "name": "Sawmill",
-   "desc": "Saws one log into two planks.",
+   "desc": "A sawyer works here: saws one log into two planks. Nothing is sawn while the sawyer is away.",
+   "staff": {
+    "sawyer": 1
+   },
    "hotkey": "S",
    "drop_off": [],
    "cost": {
@@ -131,7 +139,7 @@
   "inn": {
    "extends": "house",
    "name": "Inn",
-   "desc": "Feeds the town: hungry workers eat here. One food makes three meals, so it feeds more for less than the storehouse does (a whole food a meal). Carriers keep it stocked.",
+   "desc": "Feeds the town: hungry workers eat here. One loaf makes three meals, so it feeds more for less than the storehouse does (a whole loaf a meal). Carriers keep it stocked with bread.",
    "hotkey": "D",
    "serves": 3,
    "pop": 0,
@@ -139,7 +147,7 @@
    "roles": [],
    "note": "",
    "holds": {
-    "food": 12
+    "bread": 12
    },
    "cost": {
     "wood": 0,
@@ -151,13 +159,94 @@
    "remove": true
   },
   "farm": {
-   "remove": true
+   "name": "Farm",
+   "desc": "A farmer works here: reaps the wheat, leaves the grain for the carriers and sows the field again.",
+   "size": 3,
+   "water": false,
+   "becomes": {
+    "land": "wheat"
+   },
+   "food": 40,
+   "reseed": {
+    "food": 0,
+    "wood": 0
+   },
+   "cost": {
+    "wood": 0,
+    "plank": 6
+   },
+   "drop_off": [
+    "grain"
+   ],
+   "holds": {
+    "grain": 8
+   },
+   "offers": [
+    "grain"
+   ],
+   "staff": {
+    "farmer": 1
+   },
+   "note": ""
   },
   "pen": {
    "remove": true
   },
   "mill": {
-   "remove": true
+   "name": "Mill",
+   "desc": "A miller works here: grinds a sack of grain into a sack of flour. Nothing is milled while the miller is away.",
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "makes": {
+    "in": {
+     "grain": 1
+    },
+    "out": {
+     "flour": 1
+    },
+    "time": 5
+   },
+   "holds": {
+    "grain": 6,
+    "flour": 6
+   },
+   "staff": {
+    "miller": 1
+   },
+   "note": ""
+  },
+  "bakery": {
+   "extends": "mill",
+   "name": "Bakery",
+   "desc": "A baker works here: bakes a sack of flour into two loaves. Nothing is baked while the baker is away.",
+   "hotkey": "V",
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "makes": {
+    "in": {
+     "flour": 1
+    },
+    "out": {
+     "bread": 2
+    },
+    "time": 6
+   },
+   "holds": {
+    "flour": 4,
+    "bread": 8
+   },
+   "staff": {
+    "baker": 1
+   },
+   "note": ""
   },
   "market": {
    "remove": true

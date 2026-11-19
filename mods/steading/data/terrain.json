@@ -1,0 +1,22 @@
+{
+ "_doc": "A farm's ground (#99): wheat is a crop of grain, pooled over the field; reaped bare it's stubble, which the farmer sows again into wheat.",
+ "terrain": {
+  "wheat": {
+   "walkable": true,
+   "colour": "#b49a3e",
+   "colour2": "#a68d37",
+   "resource": "grain",
+   "depleted": "stubble",
+   "cleared": "grass",
+   "note": "a farm's wheat: its grain is pooled over its tiles; reaped bare it's stubble till sown again"
+  },
+  "stubble": {
+   "walkable": true,
+   "colour": "#7a6a3a",
+   "colour2": "#706036",
+   "reseed": "wheat",
+   "cleared": "grass",
+   "note": "a reaped field: stubble, waiting for the farmer to sow it again"
+  }
+ }
+}

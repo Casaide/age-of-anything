@@ -30,6 +30,8 @@ def hook_tick(): return
 
 def hook_can_place(p:int, k:int, cx:int, cy:int, sx:int, sy:int) -> bool: return true
 
+def hook_can_make(b:int) -> bool: return true
+
 def hook_on_order(code:int, p:int, ids:[int], x:int, y:int):
     assert code == DEPLOY and x == 0 and y == 0
     for(ids) id:

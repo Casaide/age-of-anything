@@ -70,6 +70,8 @@ lib_load("../data")
 id_load("../data")
 
 let MINUTES = 15
+let FIELD_GRAIN = 40  // the grain a sown field holds (Steading's farm)
+let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ] ]  // who works where
 let MAP = "reed_meadow"
 let T_EAT = 100  // (the mod's hunger.lua: its own task, going to eat)
 let used = mods_use([ "steading" ])
@@ -152,8 +154,12 @@ def play() -> int:
         if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
     check(by_tc == 5, "steading: the villagers start round the storehouse ({by_tc} of 5)")
     let tips = match_tips(su_rules)
-    check(tips.length == 3 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips, the first (lay a school) not yet done ({tips.length})")
+    check(tips.length == 4 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips, the first (lay a school) not yet done ({tips.length})")
     let plank0 = stock[pl][0]
+    let gr = res("grain")
+    let fl = res("flour")
+    let br = res("bread")
+    let bread0 = all_of(br)
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
     var laid = 0
@@ -164,6 +170,10 @@ def play() -> int:
     var most_builders = 0    // the most villagers building one site at once
     var site_walked = false  // someone stood on a site's cells while it went up
     var trained = false
+    var mill_up = -1          // the tick the mill was first up
+    var crafters = false      // the miller and the baker sent for
+    var mill_waited = false   // the mill held grain enough for a round with no miller yet
+    var flour_unstaffed = -1  // the flour made before the miller came
     var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
     for(MINUTES * 60 * TICK_HZ) t:
@@ -173,13 +183,24 @@ def play() -> int:
         if t == 80 and lay("mining_camp", tx + 5, ty + 6): laid++
         if t == 2400 and lay("inn", tx + 7, ty + 1): laid++  // (once the sawmill is going: planks for it first)
         if t == 140: planned = lay_road(tx - 2, ty + 4, 5)
+        if t == 600 and lay("farm", tx - 8, ty - 4): laid++  // (the food chain, #99: farm, mill, bakery)
+        if t == 700 and lay("mill", tx - 5, ty - 9): laid++
+        if t == 800 and lay("bakery", tx + 2, ty + 8): laid++
         let school = done_of("school")
         if school != 0 and not trained:
-            for([ "woodcutter", "stonecutter", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+            for([ "woodcutter", "stonecutter", "sawyer", "farmer", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
             trained = true
+        // The miller and the baker only half a minute after the mill is up: till then it holds its grain and makes nothing.
+        let mill = done_of("mill")
+        if mill != 0 and mill_up < 0: mill_up = t
+        if mill_up >= 0 and not crafters and t > mill_up + 30 * TICK_HZ and done_of("bakery") != 0:
+            flour_unstaffed = produced[fl][0]
+            for([ "miller", "baker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+            crafters = true
+        if mill != 0 and not crafters and b_hold[b_index_of(mill)][gr] >= 2: mill_waited = true
         for(u_x.length) i:
             if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])
-            if u_task[i] == GATHER and t_slot[u_kind[i]] != "woodcutter" and t_slot[u_kind[i]] != "stonecutter": gatherers_ok = false
+            if u_task[i] == GATHER and (find([ "woodcutter", "stonecutter", "farmer" ]) g: g == t_slot[u_kind[i]]) < 0: gatherers_ok = false
         wstep()
         for(b_id.length) b:
             if b_site[b].length and b_done[b] == 0 and b_progress[b] * 1000 > bt_build_ticks[b_kind[b]] * site_permille(b) + bt_build_ticks[b_kind[b]]: sites_ok = false
@@ -200,18 +221,27 @@ def play() -> int:
         let at_ = b_index_of(hook_unit_get(col_work, i))
         if u_owner[i] == 0 and at_ >= 0:
             let job = t_slot[u_kind[i]]
-            if (job == "woodcutter" and bt_name[b_kind[at_]] == "lumber_camp") or (job == "stonecutter" and bt_name[b_kind[at_]] == "mining_camp"): staffed++
+            let hut = JOBS[find(JOBS) jb: jb[0] == job]
+            if bt_name[b_kind[at_]] == hut[1]: staffed++
     print "steading: {MINUTES} min, {laid} laid, {built} built, {staffed} staffed, {most_builders} at most on a site, {ate.length} ate, {road_cells()} road; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]} (cut {gathered[w][0]}), stone {stock[st][0]} (cut {gathered[st][0]}) in store"
-    check(laid == 5 and built == 5, "steading: the school, the hut, the sawmill, the quarry and an inn are built ({built} of {laid})")
-    check(staffed == 2, "steading: a woodcutter and a stone cutter trained at the school each went to work at its hut ({staffed} of 2)")
+    check(laid == 8 and built == 8, "steading: the school, the hut, the sawmill, the quarry, an inn, a farm, a mill and a bakery are built ({built} of {laid})")
+    check(staffed == 6, "steading: a woodcutter, a stone cutter, a sawyer, a farmer, a miller and a baker trained at the school each went to work at their own ({staffed} of 6)")
     check(gatherers_ok and gathered[w][0] > 0 and gathered[st][0] > 0, "steading: wood and stone come in, cut only by the specialists ({gathered[w][0]} wood, {gathered[st][0]} stone)")
     check(planned == 5 and road_cells() == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({road_cells()} of {planned})")
     check(most_builders >= 2 and most_builders <= 3, "steading: idle villagers help build a site, no more than 3 sent at once ({most_builders})")
     check(site_walked, "steading: villagers walk across a site while it goes up")
     check(ate.length >= 3, "steading: hungry workers go to eat ({ate.length} of them)")
     check(sites_ok, "steading: no site was built ahead of its goods")
-    check((filter(tips) tip: tip_done(tip, 0, 5)).length == 3, "steading: every opening tip is done by playing the town")
+    check((filter(tips) tip: tip_done(tip, 0, 5)).length == 4, "steading: every opening tip is done by playing the town")
     check(produced[pl][0] >= 20, "steading: the sawmill makes planks ({produced[pl][0]}; {plank0} -> {stock[pl][0]} in store)")
+    let bread_eaten = bread0 + produced[br][0] - all_of(br)
+    let hungry = (filter(u_x.length) i: u_owner[i] == 0 and u_task[i] == 101).length  // (hunger.lua's T_FAINT)
+    print "steading: grain cut {gathered[gr][0]}, flour {produced[fl][0]} ({flour_unstaffed} before the miller), bread {produced[br][0]}, {bread_eaten} bread eaten, {hungry} resting hungry at the end"
+    check(gathered[gr][0] > FIELD_GRAIN, "steading: the farmer reaps grain and sows the field again ({gathered[gr][0]} cut, a field holds {FIELD_GRAIN})")
+    check(mill_waited and flour_unstaffed == 0, "steading: a mill with its grain in but no miller makes nothing ({flour_unstaffed})")
+    check(produced[fl][0] > 0 and produced[br][0] > 0, "steading: the miller mills flour and the baker bakes bread ({produced[fl][0]} flour, {produced[br][0]} bread)")
+    check(bread_eaten > 0, "steading: the town eats bread ({bread_eaten})")
+    check(hungry * 4 <= pop[0], "steading: the town lives on its own bread: at the end, hardly anyone is resting hungry ({hungry} of {pop[0]})")
     return h
 
 def store_planks() -> int:

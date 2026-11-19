@@ -4,6 +4,15 @@
  "race": "villagers",
  "animals": false,
  "topbar_stock": false,
+ "cost": {
+  "_doc": "the school's fee: every trade costs 20 food to teach (#99)",
+  "roles": {
+   "worker": {
+    "floor": 20,
+    "ceiling": 20
+   }
+  }
+ },
  "tips": [
   {
    "text": "With nothing selected, press Build: Civilian and lay a School. Your villagers bring the goods and build it.",
@@ -16,13 +25,18 @@
   {
    "text": "When the School is built, click it and train a Woodcutter: it walks to the hut and starts cutting.",
    "done": "trained"
+  },
+  {
+   "text": "Your people eat bread. Lay a Farm, a Mill and a Bakery, and train a Farmer, a Miller and a Baker at the School.",
+   "done": "laid:bakery"
   }
  ],
  "economy": {
   "model": "stocked",
   "gatherers": [
    "woodcutter",
-   "stonecutter"
+   "stonecutter",
+   "farmer"
   ],
   "builders_come": true,
   "builders_per_site": 3,
@@ -41,27 +55,36 @@
    "eaters": [
     "worker",
     "woodcutter",
-    "stonecutter"
+    "stonecutter",
+    "sawyer",
+    "farmer",
+    "miller",
+    "baker"
    ],
    "starving_pct": 50,
    "foods": [
-    "food"
+    "bread"
    ]
   },
   "hands_off": [
    "worker",
    "woodcutter",
-   "stonecutter"
+   "stonecutter",
+   "sawyer",
+   "farmer",
+   "miller",
+   "baker"
   ],
   "town_builds": true,
   "carriers": [
    "worker"
   ],
   "start": {
-   "food": 300,
+   "food": 400,
    "wood": 20,
    "stone": 20,
    "plank": 40,
+   "bread": 100,
    "workers": 5,
    "buildings": [
     "town_center"
@@ -69,7 +92,10 @@
   },
   "gather_ticks": {
    "plank": 24,
-   "_doc": "planks are sawn, never gathered; every resource needs a rate"
+   "grain": 30,
+   "flour": 24,
+   "bread": 24,
+   "_doc": "planks, flour and bread are made, never gathered; every resource needs a rate"
   }
  },
  "-roster": [
@@ -122,6 +148,46 @@
    "own_seed": true,
    "desc": "Works at a quarry: cuts the stone round it and leaves it there for the carriers",
    "noun": "Stone Cutter"
+  },
+  {
+   "slot": "sawyer",
+   "role": "worker",
+   "tier": 1,
+   "name": "Sawyer",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a sawmill: saws logs into planks",
+   "noun": "Sawyer"
+  },
+  {
+   "slot": "farmer",
+   "role": "worker",
+   "tier": 1,
+   "name": "Farmer",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a farm: reaps the wheat, leaves the grain there for the carriers and sows the field again",
+   "noun": "Farmer"
+  },
+  {
+   "slot": "miller",
+   "role": "worker",
+   "tier": 1,
+   "name": "Miller",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a mill: grinds grain into flour",
+   "noun": "Miller"
+  },
+  {
+   "slot": "baker",
+   "role": "worker",
+   "tier": 1,
+   "name": "Baker",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a bakery: bakes flour into bread",
+   "noun": "Baker"
   }
  ]
 }
