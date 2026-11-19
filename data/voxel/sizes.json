@@ -61,11 +61,11 @@
       "rides_as": 40
     },
     "bear": {
-      "size": 1.25,
+      "size": 1.35,
       "h": 81,
       "crew_k": 0.8,
       "crew_seats": 1,
-      "wide": 42
+      "wide": 62
     },
     "deer": {
       "size": 0.7,
