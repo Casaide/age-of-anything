@@ -528,6 +528,65 @@ def road_plans() -> int:
           "road plans: their goods came from the store, and the road is quicker to walk")
     return state_hash()
 
+// Ticks for a worker from (17, 2) to past (22, 2) on river_test, a 3-wide river between (the ford is rows 4-5).
+def bridge_cross() -> int:
+    let id = spawn_at(0, "worker", 17 * TILE + TILE / 2, 2 * TILE + TILE / 2)
+    issue_cmd(0, CMD_MOVE, [ id ], 24 * TILE + TILE / 2, 2 * TILE + TILE / 2, 0, 0)
+    let t0 = tick
+    for(2000):
+        tick_on()
+        if u_x[index_of(id)] >= 23 * TILE: return tick - t0
+    return 2000
+
+// Bridge plans (#51): a road plan marked bridge goes over water with land at both ends; built, it stands as a
+// bridge units cross, and breaks like a map bridge.
+def bridge_plans() -> int:
+    new_world("river_test", races0, stocked_rules(bare0), [])
+    rd_names = [ "dirt" ]
+    rd_pct = [ 150 ]
+    let hk = btype_index("house")
+    bt_road[hk] = 0
+    bt_bridge[hk] = 1
+    bt_length[hk] = 3
+    bt_size[hk] = 1
+    make_store("town_center", 200)
+    let a = b_index_of(put(0, "town_center", 6, 14, 0))
+    for(num_resources) r: stock_add(r, 0, 200)
+    t_carrier[type_of_slot(0, "worker")] = 1
+    for(3) n: spawn_at(0, "worker", 9000 + n * 600, 17000)
+    let ford = bridge_cross()
+    let held = sum(b_hold[a])
+    check(not can_place(0, hk, 18, 2, 0) and not can_place(0, hk, 20, 2, 0) and not can_place(0, hk, 19, 2, 1),
+          "bridge plans: refused on land, with an end in the water, or across the river")
+    check(can_place(0, hk, 19, 2, 0), "bridge plans: it fits over the river with land at both ends")
+    let builder = spawn_at(0, "worker", 17 * TILE + TILE / 2, 3 * TILE + TILE / 2)
+    let bridges = br_id.length
+    issue_cmd(0, CMD_BUILD, [ builder ], hk, 19, 2, 0)
+    var done_at = -1
+    for(6000) t:
+        tick_on()
+        if br_id.length > bridges:
+            done_at = t
+            break
+    let k = br_id.length - 1
+    let cells = map(3) x: 2 * W + 19 + x
+    var walked = done_at >= 0
+    for(cells) c: walked = walked and walks[0][c] == 1 and road[c] == 1 and occupied[c] == 0
+    check(walked, "bridge plans: built (at tick {done_at}), it stands as a bridge: decked, road, no plan left")
+    check(sum(b_hold[a]) < held, "bridge plans: its goods came from the store")
+    let over = bridge_cross()
+    check(over < ford, "bridge plans: the crossing is quicker over it ({over} ticks) than by the ford ({ford})")
+    bridge_hurt(k, br_full_hp)
+    var gone = br_up[k] == 0
+    for(cells) c: gone = gone and walks[0][c] == 0
+    check(gone, "bridge plans: broken like a map bridge, the deck falls")
+    return state_hash()
+
+def test_bridge_plans():
+    let h1 = bridge_plans()
+    let h2 = bridge_plans()
+    check(h1 == h2, "bridge plans: the same twice")
+
 // doors_on_roads (#51): with the rule on, a house goes up only with its door tile on a road or the player's road plan.
 def test_doors_on_roads():
     new_world("flat_test", races0, stocked_rules(bare0), [])
@@ -4895,7 +4954,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "doors_on_roads", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "doors_on_roads", "bridge_plans", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4922,6 +4981,7 @@ def run_part(name:string):
     elif name == "roads": test_roads()
     elif name == "road_plans": test_road_plans()
     elif name == "doors_on_roads": test_doors_on_roads()
+    elif name == "bridge_plans": test_bridge_plans()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()

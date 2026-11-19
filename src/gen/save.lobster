@@ -289,6 +289,7 @@ class WorldSave:
     bt_hold:[[int]]
     bt_store:[int]
     bt_road:[int]
+    bt_bridge:[int]
     bt_in:[[int]]
     bt_out:[[int]]
     bt_offer:[[int]]
@@ -823,6 +824,7 @@ def world_bytes(bots:[Bot]) -> string:
         bt_hold,
         bt_store,
         bt_road,
+        bt_bridge,
         bt_in,
         bt_out,
         bt_offer,
@@ -1370,6 +1372,7 @@ def load_world_bytes(data:string) -> [Bot]:
     bt_hold = s.bt_hold
     bt_store = s.bt_store
     bt_road = s.bt_road
+    bt_bridge = s.bt_bridge
     bt_in = s.bt_in
     bt_out = s.bt_out
     bt_offer = s.bt_offer
