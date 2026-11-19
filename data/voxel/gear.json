@@ -1,5 +1,5 @@
 {
- "_doc": "Voxel gear. `parts` maps a recipe's parts to gear, first rule that matches (part: an id or an id's prefix; tag: a tag the part has in parts.json; slot: its slot). A held item has a hand (right, left) and a hold (in holds); its shapes are in the hold's frame: [point, along, out, side] from the hand, along the held direction, out of the front, to the right. Worn gear has fits: shapes per body (bodies/<id>.json), * for any other, in the body's own frame; `helm` and `fit` are the body's helmet and armour spots. flags: what the gear tells body shapes (if / unless). foot: a foot soldier's tall shield, which reaches into a mount: no kit gives it to a rider (rider_check).",
+ "_doc": "Voxel gear. `parts` maps a recipe's parts to gear, first rule that matches (part: an id or an id's prefix; tag: a tag the part has in parts.json; slot: its slot). A held item has a hand (right, left) and a hold (in holds); its shapes are in the hold's frame: [point, along, out, side] from the hand, along the held direction, out of the front, to the right. Worn gear has fits: shapes per body (bodies/<id>.json), * for any other, in the body's own frame; `helm` and `fit` are the body's helmet and armour spots. flags: what the gear tells body shapes (if / unless). plates: worn armour on a body with no fit of its own that has `plates` (an animal) is drawn as that body's plates in this plate and edge mat (#505). foot: a foot soldier's tall shield, which reaches into a mount: no kit gives it to a rider (rider_check).",
  "holds": {
   "hang": {
    "rest": [
@@ -1541,6 +1541,7 @@
    }
   },
   "plate": {
+   "plates": {"plate": "metal", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -1554,6 +1555,7 @@
    }
   },
   "leather": {
+   "plates": {"plate": "leather", "edge": "metal"},
    "flags": [
     "armour"
    ],
@@ -1768,6 +1770,7 @@
    }
   },
   "bronze": {
+   "plates": {"plate": "bronze", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -1878,6 +1881,7 @@
    }
   },
   "lorica": {
+   "plates": {"plate": "metal", "edge": "bronze"},
    "flags": [
     "armour"
    ],
@@ -2287,6 +2291,7 @@
    }
   },
   "pectoral": {
+   "plates": {"plate": "bronze", "edge": "gold"},
    "flags": [
     "armour"
    ],
@@ -2852,6 +2857,7 @@
    }
   },
   "cuirass": {
+   "plates": {"plate": "bronze", "edge": "gold"},
    "flags": [
     "armour"
    ],
@@ -3028,6 +3034,7 @@
    ]
   },
   "mail": {
+   "plates": {"plate": "metal", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -3090,6 +3097,7 @@
    }
   },
   "surcoat": {
+   "plates": {"plate": "team", "edge": "gold"},
    "flags": [
     "armour"
    ],
@@ -3400,6 +3408,7 @@
    ]
   },
   "lamellar": {
+   "plates": {"plate": "hide", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -3467,6 +3476,7 @@
    }
   },
   "lamellar_iron": {
+   "plates": {"plate": "metal", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -3534,6 +3544,7 @@
    }
   },
   "sheepskin": {
+   "plates": {"plate": "white", "edge": "leather"},
    "flags": [
     "armour"
    ],
@@ -4223,6 +4234,7 @@
    }
   },
   "bands": {
+   "plates": {"plate": "linen", "edge": "bronze"},
    "flags": [
     "armour"
    ],
@@ -4782,6 +4794,7 @@
    }
   },
   "han_iron": {
+   "plates": {"plate": "lacquer_black", "edge": "gold"},
    "flags": [
     "armour"
    ],
@@ -5400,6 +5413,7 @@
    }
   },
   "feather_suit": {
+   "plates": {"plate": "linen", "edge": "teal"},
    "flags": [
     "armour"
    ],
@@ -5888,6 +5902,7 @@
    }
   },
   "fur_cape": {
+   "plates": {"plate": "wolf", "edge": "leather"},
    "flags": [
     "armour"
    ],

@@ -282,5 +282,15 @@
  },
  "linen": {
   "rgb": "#d9d2c0"
+ },
+ "plate": {
+  "rgb": "#b3b8c2",
+  "shine": 1.0,
+  "_doc": "a body's armour plate: drawn in the worn armour's own plate mat (gear plates)"
+ },
+ "plate_edge": {
+  "rgb": "#bd8f4d",
+  "shine": 0.9,
+  "_doc": "its rim: the armour's edge mat"
  }
 }
