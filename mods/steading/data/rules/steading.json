@@ -1,10 +1,14 @@
 {
- "_doc": "The economy mod's match (#524): a stocked economy, workers who carry, a town of wood, planks and stone. One age; no soldiers.",
+ "_doc": "The economy mod's match (#524): a stocked economy and a town of wood, planks and stone. Villagers carry and build; only woodcutters and stone cutters, trained at the school, gather, each at its hut. One age; no soldiers.",
  "extends": "default",
  "race": "villagers",
  "animals": false,
  "economy": {
   "model": "stocked",
+  "gatherers": [
+   "woodcutter",
+   "stonecutter"
+  ],
   "builders_come": true,
   "builders_per_site": 3,
   "sites_walk_over": true,
@@ -20,7 +24,9 @@
    "_doc": "every: seconds between meals; eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what a meal is (the mod's hooks/hunger.lua, #47)",
    "every": 90,
    "eaters": [
-    "worker"
+    "worker",
+    "woodcutter",
+    "stonecutter"
    ],
    "starving_pct": 50,
    "foods": [
@@ -63,6 +69,38 @@
   "hero",
   "spear",
   "infantry",
-  "skirmisher"
+  "skirmisher",
+  "worker"
+ ],
+ "+roster": [
+  {
+   "slot": "worker",
+   "role": "worker",
+   "tier": 1,
+   "name": "Villager",
+   "building": "school",
+   "desc": "Carries goods where they are wanted and builds what you lay out",
+   "noun": "Villager"
+  },
+  {
+   "slot": "woodcutter",
+   "role": "worker",
+   "tier": 1,
+   "name": "Woodcutter",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a woodcutter's hut: fells the trees round it and leaves the logs there for the carriers",
+   "noun": "Woodcutter"
+  },
+  {
+   "slot": "stonecutter",
+   "role": "worker",
+   "tier": 1,
+   "name": "Stone Cutter",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a quarry: cuts the stone round it and leaves it there for the carriers",
+   "noun": "Stone Cutter"
+  }
  ]
 }
