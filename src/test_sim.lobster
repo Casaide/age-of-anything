@@ -528,6 +528,26 @@ def road_plans() -> int:
           "road plans: their goods came from the store, and the road is quicker to walk")
     return state_hash()
 
+// doors_on_roads (#51): with the rule on, a house goes up only with its door tile on a road or the player's road plan.
+def test_doors_on_roads():
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    rd_names = [ "dirt" ]
+    rd_pct = [ 150 ]
+    let hk = btype_index("house")
+    let pk = btype_index("town_center")
+    bt_road[pk] = 0  // stands in as a road plan
+    let builder = spawn_at(0, "worker", 25000, 12000)
+    check(can_place(0, hk, 20, 10, 0), "doors on roads: off, a house goes up anywhere")
+    r_doors_on_roads = 1
+    let sx, sy = dims(hk, 0)
+    check(not can_place(0, hk, 20, 10, 0), "doors on roads: on, a house off the road is refused")
+    check(lay_foundation(0, [ builder ], hk, 20, 10, 0) == 0, "doors on roads: and its order lays nothing")
+    set_road((10 + sy) * W + 20 + sx / 2, 0)
+    check(can_place(0, hk, 20, 10, 0), "doors on roads: with road at its door it goes up")
+    check(not can_place(0, hk, 20 + sx, 10, 0), "doors on roads: road beside its door is not enough")
+    let plan = lay_foundation(0, [ builder ], pk, 34 + sx / 2, 10 + sy, 0)
+    check(plan != 0 and can_place(0, hk, 34, 10, 0), "doors on roads: a road plan at its door is enough")
+    r_doors_on_roads = 0
 def test_road_plans():
     let h1 = road_plans()
     let h2 = road_plans()
@@ -4875,7 +4895,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "doors_on_roads", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4901,6 +4921,7 @@ def run_part(name:string):
     elif name == "sites": test_sites()
     elif name == "roads": test_roads()
     elif name == "road_plans": test_road_plans()
+    elif name == "doors_on_roads": test_doors_on_roads()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
