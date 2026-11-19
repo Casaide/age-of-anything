@@ -399,6 +399,48 @@ def test_recipes():
     for(400): tick_on()
     check(b_hold[m2][st] == 4 and b_hold[m2][w] == 2 and b_make[m2] == 0, "recipes: with its out slots full it stops (stone {b_hold[m2][st]}, wood {b_hold[m2][w]})")
 
+// Building sites (Casaide/creel#59): in a stocked economy a site asks for its cost and is built as it arrives.
+def test_sites():
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_store("town_center", 200)
+    let a = b_index_of(put(0, "town_center", 10, 10, 0))
+    for(num_resources) r: stock_add(r, 0, 200)
+    let wk = type_of_slot(0, "worker")
+    t_carrier[wk] = 1
+    let builder = spawn_at(0, "worker", 25000, 12000)
+    for(4) n: spawn_at(0, "worker", 14000 + n * 600, 13000)
+    let hk = btype_index("house")
+    let before = map(num_resources) r: stock[r][0]
+    let nb = b_id.length
+    issue_cmd(0, CMD_BUILD, [ builder ], hk, 28, 10, 0)
+    for(40):
+        if b_id.length == nb: tick_on()
+    let sb = b_index_of(b_id[b_id.length - 1])
+    let cost = copy(b_site[sb])
+    var total = 0
+    for(cost) c: total += c
+    check(b_kind[sb] == hk and total > 0 and stock[res_of("wood")][0] == before[res_of("wood")],
+          "sites: a house laid pays nothing at once; its site asks for {total} goods")
+    var ahead = false
+    var last_in = -1
+    var done_at = -1
+    for(12000) t:
+        tick_on()
+        let bi = b_index_of(b_id[sb])
+        if b_done[bi] == 0:
+            if b_progress[bi] * 1000 > bt_build_ticks[hk] * site_permille(bi) + bt_build_ticks[hk]: ahead = true
+            if site_permille(bi) == 1000 and last_in < 0: last_in = t
+        elif done_at < 0:
+            done_at = t
+            break
+    let bi = b_index_of(b_id[sb])
+    var spent = true
+    for(cost) c, r: spent = spent and stock[r][0] == before[r] - c and b_hold[bi][r] == 0
+    check(done_at >= 0 and not ahead and last_in >= 0 and done_at >= last_in,
+          "sites: carriers bring the cost and the builder never runs ahead of it (all in at {last_in}, built at {done_at})")
+    check(spent and b_site[bi].length == 0 and b_hold[a][res_of("wood")] == before[res_of("wood")] - cost[res_of("wood")],
+          "sites: once built its goods are used up, and the stores hold that much less")
+
 // ------------------------------------------------------------------ small pieces
 
 def test_fixed():
@@ -4741,7 +4783,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4764,6 +4806,7 @@ def run_part(name:string):
     elif name == "stocked": test_stocked()
     elif name == "carry": test_carry()
     elif name == "recipes": test_recipes()
+    elif name == "sites": test_sites()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
