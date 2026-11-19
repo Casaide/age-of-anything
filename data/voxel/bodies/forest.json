@@ -1,0 +1,132 @@
+{
+ "_doc": "One of the forest folk in the base dress every forest unit wears (#497), drawn as forest.vox (written by tools/vox/forest.lobster) from the approved concept sheet: the Roman body's build and points, short brown hair, a moss-green knee tunic with a hem of leaves, a team sash from the left shoulder to the right hip, moss sleeves with bark bracers, bark trousers and boots. Acorn helmets, leaf hats, bark plates, shields and weapons are gear over it. The behaviour is the Roman body's.",
+ "skin": "#d0a080",
+ "pale": "#e4bc98",
+ "size": 0.73,
+ "fur": 0.0,
+ "reach": 5.0,
+ "points": {
+  "hip": {
+   "at": [
+    0,
+    0,
+    21.0
+   ],
+   "bob": 0.5
+  },
+  "chest": {
+   "at": [
+    0,
+    0.3,
+    29.6
+   ],
+   "bob": 0.5
+  },
+  "head": {
+   "at": [
+    0,
+    0.7,
+    37.1
+   ]
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "hip",
+    1.75,
+    0,
+    0
+   ],
+   "foot": [
+    1.9,
+    0,
+    1.9
+   ],
+   "stride": 5.0,
+   "lift": 2.2,
+   "bones": [
+    9.58,
+    9.58
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    2.0,
+    1.4,
+    1.3,
+    0.85
+   ],
+   "mats": [
+    "trousers",
+    "trousers"
+   ],
+   "shapes": []
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "chest",
+   4.3,
+   -0.2,
+   1.2
+  ],
+  "bone": 6.7,
+  "thick": 1.3,
+  "sleeve": "team",
+  "hand": "skin"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.3,
+   1.0
+  ],
+  "r": 2.75
+ },
+ "armour": {
+  "a": [
+   "hip",
+   0,
+   0.1,
+   2.6
+  ],
+  "b": [
+   "chest",
+   0,
+   0,
+   0.4
+  ],
+  "r": [
+   2.7,
+   3.2
+  ]
+ },
+ "seat": {
+  "z": 21.5,
+  "astride": [
+   "bark",
+   "bark",
+   "bark_light"
+  ]
+ },
+ "shapes": [],
+ "vox": "forest.vox",
+ "mats": {
+  "1": "skin",
+  "2": "lion_mane",
+  "3": "moss",
+  "4": "moss_dark",
+  "5": "leaf",
+  "6": "leaf_light",
+  "7": "team",
+  "8": "bark",
+  "9": "bark_light",
+  "10": "eye"
+ },
+ "bare": false
+}

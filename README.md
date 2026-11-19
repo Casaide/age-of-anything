@@ -45,3 +45,23 @@ Mods are folders in `mods/` (how to make one: `docs/modding.md`). Each loads onl
   carrying its goods to the site. Gather wood and stone, then build a woodcutter's hut, a sawmill and a quarry. The
   other side's bot doesn't know this economy yet, so it just sits there:
   `./play.sh lobby mods:steading rules:steading "races:villagers|villagers"`
+
+## Licence
+
+Age of Anything is free software under the GNU General Public License, version 3 (`LICENSE`). That covers the code and the
+art, models, sounds and music made for the game. You can play it, change it, make mods, fork it and even sell it, as long as
+what you share stays under GPLv3 with its source.
+
+The paid builds on Steam are the same game as this source. You're paying for the convenience: ready builds, automatic
+updates, the Workshop, and supporting the work.
+
+- **The name.** The licence covers the code and assets, not the name. "Age of Anything" and its logo belong to Casaide. A
+  fork needs its own name and must not suggest it's the official game. Mods can say they're for Age of Anything.
+- **Creel** (`creel/`), the engine, is a separate project under Apache 2.0, as is [Lobster](https://github.com/aardappel/lobster).
+- **Fonts** keep their own licence: Cinzel (`assets/fonts/`) and EB Garamond (`tools/film/fonts/`) are SIL Open Font
+  License 1.1, with the licence files next to them.
+- **Platform SDKs.** As an additional permission under section 7 of the GPLv3, you may link or combine this game with the
+  Steamworks SDK and other closed platform SDKs (consoles, app stores) needed to ship it on that platform, and distribute
+  the result. The SDKs themselves are not covered by the GPL.
+
+The code and art were made by Claude (Anthropic's AI), directed by Dominic.
