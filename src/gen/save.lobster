@@ -193,13 +193,14 @@ class WorldSave:
     u_hull:[int]
     u_lx:[int]
     u_ly:[int]
-    u_house:[int]
     u_mount:[[int]]
     u_orders:[[Cmd]]
     hook_unit_names:[string]
     hook_unit_cols:[[int]]
     hook_player_names:[string]
     hook_player_cols:[[int]]
+    hook_building_names:[string]
+    hook_building_cols:[[int]]
     hook_tick_types:[int]
     t_tags:[[int]]
     t_damage:[int]
@@ -291,7 +292,6 @@ class WorldSave:
     bt_store:[int]
     bt_road:[int]
     bt_bridge:[int]
-    bt_beds:[int]
     bt_in:[[int]]
     bt_out:[[int]]
     bt_offer:[[int]]
@@ -320,9 +320,6 @@ class WorldSave:
     r_carrier_slots:[string]
     rd_names:[string]
     rd_pct:[int]
-    r_doors_on_roads:int
-    r_born_ticks:int
-    r_foods:[int]
     road:[int]
     step_s:[int]
     step_d:[int]
@@ -732,13 +729,14 @@ def world_bytes(bots:[Bot]) -> string:
         u_hull,
         u_lx,
         u_ly,
-        u_house,
         u_mount,
         u_orders,
         hook_unit_names,
         hook_unit_cols,
         hook_player_names,
         hook_player_cols,
+        hook_building_names,
+        hook_building_cols,
         hook_tick_types,
         t_tags,
         t_damage,
@@ -830,7 +828,6 @@ def world_bytes(bots:[Bot]) -> string:
         bt_store,
         bt_road,
         bt_bridge,
-        bt_beds,
         bt_in,
         bt_out,
         bt_offer,
@@ -859,9 +856,6 @@ def world_bytes(bots:[Bot]) -> string:
         r_carrier_slots,
         rd_names,
         rd_pct,
-        r_doors_on_roads,
-        r_born_ticks,
-        r_foods,
         road,
         step_s,
         step_d,
@@ -1284,13 +1278,14 @@ def load_world_bytes(data:string) -> [Bot]:
     u_hull = s.u_hull
     u_lx = s.u_lx
     u_ly = s.u_ly
-    u_house = s.u_house
     u_mount = s.u_mount
     u_orders = s.u_orders
     hook_unit_names = s.hook_unit_names
     hook_unit_cols = s.hook_unit_cols
     hook_player_names = s.hook_player_names
     hook_player_cols = s.hook_player_cols
+    hook_building_names = s.hook_building_names
+    hook_building_cols = s.hook_building_cols
     hook_tick_types = s.hook_tick_types
     t_tags = s.t_tags
     t_damage = s.t_damage
@@ -1382,7 +1377,6 @@ def load_world_bytes(data:string) -> [Bot]:
     bt_store = s.bt_store
     bt_road = s.bt_road
     bt_bridge = s.bt_bridge
-    bt_beds = s.bt_beds
     bt_in = s.bt_in
     bt_out = s.bt_out
     bt_offer = s.bt_offer
@@ -1411,9 +1405,6 @@ def load_world_bytes(data:string) -> [Bot]:
     r_carrier_slots = s.r_carrier_slots
     rd_names = s.rd_names
     rd_pct = s.rd_pct
-    r_doors_on_roads = s.r_doors_on_roads
-    r_born_ticks = s.r_born_ticks
-    r_foods = s.r_foods
     road = s.road
     step_s = s.step_s
     step_d = s.step_d

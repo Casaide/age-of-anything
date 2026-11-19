@@ -66,6 +66,7 @@ import .gen.setup
 import .gen.race_to_types
 import .gen.modes
 import .gen.start
+import .hooks.economy
 import .view.facing
 import .view.shot_look
 import .view.node

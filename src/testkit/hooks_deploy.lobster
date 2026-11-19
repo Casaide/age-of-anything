@@ -26,6 +26,10 @@ def hook_on_death(i:int, killer:int):
 def hook_unit_tick(i:int):
     if hook_unit_get(col_deployed, i) == 0 and tick % 200 == 0: issue_cmd(u_owner[i], DEPLOY, [ u_id[i] ], 0, 0, 0, 0)
 
+def hook_tick(): return
+
+def hook_can_place(p:int, k:int, cx:int, cy:int, sx:int, sy:int) -> bool: return true
+
 def hook_on_order(code:int, p:int, ids:[int], x:int, y:int):
     assert code == DEPLOY and x == 0 and y == 0
     for(ids) id:
