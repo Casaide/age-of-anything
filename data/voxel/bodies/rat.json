@@ -425,5 +425,132 @@
  "check": {
   "knees": 110,
   "_doc": "a rat crouches on bent hind legs"
- }
+ },
+ "plates": [
+  {
+   "box": [
+    "chest",
+    0,
+    0.3,
+    -3.6
+   ],
+   "n": [
+    0,
+    0.7,
+    -0.7
+   ],
+   "half": [
+    2.1,
+    0.45,
+    2.2
+   ],
+   "round": 0.4,
+   "mat": "plate",
+   "_doc": "chest plate"
+  },
+  {
+   "box": [
+    "chest",
+    0.0,
+    0.05500000000000002,
+    -3.355
+   ],
+   "n": [
+    0,
+    0.7,
+    -0.7
+   ],
+   "half": [
+    2.6,
+    0.27,
+    2.7
+   ],
+   "round": 0.4,
+   "mat": "plate_edge"
+  },
+  {
+   "box": [
+    "chest",
+    0,
+    1.2,
+    -2.2
+   ],
+   "n": [
+    0,
+    0.7,
+    -0.7
+   ],
+   "half": [
+    1.47,
+    0.315,
+    0.45
+   ],
+   "round": 0.4,
+   "mat": "team"
+  },
+  {
+   "box": [
+    "chest",
+    0,
+    -5.2,
+    -0.8
+   ],
+   "n": [
+    0,
+    -0.7,
+    0.7
+   ],
+   "half": [
+    2.6,
+    0.45,
+    2.8
+   ],
+   "round": 0.4,
+   "mat": "plate",
+   "_doc": "back plate"
+  },
+  {
+   "box": [
+    "chest",
+    0.0,
+    -4.955,
+    -1.045
+   ],
+   "n": [
+    0,
+    -0.7,
+    0.7
+   ],
+   "half": [
+    3.1,
+    0.27,
+    3.3
+   ],
+   "round": 0.4,
+   "mat": "plate_edge"
+  },
+  {
+   "ball": [
+    "chest",
+    2.5,
+    0.0,
+    -0.2
+   ],
+   "r": 1.35,
+   "mat": "plate",
+   "mirror": true,
+   "_doc": "a pauldron"
+  },
+  {
+   "ball": [
+    "chest",
+    3.1,
+    0.0,
+    -0.4
+   ],
+   "r": 1.0,
+   "mat": "plate_edge",
+   "mirror": true
+  }
+ ]
 }
