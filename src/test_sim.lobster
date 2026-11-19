@@ -208,6 +208,57 @@ def fmt_ms(f:float) -> string:  // three decimals
     let frac = string(us % 1000)
     return string(us / 1000) + "." + "000".substring(0, 3 - frac.length) + frac
 
+// ------------------------------------------------------------------ goods in buildings (Casaide/creel#48)
+
+def stocked_rules(r:JV) -> JV:
+    let s = deep_copy(r)
+    set(at(s, "economy"), "model", jstr("stocked"))
+    return s
+
+def store_sum(r:int, p:int) -> int:
+    var n = 0
+    for(b_id.length) b:
+        if is_store(b, p): n += b_hold[b][r]
+    return n
+
+def make_store(id:string, cap:int) -> int:  // (no building is a store in the game's data: the test makes one)
+    let k = btype_index(id)
+    bt_store[k] = 1
+    bt_hold[k] = map(num_resources): cap
+    return k
+
+def test_stocked():
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    let w = res_of("wood")
+    check(r_stocked == 1 and stock[w][0] == 0, "stocked: with no store at the start, the starting goods have nowhere to be")
+    make_store("town_center", 50)
+    let a = b_index_of(put(0, "town_center", 10, 10, 0))
+    let bb = b_index_of(put(0, "town_center", 30, 30, 0))
+    check(stock_add(w, 0, 80) == 80 and b_hold[a][w] == 50 and b_hold[bb][w] == 30 and stock[w][0] == 80,
+          "stocked: 80 wood fills the first store (50) and the rest goes in the second")
+    let cost = map(num_resources) r: if r == w: 70 else: 0
+    check(can_afford(0, cost), "stocked: 70 wood is affordable from two stores")
+    pay(0, cost)
+    check(b_hold[a][w] == 0 and b_hold[bb][w] == 10 and stock[w][0] == 10, "stocked: a cost is taken from the stores in order")
+    check(stock_add(w, 0, 200) == 90 and stock[w][0] == 100 and store_sum(w, 0) == 100, "stocked: full stores refuse the rest")
+    remove_building(bb)
+    check(stock[w][0] == 50 and store_sum(w, 0) == 50, "stocked: a store takes its goods with it")
+    // A worker drops its load into the store it walks to.
+    new_world("flat_test", races0, stocked_rules(rules0), [])
+    make_store("town_center", 500)
+    var tc = -1
+    for(b_owner) o, b:
+        if tc < 0 and o == 0: tc = b
+    let wood = kind_of("wood")
+    let wi = index_of(own_workers_of(0)[0])
+    let uid = u_id[wi]
+    issue_cmd(0, CMD_GATHER, [ uid ], nearest_resource(u_x[wi], u_y[wi], wood, -1, false, false, false), 0, 0, 0)
+    for(3000):
+        tick_on()
+        if b_hold[tc][wood - 1] > 0: break
+    check(b_hold[tc][wood - 1] > 0 and stock[wood - 1][0] == store_sum(wood - 1, 0) and gathered[wood - 1][0] == b_hold[tc][wood - 1],
+          "stocked: gathered wood lands in the Town Center ({b_hold[tc][wood - 1]}) and stock is what the stores hold")
+
 // ------------------------------------------------------------------ small pieces
 
 def test_fixed():
@@ -4550,7 +4601,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4570,6 +4621,7 @@ def run_part(name:string):
     elif name == "shots": test_shots()
     elif name == "engines": test_engines()
     elif name == "trade": test_trade()
+    elif name == "stocked": test_stocked()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
