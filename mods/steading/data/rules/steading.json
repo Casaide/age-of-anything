@@ -39,7 +39,8 @@
    "plank": 40,
    "workers": 8,
    "buildings": [
-    "town_center"
+    "town_center",
+    "house"
    ]
   },
   "gather_ticks": {

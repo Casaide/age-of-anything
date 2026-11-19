@@ -140,6 +140,24 @@ def play() -> int:
     let pl = res("plank")
     let st = res("stone")
     check(r_stocked == 1 and pl >= 0 and t_carrier[u_kind[index_of(mine()[0])]] == 1, "steading: a stocked economy, planks, workers who carry")
+    var homes0 = 0
+    for(b_id.length) b:
+        if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] == btype_index("house"): homes0++
+    check(homes0 == 1 and pop[0] <= pop_cap[0], "steading: the town starts with a house, room for its workers ({pop[0]} of {pop_cap[0]})")
+    var start_house = -1  // (its cell: the town's own, not one the test laid)
+    var apart = 0         // the start house's gap to the town centre, in cells (creel#80: it was laid on top of it)
+    let tc = 0
+    for(b_id.length) b:
+        if b_owner[b] == 0 and b_kind[b] == btype_index("house"):
+            start_house = b_cy[b] * W + b_cx[b]
+            let gx = max(b_cx[tc] - (b_cx[b] + bt_size[b_kind[b]]), b_cx[b] - (b_cx[tc] + bt_size[b_kind[tc]]))
+            let gy = max(b_cy[tc] - (b_cy[b] + bt_size[b_kind[b]]), b_cy[b] - (b_cy[tc] + bt_size[b_kind[tc]]))
+            apart = max(gx, gy)
+    check(b_owner[tc] == 0 and b_kind[tc] == btype_index("town_center") and apart >= 1, "steading: the start house stands apart from the town centre, a clear cell between ({apart})")
+    var by_tc = 0
+    for(u_x.length) i:
+        if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
+    check(by_tc == 8, "steading: the workers start round the town centre ({by_tc} of 8)")
     let plank0 = stock[pl][0]
     let workers = mine()
     let tx = start_x[0] / TILE
@@ -167,13 +185,15 @@ def play() -> int:
         if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
     var built = 0
     for(b_id.length) b:
-        if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center"): built++
+        if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center") and b_cy[b] * W + b_cx[b] != start_house: built++
     print "steading: {MINUTES} min, {laid} laid, {built} built, {born_alive()} born, {ate.length} ate, {road_cells()} road; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
     check(laid == 5 and built == 5, "steading: the hut, the sawmill, the quarry, a house and an inn are built ({built} of {laid})")
     check(planned == 5 and road_cells() == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({road_cells()} of {planned})")
     check(ate.length >= 4, "steading: hungry workers go to eat ({ate.length} of them)")
-    let born = born_alive()
-    check(born > 0 and born <= 2, "steading: children are born in the house, no more than its beds ({born})")
+    var born = 0
+    for(u_id.length) i:
+        if u_owner[i] == 0 and hook_unit_get(col_house, i) != 0: born++
+    check(born > 0 and born <= 4, "steading: children are born in the two houses, no more than their beds ({born})")
     check(sites_ok, "steading: no site was built ahead of its goods")
     check(produced[pl][0] > 0 and stock[pl][0] > plank0, "steading: the sawmill makes planks, more than the town started with ({plank0} -> {stock[pl][0]})")
     return h
