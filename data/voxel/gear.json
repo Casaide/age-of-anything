@@ -3294,6 +3294,30 @@
       },
       "_doc": "royal_hood.vox"
      }
+    ],
+    "forest": [
+     {
+      "model": "forest_hood.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       -1.25
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: a hood of overlapping leaves, forest_hood.vox (#497)"
+     }
     ]
    }
   },
@@ -3896,6 +3920,30 @@
        "12": "trim"
       },
       "_doc": "steppe_shaman.vox"
+     }
+    ],
+    "forest": [
+     {
+      "model": "forest_druid.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       -0.75
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: the druid's moss hood, antler branches, white beard, forest_druid.vox (#497)"
      }
     ]
    }
@@ -6082,9 +6130,138 @@
      }
     ]
    }
+  },
+  "acorn": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "helm.acorn: an acorn's cap as the helmet (#497)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.1,
+      "mat": "acorn_cap",
+      "_doc": "a cap over the crown in the acorn's brown"
+     }
+    ],
+    "forest": [
+     {
+      "model": "forest_acorn.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       2.25
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: an acorn's scaly cap, its stalk, the nut's shell down the cheeks, forest_acorn.vox"
+     }
+    ]
+   }
+  },
+  "leaf_hat": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "hat.leaf: one broad leaf over the crown (#497)",
+   "fits": {
+    "*": [
+     {
+      "helm": 0.0,
+      "mat": "leaf",
+      "_doc": "a cap over the crown in leaf green"
+     }
+    ],
+    "forest": [
+     {
+      "model": "forest_leaf.vox",
+      "at": [
+       "head",
+       0.0,
+       -0.75,
+       2.5
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: a leaf from side to side over the crown, its stem up, forest_leaf.vox"
+     }
+    ]
+   }
+  },
+  "bark": {
+   "plates": {"plate": "leaf", "edge": "bark_light"},
+   "flags": [
+    "armour"
+   ],
+   "_doc": "armour.bark: bark plates (#497)",
+   "fits": {
+    "*": [
+     {
+      "fit": 0.0,
+      "mat": "bark_light"
+     }
+    ],
+    "forest": [
+     {
+      "model": "forest_bark.vox",
+      "at": [
+       "chest",
+       0.0,
+       0.0,
+       -1.5
+      ],
+      "mats": {
+       "1": "acorn_cap",
+       "2": "acorn",
+       "3": "bark",
+       "4": "bark_light",
+       "5": "leaf",
+       "6": "leaf_light",
+       "7": "moss",
+       "8": "moss_dark",
+       "9": "white",
+       "10": "team"
+      },
+      "_doc": "the forest body: bark plates on the chest and back, rounded bark shoulders, forest_bark.vox"
+     }
+    ]
+   }
   }
  },
  "parts": [
+  {
+   "part": "helm.acorn",
+   "gear": "acorn"
+  },
+  {
+   "part": "hat.leaf",
+   "gear": "leaf_hat"
+  },
+  {
+   "part": "armour.bark",
+   "gear": "bark"
+  },
   {
    "part": "weapon.gladius",
    "gear": "gladius"
