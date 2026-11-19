@@ -739,7 +739,6 @@ def test_homes():
     let off, empty, oh = homes_run(20, 0)
     check(off == 0 and empty == 0 and oh != h1, "homes: with the rule off, no births and no larder")
 
-
 // All of player 0's food: in its buildings and in its units' hands.
 def food_held() -> int:
     let f = res_of("food")
