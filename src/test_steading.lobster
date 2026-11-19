@@ -145,8 +145,19 @@ def play() -> int:
         if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] == btype_index("house"): homes0++
     check(homes0 == 1 and pop[0] <= pop_cap[0], "steading: the town starts with a house, room for its workers ({pop[0]} of {pop_cap[0]})")
     var start_house = -1  // (its cell: the town's own, not one the test laid)
+    var apart = 0         // the start house's gap to the town centre, in cells (creel#80: it was laid on top of it)
+    let tc = 0
     for(b_id.length) b:
-        if b_owner[b] == 0 and b_kind[b] == btype_index("house"): start_house = b_cy[b] * W + b_cx[b]
+        if b_owner[b] == 0 and b_kind[b] == btype_index("house"):
+            start_house = b_cy[b] * W + b_cx[b]
+            let gx = max(b_cx[tc] - (b_cx[b] + bt_size[b_kind[b]]), b_cx[b] - (b_cx[tc] + bt_size[b_kind[tc]]))
+            let gy = max(b_cy[tc] - (b_cy[b] + bt_size[b_kind[b]]), b_cy[b] - (b_cy[tc] + bt_size[b_kind[tc]]))
+            apart = max(gx, gy)
+    check(b_owner[tc] == 0 and b_kind[tc] == btype_index("town_center") and apart >= 1, "steading: the start house stands apart from the town centre, a clear cell between ({apart})")
+    var by_tc = 0
+    for(u_x.length) i:
+        if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
+    check(by_tc == 8, "steading: the workers start round the town centre ({by_tc} of 8)")
     let plank0 = stock[pl][0]
     let workers = mine()
     let tx = start_x[0] / TILE
