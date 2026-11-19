@@ -71,7 +71,8 @@ id_load("../data")
 
 let MINUTES = 15
 let FIELD_GRAIN = 40  // the grain a sown field holds (Steading's farm)
-let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ] ]  // who works where
+// who works where
+let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ] ]
 let MAP = "reed_meadow"
 let T_EAT = 100  // (the mod's hunger.lua: its own task, going to eat)
 let used = mods_use([ "steading" ])
@@ -170,10 +171,10 @@ def play() -> int:
     var most_builders = 0    // the most villagers building one site at once
     var site_walked = false  // someone stood on a site's cells while it went up
     var trained = false
-    var mill_up = -1          // the tick the mill was first up
-    var crafters = false      // the miller and the baker sent for
-    var mill_waited = false   // the mill held grain enough for a round with no miller yet
-    var flour_unstaffed = -1  // the flour made before the miller came
+    var mill_up = -1                                          // the tick the mill was first up
+    var crafters = false                                      // the miller and the baker sent for
+    var mill_waited = false                                   // the mill held grain enough for a round with no miller yet
+    var flour_unstaffed = -1                                  // the flour made before the miller came
     var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
     for(MINUTES * 60 * TICK_HZ) t:
