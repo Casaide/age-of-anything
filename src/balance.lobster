@@ -61,8 +61,8 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
-import hooks.economy
-import hooks.hunger
+import lua.lua
+import lua.api
 import gen.reset
 import gen.balance
 

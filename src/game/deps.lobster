@@ -47,6 +47,7 @@ import gen.sha256
 import gen.rng
 import gen.datalib
 import gen.identity
+import lua.parse
 import gen.mods
 import gen.pricing
 import gen.heroes
@@ -57,8 +58,8 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
-import hooks.economy
-import hooks.hunger
+import lua.lua
+import lua.api
 import view.facing
 import view.shot_look
 import view.node

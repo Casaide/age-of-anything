@@ -41,6 +41,7 @@ import gen.identity
 import gen.pricing
 import gen.heroes
 import gen.generator
+import lua.parse
 import gen.mods
 import lib.consts
 import lib.fixed
@@ -84,8 +85,8 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
-import hooks.economy
-import hooks.hunger
+import lua.lua
+import lua.api
 import gen.reset
 import gen.balance
 import gen.counters

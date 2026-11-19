@@ -5,6 +5,7 @@
  "animals": false,
  "economy": {
   "model": "stocked",
+  "builders_come": true,
   "roads": [
    {
     "name": "road",
@@ -13,7 +14,7 @@
    }
   ],
   "hunger": {
-   "_doc": "every: seconds between meals; eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what a meal is (hooks/hunger, #47)",
+   "_doc": "every: seconds between meals; eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what a meal is (the mod's hooks/hunger.lua, #47)",
    "every": 90,
    "eaters": [
     "worker"

@@ -14,6 +14,7 @@ import gen.identity
 import gen.pricing
 import gen.heroes
 import gen.generator
+import lua.parse
 import gen.mods
 import view.vox
 import view.voxel
