@@ -643,7 +643,8 @@ def draw_panel():
             hp_now = u_hp[i]
             hp_max = t_hp[k]
             if t_worker[k] != 0:
-                var line = TASK_NAMES[clamp(u_task[i], 0, TASK_NAMES.length - 1)]
+                let own = hunger_task_name(i)  // (a hook's own task: going to eat, resting hungry)
+                var line = if own != "": own else: TASK_NAMES[clamp(u_task[i], 0, TASK_NAMES.length - 1)]
                 if u_carry[i] > 0 and u_carry_kind[i] > 0: line += " ({u_carry[i]} {resource_names[u_carry_kind[i] - 1]})"
                 info.push(line)
             elif t_animal[k] == 0: info = card_lines(k)

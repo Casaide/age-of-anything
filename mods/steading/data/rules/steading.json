@@ -4,6 +4,17 @@
  "animals": false,
  "economy": {
   "model": "stocked",
+  "hunger": {
+   "_doc": "every: seconds between meals; eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what a meal is (hooks/hunger, #47)",
+   "every": 90,
+   "eaters": [
+    "worker"
+   ],
+   "starving_pct": 50,
+   "foods": [
+    "food"
+   ]
+  },
   "homes": {
    "born_every": 40,
    "foods": [
