@@ -225,9 +225,45 @@ def build_btn(k:int) -> Btn:
     b.tip = building_tip(k)
     return b
 
+// The build pages: a worker's, or the town's when the rules build from the town.
+def build_buttons(out:[Btn]):
+    if build_menu:  // (B: every building, on the number keys)
+        for(buildable()) k:
+            let b = build_btn(k)
+            b.group = "Build"
+            out.push(b)
+    elif build_page < 0:
+        for([ "Civilian", "Military" ]) name, page:
+            let b = Btn { "Build: " + name, "", 6, page }
+            b.building = btype_with(if page == 0: ROLE_HOUSING else: ROLE_BARRACKS)
+            b.glyph = if page == 0: "house" else: "barracks"
+            b.note = name
+            b.group = "Build"
+            b.tip = if page == 0: "Houses, farms, camps, the market, the armoury and Town Centers." else: "Barracks, ranges, stables, towers, walls and gates."
+            out.push(b)
+    else:
+        for(page_buildings(build_page)) k:
+            let b = build_btn(k)
+            b.group = if build_page == 0: "Civilian" else: "Military"
+            out.push(b)
+        let back = Btn { "Back", "Esc", 6, -1 }
+        back.icon = "back"
+        back.group = " "
+        back.tip = "To the civilian and military pages."
+        out.push(back)
+
+def town_bar() -> bool:  // the town's build pages show with nothing to order selected, or the town's hub
+    if not town_builds(): return false
+    let bi = b_index_of(sel_building)
+    if bi >= 0: return b_owner[bi] == ME and has_role(b_kind[bi], ROLE_HUB)
+    return not (filter(selected_units()) id: not hands_off(id)).length
+
 def panel_buttons() -> [Btn]:
     let out = []::Btn
-    let ids = selected_units()
+    if town_bar() and b_index_of(sel_building) < 0:
+        build_buttons(out)
+        return out
+    let ids = filter(selected_units()) id: not hands_off(id)
     let bi = b_index_of(sel_building)
     if bi >= 0 and b_owner[bi] == ME and not ids.length:
         let room = b_queue[bi].length < r_queue_max
@@ -321,6 +357,7 @@ def panel_buttons() -> [Btn]:
             b.group = "Orders"
             b.tip = if rung: "The sheltering workers come out and go back to work." else: "Workers near it run into the nearest buildings."
             out.push(b)
+        if town_bar(): build_buttons(out)
         return out
     if not ids.length: return out
     let workers = selected_workers()
@@ -366,31 +403,7 @@ def panel_buttons() -> [Btn]:
             b.note = if now == k: "ON" else: ""
             b.tip = STANCE_TIPS[k]
             out.push(b)
-    if workers.length:
-        if build_menu:  // (B: every building, on the number keys)
-            for(buildable()) k:
-                let b = build_btn(k)
-                b.group = "Build"
-                out.push(b)
-        elif build_page < 0:
-            for([ "Civilian", "Military" ]) name, page:
-                let b = Btn { "Build: " + name, "", 6, page }
-                b.building = btype_with(if page == 0: ROLE_HOUSING else: ROLE_BARRACKS)
-                b.glyph = if page == 0: "house" else: "barracks"
-                b.note = name
-                b.group = "Build"
-                b.tip = if page == 0: "Houses, farms, camps, the market, the armoury and Town Centers." else: "Barracks, ranges, stables, towers, walls and gates."
-                out.push(b)
-        else:
-            for(page_buildings(build_page)) k:
-                let b = build_btn(k)
-                b.group = if build_page == 0: "Civilian" else: "Military"
-                out.push(b)
-            let back = Btn { "Back", "Esc", 6, -1 }
-            back.icon = "back"
-            back.group = " "
-            back.tip = "To the civilian and military pages."
-            out.push(back)
+    if workers.length: build_buttons(out)
     return out
 
 def press(b:Btn):
@@ -602,7 +615,7 @@ def draw_panel():
     let bi = b_index_of(sel_building)
     let fi = index_of(sel_foreign)
     // (on a pad the orders live on the wheel, so the panel keeps who and the queue: command_panel.gd's compact)
-    let btns = if pad_on or (build_menu and not selected_workers().length): []::Btn else: panel_buttons()
+    let btns = if pad_on or (build_menu and not (selected_workers().length or town_bar())): []::Btn else: panel_buttons()
     // What's shown: title, hp, info lines, portrait, tray, queue.
     var title = rstr(su_races[ME], "name")
     var hp_now = -1

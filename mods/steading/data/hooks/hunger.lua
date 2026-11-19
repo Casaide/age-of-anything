@@ -227,8 +227,8 @@ function hunger_tick()
   end
 end
 
--- What the panel says a worker is doing, for our own tasks.
-function task_name(i)
+-- What the panel says a worker is doing, for our own tasks ("" for the engine's).
+function hunger_task_name(i)
   local task = u_task(i)
   if task == T_EAT then return "Going to eat" end
   if task == T_FAINT then return "Hungry" end
