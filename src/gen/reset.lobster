@@ -288,6 +288,7 @@ var stashed_bt_drop = []::[int]
 var stashed_bt_hold = []::[int]
 var stashed_bt_store = []::int
 var stashed_bt_road = []::int
+var stashed_bt_bridge = []::int
 var stashed_bt_in = []::[int]
 var stashed_bt_out = []::[int]
 var stashed_bt_offer = []::[int]
@@ -825,6 +826,7 @@ def reset_world():
     bt_hold = []::[int]
     bt_store = []::int
     bt_road = []::int
+    bt_bridge = []::int
     bt_in = []::[int]
     bt_out = []::[int]
     bt_offer = []::[int]
@@ -1352,6 +1354,7 @@ def stash_world():
     stashed_bt_hold = bt_hold
     stashed_bt_store = bt_store
     stashed_bt_road = bt_road
+    stashed_bt_bridge = bt_bridge
     stashed_bt_in = bt_in
     stashed_bt_out = bt_out
     stashed_bt_offer = bt_offer
@@ -1872,6 +1875,7 @@ def unstash_world():
     bt_hold = stashed_bt_hold
     bt_store = stashed_bt_store
     bt_road = stashed_bt_road
+    bt_bridge = stashed_bt_bridge
     bt_in = stashed_bt_in
     bt_out = stashed_bt_out
     bt_offer = stashed_bt_offer
