@@ -33,7 +33,6 @@ import lib.heroes
 import lib.match
 import lib.trade
 import lib.recipes
-import lib.homes
 import lib.carry
 import lib.animals
 import lib.bridges
@@ -54,6 +53,7 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
+import hooks.economy
 import gen.reset
 import testkit.kit
 import view.shot_look

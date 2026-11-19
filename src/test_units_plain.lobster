@@ -28,7 +28,6 @@ import lib.heroes
 import lib.match
 import lib.trade
 import lib.recipes
-import lib.homes
 import lib.carry
 import lib.animals
 import lib.bridges
@@ -48,6 +47,7 @@ import hooks.rules
 import gen.setup
 import gen.modes
 import gen.start
+import hooks.economy
 
 // A match from a table of unit types in data, with no generator in the program (the sim's side of the seam, #195):
 // the bots play it to a winner.
