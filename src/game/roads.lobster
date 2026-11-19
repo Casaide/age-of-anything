@@ -52,12 +52,12 @@ def road_paths() -> bool:
     let plans = map(W * H): 0
     for(b_id.length) b:
         if is_road_plan(b_kind[b]) and b_done[b] == 0: plans[b_cy[b] * W + b_cx[b]] = 1
-    var any = false
+    var added = false
     for(W * H) c:
         let now = road_here(c, plans)
         if now > road_painted[c] and fog[ME][c] != 0:
             road_painted[c] = now
-            any = true
+            added = true
             let style = if now == 2: road_style(road[c] - 1) else: "trail"
             let width = if now == 2: ROAD_WIDTH else: PLAN_WIDTH
             let mid = float2 { float(c % W) + 0.5, float(c / W) + 0.5 }
@@ -67,4 +67,4 @@ def road_paths() -> bool:
                 let y = c / W + d.y
                 if x >= 0 and y >= 0 and x < W and y < H and road_here(y * W + x, plans) >= now:
                     path_out.push(PathLaid { style, width, [ mid, mid + float2 { float(d.x), float(d.y) } ] })
-    return any
+    return added
