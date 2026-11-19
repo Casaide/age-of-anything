@@ -75,6 +75,11 @@
    }
   },
   "house": {
+   "desc": "A home: two beds and a small larder. While a bed is free and the larder has food, a child is born now and then.",
+   "beds": 2,
+   "holds": {
+    "food": 3
+   },
    "cost": {
     "wood": 0,
     "plank": 6

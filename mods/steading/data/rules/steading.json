@@ -4,6 +4,12 @@
  "animals": false,
  "economy": {
   "model": "stocked",
+  "homes": {
+   "born_every": 40,
+   "foods": [
+    "food"
+   ]
+  },
   "carriers": [
    "worker"
   ],
