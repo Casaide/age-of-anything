@@ -246,6 +246,7 @@ import .model.future
 import .model.buildings2
 import .game.art_kit
 import .game.ruin
+import .game.model_type
 import .game.art_kit_buildings
 import .game.pack_data
 import .view.vox
