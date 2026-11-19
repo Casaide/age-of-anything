@@ -57,6 +57,7 @@ import gen.start
 import gen.reset
 import gen.save
 import testkit.kit
+import game.model_type
 
 // The economy mod's first slice (mods/steading, #524): a stocked town of wood, planks and stone, played headless for
 // 15 minutes by a script (no bot, no enemy). Woodcutters and stone cutters gather, a woodcutter's hut, a sawmill and a
@@ -71,6 +72,13 @@ let used = mods_use([ "steading" ])
 check(used.length == 1, "the mod loads ({map(mods_refused.get_keys()) id: id + ": " + mods_refused.get(id, "")})")
 let rules = load_rules("steading")
 let races = map([ "villagers", "villagers" ]) p: generate(p, rules, 0)
+// Every building is drawn with a model the game has: its own, or the one it extends (#58: the sawmill had none, and the
+// game stopped baking it at the start).
+let game_buildings = at(parse_json(read_file("../data/buildings.json") or ""), "buildings")
+let merged_buildings = at(lib_data("buildings.json"), "buildings")
+for(merged_buildings.keys) id:
+    let mt = model_type(merged_buildings, id)
+    check(has(game_buildings, mt), "steading: {id} is drawn with a model the game has (it gets {mt})")
 
 def res(name:string) -> int: return str_index(resource_names, name)
 
