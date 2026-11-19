@@ -10,13 +10,18 @@
  "buildings": {
   "town_center": {
    "name": "Storehouse",
-   "desc": "Holds the town's goods; workers carry them in and out. Trains workers.",
+   "desc": "Holds the town's goods; workers carry them in and out, and wait here when there's nothing to do. Room for the whole town.",
    "store": true,
    "holds": {
     "*": 400
    },
    "trains": [
     "worker"
+   ],
+   "pop": 100,
+   "roles": [
+    "hub",
+    "housing"
    ]
   },
   "lumber_camp": {
@@ -101,9 +106,8 @@
   "inn": {
    "extends": "house",
    "name": "Inn",
-   "desc": "Feeds the town: hungry workers eat here when their home has no food. One food makes three meals, so it feeds more for less than homes do. Carriers keep it stocked.",
+   "desc": "Feeds the town: hungry workers eat here. One food makes three meals, so it feeds more for less than the storehouse does (a whole food a meal). Carriers keep it stocked.",
    "hotkey": "D",
-   "beds": 0,
    "serves": 3,
    "pop": 0,
    "house": false,
@@ -119,15 +123,7 @@
    }
   },
   "house": {
-   "desc": "A home: two beds and a small larder. While a bed is free and the larder has food, a child is born now and then.",
-   "beds": 2,
-   "holds": {
-    "food": 3
-   },
-   "cost": {
-    "wood": 0,
-    "plank": 6
-   }
+   "remove": true
   },
   "farm": {
    "remove": true

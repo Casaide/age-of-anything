@@ -6,6 +6,9 @@
  "economy": {
   "model": "stocked",
   "builders_come": true,
+  "builders_per_site": 3,
+  "sites_walk_over": true,
+  "idle_wait": true,
   "roads": [
    {
     "name": "road",
@@ -24,12 +27,6 @@
     "food"
    ]
   },
-  "homes": {
-   "born_every": 40,
-   "foods": [
-    "food"
-   ]
-  },
   "carriers": [
    "worker"
   ],
@@ -38,10 +35,9 @@
    "wood": 20,
    "stone": 20,
    "plank": 40,
-   "workers": 8,
+   "workers": 5,
    "buildings": [
-    "town_center",
-    "house"
+    "town_center"
    ]
   },
   "gather_ticks": {
