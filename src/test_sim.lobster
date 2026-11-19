@@ -62,7 +62,6 @@ import lib.heroes
 import lib.match
 import lib.trade
 import lib.recipes
-import lib.homes
 import lib.carry
 import lib.animals
 import lib.bridges
@@ -83,6 +82,7 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
+import hooks.economy
 import gen.reset
 import gen.save
 import gen.effect_words
@@ -588,7 +588,7 @@ def test_bridge_plans():
     let h2 = bridge_plans()
     check(h1 == h2, "bridge plans: the same twice")
 
-// doors_on_roads (#51): with the rule on, a house goes up only with its door tile on a road or the player's road plan.
+// doors_on_roads (hooks/economy, #62): with the rule on, a house goes up only with its door tile on a road or the player's road plan.
 def test_doors_on_roads():
     new_world("flat_test", races0, stocked_rules(bare0), [])
     rd_names = [ "dirt" ]
@@ -598,7 +598,7 @@ def test_doors_on_roads():
     bt_road[pk] = 0  // stands in as a road plan
     let builder = spawn_at(0, "worker", 25000, 12000)
     check(can_place(0, hk, 20, 10, 0), "doors on roads: off, a house goes up anywhere")
-    r_doors_on_roads = 1
+    eco_doors = true
     let sx, sy = dims(hk, 0)
     check(not can_place(0, hk, 20, 10, 0), "doors on roads: on, a house off the road is refused")
     check(lay_foundation(0, [ builder ], hk, 20, 10, 0) == 0, "doors on roads: and its order lays nothing")
@@ -607,21 +607,21 @@ def test_doors_on_roads():
     check(not can_place(0, hk, 20 + sx, 10, 0), "doors on roads: road beside its door is not enough")
     let plan = lay_foundation(0, [ builder ], pk, 34 + sx / 2, 10 + sy, 0)
     check(plan != 0 and can_place(0, hk, 34, 10, 0), "doors on roads: a road plan at its door is enough")
-    r_doors_on_roads = 0
+    eco_doors = false
 def test_road_plans():
     let h1 = road_plans()
     let h2 = road_plans()
     check(h1 == h2, "road plans: the same twice")
 
-// Homes (Casaide/creel#73): a house with 2 beds and room for 3 food beside a store; every 5 s a free bed and food
+// Homes (hooks/economy, #62): a house with 2 beds and room for 3 food beside a store; every 5 s a free bed and food
 // make a worker at its door. How many of player 0's units were born there after 60 s, what its larder holds, the hash.
 def homes_run(food:int, every:int) -> int, int, int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
     let f = res_of("food")
-    r_born_ticks = every * TICK_HZ
-    r_foods = [ f ]
+    eco_born_ticks = every * TICK_HZ
+    eco_foods = [ f ]
     let hk = btype_index("house")
-    bt_beds[hk] = 2
+    eco_beds[hk] = 2
     bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
     make_store("town_center", 200)
     put(0, "town_center", 10, 10, 0)
@@ -630,10 +630,7 @@ def homes_run(food:int, every:int) -> int, int, int:
     t_carrier[type_of_slot(0, "worker")] = 1
     for(2) n: spawn_at(0, "worker", 14000 + n * 600, 14000)
     for(60 * TICK_HZ): tick_on()
-    var kids = 0
-    for(u_house) v:
-        if v == b_id[h]: kids++
-    return kids, b_hold[h][f], state_hash()
+    return residents(h), b_hold[h][f], state_hash()
 
 def test_homes():
     let kids, larder, h1 = homes_run(20, 5)
