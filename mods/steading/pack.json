@@ -1,0 +1,13 @@
+{
+ "id": "steading",
+ "name": "Steading (working name)",
+ "version": "0.1.0",
+ "authors": ["Claude (for Dominic)"],
+ "description": "A town builder on Creel's stocked economy: goods are real things in real buildings. Woodcutters' huts, a sawmill that turns logs into planks, a quarry, and workers who carry goods one at a time from where they lie to where they're asked for. New buildings are paid for by carrying their planks and stone to the site. The first slice of the economy mod (#523, #524); the name is still open. Play it with mods:steading rules:steading.",
+ "license": "Same as the game",
+ "load_order": 120,
+ "depends": ["age_of_anything@0.21"],
+ "eras": [],
+ "data": "data",
+ "check": {"rules": "steading", "prompts": ["villagers"]}
+}
