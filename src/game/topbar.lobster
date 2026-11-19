@@ -203,16 +203,11 @@ def draw_topbar(speed:float, paused:bool):
     draw_wonder_clock(at.y + h + hint_h + (if tb_tip != "": 48.0 * s else: 40.0 * s))
     tb_flush()
 
-// The opening tips against the AI (sim_debug.gd's hints): three, one at a time, centred under the bar, each gone once
-// it's done (a worker trained, one gathering, a house begun or four minutes gone). Not in a network match, a watched one
-// or one loaded from a save. Returns the room it took.
-let TB_HINTS = [ "Click your Town Center, then press Q (or its button) to train a worker.",
-                 "Select a worker and right-click a bush, reeds or stone to gather.",
-                 "Build a House (select a worker, press H) before your population fills up: every unit needs room." ]
-let TB_PAD_HINTS = [ "D-pad up: your Town Center. Tap A on it for its commands, point at the worker, A to train.",
-                     "D-pad down: an idle worker. Aim at a bush, reeds or stone and press X to gather.",
-                     "Build a House (tap A on a selected worker, Build: Civilian, House, A to place) before your population fills up." ]
-var tb_hint_step = -1  // the tip showing; -1 not begun, 3 done or none
+// The opening tips against the AI (sim_debug.gd's hints): the match's (game/tips.lobster), one at a time, centred
+// under the bar, each gone once it's done. Not in a network match, a watched one or one loaded from a save. Returns
+// the room it took.
+var tb_tips = []::Tip
+var tb_hint_step = -1  // the tip showing; -1 not begun, past the last when done or none
 var tb_hint_units = 0  // your units when they began
 var tb_hint_tick = 0   // (a tick lower than the last seen: a new match, the tips again)
 
@@ -220,22 +215,17 @@ def tb_hints(y:float) -> float:
     if tick < tb_hint_tick: tb_hint_step = -1
     tb_hint_tick = tick
     if tb_hint_step < 0:
-        tb_hint_step = if in_net_match or watch or tick > 20: 3 else: 0
+        tb_tips = match_tips(su_rules)
+        tb_hint_step = if in_net_match or watch or tick > 20: tb_tips.length else: 0
         tb_hint_units = (filter(u_owner) o: o == ME).length
-    if tb_hint_step >= 3 or winner >= 0: return 0.0
-    var done = false
-    if tb_hint_step == 0: done = (filter(u_owner) o: o == ME).length > tb_hint_units
-    elif tb_hint_step == 1:
-        for(u_owner) o, i: done = done or (o == ME and u_task[i] == GATHER)
-    else:
-        done = tick > 20 * 240
-        for(b_owner) o, b: done = done or (o == ME and has_role(b_kind[b], ROLE_HOUSING) and not has_role(b_kind[b], ROLE_HUB))
-    if done:
+    if tb_hint_step >= tb_tips.length or winner >= 0: return 0.0
+    if tip_done(tb_tips[tb_hint_step], ME, tb_hint_units):
         tb_hint_step++
         play_sound("ui_tip", -6.0)
-    if tb_hint_step >= 3: return 0.0
+    if tb_hint_step >= tb_tips.length: return 0.0
     let s = hud_s()
-    let line = "Tip {tb_hint_step + 1} of 3:  " + (if pad_on: TB_PAD_HINTS else: TB_HINTS)[tb_hint_step]
+    let tip = tb_tips[tb_hint_step]
+    let line = "Tip {tb_hint_step + 1} of {tb_tips.length}:  " + (if pad_on: tip.pad else: tip.text)
     let fs = int(18.0 * s)
     let cw = tb_text_w(line, fs, 0) + 28.0 * s
     let ch = 40.0 * s
