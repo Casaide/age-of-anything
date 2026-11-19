@@ -60,6 +60,7 @@ import gen.reset
 import gen.save
 import testkit.kit
 import game.model_type
+import game.tips
 
 // The economy mod's first slice (mods/steading, #524): a stocked town of wood, planks and stone, played headless for
 // 15 minutes by a script (no bot, no enemy). Woodcutters and stone cutters gather, a woodcutter's hut, a sawmill and a
@@ -150,6 +151,8 @@ def play() -> int:
     for(u_x.length) i:
         if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
     check(by_tc == 5, "steading: the villagers start round the storehouse ({by_tc} of 5)")
+    let tips = match_tips(su_rules)
+    check(tips.length == 3 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips, the first (lay a school) not yet done ({tips.length})")
     let plank0 = stock[pl][0]
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
@@ -207,6 +210,7 @@ def play() -> int:
     check(site_walked, "steading: villagers walk across a site while it goes up")
     check(ate.length >= 3, "steading: hungry workers go to eat ({ate.length} of them)")
     check(sites_ok, "steading: no site was built ahead of its goods")
+    check((filter(tips) tip: tip_done(tip, 0, 5)).length == 3, "steading: every opening tip is done by playing the town")
     check(produced[pl][0] >= 20, "steading: the sawmill makes planks ({produced[pl][0]}; {plank0} -> {stock[pl][0]} in store)")
     return h
 

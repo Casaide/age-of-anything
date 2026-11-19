@@ -3,6 +3,20 @@
  "extends": "default",
  "race": "villagers",
  "animals": false,
+ "tips": [
+  {
+   "text": "With nothing selected, press Build: Civilian and lay a School. Your villagers bring the goods and build it.",
+   "done": "laid:school"
+  },
+  {
+   "text": "Lay a Woodcutter's Hut near trees. Villagers build it; a woodcutter will work there.",
+   "done": "laid:lumber_camp"
+  },
+  {
+   "text": "When the School is built, click it and train a Woodcutter: it walks to the hut and starts cutting.",
+   "done": "trained"
+  }
+ ],
  "economy": {
   "model": "stocked",
   "gatherers": [

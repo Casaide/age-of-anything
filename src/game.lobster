@@ -597,6 +597,7 @@ import .game.hud_kit
 import .game.pad  // (here: it plays through the controls above)
 import .game.techtree
 import .game.panel
+import .game.tips
 import .game.topbar
 import .game.order_marks
 import .game.touch          // (here: it plays through the pad, and leaves the panel, top bar and minimap to the mouse)
