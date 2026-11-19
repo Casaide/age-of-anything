@@ -481,6 +481,58 @@ def test_sites():
     check(spent and b_site[bi].length == 0 and b_hold[a][res_of("wood")] == before[res_of("wood")] - cost[res_of("wood")],
           "sites: once built its goods are used up, and the stores hold that much less")
 
+// Road plans (#51): a building type with `road` is a plan for road. Its cells are walked over while it is built (it asks for
+// its cost like any site), and once built they become that road and the plan goes. Its builder then takes the next plan.
+// The house stands in for a road plan here. The hash at the end.
+def road_plans() -> int:
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    rd_names = [ "dirt" ]
+    rd_pct = [ 150 ]
+    let hk = btype_index("house")
+    bt_road[hk] = 0
+    make_store("town_center", 200)
+    let a = b_index_of(put(0, "town_center", 10, 10, 0))
+    for(num_resources) r: stock_add(r, 0, 200)
+    let wk = type_of_slot(0, "worker")
+    t_carrier[wk] = 1
+    let builder = spawn_at(0, "worker", 25000, 12000)
+    for(4) n: spawn_at(0, "worker", 14000 + n * 600, 13000)
+    let wood = res_of("wood")
+    let before = b_hold[a][wood]
+    let nb = b_id.length
+    issue_cmd(0, CMD_BUILD, [ builder ], hk, 28, 10, 0)
+    for(40):
+        if b_id.length == nb: tick_on()
+    let first = b_id[b_id.length - 1]
+    let cells = footprint(b_index_of(first))
+    let cost = b_site[b_index_of(first)][wood]
+    var walked = true
+    for(cells) c: walked = walked and walks[0][c] == 1
+    check(walked and not road.length, "road plans: a plan is walked over while it waits to be built")
+    lay_foundation(0, [ builder ], hk, 31, 10, 0)  // a second plan beside it: the builder is sent once the first is done
+    let second = b_id[b_id.length - 1]
+    let cells2 = footprint(b_index_of(second))
+    var gone_at = -1
+    for(12000) t:
+        tick_on()
+        if t % 200 == 0 and b_index_of(first) < 0 and b_index_of(second) >= 0 and u_task[index_of(builder)] != BUILD:
+            issue_cmd(0, CMD_HELP_BUILD, [ builder ], second, 0, 0, 0)
+        if b_index_of(first) < 0 and b_index_of(second) < 0:
+            gone_at = t
+            break
+    var paved = true
+    for(cells) c: paved = paved and road[c] == 1 and walks[0][c] == 1 and occupied[c] == 0
+    for(cells2) c: paved = paved and road[c] == 1
+    check(gone_at >= 0 and paved, "road plans: built, both plans become dirt road and go (at tick {gone_at})")
+    check(b_hold[a][wood] == before - 2 * cost and speed_pct[0][cells[0]] == speed_row[0][terrain[cells[0]]] * 150 / 100,
+          "road plans: their goods came from the store, and the road is quicker to walk")
+    return state_hash()
+
+def test_road_plans():
+    let h1 = road_plans()
+    let h2 = road_plans()
+    check(h1 == h2, "road plans: the same twice")
+
 // ------------------------------------------------------------------ small pieces
 
 def test_fixed():
@@ -4823,7 +4875,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "roads", "road_plans", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4848,6 +4900,7 @@ def run_part(name:string):
     elif name == "recipes": test_recipes()
     elif name == "sites": test_sites()
     elif name == "roads": test_roads()
+    elif name == "road_plans": test_road_plans()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
