@@ -61,6 +61,7 @@ import lib.heal
 import lib.heroes
 import lib.match
 import lib.trade
+import lib.recipes
 import lib.carry
 import lib.animals
 import lib.bridges
@@ -348,6 +349,55 @@ def test_carry():
     var got = 0
     for(houses) hb: got += b_hold[hb][w]
     check(got > 0 and per < 1.0, "carry: 300 carriers cost under 1 ms a tick ({fmt_ms(per)} ms; {got} wood brought in 400 ticks)")
+
+// Recipes (Casaide/creel#50): building `id` made a workshop turning `nin` of resource `rin` into `nout` of `rout` in
+// `secs` seconds, holding `cap` of each. (No building has a recipe in the game's data: the test makes one.)
+def make_workshop(id:string, rin:int, nin:int, rout:int, nout:int, secs:int, cap:int) -> int:
+    let k = btype_index(id)
+    bt_in[k] = map(num_resources) r: if r == rin: nin else: 0
+    bt_out[k] = map(num_resources) r: if r == rout: nout else: 0
+    bt_offer[k] = map(num_resources) r: if r == rout: 1 else: 0
+    bt_make_ticks[k] = secs * TICK_HZ
+    bt_hold[k] = map(num_resources) r: if r == rin or r == rout: cap else: 0
+    return k
+
+def all_of(r:int) -> int:  // every r of player 0: in buildings and in carriers' hands
+    var n = 0
+    for(b_id.length) b: n += b_hold[b][r]
+    for(u_x.length) i:
+        if u_owner[i] == 0 and u_carry_kind[i] == r + 1: n += u_carry[i]
+    return n
+
+def test_recipes():
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    let w = res_of("wood")
+    let st = res_of("stone")
+    make_store("town_center", 50)
+    make_workshop("mill", w, 1, st, 2, 2, 4)
+    let a = b_index_of(put(0, "town_center", 10, 10, 0))
+    stock_add(w, 0, 10)
+    let m = b_index_of(put(0, "mill", 24, 10, 0))
+    tick_on()
+    check(b_make[m] == 0 and b_want[m][w] == 4, "recipes: a workshop with no inputs waits and asks for its in slots ({b_want[m][w]} wood)")
+    let wk = type_of_slot(0, "worker")
+    t_carrier[wk] = 1
+    for(2) n: spawn_at(0, "worker", 14000 + n * 600, 13000)
+    var started = -1
+    for(6000) t:
+        tick_on()
+        if started < 0 and b_make[m] > 0: started = t
+        if produced[st][0] >= 20 and jb_id.length == 0: break
+    let used = produced[st][0] / 2
+    check(started >= 0 and produced[st][0] == 20, "recipes: ten wood become twenty stone (made {produced[st][0]}; first round at tick {started})")
+    check(all_of(w) + used == 10 and all_of(st) == produced[st][0], "recipes: every good accounted for (wood {all_of(w)} + {used} used, stone {all_of(st)})")
+    check(stock[st][0] == 20 and b_hold[a][st] == 20, "recipes: the stone is carried to the store ({stock[st][0]} in stock)")
+    // Full out slots, nobody to carry: it stops.
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    make_workshop("mill", w, 1, st, 2, 1, 4)
+    let m2 = b_index_of(put(0, "mill", 24, 10, 0))
+    b_hold[m2][w] = 4
+    for(400): tick_on()
+    check(b_hold[m2][st] == 4 and b_hold[m2][w] == 2 and b_make[m2] == 0, "recipes: with its out slots full it stops (stone {b_hold[m2][st]}, wood {b_hold[m2][w]})")
 
 // ------------------------------------------------------------------ small pieces
 
@@ -4691,7 +4741,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -4713,6 +4763,7 @@ def run_part(name:string):
     elif name == "trade": test_trade()
     elif name == "stocked": test_stocked()
     elif name == "carry": test_carry()
+    elif name == "recipes": test_recipes()
     elif name == "sapper_sling": test_sapper_sling()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
