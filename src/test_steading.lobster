@@ -142,24 +142,13 @@ def play() -> int:
     let pl = res("plank")
     let st = res("stone")
     check(r_stocked == 1 and pl >= 0 and t_carrier[u_kind[index_of(mine()[0])]] == 1, "steading: a stocked economy, planks, workers who carry")
-    var homes0 = 0
-    for(b_id.length) b:
-        if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] == btype_index("house"): homes0++
-    check(homes0 == 1 and pop[0] <= pop_cap[0], "steading: the town starts with a house, room for its workers ({pop[0]} of {pop_cap[0]})")
-    var start_house = -1  // (its cell: the town's own, not one the test laid)
-    var apart = 0         // the start house's gap to the town centre, in cells (creel#80: it was laid on top of it)
     let tc = 0
-    for(b_id.length) b:
-        if b_owner[b] == 0 and b_kind[b] == btype_index("house"):
-            start_house = b_cy[b] * W + b_cx[b]
-            let gx = max(b_cx[tc] - (b_cx[b] + bt_size[b_kind[b]]), b_cx[b] - (b_cx[tc] + bt_size[b_kind[tc]]))
-            let gy = max(b_cy[tc] - (b_cy[b] + bt_size[b_kind[b]]), b_cy[b] - (b_cy[tc] + bt_size[b_kind[tc]]))
-            apart = max(gx, gy)
-    check(b_owner[tc] == 0 and b_kind[tc] == btype_index("town_center") and apart >= 1, "steading: the start house stands apart from the town centre, a clear cell between ({apart})")
+    check(b_owner[tc] == 0 and b_kind[tc] == btype_index("town_center") and pop[0] == 5 and pop[0] <= pop_cap[0] and btype_index("house") < 0,
+          "steading: the town starts with a storehouse and 5 villagers, room for them, and no houses ({pop[0]} of {pop_cap[0]})")
     var by_tc = 0
     for(u_x.length) i:
         if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
-    check(by_tc == 8, "steading: the workers start round the town centre ({by_tc} of 8)")
+    check(by_tc == 5, "steading: the villagers start round the storehouse ({by_tc} of 5)")
     let plank0 = stock[pl][0]
     let workers = mine()
     let tx = start_x[0] / TILE
@@ -171,12 +160,13 @@ def play() -> int:
     var sites_ok = true
     let ate = []::int  // the workers that went to eat
     var planned = 0
+    var most_builders = 0    // the most villagers building one site at once
+    var site_walked = false  // someone stood on a site's cells while it went up
     for(MINUTES * 60 * TICK_HZ) t:
         if t == 40 and lay("lumber_camp", tx + 6, ty - 4, workers[3]): laid++
         if t == 60 and lay("sawmill", tx - 6, ty + 3, workers[4]): laid++
-        if t == 80 and lay("mining_camp", tx + 5, ty + 6, workers[5]): laid++
-        if t == 100 and lay("house", tx - 5, ty - 6, workers[6]): laid++
-        if t == 2400 and lay("inn", tx + 7, ty + 1, workers[7]): laid++  // (once the sawmill is going: planks for it first)
+        if t == 80 and lay("mining_camp", tx + 5, ty + 6, workers[3]): laid++
+        if t == 2400 and lay("inn", tx + 7, ty + 1, workers[4]): laid++  // (once the sawmill is going: planks for it first)
         if t == 140: planned = lay_road(tx - 2, ty + 4, 5, workers[2])
         for(u_x.length) i:
             if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])
@@ -184,22 +174,24 @@ def play() -> int:
         wstep()
         for(b_id.length) b:
             if b_site[b].length and b_done[b] == 0 and b_progress[b] * 1000 > bt_build_ticks[b_kind[b]] * site_permille(b) + bt_build_ticks[b_kind[b]]: sites_ok = false
+        if tick % 20 == 0:
+            for(b_id.length) b:
+                if b_owner[b] == 0 and b_done[b] == 0 and bt_road[b_kind[b]] < 0:
+                    var n = 0
+                    for(u_x.length) i:
+                        if u_task[i] == BUILD and u_target[i] == b_id[b]: n++
+                        if occupied[cell_of(u_x[i], u_y[i])] == b_id[b]: site_walked = true
+                    most_builders = max(most_builders, n)
         if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
     var built = 0
     for(b_id.length) b:
-        if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center") and b_cy[b] * W + b_cx[b] != start_house: built++
-    let col_house = find(hook_unit_names) n: n == "house"  // (the mod's Lua: the home a worker was born in)
-    var born = 0
-    for(u_id.length) i:
-        if u_owner[i] == 0 and hook_unit_get(col_house, i) != 0: born++
-    var born_all = 0
-    for(u_id.length) i:
-        if hook_unit_get(col_house, i) != 0: born_all++
-    print "steading: {MINUTES} min, {laid} laid, {built} built, {born_all} born, {ate.length} ate, {road_cells()} road; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
-    check(laid == 5 and built == 5, "steading: the hut, the sawmill, the quarry, a house and an inn are built ({built} of {laid})")
+        if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center"): built++
+    print "steading: {MINUTES} min, {laid} laid, {built} built, {most_builders} at most on a site, {ate.length} ate, {road_cells()} road; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]}, stone {stock[st][0]} in store"
+    check(laid == 4 and built == 4, "steading: the hut, the sawmill, the quarry and an inn are built ({built} of {laid})")
     check(planned == 5 and road_cells() == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({road_cells()} of {planned})")
-    check(ate.length >= 4, "steading: hungry workers go to eat ({ate.length} of them)")
-    check(born > 0 and born <= 4, "steading: children are born in the two houses, no more than their beds ({born})")
+    check(most_builders >= 2 and most_builders <= 3, "steading: idle villagers help build a site, no more than 3 at once ({most_builders})")
+    check(site_walked, "steading: villagers walk across a site while it goes up")
+    check(ate.length >= 3, "steading: hungry workers go to eat ({ate.length} of them)")
     check(sites_ok, "steading: no site was built ahead of its goods")
     check(produced[pl][0] > 0 and stock[pl][0] > plank0, "steading: the sawmill makes planks, more than the town started with ({plank0} -> {stock[pl][0]})")
     return h
@@ -211,8 +203,8 @@ def store_planks() -> int:
     return n
 
 // Through a save (#75): the mod's Lua loads again with the saved match, and its state comes back in the hook columns.
-// A house goes up and workers cut wood for 2 minutes; then 2 minutes more, once straight on and once from a save made
-// there: the same hash every tick. Whether they matched, and whether anyone was hungry, ate or was born by then.
+// A hut goes up and villagers cut wood for 2 minutes; then 2 minutes more, once straight on and once from a save made
+// there: the same hash every tick. Whether they matched, and whether anyone was hungry or ate by then.
 // stop: the mod's rules stop before the save (as an error would stop them): they must stay stopped after the load.
 def save_run(stop:bool) -> bool, bool:
     let path = "test_steading.sav"
@@ -220,9 +212,9 @@ def save_run(stop:bool) -> bool, bool:
     let workers = mine()
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
-    gather_near(workers.slice(0, 4), "wood")
+    gather_near(workers.slice(0, 3), "wood")
     for(2 * 60 * TICK_HZ) t:
-        if t == 40: lay("house", tx - 5, ty - 6, workers[6])
+        if t == 40: lay("lumber_camp", tx + 6, ty - 4, workers[4])
         wstep()
     if stop:
         let pk = l_packs[find(l_packs) p: p.id == "steading"]
@@ -235,7 +227,7 @@ def save_run(stop:bool) -> bool, bool:
     let cols = map(hook_unit_names) n: n
     var lively = false
     for(u_id.length) i:
-        for([ "meal", "house" ]) name:
+        for([ "meal" ]) name:
             let c = find(cols) n: n == name
             if c >= 0 and hook_unit_get(c, i) != 0: lively = true
     reset_world()

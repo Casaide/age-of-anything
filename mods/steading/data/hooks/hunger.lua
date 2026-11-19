@@ -1,9 +1,8 @@
 -- Eating, in Lua (Casaide/creel#82). Switched on by rules economy.hunger.every; off in any other match.
 -- Units of the eater slots (economy.hunger.eaters) count the ticks since they last ate. Once hungry, at a pause in their
--- work they go and eat: at home (economy.lua) if its larder has food, else at the nearest of their side's buildings
--- that serve (buildings.json "serves": an inn), else at a store. A meal at home or a store is a whole food; an inn opens
--- one food into "serves" meals, so it feeds a town for less. Then they go back to the job they left. A hungry unit
--- that isn't eating works only economy.hunger.starving_pct of the time, and not at all once it has gone twice "every"
+-- work they go and eat at the nearest of their side's buildings that serve (buildings.json "serves": an inn), else at
+-- a store. A meal at a store is a whole food; an inn opens one food into "serves" meals, so it feeds a town for less.
+-- Then they go back to the job they left. A hungry unit that isn't eating works only economy.hunger.starving_pct of the time, and not at all once it has gone twice "every"
 -- without a meal. Serving buildings keep their holds of economy.hunger.foods topped up, by carriers.
 
 T_EAT = 100    -- our own task: going to eat (the engine's tasks end at T_CARRY, and its work leaves others be)
@@ -32,7 +31,6 @@ for k = 0, building_type_count() - 1 do serves[k + 1] = building_type(k).serves 
 local eats = {}
 for k = 0, unit_type_count() - 1 do eats[k + 1] = eater_slots[t_slot(k)] == true end
 
-local col_house = unit_column("house")  -- (economy.lua's)
 local col_meal = unit_column("meal")  -- ticks since it last ate (up to twice "every")
 local col_was = unit_column("was")  -- the job it left to eat, target * 16 + task, 0 for none
 local col_rest = unit_column("rest")  -- while resting (T_FAINT), 1 + the task it rests from
@@ -95,13 +93,8 @@ local function nearest_meal(i, list)
   return best
 end
 
--- Where unit i eats: its home if that has food, else the nearest inn of its side, else its nearest store; -1 if there's
--- none. (places: meal_places())
+-- Where unit i eats: the nearest inn of its side, else its nearest store; -1 if there's none. (places: meal_places())
 local function eat_place(i, places)
-  local hid = unit_get(col_house, i)
-  local home = -1
-  if hid ~= 0 then home = building_index(hid) end
-  if home >= 0 and b_done(home) ~= 0 and food_offered(home) >= 0 then return home end
   local mine = places[u_owner(i) + 1]
   if not mine then return -1 end
   local inn = nearest_meal(i, mine[1])
@@ -174,9 +167,11 @@ end
 
 -- A hungry unit rests this tick: past twice "every" always, before that outside starving_pct of each 100 ticks. From
 -- gathering, carrying back, building, standing idle (a resting carrier takes no job), or a carrier's job with nothing
--- in hand yet (given back to the queue: it rests from idle). One carrying goods works on.
+-- in hand yet (given back to the queue: it rests from idle). One with goods in hand works on till it puts them down
+-- (it can't go to eat before: one starving with an armful would rest for ever).
 local function rests(i, meal, now)
   local task = u_task(i)
+  if u_carry(i) > 0 then return false end
   if task ~= T_NONE and task ~= GATHER and task ~= T_RETURN and task ~= BUILD and not (task == T_CARRY and u_carry(i) == 0) then
     return false
   end
