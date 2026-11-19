@@ -19,8 +19,7 @@ macOS and the Steam Deck.
 | `docs/research.md` | Technical reference and sources (lockstep, pathing, Holepunch bridge) |
 | [Issues](https://github.com/Casaide/age-of-anything/issues) | The backlog, bugs and upstream Lobster changes |
 | `docs/roster-template.md` | Full building, age and unit-line plan, with MVP/Next/Later status |
-| `docs/market-context.md` | Why this game, why now (industry, genres, engines) |
-| `docs/business.md` | How the game earns (Steam, Early Access, era packs) and the website plan; open questions |
+| Business and market notes | Private, in `Casaide/age-of-anything-private` (`docs/business.md`, `docs/market-context.md`); not in this repo |
 | `docs/rendering.md` | How the art is made: models (code and Blender), 8-facing bakes, worn armour, buildings, checking tools
 | `docs/milestones/lobster-port.md` | The move from Godot to Lobster: what was ported, how it was checked, what's left |
 | `docs/audio.md` | How the sound is made: the offline synth (`src/audio/`), effects, creature voices, the theme in stems by age |
@@ -134,7 +133,7 @@ The engine is `Casaide/creel` (public, Apache 2.0), here as the git submodule `c
 ## Layout
 
 ```
-archive/         development history: journal, decisions, timeline, screenshots
+archive/         development history: journal, decisions, timeline, screenshots (its own private repo, cloned here; gitignored)
 data/            the data contract; mods are just more of this
   parts.json       every part: slot, shapes, sockets, stats, tags, points, era, cost_mix, legs (poses), body_steps
   creatures.json   creature -> body + head + skins + favoured families (+ fused_mount, draw_scale, crew_back)
@@ -290,6 +289,9 @@ catches it, then fix it.
 
 `archive/` records how the game grows: pictures, decisions, changes of direction, funny bugs.
 It's for future AI sessions (the *why* behind the code) and for fun. See `archive/README.md`.
+It is its own private repo, `Casaide/age-of-anything-archive`, cloned into `archive/` here
+(`git clone git@github.com:Casaide/age-of-anything-archive.git archive`) and gitignored by the game, so its
+pictures and notes never reach the public repo. Commit and push archive changes in `archive/` itself.
 
 **Take pictures as you go, not just at the end.** Whenever something visible changes, capture it
 straight away into `archive/images/<YYYY-MM-DD>/NN-name.png` (numbered in order within the day).
