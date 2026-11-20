@@ -582,7 +582,7 @@ def inn_seats():
         if u_owner[i] == 0: hook_unit_set(col_meal, i, life + 1)  // (their bars empty: 1 + the ticks used up)
     var most = 0
     var full_and_waiting = false
-    var seen_seated = false  // someone at the table drawn or in the crowd outside
+    var seen_seated = false             // someone at the table drawn or in the crowd outside
     let sat_for = map(u_x.length) _: 0  // ticks each has sat so far, this sitting
     var shortest = 1 << 30              // the shortest sitting, in ticks, per food eaten at it
     let ate_at = map(u_x.length) _: 0   // sittings each has had
