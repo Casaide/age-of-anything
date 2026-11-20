@@ -7,7 +7,8 @@
 --     gathers goes to the nearest drop-off (the hut it works at, by its trees), and carriers take it on from there.
 -- A specialist isn't a carrier, nor sent to build: those are the serfs' (economy.carriers).
 -- A workplace with no goods to gather round it (a mill, a bakery: a recipe) works only while one of its staff stands at
--- its door (#99): its worker goes there and waits, and the engine asks can_make before each round.
+-- its door (#99): its worker goes there and waits, and the engine asks can_make before each round. After each round
+-- it takes a break of REST (#139).
 -- A workplace with a "reach" (a mine, #42: tiles out from its edge) has its worker gather only that near: what's
 -- further is someone else's. When none is left within reach, the place is worked out and its worker waits at the door;
 -- unless it "plants" (the woodcutter's hut, #126): then its worker plants that terrain (saplings) on open ground in reach,
@@ -26,6 +27,8 @@ for _, slot in ipairs((rules().economy or {}).tools_for or {}) do needs_tool[slo
 local staff = {}
 local gathers = {}
 local reach = {}  -- (in tiles, or nil for anywhere)
+local ins = {}  -- the resources its recipe takes (r, 0-based), or nil ("makes": the workshops)
+local make_ticks = {}  -- and how long a round takes
 local plants = {}  -- the terrain type its worker plants when nothing is left to gather in reach ("plants"), or -1
 local job_slots = {}
 for k = 0, building_type_count() - 1 do
@@ -34,6 +37,14 @@ for k = 0, building_type_count() - 1 do
   gathers[k + 1] = 0
   reach[k + 1] = bt.reach
   plants[k + 1] = -1
+  if bt.makes and bt.makes["in"] then
+    ins[k + 1] = {}
+    for id, n in pairs(bt.makes["in"]) do
+      if n > 0 then table.insert(ins[k + 1], resource_index(id)) end
+    end
+    table.sort(ins[k + 1])
+    make_ticks[k + 1] = (bt.makes.time or 0) * TICK_HZ
+  end
   if bt.plants then
     plants[k + 1] = terrain_type(bt.plants)
     assert(plants[k + 1] >= 0 and bt.reach, "buildings.json plants: no terrain " .. bt.plants .. ", or no reach")
@@ -59,6 +70,9 @@ local col_work = unit_column("workplace")  -- the id of the building it works at
 local col_present = building_column("present")  -- 1 while one of its staff stands at its door (as of the last look)
 local col_tool = unit_column("tool")  -- 1 once it has its tool
 local col_out = building_column("worked_out")  -- 1 once there's nothing left to gather within its reach
+local col_in = building_column("in_goods")  -- its recipe's goods in as of the last tick (a round's start takes some)
+local col_rest = building_column("rest_until")  -- the tick its worker's break after the round going ends
+local REST = 8 * TICK_HZ  -- the break a worker takes after each round of a recipe (the genre's pace, #139)
 local col_plant = unit_column("plant")  -- the cell + 1 it's going to plant, 0 for none (#126)
 local col_planting = unit_column("planting")  -- the looks it has stood planting there
 
@@ -235,9 +249,24 @@ local function home_drops()
   end
 end
 
+-- Each tick: a workshop whose goods in fell since the last tick has started a round (serfs only ever bring goods in);
+-- its next waits till that round is done and its worker has had a break (can_make).
+local function breaks()
+  for b = 0, building_count() - 1 do
+    local o = ins[b_kind(b) + 1]
+    if o and b_done(b) ~= 0 then
+      local n = 0
+      for _, r in ipairs(o) do n = n + b_hold(b, r) end
+      if n < building_get(col_in, b) then building_set(col_rest, b, tick() + make_ticks[b_kind(b) + 1] + REST) end
+      building_set(col_in, b, n)
+    end
+  end
+end
+
 function jobs_tick()
   if not stocked() then return end
   home_drops()
+  breaks()
   if tick() % LOOK ~= 0 then return end
   -- One look over the units: who works where (by building slot + 1), and each side's free specialists by slot.
   local working = {}
@@ -287,7 +316,7 @@ end
 -- The engine asks before a round of building b's recipe: a staffed workplace makes only with its worker there.
 function can_make(b)
   if not staff[b_kind(b) + 1] then return true end
-  return building_get(col_present, b) == 1
+  return building_get(col_present, b) == 1 and tick() >= building_get(col_rest, b)
 end
 
 -- What the panel says unit i does, as a specialist: "Woodcutter" ("" if it isn't one), and where if it has a workplace.

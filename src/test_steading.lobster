@@ -233,6 +233,9 @@ def play() -> int:
     var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
     var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
+    var planks_seen = -1  // the sawmill's rounds (#139): planks made as of last tick, when the last round ended, the shortest gap
+    var round_at = -1
+    var shortest_round = 1 << 30
     for(MINUTES * 60 * TICK_HZ) t:
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
         if t == 40 and lay("lumber_camp", tx + 6, ty - 4): laid++
@@ -263,6 +266,11 @@ def play() -> int:
             if u_task[i] == GATHER and (find([ "woodcutter", "stonecutter", "farmer", "miner" ]) g: g == t_slot[u_kind[i]]) < 0: gatherers_ok = false
             if u_owner[i] == 0 and u_task[i] == T_RETURN and t_carrier[u_kind[i]] == 0 and hook_unit_get(col_work, i) != 0 and u_target[i] != hook_unit_get(col_work, i): dropped_away++
         lay_step()
+        let sawn = produced[res("plank")][0]
+        if planks_seen >= 0 and sawn > planks_seen:
+            if round_at >= 0: shortest_round = min(shortest_round, tick - round_at)
+            round_at = tick
+        planks_seen = sawn
         for(b_id.length) b:
             if b_site[b].length and b_done[b] == 0 and b_progress[b] > build_cap(b) + 1: sites_ok = false
         if tick % 20 == 0:
@@ -310,6 +318,9 @@ def play() -> int:
     check(planned == 5 and dragged_built == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({dragged_built} of {planned})")
     check(most_builders >= 2 and most_builders <= 3, "steading: idle serfs help build a site, no more than 3 sent at once ({most_builders})")
     check(site_walked, "steading: serfs walk across a site while it goes up")
+    check(next_job / MINUTES <= 50, "steading: serfs aren\'t run off their feet: at the genre\'s pace a town of this size makes at most 50 carry jobs a minute, most for its building sites ({next_job / MINUTES}; 59 at the old pace)")
+    check(shortest_round >= 44 * TICK_HZ and shortest_round < 1 << 30,
+          "steading: a sawyer saws a log in 36 s and takes a break after each round, the genre\'s pace (the shortest round {shortest_round / TICK_HZ} s)")
     check(dropped_away == 0, "steading: a gatherer only ever drops at its own hut, and waits there when it\'s full; serfs take goods on ({dropped_away} ticks headed elsewhere)")
     let never = filter(site_waits): _ >= 0
     check(longest_wait <= 30 * TICK_HZ and not never.length,
@@ -488,12 +499,13 @@ def pig_chain() -> int:
     let sa = res("sausage")
     hold_take(tc, br, b_hold[tc][br])
     for([ "plank", "stone", "grain" ]) g, j: hold_put(tc, res(g), [ 60, 30, 60 ][j])
+    let sausages0 = all_of(sa)  // (the stocked start's)
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
     var laid = 0
     var trained = false
     var h = 0
-    for(10 * 60 * TICK_HZ) t:
+    for(20 * 60 * TICK_HZ) t:  // (at the genre's pace a pig takes two minutes, #139)
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
         if t == 40 and lay("pig_farm", tx + 6, ty - 4): laid++
         if t == 60 and lay("butcher", tx - 6, ty + 3): laid++
@@ -503,10 +515,10 @@ def pig_chain() -> int:
             trained = true
         lay_step()
         if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
-    let eaten = produced[sa][0] - all_of(sa)
+    let eaten = sausages0 + produced[sa][0] - all_of(sa)
     print "steading: pigs: {laid} laid, pigs {produced[pg][0]}, sausages {produced[sa][0]}, {eaten} eaten"
     check(laid == 3 and done_of("pig_farm") != 0 and done_of("butcher") != 0, "steading: a pig farm and a butcher go up ({laid} laid)")
-    check(produced[pg][0] > 0 and produced[sa][0] >= 3 * (produced[pg][0] - all_of(pg)) - 6, "steading: pigs are fattened on grain and made into sausages, three a pig (but those not yet butchered) ({produced[pg][0]} pigs, {produced[sa][0]} sausages)")
+    check(produced[pg][0] > 0 and produced[sa][0] >= 3 and produced[sa][0] >= 3 * (produced[pg][0] - all_of(pg)) - 6, "steading: pigs are fattened on grain and made into sausages, three a pig (but those not yet butchered) ({produced[pg][0]} pigs, {produced[sa][0]} sausages)")
     check(eaten > 0, "steading: with no bread, the town eats sausages ({eaten})")
     return h
 
