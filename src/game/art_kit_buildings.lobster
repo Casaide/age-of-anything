@@ -78,7 +78,8 @@ def akb_hold(n:MNode?, b:Basis) -> MNode?:
 def akb_placed(arch:string, type:string, model:string, suffix:string) -> BSpec:
     let diagonal = suffix == "^d" or suffix == "^a"
     gate_span = 3.0 * (if diagonal: sqrt(2.0) else: 1.0)
-    let spec = building_spec(arch, model_type(gobj(akb_bdata(), "buildings"), type), AKB_TEAM, model)  // (a mod's new building: the model of the one it extends, #58)
+    let own = if model == "": building_spec(arch, type, AKB_TEAM) else: nil                                   // (an architecture with its own model of a mod's building, #125)
+    let spec = own or building_spec(arch, model_type(gobj(akb_bdata(), "buildings"), type), AKB_TEAM, model)  // (else the model of the one it extends, #58)
     gate_span = 3.0
     assert spec
     var s = (if type == "house": AKB_HOUSE_SCALE else: 1.0) * akb_scale(arch, type)
@@ -100,6 +101,7 @@ def akb_placed(arch:string, type:string, model:string, suffix:string) -> BSpec:
     spec.body = akb_hold(spec.body, b) or spec.body
     spec.banner = akb_hold(spec.banner, b)
     spec.vane = akb_hold(spec.vane, b)
+    spec.turn = akb_hold(spec.turn, b)
     spec.open = akb_hold(spec.open, b)
     for([ "smoke", "lantern", "banner_pivot", "vane_pivot" ]) k:
         if akb_has(spec, k): spec.pts.set(k, bxf(b, akb_pt(spec, k)))
@@ -384,6 +386,13 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
                 lk.arms_front[k] = "{name}:arm{k}:front"
     let vane = spec.vane
     if vane: akb_keep(name + ":vane", vane, false, akb_pt(spec, "vane_pivot"))
+    if spec.turn:  // a turning part (a mill's sails), a quarter turn in steps (4 sails look the same each quarter)
+        for(TURN_FRAMES) k:
+            bld_turn = float(k) * 90.0 / float(TURN_FRAMES)
+            let tn = akb_placed(arch, type, model, suffix).turn
+            if tn: akb_keep("{name}:turn{k}", tn, false)
+        bld_turn = 0.0
+        lk.turns = map(TURN_FRAMES) k: "{name}:turn{k}"
     akb_split_shadows = false
     for(4) st:
         let p = akb_placed(arch, type, model, suffix)

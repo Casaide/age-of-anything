@@ -190,7 +190,7 @@ def building_fx_tick(dt:float):
             let look = building_look(b)
             let at = building_anchor(b)
             let fx = bfx.get(look)
-            if fx and fx.has_smoke and (is_house(b_kind[b]) or b_queue[b].length > 0):
+            if fx and fx.has_smoke and (is_house(b_kind[b]) or b_queue[b].length > 0 or b_make[b] > 0):  // (a workshop smokes while it works, #143)
                 emit("{b_id[b]}:s", 2.5, dt) (): Puff2 { at + fx.smoke, rnd_dir(float2 { 0.2, -1.0 }, 12.0, 4.0, 7.0), 0.0, 4.0, 0, rnd_range(0.12, 0.2) * 16.0 }
             let full = bm_hp[b_owner[b]][b_kind[b]]
             let damage = if full > 0: 1.0 - float(b_hp[b]) / float(full) else: 0.0

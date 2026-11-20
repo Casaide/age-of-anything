@@ -11,6 +11,8 @@
 
 let BLD_UP = float3 { 0.0, 1.0, 0.0 }
 var brng = grng(0)
+let TURN_FRAMES = 8
+var bld_turn = 0.0   // degrees through a turning part's step (ArtKit sets it while it bakes the steps)
 var gate_span = 3.0  // a gate's length end to end in tiles (ArtKit sets it: 3 x sqrt 2 on a diagonal)
 
 def bv(x:float, y:float, z:float) -> float3: return float3 { x, y, z }
@@ -21,6 +23,7 @@ class BSpec:
     body:MNode
     banner:MNode? = nil
     vane:MNode? = nil
+    turn:MNode? = nil  // a part that turns (a mill's sails): baked at TURN_FRAMES steps of bld_turn, drawn in turn (#125)
     open:MNode? = nil
     icon:MNode? = nil
     arms = []::MNode
