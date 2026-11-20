@@ -171,6 +171,7 @@ def play() -> int:
     for(seam) c: amount[c] = COAL_LEFT
     let tips = match_tips(su_rules)
     check(tips.length == 12 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips and goals, the first (lay a school) not yet done ({tips.length})")
+    check(equal(gstrs(su_rules, "topbar_hide"), [ "age", "idle", "tree" ]), "steading: its top bar leaves out the age, the idle workers and the tech tree (#113)")
     // The goals' kinds of done (#104): so much made or gathered, so many people.
     let goal = Tip { "", "", "made:bread:50", "Goal" }
     check(tips[4].label == "Goal" and tips[0].label == "Tip" and not tip_done(goal, 0, 5) and tip_done(Tip { "", "", "people:5", "Goal" }, 0, 5) and not tip_done(Tip { "", "", "people:6", "Goal" }, 0, 5),

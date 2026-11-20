@@ -93,13 +93,18 @@ def draw_topbar(speed:float, paused:bool):
     let pop_w = lay.pop_w
     let title = lay.title
     let title_w = lay.title_w
+    // What the rules leave out (rules "topbar_hide": "age", "idle", "tree"; a town-builder has one age and no research, #113).
+    let hide = gstrs(su_rules, "topbar_hide")
+    let show_age = (find(hide) n: n == "age") < 0
+    let show_idle = (find(hide) n: n == "idle") < 0
+    let show_tree = (find(hide) n: n == "tree") < 0
     let age_w = lay.age_w
     let idle = tb_idle()
     let idle_w = lay.idle_w
     let tree_w = lay.tree_w
     let clock_w = lay.clock_w
     let pace_w = lay.pace_w
-    let w = lay.w
+    let w = lay.w - (if show_age: 0.0 else: age_w + sep) - (if show_idle: 0.0 else: idle_w + sep) - (if show_tree: 0.0 else: tree_w + sep)
     let h = ph + pad.y * 2.0
     tb_rect = float4 { at.x, at.y, w, h }
     // The beam: the frame's metal, studs on the corners (theme.gd's Bar: frame_box at weight 6).
@@ -138,39 +143,42 @@ def draw_topbar(speed:float, paused:bool):
         tb_text(float2 { x, y + (ph - 22.0 * s) / 2.0 - 3.0 * s }, title, int(22.0 * s), ui_look.title, 2)
         x += title_w + sep
     // The age badge.
-    tb_plaque(float2 { x, y }, float2 { age_w, ph })
-    let line_y = y + rows.age_icon
-    icon("age_up", float2 { x + 8.0 * s, line_y }, 26.0 * s, 1.0)
-    let num_x = x + 40.0 * s
-    tb_text(float2 { num_x, y + rows.age_num }, string(ages[ME]), int(24.0 * s), ui_look.title, 2)
-    tb_text(float2 { num_x + tb_text_w(string(ages[ME]), int(24.0 * s), 2) + 6.0 * s, y + rows.age_txt }, age_txt, int(17.0 * s), if next != "": TB_GOLD else: light, 1)
-    if next != "":  // the age-up's progress: a slim bar under the line
-        let bx = x + 8.0 * s
-        let bw = age_w - 16.0 * s
-        let by = y + rows.age_bar
-        ui_fill(float2 { bx, by }, float2 { bw, 5.0 * s }, float4 { 0.0, 0.0, 0.0, 0.6 })
-        ui_fill(float2 { bx, by }, float2 { bw * frac, 5.0 * s }, ui_look.accent)
-        ui_fill(float2 { bx, by }, float2 { bw * frac, 1.5 * s }, float4 { 1.0, 1.0, 1.0, 0.35 })
-        ui_outline(float2 { bx, by }, float2 { bw, 5.0 * s }, 1.0, float4 { 0.0, 0.0, 0.0, 0.7 })
-    if tb_over(float2 { x, y }, float2 { age_w, ph }): tb_tip = if next != "": "Ageing up to the {next}" else: "Your age: the {tb_age_name(ages[ME])}"
-    x += age_w + sep
+    if show_age:
+        tb_plaque(float2 { x, y }, float2 { age_w, ph })
+        let line_y = y + rows.age_icon
+        icon("age_up", float2 { x + 8.0 * s, line_y }, 26.0 * s, 1.0)
+        let num_x = x + 40.0 * s
+        tb_text(float2 { num_x, y + rows.age_num }, string(ages[ME]), int(24.0 * s), ui_look.title, 2)
+        tb_text(float2 { num_x + tb_text_w(string(ages[ME]), int(24.0 * s), 2) + 6.0 * s, y + rows.age_txt }, age_txt, int(17.0 * s), if next != "": TB_GOLD else: light, 1)
+        if next != "":  // the age-up's progress: a slim bar under the line
+            let bx = x + 8.0 * s
+            let bw = age_w - 16.0 * s
+            let by = y + rows.age_bar
+            ui_fill(float2 { bx, by }, float2 { bw, 5.0 * s }, float4 { 0.0, 0.0, 0.0, 0.6 })
+            ui_fill(float2 { bx, by }, float2 { bw * frac, 5.0 * s }, ui_look.accent)
+            ui_fill(float2 { bx, by }, float2 { bw * frac, 1.5 * s }, float4 { 1.0, 1.0, 1.0, 0.35 })
+            ui_outline(float2 { bx, by }, float2 { bw, 5.0 * s }, 1.0, float4 { 0.0, 0.0, 0.0, 0.7 })
+        if tb_over(float2 { x, y }, float2 { age_w, ph }): tb_tip = if next != "": "Ageing up to the {next}" else: "Your age: the {tb_age_name(ages[ME])}"
+        x += age_w + sep
     // Idle workers: how many; a click (or ".") goes to the next one.
     let bh = 40.0 * s
     let by = y + (ph - bh) / 2.0
-    if hud_button(float2 { x, by }, float2 { idle_w, bh }, false, true) or (gl.button(".") == 1 and not typing_text and not tree_open): tb_next_idle()
-    let ia = if idle.length: 1.0 else: 0.5
-    icon("idle", float2 { x + 8.0 * s, by + 4.0 * s }, bh - 8.0 * s, ia)
-    tb_text(float2 { x + 46.0 * s, by + (bh - 18.0 * s) / 2.0 - 2.0 * s }, string(idle.length), int(18.0 * s),
-            if idle.length: TB_IDLE else: float4 { 0.94, 0.89, 0.78, 0.5 }, 1)
-    if tb_over(float2 { x, by }, float2 { idle_w, bh }): tb_tip = "Idle workers: click (or press .) to go to the next one"
-    x += idle_w + sep
+    if show_idle:
+        if hud_button(float2 { x, by }, float2 { idle_w, bh }, false, true) or (gl.button(".") == 1 and not typing_text and not tree_open): tb_next_idle()
+        let ia = if idle.length: 1.0 else: 0.5
+        icon("idle", float2 { x + 8.0 * s, by + 4.0 * s }, bh - 8.0 * s, ia)
+        tb_text(float2 { x + 46.0 * s, by + (bh - 18.0 * s) / 2.0 - 2.0 * s }, string(idle.length), int(18.0 * s),
+                if idle.length: TB_IDLE else: float4 { 0.94, 0.89, 0.78, 0.5 }, 1)
+        if tb_over(float2 { x, by }, float2 { idle_w, bh }): tb_tip = "Idle workers: click (or press .) to go to the next one"
+        x += idle_w + sep
     // The tech tree page.
-    if hud_button(float2 { x, by }, float2 { tree_w, bh }, false, true):
-        open_tree(ME)
-    icon("research", float2 { x + 12.0 * s, by + (bh - 22.0 * s) / 2.0 }, 22.0 * s, 1.0)
-    tb_text(float2 { x + 40.0 * s, by + (bh - 17.0 * s) / 2.0 - 2.0 * s }, "Tech tree", int(17.0 * s), light, 1)
-    if tb_over(float2 { x, by }, float2 { tree_w, bh }): tb_tip = "Your race\'s tech tree and bonuses (F1)"
-    x += tree_w + sep
+    if show_tree:
+        if hud_button(float2 { x, by }, float2 { tree_w, bh }, false, true):
+            open_tree(ME)
+        icon("research", float2 { x + 12.0 * s, by + (bh - 22.0 * s) / 2.0 }, 22.0 * s, 1.0)
+        tb_text(float2 { x + 40.0 * s, by + (bh - 17.0 * s) / 2.0 - 2.0 * s }, "Tech tree", int(17.0 * s), light, 1)
+        if tb_over(float2 { x, by }, float2 { tree_w, bh }): tb_tip = "Your race\'s tech tree and bonuses (F1)"
+        x += tree_w + sep
     // The clock, and the game's pace when it isn't the usual.
     tb_plaque(float2 { x, y }, float2 { clock_w, ph })
     tb_text(float2 { x + (clock_w - tb_text_w(clock_txt, int(18.0 * s), 1)) / 2.0, y + rows.clock }, clock_txt, int(18.0 * s), light, 1)
