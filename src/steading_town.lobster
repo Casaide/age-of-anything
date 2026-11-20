@@ -59,6 +59,7 @@ import lua.api
 import gen.reset
 import gen.save
 import testkit.kit
+import steading_lay
 
 // A Steading town for pictures (#104): the bot doesn't build the economy's chains, so this lays one out by script on
 // Steading Vale, plays it headless and saves it, to be loaded in the game for a capture:
@@ -79,36 +80,14 @@ if args.length:
     assert ok
     minutes = n
 
-// Lay building `id` for player 0 near (x, y) in tiles: the first place it fits, spiralling out.
+// Lay building `id` for player 0 near (x, y) in tiles, with a road to its door (steading_lay).
 def lay(id:string, x:int, y:int):
-    let k = btype_index(id)
-    assert k >= 0
-    for(12) d:
-        for(2 * d + 1) ey:
-            for(2 * d + 1) ex:
-                let dx = ex - d
-                let dy = ey - d
-                if max(abs(dx), abs(dy)) == d and can_place(0, k, x + dx, y + dy, 0):
-                    issue_cmd(0, CMD_BUILD, []::int, k, x + dx, y + dy, 0)
-                    return
-    print "steading_town: no room for {id} near {x},{y}"
+    if not lay_with_road(id, x, y): print "steading_town: no room for {id} near {x},{y}"
 
 def done_of(id:string) -> int:
     for(b_id.length) b:
         if b_owner[b] == 0 and b_done[b] != 0 and bt_name[b_kind[b]] == id: return b_id[b]
     return 0
-
-// Lay a road along a row (across) or down a column from x, y, n cells long, a plan a cell as the road tool
-// lays it (game/roads, #68); cells already taken are skipped, so a street runs past the buildings in its way.
-def lay_road(x:int, y:int, n:int, across:bool):
-    let k = btype_index("road")
-    var first = true
-    for(n) j:
-        let cx = if across: x + j else: x
-        let cy = if across: y else: y + j
-        if can_place(0, k, cx, cy, 0):
-            issue_cmd(0, CMD_BUILD, []::int, k, cx, cy, 0, if first: 0 else: 1)
-            first = false
 
 def res(name:string) -> int: return str_index(resource_names, name)
 
@@ -172,11 +151,6 @@ for(minutes * 60 * TICK_HZ) t:
     if not iron_laid and done_of("gold_smelter") != 0:  // (once the gold smelter is up, so the first smelter goes there: it pays the school)
         iron_laid = true
         lay("iron_smelter", tx + 17, ty + 9)
-    // the streets, once the first chain is up: one across the town's middle, one down through it, one to the mines
-    if t == 1500:
-        lay_road(tx - 10, ty + 2, 24, true)
-        lay_road(tx + 1, ty - 9, 20, false)
-    if t == 3300: lay_road(tx + 3, ty + 5, sx - tx, true)
     // the school trains one at a time, each paid in gold, as the town needs them
     let school = done_of("school")
     if school != 0 and t % 20 == 0:
