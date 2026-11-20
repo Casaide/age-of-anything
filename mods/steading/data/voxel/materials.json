@@ -1,17 +1,126 @@
 {
  "_doc": "Steading's goods' colours, for the loads the serfs and trades carry (#125).",
- "plank": {"rgb": "#cfa468"},
- "plank_end": {"rgb": "#e2c28e"},
- "sheaf": {"rgb": "#dcbc58", "fur": true},
- "sack": {"rgb": "#e9e1cc", "fur": true},
- "loaf": {"rgb": "#b8702f"},
- "sausage": {"rgb": "#97452f"},
- "coal": {"rgb": "#2b292d"},
- "iron_ore": {"rgb": "#8a5440", "fur": true},
- "gold_ore": {"rgb": "#86806f", "fur": true},
- "iron_bar": {"rgb": "#a7b0ba", "shine": 0.6},
- "block": {"rgb": "#c6c0b2"},
- "chest": {"rgb": "#74482a"},
- "pig": {"rgb": "#e3a3a0"},
- "pig_snout": {"rgb": "#c97d7c"}
+ "plank": {
+  "rgb": "#cfa468"
+ },
+ "plank_end": {
+  "rgb": "#e2c28e"
+ },
+ "sheaf": {
+  "rgb": "#dcbc58",
+  "fur": true
+ },
+ "sack": {
+  "rgb": "#e9e1cc",
+  "fur": true
+ },
+ "loaf": {
+  "rgb": "#b8702f"
+ },
+ "sausage": {
+  "rgb": "#97452f"
+ },
+ "coal": {
+  "rgb": "#2b292d"
+ },
+ "iron_ore": {
+  "rgb": "#8a5440",
+  "fur": true
+ },
+ "gold_ore": {
+  "rgb": "#86806f",
+  "fur": true
+ },
+ "iron_bar": {
+  "rgb": "#a7b0ba",
+  "shine": 0.6
+ },
+ "block": {
+  "rgb": "#c6c0b2"
+ },
+ "chest": {
+  "rgb": "#74482a"
+ },
+ "pig": {
+  "rgb": "#e3a3a0"
+ },
+ "pig_snout": {
+  "rgb": "#c97d7c"
+ },
+ "undyed": {
+  "rgb": "#9a8a6c",
+  "fur": true
+ },
+ "jerkin": {
+  "rgb": "#7a5232"
+ },
+ "hood_green": {
+  "rgb": "#3f5a2a",
+  "fur": true
+ },
+ "dusty": {
+  "rgb": "#aaa59b",
+  "fur": true
+ },
+ "felt_brown": {
+  "rgb": "#6b5a44"
+ },
+ "felt_dark": {
+  "rgb": "#3d3a36"
+ },
+ "rust_shirt": {
+  "rgb": "#9c4a30"
+ },
+ "canvas": {
+  "rgb": "#c6a878"
+ },
+ "smock": {
+  "rgb": "#c9b98e",
+  "fur": true
+ },
+ "floury": {
+  "rgb": "#ece8dc",
+  "fur": true
+ },
+ "ochre": {
+  "rgb": "#c58a4a"
+ },
+ "apron_white": {
+  "rgb": "#f2ede2"
+ },
+ "dark_wool": {
+  "rgb": "#4a4440",
+  "fur": true
+ },
+ "candle": {
+  "rgb": "#eee6c8"
+ },
+ "flame": {
+  "rgb": "#ffb02a",
+  "shine": 0.9
+ },
+ "furnace_red": {
+  "rgb": "#7a3a2a"
+ },
+ "apron_leather": {
+  "rgb": "#6a4228"
+ },
+ "smith_blue": {
+  "rgb": "#3e4a5a"
+ },
+ "herd_blue": {
+  "rgb": "#7a8a9a",
+  "fur": true
+ },
+ "hood_brown": {
+  "rgb": "#8a6a44",
+  "fur": true
+ },
+ "stripe_blue": {
+  "rgb": "#4a6a9a"
+ },
+ "steel": {
+  "rgb": "#c4cad0",
+  "shine": 0.7
+ }
 }
