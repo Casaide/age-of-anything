@@ -13,7 +13,10 @@
    "iron_smelter",
    "gold_smelter",
    "pig_farm",
-   "butcher"
+   "butcher",
+   "wheat_field",
+   "vineyard",
+   "vine_field"
   ],
   "pages": [
    {
@@ -36,6 +39,9 @@
     "name": "Food",
     "ids": [
      "farm",
+     "wheat_field",
+     "vineyard",
+     "vine_field",
      "mill",
      "bakery",
      "pig_farm",
@@ -119,7 +125,7 @@
   "school": {
    "extends": "house",
    "name": "School",
-   "desc": "Teaches the town's people: new serfs, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters, smiths, swineherds and butchers for the workplaces. Each goes to work where it's needed.",
+   "desc": "Teaches the town's people: new serfs, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters, smiths, swineherds, butchers and winegrowers for the workplaces. Each goes to work where it's needed.",
    "hotkey": "C",
    "pop": 0,
    "house": false,
@@ -137,7 +143,8 @@
     "smelter",
     "smith",
     "swineherd",
-    "butcher"
+    "butcher",
+    "winegrower"
    ],
    "cost": {
     "wood": 0,
@@ -203,7 +210,7 @@
   "inn": {
    "extends": "house",
    "name": "Inn",
-   "desc": "Feeds the town: six hungry people sit at its table at once, the rest wait for a seat. Each eats a sausage, then a loaf, until full. Serfs keep it stocked with bread and sausages.",
+   "desc": "Feeds the town: six hungry people sit at its table at once, the rest wait for a seat. Each has a sausage, a loaf and a cup of wine, the most filling first, until full. Serfs keep it stocked.",
    "hotkey": "D",
    "seats": 6,
    "pop": 0,
@@ -212,7 +219,8 @@
    "note": "",
    "holds": {
     "bread": 12,
-    "sausage": 12
+    "sausage": 12,
+    "wine": 12
    },
    "cost": {
     "wood": 0,
@@ -336,25 +344,19 @@
     "pig_farm"
    ]
   },
-  "house": {
-   "remove": true
-  },
   "farm": {
+   "extends": "house",
    "name": "Farm",
-   "desc": "A farmer works here: reaps the wheat, leaves the grain for the carriers and sows the field again.",
    "size": 3,
-   "water": false,
-   "becomes": {
-    "land": "wheat"
-   },
-   "food": 40,
-   "reseed": {
-    "food": 0,
-    "wood": 0
-   },
+   "desc": "A farmer works here, on the wheat fields you lay round it (drag them, a cell at a time, up to 6 tiles out). He sows a field, and once the wheat is ripe he reaps it and leaves the grain at the farm for the serfs. A farm with no fields grows nothing.",
+   "hotkey": "F",
+   "pop": 0,
+   "house": false,
+   "roles": [],
    "cost": {
     "wood": 0,
-    "plank": 6
+    "plank": 6,
+    "stone": 2
    },
    "drop_off": [
     "grain"
@@ -368,10 +370,108 @@
    "staff": {
     "farmer": 1
    },
+   "reach": 6,
+   "plants": {
+    "terrain": "wheat_sown",
+    "on": "tilled"
+   },
    "note": "",
    "after": [
     "sawmill"
    ]
+  },
+  "wheat_field": {
+   "_doc": "extends the house only because a mod's new building must (mods.lobster); a field plan has no look of its own (game/roads)",
+   "extends": "house",
+   "name": "Wheat Field",
+   "desc": "Drag to lay wheat fields round a farm, a cell at a time. A serf digs each one; the farmer sows it, and reaps it once it's ripe.",
+   "drag": true,
+   "becomes": {
+    "terrain": "tilled"
+   },
+   "size": 1,
+   "hp": 50,
+   "cost": {
+    "food": 0,
+    "wood": 0
+   },
+   "build_time": 4,
+   "age": 1,
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "note": "",
+   "water": false,
+   "after": [
+    "farm"
+   ]
+  },
+  "vineyard": {
+   "extends": "house",
+   "name": "Vineyard",
+   "desc": "A winegrower works here, on the vines you lay round it (drag them, a cell at a time, up to 6 tiles out). He picks the grapes once they're ripe and presses them into wine himself, outside the vineyard. Picked bare, a vine grows its grapes again.",
+   "hotkey": "W",
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "cost": {
+    "wood": 0,
+    "plank": 6,
+    "stone": 2
+   },
+   "drop_off": [
+    "grapes"
+   ],
+   "holds": {
+    "grapes": 4,
+    "wine": 6
+   },
+   "makes": {
+    "in": {
+     "grapes": 1
+    },
+    "out": {
+     "wine": 1
+    },
+    "time": 30
+   },
+   "staff": {
+    "winegrower": 1
+   },
+   "reach": 6,
+   "note": "",
+   "after": [
+    "farm"
+   ]
+  },
+  "vine_field": {
+   "_doc": "extends the house only because a mod's new building must (mods.lobster); a field plan has no look of its own (game/roads)",
+   "extends": "house",
+   "name": "Vines",
+   "desc": "Drag to lay vines round a vineyard, a cell at a time. A serf plants each row; the grapes ripen by themselves, and the winegrower picks them.",
+   "drag": true,
+   "becomes": {
+    "terrain": "vines_young"
+   },
+   "size": 1,
+   "hp": 50,
+   "cost": {
+    "food": 0,
+    "wood": 0
+   },
+   "build_time": 4,
+   "age": 1,
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "note": "",
+   "water": false,
+   "after": [
+    "vineyard"
+   ]
+  },
+  "house": {
+   "remove": true
   },
   "pig_farm": {
    "extends": "pen",

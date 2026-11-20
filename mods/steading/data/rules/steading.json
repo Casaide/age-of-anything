@@ -92,6 +92,7 @@
    "woodcutter",
    "stonecutter",
    "farmer",
+   "winegrower",
    "miner"
   ],
   "builders_come": true,
@@ -111,7 +112,7 @@
    }
   ],
   "hunger": {
-   "_doc": "life: seconds a full bar lasts; hungry_at: the seconds left when they go to eat; start_pct, jitter_pct: a new one's bar, give or take (the genre's: 45 min, 6 min, 60 and 10); eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what's eaten, the most filling first, with the share of the bar each fills (the genre's: sausages 60, fish 50, bread 40, wine 30); eat_secs: how long one food takes at the inn's table (the mod's hooks/hunger.lua, #47, #132)",
+   "_doc": "life: seconds a full bar lasts; hungry_at: the seconds left when they go to eat; start_pct, jitter_pct: a new one's bar, give or take (the genre's: 45 min, 6 min, 60 and 10); eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none once the bar is empty; foods: what's eaten, the most filling first, with the share of the bar each fills (the genre's: sausages 60, fish 50, bread 40, wine 30); eat_secs: how long one food takes at the inn's table (the mod's hooks/hunger.lua, #47, #132)",
    "life": 2700,
    "hungry_at": 360,
    "start_pct": 60,
@@ -128,12 +129,14 @@
     "smelter",
     "smith",
     "swineherd",
-    "butcher"
+    "butcher",
+    "winegrower"
    ],
    "starving_pct": 50,
    "foods": [
     [ "sausage", 60 ],
-    [ "bread", 40 ]
+    [ "bread", 40 ],
+    [ "wine", 30 ]
    ],
    "eat_secs": 5
   },
@@ -149,7 +152,8 @@
    "smelter",
    "smith",
    "swineherd",
-   "butcher"
+   "butcher",
+   "winegrower"
   ],
   "town_builds": true,
   "carriers": [
@@ -174,7 +178,9 @@
   },
   "gather_ticks": {
    "plank": 24,
-   "grain": 30,
+   "grain": 200,
+   "grapes": 200,
+   "wine": 24,
    "flour": 24,
    "bread": 24,
    "_doc": "planks, flour and bread are made, never gathered; every resource needs a rate. The raw trades at the genre's pace (#139): a trunk felled in 30 s, a stone cut in 15 s, ore and coal dug in 35 s, one at a time",
@@ -200,7 +206,9 @@
    "stone": 1,
    "coal": 1,
    "iron_ore": 1,
-   "gold_ore": 1
+   "gold_ore": 1,
+   "grain": 1,
+   "grapes": 1
   }
  },
  "-roster": [
@@ -271,7 +279,7 @@
    "name": "Farmer",
    "building": "school",
    "own_seed": true,
-   "desc": "Works at a farm: reaps the wheat, leaves the grain there for the carriers and sows the field again",
+   "desc": "Works at a farm: sows its wheat fields, reaps them once ripe and leaves the grain there for the serfs",
    "noun": "Farmer"
   },
   {
@@ -343,6 +351,16 @@
    "own_seed": true,
    "desc": "Works at a butcher's: makes pigs into sausages",
    "noun": "Butcher"
+  },
+  {
+   "slot": "winegrower",
+   "role": "worker",
+   "tier": 1,
+   "name": "Winegrower",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a vineyard: picks the grapes on its vines and presses them into wine outside it",
+   "noun": "Winegrower"
   }
  ]
 }

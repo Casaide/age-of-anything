@@ -70,8 +70,8 @@ import game.tips
 lib_load("../data")
 id_load("../data")
 
-let MINUTES = 15
-let FIELD_GRAIN = 40  // the grain a sown field holds (Steading's farm)
+let MINUTES = 25  // (long enough for the food chain at the genre's pace: the farm is up at 8 minutes, its wheat ripe six on, #122)
+let FIELD_GRAIN = 12  // the farm's fields in the scripted towns (game/steading_lay's auto_fields), a sheaf of grain each
 // who works where
 let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ], [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "miner", "gold_mine" ], [ "smelter", "iron_smelter" ], [ "smelter", "gold_smelter" ], [ "smith", "armoury" ] ]
 let MAP = "steading_vale"  // (the mod's own map: the meadow with seams in its mountains, #42)
@@ -170,6 +170,7 @@ def cells_of(r:int, x:int, y:int, d:int) -> [int]:
 def seam_check():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(false)
     let seam = cells_of(res("coal"), start_x[0] / TILE, start_y[0] / TILE, 12)
     let cm = btype_index("coal_mine")
     let ik = btype_index("iron_mine")
@@ -185,6 +186,7 @@ def seam_check():
 def play() -> int:
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(true)  // (each farm gets its fields once built, a player's way: #122)
     let w = res("wood")
     let pl = res("plank")
     let st = res("stone")
@@ -238,6 +240,10 @@ def play() -> int:
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
     let inside_for = map(1000): 0                             // (#140) each unit slot's ticks inside a building so far, and each stay's length when it came out
     let stays = []::int
+    let hc = gobj(gobj(rules, "economy"), "hunger")  // (#132: who ate in the first 15 minutes, and the least time left on a bar then)
+    let col_meal = find(hook_unit_names) n: n == "meal"
+    var ate_15 = -1
+    var lowest = 1 << 30
     var planks_seen = -1  // the sawmill's rounds (#139): planks made as of last tick, when the last round ended, the shortest gap
     var round_at = -1
     var shortest_round = 1 << 30
@@ -270,6 +276,9 @@ def play() -> int:
             if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])
             if u_task[i] == GATHER and (find([ "woodcutter", "stonecutter", "farmer", "miner" ]) g: g == t_slot[u_kind[i]]) < 0: gatherers_ok = false
             if u_owner[i] == 0 and u_task[i] == T_RETURN and t_carrier[u_kind[i]] == 0 and hook_unit_get(col_work, i) != 0 and u_target[i] != hook_unit_get(col_work, i): dropped_away++
+        if t == 15 * 60 * TICK_HZ:
+            ate_15 = ate.length
+            lowest = fold(filter(u_x.length) i: u_owner[i] == 0, 1 << 30) a, i: min(a, gint(hc, "life", 0) * TICK_HZ - (hook_unit_get(col_meal, i) - 1))
         lay_step()
         for(u_x.length) i:
             if i < inside_for.length:
@@ -345,11 +354,8 @@ def play() -> int:
           "steading: a site laid in a busy town gets its first builder within half a minute, however much is being hauled (the longest {longest_wait / TICK_HZ} s, {never.length} never)")
     // (as in the genre, #132: people start with 60% of a 45-minute bar, give or take 10%, and eat with 6 minutes left,
     // so nobody is hungry in a town's first 15 minutes; the big towns, 36 minutes long, eat)
-    let hc = gobj(gobj(rules, "economy"), "hunger")
-    let col_meal = find(hook_unit_names) n: n == "meal"
-    let lowest = fold(filter(u_x.length) i: u_owner[i] == 0, 1 << 30) a, i: min(a, gint(hc, "life", 0) * TICK_HZ - (hook_unit_get(col_meal, i) - 1))
-    check(not ate.length and lowest > gint(hc, "hungry_at", 0) * TICK_HZ and gint(hc, "life", 0) == 45 * 60,
-          "steading: a bar lasts 45 minutes and nobody is hungry in the first 15 ({ate.length} went to eat, {lowest / TICK_HZ} s left at the lowest)")
+    check(ate_15 == 0 and lowest > gint(hc, "hungry_at", 0) * TICK_HZ and gint(hc, "life", 0) == 45 * 60,
+          "steading: a bar lasts 45 minutes and nobody is hungry in the first 15 ({ate_15} went to eat, {lowest / TICK_HZ} s left at the lowest)")
     check(sites_ok, "steading: no site was built ahead of its goods")
     check((filter(4) j: tip_done(tips[j], 0, 5)).length == 4, "steading: every opening tip is done by playing the town")
     let met = map(filter(tips) tip: tip.label == "Goal" and tip_done(tip, 0, 5)) tip: tip.done
@@ -359,7 +365,7 @@ def play() -> int:
     check(produced[pl][0] >= 20, "steading: the sawmill makes planks ({produced[pl][0]}; {plank0} -> {stock[pl][0]} in store)")
     let hungry = (filter(u_x.length) i: u_owner[i] == 0 and u_task[i] == 101).length  // (hunger.lua's T_FAINT)
     print "steading: grain cut {gathered[gr][0]}, flour {produced[fl][0]} ({flour_unstaffed} before the miller), bread {produced[br][0]}, {hungry} resting hungry at the end"
-    check(gathered[gr][0] > FIELD_GRAIN, "steading: the farmer reaps grain and sows the field again ({gathered[gr][0]} cut, a field holds {FIELD_GRAIN})")
+    check(gathered[gr][0] > FIELD_GRAIN, "steading: the farmer reaps his fields and sows them again ({gathered[gr][0]} cut, from {FIELD_GRAIN} fields)")
     check(mill_waited and flour_unstaffed == 0, "steading: a mill with its grain in but no miller makes nothing ({flour_unstaffed})")
     check(produced[fl][0] > 0 and produced[br][0] > 0, "steading: the miller mills flour and the baker bakes bread ({produced[fl][0]} flour, {produced[br][0]} bread)")
     check(hungry * 4 <= pop[0], "steading: the town lives on its own bread: at the end, hardly anyone is resting hungry ({hungry} of {pop[0]})")
@@ -371,6 +377,7 @@ def play() -> int:
 def big_town(dx:int, dy:int) -> int:
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(true)  // (each farm gets its fields once built, a player's way: #122)
     let pl = res("plank")
     let br = res("bread")
     let tl = res("tools")
@@ -474,6 +481,7 @@ def big_town(dx:int, dy:int) -> int:
 def metal_chain() -> int:
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(false)
     bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own, not the order they open in)
     let tc = 0
     let tl = res("tools")
@@ -518,6 +526,7 @@ def metal_chain() -> int:
 def pig_chain() -> int:
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(false)
     bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own, not the order they open in)
     let tc = 0
     let br = res("bread")
@@ -554,16 +563,66 @@ def store_planks() -> int:
         if is_store(b, 0): n += b_hold[b][res("plank")]
     return n
 
+// Fields as in the genre (#122): a farm's wheat fields and a vineyard's vines are laid a cell at a time round it, like
+// roads, and a serf digs each. The farmer sows a tilled field, it ripens, he reaps it (a sheaf of grain) and sows it
+// again; the winegrower picks ripe grapes, which grow again by themselves, and presses them into wine at the vineyard.
+// A farm with twelve fields, one with four and one with none, and a vineyard with six vines, for 20 minutes.
+def fields():
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    fields_by_script(false)
+    bt_after = map(bt_after) _: []::int  // (unlocks off)
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    let at_ = [ [ 7, -5 ], [ -8, -5 ], [ 7, 6 ], [ -8, 6 ] ]
+    for([ "farm", "farm", "farm", "vineyard" ]) id, n: check(lay(id, tx + at_[n][0], ty + at_[n][1]), "steading: a {id} is laid")
+    for(8 * 60 * TICK_HZ):
+        if (filter(b_id.length) b: b_owner[b] == 0 and b_done[b] != 0 and (bt_name[b_kind[b]] == "farm" or bt_name[b_kind[b]] == "vineyard")).length < 4: lay_step()
+    let places = filter(b_id.length) b: b_owner[b] == 0 and (bt_name[b_kind[b]] == "farm" or bt_name[b_kind[b]] == "vineyard")
+    check(places.length == 4 and (filter(places) b: b_done[b] != 0).length == 4, "steading: the three farms and the vineyard go up")
+    // their fields: a block to the left of each (twelve, four, none; six vines), and the trades to work them
+    let sizes = [ [ 4, 3 ], [ 2, 2 ], [ 0, 0 ], [ 3, 2 ] ]
+    let blocks = map(places) b, n: field_block(b, if bt_name[b_kind[b]] == "farm": "wheat_field" else: "vine_field", sizes[n][0], sizes[n][1])
+    let laid = map(places) b, n: if blocks[n].length: lay_fields(if bt_name[b_kind[b]] == "farm": "wheat_field" else: "vine_field", blocks[n][0] % W, blocks[n][0] / W, sizes[n][0], sizes[n][1]) else: 0
+    for([ "farmer", "farmer", "farmer", "winegrower" ]) slot: add_unit(0, type_of_slot(0, slot), start_x[0], start_y[0] + TILE * 3)
+    let tilled = str_index(tr_names, "tilled")
+    let sown = str_index(tr_names, "wheat_sown")
+    let ripe = str_index(tr_names, "wheat_ripe")
+    let young = str_index(tr_names, "vines_young")
+    let grapes = str_index(tr_names, "vines_ripe")
+    let was = map(W * H) c: terrain[c]
+    let reaped = map(places) _: 0  // ripe wheat (or grapes) gone from each one's own block
+    var sown_seen = 0
+    var dug_by = -1  // the tick every field had been dug
+    for(20 * 60 * TICK_HZ) t:
+        lay_step()
+        for(blocks) cells, n:
+            for(cells) c:
+                if was[c] != terrain[c]:
+                    if (was[c] == ripe and terrain[c] == tilled) or (was[c] == grapes and terrain[c] == young): reaped[n]++
+                    if terrain[c] == sown: sown_seen++
+                    was[c] = terrain[c]
+        if dug_by < 0 and (find(blocks) cells: (find(cells) c: terrain[c] != tilled and terrain[c] != sown and terrain[c] != ripe and terrain[c] != young and terrain[c] != grapes) >= 0) < 0: dug_by = t
+    let wine = res("wine")
+    print "steading: fields: {laid} laid, all dug by {dug_by / TICK_HZ} s, {sown_seen} sown, reaped {reaped}, grapes picked {gathered[res("grapes")][0]}, wine pressed {produced[wine][0]}"
+    check(laid[0] == 12 and laid[1] == 4 and laid[2] == 0 and laid[3] == 6 and dug_by >= 0 and dug_by <= 3 * 60 * TICK_HZ,
+          "steading: fields are laid a cell at a time round a farm and a vineyard, and serfs dig them within 3 minutes ({laid}, by {dug_by / TICK_HZ} s)")
+    check(sown_seen >= 16 and reaped[0] >= 12 and reaped[1] >= 4 and reaped[0] >= 2 * reaped[1] and reaped[2] == 0,
+          "steading: the farmer sows his own fields and reaps them once ripe; more fields grow more grain, and a farm with none grows nothing (sown {sown_seen}, reaped {reaped})")
+    check(reaped[3] >= 6 and produced[wine][0] >= 4, "steading: the winegrower picks his vines, which grow their grapes again, and presses them into wine ({reaped[3]} picked, {produced[wine][0]} wine)")
+
 // The inn as in the genre (#132): six seats at its table. Ten starved people go to eat at once: six sit down, the rest
 // wait for a seat. Each sits over one food at a time, the most filling first (a sausage before a loaf), never two of
 // the same at one sitting, and gets up once full or once the inn has nothing more for them.
 def inn_seats():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(false)
     bt_after = map(bt_after) _: []::int  // (unlocks off)
     let tc = b_index_of(done_of("town_center"))
     let br = res("bread")
     let sa = res("sausage")
+    let wi = res("wine")
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
     check(lay("inn", tx + 6, ty - 1), "steading: an inn is laid by the storehouse")
@@ -571,13 +630,13 @@ def inn_seats():
         if done_of("inn") == 0: lay_step()
     let inn = b_index_of(done_of("inn"))
     check(inn >= 0, "steading: the inn goes up")
-    for([ br, sa ]) r:
+    for([ br, sa, wi ]) r:
         hold_take(tc, r, b_hold[tc][r])  // (only what the inn holds is eaten)
         b_want[inn][r] = 0
-    hold_take(inn, br, b_hold[inn][br])
-    hold_take(inn, sa, b_hold[inn][sa])
+        hold_take(inn, r, b_hold[inn][r])
     hold_put(inn, sa, 4)
     hold_put(inn, br, 12)
+    hold_put(inn, wi, 3)
     while(filter(u_x.length) i: u_owner[i] == 0).length < 10: add_unit(0, type_of_slot(0, "worker"), start_x[0], start_y[0] + TILE * 3)
     let col_meal = find(hook_unit_names) n: n == "meal"
     let col_seat = find(hook_unit_names) n: n == "seat"
@@ -611,6 +670,7 @@ def inn_seats():
     let eat_ticks = gint(gobj(gobj(rules, "economy"), "hunger"), "eat_secs", 0) * TICK_HZ
     print "steading: inn: {seats} seats, at most {most} sat at once, someone waiting while full {full_and_waiting}, {4 - b_hold[inn][sa]} sausages and {12 - b_hold[inn][br]} loaves eaten, shortest sitting {shortest} ticks"
     check(seats == 6 and most == 6 and full_and_waiting, "steading: the inn seats six at once and the rest wait for a seat (at most {most} sat; waiting while full {full_and_waiting})")
+    check(b_hold[inn][wi] == 0, "steading: and a cup of wine after a loaf, for those not yet full (#122: {3 - b_hold[inn][wi]} of 3 drunk)")
     check(b_hold[inn][sa] == 0 and 12 - b_hold[inn][br] >= 10, "steading: they eat the sausages first, then a loaf with or after one ({4 - b_hold[inn][sa]} of 4 sausages, {12 - b_hold[inn][br]} loaves)")
     check(not seen_seated, "steading: those at the inn\'s table are inside it: not drawn, and out of the crowd at its door")
     check(eat_ticks > 0 and shortest >= eat_ticks, "steading: a meal takes its time at the table ({shortest} ticks at the shortest; a food takes {eat_ticks})")
@@ -623,6 +683,7 @@ def save_run(stop:bool) -> bool, bool:
     let path = "test_steading.sav"
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(false)
     bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own, not the order they open in)
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
@@ -662,6 +723,7 @@ seam_check()
 def start_rules():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(false)
     let sc = btype_index("school")
     check(not build_barred(0, sc) and build_barred(0, btype_index("lumber_camp")) and build_barred(0, btype_index("sawmill")) and build_barred(0, btype_index("iron_smelter")),
           "steading: a fresh town can lay a school, not a woodcutter\'s hut, a sawmill or a smelter before what comes first")
@@ -696,6 +758,7 @@ def start_rules():
 def busy_sites():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(false)
     let sc = btype_index("school")
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
@@ -721,6 +784,7 @@ def busy_sites():
 def woods():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(false)
     let tree = str_index(tr_names, "tree")
     let sap = str_index(tr_names, "sapling")
     let grass = str_index(tr_names, "grass")
@@ -746,6 +810,7 @@ def woods():
     // A woodcutter whose trees are all felled plants saplings round his hut, and fells them once they've grown.
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    fields_by_script(false)
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
     lay("school", tx - 2, ty - 6)
@@ -780,6 +845,7 @@ def woods():
     check(cleared and most_saplings >= 3 and most_saplings <= 6 and grown >= 1 and cut >= 1,
           "steading: a woodcutter with no trees in reach plants saplings (at most {most_saplings}), they grow ({grown} trees) and he fells them ({cut} trunks)")
 
+fields()
 inn_seats()
 start_rules()
 busy_sites()

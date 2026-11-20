@@ -44,7 +44,7 @@ for k = 0, unit_type_count() - 1 do serf[k + 1] = carrier_slots[t_slot(k)] == tr
 -- The tile in front of a building's door (below its bottom edge's middle) is road, or the player's road plan. Roads
 -- themselves, walls and gates, and ladders have no door.
 local function door_on_road(p, k, cx, cy, sx, sy)
-  if bt_road(k) >= 0 or bt_line(k) or bt_ladder(k) then return true end
+  if bt_road(k) >= 0 or bt_drag(k) or bt_line(k) or bt_ladder(k) then return true end
   local dx = cx + sx // 2
   local dy = cy + sy
   if dy >= H then return false end
@@ -57,7 +57,7 @@ end
 
 -- Whether a building of type k could have a door to keep clear: roads, walls and gates, and ladders have none.
 local function has_door(k)
-  return bt_road(k) < 0 and not bt_line(k) and not bt_ladder(k)
+  return bt_road(k) < 0 and not bt_drag(k) and not bt_line(k) and not bt_ladder(k)
 end
 
 -- Neither does the footprint cover another building's door tile, nor is its own door tile in a building (a road
@@ -110,7 +110,7 @@ end
 -- Whether site b is still waiting on goods: a builder there waits with it (the genre's foundations: lay it, then wait).
 -- Not a road: a road cell's builder comes with its stone, else a town of road plans has its serfs stand at them.
 local function waiting(b)
-  return b_done(b) == 0 and b_is_site(b) and site_permille(b) < 1000 and bt_road(b_kind(b)) < 0
+  return b_done(b) == 0 and b_is_site(b) and site_permille(b) < 1000 and bt_road(b_kind(b)) < 0 and not bt_drag(b_kind(b))
 end
 
 -- One look over the units: how many build each site (by slot + 1), and each side's idle serfs (in slot order). A

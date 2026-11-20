@@ -766,6 +766,59 @@ def road_plans() -> int:
           "road plans: their goods came from the store, and the road is quicker to walk")
     return state_hash()
 
+// Ground plans (creel #123): a building type that "becomes" a terrain is a plan for that ground (a field). Once built its
+// cells take the terrain, with its resource and amount, and the plan goes. The house stands in for one here.
+def ground_plans() -> int:
+    new_world("flat_test", races0, stocked_rules(bare0), [])
+    let hk = btype_index("house")
+    let t = find(tr_names.length) k: tr_walk[k] != 0 and tr_amount[k] > 0  // (walkable ground with something to gather on it)
+    bt_ground[hk] = t
+    make_store("town_center", 200)
+    put(0, "town_center", 10, 10, 0)
+    for(num_resources) r: stock_add(r, 0, 200)
+    t_carrier[type_of_slot(0, "worker")] = 1
+    let builder = spawn_at(0, "worker", 25000, 12000)
+    for(4) n: spawn_at(0, "worker", 14000 + n * 600, 13000)  // (carriers for its goods)
+    let nb = b_id.length
+    issue_cmd(0, CMD_BUILD, [ builder ], hk, 28, 10, 0)
+    for(40):
+        if b_id.length == nb: tick_on()
+    let id = b_id[b_id.length - 1]
+    let cells = footprint(b_index_of(id))
+    var gone = false
+    for(6000):
+        tick_on()
+        if b_index_of(id) < 0:
+            gone = true
+            break
+    var ground = true
+    for(cells) c: ground = ground and terrain[c] == t and amount[c] == tr_amount[t] and occupied[c] == 0
+    check(t >= 0 and gone and ground, "ground plans: built, the plan becomes its ground, with what grows on it, and goes ({tr_names[max(t, 0)]}, gone {gone})")
+    // Ground that grows (a vine row): laid, it grows into its crop; picked bare, the crop grows back by itself.
+    let g = find(tr_names.length) k: tr_walk[k] != 0 and tr_amount[k] == 0 and k != t
+    tr_grows[g] = t
+    tr_grow_ticks[g] = 100
+    tr_depleted[t] = g
+    bt_ground[hk] = g
+    let nb2 = b_id.length
+    issue_cmd(0, CMD_BUILD, [ builder ], hk, 28, 14, 0)
+    for(40):
+        if b_id.length == nb2: tick_on()
+    let id2 = b_id[b_id.length - 1]
+    let cells2 = footprint(b_index_of(id2))
+    for(6000):
+        tick_on()
+        if b_index_of(id2) < 0: break
+    let laid_as = terrain[cells2[0]]
+    for(140): tick_on()
+    let grown = terrain[cells2[0]] == t and amount[cells2[0]] == tr_amount[t]
+    for(tr_amount[t]): take(cells2[0])
+    let bare = terrain[cells2[0]] == g
+    for(140): tick_on()
+    let again = terrain[cells2[0]] == t
+    check(laid_as == g and grown and bare and again, "ground plans: laid as ground that grows, it grows into its crop, and picked bare it grows back ({laid_as == g} {grown} {bare} {again})")
+    return state_hash()
+
 // Ticks for a worker from (17, 2) to past (22, 2) on river_test, a 3-wide river between (the ford is rows 4-5).
 def bridge_cross() -> int:
     let id = spawn_at(0, "worker", 17 * TILE + TILE / 2, 2 * TILE + TILE / 2)
@@ -849,6 +902,7 @@ def test_road_plans():
     let h1 = road_plans()
     let h2 = road_plans()
     check(h1 == h2, "road plans: the same twice")
+    check(ground_plans() == ground_plans(), "ground plans: the same twice")
 
 // All of player 0's food: in its buildings and in its units' hands.
 def food_held() -> int:

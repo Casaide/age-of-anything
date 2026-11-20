@@ -1,22 +1,58 @@
 {
- "_doc": "A farm's ground (#99): wheat is a crop of grain, pooled over the field; reaped bare it's stubble, which the farmer sows again into wheat. Coal, iron and gold seams run through the mountains (#42): a mine against one digs it out, and a dug-out seam is worked-out rock. Trees are one trunk each, and a woodcutter plants saplings that grow into trees (#126).",
+ "_doc": "Fields (#122): a wheat field is tilled earth the farmer sows; it ripens into wheat, a sheaf of grain each, and reaped it's tilled earth again. Vines ripen into grapes by themselves, and picked bare grow them again. Coal, iron and gold seams run through the mountains (#42): a mine against one digs it out, and a dug-out seam is worked-out rock. Trees are one trunk each, and a woodcutter plants saplings that grow into trees (#126).",
  "terrain": {
-  "wheat": {
+  "tilled": {
    "walkable": true,
-   "colour": "#b49a3e",
-   "colour2": "#a68d37",
-   "resource": "grain",
-   "depleted": "stubble",
+   "colour": "#6e5434",
+   "colour2": "#664d30",
    "cleared": "grass",
-   "note": "a farm's wheat: its grain is pooled over its tiles; reaped bare it's stubble till sown again"
+   "note": "a wheat field laid by a farm and dug by a serf: bare tilled earth, waiting for the farmer to sow it (#122)"
   },
-  "stubble": {
+  "wheat_sown": {
    "walkable": true,
-   "colour": "#7a6a3a",
-   "colour2": "#706036",
-   "reseed": "wheat",
+   "colour": "#7c6a36",
+   "colour2": "#6f8a3a",
+   "prop": "tuft",
+   "grows": {
+    "into": "wheat_ripe",
+    "seconds": 360
+   },
    "cleared": "grass",
-   "note": "a reaped field: stubble, waiting for the farmer to sow it again"
+   "note": "a sown wheat field: green shoots, ripe six minutes on"
+  },
+  "wheat_ripe": {
+   "walkable": true,
+   "colour": "#c8a648",
+   "colour2": "#b8963e",
+   "prop": "crops",
+   "resource": "grain",
+   "amount": 1,
+   "depleted": "tilled",
+   "cleared": "grass",
+   "note": "ripe wheat: the farmer reaps a field's sheaf of grain, and it's tilled earth again, to sow"
+  },
+  "vines_young": {
+   "walkable": true,
+   "colour": "#5e5a34",
+   "colour2": "#566a32",
+   "prop": "bush",
+   "grows": {
+    "into": "vines_ripe",
+    "seconds": 360
+   },
+   "cleared": "grass",
+   "note": "a row of vines laid by a vineyard: its grapes ripen six minutes on, by themselves (#122)"
+  },
+  "vines_ripe": {
+   "walkable": true,
+   "colour": "#5a4a5e",
+   "colour2": "#4f6a34",
+   "prop": "bush",
+   "resource": "grapes",
+   "amount": 1,
+   "depleted": "vines_young",
+   "cleared": "grass",
+   "note": "ripe grapes on the vine: the winegrower picks them, and they grow again"
   },
   "coal_seam": {
    "walkable": false,
