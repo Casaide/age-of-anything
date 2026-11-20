@@ -14,6 +14,45 @@
    "gold_smelter",
    "pig_farm",
    "butcher"
+  ],
+  "pages": [
+   {
+    "name": "Town",
+    "ids": [
+     "road",
+     "school",
+     "inn"
+    ]
+   },
+   {
+    "name": "Wood and stone",
+    "ids": [
+     "lumber_camp",
+     "mining_camp",
+     "sawmill"
+    ]
+   },
+   {
+    "name": "Food",
+    "ids": [
+     "farm",
+     "mill",
+     "bakery",
+     "pig_farm",
+     "butcher"
+    ]
+   },
+   {
+    "name": "Metal",
+    "ids": [
+     "coal_mine",
+     "iron_mine",
+     "gold_mine",
+     "iron_smelter",
+     "gold_smelter",
+     "armoury"
+    ]
+   }
   ]
  },
  "buildings": {
