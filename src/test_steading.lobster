@@ -574,7 +574,7 @@ def inn_seats():
     hold_take(inn, sa, b_hold[inn][sa])
     hold_put(inn, sa, 4)
     hold_put(inn, br, 12)
-    while (filter(u_x.length) i: u_owner[i] == 0).length < 10: add_unit(0, type_of_slot(0, "worker"), start_x[0], start_y[0] + TILE * 3)
+    while(filter(u_x.length) i: u_owner[i] == 0).length < 10: add_unit(0, type_of_slot(0, "worker"), start_x[0], start_y[0] + TILE * 3)
     let col_meal = find(hook_unit_names) n: n == "meal"
     let col_seat = find(hook_unit_names) n: n == "seat"
     let life = gint(gobj(gobj(rules, "economy"), "hunger"), "life", 0) * TICK_HZ
@@ -583,8 +583,8 @@ def inn_seats():
     var most = 0
     var full_and_waiting = false
     let sat_for = map(u_x.length) _: 0  // ticks each has sat so far, this sitting
-    var shortest = 1 << 30  // the shortest sitting, in ticks, per food eaten at it
-    let ate_at = map(u_x.length) _: 0  // sittings each has had
+    var shortest = 1 << 30              // the shortest sitting, in ticks, per food eaten at it
+    let ate_at = map(u_x.length) _: 0   // sittings each has had
     for(90 * TICK_HZ):
         lay_step()
         var seated = 0
