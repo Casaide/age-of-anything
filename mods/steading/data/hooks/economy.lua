@@ -144,7 +144,7 @@ local function look()
       if not idle[p] then idle[p] = {} end
       table.insert(idle[p], i)
     end
-    if task == T_CARRY and serf[u_kind(i) + 1] and u_carry(i) == 0 then
+    if task == T_CARRY and serf[u_kind(i) + 1] and u_carry(i) == 0 and u_work(i) == 0 then  -- (not while inside)
       if not fetching[p] then fetching[p] = {} end
       table.insert(fetching[p], i)
     end
@@ -273,7 +273,7 @@ local function feed_starved()
   for b = 0, building_count() - 1 do
     if building_get(col_alone, b) >= ALONE and work_at(b) then
       for i = 0, unit_count() - 1 do
-        if u_task(i) == T_CARRY and u_carry(i) == 0 and u_owner(i) == b_owner(b) and serf[u_kind(i) + 1] then
+        if u_task(i) == T_CARRY and u_carry(i) == 0 and u_work(i) == 0 and u_owner(i) == b_owner(b) and serf[u_kind(i) + 1] then
           clear_task(i)
           start_build(i, b_id(b))
           building_set(col_alone, b, 0)

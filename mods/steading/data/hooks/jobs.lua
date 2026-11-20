@@ -28,7 +28,6 @@ local staff = {}
 local gathers = {}
 local reach = {}  -- (in tiles, or nil for anywhere)
 local ins = {}  -- the resources its recipe takes (r, 0-based), or nil ("makes": the workshops)
-local make_ticks = {}  -- and how long a round takes
 local plants = {}  -- the terrain type its worker plants when nothing is left to gather in reach ("plants"), or -1
 local job_slots = {}
 for k = 0, building_type_count() - 1 do
@@ -43,7 +42,6 @@ for k = 0, building_type_count() - 1 do
       if n > 0 then table.insert(ins[k + 1], resource_index(id)) end
     end
     table.sort(ins[k + 1])
-    make_ticks[k + 1] = (bt.makes.time or 0) * TICK_HZ
   end
   if bt.plants then
     plants[k + 1] = terrain_type(bt.plants)
@@ -70,7 +68,6 @@ local col_work = unit_column("workplace")  -- the id of the building it works at
 local col_present = building_column("present")  -- 1 while one of its staff stands at its door (as of the last look)
 local col_tool = unit_column("tool")  -- 1 once it has its tool
 local col_out = building_column("worked_out")  -- 1 once there's nothing left to gather within its reach
-local col_in = building_column("in_goods")  -- its recipe's goods in as of the last tick (a round's start takes some)
 local col_rest = building_column("rest_until")  -- the tick its worker's break after the round going ends
 local REST = 8 * TICK_HZ  -- the break a worker takes after each round of a recipe (the genre's pace, #139)
 local col_plant = unit_column("plant")  -- the cell + 1 it's going to plant, 0 for none (#126)
@@ -249,16 +246,13 @@ local function home_drops()
   end
 end
 
--- Each tick: a workshop whose goods in fell since the last tick has started a round (serfs only ever bring goods in);
--- its next waits till that round is done and its worker has had a break (can_make).
+-- Each tick: a workshop with a round going (b_making) and no break set past it gets one: its next round waits till
+-- this one is done and its worker has had a break (can_make).
 local function breaks()
   for b = 0, building_count() - 1 do
-    local o = ins[b_kind(b) + 1]
-    if o and b_done(b) ~= 0 then
-      local n = 0
-      for _, r in ipairs(o) do n = n + b_hold(b, r) end
-      if n < building_get(col_in, b) then building_set(col_rest, b, tick() + make_ticks[b_kind(b) + 1] + REST) end
-      building_set(col_in, b, n)
+    if ins[b_kind(b) + 1] and b_done(b) ~= 0 then
+      local left = b_making(b)
+      if left > 0 and building_get(col_rest, b) < tick() + left then building_set(col_rest, b, tick() + left + REST) end
     end
   end
 end

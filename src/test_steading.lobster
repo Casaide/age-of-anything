@@ -233,6 +233,8 @@ def play() -> int:
     var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
     var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
+    let inside_for = map(1000): 0  // (#140) each unit slot's ticks inside a building so far, and each stay's length when it came out
+    let stays = []::int
     var planks_seen = -1  // the sawmill's rounds (#139): planks made as of last tick, when the last round ended, the shortest gap
     var round_at = -1
     var shortest_round = 1 << 30
@@ -266,6 +268,13 @@ def play() -> int:
             if u_task[i] == GATHER and (find([ "woodcutter", "stonecutter", "farmer", "miner" ]) g: g == t_slot[u_kind[i]]) < 0: gatherers_ok = false
             if u_owner[i] == 0 and u_task[i] == T_RETURN and t_carrier[u_kind[i]] == 0 and hook_unit_get(col_work, i) != 0 and u_target[i] != hook_unit_get(col_work, i): dropped_away++
         lay_step()
+        for(u_x.length) i:
+            if i < inside_for.length:
+                if is_inside(i):
+                    inside_for[i]++
+                elif inside_for[i] > 0:
+                    stays.push(inside_for[i])
+                    inside_for[i] = 0
         let sawn = produced[res("plank")][0]
         if planks_seen >= 0 and sawn > planks_seen:
             if round_at >= 0: shortest_round = min(shortest_round, tick - round_at)
@@ -321,6 +330,12 @@ def play() -> int:
     check(next_job / MINUTES <= 50, "steading: serfs aren\'t run off their feet: at the genre\'s pace a town of this size makes at most 50 carry jobs a minute, most for its building sites ({next_job / MINUTES}; 59 at the old pace)")
     check(shortest_round >= 44 * TICK_HZ and shortest_round < 1 << 30,
           "steading: a sawyer saws a log in 36 s and takes a break after each round, the genre\'s pace (the shortest round {shortest_round / TICK_HZ} s)")
+    let full_stays = filter(stays): _ == r_inside_ticks
+    let short_stays = filter(stays): _ < r_inside_ticks
+    let long_stays = filter(stays): _ > r_inside_ticks
+    print "steading: stays inside: {full_stays.length} of {r_inside_ticks} ticks, shorter {short_stays}, longer {long_stays}"
+    check(r_inside_ticks == 30 and stays.length >= 100 and full_stays.length * 100 >= stays.length * 95,
+          "steading: every pick-up and drop takes a carrier inside for 1.5 s ({full_stays.length} of {stays.length} stays that long)")
     check(dropped_away == 0, "steading: a gatherer only ever drops at its own hut, and waits there when it\'s full; serfs take goods on ({dropped_away} ticks headed elsewhere)")
     let never = filter(site_waits): _ >= 0
     check(longest_wait <= 30 * TICK_HZ and not never.length,
@@ -372,7 +387,7 @@ def big_town(dx:int, dy:int) -> int:
     var mill_ticks = 0
     var stuck_most = 0
     var h = 0
-    for(30 * 60 * TICK_HZ) t:
+    for(36 * 60 * TICK_HZ) t:  // (at the genre's pace, going inside at each drop: #139, #140)
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
         if t == 40 and lay("lumber_camp", tx + 6, ty - 4): laid++
         if t == 60 and lay("sawmill", tx - 6, ty + 3): laid++
