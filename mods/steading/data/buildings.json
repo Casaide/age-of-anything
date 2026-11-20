@@ -9,7 +9,9 @@
    "bakery",
    "coal_mine",
    "iron_mine",
-   "gold_mine"
+   "gold_mine",
+   "iron_smelter",
+   "gold_smelter"
   ]
  },
  "buildings": {
@@ -68,7 +70,7 @@
   "school": {
    "extends": "house",
    "name": "School",
-   "desc": "Teaches the town's people: new villagers, and woodcutters, stone cutters, miners, farmers, millers and bakers for the workplaces. Each goes to work where it's needed.",
+   "desc": "Teaches the town's people: new villagers, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters and smiths for the workplaces. Each goes to work where it's needed.",
    "hotkey": "C",
    "pop": 0,
    "house": false,
@@ -82,7 +84,9 @@
     "farmer",
     "miller",
     "baker",
-    "miner"
+    "miner",
+    "smelter",
+    "smith"
    ],
    "cost": {
     "wood": 0,
@@ -158,6 +162,76 @@
     "plank": 10,
     "stone": 4
    }
+  },
+  "iron_smelter": {
+   "extends": "house",
+   "name": "Iron Smelter",
+   "desc": "A smelter works here: melts a load of iron ore with a load of coal into an iron bar. Nothing is smelted while the smelter is away.",
+   "makes": {
+    "in": {
+     "iron_ore": 1,
+     "coal": 1
+    },
+    "out": {
+     "iron": 1
+    },
+    "time": 8
+   },
+   "holds": {
+    "iron_ore": 4,
+    "coal": 4,
+    "iron": 4
+   },
+   "staff": {
+    "smelter": 1
+   },
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "hotkey": "",
+   "note": "",
+   "age": 1,
+   "pop": 0,
+   "house": false,
+   "roles": []
+  },
+  "gold_smelter": {
+   "extends": "house",
+   "name": "Gold Smelter",
+   "desc": "A smelter works here: melts a load of gold ore with a load of coal into gold. Nothing is smelted while the smelter is away.",
+   "makes": {
+    "in": {
+     "gold_ore": 1,
+     "coal": 1
+    },
+    "out": {
+     "gold": 1
+    },
+    "time": 8
+   },
+   "holds": {
+    "gold_ore": 4,
+    "coal": 4,
+    "gold": 4
+   },
+   "staff": {
+    "smelter": 1
+   },
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "hotkey": "",
+   "note": "",
+   "age": 1,
+   "pop": 0,
+   "house": false,
+   "roles": []
   },
   "house": {
    "remove": true
@@ -256,7 +330,35 @@
    "remove": true
   },
   "armoury": {
-   "remove": true
+   "name": "Smithy",
+   "desc": "A smith works here: forges an iron bar and a plank into tools. The stone cutters, farmers, millers and bakers need tools to start work.",
+   "makes": {
+    "in": {
+     "iron": 1,
+     "plank": 1
+    },
+    "out": {
+     "tools": 1
+    },
+    "time": 10
+   },
+   "holds": {
+    "iron": 4,
+    "plank": 4,
+    "tools": 4
+   },
+   "staff": {
+    "smith": 1
+   },
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "hotkey": "",
+   "note": "",
+   "age": 1
   },
   "university": {
    "remove": true

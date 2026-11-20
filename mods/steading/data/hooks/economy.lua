@@ -1,6 +1,8 @@
 -- Steading's town rules, in Lua (Casaide/creel#82). Each is switched on in the rules file (rules/steading.json,
 -- "economy") and off in any other match:
 --   doors_on_roads: a building goes up only with the tile in front of its door on a road or its owner's road plan.
+--   doors_clear: a building never goes up over the tile in front of another's door, nor with its own door against one
+--     (a road may: that's where a road goes). A town laid out by a child stays walkable to every door.
 --   builders_come: a site with goods brought for more than is built gets an idle villager of its side, the nearest,
 --     once a second; once all its goods are in, up to builders_per_site (1 if unset) at once. (The engine drops a site
 --     whose builder can't get to it; this sends someone back too.)
@@ -12,6 +14,7 @@ local WAIT = 2 * TILE  -- how far from a store's middle, past its half size, an 
 
 local ec = rules().economy or {}
 local doors = ec.doors_on_roads == true
+local doors_clear = ec.doors_clear == true
 local builders_come = ec.builders_come == true
 local per_site = ec.builders_per_site or 1
 local idle_wait = ec.idle_wait == true
@@ -35,7 +38,33 @@ local function door_on_road(p, k, cx, cy, sx, sy)
   return b >= 0 and b_owner(b) == p and bt_road(b_kind(b)) >= 0
 end
 
+-- Whether a building of type k could have a door to keep clear: roads, walls and gates, and ladders have none.
+local function has_door(k)
+  return bt_road(k) < 0 and not bt_line(k) and not bt_ladder(k)
+end
+
+-- Neither does the footprint cover another building's door tile, nor is its own door tile in a building (a road
+-- aside).
+local function doors_kept_clear(k, cx, cy, sx, sy)
+  if bt_road(k) >= 0 then return true end
+  for b = 0, building_count() - 1 do
+    if has_door(b_kind(b)) then
+      local x0, y0, x1, y1 = building_rect(b)
+      local dx = x0 // TILE + (x1 + 1 - x0) // TILE // 2  -- (as for a new one: below its bottom edge's middle)
+      local dy = (y1 + 1) // TILE
+      if dx >= cx and dx < cx + sx and dy >= cy and dy < cy + sy then return false end
+    end
+  end
+  if not has_door(k) then return true end
+  local dx = cx + sx // 2
+  local dy = cy + sy
+  if dy >= H then return false end
+  local b = building_index(occupied(dy * W + dx))
+  return b < 0 or bt_road(b_kind(b)) >= 0
+end
+
 function doors_can_place(p, k, cx, cy, sx, sy)
+  if doors_clear and not doors_kept_clear(k, cx, cy, sx, sy) then return false end
   return not doors or door_on_road(p, k, cx, cy, sx, sy)
 end
 

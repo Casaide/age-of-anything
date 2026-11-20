@@ -11,7 +11,13 @@
 -- A workplace with a "reach" (a mine, #42: tiles out from its edge) has its worker gather only that near: what's
 -- further is someone else's. When none is left within reach, the place is worked out and its worker waits at the door.
 
+-- A trade in the rules' economy.tools_for takes a tool from one of its side's stores when it's first given a workplace
+-- (#102); with none in store it waits, without a workplace, till the smithy's tools are in.
+
 local LOOK = 20  -- ticks between looks (a second)
+local TOOLS = resource_index("tools")  -- (-1 if the pack has no tools)
+local needs_tool = {}
+for _, slot in ipairs((rules().economy or {}).tools_for or {}) do needs_tool[slot] = true end
 
 -- Per building type (k + 1): its staff ({slot = how many}) or nil, and the resource kind its workers gather (r + 1), 0
 -- for none.
@@ -43,6 +49,7 @@ end
 
 local col_work = unit_column("workplace")  -- the id of the building it works at, 0 for none
 local col_present = building_column("present")  -- 1 while one of its staff stands at its door (as of the last look)
+local col_tool = unit_column("tool")  -- 1 once it has its tool
 local col_out = building_column("worked_out")  -- 1 once there's nothing left to gather within its reach
 
 -- Whether cell c is within building b's reach (if its type has one).
@@ -85,6 +92,25 @@ local function go_to_work(i, b)
     building_set(col_out, b, 1)
     if not in_reach(i, building_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
   end
+end
+
+-- A finished store of side p with a tool in it, or -1.
+local function tool_store(p)
+  if TOOLS < 0 then return -1 end
+  for s = 0, building_count() - 1 do
+    if b_owner(s) == p and b_done(s) ~= 0 and bt_store(b_kind(s)) and b_hold(s, TOOLS) > 0 then return s end
+  end
+  return -1
+end
+
+-- Unit i has a tool, or takes one from a store of its side: whether it has one now.
+local function tooled(i)
+  if not needs_tool[t_slot(u_kind(i))] or unit_get(col_tool, i) == 1 then return true end
+  local s = tool_store(u_owner(i))
+  if s < 0 then return false end
+  hold_take(s, TOOLS, 1)
+  unit_set(col_tool, i, 1)
+  return true
 end
 
 -- The nearest of these free specialists (unit slots) to building b, taken out of the list; -1 if there's none.
@@ -139,6 +165,7 @@ function jobs_tick()
         local pool = mine[slot]
         while pool and #pool > 0 and have < n do
           local i = take_nearest(pool, b)
+          if not tooled(i) then break end  -- (no tools in store: none of this trade can start)
           unit_set(col_work, i, b_id(b))
           have = have + 1
           if u_task(i) == T_NONE and u_orders(i) == 0 then go_to_work(i, b) end
@@ -162,7 +189,12 @@ function jobs_task_name(i)
   local b = -1
   if id ~= 0 then b = building_index(id) end
   local name = job:sub(1, 1):upper() .. job:sub(2)
-  if b < 0 then return name .. ", waiting for a workplace" end
+  if b < 0 then
+    if needs_tool[job] and unit_get(col_tool, i) == 0 and tool_store(u_owner(i)) < 0 then
+      return name .. ", waiting for tools"
+    end
+    return name .. ", waiting for a workplace"
+  end
   local at = name .. " at the " .. (building_type(b_kind(b)).name or "hut")
   if building_get(col_out, b) == 1 then return at .. ": it's worked out" end
   return at

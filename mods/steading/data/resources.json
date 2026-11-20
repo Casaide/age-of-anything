@@ -1,5 +1,5 @@
 {
- "_doc": "Planks: sawn at the sawmill from wood (logs). Grain: reaped at a farm; flour: milled from grain; bread: baked from flour, and what the town eats (#99). Coal, iron ore and gold ore: dug at the mines (#42). Wood, stone and food are the game's own.",
+ "_doc": "Planks: sawn at the sawmill from wood (logs). Grain: reaped at a farm; flour: milled from grain; bread: baked from flour, and what the town eats (#99). Coal, iron ore and gold ore: dug at the mines (#42). Iron: smelted from iron ore and coal; tools: forged from iron and planks, what every trade works with (#102). Gold (smelted from gold ore) is the game's own. Wood, stone and food are the game's own.",
  "resources": [
   {"id": "plank", "name": "Planks", "short": "P", "colour": "#c9a066"},
   {"id": "grain", "name": "Grain", "short": "G", "colour": "#e0c25a"},
@@ -7,6 +7,8 @@
   {"id": "bread", "name": "Bread", "short": "B", "colour": "#c07a3a"},
   {"id": "coal", "name": "Coal", "short": "C", "colour": "#3a383c"},
   {"id": "iron_ore", "name": "Iron Ore", "short": "IO", "colour": "#8a5a44"},
-  {"id": "gold_ore", "name": "Gold Ore", "short": "GO", "colour": "#c8a84a"}
+  {"id": "gold_ore", "name": "Gold Ore", "short": "GO", "colour": "#c8a84a"},
+  {"id": "iron", "name": "Iron", "short": "Fe", "colour": "#9aa4ae"},
+  {"id": "tools", "name": "Tools", "short": "T", "colour": "#7f8890"}
  ]
 }

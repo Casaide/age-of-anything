@@ -272,6 +272,49 @@ def play() -> int:
     check(hungry * 4 <= pop[0], "steading: the town lives on its own bread: at the end, hardly anyone is resting hungry ({hungry} of {pop[0]})")
     return h
 
+// Smelting and the smithy (#102), on their own: a storehouse given ore, coal and planks but no tools. The smelters
+// make iron and gold, the smithy makes tools from iron and planks, and a farmer trained with no tools in store waits,
+// then goes to its farm once the smithy's tools are in. Whether all of that happened, and the hash.
+def metal_chain() -> int:
+    new_world(2026, MAP, races, rules, [])
+    let tc = 0
+    let tl = res("tools")
+    let fe = res("iron")
+    let au = res("gold")
+    hold_take(tc, tl, b_hold[tc][tl])
+    for([ "plank", "stone", "iron_ore", "coal", "gold_ore" ]) g, j: hold_put(tc, res(g), [ 80, 40, 6, 8, 2 ][j])
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    let col_work = find(hook_unit_names) n: n == "workplace"
+    var laid = 0
+    var trained = false
+    var farmer_waited = false  // the farm up, no tools in store, its farmer with no workplace
+    var h = 0
+    for(10 * 60 * TICK_HZ) t:
+        if t == 20 and lay("school", tx - 2, ty - 6): laid++
+        if t == 40 and lay("iron_smelter", tx + 6, ty - 4): laid++
+        if t == 60 and lay("gold_smelter", tx - 6, ty + 3): laid++
+        if t == 80 and lay("armoury", tx + 5, ty + 6): laid++
+        if t == 100 and lay("farm", tx - 8, ty - 4): laid++
+        if t == 120:
+            let st = b_index_of(done_of("town_center"))  // (its door: below its bottom edge's middle)
+            check(not can_place(0, btype_index("inn"), b_cx[st] + b_sx[st] / 2 - 1, b_cy[st] + b_sy[st], 0), "steading: nothing goes up over the tile in front of a door (the storehouse\'s)")
+        let school = done_of("school")
+        if school != 0 and not trained:
+            for([ "smelter", "smelter", "smith", "farmer", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+            trained = true
+        if done_of("farm") != 0 and stock[tl][0] == 0 and (find(u_x.length) i: u_owner[i] == 0 and t_slot[u_kind[i]] == "farmer" and hook_unit_get(col_work, i) == 0) >= 0: farmer_waited = true
+        wstep()
+        if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
+    let farmer = find(u_x.length) i: u_owner[i] == 0 and t_slot[u_kind[i]] == "farmer"
+    let farm_id = done_of("farm")
+    print "steading: metal: {laid} laid, iron {produced[fe][0]}, gold {produced[au][0]}, tools {produced[tl][0]} ({stock[tl][0]} in store), farmer waited {farmer_waited}"
+    check(laid == 5 and done_of("armoury") != 0 and done_of("iron_smelter") != 0 and done_of("gold_smelter") != 0, "steading: two smelters and a smithy go up ({laid} laid)")
+    check(produced[fe][0] > 0 and produced[au][0] > 0, "steading: the smelters melt ore with coal into iron and gold ({produced[fe][0]} iron, {produced[au][0]} gold)")
+    check(produced[tl][0] > 0, "steading: the smith forges iron and planks into tools ({produced[tl][0]})")
+    check(farmer_waited and farmer >= 0 and farm_id != 0 and hook_unit_get(col_work, farmer) == farm_id, "steading: a farmer trained with no tools in store waits, then works the farm once the smithy\'s tools are in")
+    return h
+
 def store_planks() -> int:
     var n = 0
     for(b_id.length) b:
@@ -319,6 +362,7 @@ def save_run(stop:bool) -> bool, bool:
 let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
+check(metal_chain() == metal_chain(), "steading: the same metal trades twice, the same hash")
 let same, lively = save_run(false)
 check(lively and same, "steading: through a save, the mod\'s rules and their state play on the same (lively {lively}, same {same})")
 let same_off, _ = save_run(true)
