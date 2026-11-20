@@ -1062,6 +1062,7 @@
   "id": "tool.empty_hands",
   "slot": "hand_r",
   "tags": [
+   "worker",
    "steading",
    "tool",
    "job"
