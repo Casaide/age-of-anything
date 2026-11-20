@@ -9,5 +9,5 @@
  "depends": ["age_of_anything@0.21"],
  "eras": [],
  "data": "data",
- "check": {"rules": "steading", "prompts": ["villagers"]}
+ "check": {"rules": "steading", "prompts": ["serfs"]}
 }

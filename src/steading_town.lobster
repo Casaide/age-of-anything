@@ -72,7 +72,7 @@ id_load("../data")
 let used = mods_use([ "steading" ])
 assert used.length == 1
 let rules = load_rules("steading")
-let races = map([ "villagers", "villagers" ]) p: generate(p, rules, 0)
+let races = map([ "serfs", "serfs" ]) p: generate(p, rules, 0)
 let args = command_line_arguments()
 var minutes = 30
 if args.length:
@@ -82,7 +82,7 @@ if args.length:
 
 // Lay building `id` for player 0 near (x, y) in tiles, with a road to its door (game/steading_lay).
 def lay(id:string, x:int, y:int):
-    if not lay_with_road(id, x, y): print "steading_town: no room for {id} near {x},{y}"
+    if not lay_or_wait(id, x, y): print "steading_town: no room for {id} near {x},{y}"
 
 def done_of(id:string) -> int:
     for(b_id.length) b:
@@ -108,8 +108,8 @@ def done_count(id:string) -> int:
 def slot_count(slot:string) -> int:
     return (filter(u_x.length) i: u_owner[i] == 0 and t_slot[u_kind[i]] == slot).length
 
-// Who the school trains next: a trade for a finished building that has no one yet, else a villager if a site waits
-// with every villager busy; "" for no one.
+// Who the school trains next: a trade for a finished building that has no one yet, else a serf if a site waits
+// with every serf busy; "" for no one.
 def next_trainee() -> string:
     for(JOBS) jb:
         var need = 0
@@ -165,7 +165,7 @@ for(minutes * 60 * TICK_HZ) t:
                 asked = true
                 asked_at = t
                 next_pop = pop[0] + 1
-    wstep()
+    lay_step()
 var built = 0
 for(b_id.length) b:
     if b_owner[b] == 0 and b_done[b] != 0 and bt_road[b_kind[b]] < 0 and b_kind[b] != btype_index("town_center"): built++
@@ -176,5 +176,5 @@ for(road) r:
 launch_subprocess([ "/bin/mkdir", "-p", "saves" ])
 let path = "saves/steading-town.sav"
 assert save_world(path, [ new_bot(1) ])  // (the other side's bot: a save with none is read as a failed load)
-print "steading_town: {minutes} min, {built} of {plan.length + 1} buildings, {roads} road cells, {pop[0]} people ({slot_count("worker")} villagers), gold {stock[au][0]}, unbuilt {unbuilt}, saved to {path}"
+print "steading_town: {minutes} min, {built} of {plan.length + 1} buildings, {roads} road cells, {pop[0]} people ({slot_count("worker")} serfs), gold {stock[au][0]}, unbuilt {unbuilt}, saved to {path}"
 assert not unbuilt.length

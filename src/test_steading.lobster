@@ -80,10 +80,10 @@ let T_EAT = 100            // (the mod's hunger.lua: its own task, going to eat)
 let used = mods_use([ "steading" ])
 check(used.length == 1, "the mod loads ({map(mods_refused.get_keys()) id: id + ": " + mods_refused.get(id, "")})")
 let rules = load_rules("steading")
-let races = map([ "villagers", "sewer rats" ]) p: generate(p, rules, 0)
-// Every side plays villagers, whatever was typed (rules "race", #70).
+let races = map([ "serfs", "sewer rats" ]) p: generate(p, rules, 0)
+// Every side plays serfs, whatever was typed (rules "race", #70).
 let typed_rats = gstr(races[1], "creature", "")
-check(gstr(races[0], "creature", "") == "human" and typed_rats == "human", "steading: every side is villagers, whatever was typed ({typed_rats})")
+check(gstr(races[0], "creature", "") == "human" and typed_rats == "human", "steading: every side is serfs, whatever was typed ({typed_rats})")
 // Every building is drawn with a model the game has: its own, or the one it extends (#58: the sawmill had none, and the
 // game stopped baking it at the start).
 let game_buildings = at(parse_json(read_file("../data/buildings.json") or ""), "buildings")
@@ -125,7 +125,7 @@ def all_of(r:int) -> int:  // player 0's r: in its buildings and in its units' h
 
 // Lay building `id` for player 0 near (x, y) in tiles, from the town (no worker named), with a road to its door (game/steading_lay).
 def lay(id:string, x:int, y:int) -> bool:
-    let ok = lay_with_road(id, x, y)
+    let ok = lay_or_wait(id, x, y)
     if not ok: print "steading: no room for {id} near {x},{y} with a road to its door"
     return ok
 
@@ -165,6 +165,7 @@ def cells_of(r:int, x:int, y:int, d:int) -> [int]:
 // With doors on roads (#119), each place gets a road to its door first, so only the seam decides.
 def seam_check():
     new_world(2026, MAP, races, rules, [])
+    lay_later = []
     let seam = cells_of(res("coal"), start_x[0] / TILE, start_y[0] / TILE, 12)
     let cm = btype_index("coal_mine")
     let ik = btype_index("iron_mine")
@@ -179,17 +180,18 @@ def seam_check():
 
 def play() -> int:
     new_world(2026, MAP, races, rules, [])
+    lay_later = []
     let w = res("wood")
     let pl = res("plank")
     let st = res("stone")
     check(r_stocked == 1 and pl >= 0 and t_carrier[u_kind[index_of(mine()[0])]] == 1, "steading: a stocked economy, planks, workers who carry")
     let tc = 0
     check(b_owner[tc] == 0 and b_kind[tc] == btype_index("town_center") and pop[0] == 8 and pop[0] <= pop_cap[0] and btype_index("house") < 0,
-          "steading: the town starts with a storehouse and 8 villagers, room for them, and no houses ({pop[0]} of {pop_cap[0]})")
+          "steading: the town starts with a storehouse and 8 serfs, room for them, and no houses ({pop[0]} of {pop_cap[0]})")
     var by_tc = 0
     for(u_x.length) i:
         if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
-    check(by_tc == 8, "steading: the villagers start round the storehouse ({by_tc} of 8)")
+    check(by_tc == 8, "steading: the serfs start round the storehouse ({by_tc} of 8)")
     // Mines (#42): one goes up only against a seam of its own; the coal seam by the town is left small, to run out.
     let coal = res("coal")
     let seam = cells_of(coal, start_x[0] / TILE, start_y[0] / TILE, 12)
@@ -205,7 +207,7 @@ def play() -> int:
     // The goals' kinds of done (#104): so much made or gathered, so many people.
     let goal = Tip { "", "", "made:bread:50", "Goal" }
     check(tips[4].label == "Goal" and tips[0].label == "Tip" and not tip_done(goal, 0, 8) and tip_done(Tip { "", "", "people:8", "Goal" }, 0, 8) and not tip_done(Tip { "", "", "people:9", "Goal" }, 0, 8),
-          "steading: the goals come after the tips; one for 8 people is met by the 8 villagers, one for 9 isn\'t, nor 50 loaves made yet")
+          "steading: the goals come after the tips; one for 8 people is met by the 8 serfs, one for 9 isn\'t, nor 50 loaves made yet")
     let plank0 = stock[pl][0]
     let gr = res("grain")
     let fl = res("flour")
@@ -218,7 +220,7 @@ def play() -> int:
     var sites_ok = true
     let ate = []::int  // the workers that went to eat
     var planned = 0
-    var most_builders = 0    // the most villagers building one site at once
+    var most_builders = 0    // the most serfs building one site at once
     var site_walked = false  // someone stood on a site's cells while it went up
     var trained = false
     var mill_up = -1                                          // the tick the mill was first up
@@ -255,9 +257,9 @@ def play() -> int:
         for(u_x.length) i:
             if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])
             if u_task[i] == GATHER and (find([ "woodcutter", "stonecutter", "farmer", "miner" ]) g: g == t_slot[u_kind[i]]) < 0: gatherers_ok = false
-        wstep()
+        lay_step()
         for(b_id.length) b:
-            if b_site[b].length and b_done[b] == 0 and b_progress[b] * 1000 > bt_build_ticks[b_kind[b]] * site_permille(b) + bt_build_ticks[b_kind[b]]: sites_ok = false
+            if b_site[b].length and b_done[b] == 0 and b_progress[b] > build_cap(b) + 1: sites_ok = false
         if tick % 20 == 0:
             for(b_id.length) b:
                 if b_owner[b] == 0 and b_done[b] == 0 and bt_road[b_kind[b]] < 0:
@@ -292,8 +294,8 @@ def play() -> int:
     check(gatherers_ok and gathered[w][0] > 0 and gathered[st][0] > 0, "steading: wood and stone come in, cut only by the specialists ({gathered[w][0]} wood, {gathered[st][0]} stone)")
     let dragged_built = (filter(dragged) c: road[c] > 0).length
     check(planned == 5 and dragged_built == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({dragged_built} of {planned})")
-    check(most_builders >= 2 and most_builders <= 3, "steading: idle villagers help build a site, no more than 3 sent at once ({most_builders})")
-    check(site_walked, "steading: villagers walk across a site while it goes up")
+    check(most_builders >= 2 and most_builders <= 3, "steading: idle serfs help build a site, no more than 3 sent at once ({most_builders})")
+    check(site_walked, "steading: serfs walk across a site while it goes up")
     check(ate.length >= 3, "steading: hungry workers go to eat ({ate.length} of them)")
     check(sites_ok, "steading: no site was built ahead of its goods")
     check((filter(4) j: tip_done(tips[j], 0, 5)).length == 4, "steading: every opening tip is done by playing the town")
@@ -317,6 +319,7 @@ def play() -> int:
 // the town stays fed: carriers don't all go hauling to the storehouse, and nobody stands jammed at a door.
 def big_town(dx:int, dy:int) -> int:
     new_world(2026, MAP, races, rules, [])
+    lay_later = []
     let pl = res("plank")
     let br = res("bread")
     let tl = res("tools")
@@ -381,7 +384,7 @@ def big_town(dx:int, dy:int) -> int:
                 asked = true
                 asked_at = t
                 next_pop = pop[0] + 1
-        wstep()
+        lay_step()
         for(b_id.length) b:
             if b_owner[b] == 0 and b_done[b] != 0 and bt_name[b_kind[b]] == "sawmill" and hook_building_get(col_present, b) != 0:
                 mill_ticks++
@@ -415,6 +418,8 @@ def big_town(dx:int, dy:int) -> int:
 // then goes to its farm once the smithy's tools are in. Whether all of that happened, and the hash.
 def metal_chain() -> int:
     new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own, not the order they open in)
     let tc = 0
     let tl = res("tools")
     let fe = res("iron")
@@ -442,7 +447,7 @@ def metal_chain() -> int:
             for([ "smelter", "smelter", "smith", "farmer", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
             trained = true
         if done_of("farm") != 0 and stock[tl][0] == 0 and (find(u_x.length) i: u_owner[i] == 0 and t_slot[u_kind[i]] == "farmer" and hook_unit_get(col_work, i) == 0) >= 0: farmer_waited = true
-        wstep()
+        lay_step()
         if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
     let farmer = find(u_x.length) i: u_owner[i] == 0 and t_slot[u_kind[i]] == "farmer"
     let farm_id = done_of("farm")
@@ -457,6 +462,8 @@ def metal_chain() -> int:
 // on grain, the butcher makes them into sausages, and the town eats those. Whether it did, and the hash.
 def pig_chain() -> int:
     new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own, not the order they open in)
     let tc = 0
     let br = res("bread")
     let pg = res("pig")
@@ -476,7 +483,7 @@ def pig_chain() -> int:
         if school != 0 and not trained:
             for([ "swineherd", "butcher", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
             trained = true
-        wstep()
+        lay_step()
         if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
     let eaten = produced[sa][0] - all_of(sa)
     print "steading: pigs: {laid} laid, pigs {produced[pg][0]}, sausages {produced[sa][0]}, {eaten} eaten"
@@ -492,24 +499,26 @@ def store_planks() -> int:
     return n
 
 // Through a save (#75): the mod's Lua loads again with the saved match, and its state comes back in the hook columns.
-// A hut goes up and the villagers wait, carry and get hungry for 2 minutes; then 2 minutes more, once straight on and once from a save made
+// A hut goes up and the serfs wait, carry and get hungry for 2 minutes; then 2 minutes more, once straight on and once from a save made
 // there: the same hash every tick. Whether they matched, and whether anyone was hungry or ate by then.
 // stop: the mod's rules stop before the save (as an error would stop them): they must stay stopped after the load.
 def save_run(stop:bool) -> bool, bool:
     let path = "test_steading.sav"
     new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own, not the order they open in)
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
     for(2 * 60 * TICK_HZ) t:
         if t == 40: lay("lumber_camp", tx + 6, ty - 4)
-        wstep()
+        lay_step()
     if stop:
         let pk = l_packs[find(l_packs) p: p.id == "steading"]
         pk.error = "stopped by the test"
         lx_note_stop(pk)
     assert save_world(path, [])
     let want = map(2 * 60 * TICK_HZ):
-        wstep()
+        lay_step()
         state_hash()
     let cols = map(hook_unit_names) n: n
     var lively = false
@@ -524,12 +533,48 @@ def save_run(stop:bool) -> bool, bool:
     load_world(path)
     delete_file(path)
     let got = map(2 * 60 * TICK_HZ):
-        wstep()
+        lay_step()
         state_hash()
     let off = l_packs[find(l_packs) p: p.id == "steading"].error != ""
     return equal(want, got) and off == stop, lively
 
 seam_check()
+// A fresh town (#124): only the first buildings are open; a building laid with no road gets a road plan at its door by
+// itself; a site whose goods aren't there is built to its foundation (rules foundation_pct) and no further, a serf
+// waiting at it, and finished once the goods come.
+def start_rules():
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    let sc = btype_index("school")
+    check(not build_barred(0, sc) and build_barred(0, btype_index("lumber_camp")) and build_barred(0, btype_index("sawmill")) and build_barred(0, btype_index("iron_smelter")),
+          "steading: a fresh town can lay a school, not a woodcutter\'s hut, a sawmill or a smelter before what comes first")
+    let tc = b_index_of(done_of("town_center"))
+    let pl = res("plank")
+    let st = res("stone")
+    let kept = [ b_hold[tc][pl], b_hold[tc][st] ]
+    b_hold[tc][pl] = 0  // (the store emptied of what the school is built of)
+    b_hold[tc][st] = 0
+    let id = lay_foundation(0, []::int, sc, start_x[0] / TILE - 2, start_y[0] / TILE - 6)
+    check(id != 0, "steading: a school is laid with no road to it")
+    let b = b_index_of(id)
+    var door_road = false
+    var waited = false
+    for(60 * TICK_HZ) t:
+        lay_step()
+        if is_road_at(door_of(b)): door_road = true
+        if (find(u_x.length) i: u_task[i] == BUILD and u_target[i] == id) >= 0 and b_progress[b] > 0: waited = true
+    let cap = bt_build_ticks[sc] * r_foundation_pct / 100
+    check(door_road, "steading: the tile in front of a door gets a road plan by itself")
+    check(r_foundation_pct > 0 and b_progress[b] == cap and b_done[b] == 0 and waited,
+          "steading: with no goods a site is built to its foundation and no further, a serf waiting at it ({b_progress[b]} of {cap}, waited {waited})")
+    b_hold[tc][pl] = kept[0]
+    b_hold[tc][st] = kept[1]
+    for(3 * 60 * TICK_HZ) t:
+        if b_done[b] == 0: lay_step()
+    check(b_done[b] != 0 and not build_barred(0, btype_index("lumber_camp")) and build_barred(0, btype_index("sawmill")),
+          "steading: the goods come and the school is finished, which opens the woodcutter\'s hut but not yet the sawmill")
+
+start_rules()
 let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
