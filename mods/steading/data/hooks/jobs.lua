@@ -8,6 +8,8 @@
 -- A specialist isn't a carrier, nor sent to build: those are the villagers' (economy.carriers).
 -- A workplace with no goods to gather round it (a mill, a bakery: a recipe) works only while one of its staff stands at
 -- its door (#99): its worker goes there and waits, and the engine asks can_make before each round.
+-- A workplace with a "reach" (a mine, #42: tiles out from its edge) has its worker gather only that near: what's
+-- further is someone else's. When none is left within reach, the place is worked out and its worker waits at the door.
 
 local LOOK = 20  -- ticks between looks (a second)
 
@@ -15,11 +17,13 @@ local LOOK = 20  -- ticks between looks (a second)
 -- for none.
 local staff = {}
 local gathers = {}
+local reach = {}  -- (in tiles, or nil for anywhere)
 local job_slots = {}
 for k = 0, building_type_count() - 1 do
   local bt = building_type(k)
   staff[k + 1] = bt.staff
   gathers[k + 1] = 0
+  reach[k + 1] = bt.reach
   if bt.staff then
     for slot, _ in pairs(bt.staff) do job_slots[slot] = true end
     local d = (bt.drop_off or {})[1]
@@ -39,6 +43,19 @@ end
 
 local col_work = unit_column("workplace")  -- the id of the building it works at, 0 for none
 local col_present = building_column("present")  -- 1 while one of its staff stands at its door (as of the last look)
+local col_out = building_column("worked_out")  -- 1 once there's nothing left to gather within its reach
+
+-- Whether cell c is within building b's reach (if its type has one).
+local function within_reach(b, c)
+  local r = reach[b_kind(b) + 1]
+  if not r then return true end
+  local x0, y0, x1, y1 = building_rect(b)
+  local x = (c % W) * TILE + TILE // 2
+  local y = (c // W) * TILE + TILE // 2
+  local dx = math.max(math.max(x0 - x, x - x1), 0)
+  local dy = math.max(math.max(y0 - y, y - y1), 0)
+  return math.max(dx, dy) <= r * TILE + TILE // 2
+end
 
 -- The building slot unit i works at, or -1 (none, or gone: then it's cleared).
 local function workplace(i)
@@ -61,7 +78,13 @@ local function go_to_work(i, b)
   end
   local x0, y0, x1, y1 = building_rect(b)
   local c = nearest_resource((x0 + x1) // 2, (y0 + y1) // 2, kind, i, false, false, true)
-  if c >= 0 then start_gather(i, c, kind) end
+  if c >= 0 and within_reach(b, c) then
+    building_set(col_out, b, 0)
+    start_gather(i, c, kind)
+  elseif reach[b_kind(b) + 1] then
+    building_set(col_out, b, 1)
+    if not in_reach(i, building_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
+  end
 end
 
 -- The nearest of these free specialists (unit slots) to building b, taken out of the list; -1 if there's none.
@@ -92,6 +115,7 @@ function jobs_tick()
       if b >= 0 then
         working[b + 1] = (working[b + 1] or 0) + 1
         if in_reach(i, building_rect(b)) then at_door[b + 1] = true end
+        if u_task(i) == GATHER and u_carry(i) == 0 and u_target(i) >= 0 and not within_reach(b, u_target(i)) then clear_task(i) end
         if u_task(i) == T_NONE and u_orders(i) == 0 then go_to_work(i, b) end
       else
         local p = u_owner(i) + 1
@@ -139,5 +163,7 @@ function jobs_task_name(i)
   if id ~= 0 then b = building_index(id) end
   local name = job:sub(1, 1):upper() .. job:sub(2)
   if b < 0 then return name .. ", waiting for a workplace" end
-  return name .. " at the " .. (building_type(b_kind(b)).name or "hut")
+  local at = name .. " at the " .. (building_type(b_kind(b)).name or "hut")
+  if building_get(col_out, b) == 1 then return at .. ": it's worked out" end
+  return at
 end

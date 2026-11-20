@@ -72,9 +72,10 @@ id_load("../data")
 let MINUTES = 15
 let FIELD_GRAIN = 40  // the grain a sown field holds (Steading's farm)
 // who works where
-let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ] ]
-let MAP = "reed_meadow"
-let T_EAT = 100  // (the mod's hunger.lua: its own task, going to eat)
+let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ], [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "miner", "gold_mine" ] ]
+let MAP = "steading_vale"  // (the mod's own map: the meadow with seams in its mountains, #42)
+let COAL_LEFT = 3          // the loads the test leaves in each cell of the coal seam by the town, so it runs out
+let T_EAT = 100            // (the mod's hunger.lua: its own task, going to eat)
 let used = mods_use([ "steading" ])
 check(used.length == 1, "the mod loads ({map(mods_refused.get_keys()) id: id + ": " + mods_refused.get(id, "")})")
 let rules = load_rules("steading")
@@ -141,6 +142,10 @@ def done_of(id:string) -> int:
         if b_owner[b] == 0 and b_done[b] != 0 and bt_name[b_kind[b]] == id: return b_id[b]
     return 0
 
+// The cells of resource r (its index) within d tiles of (x, y), in cell order.
+def cells_of(r:int, x:int, y:int, d:int) -> [int]:
+    return filter(W * H) c: res_at(c) == r + 1 and abs(c % W - x) <= d and abs(c / W - y) <= d
+
 def play() -> int:
     new_world(2026, MAP, races, rules, [])
     let w = res("wood")
@@ -154,6 +159,16 @@ def play() -> int:
     for(u_x.length) i:
         if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
     check(by_tc == 5, "steading: the villagers start round the storehouse ({by_tc} of 5)")
+    // Mines (#42): one goes up only against a seam of its own; the coal seam by the town is left small, to run out.
+    let coal = res("coal")
+    let seam = cells_of(coal, start_x[0] / TILE, start_y[0] / TILE, 12)
+    check(seam.length == 3 and res("iron_ore") >= 0 and res("gold_ore") >= 0, "steading: the vale has a coal seam in the mountain by the town ({seam.length} cells)")
+    let cm = btype_index("coal_mine")
+    let sx = seam[0] % W
+    let sy = seam[0] / W
+    check(not can_place(0, cm, start_x[0] / TILE - 6, start_y[0] / TILE + 6, 0) and not can_place(0, btype_index("iron_mine"), sx - 2, sy, 0) and can_place(0, cm, sx - 2, sy, 0),
+          "steading: a mine goes up only with its back to a seam of its own (coal against the coal, not in the meadow; iron not there)")
+    for(seam) c: amount[c] = COAL_LEFT
     let tips = match_tips(su_rules)
     check(tips.length == 4 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips, the first (lay a school) not yet done ({tips.length})")
     let plank0 = stock[pl][0]
@@ -187,9 +202,12 @@ def play() -> int:
         if t == 600 and lay("farm", tx - 8, ty - 4): laid++  // (the food chain, #99: farm, mill, bakery)
         if t == 700 and lay("mill", tx - 5, ty - 9): laid++
         if t == 800 and lay("bakery", tx + 2, ty + 8): laid++
+        if t == 3000 and lay("coal_mine", sx - 2, sy + 1): laid++  // (not up against the inn: its door is above)  // (the mines, #42)
+        if t == 3050 and lay("iron_mine", sx + 3, sy): laid++
+        if t == 3100 and lay("gold_mine", tx + 16, ty - 2): laid++
         let school = done_of("school")
         if school != 0 and not trained:
-            for([ "woodcutter", "stonecutter", "sawyer", "farmer", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+            for([ "woodcutter", "stonecutter", "sawyer", "farmer", "miner", "miner", "miner", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
             trained = true
         // The miller and the baker only half a minute after the mill is up: till then it holds its grain and makes nothing.
         let mill = done_of("mill")
@@ -201,7 +219,7 @@ def play() -> int:
         if mill != 0 and not crafters and b_hold[b_index_of(mill)][gr] >= 2: mill_waited = true
         for(u_x.length) i:
             if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])
-            if u_task[i] == GATHER and (find([ "woodcutter", "stonecutter", "farmer" ]) g: g == t_slot[u_kind[i]]) < 0: gatherers_ok = false
+            if u_task[i] == GATHER and (find([ "woodcutter", "stonecutter", "farmer", "miner" ]) g: g == t_slot[u_kind[i]]) < 0: gatherers_ok = false
         wstep()
         for(b_id.length) b:
             if b_site[b].length and b_done[b] == 0 and b_progress[b] * 1000 > bt_build_ticks[b_kind[b]] * site_permille(b) + bt_build_ticks[b_kind[b]]: sites_ok = false
@@ -222,11 +240,20 @@ def play() -> int:
         let at_ = b_index_of(hook_unit_get(col_work, i))
         if u_owner[i] == 0 and at_ >= 0:
             let job = t_slot[u_kind[i]]
-            let hut = JOBS[find(JOBS) jb: jb[0] == job]
-            if bt_name[b_kind[at_]] == hut[1]: staffed++
+            if (find(JOBS) jb: jb[0] == job and jb[1] == bt_name[b_kind[at_]]) >= 0: staffed++
     print "steading: {MINUTES} min, {laid} laid, {built} built, {staffed} staffed, {most_builders} at most on a site, {ate.length} ate, {road_cells()} road; planks {plank0} -> {stock[pl][0]} (sawn {produced[pl][0]}), wood {stock[w][0]} (cut {gathered[w][0]}), stone {stock[st][0]} (cut {gathered[st][0]}) in store"
-    check(laid == 8 and built == 8, "steading: the school, the hut, the sawmill, the quarry, an inn, a farm, a mill and a bakery are built ({built} of {laid})")
-    check(staffed == 6, "steading: a woodcutter, a stone cutter, a sawyer, a farmer, a miller and a baker trained at the school each went to work at their own ({staffed} of 6)")
+    check(laid == 11 and built == 11, "steading: the school, the hut, the sawmill, the quarry, an inn, a farm, a mill, a bakery and three mines are built ({built} of {laid})")
+    check(staffed == 9, "steading: a woodcutter, a stone cutter, a sawyer, a farmer, a miller, a baker and three miners trained at the school each went to work at their own ({staffed} of 9)")
+    let coal_mine = b_index_of(done_of("coal_mine"))
+    let col_out = find(hook_building_names) n: n == "worked_out"
+    var miner_home = false  // the coal miner, its seam gone, waits by its mine
+    for(u_x.length) i:
+        if u_owner[i] == 0 and hook_unit_get(col_work, i) == b_id[coal_mine] and u_task[i] == T_NONE and mid_dist2(coal_mine, u_x[i], u_y[i]) <= 9 * TILE * TILE: miner_home = true
+    let dug_out = (filter(seam) c: tr_names[terrain[c]] == "worked_out").length
+    print "steading: coal {gathered[coal][0]} of {seam.length * COAL_LEFT}, iron ore {gathered[res("iron_ore")][0]}, gold ore {gathered[res("gold_ore")][0]}"
+    check(gathered[coal][0] == seam.length * COAL_LEFT and dug_out == seam.length, "steading: the coal mine digs its seam out, every load of it, and the seam is bare rock ({gathered[coal][0]} of {seam.length * COAL_LEFT}, {dug_out} cells worked out)")
+    check(hook_building_get(col_out, coal_mine) == 1 and miner_home, "steading: a worked-out mine stops, its miner waiting at its door (out {hook_building_get(col_out, coal_mine)}, home {miner_home})")
+    check(gathered[res("iron_ore")][0] > 0 and gathered[res("gold_ore")][0] > 0, "steading: the iron and gold mines dig ore")
     check(gatherers_ok and gathered[w][0] > 0 and gathered[st][0] > 0, "steading: wood and stone come in, cut only by the specialists ({gathered[w][0]} wood, {gathered[st][0]} stone)")
     check(planned == 5 and road_cells() == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({road_cells()} of {planned})")
     check(most_builders >= 2 and most_builders <= 3, "steading: idle villagers help build a site, no more than 3 sent at once ({most_builders})")

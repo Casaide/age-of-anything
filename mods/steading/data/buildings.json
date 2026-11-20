@@ -6,7 +6,10 @@
    "school",
    "sawmill",
    "inn",
-   "bakery"
+   "bakery",
+   "coal_mine",
+   "iron_mine",
+   "gold_mine"
   ]
  },
  "buildings": {
@@ -65,7 +68,7 @@
   "school": {
    "extends": "house",
    "name": "School",
-   "desc": "Teaches the town's people: new villagers, and woodcutters, stone cutters, farmers, millers and bakers for the workplaces. Each goes to work where it's needed.",
+   "desc": "Teaches the town's people: new villagers, and woodcutters, stone cutters, miners, farmers, millers and bakers for the workplaces. Each goes to work where it's needed.",
    "hotkey": "C",
    "pop": 0,
    "house": false,
@@ -78,7 +81,8 @@
     "sawyer",
     "farmer",
     "miller",
-    "baker"
+    "baker",
+    "miner"
    ],
    "cost": {
     "wood": 0,
@@ -307,6 +311,84 @@
   },
   "fortified_gate": {
    "remove": true
+  },
+  "coal_mine": {
+   "extends": "mining_camp",
+   "name": "Coal Mine",
+   "desc": "Goes up only with its back to a seam of coal in the mountain. A miner works here: digs the seam behind it and leaves the coal for the carriers. When the seam is dug out, the mine stops.",
+   "against": "coal",
+   "reach": 2,
+   "drop_off": [
+    "coal"
+   ],
+   "cost": {
+    "wood": 0,
+    "plank": 4,
+    "stone": 4
+   },
+   "holds": {
+    "coal": 12
+   },
+   "offers": [
+    "coal"
+   ],
+   "staff": {
+    "miner": 1
+   },
+   "note": "",
+   "hotkey": ""
+  },
+  "iron_mine": {
+   "extends": "mining_camp",
+   "name": "Iron Mine",
+   "desc": "Goes up only with its back to a seam of iron ore in the mountain. A miner works here: digs the seam behind it and leaves the iron ore for the carriers. When the seam is dug out, the mine stops.",
+   "against": "iron_ore",
+   "reach": 2,
+   "drop_off": [
+    "iron_ore"
+   ],
+   "cost": {
+    "wood": 0,
+    "plank": 4,
+    "stone": 4
+   },
+   "holds": {
+    "iron_ore": 12
+   },
+   "offers": [
+    "iron_ore"
+   ],
+   "staff": {
+    "miner": 1
+   },
+   "note": "",
+   "hotkey": ""
+  },
+  "gold_mine": {
+   "extends": "mining_camp",
+   "name": "Gold Mine",
+   "desc": "Goes up only with its back to a seam of gold ore in the mountain. A miner works here: digs the seam behind it and leaves the gold ore for the carriers. When the seam is dug out, the mine stops.",
+   "against": "gold_ore",
+   "reach": 2,
+   "drop_off": [
+    "gold_ore"
+   ],
+   "cost": {
+    "wood": 0,
+    "plank": 4,
+    "stone": 4
+   },
+   "holds": {
+    "gold_ore": 12
+   },
+   "offers": [
+    "gold_ore"
+   ],
+   "staff": {
+    "miner": 1
+   },
+   "note": "",
+   "hotkey": ""
   }
  }
 }

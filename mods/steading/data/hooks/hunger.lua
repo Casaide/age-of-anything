@@ -123,7 +123,8 @@ local function go_eat(i, b)
   approach_building(i, b)
 end
 
--- Back to the job it left to eat, if that's still there.
+-- Back to the job it left to eat, if that's still there: gathering. A builder comes back idle, and the town's rules
+-- (economy.lua) send it to whichever site wants one, so a site never gets more than its builders_per_site.
 local function back_from_meal(i)
   local was = unit_get(col_was, i)
   unit_set(col_was, i, 0)
@@ -140,10 +141,7 @@ local function back_from_meal(i)
     if res_at(target) == kind and amount(target) > 0 then c = target
     else c = nearest_resource(target % W * TILE + TILE // 2, target // W * TILE + TILE // 2, kind, i, false, false, true) end
     if kind > 0 and c >= 0 then start_gather(i, c, kind) else clear_task(i) end
-  elseif task == BUILD then
-    local b = building_index(target)
-    if b >= 0 and b_done(b) ~= 1 then start_build(i, target) else clear_task(i) end
-  else
+  else  -- (a builder is idle: the town sends builders where they're wanted, no more than a site may have)
     clear_task(i)
   end
 end

@@ -36,7 +36,8 @@
   "gatherers": [
    "woodcutter",
    "stonecutter",
-   "farmer"
+   "farmer",
+   "miner"
   ],
   "builders_come": true,
   "builders_per_site": 3,
@@ -59,7 +60,8 @@
     "sawyer",
     "farmer",
     "miller",
-    "baker"
+    "baker",
+    "miner"
    ],
    "starving_pct": 50,
    "foods": [
@@ -73,7 +75,8 @@
    "sawyer",
    "farmer",
    "miller",
-   "baker"
+   "baker",
+   "miner"
   ],
   "town_builds": true,
   "carriers": [
@@ -95,7 +98,10 @@
    "grain": 30,
    "flour": 24,
    "bread": 24,
-   "_doc": "planks, flour and bread are made, never gathered; every resource needs a rate"
+   "_doc": "planks, flour and bread are made, never gathered; every resource needs a rate",
+   "coal": 40,
+   "iron_ore": 40,
+   "gold_ore": 50
   }
  },
  "-roster": [
@@ -188,6 +194,16 @@
    "own_seed": true,
    "desc": "Works at a bakery: bakes flour into bread",
    "noun": "Baker"
+  },
+  {
+   "slot": "miner",
+   "role": "worker",
+   "tier": 1,
+   "name": "Miner",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a mine: digs the seam behind it and leaves the ore for the carriers",
+   "noun": "Miner"
   }
  ]
 }

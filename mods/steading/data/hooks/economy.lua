@@ -35,7 +35,7 @@ local function door_on_road(p, k, cx, cy, sx, sy)
   return b >= 0 and b_owner(b) == p and bt_road(b_kind(b)) >= 0
 end
 
-function can_place(p, k, cx, cy, sx, sy)
+function doors_can_place(p, k, cx, cy, sx, sy)
   return not doors or door_on_road(p, k, cx, cy, sx, sy)
 end
 
