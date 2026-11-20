@@ -59,7 +59,7 @@ import lua.api
 import gen.reset
 import gen.save
 import testkit.kit
-import steading_lay
+import game.steading_lay
 import game.model_type
 import game.tips
 
@@ -123,7 +123,7 @@ def all_of(r:int) -> int:  // player 0's r: in its buildings and in its units' h
         if u_owner[i] == 0 and u_carry_kind[i] == r + 1: n += u_carry[i]
     return n
 
-// Lay building `id` for player 0 near (x, y) in tiles, from the town (no worker named), with a road to its door (steading_lay).
+// Lay building `id` for player 0 near (x, y) in tiles, from the town (no worker named), with a road to its door (game/steading_lay).
 def lay(id:string, x:int, y:int) -> bool:
     let ok = lay_with_road(id, x, y)
     if not ok: print "steading: no room for {id} near {x},{y} with a road to its door"
@@ -194,7 +194,6 @@ def play() -> int:
     let coal = res("coal")
     let seam = cells_of(coal, start_x[0] / TILE, start_y[0] / TILE, 12)
     check(seam.length == 3 and res("iron_ore") >= 0 and res("gold_ore") >= 0, "steading: the vale has a coal seam in the mountain by the town ({seam.length} cells)")
-    let cm = btype_index("coal_mine")
     let sx = seam[0] % W
     let sy = seam[0] / W
     for(seam) c: amount[c] = COAL_LEFT

@@ -59,7 +59,7 @@ import lua.api
 import gen.reset
 import gen.save
 import testkit.kit
-import steading_lay
+import game.steading_lay
 
 // A Steading town for pictures (#104): the bot doesn't build the economy's chains, so this lays one out by script on
 // Steading Vale, plays it headless and saves it, to be loaded in the game for a capture:
@@ -80,7 +80,7 @@ if args.length:
     assert ok
     minutes = n
 
-// Lay building `id` for player 0 near (x, y) in tiles, with a road to its door (steading_lay).
+// Lay building `id` for player 0 near (x, y) in tiles, with a road to its door (game/steading_lay).
 def lay(id:string, x:int, y:int):
     if not lay_with_road(id, x, y): print "steading_town: no room for {id} near {x},{y}"
 
