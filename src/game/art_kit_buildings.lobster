@@ -101,6 +101,7 @@ def akb_placed(arch:string, type:string, model:string, suffix:string) -> BSpec:
     spec.body = akb_hold(spec.body, b) or spec.body
     spec.banner = akb_hold(spec.banner, b)
     spec.vane = akb_hold(spec.vane, b)
+    spec.turn = akb_hold(spec.turn, b)
     spec.open = akb_hold(spec.open, b)
     for([ "smoke", "lantern", "banner_pivot", "vane_pivot" ]) k:
         if akb_has(spec, k): spec.pts.set(k, bxf(b, akb_pt(spec, k)))
@@ -385,6 +386,13 @@ def akb_bake_look(arch:string, type:string, model:string, suffix:string):
                 lk.arms_front[k] = "{name}:arm{k}:front"
     let vane = spec.vane
     if vane: akb_keep(name + ":vane", vane, false, akb_pt(spec, "vane_pivot"))
+    if spec.turn:  // a turning part (a mill's sails), a quarter turn in steps (4 sails look the same each quarter)
+        for(TURN_FRAMES) k:
+            bld_turn = float(k) * 90.0 / float(TURN_FRAMES)
+            let tn = akb_placed(arch, type, model, suffix).turn
+            if tn: akb_keep("{name}:turn{k}", tn, false)
+        bld_turn = 0.0
+        lk.turns = map(TURN_FRAMES) k: "{name}:turn{k}"
     akb_split_shadows = false
     for(4) st:
         let p = akb_placed(arch, type, model, suffix)

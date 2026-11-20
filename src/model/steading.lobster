@@ -186,14 +186,15 @@ def steading_mill(team:float3) -> BSpec:
     for(4) k:
         let arm = mnode()
         arm.pos = hub + bv(0.0, 0.0, 0.04)
-        arm.rot = bv(0.0, 0.0, 20.0 + float(k) * 90.0)
+        arm.rot = bv(0.0, 0.0, 20.0 + float(k) * 90.0 + bld_turn)
         add_child(sails, arm)
         add_child(arm, bbox(bv(0.05, 1.15, 0.04), st_timber(), bv(0.0, 0.6, 0.0)))
         add_child(arm, bbox(bv(0.24, 0.85, 0.015), cloth, bv(0.14, 0.72, 0.02)))
         for(4) j: add_child(arm, bbox(bv(0.26, 0.02, 0.03), st_timber(), bv(0.13, 0.35 + float(j) * 0.25, 0.03)))
-    add_child(body, sails)  // (drawn with the body for now; next, its own turning part)
     st_cloth(body, bv(0.0, 0.9, 0.46), team)
-    return st_done(body, team, bv(0.0, 0.0, 0.5), 0.3, 0.4)
+    let s = st_done(body, team, bv(0.0, 0.0, 0.5), 0.3, 0.4)
+    s.turn = sails  // (they turn in the wind: its own part, baked through a quarter turn in steps)
+    return s
 
 // The bakery: a brick house under tiles, its bread oven a dome beside it, smoke from the chimney, a rack of loaves.
 def steading_bakery(team:float3) -> BSpec:
