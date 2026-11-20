@@ -63,7 +63,8 @@ import testkit.kit
 // A Steading town for pictures (#104): the bot doesn't build the economy's chains, so this lays one out by script on
 // Steading Vale, plays it headless and saves it, to be loaded in the game for a capture:
 //   lobster steading_town.lobster -- [minutes]    (from src; writes saves/steading-town.sav)
-//   ./play.sh lobby page:saves loadfirst mute shot:/tmp/town.png at:3 look:<x>,<y>
+//   ./play.sh lobby mods:steading rules:steading page:saves loadfirst mute shot:/tmp/town.png at:4 look:<x>,<y>
+// (A loaded match shows no tips or goals: they're only for a match played from the start.)
 lib_load("../data")
 id_load("../data")
 
@@ -128,5 +129,5 @@ var built = 0
 for(b_id.length) b:
     if b_owner[b] == 0 and b_done[b] != 0: built++
 let path = "saves/steading-town.sav"
-assert save_world(path, [])
+assert save_world(path, [ new_bot(1) ])  // (the other side's bot: a save with none is read as a failed load)
 print "steading_town: {minutes} min, {built} buildings, {pop[0]} people, saved to {path}"
