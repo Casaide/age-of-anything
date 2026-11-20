@@ -222,6 +222,9 @@ def play() -> int:
     var planned = 0
     var most_builders = 0    // the most serfs building one site at once
     var site_walked = false  // someone stood on a site's cells while it went up
+    let site_ids = []::int   // the sites seen (not roads), and how long each had stood with nobody building it (-1 once someone did)
+    let site_waits = []::int
+    var longest_wait = 0     // the longest a site stood before its first builder came
     var trained = false
     var mill_up = -1                                          // the tick the mill was first up
     var crafters = false                                      // the miller and the baker sent for
@@ -268,6 +271,15 @@ def play() -> int:
                         if u_task[i] == BUILD and u_target[i] == b_id[b]: n++
                         if occupied[cell_of(u_x[i], u_y[i])] == b_id[b]: site_walked = true
                     most_builders = max(most_builders, n)
+                    var s = find(site_ids): _ == b_id[b]
+                    if s < 0:
+                        site_ids.push(b_id[b])
+                        site_waits.push(0)
+                        s = site_ids.length - 1
+                    if site_waits[s] >= 0 and n == 0: site_waits[s] += 20
+                    if n > 0 and site_waits[s] >= 0:
+                        longest_wait = max(longest_wait, site_waits[s])
+                        site_waits[s] = -1
         if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
     var built = 0
     for(b_id.length) b:
@@ -296,6 +308,9 @@ def play() -> int:
     check(planned == 5 and dragged_built == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({dragged_built} of {planned})")
     check(most_builders >= 2 and most_builders <= 3, "steading: idle serfs help build a site, no more than 3 sent at once ({most_builders})")
     check(site_walked, "steading: serfs walk across a site while it goes up")
+    let never = filter(site_waits): _ >= 0
+    check(longest_wait <= 30 * TICK_HZ and not never.length,
+          "steading: a site laid in a busy town gets its first builder within half a minute, however much is being hauled (the longest {longest_wait / TICK_HZ} s, {never.length} never)")
     check(ate.length >= 3, "steading: hungry workers go to eat ({ate.length} of them)")
     check(sites_ok, "steading: no site was built ahead of its goods")
     check((filter(4) j: tip_done(tips[j], 0, 5)).length == 4, "steading: every opening tip is done by playing the town")
@@ -574,7 +589,33 @@ def start_rules():
     check(b_done[b] != 0 and not build_barred(0, btype_index("lumber_camp")) and build_barred(0, btype_index("sawmill")),
           "steading: the goods come and the school is finished, which opens the woodcutter\'s hut but not yet the sawmill")
 
+// Builders aren't starved by hauling (Dominic, #124): with serfs busy carrying for many sites at once, every site still
+// gets a builder soon after it's laid (a serf on its way to fetch something is taken off it for a site nobody builds).
+def busy_sites():
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    let sc = btype_index("school")
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    let ids = []::int
+    for(15) gy:
+        for(15) gx:
+            if ids.length < 6:
+                let id = lay_foundation(0, []::int, sc, tx - 14 + gx * 2, ty - 14 + gy * 2)
+                if id != 0: ids.push(id)
+    let first = map(ids) _: -1  // the tick each site first had a builder
+    var hauling = false
+    for(60 * TICK_HZ) t:
+        lay_step()
+        if (find(u_x.length) i: u_owner[i] == 0 and u_task[i] == T_CARRY) >= 0: hauling = true
+        for(ids) id, n:
+            if first[n] < 0 and (find(u_x.length) i: u_task[i] == BUILD and u_target[i] == id) >= 0: first[n] = t
+    let slowest = fold(first, 0) a, f: if f < 0 or a < 0: -1 else: max(a, f)
+    check(ids.length == 6 and hauling and slowest >= 0 and slowest <= 20 * TICK_HZ,
+          "steading: six sites laid at once while serfs haul for them each get a builder within 20 s ({ids.length} laid, the slowest at {slowest} ticks: {first})")
+
 start_rules()
+busy_sites()
 let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")

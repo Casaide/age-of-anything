@@ -8,7 +8,7 @@
 --   doors_clear: a building never goes up over the tile in front of another's door, nor with its own door against one
 --     (a road may: that's where a road goes). A town laid out by a child stays walkable to every door.
 --   builders_come: a site with goods brought for more than is built gets an idle serf of its side, the nearest,
---     once a second; once all its goods are in, up to builders_per_site (1 if unset) at once. A serf with a site
+--     once a second (with none idle and nobody at it, the nearest fetching one, empty-handed, once it's stood alone 5 s); once all its goods are in, up to builders_per_site (1 if unset) at once. A serf with a site
 --     that has work within NEXT goes there first (a road's next cell, #119). (The engine drops a site
 --     whose builder can't get to it; this sends someone back too.)
 --   idle_wait: an idle serf (a carrier slot, economy.carriers) with nothing to do walks back to its side's nearest
@@ -16,6 +16,7 @@
 
 local LOOK = 20  -- ticks between looks (a second)
 local WAIT = 2 * TILE  -- how far from a store's middle, past its half size, an idle serf may stand
+local ALONE = 5  -- looks a site with work may stand with nobody at it before a fetching serf is taken for it
 local NEXT = 4 * TILE  -- how far from a builder a site with work may be for it to go there first (next_door)
 
 local ec = rules().economy or {}
@@ -24,6 +25,7 @@ local doors_clear = ec.doors_clear == true
 local builders_come = ec.builders_come == true
 local per_site = ec.builders_per_site or 1
 local idle_wait = ec.idle_wait == true
+local col_alone = building_column("alone")  -- the looks a site with work has stood with nobody building it
 local foundation = ec.foundation_pct or 0  -- the share of a site built before its goods are in (the engine's rule, #105)
 local door_roads = doors and ec.door_roads == true
 
@@ -106,8 +108,9 @@ local function work_at(b)
 end
 
 -- Whether site b is still waiting on goods: a builder there waits with it (the genre's foundations: lay it, then wait).
+-- Not a road: a road cell's builder comes with its stone, else a town of road plans has its serfs stand at them.
 local function waiting(b)
-  return b_done(b) == 0 and b_is_site(b) and site_permille(b) < 1000
+  return b_done(b) == 0 and b_is_site(b) and site_permille(b) < 1000 and bt_road(b_kind(b)) < 0
 end
 
 -- One look over the units: how many build each site (by slot + 1), and each side's idle serfs (in slot order). A
@@ -118,6 +121,7 @@ local function look()
   local idle = {}
   local hands = {}    -- each side's serfs (by side + 1)
   local waiters = {}  -- each side's serfs waiting at a site for its goods
+  local fetching = {}  -- each side's serfs on their way to fetch something, empty-handed (by side + 1)
   for i = 0, unit_count() - 1 do
     if serf[u_kind(i) + 1] then hands[u_owner(i) + 1] = (hands[u_owner(i) + 1] or 0) + 1 end
   end
@@ -140,8 +144,12 @@ local function look()
       if not idle[p] then idle[p] = {} end
       table.insert(idle[p], i)
     end
+    if task == T_CARRY and serf[u_kind(i) + 1] and u_carry(i) == 0 then
+      if not fetching[p] then fetching[p] = {} end
+      table.insert(fetching[p], i)
+    end
   end
-  return builders, idle
+  return builders, idle, fetching
 end
 
 -- How many may build site b at once: one till its goods are all in (till then the carriers are needed), then per_site.
@@ -184,17 +192,26 @@ local function next_door(builders, idle)
   end
 end
 
-local function send_builders(builders, idle)
+-- A site with work and nobody building it takes an idle serf; one that has stood so ALONE looks takes the nearest on its
+-- way to fetch something (empty-handed: the engine gives its job back): else a town hauling all the time never builds
+-- (Dominic, #124).
+local function send_builders(builders, idle, fetching)
   next_door(builders, idle)
   for b = 0, building_count() - 1 do
-    local k = b_kind(b)
+    if work_at(b) and (builders[b + 1] or 0) == 0 then building_set(col_alone, b, building_get(col_alone, b) + 1)
+    elseif building_get(col_alone, b) ~= 0 then building_set(col_alone, b, 0) end
     local mine = idle[b_owner(b) + 1]
     local have = builders[b + 1] or 0
     local most = most_at(b)
-    if mine and #mine > 0 and have < most and work_at(b) then
+    if have < most and work_at(b) then
       for _ = have + 1, most do
-        local w = take_nearest(mine, b)
+        local w = mine and take_nearest(mine, b) or -1
+        if w < 0 and have == 0 and building_get(col_alone, b) >= ALONE then
+          w = fetching[b_owner(b) + 1] and take_nearest(fetching[b_owner(b) + 1], b) or -1
+          if w >= 0 then clear_task(w) end
+        end
         if w < 0 then break end
+        have = have + 1
         start_build(w, b_id(b))
       end
     end
@@ -249,11 +266,30 @@ local function plan_door_roads()
   end
 end
 
+-- Between looks: a site that has stood alone ALONE looks (its "alone" column) takes the first serf of its side found
+-- empty-handed on the way to fetch something; they're seldom so for long, as the engine sends a serf off again the tick
+-- it's free. Then it's not alone.
+local function feed_starved()
+  for b = 0, building_count() - 1 do
+    if building_get(col_alone, b) >= ALONE and work_at(b) then
+      for i = 0, unit_count() - 1 do
+        if u_task(i) == T_CARRY and u_carry(i) == 0 and u_owner(i) == b_owner(b) and serf[u_kind(i) + 1] then
+          clear_task(i)
+          start_build(i, b_id(b))
+          building_set(col_alone, b, 0)
+          break
+        end
+      end
+    end
+  end
+end
+
 -- Each tick, after the economy's steps (rules.lua's on_tick).
 function economy_tick()
   if door_roads and stocked() and road_kind >= 0 then plan_door_roads() end
+  if builders_come and stocked() and tick() % LOOK ~= 0 then feed_starved() end
   if not stocked() or tick() % LOOK ~= 0 or not (builders_come or idle_wait) then return end
-  local builders, idle = look()
-  if builders_come then send_builders(builders, idle) end
+  local builders, idle, fetching = look()
+  if builders_come then send_builders(builders, idle, fetching) end
   if idle_wait then wait_by_stores(idle) end
 end
