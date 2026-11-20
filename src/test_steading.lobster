@@ -614,8 +614,73 @@ def busy_sites():
     check(ids.length == 6 and hauling and slowest >= 0 and slowest <= 20 * TICK_HZ,
           "steading: six sites laid at once while serfs haul for them each get a builder within 20 s ({ids.length} laid, the slowest at {slowest} ticks: {first})")
 
+// Woods as in the genre (#126): a tree is one trunk, felled and carried home whole; a sapling grows into a tree after
+// its time (terrain.json "grows"), through a save too; and a woodcutter with no grown tree in reach plants saplings.
+def woods():
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    let tree = str_index(tr_names, "tree")
+    let sap = str_index(tr_names, "sapling")
+    let grass = str_index(tr_names, "grass")
+    check(tree >= 0 and tr_amount[tree] == 1 and r_carry_of[res("wood")] == 1, "steading: a tree is one trunk, and a woodcutter carries one home at a time")
+    // A sapling planted by hand grows into a tree after 10 minutes, saved and loaded halfway.
+    let c = find(W * H) cc: terrain[cc] == grass and occupied[cc] == 0 and can_plant(cc, sap)
+    check(sap >= 0 and tr_grows[sap] == tree and plant(c, sap) and not plant(c, sap) and not plant(c, grass), "steading: a sapling is planted on open grass once, and grass doesn\'t grow")
+    let due = tick + tr_grow_ticks[sap]
+    for(tr_grow_ticks[sap] / 2) _: wstep()
+    let path = "test_steading_woods.sav"
+    assert save_world(path, [])
+    reset_world()
+    lua_reset()
+    lua_on = false
+    lua_rules = jobj()
+    load_world(path)
+    delete_file(path)
+    var early = false
+    while tick <= due + TICK_HZ:
+        if tick < due and terrain[c] != sap: early = true
+        wstep()
+    check(tr_grow_ticks[sap] == 600 * TICK_HZ and not early and terrain[c] == tree and amount[c] == 1, "steading: the sapling is a tree of one trunk 10 minutes on, through a save (now {tr_names[terrain[c]]})")
+    // A woodcutter whose trees are all felled plants saplings round his hut, and fells them once they've grown.
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    lay("school", tx - 2, ty - 6)
+    lay("lumber_camp", tx + 6, ty - 4)
+    var trained = false
+    var cleared = false
+    var most_saplings = 0
+    var cut_after = 0
+    var grown = 0
+    for(16 * 60 * TICK_HZ):
+        lay_step()
+        let school = done_of("school")
+        if school != 0 and not trained:
+            issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, "woodcutter"), 1, 0)
+            trained = true
+        let hut = b_index_of(done_of("lumber_camp"))
+        if hut >= 0 and not cleared:  // (the woods round the hut felled at once: nothing left in reach)
+            cleared = true
+            for(W * H) cc:
+                if terrain[cc] == tree and abs(cc % W - (b_cx[hut] + 1)) <= 9 and abs(cc / W - (b_cy[hut] + 1)) <= 9: set_terrain(cc, str_index(tr_names, "stump"))
+            cut_after = gathered[res("wood")][0]
+        if hut >= 0 and tick % TICK_HZ == 0:
+            var n = 0
+            var t = 0
+            for(W * H) cc:
+                if abs(cc % W - (b_cx[hut] + 1)) <= 9 and abs(cc / W - (b_cy[hut] + 1)) <= 9:
+                    if terrain[cc] == sap: n++
+                    if terrain[cc] == tree: t++
+            most_saplings = max(most_saplings, n)
+            grown = max(grown, t)
+    let cut = gathered[res("wood")][0] - cut_after
+    check(cleared and most_saplings >= 3 and most_saplings <= 6 and grown >= 1 and cut >= 1,
+          "steading: a woodcutter with no trees in reach plants saplings (at most {most_saplings}), they grow ({grown} trees) and he fells them ({cut} trunks)")
+
 start_rules()
 busy_sites()
+woods()
 let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")

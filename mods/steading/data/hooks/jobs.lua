@@ -9,7 +9,9 @@
 -- A workplace with no goods to gather round it (a mill, a bakery: a recipe) works only while one of its staff stands at
 -- its door (#99): its worker goes there and waits, and the engine asks can_make before each round.
 -- A workplace with a "reach" (a mine, #42: tiles out from its edge) has its worker gather only that near: what's
--- further is someone else's. When none is left within reach, the place is worked out and its worker waits at the door.
+-- further is someone else's. When none is left within reach, the place is worked out and its worker waits at the door;
+-- unless it "plants" (the woodcutter's hut, #126): then its worker plants that terrain (saplings) on open ground in reach,
+-- which grows back into what's gathered.
 
 -- A trade in the rules' economy.tools_for takes a tool from one of its side's stores when it's first given a workplace
 -- (#102); with none in store it waits, without a workplace, till the smithy's tools are in.
@@ -24,12 +26,18 @@ for _, slot in ipairs((rules().economy or {}).tools_for or {}) do needs_tool[slo
 local staff = {}
 local gathers = {}
 local reach = {}  -- (in tiles, or nil for anywhere)
+local plants = {}  -- the terrain type its worker plants when nothing is left to gather in reach ("plants"), or -1
 local job_slots = {}
 for k = 0, building_type_count() - 1 do
   local bt = building_type(k)
   staff[k + 1] = bt.staff
   gathers[k + 1] = 0
   reach[k + 1] = bt.reach
+  plants[k + 1] = -1
+  if bt.plants then
+    plants[k + 1] = terrain_type(bt.plants)
+    assert(plants[k + 1] >= 0 and bt.reach, "buildings.json plants: no terrain " .. bt.plants .. ", or no reach")
+  end
   if bt.staff then
     for slot, _ in pairs(bt.staff) do job_slots[slot] = true end
     local d = (bt.drop_off or {})[1]
@@ -51,6 +59,13 @@ local col_work = unit_column("workplace")  -- the id of the building it works at
 local col_present = building_column("present")  -- 1 while one of its staff stands at its door (as of the last look)
 local col_tool = unit_column("tool")  -- 1 once it has its tool
 local col_out = building_column("worked_out")  -- 1 once there's nothing left to gather within its reach
+local col_plant = unit_column("plant")  -- the cell + 1 it's going to plant, 0 for none (#126)
+local col_planting = unit_column("planting")  -- the looks it has stood planting there
+
+local PLANT_LOOKS = 4  -- looks a sapling takes to plant, once there
+local MOST_PLANTED = 6  -- saplings growing within one hut's reach at most: the rest of the ground stays open
+local GRASS = terrain_type("grass")
+local STUMP = terrain_type("stump")
 
 -- Whether cell c is within building b's reach (if its type has one).
 local function within_reach(b, c)
@@ -76,8 +91,65 @@ local function workplace(i)
   return b
 end
 
--- Unit i, idle at its workplace b, gathers the nearest of b's goods round it (if there are any left).
+-- Where a worker of building b plants next (b's type "plants"): the nearest grass or stump within its reach, nothing
+-- on it or beside it, not next to b; -1 if there's none, or MOST_PLANTED are growing already.
+local function plant_spot(b)
+  local t = plants[b_kind(b) + 1]
+  local x0, y0, x1, y1 = building_rect(b)
+  local r = reach[b_kind(b) + 1]
+  local cx0 = math.max(0, x0 // TILE - r)
+  local cy0 = math.max(0, y0 // TILE - r)
+  local cx1 = math.min(W - 1, x1 // TILE + r)
+  local cy1 = math.min(H - 1, y1 // TILE + r)
+  local growing = 0
+  local best = -1
+  local best_d2 = 1 << 50
+  for y = cy0, cy1 do
+    for x = cx0, cx1 do
+      local c = y * W + x
+      local tc = terrain_at(c)
+      if tc == t then growing = growing + 1 end
+      if (tc == GRASS or tc == STUMP) and x >= cx0 + 1 and x <= cx1 - 1 and y >= cy0 + 1 and y <= cy1 - 1 then
+        local near_hut = x >= x0 // TILE - 1 and x <= x1 // TILE + 1 and y >= y0 // TILE - 1 and y <= y1 // TILE + 2
+        local clear = not near_hut and road(c) == 0
+        for _, n in ipairs({ c, c - 1, c + 1, c - W, c + W }) do
+          if occupied(n) ~= 0 or road(n) ~= 0 then clear = false end
+        end
+        local d2 = mid_dist2(b, x * TILE + TILE // 2, y * TILE + TILE // 2)
+        if clear and d2 < best_d2 then
+          best_d2 = d2
+          best = c
+        end
+      end
+    end
+  end
+  if growing >= MOST_PLANTED then return -1 end
+  return best
+end
+
+-- Unit i, sent to plant at cell c - 1 (col_plant): walks there, plants after PLANT_LOOKS there, and is done.
+local function planting(i, b)
+  local c = unit_get(col_plant, i) - 1
+  local x = (c % W) * TILE
+  local y = (c // W) * TILE
+  if not in_reach(i, x, y, x + TILE - 1, y + TILE - 1) then
+    if u_moving(i) == 0 then approach_cell(i, c) end
+    return
+  end
+  local n = unit_get(col_planting, i) + 1
+  if n < PLANT_LOOKS then
+    unit_set(col_planting, i, n)
+    return
+  end
+  plant(c, plants[b_kind(b) + 1])
+  unit_set(col_plant, i, 0)
+  unit_set(col_planting, i, 0)
+end
+
+-- Unit i, idle at its workplace b, gathers the nearest of b's goods round it (if there are any left); with none, a
+-- planter plants (the genre's woodcutter: saplings, when no grown tree is in reach, #126).
 local function go_to_work(i, b)
+  if unit_get(col_plant, i) ~= 0 then return planting(i, b) end
   local kind = gathers[b_kind(b) + 1]
   if kind == 0 then
     if not in_reach(i, building_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
@@ -88,6 +160,10 @@ local function go_to_work(i, b)
   if c >= 0 and within_reach(b, c) then
     building_set(col_out, b, 0)
     start_gather(i, c, kind)
+  elseif plants[b_kind(b) + 1] >= 0 and plant_spot(b) >= 0 then
+    building_set(col_out, b, 0)
+    unit_set(col_plant, i, plant_spot(b) + 1)
+    planting(i, b)
   elseif reach[b_kind(b) + 1] then
     building_set(col_out, b, 1)
     if not in_reach(i, building_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
@@ -196,6 +272,7 @@ function jobs_task_name(i)
     return name .. ", waiting for a workplace"
   end
   local at = name .. " at the " .. (building_type(b_kind(b)).name or "hut")
+  if unit_get(col_plant, i) ~= 0 then return at .. ": planting" end
   if building_get(col_out, b) == 1 then return at .. ": it's worked out" end
   return at
 end

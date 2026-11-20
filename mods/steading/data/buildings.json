@@ -33,7 +33,7 @@
   },
   "lumber_camp": {
    "name": "Woodcutter's Hut",
-   "desc": "A woodcutter works here: fells the trees round it and leaves the logs for the carriers.",
+   "desc": "A woodcutter works here: fells the trees round it one at a time, a trunk each, and leaves them for the serfs. With no grown tree in reach, he plants saplings, which grow into trees.",
    "cost": {
     "wood": 0,
     "plank": 6,
@@ -50,7 +50,9 @@
    },
    "after": [
     "school"
-   ]
+   ],
+   "reach": 6,
+   "plants": "sapling"
   },
   "mining_camp": {
    "name": "Quarry",
