@@ -270,7 +270,7 @@ def play() -> int:
         lay_step()
         for(u_x.length) i:
             if i < inside_for.length:
-                if is_inside(i):
+                if is_inside(i, -1):  // (a carrier or a worker at a drop, not one at the inn)
                     inside_for[i]++
                 elif inside_for[i] > 0:
                     stays.push(inside_for[i])
