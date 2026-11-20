@@ -109,6 +109,8 @@ let args = command_line_arguments()
 var follow = false        // the camera follows the fighting (captures)
 var look_at_army = false  // a skirmish you play: the camera starts on your army and stays yours
 var pick_hub = false      // captures: your Town Center (a town's storehouse) selected from the start (#98)
+var trade_arg = 0         // captures: trade:<n>, the School's trade shown (with pick:school)
+var pick_arg = ""         // captures: pick:<building type id>, your first finished one selected from the start (the School, #127)
 var selftest = false      // play a few orders through the controls, check the sim took them, quit
 var airtest = false       // does a click on an aircraft, where it's drawn, take it? Then quit (#185)
 var shot_at = 0.0
@@ -192,6 +194,8 @@ for(args) a, k:
         if a == "follow": follow = true
         if a == "pickhub": pick_hub = true
         if key == "races": races_arg = val
+        if key == "pick": pick_arg = val
+        if key == "trade": trade_arg = string_to_int(val)
         if key == "map": map_arg = val
         if key == "mode": mode_arg = val
         if key == "reroll": lobby_rerolls = map(tokenize(val, "|", " ")) r: string_to_int(r)
@@ -223,6 +227,9 @@ for(args) a, k:
             let sp, sa = split_string(val, "@")
             swap_arg = sp
             swap_at = string_to_float(sa)
+        if key == "hover":  // (captures: the mouse held there, in pixels, for a hover card)
+            let hx, hy = split_string(val, ",")
+            fake_mouse = float2 { string_to_float(hx), string_to_float(hy) }
         if key == "look":
             let lx, ly = split_string(val, ",")
             look_x = string_to_int(lx)
@@ -600,6 +607,8 @@ import .game.hud_kit
 import .game.pad  // (here: it plays through the controls above)
 import .game.techtree
 import .game.goods
+import .game.school      // (before the panel: its globals; it calls the panel's portraits)
+import .game.town_build  // (before the panel too)
 import .game.panel
 import .game.tips
 import .game.topbar
@@ -1517,6 +1526,11 @@ def play_match():
         let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
         if mine.length: cam = iso(float(fold(mine, 0) a, i: a + u_x[i]) / float(mine.length), float(fold(mine, 0) a, i: a + u_y[i]) / float(mine.length))
     if pick_hub and tc0 >= 0: sel_building = b_id[tc0]
+    if pick_arg != "":
+        for(b_id.length) b:
+            if b_owner[b] == ME and b_done[b] != 0 and bt_name[b_kind[b]] == pick_arg and b_index_of(sel_building) < 0: sel_building = b_id[b]
+        school_of = sel_building  // (so trade:<n> holds)
+        school_pick = trade_arg
     if look_x >= 0: cam = iso(float(look_x * 1000 + 500), float(look_y * 1000 + 500))
     sim_reset()
     paused = false
@@ -1628,6 +1642,7 @@ def play_match():
                 touch_wants_menu = false
             if not padded and not touch_play and not typing_text: scroll()
             keys()
+            school_keys()
             if not padded and not panel_click(mouse_px()) and not road_mouse(): mouse()
         perf_lap(0)
         if drawing():  // (minimised: the sim plays on, nothing is drawn)

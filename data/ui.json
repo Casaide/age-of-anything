@@ -34,6 +34,17 @@
       "accent": "#ff9a3c", "text": "#efe9dc", "dim": "#b8b0a2", "title": "#f0e2c0",
       "metal": "#8a847a", "ornament": "sun", "banner": "square",
       "culture_faces": false
+    },
+    "slate": {
+      "name": "Slate and gold (a town builder's, picked by rules ui_direction: Steading, #127)",
+      "frame": "bronze", "frame_colour": "#c9a052",
+      "panel": "stone", "colour": "#3b4654",
+      "button": "stone", "button_colour": "#4e5c6e",
+      "primary": "lacquer", "primary_colour": "#3f6a32",
+      "well": "#161b22",
+      "accent": "#f2c94c", "text": "#eef2f6", "dim": "#aab4c2", "title": "#f6d77a",
+      "metal": "#c9a052", "ornament": "sun", "banner": "square",
+      "culture_faces": false
     }
   }
 }

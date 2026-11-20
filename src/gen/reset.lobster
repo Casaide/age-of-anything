@@ -291,6 +291,7 @@ var stashed_bt_special = []::int
 var stashed_bt_drop = []::[int]
 var stashed_bt_hold = []::[int]
 var stashed_bt_store = []::int
+var stashed_bt_after = []::[int]
 var stashed_bt_road = []::int
 var stashed_bt_bridge = []::int
 var stashed_bt_in = []::[int]
@@ -317,6 +318,7 @@ var stashed_pop = []::int
 var stashed_pop_cap = []::int
 var stashed_stock = []::[int]
 var stashed_r_stocked = 0
+var stashed_r_foundation_pct = 0
 var stashed_r_carrier_load = 1
 var stashed_r_carrier_slots = []::string
 var stashed_rd_names = []::string
@@ -832,6 +834,7 @@ def reset_world():
     bt_drop = []::[int]
     bt_hold = []::[int]
     bt_store = []::int
+    bt_after = []::[int]
     bt_road = []::int
     bt_bridge = []::int
     bt_in = []::[int]
@@ -858,6 +861,7 @@ def reset_world():
     pop_cap = []::int
     stock = []::[int]
     r_stocked = 0
+    r_foundation_pct = 0
     r_carrier_load = 1
     r_carrier_slots = []::string
     rd_names = []::string
@@ -1363,6 +1367,7 @@ def stash_world():
     stashed_bt_drop = bt_drop
     stashed_bt_hold = bt_hold
     stashed_bt_store = bt_store
+    stashed_bt_after = bt_after
     stashed_bt_road = bt_road
     stashed_bt_bridge = bt_bridge
     stashed_bt_in = bt_in
@@ -1389,6 +1394,7 @@ def stash_world():
     stashed_pop_cap = pop_cap
     stashed_stock = stock
     stashed_r_stocked = r_stocked
+    stashed_r_foundation_pct = r_foundation_pct
     stashed_r_carrier_load = r_carrier_load
     stashed_r_carrier_slots = r_carrier_slots
     stashed_rd_names = rd_names
@@ -1887,6 +1893,7 @@ def unstash_world():
     bt_drop = stashed_bt_drop
     bt_hold = stashed_bt_hold
     bt_store = stashed_bt_store
+    bt_after = stashed_bt_after
     bt_road = stashed_bt_road
     bt_bridge = stashed_bt_bridge
     bt_in = stashed_bt_in
@@ -1913,6 +1920,7 @@ def unstash_world():
     pop_cap = stashed_pop_cap
     stock = stashed_stock
     r_stocked = stashed_r_stocked
+    r_foundation_pct = stashed_r_foundation_pct
     r_carrier_load = stashed_r_carrier_load
     r_carrier_slots = stashed_r_carrier_slots
     rd_names = stashed_rd_names

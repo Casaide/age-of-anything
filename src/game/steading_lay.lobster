@@ -82,3 +82,33 @@ def lay_with_road(id:string, x:int, y:int) -> bool:
                         issue_cmd(0, CMD_BUILD, []::int, k, cx, cy, 0)
                         return true
     return false
+
+// A building laid before it's unlocked (its prerequisite not yet built, buildings.json "after") waits here, and is laid
+// once it can be: the scripted towns lay their plan in order, as a player does (#124).
+class LayLater:
+    id:string
+    x:int
+    y:int
+
+var lay_later = []::LayLater
+
+// Lay `id` near (x, y) now, or once it's unlocked. False only if it was open and found no room.
+def lay_or_wait(id:string, x:int, y:int) -> bool:
+    if build_barred(0, btype_index(id)):
+        lay_later.push(LayLater { id, x, y })
+        return true
+    return lay_with_road(id, x, y)
+
+// Once a second: lay what's waiting and now unlocked, in the order it was asked for.
+def lay_waiting():
+    if tick % TICK_HZ != 0: return
+    let still = []::LayLater
+    for(lay_later) l:
+        if build_barred(0, btype_index(l.id)): still.push(l)
+        elif not lay_with_road(l.id, l.x, l.y): print "steading: no room for {l.id} near {l.x},{l.y} with a road to its door"
+    lay_later = still
+
+// A tick of the world, with the waiting buildings laid first.
+def lay_step():
+    lay_waiting()
+    wstep()
