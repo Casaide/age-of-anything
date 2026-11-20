@@ -1,9 +1,18 @@
 {
- "_doc": "The economy mod's match (#524): a stocked economy and a town of wood, planks and stone. Villagers carry and build; only woodcutters and stone cutters, trained at the school, gather, each at its hut. One age; no soldiers.",
+ "_doc": "The economy mod's match (#524): a stocked economy and a town of wood, planks and stone. Villagers carry and build; only woodcutters and stone cutters, trained at the school, gather, each at its hut. One age; no soldiers. After the opening tips come the town's goals (#104).",
  "extends": "default",
  "race": "villagers",
  "animals": false,
  "topbar_stock": false,
+ "cost": {
+  "_doc": "the school's fee: every trade costs 20 food to teach (#99)",
+  "roles": {
+   "worker": {
+    "floor": 20,
+    "ceiling": 20
+   }
+  }
+ },
  "tips": [
   {
    "text": "With nothing selected, press Build: Civilian and lay a School. Your villagers bring the goods and build it.",
@@ -16,18 +25,65 @@
   {
    "text": "When the School is built, click it and train a Woodcutter: it walks to the hut and starts cutting.",
    "done": "trained"
+  },
+  {
+   "text": "Your people eat bread and sausages. Lay a Farm, a Mill and a Bakery, and train a Farmer, a Miller and a Baker at the School.",
+   "done": "laid:bakery"
+  },
+  {
+   "text": "Grow the town to 15 people: train villagers and trades at the School.",
+   "done": "people:15",
+   "label": "Goal"
+  },
+  {
+   "text": "Bake 50 loaves of bread.",
+   "done": "made:bread:50",
+   "label": "Goal"
+  },
+  {
+   "text": "Lay an Iron Mine and a Coal Mine with their backs to the seams in the mountain, and train Miners.",
+   "done": "laid:iron_mine",
+   "label": "Goal"
+  },
+  {
+   "text": "Smelt your first iron at an Iron Smelter: it takes iron ore and coal.",
+   "done": "made:iron:1",
+   "label": "Goal"
+  },
+  {
+   "text": "Forge 10 tools at the Smithy. Stone cutters, farmers, millers and bakers need them to start work.",
+   "done": "made:tools:10",
+   "label": "Goal"
+  },
+  {
+   "text": "Feed the town sausages too: lay a Pig Farm and a Butcher, and make 30 sausages.",
+   "done": "made:sausage:30",
+   "label": "Goal"
+  },
+  {
+   "text": "Smelt 20 gold at a Gold Smelter.",
+   "done": "made:gold:20",
+   "label": "Goal"
+  },
+  {
+   "text": "Grow the town to 40 people.",
+   "done": "people:40",
+   "label": "Goal"
   }
  ],
  "economy": {
   "model": "stocked",
   "gatherers": [
    "woodcutter",
-   "stonecutter"
+   "stonecutter",
+   "farmer",
+   "miner"
   ],
   "builders_come": true,
   "builders_per_site": 3,
   "sites_walk_over": true,
   "idle_wait": true,
+  "doors_clear": true,
   "roads": [
    {
     "name": "road",
@@ -41,36 +97,74 @@
    "eaters": [
     "worker",
     "woodcutter",
-    "stonecutter"
+    "stonecutter",
+    "sawyer",
+    "farmer",
+    "miller",
+    "baker",
+    "miner",
+    "smelter",
+    "smith",
+    "swineherd",
+    "butcher"
    ],
    "starving_pct": 50,
    "foods": [
-    "food"
+    "bread",
+    "sausage"
    ]
   },
   "hands_off": [
    "worker",
    "woodcutter",
-   "stonecutter"
+   "stonecutter",
+   "sawyer",
+   "farmer",
+   "miller",
+   "baker",
+   "miner",
+   "smelter",
+   "smith",
+   "swineherd",
+   "butcher"
   ],
   "town_builds": true,
   "carriers": [
    "worker"
   ],
   "start": {
-   "food": 300,
+   "food": 400,
    "wood": 20,
    "stone": 20,
    "plank": 40,
+   "bread": 100,
    "workers": 5,
    "buildings": [
     "town_center"
-   ]
+   ],
+   "tools": 6
   },
   "gather_ticks": {
    "plank": 24,
-   "_doc": "planks are sawn, never gathered; every resource needs a rate"
-  }
+   "grain": 30,
+   "flour": 24,
+   "bread": 24,
+   "_doc": "planks, flour and bread are made, never gathered; every resource needs a rate",
+   "coal": 40,
+   "iron_ore": 40,
+   "gold_ore": 50,
+   "iron": 24,
+   "tools": 24,
+   "pig": 24,
+   "sausage": 24
+  },
+  "tools_for": [
+   "stonecutter",
+   "farmer",
+   "miller",
+   "baker"
+  ],
+  "_tools_doc": "tools_for: the trades that take a tool from a store before they start at a workplace (the mod's hooks/jobs.lua, #102). The wood and metal trades bring their own, so a town with no tools left can always make more."
  },
  "-roster": [
   "archer",
@@ -122,6 +216,96 @@
    "own_seed": true,
    "desc": "Works at a quarry: cuts the stone round it and leaves it there for the carriers",
    "noun": "Stone Cutter"
+  },
+  {
+   "slot": "sawyer",
+   "role": "worker",
+   "tier": 1,
+   "name": "Sawyer",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a sawmill: saws logs into planks",
+   "noun": "Sawyer"
+  },
+  {
+   "slot": "farmer",
+   "role": "worker",
+   "tier": 1,
+   "name": "Farmer",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a farm: reaps the wheat, leaves the grain there for the carriers and sows the field again",
+   "noun": "Farmer"
+  },
+  {
+   "slot": "miller",
+   "role": "worker",
+   "tier": 1,
+   "name": "Miller",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a mill: grinds grain into flour",
+   "noun": "Miller"
+  },
+  {
+   "slot": "baker",
+   "role": "worker",
+   "tier": 1,
+   "name": "Baker",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a bakery: bakes flour into bread",
+   "noun": "Baker"
+  },
+  {
+   "slot": "miner",
+   "role": "worker",
+   "tier": 1,
+   "name": "Miner",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a mine: digs the seam behind it and leaves the ore for the carriers",
+   "noun": "Miner"
+  },
+  {
+   "slot": "smelter",
+   "role": "worker",
+   "tier": 1,
+   "name": "Smelter",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a smelter: melts ore with coal into iron bars or gold",
+   "noun": "Smelter"
+  },
+  {
+   "slot": "smith",
+   "role": "worker",
+   "tier": 1,
+   "name": "Smith",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a smithy: forges iron and planks into tools",
+   "noun": "Smith"
+  },
+  {
+   "slot": "swineherd",
+   "role": "worker",
+   "tier": 1,
+   "name": "Swineherd",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a pig farm: fattens pigs on grain",
+   "noun": "Swineherd"
+  },
+  {
+   "slot": "butcher",
+   "role": "worker",
+   "tier": 1,
+   "name": "Butcher",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a butcher's: makes pigs into sausages",
+   "noun": "Butcher"
   }
  ]
 }

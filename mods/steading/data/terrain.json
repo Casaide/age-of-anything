@@ -1,0 +1,55 @@
+{
+ "_doc": "A farm's ground (#99): wheat is a crop of grain, pooled over the field; reaped bare it's stubble, which the farmer sows again into wheat. Coal, iron and gold seams run through the mountains (#42): a mine against one digs it out, and a dug-out seam is worked-out rock.",
+ "terrain": {
+  "wheat": {
+   "walkable": true,
+   "colour": "#b49a3e",
+   "colour2": "#a68d37",
+   "resource": "grain",
+   "depleted": "stubble",
+   "cleared": "grass",
+   "note": "a farm's wheat: its grain is pooled over its tiles; reaped bare it's stubble till sown again"
+  },
+  "stubble": {
+   "walkable": true,
+   "colour": "#7a6a3a",
+   "colour2": "#706036",
+   "reseed": "wheat",
+   "cleared": "grass",
+   "note": "a reaped field: stubble, waiting for the farmer to sow it again"
+  },
+  "coal_seam": {
+   "walkable": false,
+   "colour": "#2b2a2e",
+   "colour2": "#38363a",
+   "resource": "coal",
+   "amount": 40,
+   "depleted": "worked_out",
+   "note": "a seam of coal in the mountain: a mine against it digs it out"
+  },
+  "iron_seam": {
+   "walkable": false,
+   "colour": "#7a4a36",
+   "colour2": "#86553f",
+   "resource": "iron_ore",
+   "amount": 40,
+   "depleted": "worked_out",
+   "note": "a seam of iron ore in the mountain: a mine against it digs it out"
+  },
+  "gold_seam": {
+   "walkable": false,
+   "colour": "#a88a3a",
+   "colour2": "#b89a48",
+   "resource": "gold_ore",
+   "amount": 30,
+   "depleted": "worked_out",
+   "note": "a seam of gold ore in the mountain: a mine against it digs it out"
+  },
+  "worked_out": {
+   "walkable": false,
+   "colour": "#55504a",
+   "colour2": "#5e5952",
+   "note": "a seam dug out: bare rock"
+  }
+ }
+}

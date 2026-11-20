@@ -5,7 +5,15 @@
    "road",
    "school",
    "sawmill",
-   "inn"
+   "inn",
+   "bakery",
+   "coal_mine",
+   "iron_mine",
+   "gold_mine",
+   "iron_smelter",
+   "gold_smelter",
+   "pig_farm",
+   "butcher"
   ]
  },
  "buildings": {
@@ -64,7 +72,7 @@
   "school": {
    "extends": "house",
    "name": "School",
-   "desc": "Teaches the town's people: new villagers, and woodcutters and stone cutters for the huts. Each goes to work where it's needed.",
+   "desc": "Teaches the town's people: new villagers, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters, smiths, swineherds and butchers for the workplaces. Each goes to work where it's needed.",
    "hotkey": "C",
    "pop": 0,
    "house": false,
@@ -73,7 +81,16 @@
    "trains": [
     "worker",
     "woodcutter",
-    "stonecutter"
+    "stonecutter",
+    "sawyer",
+    "farmer",
+    "miller",
+    "baker",
+    "miner",
+    "smelter",
+    "smith",
+    "swineherd",
+    "butcher"
    ],
    "cost": {
     "wood": 0,
@@ -84,7 +101,10 @@
   "sawmill": {
    "extends": "lumber_camp",
    "name": "Sawmill",
-   "desc": "Saws one log into two planks.",
+   "desc": "A sawyer works here: saws one log into two planks. Nothing is sawn while the sawyer is away.",
+   "staff": {
+    "sawyer": 1
+   },
    "hotkey": "S",
    "drop_off": [],
    "cost": {
@@ -131,7 +151,7 @@
   "inn": {
    "extends": "house",
    "name": "Inn",
-   "desc": "Feeds the town: hungry workers eat here. One food makes three meals, so it feeds more for less than the storehouse does (a whole food a meal). Carriers keep it stocked.",
+   "desc": "Feeds the town: hungry workers eat here. One loaf or sausage makes three meals, so it feeds more for less than the storehouse does (a whole one a meal). Carriers keep it stocked with bread and sausages.",
    "hotkey": "D",
    "serves": 3,
    "pop": 0,
@@ -139,7 +159,8 @@
    "roles": [],
    "note": "",
    "holds": {
-    "food": 12
+    "bread": 12,
+    "sausage": 12
    },
    "cost": {
     "wood": 0,
@@ -147,23 +168,268 @@
     "stone": 4
    }
   },
+  "iron_smelter": {
+   "extends": "house",
+   "name": "Iron Smelter",
+   "desc": "A smelter works here: melts a load of iron ore with a load of coal into an iron bar. Nothing is smelted while the smelter is away.",
+   "makes": {
+    "in": {
+     "iron_ore": 1,
+     "coal": 1
+    },
+    "out": {
+     "iron": 1
+    },
+    "time": 8
+   },
+   "holds": {
+    "iron_ore": 4,
+    "coal": 4,
+    "iron": 4
+   },
+   "staff": {
+    "smelter": 1
+   },
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "hotkey": "",
+   "note": "",
+   "age": 1,
+   "pop": 0,
+   "house": false,
+   "roles": []
+  },
+  "gold_smelter": {
+   "extends": "house",
+   "name": "Gold Smelter",
+   "desc": "A smelter works here: melts a load of gold ore with a load of coal into gold. Nothing is smelted while the smelter is away.",
+   "makes": {
+    "in": {
+     "gold_ore": 1,
+     "coal": 1
+    },
+    "out": {
+     "gold": 1
+    },
+    "time": 8
+   },
+   "holds": {
+    "gold_ore": 4,
+    "coal": 4,
+    "gold": 4
+   },
+   "staff": {
+    "smelter": 1
+   },
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "hotkey": "",
+   "note": "",
+   "age": 1,
+   "pop": 0,
+   "house": false,
+   "roles": []
+  },
+  "butcher": {
+   "extends": "house",
+   "name": "Butcher",
+   "desc": "A butcher works here: makes a pig into three sausages. Nothing is made while the butcher is away.",
+   "makes": {
+    "in": {
+     "pig": 1
+    },
+    "out": {
+     "sausage": 3
+    },
+    "time": 8
+   },
+   "holds": {
+    "pig": 2,
+    "sausage": 9
+   },
+   "staff": {
+    "butcher": 1
+   },
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 2
+   },
+   "hotkey": "",
+   "age": 1,
+   "note": ""
+  },
   "house": {
    "remove": true
   },
   "farm": {
-   "remove": true
+   "name": "Farm",
+   "desc": "A farmer works here: reaps the wheat, leaves the grain for the carriers and sows the field again.",
+   "size": 3,
+   "water": false,
+   "becomes": {
+    "land": "wheat"
+   },
+   "food": 40,
+   "reseed": {
+    "food": 0,
+    "wood": 0
+   },
+   "cost": {
+    "wood": 0,
+    "plank": 6
+   },
+   "drop_off": [
+    "grain"
+   ],
+   "holds": {
+    "grain": 8
+   },
+   "offers": [
+    "grain"
+   ],
+   "staff": {
+    "farmer": 1
+   },
+   "note": ""
+  },
+  "pig_farm": {
+   "extends": "pen",
+   "name": "Pig Farm",
+   "desc": "A swineherd works here: fattens a pig on two sacks of grain. Nothing is fattened while the swineherd is away.",
+   "makes": {
+    "in": {
+     "grain": 2
+    },
+    "out": {
+     "pig": 1
+    },
+    "time": 12
+   },
+   "holds": {
+    "grain": 6,
+    "pig": 3
+   },
+   "staff": {
+    "swineherd": 1
+   },
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 2
+   },
+   "hotkey": "",
+   "age": 1,
+   "note": "",
+   "pen": {
+    "animals": 0
+   }
   },
   "pen": {
    "remove": true
   },
   "mill": {
-   "remove": true
+   "name": "Mill",
+   "desc": "A miller works here: grinds a sack of grain into a sack of flour. Nothing is milled while the miller is away.",
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "makes": {
+    "in": {
+     "grain": 1
+    },
+    "out": {
+     "flour": 1
+    },
+    "time": 5
+   },
+   "holds": {
+    "grain": 6,
+    "flour": 6
+   },
+   "staff": {
+    "miller": 1
+   },
+   "note": ""
+  },
+  "bakery": {
+   "extends": "mill",
+   "name": "Bakery",
+   "desc": "A baker works here: bakes a sack of flour into two loaves. Nothing is baked while the baker is away.",
+   "hotkey": "V",
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "makes": {
+    "in": {
+     "flour": 1
+    },
+    "out": {
+     "bread": 2
+    },
+    "time": 6
+   },
+   "holds": {
+    "flour": 4,
+    "bread": 8
+   },
+   "staff": {
+    "baker": 1
+   },
+   "note": ""
   },
   "market": {
    "remove": true
   },
   "armoury": {
-   "remove": true
+   "name": "Smithy",
+   "desc": "A smith works here: forges an iron bar and a plank into tools. The stone cutters, farmers, millers and bakers need tools to start work.",
+   "makes": {
+    "in": {
+     "iron": 1,
+     "plank": 1
+    },
+    "out": {
+     "tools": 1
+    },
+    "time": 10
+   },
+   "holds": {
+    "iron": 4,
+    "plank": 4,
+    "tools": 4
+   },
+   "staff": {
+    "smith": 1
+   },
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 4
+   },
+   "hotkey": "",
+   "note": "",
+   "age": 1
   },
   "university": {
    "remove": true
@@ -218,6 +484,84 @@
   },
   "fortified_gate": {
    "remove": true
+  },
+  "coal_mine": {
+   "extends": "mining_camp",
+   "name": "Coal Mine",
+   "desc": "Goes up only with its back to a seam of coal in the mountain. A miner works here: digs the seam behind it and leaves the coal for the carriers. When the seam is dug out, the mine stops.",
+   "against": "coal",
+   "reach": 2,
+   "drop_off": [
+    "coal"
+   ],
+   "cost": {
+    "wood": 0,
+    "plank": 4,
+    "stone": 4
+   },
+   "holds": {
+    "coal": 12
+   },
+   "offers": [
+    "coal"
+   ],
+   "staff": {
+    "miner": 1
+   },
+   "note": "",
+   "hotkey": ""
+  },
+  "iron_mine": {
+   "extends": "mining_camp",
+   "name": "Iron Mine",
+   "desc": "Goes up only with its back to a seam of iron ore in the mountain. A miner works here: digs the seam behind it and leaves the iron ore for the carriers. When the seam is dug out, the mine stops.",
+   "against": "iron_ore",
+   "reach": 2,
+   "drop_off": [
+    "iron_ore"
+   ],
+   "cost": {
+    "wood": 0,
+    "plank": 4,
+    "stone": 4
+   },
+   "holds": {
+    "iron_ore": 12
+   },
+   "offers": [
+    "iron_ore"
+   ],
+   "staff": {
+    "miner": 1
+   },
+   "note": "",
+   "hotkey": ""
+  },
+  "gold_mine": {
+   "extends": "mining_camp",
+   "name": "Gold Mine",
+   "desc": "Goes up only with its back to a seam of gold ore in the mountain. A miner works here: digs the seam behind it and leaves the gold ore for the carriers. When the seam is dug out, the mine stops.",
+   "against": "gold_ore",
+   "reach": 2,
+   "drop_off": [
+    "gold_ore"
+   ],
+   "cost": {
+    "wood": 0,
+    "plank": 4,
+    "stone": 4
+   },
+   "holds": {
+    "gold_ore": 12
+   },
+   "offers": [
+    "gold_ore"
+   ],
+   "staff": {
+    "miner": 1
+   },
+   "note": "",
+   "hotkey": ""
   }
  }
 }
