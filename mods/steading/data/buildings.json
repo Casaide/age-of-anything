@@ -203,9 +203,9 @@
   "inn": {
    "extends": "house",
    "name": "Inn",
-   "desc": "Feeds the town: hungry workers eat here. One loaf or sausage makes three meals, so it feeds more for less than the storehouse does (a whole one a meal). Carriers keep it stocked with bread and sausages.",
+   "desc": "Feeds the town: six hungry people sit at its table at once, the rest wait for a seat. Each eats a sausage, then a loaf, until full. Serfs keep it stocked with bread and sausages.",
    "hotkey": "D",
-   "serves": 3,
+   "seats": 6,
    "pop": 0,
    "house": false,
    "roles": [],

@@ -111,8 +111,11 @@
    }
   ],
   "hunger": {
-   "_doc": "every: seconds between meals; eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what a meal is (the mod's hooks/hunger.lua, #47)",
-   "every": 300,
+   "_doc": "life: seconds a full bar lasts; hungry_at: the seconds left when they go to eat; start_pct, jitter_pct: a new one's bar, give or take (the genre's: 45 min, 6 min, 60 and 10); eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what's eaten, the most filling first, with the share of the bar each fills (the genre's: sausages 60, fish 50, bread 40, wine 30); eat_secs: how long one food takes at the inn's table (the mod's hooks/hunger.lua, #47, #132)",
+   "life": 2700,
+   "hungry_at": 360,
+   "start_pct": 60,
+   "jitter_pct": 10,
    "eaters": [
     "worker",
     "woodcutter",
@@ -129,9 +132,10 @@
    ],
    "starving_pct": 50,
    "foods": [
-    "bread",
-    "sausage"
-   ]
+    [ "sausage", 60 ],
+    [ "bread", 40 ]
+   ],
+   "eat_secs": 5
   },
   "hands_off": [
    "worker",

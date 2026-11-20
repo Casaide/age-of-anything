@@ -212,7 +212,6 @@ def play() -> int:
     let gr = res("grain")
     let fl = res("flour")
     let br = res("bread")
-    let bread0 = all_of(br)
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
     var laid = 0
@@ -340,7 +339,13 @@ def play() -> int:
     let never = filter(site_waits): _ >= 0
     check(longest_wait <= 30 * TICK_HZ and not never.length,
           "steading: a site laid in a busy town gets its first builder within half a minute, however much is being hauled (the longest {longest_wait / TICK_HZ} s, {never.length} never)")
-    check(ate.length >= 3, "steading: hungry workers go to eat ({ate.length} of them)")
+    // (as in the genre, #132: people start with 60% of a 45-minute bar, give or take 10%, and eat with 6 minutes left,
+    // so nobody is hungry in a town's first 15 minutes; the big towns, 36 minutes long, eat)
+    let hc = gobj(gobj(rules, "economy"), "hunger")
+    let col_meal = find(hook_unit_names) n: n == "meal"
+    let lowest = fold(filter(u_x.length) i: u_owner[i] == 0, 1 << 30) a, i: min(a, gint(hc, "life", 0) * TICK_HZ - (hook_unit_get(col_meal, i) - 1))
+    check(not ate.length and lowest > gint(hc, "hungry_at", 0) * TICK_HZ and gint(hc, "life", 0) == 45 * 60,
+          "steading: a bar lasts 45 minutes and nobody is hungry in the first 15 ({ate.length} went to eat, {lowest / TICK_HZ} s left at the lowest)")
     check(sites_ok, "steading: no site was built ahead of its goods")
     check((filter(4) j: tip_done(tips[j], 0, 5)).length == 4, "steading: every opening tip is done by playing the town")
     let met = map(filter(tips) tip: tip.label == "Goal" and tip_done(tip, 0, 5)) tip: tip.done
@@ -348,13 +353,11 @@ def play() -> int:
     check((find(met) d: d == "people:15") >= 0 and (find(met) d: d == "laid:iron_mine") >= 0 and tip_done(Tip { "", "", "made:bread:{produced[br][0]}", "Goal" }, 0, 5) and not tip_done(Tip { "", "", "made:bread:{produced[br][0] + 1}", "Goal" }, 0, 5),
           "steading: the town meets its goals as it grows: 15 people, the mines laid, so many loaves made")
     check(produced[pl][0] >= 20, "steading: the sawmill makes planks ({produced[pl][0]}; {plank0} -> {stock[pl][0]} in store)")
-    let bread_eaten = bread0 + produced[br][0] - all_of(br)
     let hungry = (filter(u_x.length) i: u_owner[i] == 0 and u_task[i] == 101).length  // (hunger.lua's T_FAINT)
-    print "steading: grain cut {gathered[gr][0]}, flour {produced[fl][0]} ({flour_unstaffed} before the miller), bread {produced[br][0]}, {bread_eaten} bread eaten, {hungry} resting hungry at the end"
+    print "steading: grain cut {gathered[gr][0]}, flour {produced[fl][0]} ({flour_unstaffed} before the miller), bread {produced[br][0]}, {hungry} resting hungry at the end"
     check(gathered[gr][0] > FIELD_GRAIN, "steading: the farmer reaps grain and sows the field again ({gathered[gr][0]} cut, a field holds {FIELD_GRAIN})")
     check(mill_waited and flour_unstaffed == 0, "steading: a mill with its grain in but no miller makes nothing ({flour_unstaffed})")
     check(produced[fl][0] > 0 and produced[br][0] > 0, "steading: the miller mills flour and the baker bakes bread ({produced[fl][0]} flour, {produced[br][0]} bread)")
-    check(bread_eaten > 0, "steading: the town eats bread ({bread_eaten})")
     check(hungry * 4 <= pop[0], "steading: the town lives on its own bread: at the end, hardly anyone is resting hungry ({hungry} of {pop[0]})")
     return h
 
@@ -386,6 +389,8 @@ def big_town(dx:int, dy:int) -> int:
     var full = 0  // sawmill ticks spent standing with its planks not taken away
     var mill_ticks = 0
     var stuck_most = 0
+    let col_seat = find(hook_unit_names) n: n == "seat"
+    let sat = []::int  // those who sat down at the inn
     var h = 0
     for(36 * 60 * TICK_HZ) t:  // (at the genre's pace, going inside at each drop: #139, #140)
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
@@ -435,6 +440,7 @@ def big_town(dx:int, dy:int) -> int:
                 if b_make[b] == 0 and out_full(b, pl): full++
         for(u_x.length) i:
             if u_owner[i] == 0: stuck_most = max(stuck_most, u_stuck[i])
+            if u_owner[i] == 0 and hook_unit_get(col_seat, i) != 0 and not contains(sat, u_id[i]): sat.push(u_id[i])
         if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
     var built = 0
     for(b_id.length) b:
@@ -455,6 +461,7 @@ def big_town(dx:int, dy:int) -> int:
     check(full_pct <= 20, "steading: a big town (+{dx},{dy}): its sawmills\' planks are carried off, not left to stop them ({full_pct}% of the time full)")
     check(hungry * 4 <= pop[0] and produced[br][0] > 0, "steading: a big town (+{dx},{dy}) keeps its people fed ({hungry} of {pop[0]} resting hungry)")
     check(produced[tl][0] > 0, "steading: a big town (+{dx},{dy}) forges tools ({produced[tl][0]})")
+    check(sat.length >= 5, "steading: a big town (+{dx},{dy}): its first people get hungry after 20 minutes or so and sit down at the inn ({sat.length} sat)")
     return h
 
 // Smelting and the smithy (#102), on their own: a storehouse given ore, coal and planks but no tools. The smelters
@@ -542,6 +549,64 @@ def store_planks() -> int:
     for(b_id.length) b:
         if is_store(b, 0): n += b_hold[b][res("plank")]
     return n
+
+// The inn as in the genre (#132): six seats at its table. Ten starved people go to eat at once: six sit down, the rest
+// wait for a seat. Each sits over one food at a time, the most filling first (a sausage before a loaf), never two of
+// the same at one sitting, and gets up once full or once the inn has nothing more for them.
+def inn_seats():
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    bt_after = map(bt_after) _: []::int  // (unlocks off)
+    let tc = b_index_of(done_of("town_center"))
+    let br = res("bread")
+    let sa = res("sausage")
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    check(lay("inn", tx + 6, ty - 1), "steading: an inn is laid by the storehouse")
+    for(3 * 60 * TICK_HZ):
+        if done_of("inn") == 0: lay_step()
+    let inn = b_index_of(done_of("inn"))
+    check(inn >= 0, "steading: the inn goes up")
+    for([ br, sa ]) r:
+        hold_take(tc, r, b_hold[tc][r])  // (only what the inn holds is eaten)
+        b_want[inn][r] = 0
+    hold_take(inn, br, b_hold[inn][br])
+    hold_take(inn, sa, b_hold[inn][sa])
+    hold_put(inn, sa, 4)
+    hold_put(inn, br, 12)
+    while (filter(u_x.length) i: u_owner[i] == 0).length < 10: add_unit(0, type_of_slot(0, "worker"), start_x[0], start_y[0] + TILE * 3)
+    let col_meal = find(hook_unit_names) n: n == "meal"
+    let col_seat = find(hook_unit_names) n: n == "seat"
+    let life = gint(gobj(gobj(rules, "economy"), "hunger"), "life", 0) * TICK_HZ
+    for(u_x.length) i:
+        if u_owner[i] == 0: hook_unit_set(col_meal, i, life + 1)  // (their bars empty: 1 + the ticks used up)
+    var most = 0
+    var full_and_waiting = false
+    let sat_for = map(u_x.length) _: 0  // ticks each has sat so far, this sitting
+    var shortest = 1 << 30  // the shortest sitting, in ticks, per food eaten at it
+    let ate_at = map(u_x.length) _: 0  // sittings each has had
+    for(90 * TICK_HZ):
+        lay_step()
+        var seated = 0
+        var waiting = 0
+        for(u_x.length) i:
+            if u_task[i] == T_EAT and u_target[i] == b_id[inn]:
+                if col_seat >= 0 and hook_unit_get(col_seat, i) != 0:
+                    seated++
+                    sat_for[i]++
+                elif u_moving[i] == 0: waiting++
+            elif sat_for[i] > 0:
+                shortest = min(shortest, sat_for[i])
+                sat_for[i] = 0
+                ate_at[i]++
+        most = max(most, seated)
+        if seated == 6 and waiting > 0: full_and_waiting = true
+    let seats = gint(at(at(lib_data("buildings.json"), "buildings"), "inn"), "seats", 0)
+    let eat_ticks = gint(gobj(gobj(rules, "economy"), "hunger"), "eat_secs", 0) * TICK_HZ
+    print "steading: inn: {seats} seats, at most {most} sat at once, someone waiting while full {full_and_waiting}, {4 - b_hold[inn][sa]} sausages and {12 - b_hold[inn][br]} loaves eaten, shortest sitting {shortest} ticks"
+    check(seats == 6 and most == 6 and full_and_waiting, "steading: the inn seats six at once and the rest wait for a seat (at most {most} sat; waiting while full {full_and_waiting})")
+    check(b_hold[inn][sa] == 0 and 12 - b_hold[inn][br] >= 10, "steading: they eat the sausages first, then a loaf with or after one ({4 - b_hold[inn][sa]} of 4 sausages, {12 - b_hold[inn][br]} loaves)")
+    check(eat_ticks > 0 and shortest >= eat_ticks, "steading: a meal takes its time at the table ({shortest} ticks at the shortest; a food takes {eat_ticks})")
 
 // Through a save (#75): the mod's Lua loads again with the saved match, and its state comes back in the hook columns.
 // A hut goes up and the serfs wait, carry and get hungry for 2 minutes; then 2 minutes more, once straight on and once from a save made
@@ -708,6 +773,7 @@ def woods():
     check(cleared and most_saplings >= 3 and most_saplings <= 6 and grown >= 1 and cut >= 1,
           "steading: a woodcutter with no trees in reach plants saplings (at most {most_saplings}), they grow ({grown} trees) and he fells them ({cut} trunks)")
 
+inn_seats()
 start_rules()
 busy_sites()
 woods()
