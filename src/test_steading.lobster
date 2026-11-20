@@ -170,7 +170,11 @@ def play() -> int:
           "steading: a mine goes up only with its back to a seam of its own (coal against the coal, not in the meadow; iron not there)")
     for(seam) c: amount[c] = COAL_LEFT
     let tips = match_tips(su_rules)
-    check(tips.length == 4 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips, the first (lay a school) not yet done ({tips.length})")
+    check(tips.length == 12 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips and goals, the first (lay a school) not yet done ({tips.length})")
+    // The goals' kinds of done (#104): so much made or gathered, so many people.
+    let goal = Tip { "", "", "made:bread:50", "Goal" }
+    check(tips[4].label == "Goal" and tips[0].label == "Tip" and not tip_done(goal, 0, 5) and tip_done(Tip { "", "", "people:5", "Goal" }, 0, 5) and not tip_done(Tip { "", "", "people:6", "Goal" }, 0, 5),
+          "steading: the goals come after the tips; one for 5 people is met by the 5 villagers, one for 6 isn\'t, nor 50 loaves made yet")
     let plank0 = stock[pl][0]
     let gr = res("grain")
     let fl = res("flour")
@@ -260,7 +264,11 @@ def play() -> int:
     check(site_walked, "steading: villagers walk across a site while it goes up")
     check(ate.length >= 3, "steading: hungry workers go to eat ({ate.length} of them)")
     check(sites_ok, "steading: no site was built ahead of its goods")
-    check((filter(tips) tip: tip_done(tip, 0, 5)).length == 4, "steading: every opening tip is done by playing the town")
+    check((filter(4) j: tip_done(tips[j], 0, 5)).length == 4, "steading: every opening tip is done by playing the town")
+    let met = map(filter(tips) tip: tip.label == "Goal" and tip_done(tip, 0, 5)) tip: tip.done
+    print "steading: goals met: {met}"
+    check((find(met) d: d == "people:15") >= 0 and (find(met) d: d == "laid:iron_mine") >= 0 and tip_done(Tip { "", "", "made:bread:{produced[br][0]}", "Goal" }, 0, 5) and not tip_done(Tip { "", "", "made:bread:{produced[br][0] + 1}", "Goal" }, 0, 5),
+          "steading: the town meets its goals as it grows: 15 people, the mines laid, so many loaves made")
     check(produced[pl][0] >= 20, "steading: the sawmill makes planks ({produced[pl][0]}; {plank0} -> {stock[pl][0]} in store)")
     let bread_eaten = bread0 + produced[br][0] - all_of(br)
     let hungry = (filter(u_x.length) i: u_owner[i] == 0 and u_task[i] == 101).length  // (hunger.lua's T_FAINT)

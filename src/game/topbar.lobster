@@ -225,7 +225,7 @@ def tb_hints(y:float) -> float:
     if tb_hint_step >= tb_tips.length: return 0.0
     let s = hud_s()
     let tip = tb_tips[tb_hint_step]
-    let line = "Tip {tb_hint_step + 1} of {tb_tips.length}:  " + (if pad_on: tip.pad else: tip.text)
+    let line = "{tip.label} {tb_hint_step + 1} of {tb_tips.length}:  " + (if pad_on: tip.pad else: tip.text)
     let fs = int(18.0 * s)
     let cw = tb_text_w(line, fs, 0) + 28.0 * s
     let ch = 40.0 * s

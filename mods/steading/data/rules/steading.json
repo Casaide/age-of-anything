@@ -1,5 +1,5 @@
 {
- "_doc": "The economy mod's match (#524): a stocked economy and a town of wood, planks and stone. Villagers carry and build; only woodcutters and stone cutters, trained at the school, gather, each at its hut. One age; no soldiers.",
+ "_doc": "The economy mod's match (#524): a stocked economy and a town of wood, planks and stone. Villagers carry and build; only woodcutters and stone cutters, trained at the school, gather, each at its hut. One age; no soldiers. After the opening tips come the town's goals (#104).",
  "extends": "default",
  "race": "villagers",
  "animals": false,
@@ -29,6 +29,46 @@
   {
    "text": "Your people eat bread and sausages. Lay a Farm, a Mill and a Bakery, and train a Farmer, a Miller and a Baker at the School.",
    "done": "laid:bakery"
+  },
+  {
+   "text": "Grow the town to 15 people: train villagers and trades at the School.",
+   "done": "people:15",
+   "label": "Goal"
+  },
+  {
+   "text": "Bake 50 loaves of bread.",
+   "done": "made:bread:50",
+   "label": "Goal"
+  },
+  {
+   "text": "Lay an Iron Mine and a Coal Mine with their backs to the seams in the mountain, and train Miners.",
+   "done": "laid:iron_mine",
+   "label": "Goal"
+  },
+  {
+   "text": "Smelt your first iron at an Iron Smelter: it takes iron ore and coal.",
+   "done": "made:iron:1",
+   "label": "Goal"
+  },
+  {
+   "text": "Forge 10 tools at the Smithy. Stone cutters, farmers, millers and bakers need them to start work.",
+   "done": "made:tools:10",
+   "label": "Goal"
+  },
+  {
+   "text": "Feed the town sausages too: lay a Pig Farm and a Butcher, and make 30 sausages.",
+   "done": "made:sausage:30",
+   "label": "Goal"
+  },
+  {
+   "text": "Smelt 20 gold at a Gold Smelter.",
+   "done": "made:gold:20",
+   "label": "Goal"
+  },
+  {
+   "text": "Grow the town to 40 people.",
+   "done": "people:40",
+   "label": "Goal"
   }
  ],
  "economy": {
