@@ -1,6 +1,6 @@
 {
  "steading": {
-  "_doc": "Steading's people (#125): undyed homespun, each trade dressed for its work from the concept sheet Dominic picked (2026-11-20): its hat, its smock or apron and its tool. The kits are keyed by the roster's slots.",
+  "_doc": "Steading's people (#125): undyed homespun, each trade dressed for its work from the concept sheet Dominic picked (2026-11-20): its hat, its smock or apron and its tool. The kits are keyed by the roster's slots. Its buildings are its own set, architecture steading (src/model/steading.lobster); another culture's town would be another architecture.",
   "kits": {
    "_doc": "what each trade wears (one age)",
    "worker": {
@@ -140,7 +140,7 @@
    "style": "cobble",
    "width": 0.4
   },
-  "architecture": "thatch",
+  "architecture": "steading",
   "ranks": [
    "Journeyman",
    "Master"

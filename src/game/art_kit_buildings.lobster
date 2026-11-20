@@ -78,7 +78,8 @@ def akb_hold(n:MNode?, b:Basis) -> MNode?:
 def akb_placed(arch:string, type:string, model:string, suffix:string) -> BSpec:
     let diagonal = suffix == "^d" or suffix == "^a"
     gate_span = 3.0 * (if diagonal: sqrt(2.0) else: 1.0)
-    let spec = building_spec(arch, model_type(gobj(akb_bdata(), "buildings"), type), AKB_TEAM, model)  // (a mod's new building: the model of the one it extends, #58)
+    let own = if model == "": building_spec(arch, type, AKB_TEAM) else: nil                                   // (an architecture with its own model of a mod's building, #125)
+    let spec = own or building_spec(arch, model_type(gobj(akb_bdata(), "buildings"), type), AKB_TEAM, model)  // (else the model of the one it extends, #58)
     gate_span = 3.0
     assert spec
     var s = (if type == "house": AKB_HOUSE_SCALE else: 1.0) * akb_scale(arch, type)

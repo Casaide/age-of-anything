@@ -1,6 +1,7 @@
 // Steading's looks (#125): every good a serf or a trade carries is seen carried. Each resource the mod has (and the
 // game's wood, stone and gold it uses) has a load in the mod's voxel gear, its gear exists, and no two goods share one.
-// And every trade looks its own: the race is the steading culture, each slot wears its kit, no two alike.
+// And every trade looks its own: the race is the steading culture, each slot wears its kit, no two alike. And every
+// building the mod keeps has its own model in the steading architecture (model/steading.lobster's steading_building).
 //   lobster steading_look_check.lobster
 import from "../creel/src"
 import std
@@ -56,5 +57,25 @@ for(glist(race, "units")) unit:
     expect((find(looks) l: l == look) < 0, "the {slot} looks like no other trade: {look}")
     looks.push(look)
 expect(looks.length == 12, "the serf and 11 trades: {looks.length}")
+expect(gstr(family("steading"), "architecture", "") == "steading", "the culture builds its own set")
+let src = read_file("model/steading.lobster")
+expect(src != nil, "model/steading.lobster is there")
+let made = []::string
+for(tokenize(src or "", "\n", "")) line:
+    let t = tokenize(line, "\"", "")
+    if find_string(line, "        case \"") == 0 and t.length >= 3:
+        let r = find_string(line, "return ")
+        if r >= 0: made.push("{t[1]} {line.substring(r + 7, -1)}")
+let buildings = gobj(lib_data("buildings.json"), "buildings")
+let models = []::string
+for(buildings.keys) b, i:
+    let o = buildings.a[i]
+    if b != "_doc" and not gbool(o, "remove", false) and gstr(o, "road", "") == "":
+        let m = find(made) x: starts_with(x, b + " ")
+        expect(m >= 0, "{b} has a model of its own in the steading set")
+        if m >= 0:
+            let call = made[m].substring(b.length + 1, -1)
+            expect((find(models) x: x == call) < 0, "{b} is drawn by its own model, not {call} shared")
+            models.push(call)
 print "{n_checks} checks, {n_failed} failed"
 if n_failed > 0: set_exit_code(1)
