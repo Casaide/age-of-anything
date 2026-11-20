@@ -179,7 +179,8 @@
    "iron": 24,
    "tools": 24,
    "pig": 24,
-   "sausage": 24
+   "sausage": 24,
+   "wood": 160
   },
   "tools_for": [
    "stonecutter",
@@ -187,7 +188,10 @@
    "miller",
    "baker"
   ],
-  "_tools_doc": "tools_for: the trades that take a tool from a store before they start at a workplace (the mod's hooks/jobs.lua, #102). The wood and metal trades bring their own, so a town with no tools left can always make more."
+  "_tools_doc": "tools_for: the trades that take a tool from a store before they start at a workplace (the mod's hooks/jobs.lua, #102). The wood and metal trades bring their own, so a town with no tools left can always make more.",
+  "carry_of": {
+   "wood": 1
+  }
  },
  "-roster": [
   "archer",

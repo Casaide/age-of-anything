@@ -72,6 +72,10 @@ class WorldSave:
     tr_reseed:[int]
     tr_cleared:[int]
     tr_opaque:[int]
+    tr_grows:[int]
+    tr_grow_ticks:[int]
+    grow_cells:[int]
+    grow_due:[int]
     fresh:[int]
     fresh_was:[[int]]
     fresh_at:[int]
@@ -331,6 +335,7 @@ class WorldSave:
     gather_ticks:[[int]]
     next_id:int
     r_carry:int
+    r_carry_of:[int]
     r_queue_max:int
     r_pop_max:int
     r_fog_building:int
@@ -612,6 +617,10 @@ def world_bytes(bots:[Bot]) -> string:
         tr_reseed,
         tr_cleared,
         tr_opaque,
+        tr_grows,
+        tr_grow_ticks,
+        grow_cells,
+        grow_due,
         fresh,
         fresh_was,
         fresh_at,
@@ -871,6 +880,7 @@ def world_bytes(bots:[Bot]) -> string:
         gather_ticks,
         next_id,
         r_carry,
+        r_carry_of,
         r_queue_max,
         r_pop_max,
         r_fog_building,
@@ -1165,6 +1175,10 @@ def load_world_bytes(data:string) -> [Bot]:
     tr_reseed = s.tr_reseed
     tr_cleared = s.tr_cleared
     tr_opaque = s.tr_opaque
+    tr_grows = s.tr_grows
+    tr_grow_ticks = s.tr_grow_ticks
+    grow_cells = s.grow_cells
+    grow_due = s.grow_due
     fresh = s.fresh
     fresh_was = s.fresh_was
     fresh_at = s.fresh_at
@@ -1424,6 +1438,7 @@ def load_world_bytes(data:string) -> [Bot]:
     gather_ticks = s.gather_ticks
     next_id = s.next_id
     r_carry = s.r_carry
+    r_carry_of = s.r_carry_of
     r_queue_max = s.r_queue_max
     r_pop_max = s.r_pop_max
     r_fog_building = s.r_fog_building
