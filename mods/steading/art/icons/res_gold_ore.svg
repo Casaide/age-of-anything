@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<!-- Gold ore: a grey rock with gold showing. -->
+<path d="M5 22 L9 10 L19 6 L27 12 L27 22 L18 27 Z" fill="#8a847a" stroke="#1c120a" stroke-width="1.5"/>
+<path d="M9 10 L15 15 L19 6 M15 15 L18 27" stroke="#5a564e" stroke-width="1.1" fill="none"/>
+<path d="M10 17 l3 -2 l2 3 l-3 2 Z M19 11 l3 -1 l1 3 l-3 1 Z M20 20 l4 -1 l0 3 l-3 1 Z" fill="#f2c840" stroke="#1c120a" stroke-width="0.9"/>
+</svg>

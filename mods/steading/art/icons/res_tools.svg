@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<!-- Tools: a hammer crossed with a saw. -->
+<g stroke="#1c120a" stroke-width="1.4">
+<path d="M6 26 L22 10" stroke="#8a5a2a" stroke-width="3"/>
+<rect x="18" y="4" width="10" height="6" rx="1" fill="#9aa4ae" transform="rotate(45 23 7)"/>
+<path d="M8 8 L24 24 L27 21 L11 5 Z" fill="#c8d0d8"/>
+<rect x="4" y="3" width="7" height="5" rx="1.5" fill="#8a5a2a" transform="rotate(45 7.5 5.5)"/>
+</g>
+<path d="M13 9 l1 2 M16 12 l1 2 M19 15 l1 2 M22 18 l1 2" stroke="#1c120a" stroke-width="0.8"/>
+</svg>

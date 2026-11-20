@@ -154,6 +154,13 @@ In a network match everyone needs the same mods: a joiner who differs is turned 
 mods it was made with: start the game with them, and the Load page says which. `mods/scifi_short` is the example: infantry only, two ages:
 `./play.sh lobby mods:scifi_test,scifi_short rules:short`. `src/test_mod_match.lobster` plays it to the end.
 
+## 4b2. Icons
+
+A good of the mod's own (`resources.json`) is shown with the icon `data/icons/res_<id>.png` wherever the HUD shows a good:
+the build cards' costs, the storehouse, the School. Any icon the HUD names can come from a mod the same way (a later mod's
+wins over the game's). Draw them as SVGs in `art/icons/` and render them with `tools/mods/icons.sh <id>`. Icons only change
+what's drawn, so they stay out of the mod's signature. `mods/steading` is the example.
+
 ## 4c. Rules of your own: Lua
 
 A mod's own rules go in `data/hooks/*.lua`: what happens each tick, whether a building may go where it's placed, what a

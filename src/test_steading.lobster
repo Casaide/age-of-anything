@@ -79,6 +79,10 @@ let COAL_LEFT = 3          // the loads the test leaves in each cell of the coal
 let T_EAT = 100            // (the mod's hunger.lua: its own task, going to eat)
 let used = mods_use([ "steading" ])
 check(used.length == 1, "the mod loads ({map(mods_refused.get_keys()) id: id + ": " + mods_refused.get(id, "")})")
+// Every good of the mod's own has its icon in the mod (#141): the storehouse, the School and the build cards show it.
+let steading_root = lib_packs[lib_packs.length - 1].root
+let goods_unshown = filter(map(glist(lib_data("resources.json"), "resources")) r: gstr(r, "id", "")) id: not read_file("icons/res_" + id + ".png") and not read_file(steading_root + "/icons/res_" + id + ".png")
+check(goods_unshown.length == 0, "steading: every good has an icon ({goods_unshown})")
 let rules = load_rules("steading")
 let races = map([ "serfs", "sewer rats" ]) p: generate(p, rules, 0)
 // Every side plays serfs, whatever was typed (rules "race", #70).

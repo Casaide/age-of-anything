@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<!-- Pigs: a pink pig, side on. -->
+<g stroke="#1c120a" stroke-width="1.4">
+<path d="M9 20 L9 26 M13 21 L13 26 M20 21 L20 26 M24 20 L24 26" stroke="#c07a7a" stroke-width="2.4"/>
+<ellipse cx="16" cy="17" rx="11" ry="7" fill="#eeaaaa"/>
+<ellipse cx="27" cy="17" rx="2.6" ry="3" fill="#f2b8b8"/>
+<path d="M22 11 L24 7 L25 12 Z" fill="#e09a9a"/>
+<path d="M5 15 q-3 -2 -1 -4" fill="none"/>
+</g>
+<circle cx="23.5" cy="14.5" r="0.9" fill="#1c120a"/><circle cx="27" cy="16.5" r="0.5" fill="#7a3a3a"/><circle cx="27" cy="18" r="0.5" fill="#7a3a3a"/>
+</svg>
