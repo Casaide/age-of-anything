@@ -310,7 +310,7 @@ end
 -- The engine asks before a round of building b's recipe: a staffed workplace makes only with its worker there.
 function can_make(b)
   if not staff[b_kind(b) + 1] then return true end
-  return building_get(col_present, b) == 1 and tick() >= building_get(col_rest, b)
+  return building_get(col_present, b) == 1 and tick() > building_get(col_rest, b)  -- (past it: a round that starts the tick it sees its goods comes a tick early)
 end
 
 -- What the panel says unit i does, as a specialist: "Woodcutter" ("" if it isn't one), and where if it has a workplace.

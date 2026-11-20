@@ -1,0 +1,1136 @@
+[
+ {
+  "id": "hood.woodcutter",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a woodcutter's green hood with a shoulder cape and a tail"
+ },
+ {
+  "id": "hat.farmer",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a farmer's wide straw hat"
+ },
+ {
+  "id": "cap.stonecutter",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a stone cutter's brown felt cap"
+ },
+ {
+  "id": "cap.sawyer",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a sawyer's dark felt cap"
+ },
+ {
+  "id": "coif.miller",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a miller's white linen coif, floury"
+ },
+ {
+  "id": "hat.baker",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a baker's tall soft linen hat"
+ },
+ {
+  "id": "cap.miner",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a miner's leather hood-cap with a candle on the brow"
+ },
+ {
+  "id": "hood.smelter",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a smelter's long leather hood over the shoulders"
+ },
+ {
+  "id": "hood.swineherd",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a swineherd's brown cowl"
+ },
+ {
+  "id": "cap.butcher",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a butcher's white cap"
+ },
+ {
+  "id": "dress.serf",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a serf's undyed tunic, a rope belt"
+ },
+ {
+  "id": "dress.woodcutter",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a woodcutter's leather jerkin"
+ },
+ {
+  "id": "dress.stonecutter",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a stone cutter's dusty grey smock and a leather apron"
+ },
+ {
+  "id": "dress.sawyer",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a sawyer's rust shirt and a canvas apron"
+ },
+ {
+  "id": "dress.farmer",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a farmer's pale smock"
+ },
+ {
+  "id": "dress.miller",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a miller's floury white smock"
+ },
+ {
+  "id": "dress.baker",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a baker's ochre shirt under a white bib apron"
+ },
+ {
+  "id": "dress.miner",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a miner's dark wool and a leather jerkin"
+ },
+ {
+  "id": "dress.smelter",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a smelter's red shirt under a long leather apron"
+ },
+ {
+  "id": "dress.smith",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a smith's blue shirt under a leather bib apron"
+ },
+ {
+  "id": "dress.swineherd",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a swineherd's grey-blue tunic"
+ },
+ {
+  "id": "dress.butcher",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a butcher's white shirt under a blue-striped apron"
+ },
+ {
+  "id": "tool.mallet",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a stone cutter's wooden mallet",
+  "noun": "Stone Cutter"
+ },
+ {
+  "id": "tool.bowsaw",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a sawyer's bow saw: a wooden frame, the blade along its foot",
+  "noun": "Sawyer"
+ },
+ {
+  "id": "tool.scythe",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a farmer's scythe: a long snath, the curved blade at its head",
+  "noun": "Farmer"
+ },
+ {
+  "id": "tool.peel",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a baker's long wooden peel",
+  "noun": "Baker"
+ },
+ {
+  "id": "tool.rake",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a smelter's long iron rake for the furnace",
+  "noun": "Smelter"
+ },
+ {
+  "id": "tool.smith_hammer",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a smith's hand hammer, a heavy iron head",
+  "noun": "Smith"
+ },
+ {
+  "id": "tool.switch",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a swineherd's long switch",
+  "noun": "Swineherd"
+ },
+ {
+  "id": "tool.cleaver",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a butcher's broad cleaver",
+  "noun": "Butcher"
+ },
+ {
+  "id": "tool.flour_sack",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a miller's half-full flour sack swung from the hand",
+  "noun": "Miller"
+ },
+ {
+  "id": "tool.empty_hands",
+  "slot": "hand_r",
+  "tags": [
+   "worker",
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a serf's empty hands: carries and builds, holds nothing else",
+  "noun": "Serf"
+ },
+ {
+  "id": "tool.miner_pick",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a miner's pick (the game's pick gear)",
+  "noun": "Miner"
+ }
+]
