@@ -4,13 +4,15 @@
 --   doors_clear: a building never goes up over the tile in front of another's door, nor with its own door against one
 --     (a road may: that's where a road goes). A town laid out by a child stays walkable to every door.
 --   builders_come: a site with goods brought for more than is built gets an idle villager of its side, the nearest,
---     once a second; once all its goods are in, up to builders_per_site (1 if unset) at once. (The engine drops a site
+--     once a second; once all its goods are in, up to builders_per_site (1 if unset) at once. A villager with a site
+--     that has work within NEXT goes there first (a road's next cell, #119). (The engine drops a site
 --     whose builder can't get to it; this sends someone back too.)
 --   idle_wait: an idle villager (a carrier slot, economy.carriers) with nothing to do walks back to its side's nearest
 --     store and waits by it, rather than standing wherever its last job left it.
 
 local LOOK = 20  -- ticks between looks (a second)
 local WAIT = 2 * TILE  -- how far from a store's middle, past its half size, an idle villager may stand
+local NEXT = 4 * TILE  -- how far from a builder a site with work may be for it to go there first (next_door)
 
 local ec = rules().economy or {}
 local doors = ec.doors_on_roads == true
@@ -114,13 +116,53 @@ local function look()
   return builders, idle
 end
 
+-- How many may build site b at once: one till its goods are all in (till then the carriers are needed), then per_site.
+local function most_at(b)
+  if b_is_site(b) and site_permille(b) >= 1000 then return per_site end
+  return 1
+end
+
+-- An idle villager with a site that has work within NEXT of it goes there first, the nearest: a builder done with one
+-- cell of a road goes on to the next, as a player expects, not back to the store and out again (#119).
+local function next_door(builders, idle)
+  local open = {}  -- the sites with work and room for a builder (one look over the buildings, not one per villager)
+  for b = 0, building_count() - 1 do
+    if work_at(b) and (builders[b + 1] or 0) < most_at(b) then table.insert(open, b) end
+  end
+  if #open == 0 then return end
+  for p, mine in pairs(idle) do
+    local j = 1
+    while j <= #mine do
+      local i = mine[j]
+      local best = -1
+      local best_d2 = NEXT * NEXT + 1
+      for _, b in ipairs(open) do
+        if b_owner(b) == p - 1 and (builders[b + 1] or 0) < most_at(b) then
+          local d2 = mid_dist2(b, u_x(i), u_y(i))
+          if d2 < best_d2 then
+            best_d2 = d2
+            best = b
+          end
+        end
+      end
+      if best >= 0 then
+        builders[best + 1] = (builders[best + 1] or 0) + 1
+        start_build(i, b_id(best))
+        table.remove(mine, j)
+      else
+        j = j + 1
+      end
+    end
+  end
+end
+
 local function send_builders(builders, idle)
+  next_door(builders, idle)
   for b = 0, building_count() - 1 do
     local k = b_kind(b)
     local mine = idle[b_owner(b) + 1]
     local have = builders[b + 1] or 0
-    local most = 1
-    if b_is_site(b) and site_permille(b) >= 1000 then most = per_site end  -- (helpers once its goods are all in: till then the carriers are needed)
+    local most = most_at(b)
     if mine and #mine > 0 and have < most and work_at(b) then
       for _ = have + 1, most do
         local w = take_nearest(mine, b)

@@ -59,6 +59,7 @@ import lua.api
 import gen.reset
 import gen.save
 import testkit.kit
+import game.steading_lay
 import game.model_type
 import game.tips
 
@@ -122,22 +123,16 @@ def all_of(r:int) -> int:  // player 0's r: in its buildings and in its units' h
         if u_owner[i] == 0 and u_carry_kind[i] == r + 1: n += u_carry[i]
     return n
 
-// Lay building `id` for player 0 near (x, y) in tiles, from the town (no worker named): the first place it fits, spiralling out.
+// Lay building `id` for player 0 near (x, y) in tiles, from the town (no worker named), with a road to its door (game/steading_lay).
 def lay(id:string, x:int, y:int) -> bool:
-    let k = btype_index(id)
-    assert k >= 0
-    for(12) d:
-        for(2 * d + 1) ey:
-            for(2 * d + 1) ex:
-                let dx = ex - d
-                let dy = ey - d
-                if max(abs(dx), abs(dy)) == d and can_place(0, k, x + dx, y + dy, 0):
-                    issue_cmd(0, CMD_BUILD, []::int, k, x + dx, y + dy, 0)
-                    return true
-    return false
+    let ok = lay_with_road(id, x, y)
+    if not ok: print "steading: no room for {id} near {x},{y} with a road to its door"
+    return ok
 
 // A road dragged along a row near x, y, a plan a cell as the road tool lays it (game/roads, #68): the first row of n free
 // cells, built in order. How many plans were laid.
+var dragged = []::int  // the cells of the last road dragged
+
 def lay_road(x:int, y:int, n:int) -> int:
     let k = btype_index("road")
     for(12) d:
@@ -146,6 +141,7 @@ def lay_road(x:int, y:int, n:int) -> int:
             for(n) j: free = free and can_place(0, k, x + j, ry, 0)
             if free:
                 for(n) j: issue_cmd(0, CMD_BUILD, []::int, k, x + j, ry, 0, if j > 0: 1 else: 0)
+                dragged = map(n) j: ry * W + x + j
                 return n
     return 0
 
@@ -165,6 +161,22 @@ def done_of(id:string) -> int:
 def cells_of(r:int, x:int, y:int, d:int) -> [int]:
     return filter(W * H) c: res_at(c) == r + 1 and abs(c % W - x) <= d and abs(c / W - y) <= d
 
+// Mines (#42): one goes up only against a seam of its own. In a world of its own: the roads to the doors here cost stone.
+// With doors on roads (#119), each place gets a road to its door first, so only the seam decides.
+def seam_check():
+    new_world(2026, MAP, races, rules, [])
+    let seam = cells_of(res("coal"), start_x[0] / TILE, start_y[0] / TILE, 12)
+    let cm = btype_index("coal_mine")
+    let ik = btype_index("iron_mine")
+    let sx = seam[0] % W
+    let sy = seam[0] / W
+    let by_seam = road_to_door(cm, sx - 2, sy)
+    var mx = start_x[0] / TILE - 6
+    let my = start_y[0] / TILE + 6
+    while not (open_square(mx, my, bt_size[cm]) and road_to_door(cm, mx, my)) and mx < start_x[0] / TILE + 6: mx++
+    check(by_seam and not can_place(0, cm, mx, my, 0) and not can_place(0, ik, sx - 2, sy, 0) and can_place(0, cm, sx - 2, sy, 0),
+          "steading: a mine goes up only with its back to a seam of its own (coal against the coal, not in the meadow; iron not there)")
+
 def play() -> int:
     new_world(2026, MAP, races, rules, [])
     let w = res("wood")
@@ -172,31 +184,28 @@ def play() -> int:
     let st = res("stone")
     check(r_stocked == 1 and pl >= 0 and t_carrier[u_kind[index_of(mine()[0])]] == 1, "steading: a stocked economy, planks, workers who carry")
     let tc = 0
-    check(b_owner[tc] == 0 and b_kind[tc] == btype_index("town_center") and pop[0] == 5 and pop[0] <= pop_cap[0] and btype_index("house") < 0,
-          "steading: the town starts with a storehouse and 5 villagers, room for them, and no houses ({pop[0]} of {pop_cap[0]})")
+    check(b_owner[tc] == 0 and b_kind[tc] == btype_index("town_center") and pop[0] == 8 and pop[0] <= pop_cap[0] and btype_index("house") < 0,
+          "steading: the town starts with a storehouse and 8 villagers, room for them, and no houses ({pop[0]} of {pop_cap[0]})")
     var by_tc = 0
     for(u_x.length) i:
         if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
-    check(by_tc == 5, "steading: the villagers start round the storehouse ({by_tc} of 5)")
+    check(by_tc == 8, "steading: the villagers start round the storehouse ({by_tc} of 8)")
     // Mines (#42): one goes up only against a seam of its own; the coal seam by the town is left small, to run out.
     let coal = res("coal")
     let seam = cells_of(coal, start_x[0] / TILE, start_y[0] / TILE, 12)
     check(seam.length == 3 and res("iron_ore") >= 0 and res("gold_ore") >= 0, "steading: the vale has a coal seam in the mountain by the town ({seam.length} cells)")
-    let cm = btype_index("coal_mine")
     let sx = seam[0] % W
     let sy = seam[0] / W
-    check(not can_place(0, cm, start_x[0] / TILE - 6, start_y[0] / TILE + 6, 0) and not can_place(0, btype_index("iron_mine"), sx - 2, sy, 0) and can_place(0, cm, sx - 2, sy, 0),
-          "steading: a mine goes up only with its back to a seam of its own (coal against the coal, not in the meadow; iron not there)")
     for(seam) c: amount[c] = COAL_LEFT
     let tips = match_tips(su_rules)
     check(tips.length == 12 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips and goals, the first (lay a school) not yet done ({tips.length})")
     let vk = type_of_slot(0, "worker")
-    check(t_cost[vk][res("gold")] == 10 and t_cost[vk][res("food")] == 0 and stock[res("gold")][0] == 200, "steading: the school\'s fee is 10 gold, no food, and the town starts with 200 gold (#116; {t_cost[vk]})")
+    check(t_cost[vk][res("gold")] == 10 and t_cost[vk][res("food")] == 0 and stock[res("gold")][0] == 400, "steading: the school\'s fee is 10 gold, no food, and the town starts with 400 gold (#116; {t_cost[vk]})")
     check(equal(gstrs(su_rules, "topbar_hide"), [ "age", "idle", "tree" ]), "steading: its top bar leaves out the age, the idle workers and the tech tree (#113)")
     // The goals' kinds of done (#104): so much made or gathered, so many people.
     let goal = Tip { "", "", "made:bread:50", "Goal" }
-    check(tips[4].label == "Goal" and tips[0].label == "Tip" and not tip_done(goal, 0, 5) and tip_done(Tip { "", "", "people:5", "Goal" }, 0, 5) and not tip_done(Tip { "", "", "people:6", "Goal" }, 0, 5),
-          "steading: the goals come after the tips; one for 5 people is met by the 5 villagers, one for 6 isn\'t, nor 50 loaves made yet")
+    check(tips[4].label == "Goal" and tips[0].label == "Tip" and not tip_done(goal, 0, 8) and tip_done(Tip { "", "", "people:8", "Goal" }, 0, 8) and not tip_done(Tip { "", "", "people:9", "Goal" }, 0, 8),
+          "steading: the goals come after the tips; one for 8 people is met by the 8 villagers, one for 9 isn\'t, nor 50 loaves made yet")
     let plank0 = stock[pl][0]
     let gr = res("grain")
     let fl = res("flour")
@@ -235,10 +244,10 @@ def play() -> int:
         if school != 0 and not trained:
             for([ "woodcutter", "stonecutter", "sawyer", "farmer", "miner", "miner", "miner", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
             trained = true
-        // The miller and the baker only half a minute after the mill is up: till then it holds its grain and makes nothing.
+        // The miller and the baker only half a minute after the mill is up and holds grain: till then it makes nothing.
         let mill = done_of("mill")
         if mill != 0 and mill_up < 0: mill_up = t
-        if mill_up >= 0 and not crafters and t > mill_up + 30 * TICK_HZ and done_of("bakery") != 0:
+        if mill_up >= 0 and not crafters and mill_waited and t > mill_up + 30 * TICK_HZ and done_of("bakery") != 0:
             flour_unstaffed = produced[fl][0]
             for([ "miller", "baker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
             crafters = true
@@ -281,7 +290,8 @@ def play() -> int:
     check(hook_building_get(col_out, coal_mine) == 1 and miner_home, "steading: a worked-out mine stops, its miner waiting at its door (out {hook_building_get(col_out, coal_mine)}, home {miner_home})")
     check(gathered[res("iron_ore")][0] > 0 and gathered[res("gold_ore")][0] > 0, "steading: the iron and gold mines dig ore")
     check(gatherers_ok and gathered[w][0] > 0 and gathered[st][0] > 0, "steading: wood and stone come in, cut only by the specialists ({gathered[w][0]} wood, {gathered[st][0]} stone)")
-    check(planned == 5 and road_cells() == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({road_cells()} of {planned})")
+    let dragged_built = (filter(dragged) c: road[c] > 0).length
+    check(planned == 5 and dragged_built == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({dragged_built} of {planned})")
     check(most_builders >= 2 and most_builders <= 3, "steading: idle villagers help build a site, no more than 3 sent at once ({most_builders})")
     check(site_walked, "steading: villagers walk across a site while it goes up")
     check(ate.length >= 3, "steading: hungry workers go to eat ({ate.length} of them)")
@@ -341,8 +351,8 @@ def big_town(dx:int, dy:int) -> int:
         if t == 2400 and lay("inn", tx + 7, ty - 1): laid++
         if t == 2600 and lay("sawmill", tx - 9, ty + 3): laid++
         if t == 2700 and lay("lumber_camp", tx + 12, ty - 3): laid++  // (a second: two sawmills want more logs than one woodcutter cuts)
-        if t == 3000 and lay("coal_mine", sx - 1, sy + 3): laid++
-        if t == 3150 and lay("iron_mine", sx + 3, sy): laid++
+        if t == 90 and lay("coal_mine", sx - 1, sy + 3): laid++
+        if t == 100 and lay("iron_mine", sx + 3, sy): laid++  // (the mines early, while the seams are clear: the camps' doors and roads crowd round them later)
         if t == 2950 and lay("gold_mine", start_x[0] / TILE + 16, start_y[0] / TILE - 2): laid++
         if not iron_laid and done_of("gold_smelter") != 0:  // (once the gold smelter is up, so the first smelter trained goes there: it pays the school)
             iron_laid = true
@@ -357,7 +367,7 @@ def big_town(dx:int, dy:int) -> int:
             for([ "woodcutter", "stonecutter", "sawyer", "farmer", "miller", "baker", "miner", "miner", "smelter", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
         if t > trained_at + 100 and trained == 1 and b_queue[b_index_of(school)].length == 0:  // (a school teaches 15 at most at a time)
             trained = 2
-        // Then one at a time as the gold comes in (#116): what's left of the starting gold pays for five villagers, the
+        // Then one at a time as the gold comes in (#116): the starting gold pays for the first of them, the
         // town's own smelted gold for the rest.
         if trained == 2:  // (one at a time, each struck off once it has joined the town)
             let q = b_queue[b_index_of(school)].length
@@ -471,7 +481,7 @@ def pig_chain() -> int:
     let eaten = produced[sa][0] - all_of(sa)
     print "steading: pigs: {laid} laid, pigs {produced[pg][0]}, sausages {produced[sa][0]}, {eaten} eaten"
     check(laid == 3 and done_of("pig_farm") != 0 and done_of("butcher") != 0, "steading: a pig farm and a butcher go up ({laid} laid)")
-    check(produced[pg][0] > 0 and produced[sa][0] >= 3 * produced[pg][0] - 6, "steading: pigs are fattened on grain and made into sausages, three a pig ({produced[pg][0]} pigs, {produced[sa][0]} sausages)")
+    check(produced[pg][0] > 0 and produced[sa][0] >= 3 * (produced[pg][0] - all_of(pg)) - 6, "steading: pigs are fattened on grain and made into sausages, three a pig (but those not yet butchered) ({produced[pg][0]} pigs, {produced[sa][0]} sausages)")
     check(eaten > 0, "steading: with no bread, the town eats sausages ({eaten})")
     return h
 
@@ -519,6 +529,7 @@ def save_run(stop:bool) -> bool, bool:
     let off = l_packs[find(l_packs) p: p.id == "steading"].error != ""
     return equal(want, got) and off == stop, lively
 
+seam_check()
 let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
