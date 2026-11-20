@@ -168,7 +168,7 @@
     "out": {
      "plank": 2
     },
-    "time": 4
+    "time": 36
    },
    "holds": {
     "wood": 4,
@@ -203,9 +203,9 @@
   "inn": {
    "extends": "house",
    "name": "Inn",
-   "desc": "Feeds the town: hungry workers eat here. One loaf or sausage makes three meals, so it feeds more for less than the storehouse does (a whole one a meal). Carriers keep it stocked with bread and sausages.",
+   "desc": "Feeds the town: six hungry people sit at its table at once, the rest wait for a seat. Each eats a sausage, then a loaf, until full. Serfs keep it stocked with bread and sausages.",
    "hotkey": "D",
-   "serves": 3,
+   "seats": 6,
    "pop": 0,
    "house": false,
    "roles": [],
@@ -235,7 +235,7 @@
     "out": {
      "iron": 1
     },
-    "time": 8
+    "time": 33
    },
    "holds": {
     "iron_ore": 4,
@@ -274,7 +274,7 @@
     "out": {
      "gold": 5
     },
-    "time": 8
+    "time": 22
    },
    "holds": {
     "gold_ore": 4,
@@ -311,7 +311,7 @@
     "out": {
      "sausage": 3
     },
-    "time": 8
+    "time": 42
    },
    "holds": {
     "pig": 2,
@@ -384,7 +384,7 @@
     "out": {
      "pig": 1
     },
-    "time": 12
+    "time": 120
    },
    "holds": {
     "grain": 6,
@@ -428,7 +428,7 @@
     "out": {
      "flour": 1
     },
-    "time": 5
+    "time": 44
    },
    "holds": {
     "grain": 6,
@@ -462,7 +462,7 @@
      "flour": 0,
      "bread": 2
     },
-    "time": 6
+    "time": 42
    },
    "holds": {
     "grain": 0,
@@ -492,7 +492,7 @@
     "out": {
      "tools": 1
     },
-    "time": 10
+    "time": 40
    },
    "holds": {
     "iron": 4,

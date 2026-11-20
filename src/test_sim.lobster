@@ -226,7 +226,7 @@ def stocked_rules(r:JV) -> JV:
     return s
 
 // Steading's rules (mods/steading's Lua, #75) in this world: its pack's Lua loads again as the match's, with these
-// economy rules set over the world's (a JSON object). Building types' own fields (beds, serves) are set before it.
+// economy rules set over the world's (a JSON object). Building types' own fields (beds, seats) are set before it.
 def steading_lua(economy:string):
     let ec = rules_part("economy")
     let more = parse_json(economy)
@@ -689,9 +689,9 @@ def test_steading_big():
     let f = res_of("food")
     let hk = btype_index("house")
     let house = shallow_copy(su_btypes[hk])
-    set(house, "serves", jint(3))
+    set(house, "seats", jint(6))
     su_btypes[hk] = house
-    steading_lua("{{\"builders_come\": true, \"builders_per_site\": 3, \"idle_wait\": true, \"carriers\": [\"worker\"], \"hunger\": {{\"every\": 2, \"eaters\": [\"worker\"], \"starving_pct\": 50, \"foods\": [\"food\"]}}}}")
+    steading_lua("{{\"builders_come\": true, \"builders_per_site\": 3, \"idle_wait\": true, \"carriers\": [\"worker\"], \"hunger\": {{\"life\": 4, \"hungry_at\": 2, \"eaters\": [\"worker\"], \"starving_pct\": 50, \"foods\": [[\"food\", 60]]}}}}")
     bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
     make_store("town_center", 2000)
     put(0, "town_center", 30, 30, 0)
@@ -861,7 +861,7 @@ def food_held() -> int:
     return n
 
 // Eating (mods/steading's hunger.lua, #47): three workers who carry get hungry every `every` s, and one cuts wood. Beside the store,
-// a house that serves as an inn (3 meals a food), or none; 50 food in the store, or none. 90 s: the wood cut, the wood cut after 60 s, whether the woodcutter went to eat and came
+// a house that seats six as an inn, or none; 50 food in the store, or none. 90 s: the wood cut, the wood cut after 60 s, whether the woodcutter went to eat and came
 // back to its trees, the food eaten, the hash.
 // drain: the inn's food goes while the woodcutter walks there, so it eats at the store instead.
 def eating_run(every:int, starving:int, inn:bool, food:bool, drain:bool = false) -> int, int, bool, int, int:
@@ -869,9 +869,9 @@ def eating_run(every:int, starving:int, inn:bool, food:bool, drain:bool = false)
     let f = res_of("food")
     let hk = btype_index("house")
     let house = shallow_copy(su_btypes[hk])
-    if inn: set(house, "serves", jint(3))
+    if inn: set(house, "seats", jint(6))
     su_btypes[hk] = house
-    steading_lua("{{\"hunger\": {{\"every\": {every}, \"eaters\": [\"worker\"], \"starving_pct\": {starving}, \"foods\": [\"food\"]}}}}")
+    steading_lua("{{\"hunger\": {{\"life\": {every * 2}, \"hungry_at\": {every}, \"eaters\": [\"worker\"], \"starving_pct\": {starving}, \"foods\": [[\"food\", 60]]}}}}")
     bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
     make_store("town_center", 200)
     put(0, "town_center", 10, 10, 0)
@@ -894,7 +894,6 @@ def eating_run(every:int, starving:int, inn:bool, food:bool, drain:bool = false)
         if drain and not drained and u_task[i] == T_EAT and u_target[i] == hid:
             let inn_b = b_index_of(hid)
             b_hold[inn_b][f] = 0
-            hook_building_set(find(hook_building_names) n: n == "portions", inn_b, 0)
             drained = true
         if u_task[i] == T_EAT: went = true
         if went and u_task[i] == GATHER and hook_unit_get(lua_col("meal"), i) < every * TICK_HZ: back = true
@@ -914,7 +913,7 @@ def test_eating():
     let starved, starved_late, went, none, h3 = eating_run(20, 25, false, false)
     check(not went and none == 0 and starved < fed and starved_late == 0 and h3 != h1, "eating: hungry with nowhere to eat, less work, then none ({starved} wood, fed {fed})")
     let at_store, store_late, store_back, store_food, hs = eating_run(20, 50, false, true)
-    check(store_back and store_food > meals and at_store > 0 and store_late > 0 and hs != h1, "eating: with no inn they eat at the store, a whole food a meal ({store_food} food, {meals} at the inn)")
+    check(store_back and store_food > 0 and at_store > 0 and store_late > 0 and hs != h1, "eating: with no inn they eat at the store, a whole food a meal ({store_food} food, {meals} at the inn)")
     let r_cut, r_late, rerouted, r_food, r_hash = eating_run(20, 50, true, true, true)
     check(rerouted and r_cut > 0 and r_late > 0 and r_food > 0 and r_hash != h1, "eating: a worker sent on from an empty inn to the store still goes back to its trees")
     let never, never_late, nw, nm, h4 = eating_run(0, 50, true, true)

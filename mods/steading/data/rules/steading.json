@@ -101,6 +101,7 @@
   "doors_on_roads": true,
   "door_roads": true,
   "foundation_pct": 30,
+  "inside_ticks": 30,
   "doors_clear": true,
   "roads": [
    {
@@ -110,8 +111,11 @@
    }
   ],
   "hunger": {
-   "_doc": "every: seconds between meals; eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what a meal is (the mod's hooks/hunger.lua, #47)",
-   "every": 90,
+   "_doc": "life: seconds a full bar lasts; hungry_at: the seconds left when they go to eat; start_pct, jitter_pct: a new one's bar, give or take (the genre's: 45 min, 6 min, 60 and 10); eaters: the slots that eat; starving_pct: how much a hungry worker with nowhere to eat works, none after twice every; foods: what's eaten, the most filling first, with the share of the bar each fills (the genre's: sausages 60, fish 50, bread 40, wine 30); eat_secs: how long one food takes at the inn's table (the mod's hooks/hunger.lua, #47, #132)",
+   "life": 2700,
+   "hungry_at": 360,
+   "start_pct": 60,
+   "jitter_pct": 10,
    "eaters": [
     "worker",
     "woodcutter",
@@ -128,9 +132,10 @@
    ],
    "starving_pct": 50,
    "foods": [
-    "bread",
-    "sausage"
-   ]
+    [ "sausage", 60 ],
+    [ "bread", 40 ]
+   ],
+   "eat_secs": 5
   },
   "hands_off": [
    "worker",
@@ -172,15 +177,16 @@
    "grain": 30,
    "flour": 24,
    "bread": 24,
-   "_doc": "planks, flour and bread are made, never gathered; every resource needs a rate",
-   "coal": 40,
-   "iron_ore": 40,
-   "gold_ore": 50,
+   "_doc": "planks, flour and bread are made, never gathered; every resource needs a rate. The raw trades at the genre's pace (#139): a trunk felled in 30 s, a stone cut in 15 s, ore and coal dug in 35 s, one at a time",
+   "coal": 700,
+   "iron_ore": 700,
+   "gold_ore": 700,
    "iron": 24,
    "tools": 24,
    "pig": 24,
    "sausage": 24,
-   "wood": 160
+   "wood": 600,
+   "stone": 300
   },
   "tools_for": [
    "stonecutter",
@@ -190,7 +196,11 @@
   ],
   "_tools_doc": "tools_for: the trades that take a tool from a store before they start at a workplace (the mod's hooks/jobs.lua, #102). The wood and metal trades bring their own, so a town with no tools left can always make more.",
   "carry_of": {
-   "wood": 1
+   "wood": 1,
+   "stone": 1,
+   "coal": 1,
+   "iron_ore": 1,
+   "gold_ore": 1
   }
  },
  "-roster": [
