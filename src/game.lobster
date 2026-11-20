@@ -255,6 +255,7 @@ import .model.trees
 import .model.rocks
 import .model.buildings
 import .model.future
+import .model.steading
 import .model.buildings2
 import .game.art_kit
 import .game.ruin

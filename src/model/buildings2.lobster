@@ -1134,6 +1134,7 @@ def building_model(arch:string, type:string) -> string:
 // house and farm by name, the rest by type and culture.
 def building_spec(arch:string, type:string, team:float3, model:string = "") -> BSpec?:
     if model != "": return model_by_name(model, team)
+    if arch == "steading": return steading_building(type, team)  // (a whole set of its own, by the mod's types: model/steading, #125)
     if type == "town_center" or type == "house" or type == "farm": return model_by_name(building_model(arch, type), team)
     return building(type, arch, team)
 
