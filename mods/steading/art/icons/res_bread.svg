@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<!-- Bread: two round loaves, scored. -->
+<defs><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2a058"/><stop offset="1" stop-color="#8a4a1e"/></linearGradient></defs>
+<ellipse cx="11" cy="20" rx="8" ry="6" fill="url(#b)" stroke="#1c120a" stroke-width="1.5"/>
+<ellipse cx="21" cy="15" rx="8" ry="6" fill="url(#b)" stroke="#1c120a" stroke-width="1.5"/>
+<path d="M17 13 l3 -2 M21 14 l3 -2 M7 19 l3 -2 M11 20 l3 -2" stroke="#f2d098" stroke-width="1.2"/>
+</svg>

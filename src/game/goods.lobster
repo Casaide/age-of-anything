@@ -22,7 +22,7 @@ def good_has_icon(r:int) -> bool:
     let name = "res_" + resource_names[r]
     var got = goods_icons.get(name, -1)
     if got < 0:
-        got = if read_file("icons/" + name + ".png"): 1 else: 0
+        got = if icon_file(name) != "": 1 else: 0  // (the game's, or a mod's own, #141)
         goods_icons.set(name, got)
     return got == 1
 

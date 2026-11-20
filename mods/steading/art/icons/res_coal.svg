@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<!-- Coal: black lumps in a heap. -->
+<g stroke="#1c120a" stroke-width="1.3">
+<path d="M4 26 L7 18 L13 17 L15 26 Z" fill="#3a383c"/>
+<path d="M12 26 L14 15 L21 13 L24 19 L22 26 Z" fill="#2a282c"/>
+<path d="M20 26 L23 19 L28 20 L29 26 Z" fill="#46444a"/>
+<path d="M9 12 L13 9 L17 11 L15 15 L10 16 Z" fill="#46444a"/>
+</g>
+<path d="M15 16 l3 -1 M8 19 l2 0 M24 21 l2 0" stroke="#8a8a92" stroke-width="1"/>
+</svg>
