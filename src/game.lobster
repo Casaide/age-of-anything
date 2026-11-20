@@ -108,6 +108,7 @@ let args = command_line_arguments()
 // (a screenshot after that much play, then quit), look:<x>,<y> (the camera on that tile).
 var follow = false        // the camera follows the fighting (captures)
 var look_at_army = false  // a skirmish you play: the camera starts on your army and stays yours
+var pick_hub = false      // captures: your Town Center (a town's storehouse) selected from the start (#98)
 var selftest = false      // play a few orders through the controls, check the sim took them, quit
 var airtest = false       // does a click on an aircraft, where it's drawn, take it? Then quit (#185)
 var shot_at = 0.0
@@ -189,6 +190,7 @@ for(args) a, k:
         if a == "selftest": selftest = true
         if a == "airtest": airtest = true
         if a == "follow": follow = true
+        if a == "pickhub": pick_hub = true
         if key == "races": races_arg = val
         if key == "map": map_arg = val
         if key == "mode": mode_arg = val
@@ -596,6 +598,7 @@ def self_test() -> bool:
 import .game.hud_kit
 import .game.pad  // (here: it plays through the controls above)
 import .game.techtree
+import .game.goods
 import .game.panel
 import .game.tips
 import .game.topbar
@@ -1512,6 +1515,7 @@ def play_match():
     if look_at_army:
         let mine = filter(u_id.length) i: u_owner[i] == ME and t_worker[u_kind[i]] == 0 and t_animal[u_kind[i]] == 0
         if mine.length: cam = iso(float(fold(mine, 0) a, i: a + u_x[i]) / float(mine.length), float(fold(mine, 0) a, i: a + u_y[i]) / float(mine.length))
+    if pick_hub and tc0 >= 0: sel_building = b_id[tc0]
     if look_x >= 0: cam = iso(float(look_x * 1000 + 500), float(look_y * 1000 + 500))
     sim_reset()
     paused = false
