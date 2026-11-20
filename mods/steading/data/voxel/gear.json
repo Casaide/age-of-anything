@@ -1,0 +1,964 @@
+{
+ "_doc": "Steading's loads (#125): every good a serf or a trade carries is its own thing in the hands, never a barrow: logs and planks, a sheaf and a flour sack on the shoulder; a stone block, loaves, iron bars, a chest of gold and a piglet held before the chest; coal and ores in a basket on the back; sausages on a pole and a bundle of tools on the shoulder. Gear frame: [hand, along the hold, up out of its top, to the right].",
+ "holds": {
+  "before": {
+   "rest": [
+    -0.12,
+    0.55,
+    -0.42
+   ],
+   "dir": [
+    -1.0,
+    0.0,
+    0.0
+   ],
+   "_doc": "a load held before the chest in both arms, along across the body"
+  },
+  "strap": {
+   "rest": [
+    0.05,
+    0.3,
+    -0.25
+   ],
+   "dir": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_doc": "a hand on the strap of a basket on the back, along pointing up"
+  }
+ },
+ "loads": {
+  "*": {
+   "wood": {
+    "gear": "log"
+   },
+   "plank": {
+    "gear": "planks"
+   },
+   "stone": {
+    "gear": "stone_block"
+   },
+   "grain": {
+    "gear": "sheaf"
+   },
+   "flour": {
+    "gear": "flour_sack"
+   },
+   "bread": {
+    "gear": "loaves"
+   },
+   "sausage": {
+    "gear": "sausages"
+   },
+   "coal": {
+    "gear": "coal_basket"
+   },
+   "iron_ore": {
+    "gear": "iron_ore_basket"
+   },
+   "gold_ore": {
+    "gear": "gold_ore_basket"
+   },
+   "iron": {
+    "gear": "iron_bars"
+   },
+   "gold": {
+    "gear": "gold_chest"
+   },
+   "tools": {
+    "gear": "tool_bundle"
+   },
+   "pig": {
+    "gear": "piglet"
+   }
+  }
+ },
+ "gear": {
+  "log": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "one long log on the shoulder, its cut end showing",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -10.0,
+      -0.8,
+      0.0
+     ],
+     "to": [
+      "hand",
+      7.0,
+      -0.8,
+      0.0
+     ],
+     "r": [
+      1.25,
+      1.1
+     ],
+     "mat": "wood"
+    }
+   ]
+  },
+  "planks": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "three planks tied in a bundle on the shoulder",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      -2.0,
+      -0.6,
+      0.0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.9,
+      0.25,
+      9.5
+     ],
+     "mat": "plank",
+     "round": 0.0
+    },
+    {
+     "box": [
+      "hand",
+      -2.2,
+      -0.1,
+      0.0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.9,
+      0.25,
+      9.5
+     ],
+     "mat": "plank_end",
+     "round": 0.0
+    },
+    {
+     "box": [
+      "hand",
+      -1.8,
+      0.4,
+      0.0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.9,
+      0.25,
+      9.5
+     ],
+     "mat": "plank",
+     "round": 0.0
+    },
+    {
+     "ring": [
+      "hand",
+      -6.0,
+      -0.1,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      1.1,
+      0.25
+     ],
+     "mat": "rope"
+    }
+   ]
+  },
+  "sheaf": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "a sheaf of wheat over the shoulder, ears behind",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.0,
+      -0.6,
+      0.0
+     ],
+     "to": [
+      "hand",
+      6.0,
+      -0.6,
+      0.0
+     ],
+     "r": [
+      0.9,
+      1.1
+     ],
+     "mat": "straw"
+    },
+    {
+     "cap": [
+      "hand",
+      -1.0,
+      -0.6,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -6.5,
+      -0.6,
+      0.0
+     ],
+     "r": [
+      1.1,
+      2.3
+     ],
+     "mat": "sheaf"
+    },
+    {
+     "ring": [
+      "hand",
+      0.5,
+      -0.6,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      1.1,
+      0.3
+     ],
+     "mat": "rope"
+    }
+   ]
+  },
+  "flour_sack": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "a full white sack slung over the shoulder",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -4.5,
+      0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      1.2,
+      0.4,
+      0.0
+     ],
+     "r": [
+      2.4,
+      2.7
+     ],
+     "mat": "sack"
+    },
+    {
+     "cap": [
+      "hand",
+      1.2,
+      0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      2.6,
+      0.4,
+      0.0
+     ],
+     "r": [
+      1.0,
+      0.6
+     ],
+     "mat": "sack"
+    }
+   ]
+  },
+  "sausages": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "strings of sausages hung from a pole on the shoulder",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -8.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      6.0,
+      0.0,
+      0.0
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -6.5,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -6.5,
+      -2.8,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    },
+    {
+     "cap": [
+      "hand",
+      -5.0,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -5.0,
+      -3.2,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    },
+    {
+     "cap": [
+      "hand",
+      -3.5,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -3.5,
+      -2.6,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    },
+    {
+     "cap": [
+      "hand",
+      3.0,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      3.0,
+      -2.8,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    },
+    {
+     "cap": [
+      "hand",
+      4.5,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      4.5,
+      -2.4,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    }
+   ]
+  },
+  "tool_bundle": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "hafts tied together on the shoulder, an axe head and a hammer head out at the ends",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -7.0,
+      -0.3,
+      0.3
+     ],
+     "to": [
+      "hand",
+      6.0,
+      -0.3,
+      0.3
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -6.0,
+      0.3,
+      -0.3
+     ],
+     "to": [
+      "hand",
+      6.5,
+      0.3,
+      -0.3
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "box": [
+      "hand",
+      6.6,
+      0.8,
+      0.3
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.6,
+      1.4,
+      1.0
+     ],
+     "mat": "metal",
+     "round": 0.0
+    },
+    {
+     "box": [
+      "hand",
+      -7.3,
+      -0.3,
+      0.3
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.7,
+      0.7,
+      1.2
+     ],
+     "mat": "metal",
+     "round": 0.0
+    },
+    {
+     "ring": [
+      "hand",
+      -1.0,
+      0.0,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      0.9,
+      0.25
+     ],
+     "mat": "rope"
+    }
+   ]
+  },
+  "stone_block": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "a dressed stone block held in both arms before the chest",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      3.74,
+      2.11,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      3.74,
+      3.74,
+      3.04
+     ],
+     "round": 0.0,
+     "mat": "block"
+    }
+   ]
+  },
+  "loaves": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "round loaves in a flat basket held before the chest",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      4.21,
+      0.0,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      4.68,
+      5.62,
+      1.17
+     ],
+     "round": 0.0,
+     "mat": "wicker"
+    },
+    {
+     "ball": [
+      "hand",
+      1.87,
+      2.11,
+      0.0
+     ],
+     "r": 2.11,
+     "mat": "loaf"
+    },
+    {
+     "ball": [
+      "hand",
+      5.15,
+      2.34,
+      1.17
+     ],
+     "r": 2.11,
+     "mat": "loaf"
+    },
+    {
+     "ball": [
+      "hand",
+      4.68,
+      2.11,
+      -2.11
+     ],
+     "r": 2.11,
+     "mat": "loaf"
+    }
+   ]
+  },
+  "iron_bars": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "a stack of iron bars across the forearms",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      3.74,
+      0.7,
+      -1.64
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      6.08,
+      1.17,
+      1.05
+     ],
+     "round": 0.0,
+     "mat": "iron_bar"
+    },
+    {
+     "box": [
+      "hand",
+      3.74,
+      0.7,
+      0.94
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      6.08,
+      1.17,
+      1.05
+     ],
+     "round": 0.0,
+     "mat": "iron_bar"
+    },
+    {
+     "box": [
+      "hand",
+      3.74,
+      2.81,
+      -0.35
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      6.08,
+      1.17,
+      1.05
+     ],
+     "round": 0.0,
+     "mat": "iron_bar"
+    }
+   ]
+  },
+  "gold_chest": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "a small iron-bound chest, gold ingots showing, held before the chest",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      3.74,
+      1.4,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      3.51,
+      4.68,
+      2.57
+     ],
+     "round": 0.0,
+     "mat": "chest"
+    },
+    {
+     "box": [
+      "hand",
+      3.74,
+      4.09,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      2.81,
+      3.74,
+      0.35
+     ],
+     "round": 0.0,
+     "mat": "gold"
+    },
+    {
+     "box": [
+      "hand",
+      3.74,
+      1.4,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      3.74,
+      4.91,
+      0.59
+     ],
+     "round": 0.0,
+     "mat": "metal"
+    }
+   ]
+  },
+  "piglet": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "a piglet carried in the arms, snout to the left",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.17,
+      2.34,
+      0.0
+     ],
+     "to": [
+      "hand",
+      7.02,
+      2.34,
+      0.0
+     ],
+     "r": [
+      3.98,
+      3.51
+     ],
+     "mat": "pig"
+    },
+    {
+     "ball": [
+      "hand",
+      9.36,
+      3.28,
+      0.0
+     ],
+     "r": 2.81,
+     "mat": "pig"
+    },
+    {
+     "cap": [
+      "hand",
+      11.23,
+      3.04,
+      0.0
+     ],
+     "to": [
+      "hand",
+      12.87,
+      2.81,
+      0.0
+     ],
+     "r": 1.4,
+     "mat": "pig_snout"
+    },
+    {
+     "ball": [
+      "hand",
+      8.89,
+      5.85,
+      1.64
+     ],
+     "r": 1.17,
+     "mat": "pig_snout"
+    },
+    {
+     "ball": [
+      "hand",
+      8.89,
+      5.85,
+      -1.64
+     ],
+     "r": 1.17,
+     "mat": "pig_snout"
+    }
+   ]
+  },
+  "coal_basket": {
+   "hand": "right",
+   "hold": "strap",
+   "_doc": "a tall basket on the back heaped with coal",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0.5,
+      6.5,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.0,
+      6.5,
+      0.0
+     ],
+     "r": [
+      1.7,
+      2.2
+     ],
+     "mat": "wicker"
+    },
+    {
+     "ball": [
+      "hand",
+      5.4,
+      6.5,
+      0.0
+     ],
+     "r": 2.0,
+     "mat": "coal"
+    },
+    {
+     "cap": [
+      "hand",
+      0.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      4.5,
+      5.0,
+      0.0
+     ],
+     "r": 0.3,
+     "mat": "rope"
+    }
+   ]
+  },
+  "iron_ore_basket": {
+   "hand": "right",
+   "hold": "strap",
+   "_doc": "a tall basket on the back heaped with rusty iron ore",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0.5,
+      6.5,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.0,
+      6.5,
+      0.0
+     ],
+     "r": [
+      1.7,
+      2.2
+     ],
+     "mat": "wicker"
+    },
+    {
+     "ball": [
+      "hand",
+      5.4,
+      6.5,
+      0.0
+     ],
+     "r": 2.0,
+     "mat": "iron_ore"
+    },
+    {
+     "cap": [
+      "hand",
+      0.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      4.5,
+      5.0,
+      0.0
+     ],
+     "r": 0.3,
+     "mat": "rope"
+    }
+   ]
+  },
+  "gold_ore_basket": {
+   "hand": "right",
+   "hold": "strap",
+   "_doc": "a tall basket on the back heaped with gold-flecked rock",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0.5,
+      6.5,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.0,
+      6.5,
+      0.0
+     ],
+     "r": [
+      1.7,
+      2.2
+     ],
+     "mat": "wicker"
+    },
+    {
+     "ball": [
+      "hand",
+      5.4,
+      6.5,
+      0.0
+     ],
+     "r": 2.0,
+     "mat": "gold_ore"
+    },
+    {
+     "cap": [
+      "hand",
+      0.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      4.5,
+      5.0,
+      0.0
+     ],
+     "r": 0.3,
+     "mat": "rope"
+    },
+    {
+     "bead": [
+      "hand",
+      6.4,
+      5.8,
+      0.6
+     ],
+     "r": 0.45,
+     "mat": "gold"
+    },
+    {
+     "bead": [
+      "hand",
+      5.9,
+      7.2,
+      -0.8
+     ],
+     "r": 0.45,
+     "mat": "gold"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "_doc": "Steading's goods' colours, for the loads the serfs and trades carry (#125).",
+ "plank": {"rgb": "#cfa468"},
+ "plank_end": {"rgb": "#e2c28e"},
+ "sheaf": {"rgb": "#dcbc58", "fur": true},
+ "sack": {"rgb": "#e9e1cc", "fur": true},
+ "loaf": {"rgb": "#b8702f"},
+ "sausage": {"rgb": "#97452f"},
+ "coal": {"rgb": "#2b292d"},
+ "iron_ore": {"rgb": "#8a5440", "fur": true},
+ "gold_ore": {"rgb": "#86806f", "fur": true},
+ "iron_bar": {"rgb": "#a7b0ba", "shine": 0.6},
+ "block": {"rgb": "#c6c0b2"},
+ "chest": {"rgb": "#74482a"},
+ "pig": {"rgb": "#e3a3a0"},
+ "pig_snout": {"rgb": "#c97d7c"}
+}
