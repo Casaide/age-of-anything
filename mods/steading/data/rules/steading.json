@@ -149,16 +149,20 @@
   ],
   "start": {
    "food": 0,
-   "gold": 200,
-   "wood": 20,
-   "stone": 20,
-   "plank": 40,
-   "bread": 100,
-   "workers": 5,
+   "gold": 400,
+   "wood": 60,
+   "stone": 120,
+   "plank": 120,
+   "bread": 150,
+   "sausage": 30,
+   "coal": 10,
+   "iron": 10,
+   "workers": 8,
    "buildings": [
     "town_center"
    ],
-   "tools": 6
+   "tools": 12,
+   "_doc": "a storehouse stocked to get going (Dominic, 2026-11-20, #119): goods for the first buildings and their roads, some late goods (tools, iron, coal, sausages) and gold enough to pay the school till the gold smelter does"
   },
   "gather_ticks": {
    "plank": 24,

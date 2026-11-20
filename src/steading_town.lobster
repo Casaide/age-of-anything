@@ -100,7 +100,7 @@ let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], 
              [ "miner", "gold_mine" ], [ "smelter", "gold_smelter" ], [ "miller", "mill" ], [ "baker", "bakery" ],
              [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "smelter", "iron_smelter" ], [ "smith", "armoury" ],
              [ "swineherd", "pig_farm" ], [ "butcher", "butcher" ] ]
-let VILLAGERS = 14  // carriers and builders at most: the 5 the town starts with, and more only while sites wait for one
+let VILLAGERS = 22  // carriers and builders at most: the 8 the town starts with, and more only while sites wait for one
 
 def done_count(id:string) -> int:
     return (filter(b_id.length) b: b_owner[b] == 0 and b_done[b] != 0 and bt_name[b_kind[b]] == id).length
@@ -128,7 +128,8 @@ let seam = seam_cells(res("coal"), tx, ty, 12)
 let sx = seam[0] % W
 let sy = seam[0] / W
 let au = res("gold")
-// what goes up when (tick, building, near x, near y: from the town's middle; the mines by the coal seam)
+// what goes up when (tick, building, near x, near y: from the town's middle; the mines by the coal seam, early, while the seams
+// are clear of the camps' doors and roads)
 class Lay:
     t:int
     id:string
@@ -136,10 +137,10 @@ class Lay:
     y:int
 
 let plan = [ Lay { 20, "school", tx - 2, ty - 6 }, Lay { 40, "lumber_camp", tx + 6, ty - 4 }, Lay { 60, "sawmill", tx - 6, ty + 3 },
-             Lay { 80, "mining_camp", tx + 5, ty + 6 }, Lay { 600, "farm", tx - 8, ty - 4 }, Lay { 700, "mill", tx - 5, ty - 9 },
+             Lay { 80, "mining_camp", tx + 5, ty + 6 }, Lay { 90, "coal_mine", sx - 1, sy + 3 }, Lay { 100, "iron_mine", sx + 3, sy }, Lay { 600, "farm", tx - 8, ty - 4 }, Lay { 700, "mill", tx - 5, ty - 9 },
              Lay { 800, "bakery", tx + 2, ty + 8 }, Lay { 900, "gold_mine", tx + 16, ty - 2 }, Lay { 1000, "gold_smelter", tx + 13, ty + 9 },
              Lay { 2400, "inn", tx + 7, ty - 1 }, Lay { 2600, "sawmill", tx - 9, ty + 3 }, Lay { 2700, "lumber_camp", tx + 12, ty - 3 },
-             Lay { 3000, "coal_mine", sx - 1, sy + 3 }, Lay { 3150, "iron_mine", sx + 3, sy }, Lay { 3400, "armoury", tx + 9, ty - 6 },
+             Lay { 3400, "armoury", tx + 9, ty - 6 },
              Lay { 3600, "pig_farm", tx - 8, ty + 8 }, Lay { 3800, "butcher", tx - 3, ty + 11 } ]
 var iron_laid = false
 var asked = false

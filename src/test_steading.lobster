@@ -125,7 +125,9 @@ def all_of(r:int) -> int:  // player 0's r: in its buildings and in its units' h
 
 // Lay building `id` for player 0 near (x, y) in tiles, from the town (no worker named), with a road to its door (steading_lay).
 def lay(id:string, x:int, y:int) -> bool:
-    return lay_with_road(id, x, y)
+    let ok = lay_with_road(id, x, y)
+    if not ok: print "steading: no room for {id} near {x},{y} with a road to its door"
+    return ok
 
 // A road dragged along a row near x, y, a plan a cell as the road tool lays it (game/roads, #68): the first row of n free
 // cells, built in order. How many plans were laid.
@@ -182,12 +184,12 @@ def play() -> int:
     let st = res("stone")
     check(r_stocked == 1 and pl >= 0 and t_carrier[u_kind[index_of(mine()[0])]] == 1, "steading: a stocked economy, planks, workers who carry")
     let tc = 0
-    check(b_owner[tc] == 0 and b_kind[tc] == btype_index("town_center") and pop[0] == 5 and pop[0] <= pop_cap[0] and btype_index("house") < 0,
-          "steading: the town starts with a storehouse and 5 villagers, room for them, and no houses ({pop[0]} of {pop_cap[0]})")
+    check(b_owner[tc] == 0 and b_kind[tc] == btype_index("town_center") and pop[0] == 8 and pop[0] <= pop_cap[0] and btype_index("house") < 0,
+          "steading: the town starts with a storehouse and 8 villagers, room for them, and no houses ({pop[0]} of {pop_cap[0]})")
     var by_tc = 0
     for(u_x.length) i:
         if u_owner[i] == 0 and abs(u_x[i] / TILE - (b_cx[tc] + 1)) <= 3 and abs(u_y[i] / TILE - (b_cy[tc] + 1)) <= 3: by_tc++
-    check(by_tc == 5, "steading: the villagers start round the storehouse ({by_tc} of 5)")
+    check(by_tc == 8, "steading: the villagers start round the storehouse ({by_tc} of 8)")
     // Mines (#42): one goes up only against a seam of its own; the coal seam by the town is left small, to run out.
     let coal = res("coal")
     let seam = cells_of(coal, start_x[0] / TILE, start_y[0] / TILE, 12)
@@ -199,12 +201,12 @@ def play() -> int:
     let tips = match_tips(su_rules)
     check(tips.length == 12 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips and goals, the first (lay a school) not yet done ({tips.length})")
     let vk = type_of_slot(0, "worker")
-    check(t_cost[vk][res("gold")] == 10 and t_cost[vk][res("food")] == 0 and stock[res("gold")][0] == 200, "steading: the school\'s fee is 10 gold, no food, and the town starts with 200 gold (#116; {t_cost[vk]})")
+    check(t_cost[vk][res("gold")] == 10 and t_cost[vk][res("food")] == 0 and stock[res("gold")][0] == 400, "steading: the school\'s fee is 10 gold, no food, and the town starts with 400 gold (#116; {t_cost[vk]})")
     check(equal(gstrs(su_rules, "topbar_hide"), [ "age", "idle", "tree" ]), "steading: its top bar leaves out the age, the idle workers and the tech tree (#113)")
     // The goals' kinds of done (#104): so much made or gathered, so many people.
     let goal = Tip { "", "", "made:bread:50", "Goal" }
-    check(tips[4].label == "Goal" and tips[0].label == "Tip" and not tip_done(goal, 0, 5) and tip_done(Tip { "", "", "people:5", "Goal" }, 0, 5) and not tip_done(Tip { "", "", "people:6", "Goal" }, 0, 5),
-          "steading: the goals come after the tips; one for 5 people is met by the 5 villagers, one for 6 isn\'t, nor 50 loaves made yet")
+    check(tips[4].label == "Goal" and tips[0].label == "Tip" and not tip_done(goal, 0, 8) and tip_done(Tip { "", "", "people:8", "Goal" }, 0, 8) and not tip_done(Tip { "", "", "people:9", "Goal" }, 0, 8),
+          "steading: the goals come after the tips; one for 8 people is met by the 8 villagers, one for 9 isn\'t, nor 50 loaves made yet")
     let plank0 = stock[pl][0]
     let gr = res("grain")
     let fl = res("flour")
@@ -243,10 +245,10 @@ def play() -> int:
         if school != 0 and not trained:
             for([ "woodcutter", "stonecutter", "sawyer", "farmer", "miner", "miner", "miner", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
             trained = true
-        // The miller and the baker only half a minute after the mill is up: till then it holds its grain and makes nothing.
+        // The miller and the baker only half a minute after the mill is up and holds grain: till then it makes nothing.
         let mill = done_of("mill")
         if mill != 0 and mill_up < 0: mill_up = t
-        if mill_up >= 0 and not crafters and t > mill_up + 30 * TICK_HZ and done_of("bakery") != 0:
+        if mill_up >= 0 and not crafters and mill_waited and t > mill_up + 30 * TICK_HZ and done_of("bakery") != 0:
             flour_unstaffed = produced[fl][0]
             for([ "miller", "baker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
             crafters = true
@@ -350,8 +352,8 @@ def big_town(dx:int, dy:int) -> int:
         if t == 2400 and lay("inn", tx + 7, ty - 1): laid++
         if t == 2600 and lay("sawmill", tx - 9, ty + 3): laid++
         if t == 2700 and lay("lumber_camp", tx + 12, ty - 3): laid++  // (a second: two sawmills want more logs than one woodcutter cuts)
-        if t == 3000 and lay("coal_mine", sx - 1, sy + 3): laid++
-        if t == 3150 and lay("iron_mine", sx + 3, sy): laid++
+        if t == 90 and lay("coal_mine", sx - 1, sy + 3): laid++
+        if t == 100 and lay("iron_mine", sx + 3, sy): laid++  // (the mines early, while the seams are clear: the camps' doors and roads crowd round them later)
         if t == 2950 and lay("gold_mine", start_x[0] / TILE + 16, start_y[0] / TILE - 2): laid++
         if not iron_laid and done_of("gold_smelter") != 0:  // (once the gold smelter is up, so the first smelter trained goes there: it pays the school)
             iron_laid = true
@@ -366,7 +368,7 @@ def big_town(dx:int, dy:int) -> int:
             for([ "woodcutter", "stonecutter", "sawyer", "farmer", "miller", "baker", "miner", "miner", "smelter", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
         if t > trained_at + 100 and trained == 1 and b_queue[b_index_of(school)].length == 0:  // (a school teaches 15 at most at a time)
             trained = 2
-        // Then one at a time as the gold comes in (#116): what's left of the starting gold pays for five villagers, the
+        // Then one at a time as the gold comes in (#116): the starting gold pays for the first of them, the
         // town's own smelted gold for the rest.
         if trained == 2:  // (one at a time, each struck off once it has joined the town)
             let q = b_queue[b_index_of(school)].length
