@@ -1,5 +1,6 @@
 // Steading's looks (#125): every good a serf or a trade carries is seen carried. Each resource the mod has (and the
 // game's wood, stone and gold it uses) has a load in the mod's voxel gear, its gear exists, and no two goods share one.
+// And every trade looks its own: the race is the steading culture, each slot wears its kit, no two alike.
 //   lobster steading_look_check.lobster
 import from "../creel/src"
 import std
@@ -42,5 +43,18 @@ for(carried) r:
     expect(vx_gears.get(g) != nil, "the load gear of {r}, {g}, exists")
     expect((find(gears) x: x == g) < 0, "{r} has its own load, not {g} shared")
     gears.push(g)
+let race = generate("serfs", load_rules("steading"), 0)
+expect(gstr(race, "family", "") == "steading", "serfs are the steading culture: {gstr(race, "family", "")}")
+let looks = []::string
+for(glist(race, "units")) unit:
+    let u = at(glist(unit, "line")[0], "recipe")
+    let slot = gstr(u, "slot", "")
+    let kit = gobj(gobj(gobj(family("steading"), "kits"), slot), "1")
+    let ps = gobj(u, "parts")
+    for(kit.keys) s, i: expect(gstr(ps, s, "") == as_str(kit.a[i]), "the {slot} wears its {s}, {as_str(kit.a[i])}: {gstr(ps, s, "")}")
+    let look = "{gstr(ps, "head_gear", "")} {gstr(ps, "torso", "")} {gstr(ps, "hand_r", "")}"
+    expect((find(looks) l: l == look) < 0, "the {slot} looks like no other trade: {look}")
+    looks.push(look)
+expect(looks.length == 12, "the serf and 11 trades: {looks.length}")
 print "{n_checks} checks, {n_failed} failed"
 if n_failed > 0: set_exit_code(1)

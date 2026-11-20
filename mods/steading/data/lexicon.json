@@ -1,26 +1,41 @@
 {
- "_doc": "Steading's people (#70): every side plays villagers (rules \"race\").",
+ "_doc": "Steading's people (#70): every side plays one race (rules \"race\"), the steading culture: each trade dressed for its work (#125).",
  "words": {
   "villager": {
-   "creature": "human"
+   "creature": "human",
+   "family": "steading"
   },
   "villagers": {
-   "creature": "human"
+   "creature": "human",
+   "family": "steading"
   },
   "peasant": {
-   "creature": "human"
+   "creature": "human",
+   "family": "steading"
   },
   "peasants": {
-   "creature": "human"
+   "creature": "human",
+   "family": "steading"
   },
   "townsfolk": {
-   "creature": "human"
+   "creature": "human",
+   "family": "steading"
   },
   "townsman": {
-   "creature": "human"
+   "creature": "human",
+   "family": "steading"
   },
   "townsmen": {
-   "creature": "human"
+   "creature": "human",
+   "family": "steading"
+  },
+  "serf": {
+   "creature": "human",
+   "family": "steading"
+  },
+  "serfs": {
+   "creature": "human",
+   "family": "steading"
   }
  }
 }
