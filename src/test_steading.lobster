@@ -224,7 +224,7 @@ def play() -> int:
     var site_walked = false  // someone stood on a site's cells while it went up
     let site_ids = []::int   // the sites seen (not roads), and how long each had stood with nobody building it (-1 once someone did)
     let site_waits = []::int
-    var longest_wait = 0     // the longest a site stood before its first builder came
+    var longest_wait = 0  // the longest a site stood before its first builder came
     var trained = false
     var mill_up = -1                                          // the tick the mill was first up
     var crafters = false                                      // the miller and the baker sent for
