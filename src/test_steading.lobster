@@ -72,7 +72,7 @@ id_load("../data")
 let MINUTES = 15
 let FIELD_GRAIN = 40  // the grain a sown field holds (Steading's farm)
 // who works where
-let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ], [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "miner", "gold_mine" ] ]
+let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ], [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "miner", "gold_mine" ], [ "smelter", "iron_smelter" ], [ "smelter", "gold_smelter" ], [ "smith", "armoury" ] ]
 let MAP = "steading_vale"  // (the mod's own map: the meadow with seams in its mountains, #42)
 let COAL_LEFT = 3          // the loads the test leaves in each cell of the coal seam by the town, so it runs out
 let T_EAT = 100            // (the mod's hunger.lua: its own task, going to eat)
@@ -90,6 +90,25 @@ let merged_buildings = at(lib_data("buildings.json"), "buildings")
 for(merged_buildings.keys) id:
     let mt = model_type(merged_buildings, id)
     check(has(game_buildings, mt), "steading: {id} is drawn with a model the game has (it gets {mt})")
+// A workshop makes only what its own recipe says, not what the one it extends makes as well (#106: the bakery extends
+// the mill, and baked from grain and flour into flour and bread, so it stopped once its flour slot filled).
+let own_buildings = at(parse_json(read_file("../mods/steading/data/buildings.json") or ""), "buildings")
+for(own_buildings.keys) id:
+    if has(merged_buildings, id) and has(at(own_buildings, id), "makes"):
+        let own = gobj(at(own_buildings, id), "makes")
+        for([ "in", "out" ]) side:
+            let mine_ = gobj(own, side)
+            let got = gobj(gobj(at(merged_buildings, id), "makes"), side)
+            let extra = filter(got.keys) r: gint(got, r, 0) > 0 and gint(mine_, r, 0) == 0
+            check(not extra.length, "steading: {id} makes only from its own recipe ({side} also has {extra})")
+        // (nor hands out its inputs: the sawmill got the woodcutter's hut's offer of wood, and carriers took its logs
+        // to the storehouse and to the other sawmill)
+        let offers = filter(glist(at(merged_buildings, id), "offers")) o: gint(gobj(own, "in"), as_str(o), 0) > 0
+        check(not offers.length, "steading: {id} doesn\'t offer what it makes from ({map(offers) o: as_str(o)})")
+    if has(merged_buildings, id) and has(at(own_buildings, id), "staff"):  // (nor takes the staff of the one it extends: a woodcutter went to work at the sawmill)
+        let got = gobj(at(merged_buildings, id), "staff")
+        let extra = filter(got.keys) k: gint(got, k, 0) > 0 and gint(gobj(at(own_buildings, id), "staff"), k, 0) == 0
+        check(not extra.length, "steading: {id} is worked only by its own staff (also {extra})")
 
 def res(name:string) -> int: return str_index(resource_names, name)
 
@@ -281,6 +300,82 @@ def play() -> int:
     check(hungry * 4 <= pop[0], "steading: the town lives on its own bread: at the end, hardly anyone is resting hungry ({hungry} of {pop[0]})")
     return h
 
+// A bigger town (#106): the seventeen buildings of a whole Steading town, laid where a player might, shifted a tile or
+// two to show it isn't one lucky layout. Everything gets built, every trade goes to work, the sawmills keep sawing and
+// the town stays fed: carriers don't all go hauling to the storehouse, and nobody stands jammed at a door.
+def big_town(dx:int, dy:int) -> int:
+    new_world(2026, MAP, races, rules, [])
+    let pl = res("plank")
+    let br = res("bread")
+    let tl = res("tools")
+    let seam = cells_of(res("coal"), start_x[0] / TILE, start_y[0] / TILE, 12)
+    let sx = seam[0] % W
+    let sy = seam[0] / W
+    let tx = start_x[0] / TILE + dx
+    let ty = start_y[0] / TILE + dy
+    let col_work = find(hook_unit_names) n: n == "workplace"
+    let col_present = find(hook_building_names) n: n == "present"
+    var laid = 0
+    var trained = 0
+    var trained_at = 0
+    var full = 0  // sawmill ticks spent standing with its planks not taken away
+    var mill_ticks = 0
+    var stuck_most = 0
+    var h = 0
+    for(30 * 60 * TICK_HZ) t:
+        if t == 20 and lay("school", tx - 2, ty - 6): laid++
+        if t == 40 and lay("lumber_camp", tx + 6, ty - 4): laid++
+        if t == 60 and lay("sawmill", tx - 6, ty + 3): laid++
+        if t == 80 and lay("mining_camp", tx + 5, ty + 6): laid++
+        if t == 600 and lay("farm", tx - 8, ty - 4): laid++
+        if t == 700 and lay("mill", tx - 5, ty - 9): laid++
+        if t == 800 and lay("bakery", tx + 2, ty + 8): laid++
+        if t == 2400 and lay("inn", tx + 7, ty - 1): laid++
+        if t == 2600 and lay("sawmill", tx - 9, ty + 3): laid++
+        if t == 2700 and lay("lumber_camp", tx + 12, ty - 3): laid++  // (a second: two sawmills want more logs than one woodcutter cuts)
+        if t == 3000 and lay("coal_mine", sx - 1, sy + 3): laid++
+        if t == 3050 and lay("iron_mine", sx + 3, sy): laid++
+        if t == 3100 and lay("gold_mine", start_x[0] / TILE + 16, start_y[0] / TILE - 2): laid++
+        if t == 3200 and lay("iron_smelter", tx + 9, ty + 9): laid++
+        if t == 3300 and lay("gold_smelter", tx + 13, ty + 9): laid++
+        if t == 3400 and lay("armoury", tx + 9, ty - 6): laid++
+        if t == 3500 and lay("farm", tx - 8, ty + 8): laid++
+        let school = done_of("school")
+        if school != 0 and trained == 0:
+            trained = 1
+            trained_at = t
+            for([ "woodcutter", "stonecutter", "sawyer", "sawyer", "farmer", "miller", "baker", "miner", "miner", "miner", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+        if t > trained_at + 100 and trained == 1 and b_queue[b_index_of(school)].length == 0:  // (a school teaches 15 at most at a time)
+            trained = 2
+            hold_put(0, res("food"), 300)  // (the school's fees for a second batch: the starting food pays for the first)
+            for([ "smelter", "smelter", "smith", "farmer", "woodcutter", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+        wstep()
+        for(b_id.length) b:
+            if b_owner[b] == 0 and b_done[b] != 0 and bt_name[b_kind[b]] == "sawmill" and hook_building_get(col_present, b) != 0:
+                mill_ticks++
+                if b_make[b] == 0 and out_full(b, pl): full++
+        for(u_x.length) i:
+            if u_owner[i] == 0: stuck_most = max(stuck_most, u_stuck[i])
+        if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
+    var built = 0
+    for(b_id.length) b:
+        if b_owner[b] == 0 and b_done[b] != 0 and b_kind[b] != btype_index("town_center"): built++
+    var staffed = 0
+    for(u_x.length) i:
+        let at_ = b_index_of(hook_unit_get(col_work, i))
+        if u_owner[i] == 0 and at_ >= 0 and (find(JOBS) jb: jb[0] == t_slot[u_kind[i]] and jb[1] == bt_name[b_kind[at_]]) >= 0: staffed++
+    let hungry = (filter(u_x.length) i: u_owner[i] == 0 and u_task[i] == 101).length
+    let idle_trades = map(filter(u_x.length) i: u_owner[i] == 0 and t_carrier[u_kind[i]] == 0 and b_index_of(hook_unit_get(col_work, i)) < 0) i: t_slot[u_kind[i]]
+    let unbuilt = map(filter(b_id.length) b: b_owner[b] == 0 and b_done[b] == 0 and bt_road[b_kind[b]] < 0) b: bt_name[b_kind[b]]
+    let full_pct = full * 100 / max(1, mill_ticks)
+    print "steading: big town +{dx},{dy}: {built} of {laid} built, {staffed} staffed, sawmills stood full {full_pct}% of their staffed time, planks {produced[pl][0]} ({stock[pl][0]} in store), bread {produced[br][0]}, tools {produced[tl][0]}, {hungry} of {pop[0]} resting hungry, longest stuck {stuck_most}"
+    check(laid == 17 and built == 17, "steading: a big town (+{dx},{dy}) builds all seventeen of its buildings ({built} of {laid}; not {unbuilt})")
+    check(staffed == 15, "steading: a big town (+{dx},{dy}): every trade trained goes to work at its own ({staffed} of 15; not {idle_trades})")
+    check(full_pct <= 20, "steading: a big town (+{dx},{dy}): its sawmills\' planks are carried off, not left to stop them ({full_pct}% of the time full)")
+    check(hungry * 4 <= pop[0] and produced[br][0] > 0, "steading: a big town (+{dx},{dy}) keeps its people fed ({hungry} of {pop[0]} resting hungry)")
+    check(produced[tl][0] > 0, "steading: a big town (+{dx},{dy}) forges tools ({produced[tl][0]})")
+    return h
+
 // Smelting and the smithy (#102), on their own: a storehouse given ore, coal and planks but no tools. The smelters
 // make iron and gold, the smithy makes tools from iron and planks, and a farmer trained with no tools in store waits,
 // then goes to its farm once the smithy's tools are in. Whether all of that happened, and the hash.
@@ -405,6 +500,7 @@ let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
 check(pig_chain() == pig_chain(), "steading: the same pigs twice, the same hash")
 check(metal_chain() == metal_chain(), "steading: the same metal trades twice, the same hash")
+for([ [ 0, 0 ], [ 1, 0 ], [ 0, 1 ], [ -1, 1 ] ]) d: big_town(d[0], d[1])
 let same, lively = save_run(false)
 check(lively and same, "steading: through a save, the mod\'s rules and their state play on the same (lively {lively}, same {same})")
 let same_off, _ = save_run(true)

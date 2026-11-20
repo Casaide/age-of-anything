@@ -103,10 +103,12 @@
    "name": "Sawmill",
    "desc": "A sawyer works here: saws one log into two planks. Nothing is sawn while the sawyer is away.",
    "staff": {
+    "woodcutter": 0,
     "sawyer": 1
    },
    "hotkey": "S",
    "drop_off": [],
+   "offers": [],
    "cost": {
     "wood": 0,
     "plank": 8,
@@ -381,18 +383,22 @@
    },
    "makes": {
     "in": {
+     "grain": 0,
      "flour": 1
     },
     "out": {
+     "flour": 0,
      "bread": 2
     },
     "time": 6
    },
    "holds": {
+    "grain": 0,
     "flour": 4,
     "bread": 8
    },
    "staff": {
+    "miller": 0,
     "baker": 1
    },
    "note": ""
@@ -506,6 +512,7 @@
     "coal"
    ],
    "staff": {
+    "stonecutter": 0,
     "miner": 1
    },
    "note": "",
@@ -532,6 +539,7 @@
     "iron_ore"
    ],
    "staff": {
+    "stonecutter": 0,
     "miner": 1
    },
    "note": "",
@@ -558,6 +566,7 @@
     "gold_ore"
    ],
    "staff": {
+    "stonecutter": 0,
     "miner": 1
    },
    "note": "",
