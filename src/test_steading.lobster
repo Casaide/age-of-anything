@@ -232,7 +232,7 @@ def play() -> int:
     var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
     var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
-    let inside_for = map(1000): 0  // (#140) each unit slot's ticks inside a building so far, and each stay's length when it came out
+    let inside_for = map(1000): 0                             // (#140) each unit slot's ticks inside a building so far, and each stay's length when it came out
     let stays = []::int
     var planks_seen = -1  // the sawmill's rounds (#139): planks made as of last tick, when the last round ended, the shortest gap
     var round_at = -1
