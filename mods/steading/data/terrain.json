@@ -1,5 +1,5 @@
 {
- "_doc": "A farm's ground (#99): wheat is a crop of grain, pooled over the field; reaped bare it's stubble, which the farmer sows again into wheat. Coal, iron and gold seams run through the mountains (#42): a mine against one digs it out, and a dug-out seam is worked-out rock.",
+ "_doc": "A farm's ground (#99): wheat is a crop of grain, pooled over the field; reaped bare it's stubble, which the farmer sows again into wheat. Coal, iron and gold seams run through the mountains (#42): a mine against one digs it out, and a dug-out seam is worked-out rock. Trees are one trunk each, and a woodcutter plants saplings that grow into trees (#126).",
  "terrain": {
   "wheat": {
    "walkable": true,
@@ -50,6 +50,20 @@
    "colour": "#55504a",
    "colour2": "#5e5952",
    "note": "a seam dug out: bare rock"
+  },
+  "tree": {
+   "amount": 1,
+   "note": "a tree in Steading is one trunk: felled in one go and carried home whole (the genre's woodcutter, #126)"
+  },
+  "sapling": {
+   "walkable": false,
+   "colour": "#5f7a3a",
+   "colour2": "#58723a",
+   "grows": {
+    "into": "tree",
+    "seconds": 600
+   },
+   "note": "a sapling a woodcutter planted: a tree ten minutes on (#126); nothing goes up or through it meanwhile"
   }
  }
 }

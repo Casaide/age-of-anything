@@ -231,6 +231,7 @@ def play() -> int:
     var mill_waited = false                                   // the mill held grain enough for a round with no miller yet
     var flour_unstaffed = -1                                  // the flour made before the miller came
     var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
+    var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
     for(MINUTES * 60 * TICK_HZ) t:
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
@@ -260,6 +261,7 @@ def play() -> int:
         for(u_x.length) i:
             if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])
             if u_task[i] == GATHER and (find([ "woodcutter", "stonecutter", "farmer", "miner" ]) g: g == t_slot[u_kind[i]]) < 0: gatherers_ok = false
+            if u_owner[i] == 0 and u_task[i] == T_RETURN and t_carrier[u_kind[i]] == 0 and hook_unit_get(col_work, i) != 0 and u_target[i] != hook_unit_get(col_work, i): dropped_away++
         lay_step()
         for(b_id.length) b:
             if b_site[b].length and b_done[b] == 0 and b_progress[b] > build_cap(b) + 1: sites_ok = false
@@ -308,6 +310,7 @@ def play() -> int:
     check(planned == 5 and dragged_built == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({dragged_built} of {planned})")
     check(most_builders >= 2 and most_builders <= 3, "steading: idle serfs help build a site, no more than 3 sent at once ({most_builders})")
     check(site_walked, "steading: serfs walk across a site while it goes up")
+    check(dropped_away == 0, "steading: a gatherer only ever drops at its own hut, and waits there when it\'s full; serfs take goods on ({dropped_away} ticks headed elsewhere)")
     let never = filter(site_waits): _ >= 0
     check(longest_wait <= 30 * TICK_HZ and not never.length,
           "steading: a site laid in a busy town gets its first builder within half a minute, however much is being hauled (the longest {longest_wait / TICK_HZ} s, {never.length} never)")
@@ -614,8 +617,73 @@ def busy_sites():
     check(ids.length == 6 and hauling and slowest >= 0 and slowest <= 20 * TICK_HZ,
           "steading: six sites laid at once while serfs haul for them each get a builder within 20 s ({ids.length} laid, the slowest at {slowest} ticks: {first})")
 
+// Woods as in the genre (#126): a tree is one trunk, felled and carried home whole; a sapling grows into a tree after
+// its time (terrain.json "grows"), through a save too; and a woodcutter with no grown tree in reach plants saplings.
+def woods():
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    let tree = str_index(tr_names, "tree")
+    let sap = str_index(tr_names, "sapling")
+    let grass = str_index(tr_names, "grass")
+    check(tree >= 0 and tr_amount[tree] == 1 and r_carry_of[res("wood")] == 1, "steading: a tree is one trunk, and a woodcutter carries one home at a time")
+    // A sapling planted by hand grows into a tree after 10 minutes, saved and loaded halfway.
+    let c = find(W * H) cc: terrain[cc] == grass and occupied[cc] == 0 and can_plant(cc, sap)
+    check(sap >= 0 and tr_grows[sap] == tree and plant(c, sap) and not plant(c, sap) and not plant(c, grass), "steading: a sapling is planted on open grass once, and grass doesn\'t grow")
+    let due = tick + tr_grow_ticks[sap]
+    for(tr_grow_ticks[sap] / 2): wstep()
+    let path = "test_steading_woods.sav"
+    assert save_world(path, [])
+    reset_world()
+    lua_reset()
+    lua_on = false
+    lua_rules = jobj()
+    load_world(path)
+    delete_file(path)
+    var early = false
+    while tick <= due + TICK_HZ:
+        if tick < due and terrain[c] != sap: early = true
+        wstep()
+    check(tr_grow_ticks[sap] == 600 * TICK_HZ and not early and terrain[c] == tree and amount[c] == 1, "steading: the sapling is a tree of one trunk 10 minutes on, through a save (now {tr_names[terrain[c]]})")
+    // A woodcutter whose trees are all felled plants saplings round his hut, and fells them once they've grown.
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    lay("school", tx - 2, ty - 6)
+    lay("lumber_camp", tx + 6, ty - 4)
+    var trained = false
+    var cleared = false
+    var most_saplings = 0
+    var cut_after = 0
+    var grown = 0
+    for(16 * 60 * TICK_HZ):
+        lay_step()
+        let school = done_of("school")
+        if school != 0 and not trained:
+            issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, "woodcutter"), 1, 0)
+            trained = true
+        let hut = b_index_of(done_of("lumber_camp"))
+        if hut >= 0 and not cleared:  // (the woods round the hut felled at once: nothing left in reach)
+            cleared = true
+            for(W * H) cc:
+                if terrain[cc] == tree and abs(cc % W - (b_cx[hut] + 1)) <= 9 and abs(cc / W - (b_cy[hut] + 1)) <= 9: set_terrain(cc, str_index(tr_names, "stump"))
+            cut_after = gathered[res("wood")][0]
+        if hut >= 0 and tick % TICK_HZ == 0:
+            var n = 0
+            var t = 0
+            for(W * H) cc:
+                if abs(cc % W - (b_cx[hut] + 1)) <= 9 and abs(cc / W - (b_cy[hut] + 1)) <= 9:
+                    if terrain[cc] == sap: n++
+                    if terrain[cc] == tree: t++
+            most_saplings = max(most_saplings, n)
+            grown = max(grown, t)
+    let cut = gathered[res("wood")][0] - cut_after
+    check(cleared and most_saplings >= 3 and most_saplings <= 6 and grown >= 1 and cut >= 1,
+          "steading: a woodcutter with no trees in reach plants saplings (at most {most_saplings}), they grow ({grown} trees) and he fells them ({cut} trunks)")
+
 start_rules()
 busy_sites()
+woods()
 let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
