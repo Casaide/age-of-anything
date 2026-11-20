@@ -4,6 +4,11 @@
  "race": "villagers",
  "animals": false,
  "topbar_stock": false,
+ "topbar_hide": [
+  "age",
+  "idle",
+  "tree"
+ ],
  "cost": {
   "_doc": "the school's fee: every trade costs 20 food to teach (#99)",
   "roles": {
