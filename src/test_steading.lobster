@@ -627,7 +627,7 @@ def woods():
     let c = find(W * H) cc: terrain[cc] == grass and occupied[cc] == 0 and can_plant(cc, sap)
     check(sap >= 0 and tr_grows[sap] == tree and plant(c, sap) and not plant(c, sap) and not plant(c, grass), "steading: a sapling is planted on open grass once, and grass doesn\'t grow")
     let due = tick + tr_grow_ticks[sap]
-    for(tr_grow_ticks[sap] / 2) _: wstep()
+    for(tr_grow_ticks[sap] / 2): wstep()
     let path = "test_steading_woods.sav"
     assert save_world(path, [])
     reset_world()
