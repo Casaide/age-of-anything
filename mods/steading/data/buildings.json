@@ -58,7 +58,7 @@
  "buildings": {
   "town_center": {
    "name": "Storehouse",
-   "desc": "Holds the town's goods; villagers carry them in and out, and wait here when there's nothing to do. Room for the whole town.",
+   "desc": "Holds the town's goods; serfs carry them in and out, and wait here when there's nothing to do. Room for the whole town.",
    "store": true,
    "holds": {
     "*": 400
@@ -86,7 +86,10 @@
    ],
    "staff": {
     "woodcutter": 1
-   }
+   },
+   "after": [
+    "school"
+   ]
   },
   "mining_camp": {
    "name": "Quarry",
@@ -106,12 +109,15 @@
    ],
    "staff": {
     "stonecutter": 1
-   }
+   },
+   "after": [
+    "school"
+   ]
   },
   "school": {
    "extends": "house",
    "name": "School",
-   "desc": "Teaches the town's people: new villagers, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters, smiths, swineherds and butchers for the workplaces. Each goes to work where it's needed.",
+   "desc": "Teaches the town's people: new serfs, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters, smiths, swineherds and butchers for the workplaces. Each goes to work where it's needed.",
    "hotkey": "C",
    "pop": 0,
    "house": false,
@@ -165,7 +171,10 @@
    "holds": {
     "wood": 4,
     "plank": 6
-   }
+   },
+   "after": [
+    "lumber_camp"
+   ]
   },
   "road": {
    "_doc": "extends the house only because a mod's new building must (mods.lobster); a road plan has no look (game/roads)",
@@ -207,7 +216,10 @@
     "wood": 0,
     "plank": 10,
     "stone": 4
-   }
+   },
+   "after": [
+    "school"
+   ]
   },
   "iron_smelter": {
    "extends": "house",
@@ -242,7 +254,11 @@
    "age": 1,
    "pop": 0,
    "house": false,
-   "roles": []
+   "roles": [],
+   "after": [
+    "iron_mine",
+    "coal_mine"
+   ]
   },
   "gold_smelter": {
    "extends": "house",
@@ -277,7 +293,10 @@
    "age": 1,
    "pop": 0,
    "house": false,
-   "roles": []
+   "roles": [],
+   "after": [
+    "gold_mine"
+   ]
   },
   "butcher": {
    "extends": "house",
@@ -310,7 +329,10 @@
    },
    "hotkey": "",
    "age": 1,
-   "note": ""
+   "note": "",
+   "after": [
+    "pig_farm"
+   ]
   },
   "house": {
    "remove": true
@@ -344,7 +366,10 @@
    "staff": {
     "farmer": 1
    },
-   "note": ""
+   "note": "",
+   "after": [
+    "sawmill"
+   ]
   },
   "pig_farm": {
    "extends": "pen",
@@ -377,7 +402,10 @@
    "note": "",
    "pen": {
     "animals": 0
-   }
+   },
+   "after": [
+    "farm"
+   ]
   },
   "pen": {
    "remove": true
@@ -407,7 +435,10 @@
    "staff": {
     "miller": 1
    },
-   "note": ""
+   "note": "",
+   "after": [
+    "farm"
+   ]
   },
   "bakery": {
    "extends": "mill",
@@ -440,7 +471,10 @@
     "miller": 0,
     "baker": 1
    },
-   "note": ""
+   "note": "",
+   "after": [
+    "mill"
+   ]
   },
   "market": {
    "remove": true
@@ -474,7 +508,10 @@
    },
    "hotkey": "",
    "note": "",
-   "age": 1
+   "age": 1,
+   "after": [
+    "iron_smelter"
+   ]
   },
   "university": {
    "remove": true
@@ -555,7 +592,10 @@
     "miner": 1
    },
    "note": "",
-   "hotkey": ""
+   "hotkey": "",
+   "after": [
+    "mining_camp"
+   ]
   },
   "iron_mine": {
    "extends": "mining_camp",
@@ -582,7 +622,10 @@
     "miner": 1
    },
    "note": "",
-   "hotkey": ""
+   "hotkey": "",
+   "after": [
+    "mining_camp"
+   ]
   },
   "gold_mine": {
    "extends": "mining_camp",
@@ -609,7 +652,10 @@
     "miner": 1
    },
    "note": "",
-   "hotkey": ""
+   "hotkey": "",
+   "after": [
+    "mining_camp"
+   ]
   }
  }
 }

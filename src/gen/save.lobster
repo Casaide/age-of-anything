@@ -292,6 +292,7 @@ class WorldSave:
     bt_drop:[[int]]
     bt_hold:[[int]]
     bt_store:[int]
+    bt_after:[[int]]
     bt_road:[int]
     bt_bridge:[int]
     bt_in:[[int]]
@@ -318,6 +319,7 @@ class WorldSave:
     pop_cap:[int]
     stock:[[int]]
     r_stocked:int
+    r_foundation_pct:int
     r_carrier_load:int
     r_carrier_slots:[string]
     rd_names:[string]
@@ -830,6 +832,7 @@ def world_bytes(bots:[Bot]) -> string:
         bt_drop,
         bt_hold,
         bt_store,
+        bt_after,
         bt_road,
         bt_bridge,
         bt_in,
@@ -856,6 +859,7 @@ def world_bytes(bots:[Bot]) -> string:
         pop_cap,
         stock,
         r_stocked,
+        r_foundation_pct,
         r_carrier_load,
         r_carrier_slots,
         rd_names,
@@ -1381,6 +1385,7 @@ def load_world_bytes(data:string) -> [Bot]:
     bt_drop = s.bt_drop
     bt_hold = s.bt_hold
     bt_store = s.bt_store
+    bt_after = s.bt_after
     bt_road = s.bt_road
     bt_bridge = s.bt_bridge
     bt_in = s.bt_in
@@ -1407,6 +1412,7 @@ def load_world_bytes(data:string) -> [Bot]:
     pop_cap = s.pop_cap
     stock = s.stock
     r_stocked = s.r_stocked
+    r_foundation_pct = s.r_foundation_pct
     r_carrier_load = s.r_carrier_load
     r_carrier_slots = s.r_carrier_slots
     rd_names = s.rd_names

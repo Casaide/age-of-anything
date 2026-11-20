@@ -1,6 +1,12 @@
 {
- "_doc": "Steading's people (#70): every side plays villagers (rules \"race\").",
+ "_doc": "Steading's people (#70): every side plays serfs (rules \"race\").",
  "words": {
+  "serf": {
+   "creature": "human"
+  },
+  "serfs": {
+   "creature": "human"
+  },
   "villager": {
    "creature": "human"
   },

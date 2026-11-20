@@ -1,7 +1,7 @@
 {
- "_doc": "The economy mod's match (#524): a stocked economy and a town of wood, planks and stone. Villagers carry and build; only woodcutters and stone cutters, trained at the school, gather, each at its hut. One age; no soldiers. After the opening tips come the town's goals (#104).",
+ "_doc": "The economy mod's match (#524): a stocked economy and a town of wood, planks and stone. Serfs carry and build; only woodcutters and stone cutters, trained at the school, gather, each at its hut. One age; no soldiers. After the opening tips come the town's goals (#104).",
  "extends": "default",
- "race": "villagers",
+ "race": "serfs",
  "animals": false,
  "topbar_stock": false,
  "ui_direction": "slate",
@@ -30,11 +30,11 @@
  },
  "tips": [
   {
-   "text": "With nothing selected, press Build: Civilian and lay a School. Your villagers bring the goods and build it.",
+   "text": "With nothing selected, press Build: Civilian and lay a School. Your serfs bring the goods and build it.",
    "done": "laid:school"
   },
   {
-   "text": "Lay a Woodcutter's Hut near trees. Villagers build it; a woodcutter will work there.",
+   "text": "Lay a Woodcutter's Hut near trees. Serfs build it; a woodcutter will work there.",
    "done": "laid:lumber_camp"
   },
   {
@@ -46,7 +46,7 @@
    "done": "laid:bakery"
   },
   {
-   "text": "Grow the town to 15 people: train villagers and trades at the School.",
+   "text": "Grow the town to 15 people: train serfs and trades at the School.",
    "done": "people:15",
    "label": "Goal"
   },
@@ -99,6 +99,8 @@
   "sites_walk_over": true,
   "idle_wait": true,
   "doors_on_roads": true,
+  "door_roads": true,
+  "foundation_pct": 30,
   "doors_clear": true,
   "roads": [
    {
@@ -213,10 +215,10 @@
    "slot": "worker",
    "role": "worker",
    "tier": 1,
-   "name": "Villager",
+   "name": "Serf",
    "building": "school",
    "desc": "Carries goods where they are wanted and builds what you lay out",
-   "noun": "Villager"
+   "noun": "Serf"
   },
   {
    "slot": "woodcutter",

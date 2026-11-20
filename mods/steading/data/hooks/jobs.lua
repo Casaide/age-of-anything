@@ -5,7 +5,7 @@
 --     workplace went has none);
 --   a specialist at its workplace with nothing to do gathers the nearest of the workplace's goods round it. What it
 --     gathers goes to the nearest drop-off (the hut it works at, by its trees), and carriers take it on from there.
--- A specialist isn't a carrier, nor sent to build: those are the villagers' (economy.carriers).
+-- A specialist isn't a carrier, nor sent to build: those are the serfs' (economy.carriers).
 -- A workplace with no goods to gather round it (a mill, a bakery: a recipe) works only while one of its staff stands at
 -- its door (#99): its worker goes there and waits, and the engine asks can_make before each round.
 -- A workplace with a "reach" (a mine, #42: tiles out from its edge) has its worker gather only that near: what's
