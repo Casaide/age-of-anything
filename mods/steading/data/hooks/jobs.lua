@@ -146,11 +146,27 @@ local function planting(i, b)
   unit_set(col_planting, i, 0)
 end
 
+-- The room left in building b for resource kind (r + 1).
+local function room(b, kind)
+  return bt_hold(b_kind(b), kind - 1) - b_hold(b, kind - 1)
+end
+
 -- Unit i, idle at its workplace b, gathers the nearest of b's goods round it (if there are any left); with none, a
--- planter plants (the genre's woodcutter: saplings, when no grown tree is in reach, #126).
+-- planter plants (the genre's woodcutter: saplings, when no grown tree is in reach, #126). With b full, or i carrying
+-- what b had no room for, it waits by b's door till a serf takes some away, then drops there (#134).
 local function go_to_work(i, b)
   if unit_get(col_plant, i) ~= 0 then return planting(i, b) end
   local kind = gathers[b_kind(b) + 1]
+  if kind ~= 0 and (room(b, kind) <= 0 or (u_carry(i) > 0 and u_carry_kind(i) == kind)) then
+    if u_carry(i) > 0 and room(b, kind) > 0 then
+      set_u_task(i, T_RETURN)
+      set_u_target(i, b_id(b))
+      approach_building(i, b)
+    elseif not in_reach(i, building_rect(b)) and u_moving(i) == 0 then
+      approach_building(i, b)
+    end
+    return
+  end
   if kind == 0 then
     if not in_reach(i, building_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
     return
@@ -204,8 +220,25 @@ local function take_nearest(free, b)
   return table.remove(free, best)
 end
 
+-- Each tick: a specialist on its way to drop its goods anywhere but its own workplace (the engine sends it on to a
+-- store when its hut is full) stops, keeping them; it waits at its hut instead (go_to_work). Goods reach a store only
+-- in a serf's hands, as in the genre (#134).
+local function home_drops()
+  for i = 0, unit_count() - 1 do
+    if u_task(i) == T_RETURN and job_of[u_kind(i) + 1] then
+      local b = workplace(i)
+      if b >= 0 and u_target(i) ~= b_id(b) then
+        clear_task(i)
+        go_to_work(i, b)
+      end
+    end
+  end
+end
+
 function jobs_tick()
-  if not stocked() or tick() % LOOK ~= 0 then return end
+  if not stocked() then return end
+  home_drops()
+  if tick() % LOOK ~= 0 then return end
   -- One look over the units: who works where (by building slot + 1), and each side's free specialists by slot.
   local working = {}
   local at_door = {}
@@ -273,6 +306,8 @@ function jobs_task_name(i)
   end
   local at = name .. " at the " .. (building_type(b_kind(b)).name or "hut")
   if unit_get(col_plant, i) ~= 0 then return at .. ": planting" end
+  local kind = gathers[b_kind(b) + 1]
+  if kind ~= 0 and room(b, kind) <= 0 then return at .. ": waiting, the hut is full" end
   if building_get(col_out, b) == 1 then return at .. ": it's worked out" end
   return at
 end
