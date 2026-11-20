@@ -27,7 +27,7 @@
    "done": "trained"
   },
   {
-   "text": "Your people eat bread. Lay a Farm, a Mill and a Bakery, and train a Farmer, a Miller and a Baker at the School.",
+   "text": "Your people eat bread and sausages. Lay a Farm, a Mill and a Bakery, and train a Farmer, a Miller and a Baker at the School.",
    "done": "laid:bakery"
   }
  ],
@@ -64,11 +64,14 @@
     "baker",
     "miner",
     "smelter",
-    "smith"
+    "smith",
+    "swineherd",
+    "butcher"
    ],
    "starving_pct": 50,
    "foods": [
-    "bread"
+    "bread",
+    "sausage"
    ]
   },
   "hands_off": [
@@ -81,7 +84,9 @@
    "baker",
    "miner",
    "smelter",
-   "smith"
+   "smith",
+   "swineherd",
+   "butcher"
   ],
   "town_builds": true,
   "carriers": [
@@ -109,7 +114,9 @@
    "iron_ore": 40,
    "gold_ore": 50,
    "iron": 24,
-   "tools": 24
+   "tools": 24,
+   "pig": 24,
+   "sausage": 24
   },
   "tools_for": [
    "stonecutter",
@@ -239,6 +246,26 @@
    "own_seed": true,
    "desc": "Works at a smithy: forges iron and planks into tools",
    "noun": "Smith"
+  },
+  {
+   "slot": "swineherd",
+   "role": "worker",
+   "tier": 1,
+   "name": "Swineherd",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a pig farm: fattens pigs on grain",
+   "noun": "Swineherd"
+  },
+  {
+   "slot": "butcher",
+   "role": "worker",
+   "tier": 1,
+   "name": "Butcher",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a butcher's: makes pigs into sausages",
+   "noun": "Butcher"
   }
  ]
 }

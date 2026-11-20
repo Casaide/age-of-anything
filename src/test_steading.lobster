@@ -315,6 +315,38 @@ def metal_chain() -> int:
     check(farmer_waited and farmer >= 0 and farm_id != 0 and hook_unit_get(col_work, farmer) == farm_id, "steading: a farmer trained with no tools in store waits, then works the farm once the smithy\'s tools are in")
     return h
 
+// Pigs and sausages (#103), on their own: a storehouse given grain and planks but no bread. The swineherd fattens pigs
+// on grain, the butcher makes them into sausages, and the town eats those. Whether it did, and the hash.
+def pig_chain() -> int:
+    new_world(2026, MAP, races, rules, [])
+    let tc = 0
+    let br = res("bread")
+    let pg = res("pig")
+    let sa = res("sausage")
+    hold_take(tc, br, b_hold[tc][br])
+    for([ "plank", "stone", "grain" ]) g, j: hold_put(tc, res(g), [ 60, 30, 60 ][j])
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    var laid = 0
+    var trained = false
+    var h = 0
+    for(10 * 60 * TICK_HZ) t:
+        if t == 20 and lay("school", tx - 2, ty - 6): laid++
+        if t == 40 and lay("pig_farm", tx + 6, ty - 4): laid++
+        if t == 60 and lay("butcher", tx - 6, ty + 3): laid++
+        let school = done_of("school")
+        if school != 0 and not trained:
+            for([ "swineherd", "butcher", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+            trained = true
+        wstep()
+        if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
+    let eaten = produced[sa][0] - all_of(sa)
+    print "steading: pigs: {laid} laid, pigs {produced[pg][0]}, sausages {produced[sa][0]}, {eaten} eaten"
+    check(laid == 3 and done_of("pig_farm") != 0 and done_of("butcher") != 0, "steading: a pig farm and a butcher go up ({laid} laid)")
+    check(produced[pg][0] > 0 and produced[sa][0] >= 3 * produced[pg][0] - 6, "steading: pigs are fattened on grain and made into sausages, three a pig ({produced[pg][0]} pigs, {produced[sa][0]} sausages)")
+    check(eaten > 0, "steading: with no bread, the town eats sausages ({eaten})")
+    return h
+
 def store_planks() -> int:
     var n = 0
     for(b_id.length) b:
@@ -362,6 +394,7 @@ def save_run(stop:bool) -> bool, bool:
 let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
+check(pig_chain() == pig_chain(), "steading: the same pigs twice, the same hash")
 check(metal_chain() == metal_chain(), "steading: the same metal trades twice, the same hash")
 let same, lively = save_run(false)
 check(lively and same, "steading: through a save, the mod\'s rules and their state play on the same (lively {lively}, same {same})")

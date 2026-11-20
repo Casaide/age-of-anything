@@ -11,7 +11,9 @@
    "iron_mine",
    "gold_mine",
    "iron_smelter",
-   "gold_smelter"
+   "gold_smelter",
+   "pig_farm",
+   "butcher"
   ]
  },
  "buildings": {
@@ -70,7 +72,7 @@
   "school": {
    "extends": "house",
    "name": "School",
-   "desc": "Teaches the town's people: new villagers, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters and smiths for the workplaces. Each goes to work where it's needed.",
+   "desc": "Teaches the town's people: new villagers, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters, smiths, swineherds and butchers for the workplaces. Each goes to work where it's needed.",
    "hotkey": "C",
    "pop": 0,
    "house": false,
@@ -86,7 +88,9 @@
     "baker",
     "miner",
     "smelter",
-    "smith"
+    "smith",
+    "swineherd",
+    "butcher"
    ],
    "cost": {
     "wood": 0,
@@ -147,7 +151,7 @@
   "inn": {
    "extends": "house",
    "name": "Inn",
-   "desc": "Feeds the town: hungry workers eat here. One loaf makes three meals, so it feeds more for less than the storehouse does (a whole loaf a meal). Carriers keep it stocked with bread.",
+   "desc": "Feeds the town: hungry workers eat here. One loaf or sausage makes three meals, so it feeds more for less than the storehouse does (a whole one a meal). Carriers keep it stocked with bread and sausages.",
    "hotkey": "D",
    "serves": 3,
    "pop": 0,
@@ -155,7 +159,8 @@
    "roles": [],
    "note": "",
    "holds": {
-    "bread": 12
+    "bread": 12,
+    "sausage": 12
    },
    "cost": {
     "wood": 0,
@@ -233,6 +238,39 @@
    "house": false,
    "roles": []
   },
+  "butcher": {
+   "extends": "house",
+   "name": "Butcher",
+   "desc": "A butcher works here: makes a pig into three sausages. Nothing is made while the butcher is away.",
+   "makes": {
+    "in": {
+     "pig": 1
+    },
+    "out": {
+     "sausage": 3
+    },
+    "time": 8
+   },
+   "holds": {
+    "pig": 2,
+    "sausage": 9
+   },
+   "staff": {
+    "butcher": 1
+   },
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 2
+   },
+   "hotkey": "",
+   "age": 1,
+   "note": ""
+  },
   "house": {
    "remove": true
   },
@@ -266,6 +304,39 @@
     "farmer": 1
    },
    "note": ""
+  },
+  "pig_farm": {
+   "extends": "pen",
+   "name": "Pig Farm",
+   "desc": "A swineherd works here: fattens a pig on two sacks of grain. Nothing is fattened while the swineherd is away.",
+   "makes": {
+    "in": {
+     "grain": 2
+    },
+    "out": {
+     "pig": 1
+    },
+    "time": 12
+   },
+   "holds": {
+    "grain": 6,
+    "pig": 3
+   },
+   "staff": {
+    "swineherd": 1
+   },
+   "drop_off": [],
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 2
+   },
+   "hotkey": "",
+   "age": 1,
+   "note": "",
+   "pen": {
+    "animals": 0
+   }
   },
   "pen": {
    "remove": true
