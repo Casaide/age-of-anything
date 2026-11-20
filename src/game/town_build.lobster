@@ -106,7 +106,7 @@ var tb_ground_cols = []::float4  // each terrain's colour, then the colour of wh
 // A terrain's colour and its ripe one (terrain.json's "colour", and its "grows" "into"'s), read once.
 def ground_cols(t:int) -> float4, float4:
     if not tb_ground_cols.length:
-        let d = lib_data("terrain.json")
+        let d = gobj(lib_data("terrain.json"), "terrain")
         let col = map(tr_names) n: html(gstr(gobj(d, n), "colour", "#808080"))
         for(tr_names) n, i:
             let into = find(tr_names) m: m == gstr(gobj(gobj(d, n), "grows"), "into", "")
