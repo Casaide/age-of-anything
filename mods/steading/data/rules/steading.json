@@ -4,6 +4,7 @@
  "race": "villagers",
  "animals": false,
  "topbar_stock": false,
+ "ui_direction": "slate",
  "topbar_hide": [
   "age",
   "idle",
