@@ -269,7 +269,7 @@ def play() -> int:
         lay_step()
         for(u_x.length) i:
             if i < inside_for.length:
-                if is_inside(i):
+                if is_inside(i, -1):  // (a carrier or a worker at a drop, not one at the inn)
                     inside_for[i]++
                 elif inside_for[i] > 0:
                     stays.push(inside_for[i])
@@ -582,6 +582,7 @@ def inn_seats():
         if u_owner[i] == 0: hook_unit_set(col_meal, i, life + 1)  // (their bars empty: 1 + the ticks used up)
     var most = 0
     var full_and_waiting = false
+    var seen_seated = false  // someone at the table drawn or in the crowd outside
     let sat_for = map(u_x.length) _: 0  // ticks each has sat so far, this sitting
     var shortest = 1 << 30              // the shortest sitting, in ticks, per food eaten at it
     let ate_at = map(u_x.length) _: 0   // sittings each has had
@@ -594,6 +595,7 @@ def inn_seats():
                 if col_seat >= 0 and hook_unit_get(col_seat, i) != 0:
                     seated++
                     sat_for[i]++
+                    if not is_inside(i, inside_col()): seen_seated = true
                 elif u_moving[i] == 0: waiting++
             elif sat_for[i] > 0:
                 shortest = min(shortest, sat_for[i])
@@ -606,6 +608,7 @@ def inn_seats():
     print "steading: inn: {seats} seats, at most {most} sat at once, someone waiting while full {full_and_waiting}, {4 - b_hold[inn][sa]} sausages and {12 - b_hold[inn][br]} loaves eaten, shortest sitting {shortest} ticks"
     check(seats == 6 and most == 6 and full_and_waiting, "steading: the inn seats six at once and the rest wait for a seat (at most {most} sat; waiting while full {full_and_waiting})")
     check(b_hold[inn][sa] == 0 and 12 - b_hold[inn][br] >= 10, "steading: they eat the sausages first, then a loaf with or after one ({4 - b_hold[inn][sa]} of 4 sausages, {12 - b_hold[inn][br]} loaves)")
+    check(not seen_seated, "steading: those at the inn\'s table are inside it: not drawn, and out of the crowd at its door")
     check(eat_ticks > 0 and shortest >= eat_ticks, "steading: a meal takes its time at the table ({shortest} ticks at the shortest; a food takes {eat_ticks})")
 
 // Through a save (#75): the mod's Lua loads again with the saved match, and its state comes back in the hook columns.
