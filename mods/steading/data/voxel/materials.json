@@ -122,5 +122,30 @@
  "steel": {
   "rgb": "#c4cad0",
   "shine": 0.7
+ },
+ "grape": {
+  "rgb": "#5a2e6e"
+ },
+ "vine_leaf": {
+  "rgb": "#5f8a3a",
+  "fur": true
+ },
+ "cask": {
+  "rgb": "#8a5a2e"
+ },
+ "hoop": {
+  "rgb": "#3a3a3c",
+  "shine": 0.3
+ },
+ "kerchief_red": {
+  "rgb": "#a8322c",
+  "fur": true
+ },
+ "smock_green": {
+  "rgb": "#5a6e3a",
+  "fur": true
+ },
+ "apron_grape": {
+  "rgb": "#8e7a8a"
  }
 }

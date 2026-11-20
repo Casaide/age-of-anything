@@ -1,5 +1,5 @@
 {
- "_doc": "Steading's loads (#125): every good a serf or a trade carries is its own thing in the hands, never a barrow: logs and planks, a sheaf and a flour sack on the shoulder; a stone block, loaves, iron bars, a chest of gold and a piglet held before the chest; coal and ores in a basket on the back; sausages on a pole and a bundle of tools on the shoulder. Gear frame: [hand, along the hold, up out of its top, to the right].",
+ "_doc": "Steading's loads (#125): every good a serf or a trade carries is its own thing in the hands, never a barrow: logs and planks, a sheaf and a flour sack on the shoulder; a stone block, loaves, iron bars, a chest of gold and a piglet held before the chest; coal, ores and grapes in a basket on the back; a wine cask held before the chest; sausages on a pole and a bundle of tools on the shoulder. Gear frame: [hand, along the hold, up out of its top, to the right].",
  "holds": {
   "before": {
    "rest": [
@@ -71,6 +71,12 @@
    },
    "pig": {
     "gear": "piglet"
+   },
+   "grapes": {
+    "gear": "grape_basket"
+   },
+   "wine": {
+    "gear": "wine_cask"
    }
   }
  },
@@ -2771,6 +2777,408 @@
      "mat": "sack"
     }
    ]
+  },
+  "grape_basket": {
+   "hand": "right",
+   "hold": "strap",
+   "_doc": "a tall basket on the back heaped with bunches of grapes",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0.5,
+      6.5,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.0,
+      6.5,
+      0.0
+     ],
+     "r": [
+      1.7,
+      2.2
+     ],
+     "mat": "wicker"
+    },
+    {
+     "ball": [
+      "hand",
+      5.4,
+      5.6,
+      0.8
+     ],
+     "r": 1.3,
+     "mat": "grape"
+    },
+    {
+     "ball": [
+      "hand",
+      5.6,
+      7.3,
+      0.6
+     ],
+     "r": 1.3,
+     "mat": "grape"
+    },
+    {
+     "ball": [
+      "hand",
+      5.5,
+      6.4,
+      -1.0
+     ],
+     "r": 1.3,
+     "mat": "grape"
+    },
+    {
+     "ball": [
+      "hand",
+      6.4,
+      6.5,
+      0.0
+     ],
+     "r": 1.1,
+     "mat": "grape"
+    },
+    {
+     "ball": [
+      "hand",
+      6.0,
+      6.8,
+      1.2
+     ],
+     "r": 0.9,
+     "mat": "vine_leaf"
+    },
+    {
+     "cap": [
+      "hand",
+      0.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      4.5,
+      5.0,
+      0.0
+     ],
+     "r": 0.3,
+     "mat": "rope"
+    }
+   ]
+  },
+  "wine_cask": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "a small wine cask held across the chest, its hoops dark",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0.6,
+      1.9,
+      0.0
+     ],
+     "to": [
+      "hand",
+      7.6,
+      1.9,
+      0.0
+     ],
+     "r": [
+      2.5,
+      2.5
+     ],
+     "mat": "cask"
+    },
+    {
+     "cap": [
+      "hand",
+      2.6,
+      1.9,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.6,
+      1.9,
+      0.0
+     ],
+     "r": [
+      2.9,
+      2.9
+     ],
+     "mat": "cask"
+    },
+    {
+     "cap": [
+      "hand",
+      1.4,
+      1.9,
+      0.0
+     ],
+     "to": [
+      "hand",
+      1.9,
+      1.9,
+      0.0
+     ],
+     "r": [
+      2.75,
+      2.75
+     ],
+     "mat": "hoop"
+    },
+    {
+     "cap": [
+      "hand",
+      6.3,
+      1.9,
+      0.0
+     ],
+     "to": [
+      "hand",
+      6.8,
+      1.9,
+      0.0
+     ],
+     "r": [
+      2.75,
+      2.75
+     ],
+     "mat": "hoop"
+    }
+   ]
+  },
+  "winegrower_kerchief": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a winegrower's red kerchief, knotted at the back",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       0.0,
+       2.2
+      ],
+      "r": 2.25,
+      "mat": "kerchief_red"
+     },
+     {
+      "ball": [
+       "head",
+       0,
+       -2.4,
+       1.6
+      ],
+      "r": 0.7,
+      "mat": "kerchief_red"
+     }
+    ]
+   }
+  },
+  "winegrower_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a winegrower's green smock under a grape-stained apron",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "smock_green"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "smock_green"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       2.35,
+       -7.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.6,
+       0.35,
+       6.4
+      ],
+      "round": 0.0,
+      "mat": "apron_grape"
+     },
+     {
+      "box": [
+       "chest",
+       0.8,
+       2.75,
+       -9.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       0.6,
+       0.12,
+       0.7
+      ],
+      "round": 0.0,
+      "mat": "grape"
+     },
+     {
+      "cap": [
+       "chest",
+       -1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "smock_green"
+     },
+     {
+      "cap": [
+       "chest",
+       1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "smock_green"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "billhook": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "a winegrower's billhook: a short handle, the blade hooked at its tip",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.0,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      2.0,
+      0,
+      0
+     ],
+     "r": 0.45,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      2.0,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      4.6,
+      0.4,
+      0
+     ],
+     "r": [
+      0.4,
+      0.3
+     ],
+     "mat": "steel"
+    },
+    {
+     "cap": [
+      "hand",
+      4.6,
+      0.4,
+      0
+     ],
+     "to": [
+      "hand",
+      4.4,
+      1.6,
+      0
+     ],
+     "r": [
+      0.3,
+      0.15
+     ],
+     "mat": "steel"
+    }
+   ]
   }
  },
  "parts": [
@@ -2901,6 +3309,18 @@
   {
    "part": "tool.miner_pick",
    "gear": "pick"
+  },
+  {
+   "part": "kerchief.winegrower",
+   "gear": "winegrower_kerchief"
+  },
+  {
+   "part": "dress.winegrower",
+   "gear": "winegrower_dress"
+  },
+  {
+   "part": "tool.billhook",
+   "gear": "billhook"
   }
  ]
 }
