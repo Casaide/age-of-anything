@@ -103,10 +103,12 @@
    "name": "Sawmill",
    "desc": "A sawyer works here: saws one log into two planks. Nothing is sawn while the sawyer is away.",
    "staff": {
+    "woodcutter": 0,
     "sawyer": 1
    },
    "hotkey": "S",
    "drop_off": [],
+   "offers": [],
    "cost": {
     "wood": 0,
     "plank": 8,
@@ -206,21 +208,21 @@
   "gold_smelter": {
    "extends": "house",
    "name": "Gold Smelter",
-   "desc": "A smelter works here: melts a load of gold ore with a load of coal into gold. Nothing is smelted while the smelter is away.",
+   "desc": "A smelter works here: melts a load of gold ore with a load of coal into five gold, what the School is paid in. Nothing is smelted while the smelter is away.",
    "makes": {
     "in": {
      "gold_ore": 1,
      "coal": 1
     },
     "out": {
-     "gold": 1
+     "gold": 5
     },
     "time": 8
    },
    "holds": {
     "gold_ore": 4,
     "coal": 4,
-    "gold": 4
+    "gold": 5
    },
    "staff": {
     "smelter": 1
@@ -381,18 +383,22 @@
    },
    "makes": {
     "in": {
+     "grain": 0,
      "flour": 1
     },
     "out": {
+     "flour": 0,
      "bread": 2
     },
     "time": 6
    },
    "holds": {
+    "grain": 0,
     "flour": 4,
     "bread": 8
    },
    "staff": {
+    "miller": 0,
     "baker": 1
    },
    "note": ""
@@ -506,6 +512,7 @@
     "coal"
    ],
    "staff": {
+    "stonecutter": 0,
     "miner": 1
    },
    "note": "",
@@ -532,6 +539,7 @@
     "iron_ore"
    ],
    "staff": {
+    "stonecutter": 0,
     "miner": 1
    },
    "note": "",
@@ -558,6 +566,7 @@
     "gold_ore"
    ],
    "staff": {
+    "stonecutter": 0,
     "miner": 1
    },
    "note": "",
