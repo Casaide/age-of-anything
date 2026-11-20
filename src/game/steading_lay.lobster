@@ -112,8 +112,8 @@ def field_block(b:int, id:string, w:int, h:int) -> [int]:
                 if block.length == w * h: return block
     return []
 
-var auto_fields = false   // the scripted towns: each farm and vineyard gets its fields once it's built (a player lays them)
-var fielded = []::int      // the ids of those that have
+var auto_fields = false  // the scripted towns: each farm and vineyard gets its fields once it's built (a player lays them)
+var fielded = []::int    // the ids of those that have
 
 // A scripted town lays its farms' and vineyards' fields itself (on), or leaves them to the player; either way afresh.
 def fields_by_script(on:bool):

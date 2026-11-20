@@ -70,7 +70,7 @@ import game.tips
 lib_load("../data")
 id_load("../data")
 
-let MINUTES = 25  // (long enough for the food chain at the genre's pace: the farm is up at 8 minutes, its wheat ripe six on, #122)
+let MINUTES = 25      // (long enough for the food chain at the genre's pace: the farm is up at 8 minutes, its wheat ripe six on, #122)
 let FIELD_GRAIN = 12  // the farm's fields in the scripted towns (game/steading_lay's auto_fields), a sheaf of grain each
 // who works where
 let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ], [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "miner", "gold_mine" ], [ "smelter", "iron_smelter" ], [ "smelter", "gold_smelter" ], [ "smith", "armoury" ] ]
