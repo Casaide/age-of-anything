@@ -574,7 +574,7 @@ def start_rules():
     let b = b_index_of(id)
     var door_road = false
     var waited = false
-    for(60 * TICK_HZ) t:
+    for(60 * TICK_HZ):
         lay_step()
         if is_road_at(door_of(b)): door_road = true
         if (find(u_x.length) i: u_task[i] == BUILD and u_target[i] == id) >= 0 and b_progress[b] > 0: waited = true
@@ -584,7 +584,7 @@ def start_rules():
           "steading: with no goods a site is built to its foundation and no further, a serf waiting at it ({b_progress[b]} of {cap}, waited {waited})")
     b_hold[tc][pl] = kept[0]
     b_hold[tc][st] = kept[1]
-    for(3 * 60 * TICK_HZ) t:
+    for(3 * 60 * TICK_HZ):
         if b_done[b] == 0: lay_step()
     check(b_done[b] != 0 and not build_barred(0, btype_index("lumber_camp")) and build_barred(0, btype_index("sawmill")),
           "steading: the goods come and the school is finished, which opens the woodcutter\'s hut but not yet the sawmill")
