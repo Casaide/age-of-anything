@@ -231,6 +231,7 @@ def play() -> int:
     var mill_waited = false                                   // the mill held grain enough for a round with no miller yet
     var flour_unstaffed = -1                                  // the flour made before the miller came
     var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
+    var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
     for(MINUTES * 60 * TICK_HZ) t:
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
@@ -260,6 +261,7 @@ def play() -> int:
         for(u_x.length) i:
             if u_owner[i] == 0 and u_task[i] == T_EAT and not contains(ate, u_id[i]): ate.push(u_id[i])
             if u_task[i] == GATHER and (find([ "woodcutter", "stonecutter", "farmer", "miner" ]) g: g == t_slot[u_kind[i]]) < 0: gatherers_ok = false
+            if u_owner[i] == 0 and u_task[i] == T_RETURN and t_carrier[u_kind[i]] == 0 and hook_unit_get(col_work, i) != 0 and u_target[i] != hook_unit_get(col_work, i): dropped_away++
         lay_step()
         for(b_id.length) b:
             if b_site[b].length and b_done[b] == 0 and b_progress[b] > build_cap(b) + 1: sites_ok = false
@@ -308,6 +310,7 @@ def play() -> int:
     check(planned == 5 and dragged_built == 5 and rd_names.length == 1, "steading: a road dragged 5 cells long is built, a road cell each ({dragged_built} of {planned})")
     check(most_builders >= 2 and most_builders <= 3, "steading: idle serfs help build a site, no more than 3 sent at once ({most_builders})")
     check(site_walked, "steading: serfs walk across a site while it goes up")
+    check(dropped_away == 0, "steading: a gatherer only ever drops at its own hut, and waits there when it\'s full; serfs take goods on ({dropped_away} ticks headed elsewhere)")
     let never = filter(site_waits): _ >= 0
     check(longest_wait <= 30 * TICK_HZ and not never.length,
           "steading: a site laid in a busy town gets its first builder within half a minute, however much is being hauled (the longest {longest_wait / TICK_HZ} s, {never.length} never)")
