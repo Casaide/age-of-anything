@@ -227,6 +227,9 @@ for(args) a, k:
             let sp, sa = split_string(val, "@")
             swap_arg = sp
             swap_at = string_to_float(sa)
+        if key == "hover":  // (captures: the mouse held there, in pixels, for a hover card)
+            let hx, hy = split_string(val, ",")
+            fake_mouse = float2 { string_to_float(hx), string_to_float(hy) }
         if key == "look":
             let lx, ly = split_string(val, ",")
             look_x = string_to_int(lx)
@@ -603,7 +606,8 @@ import .game.hud_kit
 import .game.pad  // (here: it plays through the controls above)
 import .game.techtree
 import .game.goods
-import .game.school  // (before the panel: its globals; it calls the panel's portraits)
+import .game.school      // (before the panel: its globals; it calls the panel's portraits)
+import .game.town_build  // (before the panel too)
 import .game.panel
 import .game.tips
 import .game.topbar

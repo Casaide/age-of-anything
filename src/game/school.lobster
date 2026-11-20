@@ -20,7 +20,6 @@ let SCHOOL_NEED = float4 { 0.56, 0.82, 0.45, 1.0 }   // #8fd172: the town's shor
 
 var school_pick = 0  // the trade shown: an index into trainable(b)
 var school_of = -1   // the building it's for (sel_building's id): another one starts from its first trade
-var school_teach_hot = false
 
 // Building bi's panel is the School's: yours, finished, in a town builder, teaching two trades or more and nothing else.
 def school_on(bi:int) -> bool:

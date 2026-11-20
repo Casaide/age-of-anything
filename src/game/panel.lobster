@@ -634,8 +634,9 @@ def draw_panel():
     let bi = b_index_of(sel_building)
     let fi = index_of(sel_foreign)
     // (on a pad the orders live on the wheel, so the panel keeps who and the queue: command_panel.gd's compact)
-    let school = school_on(bi)  // (the School's own part instead of its train buttons: game/school, #127)
-    let btns = if pad_on or school or (build_menu and not (selected_workers().length or town_bar())): []::Btn else: panel_buttons()
+    let school = school_on(bi)    // (the School's own part instead of its train buttons: game/school, #127)
+    let tbuild = town_build_on()  // (a town builder's build pages as cards: game/town_build, #127)
+    let btns = if pad_on or school or tbuild or (build_menu and not (selected_workers().length or town_bar())): []::Btn else: panel_buttons()
     // What's shown: title, hp, info lines, portrait, tray, queue.
     var title = rstr(su_races[ME], "name")
     var hp_now = -1
@@ -703,6 +704,9 @@ def draw_panel():
         hp_max = t_hp[k]
         portrait = k
         if t_animal[k] == 0: info = append(info, card_lines(k))
+    elif tbuild:
+        title = "Build"
+        info.push("Pick a building, then click where it goes: shift keeps placing. Select a building to see it.")
     else:
         info.push("Select units or a building.")
     if school: info = append(info, school_needs())
@@ -750,12 +754,14 @@ def draw_panel():
     if has_goods: content_w += sep + 10.0 * s + sep + goods_sz.x
     let school_sz = if school: school_size(s) else: float2_0
     if school: content_w += sep + 10.0 * s + sep + school_sz.x
+    let tbuild_sz = if tbuild: town_build_size(s) else: float2_0
+    if tbuild: content_w += sep + 10.0 * s + sep + tbuild_sz.x
     let teach_h = if school: (SCHOOL_TEACH_H + 8.0) * s else: 0.0  // (Teach over the queue)
     if acts or has_queue: content_w += sep + 10.0 * s
     if acts: content_w += sep + acts_w
     if acts and has_queue: content_w += sep + 10.0 * s
     if has_queue: content_w += sep + q_w
-    let content_h = max(max(max(if show_pic: P_PORTRAIT * s else: 0.0, who_h), max(acts_h, if has_queue: teach_h + q_h else: 0.0)), max(school_sz.y, if has_goods: 21.0 * s + goods_sz.y else: 0.0))
+    let content_h = max(max(max(if show_pic: P_PORTRAIT * s else: 0.0, who_h), max(acts_h, if has_queue: teach_h + q_h else: 0.0)), max(max(school_sz.y, tbuild_sz.y), if has_goods: 21.0 * s + goods_sz.y else: 0.0))
     let pw = pad_l * 2.0 + content_w
     let ph = pad_t + content_h + pad_b
     let py = ws.y - 12.0 * s - ph
@@ -796,6 +802,14 @@ def draw_panel():
         school_xy = float2 { x, y }
         school_frame(school_xy, bi, s)
         x += school_sz.x
+    var tbuild_xy = float2_0
+    if tbuild:
+        groove(x + sep - 5.0 * s, py + pad_t, bottom, true)
+        x += sep + 10.0 * s + sep
+        tbuild_xy = float2 { x, y }
+        let k = town_build_frame(tbuild_xy, s)
+        if k >= 0: press(build_btn(k))
+        x += tbuild_sz.x
     if acts or has_queue:
         groove(x + sep - 5.0 * s, py + pad_t, bottom, true)
         x += sep + 10.0 * s
@@ -850,6 +864,7 @@ def draw_panel():
     b_sheet = -1
     let pic_at = float2 { x0 + pad_l, y }
     if b_pic >= 0: draw_building_icon(b_pic, if bi >= 0: b_owner[bi] else: ME, pic_at + float2_1 * 4.0 * s, (P_PORTRAIT - 8.0) * s)
+    if tbuild: town_build_pictures(tbuild_xy, s)
     for(items) it:
         if it.b.building >= 0: draw_building_icon(it.b.building, ME, it.at + float2 { 6.0 * s, 5.0 * s }, it.side - 22.0 * s)
     flush_sprites()
@@ -874,6 +889,7 @@ def draw_panel():
         if tray_n[n] > 1:
             let ct = string(tray_n[n])
             edged_text(float2 { who_x + float(n % 7) * 43.0 * s + 38.0 * s - tb_text_w(ct, int(13.0 * s), 1), tray_y + float(n / 7) * 43.0 * s + 22.0 * s }, ct, int(13.0 * s), float4_1, 1)
+    let build_over = if tbuild: town_build_texts(tbuild_xy, s, mpos) else: -1
     let trade_over = if school: school_texts(school_xy, bi, s, mpos) else: -1
     if school: school_teach_text(float2 { qx, y }, q_w, bi, s)
     let good_over = goods_texts(goods_xy, goods_r, goods_n, s, mpos)
@@ -898,8 +914,9 @@ def draw_panel():
         if mpos.x >= it.at.x and mpos.y >= it.at.y and mpos.x <= it.at.x + it.side and mpos.y <= it.at.y + it.side: q_hover = n
     if hover >= 0: tip_card(mpos, items[hover].b.label, items[hover].b.costv, items[hover].b.tip, items[hover].b.enabled)
     elif q_hover >= 0: tip_card(mpos, q_items[q_hover].b.label, []::int, "Click to cancel.", true)
-    elif trade_over >= 0: tip_card(mpos, unit_name(trade_over), t_cost[trade_over], school_tip(trade_over, true), true)
-    elif teach_hot: tip_card(mpos, "Teach " + unit_name(trainable(bi)[school_pick]), t_cost[trainable(bi)[school_pick]], school_tip(trainable(bi)[school_pick], b_queue[bi].length < r_queue_max), true)
+    elif build_over >= 0: big_tip(mpos, bname(build_over), bm_cost[ME][build_over], building_tip(build_over))
+    elif trade_over >= 0: big_tip(mpos, unit_name(trade_over), t_cost[trade_over], school_tip(trade_over, true))
+    elif teach_hot: big_tip(mpos, "Teach " + unit_name(trainable(bi)[school_pick]), t_cost[trainable(bi)[school_pick]], school_tip(trainable(bi)[school_pick], b_queue[bi].length < r_queue_max))
     elif good_over >= 0: tip_card(mpos, good_look(good_over).title, []::int, "Held here: carriers bring it in and take it where it\'s wanted.", true)
     tb_flush()
     ui_flush()
