@@ -102,10 +102,10 @@ if args.length > 2 and args[1] == "legs":
     let u = if args.length > 3: unit(b, b, float3_0, float3_0, kit, "", float3_0) elif b == "human": units[1] elif b == "rat": units[1 - 1] elif b == "cat": units[2] elif b == "pony": units[9] else: unit(b, b, float3_0, float3_0, kit, "", float3_0)
     let lu = if b == "rat" and args.length <= 3: units[1] elif b == "human" and args.length <= 3: units[5] else: u
     for([ "stand", "walk", "attack" ]) m: rows.push(row { lu, m, "scarf", true, 0 })
-// `loads <body>`: a worker walking home with each resource, and picking fruit
+// `loads <body>`: a worker walking with each load in data (a mod's too, with voxels:), and picking fruit
 if args.length > 2 and args[1] == "loads":
     while rows.length: rows.pop()
-    for([ "food", "wood", "stone", "gold" ]) res:
+    for(vx_load_names) res:
         let tool = vx_load_gear(args[2], res)
         rows.push(row { unit(args[2], args[2], float3_0, float3_0, if tool != "": [ tool, "cap" ] else: [ "cap" ], "", float3_0), "carry_" + res, "scarf", true, 0 })
     rows.push(row { unit(args[2], args[2], float3_0, float3_0, [ "basket", "cap" ], "", float3_0), "attack", "scarf", true, 0 })

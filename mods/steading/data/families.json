@@ -1,0 +1,171 @@
+{
+ "steading": {
+  "_doc": "Steading's people (#125): undyed homespun, each trade dressed for its work from the concept sheet Dominic picked (2026-11-20): its hat, its smock or apron and its tool. The kits are keyed by the roster's slots. Its buildings are its own set, architecture steading (src/model/steading.lobster); another culture's town would be another architecture.",
+  "kits": {
+   "_doc": "what each trade wears (one age)",
+   "worker": {
+    "1": {
+     "torso": "dress.serf",
+     "hand_r": "tool.empty_hands"
+    }
+   },
+   "woodcutter": {
+    "1": {
+     "head_gear": "hood.woodcutter",
+     "torso": "dress.woodcutter",
+     "hand_r": "tool.axe"
+    }
+   },
+   "stonecutter": {
+    "1": {
+     "head_gear": "cap.stonecutter",
+     "torso": "dress.stonecutter",
+     "hand_r": "tool.mallet"
+    }
+   },
+   "sawyer": {
+    "1": {
+     "head_gear": "cap.sawyer",
+     "torso": "dress.sawyer",
+     "hand_r": "tool.bowsaw"
+    }
+   },
+   "farmer": {
+    "1": {
+     "head_gear": "hat.farmer",
+     "torso": "dress.farmer",
+     "hand_r": "tool.scythe"
+    }
+   },
+   "miller": {
+    "1": {
+     "head_gear": "coif.miller",
+     "torso": "dress.miller",
+     "hand_r": "tool.flour_sack"
+    }
+   },
+   "baker": {
+    "1": {
+     "head_gear": "hat.baker",
+     "torso": "dress.baker",
+     "hand_r": "tool.peel"
+    }
+   },
+   "miner": {
+    "1": {
+     "head_gear": "cap.miner",
+     "torso": "dress.miner",
+     "hand_r": "tool.miner_pick"
+    }
+   },
+   "smelter": {
+    "1": {
+     "head_gear": "hood.smelter",
+     "torso": "dress.smelter",
+     "hand_r": "tool.rake"
+    }
+   },
+   "smith": {
+    "1": {
+     "torso": "dress.smith",
+     "hand_r": "tool.smith_hammer"
+    }
+   },
+   "swineherd": {
+    "1": {
+     "head_gear": "hood.swineherd",
+     "torso": "dress.swineherd",
+     "hand_r": "tool.switch"
+    }
+   },
+   "butcher": {
+    "1": {
+     "head_gear": "cap.butcher",
+     "torso": "dress.butcher",
+     "hand_r": "tool.cleaver"
+    }
+   }
+  },
+  "skins": [
+   "human_light"
+  ],
+  "cloth": [
+   "#9a8a6c",
+   "#6e6150"
+  ],
+  "mounts": [],
+  "adjective": "Steading",
+  "bonuses": [
+   {
+    "text": "Serfs carry +1",
+    "effects": [
+     {
+      "tag": "worker",
+      "stat": "carry",
+      "add": 1
+     }
+    ],
+    "alt": {
+     "text": "Buildings go up 10% faster",
+     "effects": [
+      {
+       "tag": "worker",
+       "stat": "build_speed",
+       "pct": 10
+      }
+     ]
+    }
+   }
+  ],
+  "research": [],
+  "hero_kin": [
+   "royal"
+  ],
+  "lacks": [],
+  "prefixes": [
+   "Oak",
+   "Mill",
+   "Ash",
+   "Elm",
+   "Thorn"
+  ],
+  "suffixes": [
+   "ford",
+   "stead",
+   "wick",
+   " Vale",
+   "ley"
+  ],
+  "paths": {
+   "style": "cobble",
+   "width": 0.4
+  },
+  "architecture": "steading",
+  "ranks": [
+   "Journeyman",
+   "Master"
+  ],
+  "ui": {
+   "frame": "iron",
+   "frame_colour": "#6a6e72",
+   "panel": "wood",
+   "colour": "#2e2a24",
+   "button": "wood",
+   "button_colour": "#4a3e30",
+   "primary": "felt",
+   "primary_colour": "#7a5a2a",
+   "accent": "#e8d8a8",
+   "metal": "#b8bcc0",
+   "ornament": "longship",
+   "banner": "scalloped"
+  },
+  "siege": "timber",
+  "war_beast": "boar",
+  "pour": "boiling water",
+  "unique": "berserker",
+  "bodies": {
+   "_doc": "the culture's own body (#125)",
+   "human": "steading"
+  }
+ }
+}

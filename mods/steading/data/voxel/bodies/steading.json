@@ -1,0 +1,130 @@
+{
+ "_doc": "Steading's townsman (#125): the medieval man of the Royal culture's approved dress (royal.vox, copied as steading.vox), his tunic undyed homespun, not team colour. Each trade's kit dresses him for his work (families.json); team colour is the sash every kit wears.",
+ "skin": "#d8a882",
+ "pale": "#e8bc98",
+ "size": 0.73,
+ "fur": 0.0,
+ "reach": 5.0,
+ "points": {
+  "hip": {
+   "at": [
+    0,
+    0,
+    21.0
+   ],
+   "bob": 0.5
+  },
+  "chest": {
+   "at": [
+    0,
+    0.3,
+    29.6
+   ],
+   "bob": 0.5
+  },
+  "head": {
+   "at": [
+    0,
+    0.7,
+    37.1
+   ]
+  }
+ },
+ "legs": [
+  {
+   "hip": [
+    "hip",
+    1.75,
+    0,
+    0
+   ],
+   "foot": [
+    1.9,
+    0,
+    1.9
+   ],
+   "stride": 5.0,
+   "lift": 2.2,
+   "bones": [
+    9.58,
+    9.58
+   ],
+   "pole": [
+    0,
+    1,
+    0
+   ],
+   "r": [
+    2.0,
+    1.4,
+    1.3,
+    0.85
+   ],
+   "mats": [
+    "trousers",
+    "trousers"
+   ],
+   "shapes": []
+  }
+ ],
+ "arms": {
+  "shoulder": [
+   "chest",
+   4.3,
+   -0.2,
+   1.2
+  ],
+  "bone": 6.7,
+  "thick": 1.3,
+  "sleeve": "team",
+  "hand": "skin"
+ },
+ "helm": {
+  "at": [
+   "head",
+   0,
+   -0.3,
+   1.0
+  ],
+  "r": 2.75
+ },
+ "armour": {
+  "a": [
+   "hip",
+   0,
+   0.1,
+   2.6
+  ],
+  "b": [
+   "chest",
+   0,
+   0,
+   0.4
+  ],
+  "r": [
+   2.7,
+   3.2
+  ]
+ },
+ "seat": {
+  "z": 21.5,
+  "astride": [
+   "trousers",
+   "trousers",
+   "leather"
+  ]
+ },
+ "shapes": [],
+ "vox": "steading.vox",
+ "mats": {
+  "1": "skin",
+  "2": "hair",
+  "3": "undyed",
+  "4": "leather",
+  "5": "metal",
+  "6": "leather",
+  "7": "trousers",
+  "8": "eye"
+ },
+ "bare": false
+}

@@ -1,0 +1,2906 @@
+{
+ "_doc": "Steading's loads (#125): every good a serf or a trade carries is its own thing in the hands, never a barrow: logs and planks, a sheaf and a flour sack on the shoulder; a stone block, loaves, iron bars, a chest of gold and a piglet held before the chest; coal and ores in a basket on the back; sausages on a pole and a bundle of tools on the shoulder. Gear frame: [hand, along the hold, up out of its top, to the right].",
+ "holds": {
+  "before": {
+   "rest": [
+    -0.12,
+    0.55,
+    -0.42
+   ],
+   "dir": [
+    -1.0,
+    0.0,
+    0.0
+   ],
+   "_doc": "a load held before the chest in both arms, along across the body"
+  },
+  "strap": {
+   "rest": [
+    0.05,
+    0.3,
+    -0.25
+   ],
+   "dir": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "_doc": "a hand on the strap of a basket on the back, along pointing up"
+  }
+ },
+ "loads": {
+  "*": {
+   "wood": {
+    "gear": "log"
+   },
+   "plank": {
+    "gear": "planks"
+   },
+   "stone": {
+    "gear": "stone_block"
+   },
+   "grain": {
+    "gear": "sheaf"
+   },
+   "flour": {
+    "gear": "flour_sack"
+   },
+   "bread": {
+    "gear": "loaves"
+   },
+   "sausage": {
+    "gear": "sausages"
+   },
+   "coal": {
+    "gear": "coal_basket"
+   },
+   "iron_ore": {
+    "gear": "iron_ore_basket"
+   },
+   "gold_ore": {
+    "gear": "gold_ore_basket"
+   },
+   "iron": {
+    "gear": "iron_bars"
+   },
+   "gold": {
+    "gear": "gold_chest"
+   },
+   "tools": {
+    "gear": "tool_bundle"
+   },
+   "pig": {
+    "gear": "piglet"
+   }
+  }
+ },
+ "gear": {
+  "log": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "one long log on the shoulder, its cut end showing",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -10.0,
+      -0.8,
+      0.0
+     ],
+     "to": [
+      "hand",
+      7.0,
+      -0.8,
+      0.0
+     ],
+     "r": [
+      1.25,
+      1.1
+     ],
+     "mat": "wood"
+    }
+   ]
+  },
+  "planks": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "three planks tied in a bundle on the shoulder",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      -2.0,
+      -0.6,
+      0.0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.9,
+      0.25,
+      9.5
+     ],
+     "mat": "plank",
+     "round": 0.0
+    },
+    {
+     "box": [
+      "hand",
+      -2.2,
+      -0.1,
+      0.0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.9,
+      0.25,
+      9.5
+     ],
+     "mat": "plank_end",
+     "round": 0.0
+    },
+    {
+     "box": [
+      "hand",
+      -1.8,
+      0.4,
+      0.0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.9,
+      0.25,
+      9.5
+     ],
+     "mat": "plank",
+     "round": 0.0
+    },
+    {
+     "ring": [
+      "hand",
+      -6.0,
+      -0.1,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      1.1,
+      0.25
+     ],
+     "mat": "rope"
+    }
+   ]
+  },
+  "sheaf": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "a sheaf of wheat over the shoulder, ears behind",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.0,
+      -0.6,
+      0.0
+     ],
+     "to": [
+      "hand",
+      6.0,
+      -0.6,
+      0.0
+     ],
+     "r": [
+      0.9,
+      1.1
+     ],
+     "mat": "straw"
+    },
+    {
+     "cap": [
+      "hand",
+      -1.0,
+      -0.6,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -6.5,
+      -0.6,
+      0.0
+     ],
+     "r": [
+      1.1,
+      2.3
+     ],
+     "mat": "sheaf"
+    },
+    {
+     "ring": [
+      "hand",
+      0.5,
+      -0.6,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      1.1,
+      0.3
+     ],
+     "mat": "rope"
+    }
+   ]
+  },
+  "flour_sack": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "a full white sack slung over the shoulder",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -4.5,
+      0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      1.2,
+      0.4,
+      0.0
+     ],
+     "r": [
+      2.4,
+      2.7
+     ],
+     "mat": "sack"
+    },
+    {
+     "cap": [
+      "hand",
+      1.2,
+      0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      2.6,
+      0.4,
+      0.0
+     ],
+     "r": [
+      1.0,
+      0.6
+     ],
+     "mat": "sack"
+    }
+   ]
+  },
+  "sausages": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "strings of sausages hung from a pole on the shoulder",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -8.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      6.0,
+      0.0,
+      0.0
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -6.5,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -6.5,
+      -2.8,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    },
+    {
+     "cap": [
+      "hand",
+      -5.0,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -5.0,
+      -3.2,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    },
+    {
+     "cap": [
+      "hand",
+      -3.5,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -3.5,
+      -2.6,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    },
+    {
+     "cap": [
+      "hand",
+      3.0,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      3.0,
+      -2.8,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    },
+    {
+     "cap": [
+      "hand",
+      4.5,
+      -0.4,
+      0.0
+     ],
+     "to": [
+      "hand",
+      4.5,
+      -2.4,
+      0.0
+     ],
+     "r": 0.85,
+     "mat": "sausage"
+    }
+   ]
+  },
+  "tool_bundle": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "hafts tied together on the shoulder, an axe head and a hammer head out at the ends",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -7.0,
+      -0.3,
+      0.3
+     ],
+     "to": [
+      "hand",
+      6.0,
+      -0.3,
+      0.3
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -6.0,
+      0.3,
+      -0.3
+     ],
+     "to": [
+      "hand",
+      6.5,
+      0.3,
+      -0.3
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "box": [
+      "hand",
+      6.6,
+      0.8,
+      0.3
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.6,
+      1.4,
+      1.0
+     ],
+     "mat": "metal",
+     "round": 0.0
+    },
+    {
+     "box": [
+      "hand",
+      -7.3,
+      -0.3,
+      0.3
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.7,
+      0.7,
+      1.2
+     ],
+     "mat": "metal",
+     "round": 0.0
+    },
+    {
+     "ring": [
+      "hand",
+      -1.0,
+      0.0,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "r": [
+      0.9,
+      0.25
+     ],
+     "mat": "rope"
+    }
+   ]
+  },
+  "stone_block": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "a dressed stone block held in both arms before the chest",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      3.74,
+      2.11,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      3.74,
+      3.74,
+      3.04
+     ],
+     "round": 0.0,
+     "mat": "block"
+    }
+   ]
+  },
+  "loaves": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "round loaves in a flat basket held before the chest",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      4.21,
+      0.0,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      4.68,
+      5.62,
+      1.17
+     ],
+     "round": 0.0,
+     "mat": "wicker"
+    },
+    {
+     "ball": [
+      "hand",
+      1.87,
+      2.11,
+      0.0
+     ],
+     "r": 2.11,
+     "mat": "loaf"
+    },
+    {
+     "ball": [
+      "hand",
+      5.15,
+      2.34,
+      1.17
+     ],
+     "r": 2.11,
+     "mat": "loaf"
+    },
+    {
+     "ball": [
+      "hand",
+      4.68,
+      2.11,
+      -2.11
+     ],
+     "r": 2.11,
+     "mat": "loaf"
+    }
+   ]
+  },
+  "iron_bars": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "a stack of iron bars across the forearms",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      3.74,
+      0.7,
+      -1.64
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      6.08,
+      1.17,
+      1.05
+     ],
+     "round": 0.0,
+     "mat": "iron_bar"
+    },
+    {
+     "box": [
+      "hand",
+      3.74,
+      0.7,
+      0.94
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      6.08,
+      1.17,
+      1.05
+     ],
+     "round": 0.0,
+     "mat": "iron_bar"
+    },
+    {
+     "box": [
+      "hand",
+      3.74,
+      2.81,
+      -0.35
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      6.08,
+      1.17,
+      1.05
+     ],
+     "round": 0.0,
+     "mat": "iron_bar"
+    }
+   ]
+  },
+  "gold_chest": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "a small iron-bound chest, gold ingots showing, held before the chest",
+   "shapes": [
+    {
+     "box": [
+      "hand",
+      3.74,
+      1.4,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      3.51,
+      4.68,
+      2.57
+     ],
+     "round": 0.0,
+     "mat": "chest"
+    },
+    {
+     "box": [
+      "hand",
+      3.74,
+      4.09,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      2.81,
+      3.74,
+      0.35
+     ],
+     "round": 0.0,
+     "mat": "gold"
+    },
+    {
+     "box": [
+      "hand",
+      3.74,
+      1.4,
+      0.0
+     ],
+     "n": [
+      1,
+      0,
+      0
+     ],
+     "half": [
+      3.74,
+      4.91,
+      0.59
+     ],
+     "round": 0.0,
+     "mat": "metal"
+    }
+   ]
+  },
+  "piglet": {
+   "hand": "right",
+   "hold": "before",
+   "_doc": "a piglet carried in the arms, snout to the left",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.17,
+      2.34,
+      0.0
+     ],
+     "to": [
+      "hand",
+      7.02,
+      2.34,
+      0.0
+     ],
+     "r": [
+      3.98,
+      3.51
+     ],
+     "mat": "pig"
+    },
+    {
+     "ball": [
+      "hand",
+      9.36,
+      3.28,
+      0.0
+     ],
+     "r": 2.81,
+     "mat": "pig"
+    },
+    {
+     "cap": [
+      "hand",
+      11.23,
+      3.04,
+      0.0
+     ],
+     "to": [
+      "hand",
+      12.87,
+      2.81,
+      0.0
+     ],
+     "r": 1.4,
+     "mat": "pig_snout"
+    },
+    {
+     "ball": [
+      "hand",
+      8.89,
+      5.85,
+      1.64
+     ],
+     "r": 1.17,
+     "mat": "pig_snout"
+    },
+    {
+     "ball": [
+      "hand",
+      8.89,
+      5.85,
+      -1.64
+     ],
+     "r": 1.17,
+     "mat": "pig_snout"
+    }
+   ]
+  },
+  "coal_basket": {
+   "hand": "right",
+   "hold": "strap",
+   "_doc": "a tall basket on the back heaped with coal",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0.5,
+      6.5,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.0,
+      6.5,
+      0.0
+     ],
+     "r": [
+      1.7,
+      2.2
+     ],
+     "mat": "wicker"
+    },
+    {
+     "ball": [
+      "hand",
+      5.4,
+      6.5,
+      0.0
+     ],
+     "r": 2.0,
+     "mat": "coal"
+    },
+    {
+     "cap": [
+      "hand",
+      0.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      4.5,
+      5.0,
+      0.0
+     ],
+     "r": 0.3,
+     "mat": "rope"
+    }
+   ]
+  },
+  "iron_ore_basket": {
+   "hand": "right",
+   "hold": "strap",
+   "_doc": "a tall basket on the back heaped with rusty iron ore",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0.5,
+      6.5,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.0,
+      6.5,
+      0.0
+     ],
+     "r": [
+      1.7,
+      2.2
+     ],
+     "mat": "wicker"
+    },
+    {
+     "ball": [
+      "hand",
+      5.4,
+      6.5,
+      0.0
+     ],
+     "r": 2.0,
+     "mat": "iron_ore"
+    },
+    {
+     "cap": [
+      "hand",
+      0.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      4.5,
+      5.0,
+      0.0
+     ],
+     "r": 0.3,
+     "mat": "rope"
+    }
+   ]
+  },
+  "gold_ore_basket": {
+   "hand": "right",
+   "hold": "strap",
+   "_doc": "a tall basket on the back heaped with gold-flecked rock",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0.5,
+      6.5,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.0,
+      6.5,
+      0.0
+     ],
+     "r": [
+      1.7,
+      2.2
+     ],
+     "mat": "wicker"
+    },
+    {
+     "ball": [
+      "hand",
+      5.4,
+      6.5,
+      0.0
+     ],
+     "r": 2.0,
+     "mat": "gold_ore"
+    },
+    {
+     "cap": [
+      "hand",
+      0.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      4.5,
+      5.0,
+      0.0
+     ],
+     "r": 0.3,
+     "mat": "rope"
+    },
+    {
+     "bead": [
+      "hand",
+      6.4,
+      5.8,
+      0.6
+     ],
+     "r": 0.45,
+     "mat": "gold"
+    },
+    {
+     "bead": [
+      "hand",
+      5.9,
+      7.2,
+      -0.8
+     ],
+     "r": 0.45,
+     "mat": "gold"
+    }
+   ]
+  },
+  "woodcutter_hood": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a woodcutter's green hood and a tail",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       -1.0,
+       2.4
+      ],
+      "r": 2.3,
+      "mat": "hood_green"
+     },
+     {
+      "cap": [
+       "head",
+       0,
+       -2.6,
+       1.4
+      ],
+      "to": [
+       "head",
+       0,
+       -4.0,
+       -2.0
+      ],
+      "r": [
+       0.8,
+       0.45
+      ],
+      "mat": "hood_green"
+     }
+    ]
+   }
+  },
+  "farmer_hat": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a farmer's wide straw hat",
+   "fits": {
+    "*": [
+     {
+      "disc": [
+       "head",
+       0,
+       0.1,
+       2.4
+      ],
+      "n": [
+       0,
+       0,
+       1
+      ],
+      "r": [
+       5.2,
+       0.35
+      ],
+      "mat": "straw"
+     },
+     {
+      "cap": [
+       "head",
+       0,
+       -0.2,
+       2.9
+      ],
+      "to": [
+       "head",
+       0,
+       -0.2,
+       3.8
+      ],
+      "r": [
+       2.1,
+       1.8
+      ],
+      "mat": "straw"
+     }
+    ]
+   }
+  },
+  "stonecutter_cap": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a stone cutter's brown felt cap",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       -0.4,
+       2.7
+      ],
+      "r": 2.0,
+      "mat": "felt_brown"
+     },
+     {
+      "disc": [
+       "head",
+       0,
+       0.3,
+       2.4
+      ],
+      "n": [
+       0,
+       0.3,
+       1
+      ],
+      "r": [
+       2.4,
+       0.25
+      ],
+      "mat": "felt_brown"
+     }
+    ]
+   }
+  },
+  "sawyer_cap": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a sawyer's dark felt cap",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       -0.4,
+       2.7
+      ],
+      "r": 2.0,
+      "mat": "felt_dark"
+     },
+     {
+      "disc": [
+       "head",
+       0,
+       0.3,
+       2.4
+      ],
+      "n": [
+       0,
+       0.3,
+       1
+      ],
+      "r": [
+       2.4,
+       0.25
+      ],
+      "mat": "felt_dark"
+     }
+    ]
+   }
+  },
+  "miller_coif": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a miller's white linen coif, floury",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       -1.0,
+       2.3
+      ],
+      "r": 2.35,
+      "mat": "floury"
+     }
+    ]
+   }
+  },
+  "baker_hat": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a baker's tall soft linen hat",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "head",
+       0,
+       -0.3,
+       3.0
+      ],
+      "to": [
+       "head",
+       0,
+       -0.5,
+       5.4
+      ],
+      "r": [
+       2.0,
+       2.5
+      ],
+      "mat": "apron_white"
+     }
+    ]
+   }
+  },
+  "miner_cap": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a miner's leather hood-cap with a candle on the brow",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       -0.4,
+       2.6
+      ],
+      "r": 2.1,
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "head",
+       0,
+       2.0,
+       2.6
+      ],
+      "to": [
+       "head",
+       0,
+       2.1,
+       4.2
+      ],
+      "r": 0.5,
+      "mat": "candle"
+     },
+     {
+      "ball": [
+       "head",
+       0,
+       2.1,
+       4.9
+      ],
+      "r": 0.6,
+      "mat": "flame"
+     }
+    ]
+   }
+  },
+  "smelter_hood": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a smelter's long leather hood",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       -1.0,
+       2.4
+      ],
+      "r": 2.3,
+      "mat": "apron_leather"
+     }
+    ]
+   }
+  },
+  "swineherd_hood": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a swineherd's brown cowl",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       -1.0,
+       2.4
+      ],
+      "r": 2.3,
+      "mat": "hood_brown"
+     },
+     {
+      "cap": [
+       "head",
+       0,
+       -2.6,
+       1.4
+      ],
+      "to": [
+       "head",
+       0,
+       -4.0,
+       -2.0
+      ],
+      "r": [
+       0.8,
+       0.45
+      ],
+      "mat": "hood_brown"
+     }
+    ]
+   }
+  },
+  "butcher_cap": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a butcher's white cap",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       -0.4,
+       2.7
+      ],
+      "r": 2.0,
+      "mat": "apron_white"
+     },
+     {
+      "disc": [
+       "head",
+       0,
+       0.3,
+       2.4
+      ],
+      "n": [
+       0,
+       0.3,
+       1
+      ],
+      "r": [
+       2.4,
+       0.25
+      ],
+      "mat": "apron_white"
+     }
+    ]
+   }
+  },
+  "serf_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a serf's undyed tunic, a rope belt",
+   "fits": {
+    "*": [
+     {
+      "ring": [
+       "chest",
+       0,
+       0,
+       -4.6
+      ],
+      "n": [
+       0,
+       0,
+       1
+      ],
+      "r": [
+       2.6,
+       0.35
+      ],
+      "mat": "rope"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "woodcutter_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a woodcutter's leather jerkin",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -5.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "jerkin"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -5.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "jerkin"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "stonecutter_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a stone cutter's dusty grey smock and a leather apron",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "dusty"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "dusty"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       2.35,
+       -8.0
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.6,
+       0.35,
+       4.0
+      ],
+      "round": 0.0,
+      "mat": "leather"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "sawyer_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a sawyer's rust shirt and a canvas apron",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "rust_shirt"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "rust_shirt"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       2.35,
+       -7.25
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.6,
+       0.35,
+       3.25
+      ],
+      "round": 0.0,
+      "mat": "canvas"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "farmer_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a farmer's pale smock",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "smock"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "smock"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "miller_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a miller's floury white smock",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "floury"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "floury"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "baker_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a baker's ochre shirt under a white bib apron",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "ochre"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "ochre"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       2.35,
+       -7.35
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.6,
+       0.35,
+       6.15
+      ],
+      "round": 0.0,
+      "mat": "apron_white"
+     },
+     {
+      "cap": [
+       "chest",
+       -1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "apron_white"
+     },
+     {
+      "cap": [
+       "chest",
+       1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "apron_white"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "miner_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a miner's dark wool and a leather jerkin",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -5.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "dark_wool"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -5.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "dark_wool"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "smelter_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a smelter's red shirt under a long leather apron",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "furnace_red"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "furnace_red"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       2.35,
+       -9.1
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.6,
+       0.35,
+       7.9
+      ],
+      "round": 0.0,
+      "mat": "apron_leather"
+     },
+     {
+      "cap": [
+       "chest",
+       -1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "apron_leather"
+     },
+     {
+      "cap": [
+       "chest",
+       1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "apron_leather"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "smith_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a smith's blue shirt under a leather bib apron",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "smith_blue"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "smith_blue"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       2.35,
+       -8.1
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.6,
+       0.35,
+       6.9
+      ],
+      "round": 0.0,
+      "mat": "apron_leather"
+     },
+     {
+      "cap": [
+       "chest",
+       -1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "apron_leather"
+     },
+     {
+      "cap": [
+       "chest",
+       1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "apron_leather"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "swineherd_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a swineherd's grey-blue tunic",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "herd_blue"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "herd_blue"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "butcher_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a butcher's white shirt under a blue-striped apron",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "apron_white"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "apron_white"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       2.35,
+       -7.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.6,
+       0.35,
+       6.4
+      ],
+      "round": 0.0,
+      "mat": "apron_white"
+     },
+     {
+      "cap": [
+       "chest",
+       -1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "apron_white"
+     },
+     {
+      "cap": [
+       "chest",
+       1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "apron_white"
+     },
+     {
+      "box": [
+       "chest",
+       -1.6,
+       2.65,
+       -7.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       0.3,
+       0.12,
+       6.2
+      ],
+      "round": 0.0,
+      "mat": "stripe_blue"
+     },
+     {
+      "box": [
+       "chest",
+       -0.55,
+       2.65,
+       -7.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       0.3,
+       0.12,
+       6.2
+      ],
+      "round": 0.0,
+      "mat": "stripe_blue"
+     },
+     {
+      "box": [
+       "chest",
+       0.55,
+       2.65,
+       -7.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       0.3,
+       0.12,
+       6.2
+      ],
+      "round": 0.0,
+      "mat": "stripe_blue"
+     },
+     {
+      "box": [
+       "chest",
+       1.6,
+       2.65,
+       -7.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       0.3,
+       0.12,
+       6.2
+      ],
+      "round": 0.0,
+      "mat": "stripe_blue"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "mallet": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "a stone cutter's wooden mallet",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      5.5,
+      0,
+      0
+     ],
+     "r": [
+      0.5,
+      0.45
+     ],
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      5.8,
+      -1.4,
+      0
+     ],
+     "to": [
+      "hand",
+      5.8,
+      1.6,
+      0
+     ],
+     "r": [
+      1.3,
+      1.3
+     ],
+     "mat": "plank"
+    }
+   ]
+  },
+  "bowsaw": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "a sawyer's bow saw: a wooden frame, the blade along its foot",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.0,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      7.0,
+      0,
+      0
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -1.0,
+      4.5,
+      0
+     ],
+     "to": [
+      "hand",
+      7.0,
+      4.5,
+      0
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      3.0,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      3.0,
+      4.5,
+      0
+     ],
+     "r": 0.35,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -0.6,
+      0.5,
+      0
+     ],
+     "to": [
+      "hand",
+      6.6,
+      0.5,
+      0
+     ],
+     "r": 0.25,
+     "mat": "steel"
+    }
+   ]
+  },
+  "scythe": {
+   "hand": "right",
+   "hold": "thrust",
+   "_doc": "a farmer's scythe: a long snath, the curved blade at its head",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -8,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      10,
+      0,
+      0
+     ],
+     "r": [
+      0.45,
+      0.4
+     ],
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      10,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      9.0,
+      5.5,
+      0
+     ],
+     "r": [
+      0.55,
+      0.2
+     ],
+     "mat": "steel"
+    }
+   ]
+  },
+  "peel": {
+   "hand": "right",
+   "hold": "thrust",
+   "_doc": "a baker's long wooden peel",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -6,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      9,
+      0,
+      0
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "disc": [
+      "hand",
+      10.8,
+      0,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "r": [
+      2.0,
+      0.3
+     ],
+     "mat": "plank"
+    }
+   ]
+  },
+  "furnace_rake": {
+   "hand": "right",
+   "hold": "thrust",
+   "_doc": "a smelter's long iron rake for the furnace",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -7,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      11,
+      0,
+      0
+     ],
+     "r": 0.4,
+     "mat": "metal"
+    },
+    {
+     "cap": [
+      "hand",
+      11,
+      -2.0,
+      0
+     ],
+     "to": [
+      "hand",
+      11,
+      2.0,
+      0
+     ],
+     "r": 0.5,
+     "mat": "metal"
+    }
+   ]
+  },
+  "smith_hammer": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "a smith's hand hammer, a heavy iron head",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      5.0,
+      0,
+      0
+     ],
+     "r": [
+      0.45,
+      0.4
+     ],
+     "mat": "wood"
+    },
+    {
+     "box": [
+      "hand",
+      5.4,
+      0.3,
+      0
+     ],
+     "n": [
+      0,
+      1,
+      0
+     ],
+     "half": [
+      0.8,
+      1.6,
+      0.8
+     ],
+     "round": 0.0,
+     "mat": "metal"
+    }
+   ]
+  },
+  "switch": {
+   "hand": "right",
+   "hold": "thrust",
+   "_doc": "a swineherd's long switch",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -10,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      12,
+      0,
+      0
+     ],
+     "r": [
+      0.4,
+      0.25
+     ],
+     "mat": "wood"
+    }
+   ]
+  },
+  "cleaver": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "a butcher's broad cleaver",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.0,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      2.0,
+      0,
+      0
+     ],
+     "r": 0.45,
+     "mat": "jerkin"
+    },
+    {
+     "box": [
+      "hand",
+      3.8,
+      0.9,
+      0
+     ],
+     "n": [
+      0,
+      0,
+      1
+     ],
+     "half": [
+      1.9,
+      0.15,
+      1.6
+     ],
+     "round": 0.0,
+     "mat": "steel"
+    }
+   ]
+  },
+  "flour_sack_small": {
+   "hand": "right",
+   "hold": "hang",
+   "_doc": "a miller's half-full flour sack swung from the hand",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      0,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      -3.5,
+      0,
+      0
+     ],
+     "r": [
+      1.3,
+      2.0
+     ],
+     "mat": "sack"
+    }
+   ]
+  }
+ },
+ "parts": [
+  {
+   "part": "hood.woodcutter",
+   "gear": "woodcutter_hood"
+  },
+  {
+   "part": "hat.farmer",
+   "gear": "farmer_hat"
+  },
+  {
+   "part": "cap.stonecutter",
+   "gear": "stonecutter_cap"
+  },
+  {
+   "part": "cap.sawyer",
+   "gear": "sawyer_cap"
+  },
+  {
+   "part": "coif.miller",
+   "gear": "miller_coif"
+  },
+  {
+   "part": "hat.baker",
+   "gear": "baker_hat"
+  },
+  {
+   "part": "cap.miner",
+   "gear": "miner_cap"
+  },
+  {
+   "part": "hood.smelter",
+   "gear": "smelter_hood"
+  },
+  {
+   "part": "hood.swineherd",
+   "gear": "swineherd_hood"
+  },
+  {
+   "part": "cap.butcher",
+   "gear": "butcher_cap"
+  },
+  {
+   "part": "dress.serf",
+   "gear": "serf_dress"
+  },
+  {
+   "part": "dress.woodcutter",
+   "gear": "woodcutter_dress"
+  },
+  {
+   "part": "dress.stonecutter",
+   "gear": "stonecutter_dress"
+  },
+  {
+   "part": "dress.sawyer",
+   "gear": "sawyer_dress"
+  },
+  {
+   "part": "dress.farmer",
+   "gear": "farmer_dress"
+  },
+  {
+   "part": "dress.miller",
+   "gear": "miller_dress"
+  },
+  {
+   "part": "dress.baker",
+   "gear": "baker_dress"
+  },
+  {
+   "part": "dress.miner",
+   "gear": "miner_dress"
+  },
+  {
+   "part": "dress.smelter",
+   "gear": "smelter_dress"
+  },
+  {
+   "part": "dress.smith",
+   "gear": "smith_dress"
+  },
+  {
+   "part": "dress.swineherd",
+   "gear": "swineherd_dress"
+  },
+  {
+   "part": "dress.butcher",
+   "gear": "butcher_dress"
+  },
+  {
+   "part": "tool.mallet",
+   "gear": "mallet"
+  },
+  {
+   "part": "tool.bowsaw",
+   "gear": "bowsaw"
+  },
+  {
+   "part": "tool.scythe",
+   "gear": "scythe"
+  },
+  {
+   "part": "tool.peel",
+   "gear": "peel"
+  },
+  {
+   "part": "tool.rake",
+   "gear": "furnace_rake"
+  },
+  {
+   "part": "tool.smith_hammer",
+   "gear": "smith_hammer"
+  },
+  {
+   "part": "tool.switch",
+   "gear": "switch"
+  },
+  {
+   "part": "tool.cleaver",
+   "gear": "cleaver"
+  },
+  {
+   "part": "tool.flour_sack",
+   "gear": "flour_sack_small"
+  },
+  {
+   "part": "tool.miner_pick",
+   "gear": "pick"
+  }
+ ]
+}
