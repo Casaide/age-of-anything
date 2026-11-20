@@ -190,6 +190,8 @@ def play() -> int:
     for(seam) c: amount[c] = COAL_LEFT
     let tips = match_tips(su_rules)
     check(tips.length == 12 and tips[0].done == "laid:school" and not tip_done(tips[0], 0, 5), "steading: its own opening tips and goals, the first (lay a school) not yet done ({tips.length})")
+    let vk = type_of_slot(0, "worker")
+    check(t_cost[vk][res("gold")] == 10 and t_cost[vk][res("food")] == 0 and stock[res("gold")][0] == 200, "steading: the school\'s fee is 10 gold, no food, and the town starts with 200 gold (#116; {t_cost[vk]})")
     check(equal(gstrs(su_rules, "topbar_hide"), [ "age", "idle", "tree" ]), "steading: its top bar leaves out the age, the idle workers and the tech tree (#113)")
     // The goals' kinds of done (#104): so much made or gathered, so many people.
     let goal = Tip { "", "", "made:bread:50", "Goal" }
@@ -318,6 +320,12 @@ def big_town(dx:int, dy:int) -> int:
     var laid = 0
     var trained = 0
     var trained_at = 0
+    let au = res("gold")
+    var asked = false
+    var iron_laid = false
+    var asked_at = 0
+    var next_pop = 0
+    let later = [ "worker", "worker", "worker", "worker", "worker", "miner", "smelter", "sawyer", "smith", "farmer", "woodcutter", "worker", "worker", "worker", "worker" ]
     var full = 0  // sawmill ticks spent standing with its planks not taken away
     var mill_ticks = 0
     var stuck_most = 0
@@ -334,21 +342,35 @@ def big_town(dx:int, dy:int) -> int:
         if t == 2600 and lay("sawmill", tx - 9, ty + 3): laid++
         if t == 2700 and lay("lumber_camp", tx + 12, ty - 3): laid++  // (a second: two sawmills want more logs than one woodcutter cuts)
         if t == 3000 and lay("coal_mine", sx - 1, sy + 3): laid++
-        if t == 3050 and lay("iron_mine", sx + 3, sy): laid++
-        if t == 3100 and lay("gold_mine", start_x[0] / TILE + 16, start_y[0] / TILE - 2): laid++
-        if t == 3200 and lay("iron_smelter", tx + 9, ty + 9): laid++
-        if t == 3300 and lay("gold_smelter", tx + 13, ty + 9): laid++
+        if t == 3150 and lay("iron_mine", sx + 3, sy): laid++
+        if t == 2950 and lay("gold_mine", start_x[0] / TILE + 16, start_y[0] / TILE - 2): laid++
+        if not iron_laid and done_of("gold_smelter") != 0:  // (once the gold smelter is up, so the first smelter trained goes there: it pays the school)
+            iron_laid = true
+            if lay("iron_smelter", tx + 9, ty + 9): laid++
+        if t == 3200 and lay("gold_smelter", tx + 13, ty + 9): laid++
         if t == 3400 and lay("armoury", tx + 9, ty - 6): laid++
         if t == 3500 and lay("farm", tx - 8, ty + 8): laid++
         let school = done_of("school")
         if school != 0 and trained == 0:
             trained = 1
             trained_at = t
-            for([ "woodcutter", "stonecutter", "sawyer", "sawyer", "farmer", "miller", "baker", "miner", "miner", "miner", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+            for([ "woodcutter", "stonecutter", "sawyer", "farmer", "miller", "baker", "miner", "miner", "smelter", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
         if t > trained_at + 100 and trained == 1 and b_queue[b_index_of(school)].length == 0:  // (a school teaches 15 at most at a time)
             trained = 2
-            hold_put(0, res("food"), 300)  // (the school's fees for a second batch: the starting food pays for the first)
-            for([ "smelter", "smelter", "smith", "farmer", "woodcutter", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+        // Then one at a time as the gold comes in (#116): what's left of the starting gold pays for five villagers, the
+        // town's own smelted gold for the rest.
+        if trained == 2:  // (one at a time, each struck off once it has joined the town)
+            let q = b_queue[b_index_of(school)].length
+            if asked and pop[0] >= next_pop:
+                later.remove(0)
+                asked = false
+                if not later.length: trained = 3
+            elif asked and q == 0 and t > asked_at + 60: asked = false
+            if trained == 2 and not asked and q == 0 and stock[au][0] >= 10:
+                issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, later[0]), 1, 0)
+                asked = true
+                asked_at = t
+                next_pop = pop[0] + 1
         wstep()
         for(b_id.length) b:
             if b_owner[b] == 0 and b_done[b] != 0 and bt_name[b_kind[b]] == "sawmill" and hook_building_get(col_present, b) != 0:
@@ -369,6 +391,8 @@ def big_town(dx:int, dy:int) -> int:
     let unbuilt = map(filter(b_id.length) b: b_owner[b] == 0 and b_done[b] == 0 and bt_road[b_kind[b]] < 0) b: bt_name[b_kind[b]]
     let full_pct = full * 100 / max(1, mill_ticks)
     print "steading: big town +{dx},{dy}: {built} of {laid} built, {staffed} staffed, sawmills stood full {full_pct}% of their staffed time, planks {produced[pl][0]} ({stock[pl][0]} in store), bread {produced[br][0]}, tools {produced[tl][0]}, {hungry} of {pop[0]} resting hungry, longest stuck {stuck_most}"
+    print "steading: big town +{dx},{dy}: {pop[0]} people, gold smelted {produced[au][0]}, {stock[au][0]} in store"
+    check(pop[0] >= 30 and produced[au][0] >= 50, "steading: a big town (+{dx},{dy}) grows past 25, paying the school with the gold it smelts ({pop[0]} people, {produced[au][0]} gold smelted)")
     check(laid == 17 and built == 17, "steading: a big town (+{dx},{dy}) builds all seventeen of its buildings ({built} of {laid}; not {unbuilt})")
     check(staffed == 15, "steading: a big town (+{dx},{dy}): every trade trained goes to work at its own ({staffed} of 15; not {idle_trades})")
     check(full_pct <= 20, "steading: a big town (+{dx},{dy}): its sawmills\' planks are carried off, not left to stop them ({full_pct}% of the time full)")

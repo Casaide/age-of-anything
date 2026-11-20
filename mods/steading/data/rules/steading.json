@@ -10,11 +10,20 @@
   "tree"
  ],
  "cost": {
-  "_doc": "the school's fee: every trade costs 20 food to teach (#99)",
+  "_doc": "the school's fee: every trade costs 10 gold to teach, smelted at the gold smelter (#116; it was food, which nothing here makes). One age, so its gold isn't paid in food as the base rules' age 1 would.",
   "roles": {
    "worker": {
-    "floor": 20,
-    "ceiling": 20
+    "floor": 10,
+    "ceiling": 10,
+    "mix": {
+     "food": 0,
+     "gold": 1
+    }
+   }
+  },
+  "early": {
+   "1": {
+    "gold": "gold"
    }
   }
  },
@@ -138,7 +147,8 @@
    "worker"
   ],
   "start": {
-   "food": 400,
+   "food": 0,
+   "gold": 200,
    "wood": 20,
    "stone": 20,
    "plank": 40,

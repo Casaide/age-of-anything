@@ -178,7 +178,7 @@ def evaluate(recipe:JV, rules:JV, age:int) -> JV:
     if has(terms, "mix"): use_mix = shallow_copy(at(terms, "mix"))
     let swaps = gobj(gobj(c, "early"), string(age))
     for(swaps.keys) r, n:
-        if has(use_mix, r):
+        if has(use_mix, r) and as_str(swaps.a[n]) != r:  // (one paid in itself stays: a mod's rules can undo the swap, #116)
             let to = as_str(swaps.a[n])
             iadd(use_mix, to, iget(use_mix, r))
             erase(use_mix, r)

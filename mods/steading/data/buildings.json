@@ -208,21 +208,21 @@
   "gold_smelter": {
    "extends": "house",
    "name": "Gold Smelter",
-   "desc": "A smelter works here: melts a load of gold ore with a load of coal into gold. Nothing is smelted while the smelter is away.",
+   "desc": "A smelter works here: melts a load of gold ore with a load of coal into five gold, what the School is paid in. Nothing is smelted while the smelter is away.",
    "makes": {
     "in": {
      "gold_ore": 1,
      "coal": 1
     },
     "out": {
-     "gold": 1
+     "gold": 5
     },
     "time": 8
    },
    "holds": {
     "gold_ore": 4,
     "coal": 4,
-    "gold": 4
+    "gold": 5
    },
    "staff": {
     "smelter": 1
