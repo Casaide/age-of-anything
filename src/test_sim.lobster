@@ -82,6 +82,7 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
+import gen.research_title
 import lua.lua
 import lua.api
 import gen.reset
@@ -4702,6 +4703,14 @@ def test_research_queue():
     let up = research_named("line.spear.2")
     let leap = research_named("frog_leap")
     let k = type_of_slot(0, "spear")
+    // A line upgrade is named for the unit it gives, never its raw id (#162).
+    var step2 = ""
+    for(glist(su_units[k], "line")) l:
+        if as_int(at(l, "age")) == 2: step2 = gstr(at(l, "look"), "name", "")
+    check(step2 != "" and research_title(0, up) == "Upgrade to " + step2, "research names: line.spear.2 reads \"{research_title(0, up)}\"")
+    for(2) p:
+        for(research) item, r:
+            check(not starts_with(research_title(p, r), "line."), "research names: {item.id} has a name for side {p}")
     let food = stock[0][0]
     issue_cmd(0, CMD_RESEARCH, [], bid, up, 0, 0)
     issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)

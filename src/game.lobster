@@ -67,6 +67,7 @@ import .gen.setup
 import .gen.race_to_types
 import .gen.modes
 import .gen.start
+import .gen.research_title
 import .lua.lua
 import .lua.api
 import .view.facing
