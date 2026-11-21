@@ -637,7 +637,8 @@ def draw_panel():
     // (on a pad the orders live on the wheel, so the panel keeps who and the queue: command_panel.gd's compact)
     let school = school_on(bi)    // (the School's own part instead of its train buttons: game/school, #127)
     let tbuild = town_build_on()  // (a town builder's build pages as cards: game/town_build, #127)
-    let btns = if pad_on or school or tbuild or (build_menu and not (selected_workers().length or town_bar())): []::Btn else: panel_buttons()
+    let market = market_on(bi)    // (the marketplace's own part: game/market, #43)
+    let btns = if pad_on or school or market or tbuild or (build_menu and not (selected_workers().length or town_bar())): []::Btn else: panel_buttons()
     // What's shown: title, hp, info lines, portrait, tray, queue.
     var title = rstr(su_races[ME], "name")
     var hp_now = -1
@@ -755,6 +756,8 @@ def draw_panel():
     if has_goods: content_w += sep + 10.0 * s + sep + goods_sz.x
     let school_sz = if school: school_size(s) else: float2_0
     if school: content_w += sep + 10.0 * s + sep + school_sz.x
+    let market_sz = if market: market_size(s) else: float2_0
+    if market: content_w += sep + 10.0 * s + sep + market_sz.x
     let tbuild_sz = if tbuild: town_build_size(s) else: float2_0
     if tbuild: content_w += sep + 10.0 * s + sep + tbuild_sz.x
     let teach_h = if school: (SCHOOL_TEACH_H + 8.0) * s else: 0.0  // (Teach over the queue)
@@ -762,7 +765,7 @@ def draw_panel():
     if acts: content_w += sep + acts_w
     if acts and has_queue: content_w += sep + 10.0 * s
     if has_queue: content_w += sep + q_w
-    let content_h = max(max(max(if show_pic: P_PORTRAIT * s else: 0.0, who_h), max(acts_h, if has_queue: teach_h + q_h else: 0.0)), max(max(school_sz.y, tbuild_sz.y), if has_goods: 21.0 * s + goods_sz.y else: 0.0))
+    let content_h = max(max(max(if show_pic: P_PORTRAIT * s else: 0.0, who_h), max(acts_h, if has_queue: teach_h + q_h else: 0.0)), max(max(max(school_sz.y, market_sz.y), tbuild_sz.y), if has_goods: 21.0 * s + goods_sz.y else: 0.0))
     let pw = pad_l * 2.0 + content_w
     let ph = pad_t + content_h + pad_b
     let py = ws.y - 12.0 * s - ph
@@ -803,6 +806,13 @@ def draw_panel():
         school_xy = float2 { x, y }
         school_frame(school_xy, bi, s)
         x += school_sz.x
+    var market_xy = float2_0
+    if market:
+        groove(x + sep - 5.0 * s, py + pad_t, bottom, true)
+        x += sep + 10.0 * s + sep
+        market_xy = float2 { x, y }
+        market_frame(market_xy, bi, s)
+        x += market_sz.x
     var tbuild_xy = float2_0
     if tbuild:
         groove(x + sep - 5.0 * s, py + pad_t, bottom, true)
@@ -893,6 +903,7 @@ def draw_panel():
     let build_over = if tbuild: town_build_texts(tbuild_xy, s, mpos) else: -1
     let trade_over = if school: school_texts(school_xy, bi, s, mpos) else: -1
     if school: school_teach_text(float2 { qx, y }, q_w, bi, s)
+    if market: market_texts(market_xy, bi, s)
     let good_over = goods_texts(goods_xy, goods_r, goods_n, s, mpos)
     if has_goods: tb_text(float2 { goods_xy.x, y - 1.0 * s }, (if has_role(b_kind[bi], ROLE_HUB): "IN STORE" else: "HELD HERE"), int(13.0 * s), ui_look.metal + (float4_1 - ui_look.metal) * 0.25, 3)
     if acts:
