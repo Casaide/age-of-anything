@@ -105,5 +105,14 @@ for(buildings.keys) b, i:
             let call = made[m].substring(b.length + 1, -1)
             expect((find(models) x: x == call) < 0, "{b} is drawn by its own model, not {call} shared")
             models.push(call)
+// Each stage of a field and a vine row has a prop of its own (#154), none of them the meadow's (a tuft, a bush, the
+// base set's crops), so tilled, sown, ripe and reaped can be told apart from each other and from the grass.
+let field_terrain = gobj(lib_data("terrain.json"), "terrain")
+let field_props = []::string
+for([ "tilled", "wheat_sown", "wheat_ripe", "vines_young", "vines_ripe" ]) t:
+    let pr = gstr(gobj(field_terrain, t), "prop", "")
+    expect(pr != "" and pr != "tuft" and pr != "bush" and pr != "crops", "{t} has a field prop of its own, not the meadow\'s ({pr})")
+    expect((find(field_props) x: x == pr) < 0, "{t}\'s prop {pr} is no other stage\'s")
+    field_props.push(pr)
 print "{n_checks} checks, {n_failed} failed"
 if n_failed > 0: set_exit_code(1)

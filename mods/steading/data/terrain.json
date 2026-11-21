@@ -5,6 +5,7 @@
    "walkable": true,
    "colour": "#6e5434",
    "colour2": "#664d30",
+   "prop": "furrows",
    "cleared": "grass",
    "note": "a wheat field laid by a farm and dug by a serf: bare tilled earth, waiting for the farmer to sow it (#122)"
   },
@@ -12,7 +13,7 @@
    "walkable": true,
    "colour": "#7c6a36",
    "colour2": "#6f8a3a",
-   "prop": "tuft",
+   "prop": "shoots",
    "grows": {
     "into": "wheat_ripe",
     "seconds": 360
@@ -24,7 +25,7 @@
    "walkable": true,
    "colour": "#c8a648",
    "colour2": "#b8963e",
-   "prop": "crops",
+   "prop": "wheat",
    "resource": "grain",
    "amount": 1,
    "depleted": "tilled",
@@ -35,7 +36,7 @@
    "walkable": true,
    "colour": "#5e5a34",
    "colour2": "#566a32",
-   "prop": "bush",
+   "prop": "vines",
    "grows": {
     "into": "vines_ripe",
     "seconds": 360
@@ -47,7 +48,7 @@
    "walkable": true,
    "colour": "#5a4a5e",
    "colour2": "#4f6a34",
-   "prop": "bush",
+   "prop": "vines_ripe",
    "resource": "grapes",
    "amount": 1,
    "depleted": "vines_young",
