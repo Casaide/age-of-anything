@@ -190,13 +190,13 @@ local function go_to_work(i, b)
       set_u_task(i, T_RETURN)
       set_u_target(i, b_id(b))
       approach_building(i, b)
-    elseif not in_reach(i, building_rect(b)) and u_moving(i) == 0 then
+    elseif not in_reach(i, entry_rect(b)) and u_moving(i) == 0 then
       approach_building(i, b)
     end
     return
   end
   if kind == 0 then
-    if not in_reach(i, building_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
+    if not in_reach(i, entry_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
     return
   end
   local x0, y0, x1, y1 = building_rect(b)
@@ -210,7 +210,7 @@ local function go_to_work(i, b)
     planting(i, b)
   elseif reach[b_kind(b) + 1] then
     building_set(col_out, b, 1)
-    if not in_reach(i, building_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
+    if not in_reach(i, entry_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
   end
 end
 
@@ -289,7 +289,7 @@ function jobs_tick()
       local b = workplace(i)
       if b >= 0 then
         working[b + 1] = (working[b + 1] or 0) + 1
-        if in_reach(i, building_rect(b)) then at_door[b + 1] = true end
+        if in_reach(i, entry_rect(b)) then at_door[b + 1] = true end
         if u_task(i) == GATHER and u_carry(i) == 0 and u_target(i) >= 0 and not within_reach(b, u_target(i)) then clear_task(i) end
         if u_task(i) == T_NONE and u_orders(i) == 0 then go_to_work(i, b) end
       else

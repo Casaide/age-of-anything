@@ -103,6 +103,7 @@
   "door_roads": true,
   "foundation_pct": 30,
   "inside_ticks": 30,
+  "doors": true,
   "doors_clear": true,
   "roads": [
    {

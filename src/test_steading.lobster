@@ -238,6 +238,8 @@ def play() -> int:
     var mill_waited = false                                   // the mill held grain enough for a round with no miller yet
     var flour_unstaffed = -1                                  // the flour made before the miller came
     var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
+    var off_door = 0  // stays inside begun away from the building's door tile (#157)
+    var went_in = 0
     var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
     let inside_for = map(1000): 0                             // (#140) each unit slot's ticks inside a building so far, and each stay's length when it came out
@@ -285,6 +287,12 @@ def play() -> int:
         for(u_x.length) i:
             if i < inside_for.length:
                 if is_inside(i, -1):  // (a carrier or a worker at a drop, not one at the inn)
+                    if inside_for[i] == 0:  // (going in: by the door, #157)
+                        let at_ = b_index_of(u_target[i])
+                        if at_ >= 0 and b_done[at_] != 0:  // (a site is built from round it)
+                            let x0, y0, x1, y1 = entry_rect(at_)
+                            if not by_door(at_) or not in_reach(i, x0, y0, x1, y1): off_door++
+                            went_in++
                     inside_for[i]++
                 elif inside_for[i] > 0:
                     stays.push(inside_for[i])
@@ -350,6 +358,7 @@ def play() -> int:
     print "steading: stays inside: {full_stays.length} of {r_inside_ticks} ticks, shorter {short_stays}, longer {long_stays}"
     check(r_inside_ticks == 30 and stays.length >= 100 and full_stays.length * 100 >= stays.length * 95,
           "steading: every pick-up and drop takes a carrier inside for 1.5 s ({full_stays.length} of {stays.length} stays that long)")
+    check(went_in > 100 and off_door == 0, "steading: people go into a building only by its door ({off_door} of {went_in} went in elsewhere; #157)")
     check(dropped_away == 0, "steading: a gatherer only ever drops at its own hut, and waits there when it\'s full; serfs take goods on ({dropped_away} ticks headed elsewhere)")
     let never = filter(site_waits): _ >= 0
     check(longest_wait <= 30 * TICK_HZ and not never.length,
