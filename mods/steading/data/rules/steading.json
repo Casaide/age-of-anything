@@ -4,6 +4,8 @@
  "race": "serfs",
  "animals": false,
  "topbar_stock": false,
+ "_zoom_doc": "zoom_in: wheel steps closer in than the game's camera a match starts at (the genre's town builders start where each person reads, #156)",
+ "zoom_in": 1,
  "ui_direction": "slate",
  "topbar_hide": [
   "age",
