@@ -4711,6 +4711,11 @@ def test_research_queue():
     for(2) p:
         for(research) item, r:
             check(not starts_with(research_title(p, r), "line."), "research names: {item.id} has a name for side {p}")
+    // Its hover card says what it gives: the step it becomes and the numbers that change; a research its effects (#168).
+    let gains = research_gains(0, up)
+    check(gains.length == 2 and gains[0] == "{gstr(at(glist(su_units[k], "line")[0], "look"), "name", "")} becomes {step2}" and
+          find_string(gains[1], " to ") > 0, "research gains: line.spear.2 says {gains}")
+    check(equal(research_gains(0, leap), [ "Amphibious units +2 speed" ]), "research gains: Strong Legs says {research_gains(0, leap)}")
     let food = stock[0][0]
     issue_cmd(0, CMD_RESEARCH, [], bid, up, 0, 0)
     issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)
