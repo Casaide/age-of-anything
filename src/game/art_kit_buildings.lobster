@@ -249,7 +249,7 @@ class AkbCached:
 var akb_cache_frames = []::AkbFrame
 var akb_cache_stem = ""  // the look being baked ("" while not recording)
 
-def akb_stem_in(dir:string, name:string) -> string: return dir + "/b" + sha256_text("{BAKE_VERSION}|building|{name}|k {ART_K}").substring(0, 20)
+def akb_stem_in(dir:string, name:string) -> string: return dir + "/b" + sha256_text("{BAKE_VERSION}|building|{name}|k {ART_K}|ruin {RUIN_LOOK}").substring(0, 20)
 def akb_stem(name:string) -> string: return akb_stem_in(bake_cache_dir, name)
 
 // A look from the shipped bakes or the cache, if it's there (its frames, Look and BFx in place): whether it was.
@@ -530,6 +530,17 @@ def akb_check(archs:[string]) -> int:
                 if specks > 0:
                     print "FAIL {name}: {specks} specks (islands of under 4 pixels)"
                     failed++
+                if not spec.arms.length and not spec.open:  // its standing broken-up stages hold up what they keep (#163)
+                    for(RUIN_STANDING) k:
+                        let broken = akb_placed(arch, type, ml[0], ml[1])
+                        let whole = []::RuinMesh
+                        ruin_meshes(broken.body, XF_ID, whole)
+                        let seen = map(whole) mi: mi.node.visible
+                        ruin_apply(broken.body, k + 1, hash_text(name))
+                        let floating = ruin_floating(whole, seen, broken.body)
+                        if floating > 0:
+                            print "FAIL {name}:ruin{k + 1}: {floating} pieces left in the air over what fell"
+                            failed++
                 if team == 0:  // (its model's team colour, if it has any, showing: walls, farms, palisades have none)
                     let shell = vm_fill(spec.body, VM_PX / WB_PX)
                     let tv = (filter(shell.col) c: c.x > 0.5 and c.z > 0.5 and c.y < 0.3).length
