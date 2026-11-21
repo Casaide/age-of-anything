@@ -82,6 +82,7 @@ import gen.setup
 import gen.race_to_types
 import gen.modes
 import gen.start
+import gen.research_title
 import lua.lua
 import lua.api
 import gen.reset
@@ -292,9 +293,11 @@ def test_stocked():
 // `carriers` carriers by the store. The house's index.
 // Roads (#51): a worker walking from (8, 20) to (32, 20) on flat_test (an open row), with the given roads laid first
 // (cells, kind); the ticks it takes to pass x 30, how many rows it strays from row 20 on the way, and the hash at the end.
-def road_walk(roads:[[int]], pcts:[int]) -> int, int, int:
+def road_walk(roads:[[int]], pcts:[int], costs:[int] = []) -> int, int, int:
     new_world("flat_test", races0, bare0, [])
     rd_pct = pcts
+    rd_cost = if costs.length: costs else: map(pcts) p: 10000 / p  // (cost_pct: as a pack's rules give it, by default what the speed saves)
+    rd_middle = map(pcts): 0
     for(roads) r: set_road(r[0], r[1])
     let id = spawn_at(0, "worker", 8 * TILE + TILE / 2, 20 * TILE + TILE / 2)
     issue_cmd(0, CMD_MOVE, [ id ], 32 * TILE + TILE / 2, 20 * TILE + TILE / 2, 0, 0)
@@ -329,6 +332,10 @@ def test_roads():
     check(round < plain, "roads: and gets there sooner ({round} ticks, {plain} straight across)")
     let slow, slow_top, h4 = road_walk(bend, [ 110 ])
     check(slow_top <= 1 and slow > round and h4 != h3, "roads: a road barely faster than the grass is not worth the bend ({slow_top} rows out, {slow} ticks)")
+    // A road no quicker than the grass that paths keep to all the same (cost_pct, the town builder's road, creel #129):
+    // it takes the bend, at the grass's pace.
+    let kept, kept_top, _ = road_walk(bend, [ 100 ], [ 34 ])
+    check(kept_top >= 5 and kept > plain, "roads: a road no quicker but cheap to cross is the way it goes ({kept_top} rows out, {kept} ticks, {plain} straight across)")
 
 def carry_world(wood:int, carriers:int) -> int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
@@ -581,13 +588,11 @@ def test_walk_over_site():
     let open_off, shut_off, _ = walk_over_site(false)
     check(not open_off and shut_off, "sites: without it a site blocks from the start (open {open_off}, shut {shut_off})")
 
-// Idle villagers wait at the store (mods/steading's economy.lua, #79): with rules economy.idle_wait a villager (a carrier
-// slot) with nothing to do walks back to its side's nearest store and stands by it. One far off and one near: how far
-// each ends from the store's middle, in tiles, after 30 s, and whether the far one ever left where it was.
-def idle_wait_run(on:bool) -> int, int:
+// An idle serf stands where its last job left it (mods/steading's economy.lua, as in the genre: #158). One far off and
+// one near a store: how far each ends from the store's middle, in tiles, after 30 s.
+def idle_wait_run() -> int, int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
-    let ec = if on: "{{\"idle_wait\": true, \"carriers\": [\"worker\"]}}" else: "{{\"carriers\": [\"worker\"]}}"
-    steading_lua(ec)
+    steading_lua("{{\"builders_come\": true, \"carriers\": [\"worker\"]}}")
     make_store("town_center", 200)
     let tc = b_index_of(put(0, "town_center", 10, 10, 0))
     t_carrier[type_of_slot(0, "worker")] = 1
@@ -602,10 +607,8 @@ def idle_wait_run(on:bool) -> int, int:
     return far_d, near_d
 
 def test_idle_wait():
-    let far_d, near_d = idle_wait_run(true)
-    check(far_d <= 4 and near_d <= 4, "idle wait: an idle villager far off walks back to wait by the store ({far_d} tiles; the near one {near_d})")
-    let far_off, _ = idle_wait_run(false)
-    check(far_off > 20, "idle wait: without the rule it stays where it was ({far_off} tiles off)")
+    let far_d, near_d = idle_wait_run()
+    check(far_d > 20 and near_d <= 4, "idle wait: an idle serf stands where it was, as in the genre: nothing sends it off to the store ({far_d} tiles off; the near one {near_d})")
 
 // Who gathers (Casaide/creel#88): with rules economy.gatherers only units of those slots gather. A worker is ordered to
 // the trees, and another builds a lumber camp by them: in 40 s, whether the first gathered, and whether the camp's
@@ -691,7 +694,7 @@ def test_steading_big():
     let house = shallow_copy(su_btypes[hk])
     set(house, "seats", jint(6))
     su_btypes[hk] = house
-    steading_lua("{{\"builders_come\": true, \"builders_per_site\": 3, \"idle_wait\": true, \"carriers\": [\"worker\"], \"hunger\": {{\"life\": 4, \"hungry_at\": 2, \"eaters\": [\"worker\"], \"starving_pct\": 50, \"foods\": [[\"food\", 60]]}}}}")
+    steading_lua("{{\"builders_come\": true, \"builders_per_site\": 3, \"carriers\": [\"worker\"], \"hunger\": {{\"life\": 4, \"hungry_at\": 2, \"eaters\": [\"worker\"], \"starving_pct\": 50, \"foods\": [[\"food\", 60]]}}}}")
     bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
     make_store("town_center", 2000)
     put(0, "town_center", 30, 30, 0)
@@ -726,6 +729,8 @@ def road_plans() -> int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
     rd_names = [ "dirt" ]
     rd_pct = [ 150 ]
+    rd_cost = [ 66 ]
+    rd_middle = [ 0 ]
     let hk = btype_index("house")
     bt_road[hk] = 0
     make_store("town_center", 200)
@@ -835,6 +840,8 @@ def bridge_plans() -> int:
     new_world("river_test", races0, stocked_rules(bare0), [])
     rd_names = [ "dirt" ]
     rd_pct = [ 150 ]
+    rd_cost = [ 66 ]
+    rd_middle = [ 0 ]
     let hk = btype_index("house")
     bt_road[hk] = 0
     bt_bridge[hk] = 1
@@ -883,6 +890,8 @@ def test_doors_on_roads():
     new_world("flat_test", races0, stocked_rules(bare0), [])
     rd_names = [ "dirt" ]
     rd_pct = [ 150 ]
+    rd_cost = [ 66 ]
+    rd_middle = [ 0 ]
     let hk = btype_index("house")
     let pk = btype_index("town_center")
     bt_road[pk] = 0  // stands in as a road plan
@@ -4702,6 +4711,19 @@ def test_research_queue():
     let up = research_named("line.spear.2")
     let leap = research_named("frog_leap")
     let k = type_of_slot(0, "spear")
+    // A line upgrade is named for the unit it gives, never its raw id (#162).
+    var step2 = ""
+    for(glist(su_units[k], "line")) l:
+        if as_int(at(l, "age")) == 2: step2 = gstr(at(l, "look"), "name", "")
+    check(step2 != "" and research_title(0, up) == "Upgrade to " + step2, "research names: line.spear.2 reads \"{research_title(0, up)}\"")
+    for(2) p:
+        for(research) item, r:
+            check(not starts_with(research_title(p, r), "line."), "research names: {item.id} has a name for side {p}")
+    // Its hover card says what it gives: the step it becomes and the numbers that change; a research its effects (#168).
+    let gains = research_gains(0, up)
+    check(gains.length == 2 and gains[0] == "{gstr(at(glist(su_units[k], "line")[0], "look"), "name", "")} becomes {step2}" and
+          find_string(gains[1], " to ") > 0, "research gains: line.spear.2 says {gains}")
+    check(equal(research_gains(0, leap), [ "Amphibious units +2 speed" ]), "research gains: Strong Legs says {research_gains(0, leap)}")
     let food = stock[0][0]
     issue_cmd(0, CMD_RESEARCH, [], bid, up, 0, 0)
     issue_cmd(0, CMD_RESEARCH, [], bid, leap, 0, 0)

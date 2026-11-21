@@ -4,6 +4,8 @@
  "race": "serfs",
  "animals": false,
  "topbar_stock": false,
+ "_zoom_doc": "zoom_in: wheel steps closer in than the game's camera a match starts at (the genre's town builders start where each person reads, #156)",
+ "zoom_in": 1,
  "ui_direction": "slate",
  "topbar_hide": [
   "age",
@@ -93,21 +95,27 @@
    "stonecutter",
    "farmer",
    "winegrower",
-   "miner"
+   "miner",
+   "fisherman"
   ],
   "builders_come": true,
   "builders_per_site": 3,
   "sites_walk_over": true,
-  "idle_wait": true,
   "doors_on_roads": true,
   "door_roads": true,
   "foundation_pct": 30,
+  "goods_after_foundation": true,
+  "_goods_after_foundation_doc": "As in the genre (#41): a builder levels the plot first (its foundation share, foundation_pct), and only then are its goods fetched, so serfs never carry to a plot that isn't ready (the engine's rule, creel #138).",
   "inside_ticks": 30,
+  "doors": true,
   "doors_clear": true,
   "roads": [
    {
+    "_doc": "the genre's road (#138): no quicker to walk (a serf walks 1 tile a second anywhere), but paths keep to it (crossing it costs a third of open ground), walked tile to tile down its middle, and two passing on it trade places instead of shoving",
     "name": "road",
-    "speed_pct": 150,
+    "speed_pct": 100,
+    "cost_pct": 34,
+    "middle": true,
     "style": "cobble"
    }
   ],
@@ -130,11 +138,13 @@
     "smith",
     "swineherd",
     "butcher",
-    "winegrower"
+    "winegrower",
+    "fisherman"
    ],
    "starving_pct": 50,
    "foods": [
     [ "sausage", 60 ],
+    [ "fish", 50 ],
     [ "bread", 40 ],
     [ "wine", 30 ]
    ],
@@ -153,7 +163,8 @@
    "smith",
    "swineherd",
    "butcher",
-   "winegrower"
+   "winegrower",
+   "fisherman"
   ],
   "town_builds": true,
   "carriers": [
@@ -183,7 +194,8 @@
    "wine": 24,
    "flour": 24,
    "bread": 24,
-   "_doc": "planks, flour and bread are made, never gathered; every resource needs a rate. The raw trades at the genre's pace (#139): a trunk felled in 30 s, a stone cut in 15 s, ore and coal dug in 35 s, one at a time",
+   "_doc": "planks, flour and bread are made, never gathered; every resource needs a rate. The raw trades at the genre's pace (#139): a trunk felled in 30 s, a stone cut in 15 s, ore and coal dug in 35 s, a fish caught in 59 s (#149), one at a time",
+   "fish": 1180,
    "coal": 700,
    "iron_ore": 700,
    "gold_ore": 700,
@@ -201,6 +213,11 @@
    "baker"
   ],
   "_tools_doc": "tools_for: the trades that take a tool from a store before they start at a workplace (the mod's hooks/jobs.lua, #102). The wood and metal trades bring their own, so a town with no tools left can always make more.",
+  "market": {
+   "_doc": "the marketplace (#43, hooks/market.lua): a trade costs tradeoff_pct of the worth got in the good given (the genre's 2.2), at most most_orders trades ordered at once",
+   "tradeoff_pct": 220,
+   "most_orders": 99
+  },
   "carry_of": {
    "wood": 1,
    "stone": 1,
@@ -208,7 +225,8 @@
    "iron_ore": 1,
    "gold_ore": 1,
    "grain": 1,
-   "grapes": 1
+   "grapes": 1,
+   "fish": 1
   }
  },
  "-roster": [
@@ -361,6 +379,16 @@
    "own_seed": true,
    "desc": "Works at a vineyard: picks the grapes on its vines and presses them into wine outside it",
    "noun": "Winegrower"
+  },
+  {
+   "slot": "fisherman",
+   "role": "worker",
+   "tier": 1,
+   "name": "Fisherman",
+   "building": "school",
+   "own_seed": true,
+   "desc": "Works at a fisherman's hut: fishes the water near it and leaves the fish there for the serfs",
+   "noun": "Fisherman"
   }
  ]
 }

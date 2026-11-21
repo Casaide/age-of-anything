@@ -47,6 +47,9 @@ for(carried) r:
 let race = generate("serfs", load_rules("steading"), 0)
 expect(gstr(race, "family", "") == "steading", "serfs are the steading culture: {gstr(race, "family", "")}")
 let looks = []::string
+let kit_slots = []::string  // (#156) each trade's slot, head gear and dress
+let kit_heads = []::string
+let kit_torsos = []::string
 for(glist(race, "units")) unit:
     let u = at(glist(unit, "line")[0], "recipe")
     let slot = gstr(u, "slot", "")
@@ -56,7 +59,32 @@ for(glist(race, "units")) unit:
     let look = "{gstr(ps, "head_gear", "")} {gstr(ps, "torso", "")} {gstr(ps, "hand_r", "")}"
     expect((find(looks) l: l == look) < 0, "the {slot} looks like no other trade: {look}")
     looks.push(look)
-expect(looks.length == 13, "the serf and 12 trades: {looks.length}")
+    kit_slots.push(slot)
+    kit_heads.push(gstr(ps, "head_gear", ""))
+    kit_torsos.push(gstr(ps, "torso", ""))
+expect(looks.length == 14, "the serf and 13 trades (the fisherman, #149): {looks.length}")
+// (#156) At game size a trade reads by the colour of its clothes and its hat: each wears a colour of its own (its dress's
+// first shape, what covers the body), the serf alone the team's, and no two hats share theirs. The serf goes bare-headed.
+let gear_json = parse_json(read_file("../mods/steading/data/voxel/gear.json") or "\{\}")
+let part_gear = map(glist(gear_json, "parts")) p: [ gstr(p, "part", ""), gstr(p, "gear", "") ]
+def main_mat(part:string) -> string:  // the material of a part's gear's first shape, "" for none
+    let pg = find(part_gear) p: p[0] == part
+    if pg < 0: return ""
+    let g = gobj(gobj(gear_json, "gear"), part_gear[pg][1])
+    let fits = glist(gobj(g, "fits"), "*")
+    let shapes = if fits.length > 0: fits else: glist(g, "shapes")
+    return if shapes.length > 0: gstr(shapes[0], "mat", "") else: ""
+let dress_mats = []::string
+let hat_mats = []::string
+for(kit_slots) slot, i:
+    let dm = main_mat(kit_torsos[i])
+    let hm = main_mat(kit_heads[i])
+    expect(dm != "" and (find(dress_mats) m: m == dm) < 0, "the {slot} wears a colour no other trade does: {dm}")
+    expect((dm == "team") == (slot == "worker"), "only the serf is dressed in the team\'s colour ({slot}: {dm})")
+    if hm != "": expect((find(hat_mats) m: m == hm) < 0, "the {slot}\'s hat is a colour no other hat is: {hm}")
+    if slot == "worker": expect(kit_heads[i] == "", "the serf goes bare-headed: {kit_heads[i]}")
+    dress_mats.push(dm)
+    if hm != "": hat_mats.push(hm)
 expect(gstr(family("steading"), "architecture", "") == "steading", "the culture builds its own set")
 let src = read_file("model/steading.lobster")
 expect(src != nil, "model/steading.lobster is there")
@@ -77,5 +105,23 @@ for(buildings.keys) b, i:
             let call = made[m].substring(b.length + 1, -1)
             expect((find(models) x: x == call) < 0, "{b} is drawn by its own model, not {call} shared")
             models.push(call)
+// Each stage of a field and a vine row has a prop of its own (#154), none of them the meadow's (a tuft, a bush, the
+// base set's crops), so tilled, sown, ripe and reaped can be told apart from each other and from the grass.
+let field_terrain = gobj(lib_data("terrain.json"), "terrain")
+let field_props = []::string
+for([ "tilled", "wheat_sown", "wheat_ripe", "vines_young", "vines_ripe" ]) t:
+    let pr = gstr(gobj(field_terrain, t), "prop", "")
+    expect(pr != "" and pr != "tuft" and pr != "bush" and pr != "crops", "{t} has a field prop of its own, not the meadow\'s ({pr})")
+    expect((find(field_props) x: x == pr) < 0, "{t}\'s prop {pr} is no other stage\'s")
+    field_props.push(pr)
+// Each workshop that sounds busy names a building of the mod and a loop it brings (#121): its sound in audio.json and
+// the rendered WAV in the mod's audio.
+let work_sounds = gobj(lib_data("audio.json"), "buildings")
+expect(work_sounds.keys.length >= 5, "workshops have their working sounds ({work_sounds.keys.length})")
+for(work_sounds.keys) b, i:
+    let snd = gstr(work_sounds, b, "")
+    expect((find(buildings.keys) x: x == b) >= 0, "{b}, which sounds busy, is a building of the mod")
+    expect(gobj(gobj(lib_data("audio.json"), "sounds"), snd).keys.length > 0, "{b}\'s sound {snd} is in audio.json")
+    expect(read_file("../mods/steading/audio/sfx/{snd}_1.wav") != nil, "{b}\'s sound {snd} is rendered into the mod")
 print "{n_checks} checks, {n_failed} failed"
 if n_failed > 0: set_exit_code(1)

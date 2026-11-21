@@ -125,7 +125,7 @@
   "school": {
    "extends": "house",
    "name": "School",
-   "desc": "Teaches the town's people: new serfs, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters, smiths, swineherds, butchers and winegrowers for the workplaces. Each goes to work where it's needed.",
+   "desc": "Teaches the town's people: new serfs, and woodcutters, stone cutters, miners, farmers, millers, bakers, smelters, smiths, swineherds, butchers, winegrowers and fishermen for the workplaces. Each goes to work where it's needed.",
    "hotkey": "C",
    "pop": 0,
    "house": false,
@@ -144,7 +144,8 @@
     "smith",
     "swineherd",
     "butcher",
-    "winegrower"
+    "winegrower",
+    "fisherman"
    ],
    "cost": {
     "wood": 0,
@@ -189,7 +190,7 @@
    "_doc": "extends the house only because a mod's new building must (mods.lobster); a road plan has no look (game/roads)",
    "extends": "house",
    "name": "Road",
-   "desc": "Drag to lay a road, a cell at a time. Workers walk faster on it. Each cell takes a stone, carried there, and a moment's work.",
+   "desc": "Drag to lay a road, a cell at a time. Serfs keep to roads between buildings. Each cell takes a stone, carried there, and a moment's work.",
    "road": "road",
    "size": 1,
    "hp": 50,
@@ -210,7 +211,7 @@
   "inn": {
    "extends": "house",
    "name": "Inn",
-   "desc": "Feeds the town: six hungry people sit at its table at once, the rest wait for a seat. Each has a sausage, a loaf and a cup of wine, the most filling first, until full. Serfs keep it stocked.",
+   "desc": "Feeds the town: six hungry people sit at its table at once, the rest wait for a seat. Each has a sausage, a fish, a loaf and a cup of wine, the most filling first, until full. Serfs keep it stocked.",
    "hotkey": "D",
    "seats": 6,
    "pop": 0,
@@ -220,7 +221,8 @@
    "holds": {
     "bread": 12,
     "sausage": 12,
-    "wine": 12
+    "wine": 12,
+    "fish": 12
    },
    "cost": {
     "wood": 0,
@@ -229,6 +231,93 @@
    },
    "after": [
     "school"
+   ]
+  },
+  "fishermans_hut": {
+   "extends": "mining_camp",
+   "name": "Fisherman's Hut",
+   "desc": "A fisherman works here: he fishes the river or lake within reach, one fish at a time, and leaves the fish at the hut for the serfs. Fished out, a stretch of water fills with fish again in time.",
+   "hotkey": "",
+   "note": "",
+   "drop_off": [
+    "fish"
+   ],
+   "cost": {
+    "wood": 0,
+    "plank": 4,
+    "stone": 2
+   },
+   "holds": {
+    "fish": 8
+   },
+   "offers": [
+    "fish"
+   ],
+   "staff": {
+    "stonecutter": 0,
+    "fisherman": 1
+   },
+   "reach": 8,
+   "after": [
+    "inn"
+   ]
+  },
+  "marketplace": {
+   "extends": "house",
+   "name": "Marketplace",
+   "desc": "Trades one good for another: pick what to give and what to get, and how many times. Serfs bring what you give; once enough is in, the market swaps it for one of what you get, and serfs carry that home. The rate follows what each good is worth, and the market keeps its cut. No one works here.",
+   "hotkey": "",
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "note": "",
+   "market": true,
+   "size": 3,
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 6
+   },
+   "holds": {
+    "plank": 10,
+    "grain": 10,
+    "grapes": 10,
+    "wine": 10,
+    "flour": 10,
+    "bread": 10,
+    "fish": 10,
+    "coal": 10,
+    "iron_ore": 10,
+    "gold_ore": 10,
+    "iron": 10,
+    "tools": 10,
+    "pig": 10,
+    "sausage": 10,
+    "wood": 10,
+    "stone": 10,
+    "gold": 10
+   },
+   "offers": [
+    "plank",
+    "grain",
+    "grapes",
+    "wine",
+    "flour",
+    "bread",
+    "fish",
+    "coal",
+    "iron_ore",
+    "gold_ore",
+    "iron",
+    "tools",
+    "pig",
+    "sausage",
+    "wood",
+    "stone",
+    "gold"
+   ],
+   "after": [
+    "inn"
    ]
   },
   "iron_smelter": {

@@ -529,14 +529,43 @@ def turret_servo() -> [float]:
     let whine = add([ sine(n, 420.0), gain(sine(n, 840.0), 0.35), gain(sine(n, 1265.0), 0.12) ])
     return looped(gain(add([ whine, gain(bandpass(noise(n), 700.0, 3.0), 0.4) ]), 0.6), seconds(0.3))
 
-// A cart or an engine on wooden wheels: a low rumble, and the bumps of the road.
+// A cart or an engine on wooden wheels, a quiet bed under the mix (#169): the soft knock of each rim joint coming round,
+// two wheels a little out of step, now and then a stone under a wheel and a dry creak at the hub, over a low rumble with
+// the hiss filtered right off (the old one was mostly filtered noise and read as wind). Two turns of the wheels a loop, so
+// it repeats like a wheel does.
+def wood_knock(g:float) -> [float]:
+    let f = j(150.0, 190.0)
+    let body = modal(seconds(0.12), [ p3(f, 38.0, 1.0), p3(f * 2.3, 55.0, 0.45), p3(f * 5.1, 110.0, 0.12) ], 0.0)
+    return gain(lowpass(body, 1400.0), g)
+
+def hub_creak() -> [float]:
+    let n = seconds(j(0.28, 0.4))
+    let f0 = j(32.0, 40.0)
+    let rub = pulsec(curve(n) t: f0 + 40.0 * t, 0.12)
+    let wood = formants(rub, [ p3(j(380.0, 440.0), 7.0, 1.0), p3(j(880.0, 980.0), 9.0, 0.5), p3(1500.0, 10.0, 0.2) ])
+    return mul(wood, swell(n, 0.12, 0.2))
+
 def cart_roll() -> [float]:
-    let n = seconds(4.5)
-    let out = gain(lowpass(noise(n), 260.0), 1.4)
-    for(int(4.5 * 5.0)) k:
-        let m = seconds(0.07)
-        mix_into(out, mul(bandpass(noise(m), j(160.0, 380.0), 2.0), env(m, 0.004, 0.06)), seconds(max(0.0, float(k) / 5.0 + j(-0.05, 0.05))), 0.9, true)
-    return soft_clip(looped(out, seconds(0.5)), 1.2)
+    let n = seconds(4.0)
+    var bed = noise(seconds(4.5))
+    for(3): bed = lowpass(bed, 95.0)
+    let out = gain(highpass(looped(bed, seconds(0.5)), 30.0), 6.0)
+    let joints = 6
+    let turn = 2.0
+    for(2) w:
+        let start = if w == 0: 0.0 else: j(0.12, 0.2)
+        let lean = map(joints): j(-0.025, 0.025)
+        let loud = map(joints): j(0.55, 1.0)
+        for(2) r:
+            for(joints) k:
+                let at = start + float(r) * turn + float(k) * turn / float(joints) + lean[k]
+                mix_into(out, wood_knock(loud[k] * (if w == 0: 1.0 else: 0.8)), seconds(at + 4.0), 1.0, true)
+    for(3):
+        let at = j(0.0, 4.0)
+        mix_into(out, wood_knock(1.6), seconds(at), 1.0, true)
+        mix_into(out, burst(0.05, j(1600.0, 2400.0), 1.5, 70.0, 0.15), seconds(at), 1.0, true)
+    mix_into(out, hub_creak(), seconds(j(0.5, 3.0)), 0.6, true)
+    return out.slice(0, n)
 
 // A tank's gun: a hard crack, a heavy boom, the echo rolling off.
 def shell_boom() -> [float]:
@@ -552,18 +581,65 @@ def shell_hit() -> [float]:
     let bits = burst(0.5, 2600.0, 1.2, 7.0, 0.3)
     return soft_clip(add([ bang, boom, delay_start(bits, 0.03) ]), 2.0)
 
+// ------------------------------------------------------------------ workshops at work (#121): loops heard near a building
+// while it makes something, one channel a sound however many are working (as the units' loops)
+
+// A windmill turning: the wooden gearing's low rumble, the stones grinding, a creak of the cap each turn of the sails.
+def mill_work() -> [float]:
+    let n = seconds(4.4)
+    let out = add([ gain(lowpass(noise(n), 170.0), 1.3), gain(bandpass(noise(n), 520.0, 1.2), 0.25) ])
+    for(4) k: mix_into(out, creak(j(0.5, 0.7), j(38.0, 44.0), j(30.0, 34.0), 0.5), seconds(float(k) * 1.1 + j(0.0, 0.08)), 1.0, true)
+    return soft_clip(looped(out, seconds(0.4)), 1.2)
+
+// A saw in a log: the rasp of the teeth back and forth, each stroke swelling and dying, dust under it.
+def saw_work() -> [float]:
+    let n = seconds(4.0)
+    let stroke = curve(n) t: pow(abs(rsin(TAU * 0.75 * t)), 1.5)
+    let rasp = mul(add([ bandpass(noise(n), 2600.0, 2.0), gain(bandpass(noise(n), 1200.0, 3.0), 0.5) ]), stroke)
+    return soft_clip(looped(add([ gain(rasp, 0.9), gain(lowpass(noise(n), 300.0), 0.25) ]), seconds(0.3)), 1.2)
+
+// A forge: the fire's roar and the smith's hammer on the anvil, two blows and a rest, the iron ringing.
+def forge_work() -> [float]:
+    let n = seconds(4.8)
+    let out = gain(lowpass(noise(n), 320.0), 0.9)
+    for(8) k:
+        if k % 3 != 2:
+            let f = j(1180.0, 1260.0)
+            let ring = modal(seconds(0.35), [ p3(f, 14.0, 0.5), p3(f * 2.76, 20.0, 0.3), p3(f * 5.4, 30.0, 0.15) ], 0.0)
+            mix_into(out, add([ ring, burst(0.012, 4200.0, 1.0, 300.0, 0.8) ]), seconds(float(k) * 0.6 + j(0.0, 0.02)), 0.7, true)
+    return soft_clip(looped(out, seconds(0.3)), 1.3)
+
+// A fire in an oven or a furnace: a soft roar and the wood crackling in it.
+def fire_work() -> [float]:
+    let n = seconds(4.0)
+    let out = add([ gain(lowpass(noise(n), 380.0), 1.1), gain(bandpass(noise(n), 900.0, 1.0), 0.15) ])
+    for(26):
+        let m = seconds(0.012)
+        mix_into(out, mul(bandpass(noise(m), j(2000.0, 4500.0), 2.0), env(m, 0.001, 0.01)), seconds(j(0.0, 3.9)), j(0.3, 0.8), true)
+    return soft_clip(looped(out, seconds(0.3)), 1.2)
+
+// A wine press: the screw's slow creak as it's turned down, and the juice running out under it.
+def press_work() -> [float]:
+    let n = seconds(4.5)
+    let run = mul(bandpass(noise(n), 700.0, 4.0), curve(n) t: 0.6 + 0.4 * rsin(TAU * 3.1 * t) * rsin(TAU * 0.7 * t))
+    let out = gain(run, 0.6)
+    for(2) k: mix_into(out, creak(j(0.9, 1.2), j(30.0, 36.0), j(22.0, 26.0), 0.7), seconds(float(k) * 2.25 + j(0.0, 0.1)), 1.0, true)
+    return soft_clip(looped(out, seconds(0.4)), 1.2)
+
 // name -> takes, peak dB. Stings and ambience are one take.
 let sfx_names = [ "hit_blade", "hit_blunt", "hit_pierce", "arrow_land", "shoot_arrow", "shoot_bolt", "shoot_javelin",
                   "shoot_stone", "shoot_dart", "shoot_ball", "ram_hit", "catapult_release", "catapult_impact",
                   "bolt_release", "sling_release", "blast", "trade_paid", "fall", "building_fall", "chop", "mine",
                   "build", "forage", "farm_done", "ui_click", "ui_tip", "ui_hover", "ui_start", "ui_nope", "dice_roll",
                   "trained", "built", "research", "heal", "age", "won", "lost", "alarm", "town_bell", "town_bell_clear",
-                  "hero_up", "hero_fell", "meadow", "town_quiet", "town_busy", "engine_idle", "engine_move", "turret_servo", "cart_roll", "shell_boom", "shell_hit" ]
+                  "hero_up", "hero_fell", "meadow", "town_quiet", "town_busy", "engine_idle", "engine_move", "turret_servo", "cart_roll", "shell_boom", "shell_hit",
+                  "mill_work", "saw_work", "forge_work", "fire_work", "press_work" ]
 let sfx_takes = [ 4, 4, 4, 3, 3, 2, 2, 2, 2, 2, 3, 2, 3, 2, 2, 2, 2, 3, 2, 4, 4, 4, 4, 2, 3, 1, 2, 1, 1, 3, 1, 1, 1, 2,
-                  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3 ]
+                  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1, 1 ]
 let sfx_peaks = [ -4.0, -2.0, -2.0, -4.0, -3.0, -2.0, -3.0, -3.0, -6.0, -1.0, -1.5, -2.0, -1.5, -2.0, -2.0, -1.0, -10.0,
                   -3.0, -1.0, -3.0, -3.0, -3.0, -6.0, -5.0, -6.0, -8.0, -14.0, -2.0, -5.0, -6.0, -4.0, -3.0, -5.0, -12.0,
-                  -1.0, -1.0, -1.0, -1.0, -1.5, -4.0, -2.0, -2.0, -14.0, -12.0, -10.0, -10.0, -8.0, -14.0, -10.0, -1.0, -2.0 ]
+                  -1.0, -1.0, -1.0, -1.0, -1.5, -4.0, -2.0, -2.0, -14.0, -12.0, -10.0, -10.0, -8.0, -14.0, -18.0, -1.0, -2.0, -12.0,
+                  -12.0, -10.0, -12.0, -12.0 ]
 
 def sfx_take(name:string) -> [float]:
     return switch name:
@@ -616,5 +692,10 @@ def sfx_take(name:string) -> [float]:
         case "cart_roll": cart_roll()
         case "shell_boom": shell_boom()
         case "shell_hit": shell_hit()
+        case "mill_work": mill_work()
+        case "saw_work": saw_work()
+        case "forge_work": forge_work()
+        case "fire_work": fire_work()
+        case "press_work": press_work()
         case "town_quiet": town(false)
         default: town(true)
