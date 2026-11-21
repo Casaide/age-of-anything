@@ -3,7 +3,7 @@
 // rest ("watch": the bot plays you too).
 // Run: lobster game.lobster -- <pack dir> <scenario file, or - to make the start from the pack\'s races> [watch]
 //   left click / drag: select;  right click: move, attack, gather, build, rally;  shift: queue
-//   Ctrl + right click: attack-move;  X: stop;  B then 1-9: build;  1-9 on a building: train;  U: age up
+//   Ctrl + right click: attack-move;  X: stop;  B then 1-9: build;  1-9 on a building: train;  U: age up;  Delete: take your building down
 //   Q E R T Y F G H J on a building: research;  M: sound on / off;  the minimap (bottom right): click to look there
 //   WASD / arrows / screen edges: scroll;  wheel: zoom;  space: pause;  + / -: speed;  Ctrl/Cmd + / -: the HUD's size
 
@@ -672,6 +672,9 @@ var test_pause = false
 var pad_paged = false
 var pad_spot = float2_0
 var pad_houses = 0
+var pad_site = 0  // the house just laid, taken down from the wheel (creel #149, #180)
+var pad_demolished = false
+var pad_t0 = 0.0
 def pad_script() -> PadIn:
     let t = clock_s
     let none = PadIn { [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ], [] }
@@ -757,6 +760,17 @@ def pad_script() -> PadIn:
         return none
     if pad_step == 102:
         expect_ok(selected_workers().length > 0, "letting go of the A that laid the house keeps the worker selected")
+        if not pad_demolished:  // (#180: the site from the wheel: A on it, A again for its wheel, Delete; then back)
+            pad_demolished = true
+            for(b_id.length) b:
+                if b_owner[b] == ME and bt_name[b_kind[b]] == "house" and b_done[b] == 0: pad_site = b_id[b]
+            store_group(1)
+            let b = b_index_of(pad_site)
+            cam = iso(float(b_cx[b] * TILE + b_sx[b] * TILE / 2), float(b_cy[b] * TILE + b_sy[b] * TILE / 2))
+            pad_off = float2_0
+            test_pause = true
+            pad_step = 110
+            return none
         var best = int2 { -1, -1 }  // (#508: the reticle on the tree nearest the Town Center)
         var best_d = 1000000000
         for(H) y:
@@ -771,6 +785,43 @@ def pad_script() -> PadIn:
         pad_off = float2_0
         test_pause = true
         pad_step = 103
+        return none
+    if pad_step == 110:
+        pad_step++
+        return PadIn { none.axes, [ "a" ] }
+    if pad_step == 111:
+        pad_step++
+        return none
+    if pad_step == 112:
+        expect_ok(sel_building == pad_site, "A on the house site selects it ({sel_building}, {pad_site})")
+        pad_step++
+        return PadIn { none.axes, [ "a" ] }
+    if pad_step == 113:
+        pad_step++
+        return none
+    if pad_step == 114:
+        let del = find(pad_wheel) w: w.act == 19
+        expect_ok(del >= 0, "A again opens the site\'s wheel, with Delete on it ({pad_wheel.length} things)")
+        if del >= 0:
+            pad_page = max(0, find_s(wheel_groups(), pad_wheel[del].group))
+        let items = wheel_page_items()
+        let at = find(items) w: w.act == 19
+        let a = float(max(0, at)) / float(max(1, items.length)) * 360.0 - 90.0
+        test_pause = false
+        pad_step++
+        return PadIn { [ cos(a), sin(a), 0.0, 0.0, 0.0, 0.0 ], [] }
+    if pad_step == 115:
+        pad_step++
+        pad_t0 = t
+        return PadIn { none.axes, [ "a" ] }
+    if pad_step == 116 and t < pad_t0 + 1.0: return none  // (the order runs two turns on)
+    if pad_step == 116:
+        expect_ok(b_index_of(pad_site) < 0, "pointing at Delete and A takes the site down")
+        pad_step++
+        return PadIn { none.axes, [ "b" ] }
+    if pad_step == 117:
+        recall_group(1)
+        pad_step = 102
         return none
     if pad_step == 103:
         pad_step = 104

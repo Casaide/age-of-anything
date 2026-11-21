@@ -4780,6 +4780,56 @@ def put_done(p:int, id:string, cx:int, cy:int) -> int:  // place + done + full h
     b_hp[b] = bm_hp[p][k]
     return b
 
+// Demolish (creel #149, #180): a player takes down their own building or site, as the genre's Delete key does. It falls as a
+// building lost in a fight (people inside come out, its cells free); another player's building is refused; the
+// order crosses the lockstep wire like any other.
+class WireTurn:  // net.lockstep's TurnMsg, field for field (its HASH_EVERY clashes with this file's)
+    player:int
+    turn:int
+    cmds:[Cmd]
+    hashes:[int]
+
+def test_demolish():
+    new_world("flat_test", races0, rules0, [])
+    let sx = start_x[0] / 1000
+    let sy = start_y[0] / 1000
+    let hk = btype_index("house")
+    let at = free_spot(hk, sx + 5, sy + 5)
+    let house = b_id[put_done(0, "house", at.x, at.y)]
+    let cells = footprint(b_index_of(house))
+    let workers = own_workers_of(0)
+    let st = free_spot(hk, sx - 6, sy + 5)
+    let site = lay_foundation(0, [ workers[0] ], hk, st.x, st.y)
+    check(site != 0 and b_done[b_index_of(site)] == 0, "demolish: a site to take down ({site})")
+    let tc = b_id[0]
+    issue_cmd(0, CMD_GARRISON, workers.slice(1, 2), tc, 0, 0, 0)
+    for(300):
+        tick_on()
+        if inside_n(b_index_of(tc)) == 2: break
+    let foe_tc = b_id[(find(b_id.length) b: b_owner[b] == 1)]
+    issue_cmd(0, CMD_DEMOLISH, [], house, 0, 0, 0)
+    issue_cmd(0, CMD_DEMOLISH, [], site, 0, 0, 0)
+    issue_cmd(0, CMD_DEMOLISH, [], foe_tc, 0, 0, 0)  // not ours: refused
+    steps(12)
+    check(b_index_of(house) < 0, "demolish: a finished house is gone")
+    check(not exists(cells) c: occupied[c] != 0, "demolish: its cells are free")
+    check(b_index_of(site) < 0, "demolish: a site is gone")
+    check(b_index_of(foe_tc) >= 0, "demolish: another player\'s building stands")
+    issue_cmd(0, CMD_DEMOLISH, [], tc, 0, 0, 0)
+    steps(12)
+    check(b_index_of(tc) < 0 and index_of(workers[1]) >= 0 and index_of(workers[2]) >= 0, "demolish: those inside come out")
+    // Over the wire: a turn message with the order, written and read back as lockstep does, takes a building down.
+    let at2 = free_spot(hk, sx + 9, sy - 6)
+    let h2 = b_id[put_done(0, "house", at2.x, at2.y)]
+    issue_cmd(0, CMD_DEMOLISH, [], h2, 0, 0, 0)
+    let sent = WireTurn { 0, tick / TICKS_PER_TURN, pending, [] }
+    let back, err = flexbuffers_binary_to_value(typeof WireTurn, flexbuffers_value_to_binary(sent, 1000))
+    let got = if back: back.cmds else: []::Cmd
+    check(err == nil and exists(got) c: c.code == CMD_DEMOLISH and c.a == h2, "demolish: the order reads back off the wire ({err})")
+    pending = got
+    steps(12)
+    check(b_index_of(h2) < 0, "demolish: the order from the wire takes the house down")
+
 // Research and the age-up queue with units, the genre's way: in the order clicked, paid when queued,
 // refunded on cancel, never queued twice.
 def test_research_queue():
@@ -5418,7 +5468,7 @@ def test_save_load():
 
 // ------------------------------------------------------------------ the parts
 
-let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
+let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "demolish", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "walk_over_site", "gatherers", "hands_off", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "eating", "idle_wait", "sapper_sling", "sling_group", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "tower_ride", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
@@ -5490,6 +5540,7 @@ def run_part(name:string):
     elif name == "effects": test_effects()
     elif name == "university_castle": test_university_castle()
     elif name == "research_queue": test_research_queue()
+    elif name == "demolish": test_demolish()
     elif name == "tech": test_tech()
     elif name == "queue": test_queue()
     elif name == "wonder": test_wonder()
