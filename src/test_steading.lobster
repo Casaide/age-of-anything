@@ -838,6 +838,30 @@ def busy_sites():
     check(ids.length == 6 and hauling and slowest >= 0 and slowest <= 20 * TICK_HZ,
           "steading: six sites laid at once while serfs haul for them each get a builder within 20 s ({ids.length} laid, the slowest at {slowest} ticks: {first})")
 
+// A builder that gives its site up comes back, or another does (#74): the engine drops a site whose builder stands
+// stuck short of it, and nobody was ever sent again, so a site with all its goods stood unfinished. Here each of the
+// first three builders gives the school up as the engine does (clear_task), and with no new order it's still finished.
+def gave_up():
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    lay_sent = []
+    fields_by_script(false)
+    let sc = btype_index("school")
+    let id = lay_foundation(0, []::int, sc, start_x[0] / TILE - 2, start_y[0] / TILE - 6)
+    check(id != 0, "steading: a school is laid to give up")
+    let b = b_index_of(id)
+    var dropped = 0
+    var t = 0
+    while b_done[b] == 0 and t < 4 * 60 * TICK_HZ:
+        lay_step()
+        t++
+        if dropped < 3 and b_progress[b] > 0:
+            let i = find(u_x.length) j: u_task[j] == BUILD and u_target[j] == id
+            if i >= 0:
+                clear_task(i)
+                dropped++
+    check(dropped == 3 and b_done[b] != 0, "steading: a site given up three times is still finished, with no new order ({dropped} given up, done {b_done[b]}, {b_progress[b]} of {bt_build_ticks[sc]})")
+
 // Woods as in the genre (#126): a tree is one trunk, felled and carried home whole; a sapling grows into a tree after
 // its time (terrain.json "grows"), through a save too; and a woodcutter with no grown tree in reach plants saplings.
 def woods():
@@ -910,6 +934,7 @@ fields()
 inn_seats()
 start_rules()
 busy_sites()
+gave_up()
 woods()
 let h1 = play()
 let h2 = play()
