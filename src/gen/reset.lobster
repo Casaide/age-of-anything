@@ -197,6 +197,7 @@ var stashed_u_hull = []::int
 var stashed_u_lx = []::int
 var stashed_u_ly = []::int
 var stashed_u_mount = []::[int]
+var stashed_u_inside = []::[int]
 var stashed_u_orders = []::[Cmd]
 var stashed_hook_unit_names = []::string
 var stashed_hook_unit_cols = []::[int]
@@ -266,6 +267,7 @@ var stashed_bt_wall = []::int
 var stashed_bt_over_trees = []::int
 var stashed_r_fog_tower = 0
 var stashed_r_garrison_heal_every = 0
+var stashed_r_dock_holds:int = DOCK_HOLDS
 var stashed_r_call_range = 0
 var stashed_garrison_not = []::int
 var stashed_hero_types = []::int
@@ -748,6 +750,7 @@ def reset_world():
     u_lx = []::int
     u_ly = []::int
     u_mount = []::[int]
+    u_inside = []::[int]
     u_orders = []::[Cmd]
     hook_unit_names = []::string
     hook_unit_cols = []::[int]
@@ -817,6 +820,7 @@ def reset_world():
     bt_over_trees = []::int
     r_fog_tower = 0
     r_garrison_heal_every = 0
+    r_dock_holds = DOCK_HOLDS
     r_call_range = 0
     garrison_not = []::int
     hero_types = []::int
@@ -1289,6 +1293,7 @@ def stash_world():
     stashed_u_lx = u_lx
     stashed_u_ly = u_ly
     stashed_u_mount = u_mount
+    stashed_u_inside = u_inside
     stashed_u_orders = u_orders
     stashed_hook_unit_names = hook_unit_names
     stashed_hook_unit_cols = hook_unit_cols
@@ -1358,6 +1363,7 @@ def stash_world():
     stashed_bt_over_trees = bt_over_trees
     stashed_r_fog_tower = r_fog_tower
     stashed_r_garrison_heal_every = r_garrison_heal_every
+    stashed_r_dock_holds = r_dock_holds
     stashed_r_call_range = r_call_range
     stashed_garrison_not = garrison_not
     stashed_hero_types = hero_types
@@ -1823,6 +1829,7 @@ def unstash_world():
     u_lx = stashed_u_lx
     u_ly = stashed_u_ly
     u_mount = stashed_u_mount
+    u_inside = stashed_u_inside
     u_orders = stashed_u_orders
     hook_unit_names = stashed_hook_unit_names
     hook_unit_cols = stashed_hook_unit_cols
@@ -1892,6 +1899,7 @@ def unstash_world():
     bt_over_trees = stashed_bt_over_trees
     r_fog_tower = stashed_r_fog_tower
     r_garrison_heal_every = stashed_r_garrison_heal_every
+    r_dock_holds = stashed_r_dock_holds
     r_call_range = stashed_r_call_range
     garrison_not = stashed_garrison_not
     hero_types = stashed_hero_types

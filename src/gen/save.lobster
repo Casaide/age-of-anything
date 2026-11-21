@@ -198,6 +198,7 @@ class WorldSave:
     u_lx:[int]
     u_ly:[int]
     u_mount:[[int]]
+    u_inside:[[int]]
     u_orders:[[Cmd]]
     hook_unit_names:[string]
     hook_unit_cols:[[int]]
@@ -267,6 +268,7 @@ class WorldSave:
     bt_over_trees:[int]
     r_fog_tower:int
     r_garrison_heal_every:int
+    r_dock_holds:int
     r_call_range:int
     garrison_not:[int]
     hero_types:[int]
@@ -746,6 +748,7 @@ def world_bytes(bots:[Bot]) -> string:
         u_lx,
         u_ly,
         u_mount,
+        u_inside,
         u_orders,
         hook_unit_names,
         hook_unit_cols,
@@ -815,6 +818,7 @@ def world_bytes(bots:[Bot]) -> string:
         bt_over_trees,
         r_fog_tower,
         r_garrison_heal_every,
+        r_dock_holds,
         r_call_range,
         garrison_not,
         hero_types,
@@ -1307,6 +1311,7 @@ def load_world_bytes(data:string) -> [Bot]:
     u_lx = s.u_lx
     u_ly = s.u_ly
     u_mount = s.u_mount
+    u_inside = s.u_inside
     u_orders = s.u_orders
     hook_unit_names = s.hook_unit_names
     hook_unit_cols = s.hook_unit_cols
@@ -1376,6 +1381,7 @@ def load_world_bytes(data:string) -> [Bot]:
     bt_over_trees = s.bt_over_trees
     r_fog_tower = s.r_fog_tower
     r_garrison_heal_every = s.r_garrison_heal_every
+    r_dock_holds = s.r_dock_holds
     r_call_range = s.r_call_range
     garrison_not = s.garrison_not
     hero_types = s.hero_types

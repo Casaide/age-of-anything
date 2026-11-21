@@ -1202,6 +1202,7 @@ def make_match() -> bool:
         let fgate = btype_index(if stone: "stone_gate" else: "palisade_gate")
         let ftower = btype_index(if stone: "wall_tower" else: "watchtower")
         let tc = town_center(ME)
+        let fside = if has_s(args, "tower_ride"): 1 else: ME  // (tower_ride: the wall is the enemy's, to dock against)
         if tc >= 0:
             var done = false
             for([ int2 { 5, -4 }, int2 { -12, 5 }, int2 { 5, 6 }, int2 { -10, -10 }, int2 { 6, 0 }, int2 { 0, 6 }, int2 { -8, 0 }, int2 { 0, -8 } ]) o:
@@ -1220,7 +1221,7 @@ def make_match() -> bool:
                     if fits * 10 >= cells.length * 8:  // (most of it: a tree or a rock in the way leaves a gap)
                         for(cells) c:
                             let k = if c.z == -1: fwall elif c.z == -2: fgate else: ftower
-                            if can_place(ME, k, c.x, c.y): fort_put(ME, k, c.x, c.y, 0)
+                            if can_place(ME, k, c.x, c.y): fort_put(fside, k, c.x, c.y, 0)
                         update_pop()
                         cam = iso(float(x0 * 1000 + 5500), float(y0 * 1000 + 4500))
                         print "fort: {fits} of {cells.length} tiles at {x0},{y0}"
@@ -1263,7 +1264,17 @@ def make_match() -> bool:
                     issue_cmd(p, CMD_ATTACK_MOVE, ids, start_x[foe], start_y[foe], 0, 0)
                     army_snap = true
         update_pop()
-        if fort_gate.x >= 0 and has_s(args, "in_gate"):  // (captures: soldiers standing through the gate's arch, before, in it, past it)
+        if fort_gate.x >= 0 and has_s(args, "tower_ride"):  // (captures: our siege tower carries swordsmen to the wall, #177)
+            let tk = type_of_slot(ME, "siege_tower")
+            let ik = type_of_slot(ME, "infantry")
+            if tk >= 0 and ik >= 0:
+                let tx = (fort_gate.x - 2) * 1000 + 500
+                let tw = add_unit(ME, tk, tx, (fort_gate.y + 6) * 1000)
+                let rid = map(6) n: u_id[add_unit(ME, ik, tx - 2500 + n * 1000, (fort_gate.y + 8) * 1000)]
+                issue_cmd(ME, CMD_GARRISON, rid, u_id[tw], 0, 0, 0)
+                issue_cmd(ME, CMD_MOVE, [ u_id[tw] ], tx, (fort_gate.y + 1) * 1000 + 500, 0, 0, 1)
+                cam = iso(float(tx), float((fort_gate.y + 3) * 1000))
+        elif fort_gate.x >= 0 and has_s(args, "in_gate"):  // (captures: soldiers standing through the gate's arch, before, in it, past it)
             let gk = find(t_slot.length) j: t_player[j] == ME and t_slot[j] == "infantry"
             let gx = (fort_gate.x + 1) * 1000 + 500
             if gk >= 0:

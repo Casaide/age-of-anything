@@ -2791,6 +2791,59 @@ def test_siege_ways():
     let b = ways_run(false)
     check(a == b, "siege ways: the same commands give the same state hash")
 
+// A siege tower carries its soldiers (#177): rat swordsmen sent to their tower board it (off the field, on its records,
+// their pop kept); it rolls to the frogs' south wall and docks, and they come out and stand on the walkway. Another tower
+// unloads by hand beside it; a third, struck down with riders aboard, spills them.
+def riders_of(j:int) -> int: return u_inside[j].length / REC_SIZE
+def test_tower_ride():
+    new_world("flat_test", races0, rules0, [])
+    in_age3()
+    fortify_ring(0, 12, 12, 6, ring_spec(""))
+    let tower = lone(1, "siege_tower", 15500, 26500, "passive")
+    let swords = map(4) k: lone(1, "infantry", 13500 + k * 900, 28500, "stand")
+    let pop0 = pop[1]
+    issue_cmd(1, CMD_GARRISON, swords, tower, 0, 0, 0)
+    for(400):
+        tick_on()
+        if riders_of(index_of(tower)) == swords.length: break
+    let off = (filter(swords) uid: index_of(uid) < 0).length
+    check(riders_of(index_of(tower)) == swords.length and off == swords.length and pop[1] == pop0, "tower ride: swordsmen board their siege tower ({riders_of(index_of(tower))} aboard, {off} off the field, pop {pop[1]} was {pop0})")
+    issue_cmd(1, CMD_MOVE, [ tower ], 15500, 18500, 0, 0)
+    var docked = -1
+    var aboard_then = 0
+    for(900) t:
+        tick_on()
+        if docked < 0 and docked_at(index_of(tower)) >= 0:
+            docked = t
+            aboard_then = riders_of(index_of(tower))
+        if count_up(swords) == swords.length: break
+    check(docked >= 0 and aboard_then == swords.length, "tower ride: they ride until it docks against the wall ({aboard_then} aboard then)")
+    check(count_up(swords) == swords.length and riders_of(index_of(tower)) == 0, "tower ride: docked, they come out onto the walkway ({count_up(swords)} up)")
+    let t2 = lone(1, "siege_tower", 22500, 26500, "passive")
+    let two = map(2) k: lone(1, "spear", 21500 + k * 1800, 28500, "stand")
+    issue_cmd(1, CMD_GARRISON, two, t2, 0, 0, 0)
+    for(400):
+        tick_on()
+        if riders_of(index_of(t2)) == two.length: break
+    issue_cmd(1, CMD_UNGARRISON, [], t2, 0, 0, 0)
+    for(20):
+        tick_on()
+        if riders_of(index_of(t2)) == 0: break
+    let out = (filter(two) uid: index_of(uid) >= 0 and gap(index_of(uid), index_of(t2)) < 2000).length
+    check(riders_of(index_of(t2)) == 0 and out == two.length, "tower ride: unloaded by hand, they step out beside it ({out} of {two.length})")
+    issue_cmd(1, CMD_GARRISON, two, t2, 0, 0, 0)
+    for(400):
+        tick_on()
+        if riders_of(index_of(t2)) == two.length: break
+    u_hp[index_of(t2)] = 1
+    let killer = lone(0, "infantry", 23500, 27500, "aggressive")
+    issue_cmd(0, CMD_ATTACK, [ killer ], t2, 0, 0, 0)
+    for(400):
+        tick_on()
+        if index_of(t2) < 0: break
+    let spilled = (filter(two) uid: index_of(uid) >= 0).length
+    check(index_of(t2) < 0 and spilled == two.length, "tower ride: a tower struck down spills its riders ({spilled} of {two.length})")
+
 // ------------------------------------------------------------------ game modes
 
 def walled(p:int) -> int:
@@ -5345,7 +5398,7 @@ def test_save_load():
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "walk_over_site", "gatherers", "hands_off", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "eating", "idle_wait", "sapper_sling", "sling_group", "gates", "diagonal_wall", "diagonal_gates",
-              "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
+              "walls", "siege_ways", "tower_ride", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
               "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "wonder", "save_load", "match", "match_b", "match_flipped" ]
@@ -5386,6 +5439,7 @@ def run_part(name:string):
     elif name == "diagonal_gates": test_diagonal_gates()
     elif name == "walls": test_walls()
     elif name == "siege_ways": test_siege_ways()
+    elif name == "tower_ride": test_tower_ride()
     elif name == "modes": test_modes()
     elif name == "movement_classes": test_movement_classes()
     elif name == "land": test_land()
