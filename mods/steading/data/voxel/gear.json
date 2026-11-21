@@ -1056,7 +1056,7 @@
    "flags": [
     "helm"
    ],
-   "_doc": "a stone cutter's brown felt cap",
+   "_doc": "a stone cutter's white dust cap (#156)",
    "fits": {
     "*": [
      {
@@ -1067,7 +1067,7 @@
        2.7
       ],
       "r": 2.0,
-      "mat": "felt_brown"
+      "mat": "dust_cap"
      },
      {
       "disc": [
@@ -1085,7 +1085,7 @@
        2.4,
        0.25
       ],
-      "mat": "felt_brown"
+      "mat": "dust_cap"
      }
     ]
    }
@@ -1286,7 +1286,7 @@
    "flags": [
     "helm"
    ],
-   "_doc": "a butcher's white cap",
+   "_doc": "a butcher's blue cap (#156)",
    "fits": {
     "*": [
      {
@@ -1297,7 +1297,7 @@
        2.7
       ],
       "r": 2.0,
-      "mat": "apron_white"
+      "mat": "stripe_blue"
      },
      {
       "disc": [
@@ -1315,7 +1315,7 @@
        2.4,
        0.25
       ],
-      "mat": "apron_white"
+      "mat": "stripe_blue"
      }
     ]
    }
@@ -1324,9 +1324,47 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a serf's undyed tunic, a rope belt",
+   "_doc": "a serf's tunic in the team's colour, a rope belt, and a wicker basket on his back: the one who carries (#156)",
    "fits": {
     "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.9,
+       3.1
+      ],
+      "mat": "team"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.9,
+       3.1
+      ],
+      "mat": "team"
+     },
      {
       "ring": [
        "chest",
@@ -1348,18 +1386,71 @@
      {
       "cap": [
        "chest",
-       -2.0,
-       1.9,
-       2.4
+       0,
+       -3.8,
+       -4.4
       ],
       "to": [
        "chest",
-       2.1,
-       1.7,
-       -4.2
+       0,
+       -4.0,
+       1.6
       ],
-      "r": 0.5,
-      "mat": "team"
+      "r": [
+       1.9,
+       2.5
+      ],
+      "mat": "wicker"
+     },
+     {
+      "ring": [
+       "chest",
+       0,
+       -4.0,
+       1.6
+      ],
+      "n": [
+       0,
+       0,
+       1
+      ],
+      "r": [
+       2.6,
+       0.35
+      ],
+      "mat": "rope"
+     },
+     {
+      "cap": [
+       "chest",
+       -1.6,
+       1.4,
+       2.2
+      ],
+      "to": [
+       "chest",
+       -1.6,
+       -2.2,
+       1.6
+      ],
+      "r": 0.3,
+      "mat": "rope"
+     },
+     {
+      "cap": [
+       "chest",
+       1.6,
+       1.4,
+       2.2
+      ],
+      "to": [
+       "chest",
+       1.6,
+       -2.2,
+       1.6
+      ],
+      "r": 0.3,
+      "mat": "rope"
      }
     ]
    }
@@ -1368,7 +1459,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a woodcutter's leather jerkin",
+   "_doc": "a woodcutter's green jerkin (#156)",
    "fits": {
     "*": [
      {
@@ -1388,7 +1479,7 @@
        3.15,
        2.85
       ],
-      "mat": "jerkin"
+      "mat": "jerkin_green"
      },
      {
       "cap": [
@@ -1407,7 +1498,7 @@
        3.15,
        2.85
       ],
-      "mat": "jerkin"
+      "mat": "jerkin_green"
      },
      {
       "cap": [
@@ -1516,7 +1607,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a sawyer's rust shirt and a canvas apron",
+   "_doc": "a sawyer's tan jerkin (#156)",
    "fits": {
     "*": [
      {
@@ -1536,7 +1627,7 @@
        3.15,
        2.85
       ],
-      "mat": "rust_shirt"
+      "mat": "jerkin_tan"
      },
      {
       "cap": [
@@ -1555,27 +1646,7 @@
        3.15,
        2.85
       ],
-      "mat": "rust_shirt"
-     },
-     {
-      "box": [
-       "chest",
-       0,
-       2.35,
-       -7.25
-      ],
-      "n": [
-       0,
-       1,
-       0
-      ],
-      "half": [
-       2.6,
-       0.35,
-       3.25
-      ],
-      "round": 0.0,
-      "mat": "canvas"
+      "mat": "jerkin_tan"
      },
      {
       "cap": [
@@ -1600,7 +1671,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a farmer's pale smock",
+   "_doc": "a farmer's fawn smock (#156)",
    "fits": {
     "*": [
      {
@@ -1620,7 +1691,7 @@
        3.15,
        2.85
       ],
-      "mat": "smock"
+      "mat": "smock_fawn"
      },
      {
       "cap": [
@@ -1639,7 +1710,7 @@
        3.15,
        2.85
       ],
-      "mat": "smock"
+      "mat": "smock_fawn"
      },
      {
       "cap": [
@@ -1728,7 +1799,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a baker's ochre shirt under a white bib apron",
+   "_doc": "a baker's ochre shirt under a brown bib apron (#156)",
    "fits": {
     "*": [
      {
@@ -1787,7 +1858,7 @@
        6.15
       ],
       "round": 0.0,
-      "mat": "apron_white"
+      "mat": "apron_leather"
      },
      {
       "cap": [
@@ -1803,7 +1874,7 @@
        3.6
       ],
       "r": 0.3,
-      "mat": "apron_white"
+      "mat": "apron_leather"
      },
      {
       "cap": [
@@ -1819,7 +1890,7 @@
        3.6
       ],
       "r": 0.3,
-      "mat": "apron_white"
+      "mat": "apron_leather"
      },
      {
       "cap": [
@@ -2024,7 +2095,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a smith's blue shirt under a leather bib apron",
+   "_doc": "a smith's pale shirt under a big black leather apron (#156)",
    "fits": {
     "*": [
      {
@@ -2044,7 +2115,7 @@
        3.15,
        2.85
       ],
-      "mat": "smith_blue"
+      "mat": "smith_shirt"
      },
      {
       "cap": [
@@ -2063,7 +2134,7 @@
        3.15,
        2.85
       ],
-      "mat": "smith_blue"
+      "mat": "smith_shirt"
      },
      {
       "box": [
@@ -2083,7 +2154,7 @@
        6.9
       ],
       "round": 0.0,
-      "mat": "apron_leather"
+      "mat": "apron_black"
      },
      {
       "cap": [
@@ -2099,7 +2170,7 @@
        3.6
       ],
       "r": 0.3,
-      "mat": "apron_leather"
+      "mat": "apron_black"
      },
      {
       "cap": [
@@ -2115,7 +2186,7 @@
        3.6
       ],
       "r": 0.3,
-      "mat": "apron_leather"
+      "mat": "apron_black"
      },
      {
       "cap": [
@@ -2140,7 +2211,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a swineherd's grey-blue tunic",
+   "_doc": "a swineherd's khaki tunic (#156)",
    "fits": {
     "*": [
      {
@@ -2160,7 +2231,7 @@
        3.15,
        2.85
       ],
-      "mat": "herd_blue"
+      "mat": "herd_khaki"
      },
      {
       "cap": [
@@ -2179,7 +2250,7 @@
        3.15,
        2.85
       ],
-      "mat": "herd_blue"
+      "mat": "herd_khaki"
      },
      {
       "cap": [
@@ -2204,7 +2275,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a butcher's white shirt under a blue-striped apron",
+   "_doc": "a butcher's red shirt under a white apron striped blue (#156)",
    "fits": {
     "*": [
      {
@@ -2224,7 +2295,7 @@
        3.15,
        2.85
       ],
-      "mat": "apron_white"
+      "mat": "butcher_red"
      },
      {
       "cap": [
@@ -2243,7 +2314,7 @@
        3.15,
        2.85
       ],
-      "mat": "apron_white"
+      "mat": "butcher_red"
      },
      {
       "box": [
@@ -2957,7 +3028,7 @@
    "flags": [
     "helm"
    ],
-   "_doc": "a winegrower's red kerchief, knotted at the back",
+   "_doc": "a winegrower's purple kerchief, knotted at the back (#156)",
    "fits": {
     "*": [
      {
@@ -2968,7 +3039,7 @@
        2.2
       ],
       "r": 2.25,
-      "mat": "kerchief_red"
+      "mat": "kerchief_purple"
      },
      {
       "ball": [
@@ -2978,7 +3049,7 @@
        1.6
       ],
       "r": 0.7,
-      "mat": "kerchief_red"
+      "mat": "kerchief_purple"
      }
     ]
    }
