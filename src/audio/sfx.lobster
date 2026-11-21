@@ -529,14 +529,43 @@ def turret_servo() -> [float]:
     let whine = add([ sine(n, 420.0), gain(sine(n, 840.0), 0.35), gain(sine(n, 1265.0), 0.12) ])
     return looped(gain(add([ whine, gain(bandpass(noise(n), 700.0, 3.0), 0.4) ]), 0.6), seconds(0.3))
 
-// A cart or an engine on wooden wheels: a low rumble, and the bumps of the road.
+// A cart or an engine on wooden wheels, a quiet bed under the mix (#169): the soft knock of each rim joint coming round,
+// two wheels a little out of step, now and then a stone under a wheel and a dry creak at the hub, over a low rumble with
+// the hiss filtered right off (the old one was mostly filtered noise and read as wind). Two turns of the wheels a loop, so
+// it repeats like a wheel does.
+def wood_knock(g:float) -> [float]:
+    let f = j(150.0, 190.0)
+    let body = modal(seconds(0.12), [ p3(f, 38.0, 1.0), p3(f * 2.3, 55.0, 0.45), p3(f * 5.1, 110.0, 0.12) ], 0.0)
+    return gain(lowpass(body, 1400.0), g)
+
+def hub_creak() -> [float]:
+    let n = seconds(j(0.28, 0.4))
+    let f0 = j(32.0, 40.0)
+    let rub = pulsec(curve(n) t: f0 + 40.0 * t, 0.12)
+    let wood = formants(rub, [ p3(j(380.0, 440.0), 7.0, 1.0), p3(j(880.0, 980.0), 9.0, 0.5), p3(1500.0, 10.0, 0.2) ])
+    return mul(wood, swell(n, 0.12, 0.2))
+
 def cart_roll() -> [float]:
-    let n = seconds(4.5)
-    let out = gain(lowpass(noise(n), 260.0), 1.4)
-    for(int(4.5 * 5.0)) k:
-        let m = seconds(0.07)
-        mix_into(out, mul(bandpass(noise(m), j(160.0, 380.0), 2.0), env(m, 0.004, 0.06)), seconds(max(0.0, float(k) / 5.0 + j(-0.05, 0.05))), 0.9, true)
-    return soft_clip(looped(out, seconds(0.5)), 1.2)
+    let n = seconds(4.0)
+    var bed = noise(seconds(4.5))
+    for(3): bed = lowpass(bed, 95.0)
+    let out = gain(highpass(looped(bed, seconds(0.5)), 30.0), 6.0)
+    let joints = 6
+    let turn = 2.0
+    for(2) w:
+        let start = if w == 0: 0.0 else: j(0.12, 0.2)
+        let lean = map(joints): j(-0.025, 0.025)
+        let loud = map(joints): j(0.55, 1.0)
+        for(2) r:
+            for(joints) k:
+                let at = start + float(r) * turn + float(k) * turn / float(joints) + lean[k]
+                mix_into(out, wood_knock(loud[k] * (if w == 0: 1.0 else: 0.8)), seconds(at + 4.0), 1.0, true)
+    for(3):
+        let at = j(0.0, 4.0)
+        mix_into(out, wood_knock(1.6), seconds(at), 1.0, true)
+        mix_into(out, burst(0.05, j(1600.0, 2400.0), 1.5, 70.0, 0.15), seconds(at), 1.0, true)
+    mix_into(out, hub_creak(), seconds(j(0.5, 3.0)), 0.6, true)
+    return out.slice(0, n)
 
 // A tank's gun: a hard crack, a heavy boom, the echo rolling off.
 def shell_boom() -> [float]:
@@ -609,7 +638,7 @@ let sfx_takes = [ 4, 4, 4, 3, 3, 2, 2, 2, 2, 2, 3, 2, 3, 2, 2, 2, 2, 3, 2, 4, 4,
                   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1, 1 ]
 let sfx_peaks = [ -4.0, -2.0, -2.0, -4.0, -3.0, -2.0, -3.0, -3.0, -6.0, -1.0, -1.5, -2.0, -1.5, -2.0, -2.0, -1.0, -10.0,
                   -3.0, -1.0, -3.0, -3.0, -3.0, -6.0, -5.0, -6.0, -8.0, -14.0, -2.0, -5.0, -6.0, -4.0, -3.0, -5.0, -12.0,
-                  -1.0, -1.0, -1.0, -1.0, -1.5, -4.0, -2.0, -2.0, -14.0, -12.0, -10.0, -10.0, -8.0, -14.0, -10.0, -1.0, -2.0, -12.0,
+                  -1.0, -1.0, -1.0, -1.0, -1.5, -4.0, -2.0, -2.0, -14.0, -12.0, -10.0, -10.0, -8.0, -14.0, -18.0, -1.0, -2.0, -12.0,
                   -12.0, -10.0, -12.0, -12.0 ]
 
 def sfx_take(name:string) -> [float]:

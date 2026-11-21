@@ -206,6 +206,7 @@ def research_tip(bi:int, r:int) -> string:
     let rows = []::string
     let desc = gstr(su_research[r], "desc", "")
     if desc != "": rows.push(desc)
+    for(research_gains(ME, r)) g: rows.push("+" + g)  // (what it gives, #168)
     let why = why_barred(bi, r)
     if why != "": rows.push(why)
     elif not rows.length: rows.push("Click to research it.")
