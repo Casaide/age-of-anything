@@ -549,6 +549,43 @@ def steading_fishermans_hut(team:float3) -> BSpec:
     blights(sp, [ st_lit(body, bv(-0.1, 0.25, 0.11), 0.12, 0.1) ])
     return sp
 
+// The marketplace (#43): an open square of trestle stalls under striped awnings round a set of scales on a post, crates
+// and sacks of goods between them, a small counting house at the back.
+def steading_marketplace(team:float3) -> BSpec:
+    let body = mnode()
+    add_child(body, bbox(bv(2.3, 0.04, 2.3), st_stone_b(), bv(0.0, 0.02, 0.0)))  // the square's paving
+    st_walls(body, 0.9, 0.6, 0.55, bm("plaster"), 0.0, bv(-0.55, 0.0, -0.75))
+    st_frame(body, 0.9, 0.6, 0.55, 0.0, bv(-0.55, 0.0, -0.75))
+    st_roof(body, bv(-0.55, 0.55, -0.75), 0.9, 0.6, 0.32, st_tile(), bm("plaster"))
+    st_door(body, -0.55, -0.45, 0.22, 0.38)
+    let stripes = [ [ "#b03a30", "#efe8e0" ], [ "#3a6a9a", "#efe8e0" ], [ "#c8a040", "#5a3a2a" ] ]
+    for([ bv(0.6, 0.0, -0.6), bv(0.75, 0.0, 0.35), bv(-0.45, 0.0, 0.6) ]) at, n:
+        add_child(body, bbox(bv(0.62, 0.05, 0.3), st_board(), at + bv(0.0, 0.26, 0.0)))  // the stall's counter on trestles
+        for([ -0.26, 0.26 ]) x: add_child(body, bbox(bv(0.04, 0.26, 0.26), st_timber(), at + bv(x, 0.13, 0.0)))
+        for([ -0.3, 0.3 ]) x: add_child(body, bbox(bv(0.035, 0.62, 0.035), st_timber(), at + bv(x, 0.31, -0.16)))
+        for(5) i: add_child(body, bbox(bv(0.13, 0.02, 0.42), st_col(stripes[n][i % 2]), at + bv(-0.26 + float(i) * 0.13, 0.6, 0.02), bv(-18.0, 0.0, 0.0)))
+    // loaves
+    for([ bv(0.45, 0.33, -0.6), bv(0.7, 0.33, -0.6) ]) p: add_child(body, bball(0.07, st_col("#c07a3a"), p, bv(1.2, 0.7, 1.0)))
+    // fish
+    for(3) i: add_child(body, bcyl(0.035, 0.035, 0.12, st_col("#a8bcc6", 0.4), bv(0.6 + float(i) * 0.1, 0.31, 0.35), bv(0.0, 0.0, 90.0), 6))
+    // iron bars, tools
+    add_child(body, bbox(bv(0.12, 0.1, 0.1), bflat(html("#9aa4ae"), 0.4, 0.8), bv(-0.5, 0.33, 0.6)))
+    add_child(body, bbox(bv(0.14, 0.06, 0.08), bflat(html("#7f8890"), 0.4, 0.8), bv(-0.32, 0.31, 0.6)))
+    let post = bv(0.05, 0.0, -0.05)  // the scales on their post
+    add_child(body, bbox(bv(0.06, 0.8, 0.06), st_timber(), post + bv(0.0, 0.4, 0.0)))
+    add_child(body, bbox(bv(0.6, 0.03, 0.03), st_timber(), post + bv(0.0, 0.8, 0.0)))
+    let brass = bflat(html("#c8a040"), 0.3, 0.8)
+    for([ -0.27, 0.27 ]) x:
+        add_child(body, beam(post + bv(x, 0.79, 0.0), post + bv(x, 0.55, 0.0), 0.006, bm("weave"), 3))
+        add_child(body, bcyl(0.09, 0.07, 0.03, brass, post + bv(x, 0.54, 0.0), float3_0, 10))
+    for([ bv(0.25, 0.12, 0.85), bv(0.48, 0.12, 0.9) ]) p: add_child(body, bbox(bv(0.22, 0.22, 0.22), st_board_dark(), p))
+    for([ bv(-0.9, 0.1, 0.1), bv(-0.8, 0.1, 0.25) ]) p: add_child(body, bball(0.11, st_col("#d8c8a0", 1.0), p, bv(1.0, 1.2, 0.9)))
+    barrel(bv(0.95, 0.0, -0.1), body)
+    st_cloth(body, bv(-0.3, 0.38, -0.44), team)
+    let sp = st_done(body, team, bv(-0.55, 0.0, -0.44), 0.2, 0.36)
+    blights(sp, [ st_lit(body, bv(-0.3, 0.25, -0.44), 0.12, 0.1) ])
+    return sp
+
 // A Steading building by its type (the mod's own ids): nil for one this set has no model of.
 def steading_building(type:string, team:float3) -> BSpec?:
     switch type:
@@ -563,6 +600,7 @@ def steading_building(type:string, team:float3) -> BSpec?:
         case "bakery": return steading_bakery(team)
         case "inn": return steading_inn(team)
         case "fishermans_hut": return steading_fishermans_hut(team)
+        case "marketplace": return steading_marketplace(team)
         case "pig_farm": return steading_pig_farm(team)
         case "butcher": return steading_butcher(team)
         case "coal_mine": return steading_mine("coal", team)

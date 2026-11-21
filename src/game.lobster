@@ -610,6 +610,7 @@ import .game.pad  // (here: it plays through the controls above)
 import .game.techtree
 import .game.goods
 import .game.school      // (before the panel: its globals; it calls the panel's portraits)
+import .game.market      // (before the panel, after the school: it draws with the school's helpers)
 import .game.town_build  // (before the panel too)
 import .game.panel
 import .game.tips

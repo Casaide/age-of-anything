@@ -658,6 +658,46 @@ def fish_chain() -> int:
     check(fished_out, "steading: a river cell fished out turns to fished river, to fill again")
     return h
 
+// The marketplace (#43), as in the genre: three trades of planks for iron ordered at a market. Serfs bring the planks,
+// the market swaps them at the rate the goods\' worth sets (with its cut), and serfs carry the iron home. Whether it did,
+// and the hash.
+def market_chain() -> int:
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    lay_sent = []
+    fields_by_script(false)
+    bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own)
+    let pl = res("plank")
+    let fe = res("iron")
+    hold_put(0, pl, 80)
+    let iron0 = all_of(fe)
+    var planks0 = 0  // (once it\'s built: the market\'s own planks aren\'t trade)
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    var laid = false
+    var ordered = false
+    var h = 0
+    for(20 * 60 * TICK_HZ) t:
+        if t == 20: laid = lay("marketplace", tx - 8, ty + 2)
+        let m = done_of("marketplace")
+        if m != 0 and not ordered:
+            planks0 = all_of(pl)
+            // MARKET_SET (give planks, get iron), then MARKET_MORE (three trades)
+            issue_cmd(0, 140, [ m ], pl + 1, fe + 1, 0, 0)
+            issue_cmd(0, 141, [ m ], 3, 0, 0, 0)
+            ordered = true
+        lay_step()
+        if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
+    let got = all_of(fe) - iron0
+    let mb = b_index_of(done_of("marketplace"))
+    let spent = planks0 - all_of(pl) - (if mb >= 0: hook_building_get(find(hook_building_names) n: n == "m_paid", mb) else: 0)
+    let rate = if got > 0: spent / got else: 0  // (the worth of iron, its ore, coal and smelting, 2.2 times over that of planks)
+    print "steading: market: rate {rate} planks an iron, {got} iron got, {spent} planks spent"
+    check(laid and ordered, "steading: a marketplace goes up and takes an order ({laid}, {ordered})")
+    check(rate > 1 and got == 3 and spent == 3 * rate, "steading: three trades of planks for iron at the market\'s rate, {rate} planks an iron ({got} iron, {spent} planks spent)")
+    check(mb >= 0 and b_hold[mb][fe] == 0, "steading: the serfs carry the iron home from the market (still there: {if mb >= 0: b_hold[mb][fe] else: -1})")
+    return h
+
 def store_planks() -> int:
     var n = 0
     for(b_id.length) b:
@@ -1011,6 +1051,7 @@ let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
 check(pig_chain() == pig_chain(), "steading: the same pigs twice, the same hash")
 check(fish_chain() == fish_chain(), "steading: the same fish twice, the same hash")
+check(market_chain() == market_chain(), "steading: the same trades twice, the same hash")
 check(metal_chain() == metal_chain(), "steading: the same metal trades twice, the same hash")
 for([ [ 0, 0 ], [ 1, 0 ], [ 0, 1 ], [ -1, 1 ] ]) d: big_town(d[0], d[1])
 let same, lively = save_run(false)

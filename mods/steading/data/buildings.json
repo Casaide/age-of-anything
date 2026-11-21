@@ -262,6 +262,64 @@
     "inn"
    ]
   },
+  "marketplace": {
+   "extends": "house",
+   "name": "Marketplace",
+   "desc": "Trades one good for another: pick what to give and what to get, and how many times. Serfs bring what you give; once enough is in, the market swaps it for one of what you get, and serfs carry that home. The rate follows what each good is worth, and the market keeps its cut. No one works here.",
+   "hotkey": "",
+   "pop": 0,
+   "house": false,
+   "roles": [],
+   "note": "",
+   "market": true,
+   "size": 3,
+   "cost": {
+    "wood": 0,
+    "plank": 8,
+    "stone": 6
+   },
+   "holds": {
+    "plank": 10,
+    "grain": 10,
+    "grapes": 10,
+    "wine": 10,
+    "flour": 10,
+    "bread": 10,
+    "fish": 10,
+    "coal": 10,
+    "iron_ore": 10,
+    "gold_ore": 10,
+    "iron": 10,
+    "tools": 10,
+    "pig": 10,
+    "sausage": 10,
+    "wood": 10,
+    "stone": 10,
+    "gold": 10
+   },
+   "offers": [
+    "plank",
+    "grain",
+    "grapes",
+    "wine",
+    "flour",
+    "bread",
+    "fish",
+    "coal",
+    "iron_ore",
+    "gold_ore",
+    "iron",
+    "tools",
+    "pig",
+    "sausage",
+    "wood",
+    "stone",
+    "gold"
+   ],
+   "after": [
+    "inn"
+   ]
+  },
   "iron_smelter": {
    "extends": "house",
    "name": "Iron Smelter",

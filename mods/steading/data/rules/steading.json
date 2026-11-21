@@ -213,6 +213,11 @@
    "baker"
   ],
   "_tools_doc": "tools_for: the trades that take a tool from a store before they start at a workplace (the mod's hooks/jobs.lua, #102). The wood and metal trades bring their own, so a town with no tools left can always make more.",
+  "market": {
+   "_doc": "the marketplace (#43, hooks/market.lua): a trade costs tradeoff_pct of the worth got in the good given (the genre's 2.2), at most most_orders trades ordered at once",
+   "tradeoff_pct": 220,
+   "most_orders": 99
+  },
   "carry_of": {
    "wood": 1,
    "stone": 1,
