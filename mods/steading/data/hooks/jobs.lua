@@ -29,6 +29,7 @@ local gathers = {}
 local reach = {}  -- (in tiles, or nil for anywhere)
 local ins = {}  -- the resources its recipe takes (r, 0-based), or nil ("makes": the workshops)
 local plants = {}  -- the terrain type its worker plants when nothing is left to gather in reach ("plants"), or -1
+local plants_on = {}  -- and the terrain it plants on ("plants": {"terrain", "on"}: a farm's tilled fields, #122), or nil for open ground
 local job_slots = {}
 for k = 0, building_type_count() - 1 do
   local bt = building_type(k)
@@ -44,8 +45,14 @@ for k = 0, building_type_count() - 1 do
     table.sort(ins[k + 1])
   end
   if bt.plants then
-    plants[k + 1] = terrain_type(bt.plants)
-    assert(plants[k + 1] >= 0 and bt.reach, "buildings.json plants: no terrain " .. bt.plants .. ", or no reach")
+    local t = bt.plants
+    if type(t) == "table" then
+      plants_on[k + 1] = terrain_type(t.on)
+      assert(plants_on[k + 1] >= 0, "buildings.json plants: no terrain " .. tostring(t.on) .. " to plant on")
+      t = t.terrain
+    end
+    plants[k + 1] = terrain_type(t)
+    assert(plants[k + 1] >= 0 and bt.reach, "buildings.json plants: no terrain " .. tostring(t) .. ", or no reach")
   end
   if bt.staff then
     for slot, _ in pairs(bt.staff) do job_slots[slot] = true end
@@ -102,10 +109,12 @@ local function workplace(i)
   return b
 end
 
--- Where a worker of building b plants next (b's type "plants"): the nearest grass or stump within its reach, nothing
--- on it or beside it, not next to b; -1 if there's none, or MOST_PLANTED are growing already.
+-- Where a worker of building b plants next (b's type "plants"): on its fields (plants "on"), the nearest of them in
+-- reach; else the nearest grass or stump within its reach, nothing on it or beside it, not next to b. -1 if there's
+-- none, or (on open ground) MOST_PLANTED are growing already.
 local function plant_spot(b)
   local t = plants[b_kind(b) + 1]
+  local on = plants_on[b_kind(b) + 1]
   local x0, y0, x1, y1 = building_rect(b)
   local r = reach[b_kind(b) + 1]
   local cx0 = math.max(0, x0 // TILE - r)
@@ -120,7 +129,15 @@ local function plant_spot(b)
       local c = y * W + x
       local tc = terrain_at(c)
       if tc == t then growing = growing + 1 end
-      if (tc == GRASS or tc == STUMP) and x >= cx0 + 1 and x <= cx1 - 1 and y >= cy0 + 1 and y <= cy1 - 1 then
+      if on then
+        if tc == on and within_reach(b, c) and occupied(c) == 0 then
+          local d2 = mid_dist2(b, x * TILE + TILE // 2, y * TILE + TILE // 2)
+          if d2 < best_d2 then
+            best_d2 = d2
+            best = c
+          end
+        end
+      elseif (tc == GRASS or tc == STUMP) and x >= cx0 + 1 and x <= cx1 - 1 and y >= cy0 + 1 and y <= cy1 - 1 then
         local near_hut = x >= x0 // TILE - 1 and x <= x1 // TILE + 1 and y >= y0 // TILE - 1 and y <= y1 // TILE + 2
         local clear = not near_hut and road(c) == 0
         for _, n in ipairs({ c, c - 1, c + 1, c - W, c + W }) do
@@ -134,7 +151,7 @@ local function plant_spot(b)
       end
     end
   end
-  if growing >= MOST_PLANTED then return -1 end
+  if not on and growing >= MOST_PLANTED then return -1 end
   return best
 end
 

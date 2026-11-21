@@ -1132,5 +1132,108 @@
   ],
   "note": "a miner's pick (the game's pick gear)",
   "noun": "Miner"
+ },
+ {
+  "id": "kerchief.winegrower",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a winegrower's red kerchief, knotted at the back"
+ },
+ {
+  "id": "dress.winegrower",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a winegrower's green smock under a grape-stained apron"
+ },
+ {
+  "id": "tool.billhook",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a winegrower's billhook, for cutting the bunches",
+  "noun": "Butcher"
  }
 ]

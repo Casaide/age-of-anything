@@ -65,6 +65,10 @@ def pack_from_data(map_id:string):
             let d = at(tj, id)
             ground_a.push(pd_rgb(gstr(d, "colour", "#808080")))
             ground_b.push(pd_rgb(gstr(d, "colour2", gstr(d, "colour", "#808080"))))
+    let tjp = gobj(lib_data("terrain.json"), "terrain")
+    for(tr_names) id:  // (a terrain's own "prop" first: a mod's crops, #122)
+        let pr = gstr(at(tjp, id), "prop", "")
+        if pr != "" and prop_of.get(id, "") == "": prop_of.set(id, pr)
     for(PD_PROPS) pp:
         if prop_of.get(pp[0], "") == "": prop_of.set(pp[0], pp[1])
     if not species.length: species = species_from_map(map_id)

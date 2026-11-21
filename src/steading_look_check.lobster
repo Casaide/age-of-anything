@@ -56,7 +56,7 @@ for(glist(race, "units")) unit:
     let look = "{gstr(ps, "head_gear", "")} {gstr(ps, "torso", "")} {gstr(ps, "hand_r", "")}"
     expect((find(looks) l: l == look) < 0, "the {slot} looks like no other trade: {look}")
     looks.push(look)
-expect(looks.length == 12, "the serf and 11 trades: {looks.length}")
+expect(looks.length == 13, "the serf and 12 trades: {looks.length}")
 expect(gstr(family("steading"), "architecture", "") == "steading", "the culture builds its own set")
 let src = read_file("model/steading.lobster")
 expect(src != nil, "model/steading.lobster is there")
@@ -70,7 +70,7 @@ let buildings = gobj(lib_data("buildings.json"), "buildings")
 let models = []::string
 for(buildings.keys) b, i:
     let o = buildings.a[i]
-    if b != "_doc" and not gbool(o, "remove", false) and gstr(o, "road", "") == "":
+    if b != "_doc" and not gbool(o, "remove", false) and gstr(o, "road", "") == "" and not gbool(o, "drag", false):  // (a road or a field plan has no model: game/roads)
         let m = find(made) x: starts_with(x, b + " ")
         expect(m >= 0, "{b} has a model of its own in the steading set")
         if m >= 0:

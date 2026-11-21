@@ -84,6 +84,13 @@
      "torso": "dress.butcher",
      "hand_r": "tool.cleaver"
     }
+   },
+   "winegrower": {
+    "1": {
+     "head_gear": "kerchief.winegrower",
+     "torso": "dress.winegrower",
+     "hand_r": "tool.billhook"
+    }
    }
   },
   "skins": [

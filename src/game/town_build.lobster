@@ -101,15 +101,38 @@ def town_build_pictures(at:float2, s:float):
     let lay = town_lay(at, s)
     for(lay.cards) p, n: draw_building_icon(lay.card_k[n], ME, p + float2 { (TB_CARD_W - TB_PIC) / 2.0, 8.0 } * s, (TB_PIC - 4.0) * s)
 
-// A building with no picture (a road): a cobbled strip across its well (with the frame).
+var tb_ground_cols = []::float4  // each terrain's colour, then the colour of what it grows into (field cards, #122)
+
+// A terrain's colour and its ripe one (terrain.json's "colour", and its "grows" "into"'s), read once.
+def ground_cols(t:int) -> float4, float4:
+    if not tb_ground_cols.length:
+        let d = gobj(lib_data("terrain.json"), "terrain")
+        let col = map(tr_names) n: html(gstr(gobj(d, n), "colour", "#808080"))
+        for(tr_names) n, i:
+            let into = find(tr_names) m: m == gstr(gobj(gobj(d, n), "grows"), "into", "")
+            let c = if into >= 0: col[into] else: col[i]
+            tb_ground_cols.push(float4 { col[i].x, col[i].y, col[i].z, 1.0 })
+            tb_ground_cols.push(float4 { c.x, c.y, c.z, 1.0 })
+    return tb_ground_cols[t * 2], tb_ground_cols[t * 2 + 1]
+
+// A building with no picture: a road, a cobbled strip across its well (with the frame); a field plan, rows of its
+// ground and what grows on it.
 def town_build_plain(at:float2, s:float):
     let lay = town_lay(at, s)
     for(lay.cards) p, n:
-        if not looks.get(building_key(arch_of[ME], bt_name[lay.card_k[n]], ages[ME], 0)):
+        let k = lay.card_k[n]
+        if not looks.get(building_key(arch_of[ME], bt_name[k], ages[ME], 0)):
             let a = p + float2 { TB_CARD_W / 2.0 - 34.0, 70.0 } * s
             let b = p + float2 { TB_CARD_W / 2.0 + 34.0, 22.0 } * s
-            ui_line(a, b, 22.0 * s, float4 { 0.55, 0.52, 0.47, 1.0 })
-            ui_line(a, b, 14.0 * s, float4 { 0.66, 0.63, 0.57, 1.0 })
+            if bt_ground[k] >= 0:
+                let bare, ripe = ground_cols(bt_ground[k])
+                for(4) r:
+                    let off = float2 { -9.0, -9.0 } * s * (float(r) - 1.5)
+                    ui_line(a + off, b + off, 9.0 * s, bare)
+                    ui_line(a + off, b + off, 5.0 * s, ripe)
+            else:
+                ui_line(a, b, 22.0 * s, float4 { 0.55, 0.52, 0.47, 1.0 })
+                ui_line(a, b, 14.0 * s, float4 { 0.66, 0.63, 0.57, 1.0 })
 
 // The words (with the panel's text). The building under the mouse, or -1.
 def town_build_texts(at:float2, s:float, m:float2) -> int:

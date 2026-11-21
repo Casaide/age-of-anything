@@ -99,7 +99,7 @@ def seam_cells(r:int, x:int, y:int, d:int) -> [int]:
 let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ],
              [ "miner", "gold_mine" ], [ "smelter", "gold_smelter" ], [ "miller", "mill" ], [ "baker", "bakery" ],
              [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "smelter", "iron_smelter" ], [ "smith", "armoury" ],
-             [ "swineherd", "pig_farm" ], [ "butcher", "butcher" ] ]
+             [ "swineherd", "pig_farm" ], [ "butcher", "butcher" ], [ "winegrower", "vineyard" ] ]
 let VILLAGERS = 22  // carriers and builders at most: the 8 the town starts with, and more only while sites wait for one
 
 def done_count(id:string) -> int:
@@ -122,6 +122,7 @@ def next_trainee() -> string:
     return ""
 
 new_world(2026, "steading_vale", races, rules, [])
+fields_by_script(true)  // (each farm and vineyard gets its fields once it's built, #122)
 let tx = start_x[0] / TILE
 let ty = start_y[0] / TILE
 let seam = seam_cells(res("coal"), tx, ty, 12)
@@ -141,7 +142,7 @@ let plan = [ Lay { 20, "school", tx - 2, ty - 6 }, Lay { 40, "lumber_camp", tx +
              Lay { 800, "bakery", tx + 2, ty + 8 }, Lay { 900, "gold_mine", tx + 16, ty - 2 }, Lay { 1000, "gold_smelter", tx + 13, ty + 9 },
              Lay { 2400, "inn", tx + 7, ty - 1 }, Lay { 2600, "sawmill", tx - 9, ty + 3 }, Lay { 2700, "lumber_camp", tx + 12, ty - 3 },
              Lay { 3400, "armoury", tx + 9, ty - 6 },
-             Lay { 3600, "pig_farm", tx - 8, ty + 8 }, Lay { 3800, "butcher", tx - 3, ty + 11 } ]
+             Lay { 3600, "pig_farm", tx - 8, ty + 8 }, Lay { 3800, "butcher", tx - 3, ty + 11 }, Lay { 4000, "vineyard", tx + 4, ty - 12 } ]
 var iron_laid = false
 var asked = false
 var asked_at = 0

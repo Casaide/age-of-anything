@@ -3,6 +3,7 @@
 // dragging, as a wall is: press at one end, release at the other, a plan a cell (shift: keep placing). Laid roads and the
 // plans are painted into the ground's path mask (game/paths): a road in its kind's style (rules economy.roads[].style,
 // else "road"), a plan as a faint trail. Plans have no baked look (game/art_kit_buildings).
+// A field (a type with "drag" that "becomes" a terrain, creel #123) is dragged the same way.
 
 let ROAD_WIDTH = 0.42  // a road's half width in tiles, painted (a tile's road joins its neighbours')
 let PLAN_WIDTH = 0.16  // and a plan's
@@ -12,9 +13,11 @@ var road_painted = []::int       // per cell: what's painted there (0 nothing, 1
 
 def is_road_plan(k:int) -> bool: return k >= 0 and k < bt_road.length and bt_road[k] >= 0
 
+def is_dragged(k:int) -> bool: return k >= 0 and k < bt_drag.length and bt_drag[k] != 0  // (a road plan, or a field: creel #123)
+
 // The mouse while a road plan is picked: true when it took the mouse (else Creel's mouse() has it).
 def road_mouse() -> bool:
-    if placing < 0 or not is_road_plan(placing) or touch_play:
+    if placing < 0 or not is_dragged(placing) or touch_play:
         road_from = int2 { -1, -1 }
         return false
     if gl.button("mouse1") == 1: road_from = place_cell()
@@ -28,7 +31,7 @@ def road_mouse() -> bool:
 
 // The line being dragged, a diamond a cell: green where a plan can go. In draw_town (the world at 1.5).
 def draw_road_drag():
-    if placing < 0 or not is_road_plan(placing) or road_from.x < 0: return
+    if placing < 0 or not is_dragged(placing) or road_from.x < 0: return
     gl.set_shader("color")
     for(wall_cells(road_from, place_cell())) g:
         let ok = view_can_place(ME, placing, g.x, g.y)

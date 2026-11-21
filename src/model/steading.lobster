@@ -165,6 +165,30 @@ def steading_farm(team:float3) -> BSpec:
     blights(sp, [ st_lit(body, bv(0.1, 0.3, -0.14), 0.14, 0.12) ])
     return sp
 
+// The vineyard: the winegrower's house, low plaster under a tiled roof, with the press in its yard (a vat under a
+// screw beam) and casks of wine stacked by the wall (#122).
+def steading_vineyard(team:float3) -> BSpec:
+    let body = mnode()
+    st_walls(body, 1.2, 0.9, 0.55, bm("plaster"), 0.0, bv(-0.45, 0.0, -0.55))
+    st_frame(body, 1.2, 0.9, 0.55, 0.0, bv(-0.45, 0.0, -0.55))
+    st_roof(body, bv(-0.45, 0.55, -0.55), 1.2, 0.9, 0.45, st_tile(), bm("plaster"), 0.06, 0.16)
+    st_door(body, -0.5, -0.1, 0.24, 0.4)
+    let oak = st_col("#7a4e2a")
+    let hoop = st_col("#3a3a3c", 0.6)
+    add_child(body, bcyl(0.32, 0.32, 0.28, oak, bv(0.75, 0.14, 0.2), float3_0, 14))  // the press: its vat
+    add_child(body, bcyl(0.33, 0.33, 0.04, hoop, bv(0.75, 0.2, 0.2), float3_0, 14))
+    add_child(body, bcyl(0.27, 0.27, 0.02, st_col("#5a2e6e", 1.0), bv(0.75, 0.28, 0.2), float3_0, 14))  // grapes in it
+    for([ -0.3, 0.3 ]) x: add_child(body, bbox(bv(0.06, 0.75, 0.06), st_timber(), bv(0.75 + x, 0.37, 0.2)))
+    add_child(body, bbox(bv(0.72, 0.08, 0.08), st_timber(), bv(0.75, 0.72, 0.2)))  // its beam and screw
+    add_child(body, bcyl(0.035, 0.035, 0.42, st_dark(), bv(0.75, 0.48, 0.2), float3_0, 6))
+    for([ bv(0.55, 0.14, -0.55), bv(0.9, 0.14, -0.55), bv(0.72, 0.4, -0.55) ]) at:  // casks by the wall, on their sides
+        add_child(body, bcyl(0.14, 0.14, 0.32, oak, at, bv(0.0, 0.0, 90.0), 10))
+        add_child(body, bcyl(0.15, 0.15, 0.03, hoop, at, bv(0.0, 0.0, 90.0), 10))
+    st_cloth(body, bv(-0.15, 0.45, -0.09), team)
+    let sp = st_done(body, team, bv(-0.5, 0.0, -0.09), 0.22, 0.38)
+    blights(sp, [ st_lit(body, bv(-0.85, 0.3, -0.09), 0.14, 0.12) ])
+    return sp
+
 // The mill: a post windmill: a trestle under a weatherboarded body, a pitched roof, and four sails on the front
 // (to turn as the mill works, next).
 def steading_mill(team:float3) -> BSpec:
@@ -353,6 +377,7 @@ def steading_building(type:string, team:float3) -> BSpec?:
         case "mining_camp": return steading_quarry(team)
         case "sawmill": return steading_sawmill(team)
         case "farm": return steading_farm(team)
+        case "vineyard": return steading_vineyard(team)
         case "mill": return steading_mill(team)
         case "bakery": return steading_bakery(team)
         case "inn": return steading_inn(team)

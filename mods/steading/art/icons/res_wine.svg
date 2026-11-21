@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<!-- Wine: a small barrel on its side, with a tap. -->
+<g stroke="#1c120a" stroke-width="1.4">
+<path d="M6 9 q-2 7 0 14 h20 q2 -7 0 -14 z" fill="#8a5a2a"/>
+<path d="M5.5 12 h21 M5.5 20 h21" stroke="#4a4a4a" stroke-width="1.8"/>
+<ellipse cx="6" cy="16" rx="2" ry="7" fill="#a06a34"/>
+<rect x="2" y="15" width="3" height="2" fill="#6a6a6a"/>
+</g>
+<path d="M3 18 q0.5 3 0 5" stroke="#7a1a3a" stroke-width="1.6" fill="none"/>
+<path d="M12 10 v12 M18 10 v12" stroke="#6a4420" stroke-width="0.8"/>
+</svg>

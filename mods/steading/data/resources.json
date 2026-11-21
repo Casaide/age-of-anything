@@ -1,5 +1,5 @@
 {
- "_doc": "Planks: sawn at the sawmill from wood (logs). Grain: reaped at a farm; flour: milled from grain; bread: baked from flour, and what the town eats (#99). Coal, iron ore and gold ore: dug at the mines (#42). Iron: smelted from iron ore and coal; tools: forged from iron and planks, what every trade works with (#102). Gold (smelted from gold ore) is the game's own. Pigs: fattened on grain; sausages: a butcher's, eaten as bread is (#103). Wood, stone and food are the game's own.",
+ "_doc": "Planks: sawn at the sawmill from wood (logs). Grain: reaped at a farm; flour: milled from grain; bread: baked from flour, and what the town eats (#99). Coal, iron ore and gold ore: dug at the mines (#42). Iron: smelted from iron ore and coal; tools: forged from iron and planks, what every trade works with (#102). Gold (smelted from gold ore) is the game's own. Pigs: fattened on grain; sausages: a butcher's, eaten as bread is (#103). Grapes: picked from vines; wine: pressed from them at the vineyard, drunk at the inn (#122). Wood, stone and food are the game's own.",
  "resources": [
   {"id": "plank", "name": "Planks", "short": "P", "colour": "#c9a066"},
   {"id": "grain", "name": "Grain", "short": "G", "colour": "#e0c25a"},
@@ -11,6 +11,8 @@
   {"id": "iron", "name": "Iron", "short": "Fe", "colour": "#9aa4ae"},
   {"id": "tools", "name": "Tools", "short": "T", "colour": "#7f8890"},
   {"id": "pig", "name": "Pigs", "short": "Pg", "colour": "#e0a0a0"},
-  {"id": "sausage", "name": "Sausages", "short": "Sa", "colour": "#a0503a"}
+  {"id": "sausage", "name": "Sausages", "short": "Sa", "colour": "#a0503a"},
+  {"id": "grapes", "name": "Grapes", "short": "Gr", "colour": "#6a3a7a"},
+  {"id": "wine", "name": "Wine", "short": "Wi", "colour": "#8a2a3a"}
  ]
 }
