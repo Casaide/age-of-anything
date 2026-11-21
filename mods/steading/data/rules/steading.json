@@ -98,7 +98,6 @@
   "builders_come": true,
   "builders_per_site": 3,
   "sites_walk_over": true,
-  "idle_wait": true,
   "doors_on_roads": true,
   "door_roads": true,
   "foundation_pct": 30,

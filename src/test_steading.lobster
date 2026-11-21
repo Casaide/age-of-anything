@@ -243,6 +243,8 @@ def play() -> int:
     var idle_in = 0
     let idle_said = []::string
     var hidden_walk = 0  // ticks a unit put inside by the rules walks, unseen (#158)
+    var idle_walk = 0    // a serf's ticks walking with no job (the genre's idle serf stands where it finished, #158)
+    var idle_stand = 0
     var went_in = 0
     var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
@@ -303,6 +305,8 @@ def play() -> int:
                     inside_for[i] = 0
             let ic = inside_col()
             if ic >= 0 and hook_unit_get(ic, i) != 0 and u_moving[i] == 1: hidden_walk++
+            if u_owner[i] == 0 and t_carrier[u_kind[i]] != 0 and u_task[i] == T_NONE and u_orders[i].length == 0:
+                if u_moving[i] == 1: idle_walk++ else: idle_stand++
             let wb = if t_carrier[u_kind[i]] == 0 and hook_unit_get(col_work, i) != 0: b_index_of(hook_unit_get(col_work, i)) else: -1
             if wb >= 0 and u_task[i] == T_NONE and u_moving[i] == 0:
                 let x0, y0, x1, y1 = entry_rect(wb)
@@ -374,6 +378,9 @@ def play() -> int:
           "steading: every pick-up and drop takes a carrier inside for 1.5 s ({full_stays.length} of {stays.length} stays that long)")
     // (the genre's idle trade, #158: at its workplace with nothing to do, it goes in and rests, out of sight)
     print "steading: idle trades at their door: {idle_in} ticks inside, {idle_out} out in the open; {hidden_walk} ticks walking while put inside"
+    print "steading: idle serfs: {idle_stand} ticks standing, {idle_walk} walking with no job"
+    check(idle_stand > 0 and idle_walk * 100 <= (idle_stand + idle_walk) * 2,
+          "steading: an idle serf stands where it finished, as in the genre, and doesn\'t walk off to wait ({idle_walk} of {idle_stand + idle_walk} idle ticks walking)")
     print "steading: the panel of an idle trade: {idle_said.slice(0, min(6, idle_said.length))}"
     check(idle_said.length > 0 and (filter(idle_said) s: find_string(s, " inside") < 0).length == 0,
           "steading: the panel says an idle trade is inside, and why ({idle_said.length} looks)")

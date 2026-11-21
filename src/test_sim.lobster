@@ -587,13 +587,11 @@ def test_walk_over_site():
     let open_off, shut_off, _ = walk_over_site(false)
     check(not open_off and shut_off, "sites: without it a site blocks from the start (open {open_off}, shut {shut_off})")
 
-// Idle villagers wait at the store (mods/steading's economy.lua, #79): with rules economy.idle_wait a villager (a carrier
-// slot) with nothing to do walks back to its side's nearest store and stands by it. One far off and one near: how far
-// each ends from the store's middle, in tiles, after 30 s, and whether the far one ever left where it was.
-def idle_wait_run(on:bool) -> int, int:
+// An idle serf stands where its last job left it (mods/steading's economy.lua, as in the genre: #158). One far off and
+// one near a store: how far each ends from the store's middle, in tiles, after 30 s.
+def idle_wait_run() -> int, int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
-    let ec = if on: "{{\"idle_wait\": true, \"carriers\": [\"worker\"]}}" else: "{{\"carriers\": [\"worker\"]}}"
-    steading_lua(ec)
+    steading_lua("{{\"builders_come\": true, \"carriers\": [\"worker\"]}}")
     make_store("town_center", 200)
     let tc = b_index_of(put(0, "town_center", 10, 10, 0))
     t_carrier[type_of_slot(0, "worker")] = 1
@@ -608,10 +606,8 @@ def idle_wait_run(on:bool) -> int, int:
     return far_d, near_d
 
 def test_idle_wait():
-    let far_d, near_d = idle_wait_run(true)
-    check(far_d <= 4 and near_d <= 4, "idle wait: an idle villager far off walks back to wait by the store ({far_d} tiles; the near one {near_d})")
-    let far_off, _ = idle_wait_run(false)
-    check(far_off > 20, "idle wait: without the rule it stays where it was ({far_off} tiles off)")
+    let far_d, near_d = idle_wait_run()
+    check(far_d > 20 and near_d <= 4, "idle wait: an idle serf stands where it was, as in the genre: nothing sends it off to the store ({far_d} tiles off; the near one {near_d})")
 
 // Who gathers (Casaide/creel#88): with rules economy.gatherers only units of those slots gather. A worker is ordered to
 // the trees, and another builds a lumber camp by them: in 40 s, whether the first gathered, and whether the camp's
@@ -697,7 +693,7 @@ def test_steading_big():
     let house = shallow_copy(su_btypes[hk])
     set(house, "seats", jint(6))
     su_btypes[hk] = house
-    steading_lua("{{\"builders_come\": true, \"builders_per_site\": 3, \"idle_wait\": true, \"carriers\": [\"worker\"], \"hunger\": {{\"life\": 4, \"hungry_at\": 2, \"eaters\": [\"worker\"], \"starving_pct\": 50, \"foods\": [[\"food\", 60]]}}}}")
+    steading_lua("{{\"builders_come\": true, \"builders_per_site\": 3, \"carriers\": [\"worker\"], \"hunger\": {{\"life\": 4, \"hungry_at\": 2, \"eaters\": [\"worker\"], \"starving_pct\": 50, \"foods\": [[\"food\", 60]]}}}}")
     bt_hold[hk] = map(num_resources) r: if r == f: 3 else: 0
     make_store("town_center", 2000)
     put(0, "town_center", 30, 30, 0)
