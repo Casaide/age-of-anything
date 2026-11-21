@@ -326,6 +326,7 @@ var stashed_stock = []::[int]
 var stashed_r_stocked = 0
 var stashed_r_foundation_pct = 0
 var stashed_r_inside_ticks = 0
+var stashed_r_doors = 0
 var stashed_r_carrier_load = 1
 var stashed_r_carrier_slots = []::string
 var stashed_rd_names = []::string
@@ -879,6 +880,7 @@ def reset_world():
     r_stocked = 0
     r_foundation_pct = 0
     r_inside_ticks = 0
+    r_doors = 0
     r_carrier_load = 1
     r_carrier_slots = []::string
     rd_names = []::string
@@ -1422,6 +1424,7 @@ def stash_world():
     stashed_r_stocked = r_stocked
     stashed_r_foundation_pct = r_foundation_pct
     stashed_r_inside_ticks = r_inside_ticks
+    stashed_r_doors = r_doors
     stashed_r_carrier_load = r_carrier_load
     stashed_r_carrier_slots = r_carrier_slots
     stashed_rd_names = rd_names
@@ -1958,6 +1961,7 @@ def unstash_world():
     r_stocked = stashed_r_stocked
     r_foundation_pct = stashed_r_foundation_pct
     r_inside_ticks = stashed_r_inside_ticks
+    r_doors = stashed_r_doors
     r_carrier_load = stashed_r_carrier_load
     r_carrier_slots = stashed_r_carrier_slots
     rd_names = stashed_rd_names

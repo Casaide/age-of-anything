@@ -213,7 +213,7 @@ local function eat(i, places)
     if other >= 0 then go_eat(i, other) else back_from_meal(i) end
     return
   end
-  if in_reach(i, building_rect(b)) then
+  if in_reach(i, entry_rect(b)) then
     set_u_moving(i, 0)
     set_u_stuck(i, 0)
     if seats[b_kind(b) + 1] == 0 then  -- a store: a whole food at the door
