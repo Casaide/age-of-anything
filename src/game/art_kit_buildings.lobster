@@ -186,7 +186,7 @@ class AkbCached:
 var akb_cache_frames = []::AkbFrame
 var akb_cache_stem = ""  // the look being baked ("" while not recording)
 
-let AKB_VERSION = 1  // the game's own bakes of buildings, beside Creel's BAKE_VERSION (1: the roof goes on last at sites, #155)
+let AKB_VERSION = 2  // the game's own bakes of buildings, beside Creel's BAKE_VERSION (2: Steading's set in textured courses, #156; 1: the roof goes on last at sites, #155)
 def akb_stem_in(dir:string, name:string) -> string: return dir + "/b" + sha256_text("{BAKE_VERSION}.{AKB_VERSION}|building|{name}|k {ART_K}").substring(0, 20)
 def akb_stem(name:string) -> string: return akb_stem_in(bake_cache_dir, name)
 
