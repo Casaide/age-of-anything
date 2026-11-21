@@ -28,6 +28,19 @@ local staff = {}
 local gathers = {}
 local reach = {}  -- (in tiles, or nil for anywhere)
 local ins = {}  -- the resources its recipe takes (r, 0-based), or nil ("makes": the workshops)
+local ins_n = {}  -- how many of each (by r + 1) a round takes
+local good_name = {}  -- each of those resources' name, as the panel says it (by r + 1)
+
+-- A resource's id as words: "iron_ore" is "iron ore".
+local function spaced(id)
+  local out = ""
+  for k = 1, string.len(id) do
+    local c = id:sub(k, k)
+    if c == "_" then c = " " end
+    out = out .. c
+  end
+  return out
+end
 local plants = {}  -- the terrain type its worker plants when nothing is left to gather in reach ("plants"), or -1
 local plants_on = {}  -- and the terrain it plants on ("plants": {"terrain", "on"}: a farm's tilled fields, #122), or nil for open ground
 local job_slots = {}
@@ -40,7 +53,13 @@ for k = 0, building_type_count() - 1 do
   if bt.makes and bt.makes["in"] then
     ins[k + 1] = {}
     for id, n in pairs(bt.makes["in"]) do
-      if n > 0 then table.insert(ins[k + 1], resource_index(id)) end
+      if n > 0 then
+        local r = resource_index(id)
+        table.insert(ins[k + 1], r)
+        ins_n[k + 1] = ins_n[k + 1] or {}
+        ins_n[k + 1][r + 1] = n
+        good_name[r + 1] = spaced(id)
+      end
     end
     table.sort(ins[k + 1])
   end
@@ -356,7 +375,16 @@ function jobs_task_name(i)
   local at = name .. " at the " .. (building_type(b_kind(b)).name or "hut")
   if unit_get(col_plant, i) ~= 0 then return at .. ": planting" end
   local kind = gathers[b_kind(b) + 1]
-  if kind ~= 0 and room(b, kind) <= 0 then return at .. ": waiting, the hut is full" end
-  if building_get(col_out, b) == 1 then return at .. ": it's worked out" end
+  local wait = ": waiting, "
+  if unit_get(COL_INSIDE, i) ~= 0 then wait = ": idle inside, " end  -- (#158: resting in there, and why)
+  if kind ~= 0 and room(b, kind) <= 0 then return at .. wait .. "the hut is full" end
+  if building_get(col_out, b) == 1 then return at .. wait .. "it's worked out" end
+  if unit_get(COL_INSIDE, i) ~= 0 then
+    if b_making(b) > 0 then return at .. ": working inside" end
+    for _, r in ipairs(ins[b_kind(b) + 1] or {}) do
+      if b_hold(b, r) < ins_n[b_kind(b) + 1][r + 1] then return at .. ": idle inside, no " .. good_name[r + 1] end
+    end
+    return at .. ": idle inside, nothing to do"
+  end
   return at
 end

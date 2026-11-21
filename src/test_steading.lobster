@@ -241,6 +241,7 @@ def play() -> int:
     var off_door = 0          // stays inside begun away from the building's door tile (#157)
     var idle_out = 0          // a trade's ticks idle at its workplace's door, out in the open, and inside resting (#158)
     var idle_in = 0
+    let idle_said = []::string
     var hidden_walk = 0  // ticks a unit put inside by the rules walks, unseen (#158)
     var went_in = 0
     var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
@@ -306,7 +307,10 @@ def play() -> int:
             if wb >= 0 and u_task[i] == T_NONE and u_moving[i] == 0:
                 let x0, y0, x1, y1 = entry_rect(wb)
                 if in_reach(i, x0, y0, x1, y1):
-                    if ic >= 0 and hook_unit_get(ic, i) != 0: idle_in++ else: idle_out++
+                    if ic >= 0 and hook_unit_get(ic, i) != 0:
+                        idle_in++
+                        if t % 600 == 0: idle_said.push(lua_task_name(i))  // (what the panel says of it)
+                    else: idle_out++
         let sawn = produced[res("plank")][0]
         if planks_seen >= 0 and sawn > planks_seen:
             if round_at >= 0: shortest_round = min(shortest_round, tick - round_at)
@@ -370,6 +374,9 @@ def play() -> int:
           "steading: every pick-up and drop takes a carrier inside for 1.5 s ({full_stays.length} of {stays.length} stays that long)")
     // (the genre's idle trade, #158: at its workplace with nothing to do, it goes in and rests, out of sight)
     print "steading: idle trades at their door: {idle_in} ticks inside, {idle_out} out in the open; {hidden_walk} ticks walking while put inside"
+    print "steading: the panel of an idle trade: {idle_said.slice(0, min(6, idle_said.length))}"
+    check(idle_said.length > 0 and (filter(idle_said) s: find_string(s, " inside") < 0).length == 0,
+          "steading: the panel says an idle trade is inside, and why ({idle_said.length} looks)")
     check(idle_in > 0 and idle_out * 100 <= (idle_in + idle_out) * 5 and hidden_walk == 0,
           "steading: a trade with nothing to do rests inside its workplace, as in the genre, and nobody walks about unseen ({idle_in} ticks in, {idle_out} out, {hidden_walk} walking hidden)")
     check(went_in > 100 and off_door == 0, "steading: people go into a building only by its door ({off_door} of {went_in} went in elsewhere; #157)")
