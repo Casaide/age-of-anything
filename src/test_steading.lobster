@@ -70,7 +70,7 @@ import game.tips
 lib_load("../data")
 id_load("../data")
 
-let MINUTES = 28      // (long enough for the food chain at the genre's pace: the farm is up at 8 minutes, its wheat ripe six on, #122; serfs no quicker on roads, #138)
+let MINUTES = 32      // (long enough for the food chain at the genre's pace: the farm is up at 8 minutes, its wheat ripe six on, #122; serfs no quicker on roads, #138)
 let FIELD_GRAIN = 12  // the farm's fields in the scripted towns (game/steading_lay's auto_fields), a sheaf of grain each
 // who works where
 let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ], [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "miner", "gold_mine" ], [ "smelter", "iron_smelter" ], [ "smelter", "gold_smelter" ], [ "smith", "armoury" ] ]
@@ -418,7 +418,7 @@ def big_town(dx:int, dy:int) -> int:
     var off_road = 0
     var off_line = 0  // of the road ticks, those off the lines through its tiles' centres (cutting across it at an angle)
     var h = 0
-    for(36 * 60 * TICK_HZ) t:  // (at the genre's pace, going inside at each drop: #139, #140)
+    for(40 * 60 * TICK_HZ) t:  // (at the genre's pace, going inside at each drop by the door: #139, #140, #157)
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
         if t == 40 and lay("lumber_camp", tx + 6, ty - 4): laid++
         if t == 60 and lay("sawmill", tx - 6, ty + 3): laid++
