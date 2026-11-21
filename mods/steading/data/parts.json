@@ -1235,5 +1235,108 @@
   ],
   "note": "a winegrower's billhook, for cutting the bunches",
   "noun": "Butcher"
+ },
+ {
+  "id": "hat.fisherman",
+  "slot": "head_gear",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a fisherman's broad oilskin hat against the rain"
+ },
+ {
+  "id": "dress.fisherman",
+  "slot": "torso",
+  "tags": [
+   "steading",
+   "light"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {},
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a fisherman's slate-grey smock and waders"
+ },
+ {
+  "id": "tool.fishing_rod",
+  "slot": "hand_r",
+  "tags": [
+   "steading",
+   "tool",
+   "job"
+  ],
+  "only_if": [
+   "steading"
+  ],
+  "stats": {
+   "attack": 1
+  },
+  "points": 0,
+  "price_points": 0,
+  "cost_mix": {
+   "food": 100
+  },
+  "tier": 1,
+  "shapes": [
+   {
+    "t": "ellipse",
+    "c": [
+     0,
+     0
+    ],
+    "r": [
+     2,
+     2
+    ],
+    "ch": "wood"
+   }
+  ],
+  "note": "a fisherman's rod: a long cane, the line hanging from its tip",
+  "noun": "Butcher"
  }
 ]

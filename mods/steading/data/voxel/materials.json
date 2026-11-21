@@ -147,5 +147,53 @@
  },
  "apron_grape": {
   "rgb": "#8e7a8a"
+ },
+ "dust_cap": {
+  "rgb": "#ece6da",
+  "fur": true
+ },
+ "jerkin_green": {
+  "rgb": "#5b7a3a",
+  "fur": true
+ },
+ "jerkin_tan": {
+  "rgb": "#c9a46a",
+  "fur": true
+ },
+ "smock_fawn": {
+  "rgb": "#a3876a",
+  "fur": true
+ },
+ "smith_shirt": {
+  "rgb": "#e3dac8",
+  "fur": true
+ },
+ "apron_black": {
+  "rgb": "#2a221c"
+ },
+ "herd_khaki": {
+  "rgb": "#9a7a50",
+  "fur": true
+ },
+ "butcher_red": {
+  "rgb": "#a0473a"
+ },
+ "kerchief_purple": {
+  "rgb": "#6a2f6a",
+  "fur": true
+ },
+ "fisher_slate": {
+  "rgb": "#5e7480",
+  "fur": true
+ },
+ "hat_oilskin": {
+  "rgb": "#c09a3a",
+  "fur": true
+ },
+ "rod_cane": {
+  "rgb": "#b89a5a"
+ },
+ "fish_scale": {
+  "rgb": "#a8bcc6"
  }
 }

@@ -1,0 +1,19 @@
+{
+  "_doc": "Workshops sound busy while they make something (#121): each loop is heard near the camera only while a building of that type works, one channel a sound however many are working. The WAVs are in mods/steading/audio/sfx, rendered by src/render_audio.sh (src/audio/sfx.lobster).",
+  "sounds": {
+    "mill_work": {"takes": 1, "bus": "Sfx", "gap_ms": 0, "voices": 1},
+    "saw_work": {"takes": 1, "bus": "Sfx", "gap_ms": 0, "voices": 1},
+    "forge_work": {"takes": 1, "bus": "Sfx", "gap_ms": 0, "voices": 1},
+    "fire_work": {"takes": 1, "bus": "Sfx", "gap_ms": 0, "voices": 1},
+    "press_work": {"takes": 1, "bus": "Sfx", "gap_ms": 0, "voices": 1}
+  },
+  "buildings": {
+    "mill": "mill_work",
+    "sawmill": "saw_work",
+    "armoury": "forge_work",
+    "bakery": "fire_work",
+    "iron_smelter": "fire_work",
+    "gold_smelter": "fire_work",
+    "vineyard": "press_work"
+  }
+}

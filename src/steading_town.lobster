@@ -99,7 +99,8 @@ def seam_cells(r:int, x:int, y:int, d:int) -> [int]:
 let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ],
              [ "miner", "gold_mine" ], [ "smelter", "gold_smelter" ], [ "miller", "mill" ], [ "baker", "bakery" ],
              [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "smelter", "iron_smelter" ], [ "smith", "armoury" ],
-             [ "swineherd", "pig_farm" ], [ "butcher", "butcher" ], [ "winegrower", "vineyard" ] ]
+             [ "swineherd", "pig_farm" ], [ "butcher", "butcher" ], [ "winegrower", "vineyard" ],
+             [ "fisherman", "fishermans_hut" ] ]
 let VILLAGERS = 22  // carriers and builders at most: the 8 the town starts with, and more only while sites wait for one
 
 def done_count(id:string) -> int:
@@ -129,6 +130,12 @@ let seam = seam_cells(res("coal"), tx, ty, 12)
 let sx = seam[0] % W
 let sy = seam[0] / W
 let au = res("gold")
+let river = str_index(tr_names, "river")
+var near = -1  // the river cell nearest the town's middle: the fisherman's hut goes by it
+for(W * H) c:
+    if terrain[c] == river and (near < 0 or abs(c % W - tx) + abs(c / W - ty) < abs(near % W - tx) + abs(near / W - ty)): near = c
+let fx = near % W + (if near % W > tx: -3 else: 3)
+let fy = near / W + (if near / W > ty: -3 else: 3)
 // what goes up when (tick, building, near x, near y: from the town's middle; the mines by the coal seam, early, while the seams
 // are clear of the camps' doors and roads)
 class Lay:
@@ -140,10 +147,12 @@ class Lay:
 let plan = [ Lay { 20, "school", tx - 2, ty - 6 }, Lay { 40, "lumber_camp", tx + 6, ty - 4 }, Lay { 60, "sawmill", tx - 6, ty + 3 },
              Lay { 80, "mining_camp", tx + 5, ty + 6 }, Lay { 90, "coal_mine", sx - 1, sy + 3 }, Lay { 100, "iron_mine", sx + 3, sy }, Lay { 600, "farm", tx - 8, ty - 4 }, Lay { 700, "mill", tx - 5, ty - 9 },
              Lay { 800, "bakery", tx + 2, ty + 8 }, Lay { 900, "gold_mine", tx + 16, ty - 2 }, Lay { 1000, "gold_smelter", tx + 13, ty + 9 },
-             Lay { 2400, "inn", tx + 7, ty - 1 }, Lay { 2600, "sawmill", tx - 9, ty + 3 }, Lay { 2700, "lumber_camp", tx + 12, ty - 3 },
+             Lay { 1200, "mining_camp", tx - 4, ty - 2 }, Lay { 2400, "inn", tx + 7, ty - 1 }, Lay { 2600, "sawmill", tx - 9, ty + 3 }, Lay { 2700, "lumber_camp", tx + 12, ty - 3 },
              Lay { 3400, "armoury", tx + 9, ty - 6 },
-             Lay { 3600, "pig_farm", tx - 8, ty + 8 }, Lay { 3800, "butcher", tx - 3, ty + 11 }, Lay { 4000, "vineyard", tx + 4, ty - 12 } ]
+             Lay { 3600, "pig_farm", tx - 8, ty + 8 }, Lay { 3800, "butcher", tx - 3, ty + 11 }, Lay { 4000, "vineyard", tx + 4, ty - 12 },
+             Lay { 24000, "fishermans_hut", fx, fy }, Lay { 26000, "marketplace", tx + 5, ty + 14 } ]
 var iron_laid = false
+var traded = false
 var asked = false
 var asked_at = 0
 var next_pop = 0
@@ -153,6 +162,11 @@ for(minutes * 60 * TICK_HZ) t:
     if not iron_laid and done_of("gold_smelter") != 0:  // (once the gold smelter is up, so the first smelter goes there: it pays the school)
         iron_laid = true
         lay("iron_smelter", tx + 17, ty + 9)
+    // the marketplace, once up, is told to trade planks for iron (#43: hooks/market.lua's orders)
+    if not traded and done_of("marketplace") != 0:
+        traded = true
+        issue_cmd(0, 140, [ done_of("marketplace") ], res("plank") + 1, res("iron") + 1, 0, 0)
+        issue_cmd(0, 141, [ done_of("marketplace") ], 5, 0, 0, 0)
     // the school trains one at a time, each paid in gold, as the town needs them
     let school = done_of("school")
     if school != 0 and t % 20 == 0:
