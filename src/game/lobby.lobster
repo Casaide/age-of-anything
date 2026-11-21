@@ -75,6 +75,7 @@ var fe_frames = 0
 var fe_pad = false  // the pad was used last (its hints shown)
 var fe_hosts = []::LanHost
 var fe_scanned = false
+var fe_scan:LanScan? = nil  // the network page's scan while it runs, a step each frame (never the whole scan in one: #150 in Creel)
 var fe_address = ""
 var fe_lab_rules = 0
 let fe_lab_scroll = [ 0.0, 0.0 ]
@@ -883,7 +884,34 @@ def fe_room_open():
     fe_swarm = swarm_host(NET_PORT)
     fe_code_copied = ""
 
+// Host a saved game (#174): the save's map, sides, teams and armies' names on the setup page, the room open; joiners take
+// an AI's side, and at Start the save is the match. What's wrong, or "" once hosting.
+var fe_host_save = ""
+
+def fe_host_saved(path:string) -> string:
+    let data = read_file(path, true)
+    if not data: return "No such save."
+    let w, err = flexbuffers_binary_to_value(typeof WorldSave, data)
+    let sv = w
+    if err or not sv: return "That file is not a save."
+    let k = str_index(fe_maps, gstr(sv.su_map, "id", ""))
+    if k < 0: return "This save\'s map isn\'t here."
+    fe_set_map(k)
+    if fe_sides.length != sv.su_races.length: return "This save has {sv.su_races.length} sides; its map here has {fe_sides.length}."
+    for(fe_sides) side, i:
+        side.typed = gstr(sv.su_races[i], "prompt", rstr(sv.su_races[i], "name"))  // (its words and take: the same army again)
+        side.reroll = gint(sv.su_races[i], "reroll", 0)
+        if i < sv.teams.length: side.team = sv.teams[i]
+        fe_regen(i)
+    fe_hosting = true
+    fe_page = "setup"
+    fe_frames = 0
+    fe_room_open()
+    fe_host_save = path
+    return ""
+
 def fe_room_close():
+    fe_host_save = ""
     swarm_stop(fe_swarm)
     fe_swarm = Swarm {}
     fe_rooms = []
@@ -911,6 +939,10 @@ def fe_room_tick():
 
 // The host's line under the title: how others join.
 def fe_room_line() -> string:
+    let line = fe_room_how()
+    return if fe_host_save != "": "Your saved game: players take an AI\'s side  ·  " + line else: line
+
+def fe_room_how() -> string:
     let here = my_ipv4()
     let lan = if here != "": "on this network: {here}" else: ""
     if fe_swarm.code != "": return "Join code: {fe_swarm.code} (copied; C or Y copies again)" + (if lan != "": "  ·  or " + lan else: "")
@@ -1106,7 +1138,7 @@ def fe_saves() -> [string], [string]:  // paths, rows_
     return paths, rows_
 
 // The saves over a dimmed screen: pick one to play on from there. Returns the path picked, "back", or "".
-def fe_saves_card(note:string) -> string:
+def fe_saves_card(note:string, can_host:bool) -> string:
     let ws = float(gl.window_size())
     let lk = ui_look_of("")
     ui_use(lk)
@@ -1122,8 +1154,10 @@ def fe_saves_card(note:string) -> string:
     fe_rule(at.x + 40.0 * fe_k, y, size.x - 80.0 * fe_k, lk.metal)
     y += 14.0 * fe_k
     var go = ""
+    let host_w = if can_host: 120.0 * fe_k else: 0.0  // (the lobby's: Host beside each, to play it on the network, #174)
     for(shown) k:
-        if ui_button(float2 { at.x + 40.0 * fe_k, y }, float2 { size.x - 80.0 * fe_k, 56.0 * fe_k }, rows_[k], false): go = paths[k]
+        if ui_button(float2 { at.x + 40.0 * fe_k, y }, float2 { size.x - 80.0 * fe_k - host_w, 56.0 * fe_k }, rows_[k], false): go = paths[k]
+        if can_host and ui_button(float2 { at.x + size.x - 40.0 * fe_k - host_w + 8.0 * fe_k, y }, float2 { host_w - 8.0 * fe_k, 56.0 * fe_k }, "Host", false): go = "host:" + paths[k]
         y += 64.0 * fe_k
     let say = if note != "": note elif shown == 0: "No saved games yet. Save one from the pause menu (Esc, or Menu on a pad)." elif paths.length > FE_SAVES: "The newest {FE_SAVES} of {paths.length} saves." else: ""
     if say != "":
@@ -1157,7 +1191,10 @@ def fe_net_page() -> string:
     fe_rule(x, y, w, lk.metal)
     y += 14.0 * fe_k
     ui_text(float2 { x, y }, "Games on this network", fz(18.0), lk.dim)
-    if ui_button(float2 { x + w - 200.0 * fe_k, y - 6.0 * fe_k }, float2 { 200.0 * fe_k, 36.0 * fe_k }, "Look again", false): fe_scanned = false
+    if ui_button(float2 { x + w - 200.0 * fe_k, y - 6.0 * fe_k }, float2 { 200.0 * fe_k, 36.0 * fe_k }, "Look again", false):
+        fe_scanned = false
+        fe_scan = nil
+        fe_hosts = []
     y += 40.0 * fe_k
     if not fe_hosts.length:
         ui_text(float2 { x, y + 14.0 * fe_k }, if fe_scanned: "None yet: on the other machine, Play on the network, Host a game." else: "Looking for games...", fz(16.0), lk.dim)
@@ -1491,6 +1528,9 @@ def run_front(page0:string, typed:[string]) -> string:
         fe_hosting = true
         fe_page = "setup"
         fe_room_open()
+    elif starts_with(page0, "hostsave:"):  // (captures: a saved game hosted, #174)
+        let why = fe_host_saved(page0.substring(9, page0.length - 9))
+        if why != "": print "hostsave: {why}"
     elif starts_with(page0, "guest:"):
         fe_guest_start(page0.substring(6, page0.length - 6))
         fe_page = "setup"
@@ -1552,8 +1592,11 @@ def run_front(page0:string, typed:[string]) -> string:
             elif fe_field == 20: fe_address = text
             if gl.button("tab") == 1 and fe_page == "setup": fe_focus((fe_field + 1) % fe_sides.length, fe_sides[(fe_field + 1) % fe_sides.length].typed)
         if fe_page == "net" and not fe_scanned and fe_frames > 1:
-            fe_hosts = lan_scan(4.0, NET_PORT)  // (Wi-Fi in power saving can take a while to answer: #506)
-            fe_scanned = true
+            let scan = fe_scan or lan_scan_start(4.0, NET_PORT)  // (Wi-Fi in power saving can take a while to answer: #506)
+            fe_scan = scan
+            fe_scanned = lan_scan_tick(scan)
+            fe_hosts = copy(scan.found)  // (each host shown as soon as it answers)
+            if fe_scanned: fe_scan = nil
         if fe_page == "setup" and fe_hosting: fe_room_tick()
         var joined_now = false
         if fe_page == "setup" and fe_joining: joined_now = fe_guest_sync() == "join"
@@ -1588,14 +1631,17 @@ def run_front(page0:string, typed:[string]) -> string:
             elif fe_page == "setup": go = fe_setup_page(dt)
             elif fe_page == "lab": go = fe_lab_page(dt)
             elif fe_page == "saves":
-                let picked = fe_saves_card(fe_note)
+                let picked = fe_saves_card(fe_note, true)
                 if picked == "back": go = "back"
                 elif picked != "":
-                    let why = save_refusal_of(picked)
+                    let path = if starts_with(picked, "host:"): picked.substring(5, picked.length - 5) else: picked
+                    let why = save_refusal_of(path)
                     if why != "": fe_note = why
+                    elif path != picked: fe_note = fe_host_saved(path)  // ("": the room is open, on the setup page)
                     else: go = "load:" + picked
             elif fe_page == "net": go = fe_net_page()
             elif fe_page == "settings": go = fe_settings_card()
+        if has_s(args, "roomstart") and fe_page == "setup" and fe_hosting and fe_rooms.length and room_players(fe_rooms[0]) > 0: go = "start"  // (checks: the host starts once a player is in, and shot: is taken in the match, #174)
         if fe_page == "setup" or fe_page == "lab" or fe_page == "title":
             ui_flush()
         fe_draw_tip()
@@ -1640,7 +1686,7 @@ def run_front(page0:string, typed:[string]) -> string:
         // captures: the page once its armies stand
         let room_waits = has_s(args, "roomshot") and not (if fe_joining: fe_guests.length and fe_guests[0].side >= 0 and glist(fe_guests[0].lobby, "sides").length > 0 else: fe_rooms.length and room_players(fe_rooms[0]) > 0)  // (captures: a player in the room)
         if shot != "" and has_s(args, "roomshot") and not room_waits and shot_frame < 0 and fe_joining and (filter(fe_sides) sd: sd.views_gen != sd.gen).length == 0: shot_frame = fe_frames + 3                                 // (the host may start any moment)
-        if shot != "" and not room_waits and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and (not fe_looks_waiting() or fe_frames > 900) and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
+        if shot != "" and not room_waits and not has_s(args, "lobbyloop") and not has_s(args, "loadfirst") and not has_s(args, "roomstart") and (fe_sides.length == 0 or (filter(fe_sides) s: s.views_gen != s.gen).length == 0 or fe_page == "lab") and (not fe_looks_waiting() or fe_frames > 900) and shot_frame < 0: shot_frame = fe_frames + (if fe_page == "lab": 90 else: 20)
         if rec_dir != "" and rec_type.length > 0:  // (filming: the prompts typed in, side by side, each given time to muster)
             if rec_n == 0:
                 gl.set_fixed_delta_time(1.0 / rec_fps, 0.0)
@@ -1692,6 +1738,7 @@ def run_front(page0:string, typed:[string]) -> string:
             if go == "setup" or go == "lab": gl.set_text_input(fe_sides[0].typed)
             if go == "net":
                 fe_scanned = false
+                fe_scan = nil
                 fe_hosts = []
                 fe_field = 20
                 gl.set_text_input(fe_address)
@@ -1723,6 +1770,7 @@ def run_front(page0:string, typed:[string]) -> string:
             lobby_levels = map(fe_sides) s, i: if i == 0 or fe_player_side(i): "" else: FE_LEVELS[s.level].lowercase()
             if fe_hosting:
                 hosting = true
+                lobby_save = fe_host_save  // (a saved game hosted: the save is the match, #174)
                 net_people = 1 + (if fe_rooms.length: room_players(fe_rooms[0]) else: 1)
                 return "host"
             fe_loader("Setting up the battle", 0.02)  // (shown at once: the start's work comes before the next frame)
