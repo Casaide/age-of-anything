@@ -518,6 +518,37 @@ def steading_smithy(team:float3) -> BSpec:
     blights(sp, [ bv(0.15, 0.33, -0.3) ])
     return bpt(sp, "smoke", smoke)
 
+// The fisherman's hut (#149): a small board hut on the bank under shingles, nets hung to dry on a frame, a rack of fish
+// drying, an upturned boat and a barrel of salt.
+def steading_fishermans_hut(team:float3) -> BSpec:
+    let body = mnode()
+    st_walls(body, 0.8, 0.7, 0.5, bm("wood"), 0.0, bv(-0.3, 0.0, -0.25))
+    st_roof(body, bv(-0.3, 0.5, -0.25), 0.8, 0.7, 0.32, st_shingle(), bm("wood"))
+    st_door(body, -0.4, 0.1, 0.22, 0.38)
+    let net = st_col("#6a6a5a", 1.0)
+    for([ 0.35, 0.95 ]) x: add_child(body, bbox(bv(0.05, 0.6, 0.05), st_timber(), bv(x, 0.3, -0.35)))  // the net frame
+    add_child(body, bbox(bv(0.66, 0.04, 0.04), st_timber(), bv(0.65, 0.6, -0.35)))
+    for(5) i: add_child(body, bbox(bv(0.1, 0.42, 0.015), net, bv(0.42 + float(i) * 0.115, 0.38, -0.35), bv(0.0, 0.0, if i % 2 == 0: 4.0 else: -4.0)))
+    for([ 0.32, 0.6, 0.88 ]) x: add_child(body, bball(0.025, st_col("#c8a040", 0.6), bv(x, 0.2, -0.33)))  // its floats
+    // the drying rack, fish hung on it
+    let rack = bv(0.6, 0.0, 0.35)
+    for([ -0.25, 0.25 ]) x: add_child(body, bbox(bv(0.04, 0.42, 0.04), st_timber(), rack + bv(x, 0.21, 0.0)))
+    add_child(body, bbox(bv(0.56, 0.03, 0.03), st_timber(), rack + bv(0.0, 0.41, 0.0)))
+    let fish = st_col("#a8bcc6", 0.4)
+    for(5) i: add_child(body, bball(0.035, fish, rack + bv(-0.2 + float(i) * 0.1, 0.32, 0.0), bv(0.6, 1.8, 0.4)))
+    // the boat, upturned on the bank
+    let boat = mnode()
+    boat.pos = bv(-0.55, 0.0, 0.55)
+    boat.rot = bv(0.0, 20.0, 0.0)
+    add_child(body, boat)
+    add_child(boat, bball(0.3, st_board_dark(), bv(0.0, 0.0, 0.0), bv(1.9, 0.45, 0.75)))
+    add_child(boat, bbox(bv(1.1, 0.03, 0.05), st_timber(), bv(0.0, 0.135, 0.0)))
+    barrel(bv(0.05, 0.0, 0.35), body)
+    st_cloth(body, bv(-0.1, 0.38, 0.11), team)
+    let sp = st_done(body, team, bv(-0.4, 0.0, 0.1), 0.2, 0.36)
+    blights(sp, [ st_lit(body, bv(-0.1, 0.25, 0.11), 0.12, 0.1) ])
+    return sp
+
 // A Steading building by its type (the mod's own ids): nil for one this set has no model of.
 def steading_building(type:string, team:float3) -> BSpec?:
     switch type:
@@ -531,6 +562,7 @@ def steading_building(type:string, team:float3) -> BSpec?:
         case "mill": return steading_mill(team)
         case "bakery": return steading_bakery(team)
         case "inn": return steading_inn(team)
+        case "fishermans_hut": return steading_fishermans_hut(team)
         case "pig_farm": return steading_pig_farm(team)
         case "butcher": return steading_butcher(team)
         case "coal_mine": return steading_mine("coal", team)

@@ -1,5 +1,5 @@
 {
- "_doc": "Steading's loads (#125): every good a serf or a trade carries is its own thing in the hands, never a barrow: logs and planks, a sheaf and a flour sack on the shoulder; a stone block, loaves, iron bars, a chest of gold and a piglet held before the chest; coal, ores and grapes in a basket on the back; a wine cask held before the chest; sausages on a pole and a bundle of tools on the shoulder. Gear frame: [hand, along the hold, up out of its top, to the right].",
+ "_doc": "Steading's loads (#125): every good a serf or a trade carries is its own thing in the hands, never a barrow: logs and planks, a sheaf and a flour sack on the shoulder; a stone block, loaves, iron bars, a chest of gold and a piglet held before the chest; coal, ores and grapes in a basket on the back; a wine cask held before the chest; sausages and fish on a pole and a bundle of tools on the shoulder. Gear frame: [hand, along the hold, up out of its top, to the right].",
  "holds": {
   "before": {
    "rest": [
@@ -77,6 +77,9 @@
    },
    "wine": {
     "gear": "wine_cask"
+   },
+   "fish": {
+    "gear": "fish_string"
    }
   }
  },
@@ -3312,6 +3315,318 @@
      "mat": "steel"
     }
    ]
+  },
+  "fisherman_hat": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a fisherman's oilskin hat (#149): a round crown and a long flap down the back of the neck against the rain",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       0.0,
+       2.3
+      ],
+      "r": 2.2,
+      "mat": "hat_oilskin"
+     },
+     {
+      "cap": [
+       "head",
+       0,
+       -1.4,
+       1.6
+      ],
+      "to": [
+       "head",
+       0,
+       -2.9,
+       -0.4
+      ],
+      "r": [
+       1.9,
+       1.6
+      ],
+      "mat": "hat_oilskin"
+     },
+     {
+      "cap": [
+       "head",
+       -1.6,
+       0.6,
+       1.2
+      ],
+      "to": [
+       "head",
+       1.6,
+       0.6,
+       1.2
+      ],
+      "r": 0.5,
+      "mat": "hat_oilskin"
+     }
+    ]
+   }
+  },
+  "fisherman_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a fisherman's slate-grey smock and waders (#149)",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "fisher_slate"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "fisher_slate"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       2.35,
+       -7.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.6,
+       0.35,
+       6.4
+      ],
+      "round": 0.0,
+      "mat": "fisher_slate"
+     },
+     {
+      "cap": [
+       "chest",
+       -1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "fisher_slate"
+     },
+     {
+      "cap": [
+       "chest",
+       1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "fisher_slate"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "fishing_rod": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "a fisherman's rod (#149): a long cane tapering to its tip, held out over the water",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      2.0,
+      0,
+      0
+     ],
+     "r": 0.5,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      2.0,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      14.0,
+      1.5,
+      0
+     ],
+     "r": [
+      0.4,
+      0.2
+     ],
+     "mat": "rod_cane"
+    }
+   ]
+  },
+  "fish_string": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "fish hung by their gills from a pole on the shoulder, silver against the dress (#149)",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -8.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      6.5,
+      0.0,
+      0.0
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -6.0,
+      -1.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -6.0,
+      -5.6,
+      0.0
+     ],
+     "r": [
+      0.7,
+      1.25
+     ],
+     "mat": "fish_scale"
+    },
+    {
+     "cap": [
+      "hand",
+      -4.2,
+      -1.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -4.2,
+      -5.2,
+      0.0
+     ],
+     "r": [
+      0.7,
+      1.25
+     ],
+     "mat": "fish_scale"
+    },
+    {
+     "cap": [
+      "hand",
+      3.4,
+      -1.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      3.4,
+      -5.4,
+      0.0
+     ],
+     "r": [
+      0.7,
+      1.25
+     ],
+     "mat": "fish_scale"
+    },
+    {
+     "cap": [
+      "hand",
+      5.2,
+      -1.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.2,
+      -5.0,
+      0.0
+     ],
+     "r": [
+      0.7,
+      1.25
+     ],
+     "mat": "fish_scale"
+    }
+   ]
   }
  },
  "parts": [
@@ -3454,6 +3769,18 @@
   {
    "part": "tool.billhook",
    "gear": "billhook"
+  },
+  {
+   "part": "hat.fisherman",
+   "gear": "fisherman_hat"
+  },
+  {
+   "part": "dress.fisherman",
+   "gear": "fisherman_dress"
+  },
+  {
+   "part": "tool.fishing_rod",
+   "gear": "fishing_rod"
   }
  ]
 }

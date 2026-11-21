@@ -181,5 +181,19 @@
  "kerchief_purple": {
   "rgb": "#6a2f6a",
   "fur": true
+ },
+ "fisher_slate": {
+  "rgb": "#5e7480",
+  "fur": true
+ },
+ "hat_oilskin": {
+  "rgb": "#c09a3a",
+  "fur": true
+ },
+ "rod_cane": {
+  "rgb": "#b89a5a"
+ },
+ "fish_scale": {
+  "rgb": "#a8bcc6"
  }
 }

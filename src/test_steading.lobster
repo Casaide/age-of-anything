@@ -611,6 +611,53 @@ def pig_chain() -> int:
     check(eaten > 0, "steading: with no bread, the town eats sausages ({eaten})")
     return h
 
+// Fish (#149), on its own: a fisherman's hut by the river, a storehouse with no other food. The fisherman catches fish
+// at the genre's pace (about one a minute), the serfs carry them to the inn and the town eats them; a fished-out cell
+// is still river on the map, and fills with fish again.
+def fish_chain() -> int:
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    lay_sent = []
+    fields_by_script(false)
+    bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own)
+    let tc = 0
+    for([ "bread", "sausage", "wine" ]) g: hold_take(tc, res(g), b_hold[tc][res(g)])
+    for([ "plank", "stone" ]) g, j: hold_put(tc, res(g), [ 60, 30 ][j])
+    let fi = res("fish")
+    let river = str_index(tr_names, "river")
+    let tx = start_x[0] / TILE
+    let ty = start_y[0] / TILE
+    var near = -1  // the river cell nearest the start
+    for(W * H) c:
+        if terrain[c] == river and (near < 0 or abs(c % W - tx) + abs(c / W - ty) < abs(near % W - tx) + abs(near / W - ty)): near = c
+    let dx = if near % W > tx: -3 else: 3
+    let dy = if near / W > ty: -3 else: 3
+    var laid = 0
+    var trained = false
+    var fished_out = false
+    var h = 0
+    for(20 * 60 * TICK_HZ) t:
+        if t == 20 and lay("school", tx - 2, ty - 6): laid++
+        if t == 40 and lay("inn", near % W + dx * 3, near / W + dy * 2): laid++  // (by the river: the fish come a short way)
+        if t == 60 and lay("fishermans_hut", near % W + dx, near / W + dy): laid++
+        let school = done_of("school")
+        if school != 0 and not trained:
+            for([ "fisherman", "worker", "worker", "worker" ]) slot: issue_cmd(0, CMD_TRAIN, []::int, school, type_of_slot(0, slot), 1, 0)
+            trained = true
+        lay_step()
+        if not fished_out: fished_out = (find(W * H) c: tr_names[terrain[c]] == "river_fished") >= 0
+        if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
+    let hut = b_index_of(done_of("fishermans_hut"))
+    let inn = b_index_of(done_of("inn"))
+    let caught = gathered[fi][0]
+    let eaten = caught - all_of(fi)
+    print "steading: fish: {laid} laid, {caught} caught, {eaten} eaten, at the inn {if inn >= 0: b_hold[inn][fi] else: -1}"
+    check(laid == 3 and hut >= 0 and inn >= 0, "steading: a school, an inn and a fisherman\'s hut by the river go up ({laid} laid)")
+    check(base_gather_ticks[fi] == 1180 and caught >= 4 and caught <= 20, "steading: a fisherman catches fish at the genre\'s pace, about one a minute ({caught} in 20 minutes, the hut up part of that)")
+    check(eaten > 0, "steading: with no other food, the town eats fish ({eaten})")
+    check(fished_out, "steading: a river cell fished out turns to fished river, to fill again")
+    return h
+
 def store_planks() -> int:
     var n = 0
     for(b_id.length) b:
@@ -963,6 +1010,7 @@ let h1 = play()
 let h2 = play()
 check(h1 == h2, "steading: the same town twice, the same hash")
 check(pig_chain() == pig_chain(), "steading: the same pigs twice, the same hash")
+check(fish_chain() == fish_chain(), "steading: the same fish twice, the same hash")
 check(metal_chain() == metal_chain(), "steading: the same metal trades twice, the same hash")
 for([ [ 0, 0 ], [ 1, 0 ], [ 0, 1 ], [ -1, 1 ] ]) d: big_town(d[0], d[1])
 let same, lively = save_run(false)

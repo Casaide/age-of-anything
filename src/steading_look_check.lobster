@@ -62,7 +62,7 @@ for(glist(race, "units")) unit:
     kit_slots.push(slot)
     kit_heads.push(gstr(ps, "head_gear", ""))
     kit_torsos.push(gstr(ps, "torso", ""))
-expect(looks.length == 13, "the serf and 12 trades: {looks.length}")
+expect(looks.length == 14, "the serf and 13 trades (the fisherman, #149): {looks.length}")
 // (#156) At game size a trade reads by the colour of its clothes and its hat: each wears a colour of its own (its dress's
 // first shape, what covers the body), the serf alone the team's, and no two hats share theirs. The serf goes bare-headed.
 let gear_json = parse_json(read_file("../mods/steading/data/voxel/gear.json") or "\{\}")
