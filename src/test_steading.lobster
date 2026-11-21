@@ -418,7 +418,7 @@ def big_town(dx:int, dy:int) -> int:
     var off_road = 0
     var off_line = 0  // of the road ticks, those off the lines through its tiles' centres (cutting across it at an angle)
     var h = 0
-    for(40 * 60 * TICK_HZ) t:  // (at the genre's pace, going inside at each drop by the door: #139, #140, #157)
+    for(48 * 60 * TICK_HZ) t:  // (at the genre's pace, going inside at each drop by the door: #139, #140, #157)
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
         if t == 40 and lay("lumber_camp", tx + 6, ty - 4): laid++
         if t == 60 and lay("sawmill", tx - 6, ty + 3): laid++
