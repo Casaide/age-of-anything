@@ -91,6 +91,13 @@
      "torso": "dress.winegrower",
      "hand_r": "tool.billhook"
     }
+   },
+   "fisherman": {
+    "1": {
+     "head_gear": "hat.fisherman",
+     "torso": "dress.fisherman",
+     "hand_r": "tool.fishing_rod"
+    }
    }
   },
   "skins": [

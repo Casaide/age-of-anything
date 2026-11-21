@@ -183,9 +183,21 @@ def emit(key:string, rate:float, dt:float, make):
         owed -= 1.0
     town_emit.set(key, owed)
 
+// The sound a building makes while it works (audio.json "buildings": a type's id to a loop, #121), "" for none; read once
+// a match.
+var work_sound_of = []::string
+def work_sound(k:int) -> string:
+    if work_sound_of.length != bt_name.length:
+        let m = gobj(lib_data("audio.json"), "buildings")
+        work_sound_of = map(bt_name) n: gstr(m, n, "")
+    return work_sound_of[k]
+
 def building_fx_tick(dt:float):
+    let working = dictionary<string, int>(8)  // the workshops on screen working now, by their sound
     for(b_id.length) b:
         let cell = b_cy[b] * W + b_cx[b]
+        if b_done[b] == 1 and b_make[b] > 0 and fog[ME][cell] == 2 and work_sound(b_kind[b]) != "" and on_screen(b_cx[b] * 1000 + 1000, b_cy[b] * 1000 + 1000):
+            working.set(work_sound(b_kind[b]), working.get(work_sound(b_kind[b]), 0) + 1)
         if b_done[b] == 1 and (teams[b_owner[b]] == teams[ME] or fog[ME][cell] == 2) and b_owner[b] < arch_of.length:
             let look = building_look(b)
             let at = building_anchor(b)
@@ -201,6 +213,8 @@ def building_fx_tick(dt:float):
                     let sp = at + spots[k]
                     emit("{b_id[b]}:f{k}", 20.0, dt) (): Puff2 { sp + float2 { rnd_range(-3.0, 3.0), rnd_range(-2.0, 2.0) }, rnd_dir(float2 { 0.0, -1.0 }, 14.0, 7.0, 13.0), 0.0, 0.8, 1, rnd_range(0.14, 0.24) * 16.0 }
                     emit("{b_id[b]}:b{k}", 4.0, dt) (): Puff2 { sp + float2 { 0.0, -5.0 }, rnd_dir(float2 { 0.15, -1.0 }, 14.0, 6.0, 10.0), 0.0, 3.5, 2, rnd_range(0.16, 0.26) * 16.0 }
+    // (heard as the units' loops are, faded with them)
+    for(working.get_keys()) name: unit_loop_hear(name, working.get(name, 0))
     for(fx_ruins) r:  // a fallen building burns on a while in its ruin
         if clock_s - r.t0 < RUIN_BURN:
             let at = r.at / 1.5

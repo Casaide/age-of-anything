@@ -1,5 +1,5 @@
 {
- "_doc": "Steading's loads (#125): every good a serf or a trade carries is its own thing in the hands, never a barrow: logs and planks, a sheaf and a flour sack on the shoulder; a stone block, loaves, iron bars, a chest of gold and a piglet held before the chest; coal, ores and grapes in a basket on the back; a wine cask held before the chest; sausages on a pole and a bundle of tools on the shoulder. Gear frame: [hand, along the hold, up out of its top, to the right].",
+ "_doc": "Steading's loads (#125): every good a serf or a trade carries is its own thing in the hands, never a barrow: logs and planks, a sheaf and a flour sack on the shoulder; a stone block, loaves, iron bars, a chest of gold and a piglet held before the chest; coal, ores and grapes in a basket on the back; a wine cask held before the chest; sausages and fish on a pole and a bundle of tools on the shoulder. Gear frame: [hand, along the hold, up out of its top, to the right].",
  "holds": {
   "before": {
    "rest": [
@@ -77,6 +77,9 @@
    },
    "wine": {
     "gear": "wine_cask"
+   },
+   "fish": {
+    "gear": "fish_string"
    }
   }
  },
@@ -1056,7 +1059,7 @@
    "flags": [
     "helm"
    ],
-   "_doc": "a stone cutter's brown felt cap",
+   "_doc": "a stone cutter's white dust cap (#156)",
    "fits": {
     "*": [
      {
@@ -1067,7 +1070,7 @@
        2.7
       ],
       "r": 2.0,
-      "mat": "felt_brown"
+      "mat": "dust_cap"
      },
      {
       "disc": [
@@ -1085,7 +1088,7 @@
        2.4,
        0.25
       ],
-      "mat": "felt_brown"
+      "mat": "dust_cap"
      }
     ]
    }
@@ -1286,7 +1289,7 @@
    "flags": [
     "helm"
    ],
-   "_doc": "a butcher's white cap",
+   "_doc": "a butcher's blue cap (#156)",
    "fits": {
     "*": [
      {
@@ -1297,7 +1300,7 @@
        2.7
       ],
       "r": 2.0,
-      "mat": "apron_white"
+      "mat": "stripe_blue"
      },
      {
       "disc": [
@@ -1315,7 +1318,7 @@
        2.4,
        0.25
       ],
-      "mat": "apron_white"
+      "mat": "stripe_blue"
      }
     ]
    }
@@ -1324,9 +1327,85 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a serf's undyed tunic, a rope belt",
+   "_doc": "a serf's tunic in the team's colour, a rope belt, and a wicker basket on his back: the one who carries (#156) The basket is left off while he carries a basket load: his basket is the one heaped.",
    "fits": {
     "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.9,
+       3.1
+      ],
+      "mat": "team"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.9,
+       3.1
+      ],
+      "mat": "team"
+     },
+     {
+      "cap": [
+       "hip",
+       0,
+       1.3,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       0,
+       1.1,
+       0.8
+      ],
+      "r": [
+       3.4,
+       2.6
+      ],
+      "mat": "team"
+     },
+     {
+      "cap": [
+       "hip",
+       0,
+       -1.3,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       0,
+       -1.1,
+       0.8
+      ],
+      "r": [
+       3.4,
+       2.6
+      ],
+      "mat": "team"
+     },
      {
       "ring": [
        "chest",
@@ -1348,18 +1427,95 @@
      {
       "cap": [
        "chest",
-       -2.0,
-       1.9,
-       2.4
+       0,
+       -3.8,
+       -4.4
       ],
       "to": [
        "chest",
-       2.1,
-       1.7,
-       -4.2
+       0,
+       -4.0,
+       1.6
       ],
-      "r": 0.5,
-      "mat": "team"
+      "r": [
+       1.9,
+       2.5
+      ],
+      "mat": "wicker",
+      "unless": [
+       "has:coal_basket",
+       "has:iron_ore_basket",
+       "has:gold_ore_basket",
+       "has:grape_basket"
+      ]
+     },
+     {
+      "ring": [
+       "chest",
+       0,
+       -4.0,
+       1.6
+      ],
+      "n": [
+       0,
+       0,
+       1
+      ],
+      "r": [
+       2.6,
+       0.35
+      ],
+      "mat": "rope",
+      "unless": [
+       "has:coal_basket",
+       "has:iron_ore_basket",
+       "has:gold_ore_basket",
+       "has:grape_basket"
+      ]
+     },
+     {
+      "cap": [
+       "chest",
+       -1.6,
+       1.4,
+       2.2
+      ],
+      "to": [
+       "chest",
+       -1.6,
+       -2.2,
+       1.6
+      ],
+      "r": 0.3,
+      "mat": "rope",
+      "unless": [
+       "has:coal_basket",
+       "has:iron_ore_basket",
+       "has:gold_ore_basket",
+       "has:grape_basket"
+      ]
+     },
+     {
+      "cap": [
+       "chest",
+       1.6,
+       1.4,
+       2.2
+      ],
+      "to": [
+       "chest",
+       1.6,
+       -2.2,
+       1.6
+      ],
+      "r": 0.3,
+      "mat": "rope",
+      "unless": [
+       "has:coal_basket",
+       "has:iron_ore_basket",
+       "has:gold_ore_basket",
+       "has:grape_basket"
+      ]
      }
     ]
    }
@@ -1368,7 +1524,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a woodcutter's leather jerkin",
+   "_doc": "a woodcutter's green jerkin (#156)",
    "fits": {
     "*": [
      {
@@ -1388,7 +1544,7 @@
        3.15,
        2.85
       ],
-      "mat": "jerkin"
+      "mat": "jerkin_green"
      },
      {
       "cap": [
@@ -1407,7 +1563,7 @@
        3.15,
        2.85
       ],
-      "mat": "jerkin"
+      "mat": "jerkin_green"
      },
      {
       "cap": [
@@ -1516,7 +1672,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a sawyer's rust shirt and a canvas apron",
+   "_doc": "a sawyer's tan jerkin (#156)",
    "fits": {
     "*": [
      {
@@ -1536,7 +1692,7 @@
        3.15,
        2.85
       ],
-      "mat": "rust_shirt"
+      "mat": "jerkin_tan"
      },
      {
       "cap": [
@@ -1555,27 +1711,7 @@
        3.15,
        2.85
       ],
-      "mat": "rust_shirt"
-     },
-     {
-      "box": [
-       "chest",
-       0,
-       2.35,
-       -7.25
-      ],
-      "n": [
-       0,
-       1,
-       0
-      ],
-      "half": [
-       2.6,
-       0.35,
-       3.25
-      ],
-      "round": 0.0,
-      "mat": "canvas"
+      "mat": "jerkin_tan"
      },
      {
       "cap": [
@@ -1600,7 +1736,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a farmer's pale smock",
+   "_doc": "a farmer's fawn smock (#156)",
    "fits": {
     "*": [
      {
@@ -1620,7 +1756,7 @@
        3.15,
        2.85
       ],
-      "mat": "smock"
+      "mat": "smock_fawn"
      },
      {
       "cap": [
@@ -1639,7 +1775,7 @@
        3.15,
        2.85
       ],
-      "mat": "smock"
+      "mat": "smock_fawn"
      },
      {
       "cap": [
@@ -1728,7 +1864,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a baker's ochre shirt under a white bib apron",
+   "_doc": "a baker's ochre shirt under a brown bib apron (#156)",
    "fits": {
     "*": [
      {
@@ -1787,7 +1923,7 @@
        6.15
       ],
       "round": 0.0,
-      "mat": "apron_white"
+      "mat": "apron_leather"
      },
      {
       "cap": [
@@ -1803,7 +1939,7 @@
        3.6
       ],
       "r": 0.3,
-      "mat": "apron_white"
+      "mat": "apron_leather"
      },
      {
       "cap": [
@@ -1819,7 +1955,7 @@
        3.6
       ],
       "r": 0.3,
-      "mat": "apron_white"
+      "mat": "apron_leather"
      },
      {
       "cap": [
@@ -2024,7 +2160,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a smith's blue shirt under a leather bib apron",
+   "_doc": "a smith's pale shirt under a big black leather apron (#156)",
    "fits": {
     "*": [
      {
@@ -2044,7 +2180,7 @@
        3.15,
        2.85
       ],
-      "mat": "smith_blue"
+      "mat": "smith_shirt"
      },
      {
       "cap": [
@@ -2063,7 +2199,7 @@
        3.15,
        2.85
       ],
-      "mat": "smith_blue"
+      "mat": "smith_shirt"
      },
      {
       "box": [
@@ -2083,7 +2219,7 @@
        6.9
       ],
       "round": 0.0,
-      "mat": "apron_leather"
+      "mat": "apron_black"
      },
      {
       "cap": [
@@ -2099,7 +2235,7 @@
        3.6
       ],
       "r": 0.3,
-      "mat": "apron_leather"
+      "mat": "apron_black"
      },
      {
       "cap": [
@@ -2115,7 +2251,7 @@
        3.6
       ],
       "r": 0.3,
-      "mat": "apron_leather"
+      "mat": "apron_black"
      },
      {
       "cap": [
@@ -2140,7 +2276,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a swineherd's grey-blue tunic",
+   "_doc": "a swineherd's khaki tunic (#156)",
    "fits": {
     "*": [
      {
@@ -2160,7 +2296,7 @@
        3.15,
        2.85
       ],
-      "mat": "herd_blue"
+      "mat": "herd_khaki"
      },
      {
       "cap": [
@@ -2179,7 +2315,7 @@
        3.15,
        2.85
       ],
-      "mat": "herd_blue"
+      "mat": "herd_khaki"
      },
      {
       "cap": [
@@ -2204,7 +2340,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a butcher's white shirt under a blue-striped apron",
+   "_doc": "a butcher's red shirt under a white apron striped blue (#156)",
    "fits": {
     "*": [
      {
@@ -2224,7 +2360,7 @@
        3.15,
        2.85
       ],
-      "mat": "apron_white"
+      "mat": "butcher_red"
      },
      {
       "cap": [
@@ -2243,7 +2379,7 @@
        3.15,
        2.85
       ],
-      "mat": "apron_white"
+      "mat": "butcher_red"
      },
      {
       "box": [
@@ -2957,7 +3093,7 @@
    "flags": [
     "helm"
    ],
-   "_doc": "a winegrower's red kerchief, knotted at the back",
+   "_doc": "a winegrower's purple kerchief, knotted at the back (#156)",
    "fits": {
     "*": [
      {
@@ -2968,7 +3104,7 @@
        2.2
       ],
       "r": 2.25,
-      "mat": "kerchief_red"
+      "mat": "kerchief_purple"
      },
      {
       "ball": [
@@ -2978,7 +3114,7 @@
        1.6
       ],
       "r": 0.7,
-      "mat": "kerchief_red"
+      "mat": "kerchief_purple"
      }
     ]
    }
@@ -3179,6 +3315,318 @@
      "mat": "steel"
     }
    ]
+  },
+  "fisherman_hat": {
+   "flags": [
+    "helm"
+   ],
+   "_doc": "a fisherman's oilskin hat (#149): a round crown and a long flap down the back of the neck against the rain",
+   "fits": {
+    "*": [
+     {
+      "ball": [
+       "head",
+       0,
+       0.0,
+       2.3
+      ],
+      "r": 2.2,
+      "mat": "hat_oilskin"
+     },
+     {
+      "cap": [
+       "head",
+       0,
+       -1.4,
+       1.6
+      ],
+      "to": [
+       "head",
+       0,
+       -2.9,
+       -0.4
+      ],
+      "r": [
+       1.9,
+       1.6
+      ],
+      "mat": "hat_oilskin"
+     },
+     {
+      "cap": [
+       "head",
+       -1.6,
+       0.6,
+       1.2
+      ],
+      "to": [
+       "head",
+       1.6,
+       0.6,
+       1.2
+      ],
+      "r": 0.5,
+      "mat": "hat_oilskin"
+     }
+    ]
+   }
+  },
+  "fisherman_dress": {
+   "flags": [
+    "armour"
+   ],
+   "_doc": "a fisherman's slate-grey smock and waders (#149)",
+   "fits": {
+    "*": [
+     {
+      "cap": [
+       "hip",
+       -1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "fisher_slate"
+     },
+     {
+      "cap": [
+       "hip",
+       1.0,
+       0.1,
+       -7.5
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.0,
+       0.8
+      ],
+      "r": [
+       3.15,
+       2.85
+      ],
+      "mat": "fisher_slate"
+     },
+     {
+      "box": [
+       "chest",
+       0,
+       2.35,
+       -7.6
+      ],
+      "n": [
+       0,
+       1,
+       0
+      ],
+      "half": [
+       2.6,
+       0.35,
+       6.4
+      ],
+      "round": 0.0,
+      "mat": "fisher_slate"
+     },
+     {
+      "cap": [
+       "chest",
+       -1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       -1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "fisher_slate"
+     },
+     {
+      "cap": [
+       "chest",
+       1.4,
+       1.9,
+       -1.0
+      ],
+      "to": [
+       "chest",
+       1.0,
+       0.5,
+       3.6
+      ],
+      "r": 0.3,
+      "mat": "fisher_slate"
+     },
+     {
+      "cap": [
+       "chest",
+       -2.0,
+       1.9,
+       2.4
+      ],
+      "to": [
+       "chest",
+       2.1,
+       1.7,
+       -4.2
+      ],
+      "r": 0.5,
+      "mat": "team"
+     }
+    ]
+   }
+  },
+  "fishing_rod": {
+   "hand": "right",
+   "hold": "swing",
+   "_doc": "a fisherman's rod (#149): a long cane tapering to its tip, held out over the water",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -1.5,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      2.0,
+      0,
+      0
+     ],
+     "r": 0.5,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      2.0,
+      0,
+      0
+     ],
+     "to": [
+      "hand",
+      14.0,
+      1.5,
+      0
+     ],
+     "r": [
+      0.4,
+      0.2
+     ],
+     "mat": "rod_cane"
+    }
+   ]
+  },
+  "fish_string": {
+   "hand": "right",
+   "hold": "shoulder",
+   "_doc": "fish hung by their gills from a pole on the shoulder, silver against the dress (#149)",
+   "shapes": [
+    {
+     "cap": [
+      "hand",
+      -8.0,
+      0.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      6.5,
+      0.0,
+      0.0
+     ],
+     "r": 0.4,
+     "mat": "wood"
+    },
+    {
+     "cap": [
+      "hand",
+      -6.0,
+      -1.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -6.0,
+      -5.6,
+      0.0
+     ],
+     "r": [
+      0.7,
+      1.25
+     ],
+     "mat": "fish_scale"
+    },
+    {
+     "cap": [
+      "hand",
+      -4.2,
+      -1.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      -4.2,
+      -5.2,
+      0.0
+     ],
+     "r": [
+      0.7,
+      1.25
+     ],
+     "mat": "fish_scale"
+    },
+    {
+     "cap": [
+      "hand",
+      3.4,
+      -1.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      3.4,
+      -5.4,
+      0.0
+     ],
+     "r": [
+      0.7,
+      1.25
+     ],
+     "mat": "fish_scale"
+    },
+    {
+     "cap": [
+      "hand",
+      5.2,
+      -1.0,
+      0.0
+     ],
+     "to": [
+      "hand",
+      5.2,
+      -5.0,
+      0.0
+     ],
+     "r": [
+      0.7,
+      1.25
+     ],
+     "mat": "fish_scale"
+    }
+   ]
   }
  },
  "parts": [
@@ -3321,6 +3769,18 @@
   {
    "part": "tool.billhook",
    "gear": "billhook"
+  },
+  {
+   "part": "hat.fisherman",
+   "gear": "fisherman_hat"
+  },
+  {
+   "part": "dress.fisherman",
+   "gear": "fisherman_dress"
+  },
+  {
+   "part": "tool.fishing_rod",
+   "gear": "fishing_rod"
   }
  ]
 }
