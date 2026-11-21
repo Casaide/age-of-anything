@@ -148,6 +148,18 @@
       "size": 1.6,
       "h": 79
     },
+    "shot.stone_0": {
+      "size": 0.9,
+      "h": 27
+    },
+    "shot.stone_1": {
+      "size": 0.9,
+      "h": 28
+    },
+    "shot.stone_2": {
+      "size": 0.9,
+      "h": 26
+    },
     "siege.ram": {
       "size": 0.8,
       "h": 99

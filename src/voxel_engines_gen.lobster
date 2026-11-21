@@ -212,6 +212,20 @@ def mantis():
                    leg(float3 { 2.5, -4.0, 12.0 }, float3 { 12.0, -14.0, 0.8 }, float2 { 8.5, 8.5 }, UP, float4 { 1.0, 0.8, 0.7, 0.5 }, [ "mantis", "mantis" ], 2.6, 1.6, 180.0) ]) l: with_foot(l, 1.0, "mantis", false)
     vxw_body(OUT + "siege.beast.mantis.json", "A war mantis: a long green body reared up at the front, a triangle head with great gold eyes, its claws folded up before it, four thin legs, wings folded on its back; a saddle, its crew sat on it.", 1.0, [ HOWDAH, legs(ls), "\"reach\": 2.6", spots("seats", [ float3 { 0.0, -6.0, 17.0 } ]) ])
 
+// A thrown stone (#179), in three turns of its tumble about x (the 8 facings turn it about z): a rough-dressed boulder,
+// a core with lumps standing out of it and a few flat split faces, in mottled stone. shots.json's "boulder" and
+// "sling_stone" fly them.
+def stone(k:int):
+    let a = float(k) * 30.0
+    def turn(v:float3) -> float3: return float3 { v.x, v.y * cos(a) - v.z * sin(a), v.y * sin(a) + v.z * cos(a) } + float3 { 0.0, 0.0, 8.0 }
+    ball(turn(float3_0), 6.2, "shot_stone", false)
+    for([ float4 { 3.2, 1.6, 2.4, 4.2 }, float4 { -2.8, 2.6, -1.4, 4.0 }, float4 { 0.6, -3.4, 2.0, 3.8 }, float4 { -1.6, -1.4, -3.4, 3.6 }, float4 { 1.8, 3.0, -2.6, 3.2 } ]) l:
+        ball(turn(l.xyz), l.w, "shot_stone", false)
+    for([ float3 { 0.7, 0.2, 0.7 }, float3 { -0.6, -0.7, 0.3 } ]) n:
+        let c = normalize(n) * 5.6
+        box(turn(c * 0.93), float3 { 3.4, 1.0, 3.0 }, normalize(turn(n) - float3 { 0.0, 0.0, 8.0 }), "shot_stone_cut", 0.4)
+    vxw_body(OUT + "shot.stone_{k}.json", "A thrown stone, a turn {k} of 3 through its tumble (#179): a rough boulder, lumps out of a core and a couple of split faces.", 1.0, [])
+
 // The war elephant, heron and mantis are hand-made bodies now (data/voxel/bodies/siege.beast.*.json, 2026-11-04),
 // so they aren't written here any more (their functions are kept for reference).
 ram()
@@ -220,4 +234,5 @@ bolt()
 tower()
 sling()
 sling_packed()
+for(3) k: stone(k)
 cart()
