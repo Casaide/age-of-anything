@@ -324,6 +324,7 @@ var lobby_mode = "standard"
 var lobby_prompts = []::string  // each side's words (the lobby's, or races:A|B)
 var lobby_teams = []::int       // each side's team (a team game from the lobby)
 var lobby_levels = []::string   // each side's AI level ("" for a person)
+var lobby_save = ""             // a saved game the lobby hosts (#174): the match is the save
 var front_shown = false         // the lobby's pages were up (the match loader shows their armies)
 
 // The maps a match can be on (data/maps).
@@ -1057,6 +1058,8 @@ def make_match() -> bool:
     ai_levels = []
     if starts_with(front_choice, "load:"):
         if not load_saved(front_choice.substring(5, front_choice.length - 5)): return false
+    if hosting and lobby_save != "":  // (a saved game hosted, #174: the save, the people's sides then played by them)
+        if not load_saved(lobby_save): return false
     net_swarm_stop()                                                     // (the last match's)
     if join_ip != "" and fe_guests.length and fe_guests[0].world != "":  // joined in the host's lobby (#519): it sent the match
         let g = fe_guests[0]
@@ -1160,7 +1163,7 @@ def make_match() -> bool:
         roles_from_data()  // (a scenario file carries no building roles)
     note("world")
     events_on = true
-    if args[1] == "lobby" and lobby_levels.length == num_players and not joined_bots.length: ai_levels_set(lobby_levels)  // (each AI at its level)
+    if args[1] == "lobby" and lobby_levels.length == num_players and (not joined_bots.length or lobby_save != ""): ai_levels_set(lobby_levels)  // (each AI at its level)
     bots = map(num_players) p: new_bot(p)
     if joined_bots.length: bots = joined_bots
     if hosting and fe_rooms.length:  // the lobby's room (#519): its players are in, each on the side they took
@@ -1442,7 +1445,7 @@ def pause_menu_body():
     let ws = float(gl.window_size())
     if menu_saves:  // Load game: the saves (game/lobby.lobster)
         fe_fit()
-        let picked = fe_saves_card("")
+        let picked = fe_saves_card("", false)
         if picked == "back": menu_saves = false
         elif picked != "":  // (a new match from the save: its map may be another)
             next_choice = "load:" + picked
@@ -1615,6 +1618,14 @@ def play_match():
             print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
             bake_progress_on = false
             bake_loading = false
+            if net_on:  // every player loaded, then the match starts on all at once (#151 in Creel): no one freezes waiting mid-move
+                ls_begin(lockstep)
+                while not ls_begin_tick(lockstep) and not quit_game:
+                    if net_wait_frame(if link.closed: "The other player has left" else: "Waiting for the other players to load..."):
+                        quit_game = true
+                        if net_backed_out: back_to_lobby = true  // (B or Esc: the menu; the window closed: the end)
+                        else: quit_app = true
+                        net_backed_out = false
         if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
         if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
         if reload_at >= 0.0 and clock_s >= reload_at:
@@ -1631,7 +1642,7 @@ def play_match():
         if swap_arg != "" and clock_s >= swap_at:
             become(swap_arg)
             swap_arg = ""
-        if not paused and not test_pause and winner < 0 and not typing_text and ((not tree_open and not menu_open) or net_on): sim_owe(dt * speed)
+        if not paused and not test_pause and winner < 0 and not typing_text and ((not tree_open and not menu_open) or net_on): sim_owe(if frame_no == 2: 0.0 else: dt * speed)  // (the second frame's time is the first one's bake: not played, #151 in Creel)
         if net_on:
             ls_receive(lockstep)
             if lockstep.desync != "": banner = "Out of step with the other player: {lockstep.desync}"
@@ -1765,6 +1776,7 @@ def new_match_reset():
     join_ip = ""
     net_seats = []
     in_net_match = false
+    lobby_save = ""
     net_on = false
     ME = 0
     skirmish = false
