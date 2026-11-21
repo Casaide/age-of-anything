@@ -521,6 +521,75 @@ def crops(seed_value:int) -> MNode:
             add_child(n, blob(float3 { 0.02, 0.012, 0.018 }, plain(html("#4a3420")), float3 { randf_range(rng, -0.45, 0.45), 0.045, z + 0.08 }))
     return n
 
+// A field as the genre shows it (#154), each stage told apart at game size: tilled earth in ridged rows (furrows), the
+// same rows with green shoots up them (shoots), and ripe wheat standing gold to the edges (wheat). One cell each.
+def field_rows(n:MNode, rng:Pcg):
+    add_child(n, box(float3 { 0.98, 0.03, 0.98 }, plain(html("#5a3e24")), float3 { 0.0, 0.015, 0.0 }))
+    let ridge = [ plain(html("#7a5634")), plain(html("#70502f")) ]
+    for(6) row:
+        let z = -0.4 + float(row) * 0.16
+        add_child(n, blob(float3 { 0.48, 0.03, 0.05 }, ridge[row % 2], float3 { 0.0, 0.035, z }))
+        for(4): add_child(n, blob(float3 { 0.018, 0.012, 0.016 }, plain(html("#4a3220")), float3 { randf_range(rng, -0.45, 0.45), 0.05, z + randf_range(rng, -0.03, 0.03) }))
+
+def furrows(seed_value:int) -> MNode:
+    let rng = grng(seed_value)
+    let n = mnode()
+    field_rows(n, rng)
+    return n
+
+def shoots(seed_value:int) -> MNode:
+    let rng = grng(seed_value)
+    let n = mnode()
+    field_rows(n, rng)
+    let green = [ plain(html("#7cb040")), plain(html("#62983a")) ]
+    for(6) row:
+        let z = -0.4 + float(row) * 0.16
+        for(9) k:
+            let base = float3 { -0.42 + float(k) * 0.105 + randf_range(rng, -0.015, 0.015), 0.06, z }
+            for(2) l: add_child(n, rod(base, base + float3 { randf_range(rng, -0.03, 0.03), randf_range(rng, 0.05, 0.09), randf_range(rng, -0.025, 0.025) }, 0.01, 0.005, green[(k + l) % 2], false))
+    return n
+
+def wheat(seed_value:int) -> MNode:
+    let rng = grng(seed_value)
+    let n = mnode()
+    add_child(n, box(float3 { 0.98, 0.03, 0.98 }, plain(html("#6e5232")), float3 { 0.0, 0.015, 0.0 }))
+    let stalk = [ plain(html("#c8a040")), plain(html("#b8902e")), plain(html("#d8b450")) ]
+    let ear = [ plain(html("#e6c460")), plain(html("#d0a844")) ]
+    for(9) row:
+        let z = -0.42 + float(row) * 0.105
+        for(14) k:
+            let base = float3 { -0.44 + float(k) * 0.068 + randf_range(rng, -0.02, 0.02), 0.03, z + randf_range(rng, -0.02, 0.02) }
+            let h = randf_range(rng, 0.22, 0.3)
+            let lean = float3 { randf_range(rng, -0.03, 0.05), 0.0, randf_range(rng, -0.02, 0.04) }
+            let top = base + float3 { 0.0, h, 0.0 } + lean
+            add_child(n, rod(base, top, 0.006, 0.005, stalk[(row + k) % 3], false))
+            add_child(n, blob(float3 { 0.014, 0.034, 0.014 }, ear[(row * 3 + k) % 2], top + float3 { lean.x * 0.3, 0.025, lean.z * 0.3 }))
+    return n
+
+// A row of vines on stakes with a wire between (#154): leafy and green young (vines), hung with dark purple bunches
+// once ripe (vines_ripe). One cell, the row along x.
+def vines(seed_value:int, ripe:bool) -> MNode:
+    let rng = grng(seed_value)
+    let n = mnode()
+    add_child(n, box(float3 { 0.98, 0.03, 0.98 }, plain(html("#5e4a30")), float3 { 0.0, 0.015, 0.0 }))
+    let stake = plain(html("#6a4a2e"))
+    let leaf = [ plain(html("#4e7a2a")), plain(html("#3e6a24")), plain(html("#62903a")) ]
+    let grape = [ plain(html("#3a1e4a")), plain(html("#4e2a5e")) ]
+    for([ -0.22, 0.22 ]) z:
+        for([ -0.44, 0.0, 0.44 ]) x: add_child(n, rod(float3 { x, 0.0, z }, float3 { x, 0.36, z }, 0.018, 0.015, stake))
+        add_child(n, rod(float3 { -0.46, 0.3, z }, float3 { 0.46, 0.3, z }, 0.005, 0.005, plain(html("#5a5a5a")), false))
+        for(9) k:
+            let x = -0.4 + float(k) * 0.1
+            add_child(n, rod(float3 { x, 0.03, z }, float3 { x + randf_range(rng, -0.03, 0.03), 0.28, z }, 0.012, 0.008, stake, false))
+            for(5) l:
+                let p = float3 { x + randf_range(rng, -0.05, 0.05), randf_range(rng, 0.2, 0.31), z + randf_range(rng, -0.04, 0.04) }
+                add_child(n, blob(float3 { 0.04, 0.018, 0.035 }, leaf[(k + l) % 3], p, float3 { 0.0, randf(rng) * 180.0, 20.0 }))
+            if ripe and k % 2 == 0:
+                let g = float3 { x + 0.02, 0.17, z + (if z > 0.0: 0.05 else: -0.05) }
+                add_child(n, blob(float3 { 0.028, 0.05, 0.028 }, grape[k % 2], g))
+                add_child(n, blob(float3 { 0.022, 0.03, 0.022 }, grape[(k + 1) % 2], g + float3 { 0.0, -0.045, 0.0 }))
+    return n
+
 def paddy(seed_value:int) -> MNode:
     let rng = grng(seed_value)
     let n = mnode()

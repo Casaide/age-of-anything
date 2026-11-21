@@ -57,8 +57,7 @@ def pack_from_data(map_id:string):
         for(kinds.keys) name, n: voice_takes.set(name, as_int(kinds.a[n]))
     if not building_names.get_keys().length:
         for(bt_name) id, k: building_names.set(k, gstr(at(at(lib_data("buildings.json"), "buildings"), id), "name", id))
-    if not research_names.get_keys().length:
-        for(research) item, r: research_names.set(r, gstr(su_research[r], "name", item.id))
+    for(research.length) r: research_names.set(r, research_title(ME, r))  // (each match: a line upgrade is named for your race, #162)
     if not ground_a.length:
         let tj = gobj(lib_data("terrain.json"), "terrain")
         for(tr_names) id:

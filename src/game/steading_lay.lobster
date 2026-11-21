@@ -66,6 +66,25 @@ def road_to_door(k:int, cx:int, cy:int) -> bool:
         if not is_road_at(door): wstep()
     return is_road_at(door)
 
+// A building laid before it's unlocked (its prerequisite not yet built, buildings.json "after") waits here, and is laid
+// once it can be: the scripted towns lay their plan in order, as a player does (#124).
+class LayLater:
+    id:string
+    x:int
+    y:int
+    cell:int  // (sent: the cell its order laid it at, and the tick)
+    at:int
+
+var lay_later = []::LayLater
+var lay_sent = []::LayLater  // laid by an order not yet seen through: if the ground was taken meanwhile, it's laid again
+
+// Whether an s-square at (cx, cy) would overlap one laid by an order still on its way (two laid in a tick took one place).
+def sent_near(cx:int, cy:int, s:int) -> bool:
+    for(lay_sent) l:
+        let ls = bt_size[btype_index(l.id)]
+        if cx < l.cell % W + ls and l.cell % W < cx + s and cy < l.cell / W + ls and l.cell / W < cy + s: return true
+    return false
+
 // Lay building `id` for player 0 near (x, y) in tiles, with a road to its door: the first place, spiralling out, where
 // it fits and its door can be reached (road_to_door), then the building.
 def lay_with_road(id:string, x:int, y:int) -> bool:
@@ -82,8 +101,9 @@ def lay_with_road(id:string, x:int, y:int) -> bool:
                 let cx = x + ex - d
                 let cy = y + ey - d
                 if max(abs(ex - d), abs(ey - d)) == d and cx >= 0 and cy >= 0 and cx + s <= W and cy + s < H and open_square(cx, cy, s):
-                    if road_to_door(k, cx, cy) and can_place(0, k, cx, cy, 0):
+                    if road_to_door(k, cx, cy) and can_place(0, k, cx, cy, 0) and not sent_near(cx, cy, s):
                         issue_cmd(0, CMD_BUILD, []::int, k, cx, cy, 0)
+                        lay_sent.push(LayLater { id, x, y, cy * W + cx, tick })
                         return true
     return false
 
@@ -134,19 +154,10 @@ def lay_auto_fields():
                 let cells = field_block(b, AUTO_FIELD_TYPE[a], wh[0], wh[1])
                 if cells.length: lay_fields(AUTO_FIELD_TYPE[a], cells[0] % W, cells[0] / W, wh[0], wh[1])
 
-// A building laid before it's unlocked (its prerequisite not yet built, buildings.json "after") waits here, and is laid
-// once it can be: the scripted towns lay their plan in order, as a player does (#124).
-class LayLater:
-    id:string
-    x:int
-    y:int
-
-var lay_later = []::LayLater
-
 // Lay `id` near (x, y) now, or once it's unlocked. False only if it was open and found no room.
 def lay_or_wait(id:string, x:int, y:int) -> bool:
     if build_barred(0, btype_index(id)):
-        lay_later.push(LayLater { id, x, y })
+        lay_later.push(LayLater { id, x, y, -1, 0 })
         return true
     return lay_with_road(id, x, y)
 
@@ -154,6 +165,14 @@ def lay_or_wait(id:string, x:int, y:int) -> bool:
 def lay_waiting():
     if tick % TICK_HZ != 0: return
     if auto_fields: lay_auto_fields()
+    // (an order runs a few ticks after it's sent: one whose ground was taken by then, by a road or a field, is laid again)
+    let sent = lay_sent
+    lay_sent = []
+    for(sent) l:
+        if tick < l.at + TICK_HZ: lay_sent.push(l)
+        else:
+            let b = b_index_of(occupied[l.cell])
+            if (b < 0 or b_kind[b] != btype_index(l.id)) and not lay_with_road(l.id, l.x, l.y): print "steading: no room for {l.id} near {l.x},{l.y} with a road to its door"
     let still = []::LayLater
     for(lay_later) l:
         if build_barred(0, btype_index(l.id)): still.push(l)
