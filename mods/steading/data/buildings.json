@@ -189,7 +189,7 @@
    "_doc": "extends the house only because a mod's new building must (mods.lobster); a road plan has no look (game/roads)",
    "extends": "house",
    "name": "Road",
-   "desc": "Drag to lay a road, a cell at a time. Workers walk faster on it. Each cell takes a stone, carried there, and a moment's work.",
+   "desc": "Drag to lay a road, a cell at a time. Serfs keep to roads between buildings. Each cell takes a stone, carried there, and a moment's work.",
    "road": "road",
    "size": 1,
    "hp": 50,

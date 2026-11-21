@@ -4,6 +4,8 @@
  "race": "serfs",
  "animals": false,
  "topbar_stock": false,
+ "_zoom_doc": "zoom_in: wheel steps closer in than the game's camera a match starts at (the genre's town builders start where each person reads, #156)",
+ "zoom_in": 1,
  "ui_direction": "slate",
  "topbar_hide": [
   "age",
@@ -98,16 +100,19 @@
   "builders_come": true,
   "builders_per_site": 3,
   "sites_walk_over": true,
-  "idle_wait": true,
   "doors_on_roads": true,
   "door_roads": true,
   "foundation_pct": 30,
   "inside_ticks": 30,
+  "doors": true,
   "doors_clear": true,
   "roads": [
    {
+    "_doc": "the genre's road (#138): no quicker to walk (a serf walks 1 tile a second anywhere), but paths keep to it (crossing it costs a third of open ground), walked tile to tile down its middle, and two passing on it trade places instead of shoving",
     "name": "road",
-    "speed_pct": 150,
+    "speed_pct": 100,
+    "cost_pct": 34,
+    "middle": true,
     "style": "cobble"
    }
   ],

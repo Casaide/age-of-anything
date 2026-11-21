@@ -47,6 +47,9 @@ for(carried) r:
 let race = generate("serfs", load_rules("steading"), 0)
 expect(gstr(race, "family", "") == "steading", "serfs are the steading culture: {gstr(race, "family", "")}")
 let looks = []::string
+let kit_slots = []::string  // (#156) each trade's slot, head gear and dress
+let kit_heads = []::string
+let kit_torsos = []::string
 for(glist(race, "units")) unit:
     let u = at(glist(unit, "line")[0], "recipe")
     let slot = gstr(u, "slot", "")
@@ -56,7 +59,32 @@ for(glist(race, "units")) unit:
     let look = "{gstr(ps, "head_gear", "")} {gstr(ps, "torso", "")} {gstr(ps, "hand_r", "")}"
     expect((find(looks) l: l == look) < 0, "the {slot} looks like no other trade: {look}")
     looks.push(look)
+    kit_slots.push(slot)
+    kit_heads.push(gstr(ps, "head_gear", ""))
+    kit_torsos.push(gstr(ps, "torso", ""))
 expect(looks.length == 13, "the serf and 12 trades: {looks.length}")
+// (#156) At game size a trade reads by the colour of its clothes and its hat: each wears a colour of its own (its dress's
+// first shape, what covers the body), the serf alone the team's, and no two hats share theirs. The serf goes bare-headed.
+let gear_json = parse_json(read_file("../mods/steading/data/voxel/gear.json") or "\{\}")
+let part_gear = map(glist(gear_json, "parts")) p: [ gstr(p, "part", ""), gstr(p, "gear", "") ]
+def main_mat(part:string) -> string:  // the material of a part's gear's first shape, "" for none
+    let pg = find(part_gear) p: p[0] == part
+    if pg < 0: return ""
+    let g = gobj(gobj(gear_json, "gear"), part_gear[pg][1])
+    let fits = glist(gobj(g, "fits"), "*")
+    let shapes = if fits.length > 0: fits else: glist(g, "shapes")
+    return if shapes.length > 0: gstr(shapes[0], "mat", "") else: ""
+let dress_mats = []::string
+let hat_mats = []::string
+for(kit_slots) slot, i:
+    let dm = main_mat(kit_torsos[i])
+    let hm = main_mat(kit_heads[i])
+    expect(dm != "" and (find(dress_mats) m: m == dm) < 0, "the {slot} wears a colour no other trade does: {dm}")
+    expect((dm == "team") == (slot == "worker"), "only the serf is dressed in the team\'s colour ({slot}: {dm})")
+    if hm != "": expect((find(hat_mats) m: m == hm) < 0, "the {slot}\'s hat is a colour no other hat is: {hm}")
+    if slot == "worker": expect(kit_heads[i] == "", "the serf goes bare-headed: {kit_heads[i]}")
+    dress_mats.push(dm)
+    if hm != "": hat_mats.push(hm)
 expect(gstr(family("steading"), "architecture", "") == "steading", "the culture builds its own set")
 let src = read_file("model/steading.lobster")
 expect(src != nil, "model/steading.lobster is there")

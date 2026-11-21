@@ -70,7 +70,7 @@ import game.tips
 lib_load("../data")
 id_load("../data")
 
-let MINUTES = 25      // (long enough for the food chain at the genre's pace: the farm is up at 8 minutes, its wheat ripe six on, #122)
+let MINUTES = 32      // (long enough for the food chain at the genre's pace: the farm is up at 8 minutes, its wheat ripe six on, #122; serfs no quicker on roads, #138)
 let FIELD_GRAIN = 12  // the farm's fields in the scripted towns (game/steading_lay's auto_fields), a sheaf of grain each
 // who works where
 let JOBS = [ [ "woodcutter", "lumber_camp" ], [ "stonecutter", "mining_camp" ], [ "sawyer", "sawmill" ], [ "farmer", "farm" ], [ "miller", "mill" ], [ "baker", "bakery" ], [ "miner", "coal_mine" ], [ "miner", "iron_mine" ], [ "miner", "gold_mine" ], [ "smelter", "iron_smelter" ], [ "smelter", "gold_smelter" ], [ "smith", "armoury" ] ]
@@ -170,6 +170,7 @@ def cells_of(r:int, x:int, y:int, d:int) -> [int]:
 def seam_check():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     let seam = cells_of(res("coal"), start_x[0] / TILE, start_y[0] / TILE, 12)
     let cm = btype_index("coal_mine")
@@ -186,6 +187,7 @@ def seam_check():
 def play() -> int:
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(true)  // (each farm gets its fields once built, a player's way: #122)
     let w = res("wood")
     let pl = res("plank")
@@ -231,11 +233,19 @@ def play() -> int:
     let site_waits = []::int
     var longest_wait = 0  // the longest a site stood before its first builder came
     var trained = false
-    var mill_up = -1                                          // the tick the mill was first up
-    var crafters = false                                      // the miller and the baker sent for
-    var mill_waited = false                                   // the mill held grain enough for a round with no miller yet
-    var flour_unstaffed = -1                                  // the flour made before the miller came
-    var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
+    var mill_up = -1          // the tick the mill was first up
+    var crafters = false      // the miller and the baker sent for
+    var mill_waited = false   // the mill held grain enough for a round with no miller yet
+    var flour_unstaffed = -1  // the flour made before the miller came
+    var gatherers_ok = true   // nobody but a woodcutter or a stone cutter ever gathered
+    var off_door = 0          // stays inside begun away from the building's door tile (#157)
+    var idle_out = 0          // a trade's ticks idle at its workplace's door, out in the open, and inside resting (#158)
+    var idle_in = 0
+    let idle_said = []::string
+    var hidden_walk = 0  // ticks a unit put inside by the rules walks, unseen (#158)
+    var idle_walk = 0    // a serf's ticks walking with no job (the genre's idle serf stands where it finished, #158)
+    var idle_stand = 0
+    var went_in = 0
     var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
     let inside_for = map(1000): 0                             // (#140) each unit slot's ticks inside a building so far, and each stay's length when it came out
@@ -282,11 +292,29 @@ def play() -> int:
         lay_step()
         for(u_x.length) i:
             if i < inside_for.length:
-                if is_inside(i, -1):  // (a carrier or a worker at a drop, not one at the inn)
+                if is_inside(i, -1):        // (a carrier or a worker at a drop, not one at the inn)
+                    if inside_for[i] == 0:  // (going in: by the door, #157)
+                        let at_ = b_index_of(u_target[i])
+                        if at_ >= 0 and b_done[at_] != 0:  // (a site is built from round it)
+                            let x0, y0, x1, y1 = entry_rect(at_)
+                            if not by_door(at_) or not in_reach(i, x0, y0, x1, y1): off_door++
+                            went_in++
                     inside_for[i]++
                 elif inside_for[i] > 0:
                     stays.push(inside_for[i])
                     inside_for[i] = 0
+            let ic = inside_col()
+            if ic >= 0 and hook_unit_get(ic, i) != 0 and u_moving[i] == 1: hidden_walk++
+            if u_owner[i] == 0 and t_carrier[u_kind[i]] != 0 and u_task[i] == T_NONE and u_orders[i].length == 0:
+                if u_moving[i] == 1: idle_walk++ else: idle_stand++
+            let wb = if t_carrier[u_kind[i]] == 0 and hook_unit_get(col_work, i) != 0: b_index_of(hook_unit_get(col_work, i)) else: -1
+            if wb >= 0 and u_task[i] == T_NONE and u_moving[i] == 0:
+                let x0, y0, x1, y1 = entry_rect(wb)
+                if in_reach(i, x0, y0, x1, y1):
+                    if ic >= 0 and hook_unit_get(ic, i) != 0:
+                        idle_in++
+                        if t % 600 == 0: idle_said.push(lua_task_name(i))  // (what the panel says of it)
+                    else: idle_out++
         let sawn = produced[res("plank")][0]
         if planks_seen >= 0 and sawn > planks_seen:
             if round_at >= 0: shortest_round = min(shortest_round, tick - round_at)
@@ -348,6 +376,17 @@ def play() -> int:
     print "steading: stays inside: {full_stays.length} of {r_inside_ticks} ticks, shorter {short_stays}, longer {long_stays}"
     check(r_inside_ticks == 30 and stays.length >= 100 and full_stays.length * 100 >= stays.length * 95,
           "steading: every pick-up and drop takes a carrier inside for 1.5 s ({full_stays.length} of {stays.length} stays that long)")
+    // (the genre's idle trade, #158: at its workplace with nothing to do, it goes in and rests, out of sight)
+    print "steading: idle trades at their door: {idle_in} ticks inside, {idle_out} out in the open; {hidden_walk} ticks walking while put inside"
+    print "steading: idle serfs: {idle_stand} ticks standing, {idle_walk} walking with no job"
+    check(idle_stand > 0 and idle_walk * 100 <= (idle_stand + idle_walk) * 2,
+          "steading: an idle serf stands where it finished, as in the genre, and doesn\'t walk off to wait ({idle_walk} of {idle_stand + idle_walk} idle ticks walking)")
+    print "steading: the panel of an idle trade: {idle_said.slice(0, min(6, idle_said.length))}"
+    check(idle_said.length > 0 and (filter(idle_said) s: find_string(s, " inside") < 0).length == 0,
+          "steading: the panel says an idle trade is inside, and why ({idle_said.length} looks)")
+    check(idle_in > 0 and idle_out * 100 <= (idle_in + idle_out) * 5 and hidden_walk == 0,
+          "steading: a trade with nothing to do rests inside its workplace, as in the genre, and nobody walks about unseen ({idle_in} ticks in, {idle_out} out, {hidden_walk} walking hidden)")
+    check(went_in > 100 and off_door == 0, "steading: people go into a building only by its door ({off_door} of {went_in} went in elsewhere; #157)")
     check(dropped_away == 0, "steading: a gatherer only ever drops at its own hut, and waits there when it\'s full; serfs take goods on ({dropped_away} ticks headed elsewhere)")
     let never = filter(site_waits): _ >= 0
     check(longest_wait <= 30 * TICK_HZ and not never.length,
@@ -377,6 +416,7 @@ def play() -> int:
 def big_town(dx:int, dy:int) -> int:
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(true)  // (each farm gets its fields once built, a player's way: #122)
     let pl = res("plank")
     let br = res("bread")
@@ -402,8 +442,11 @@ def big_town(dx:int, dy:int) -> int:
     var stuck_most = 0
     let col_seat = find(hook_unit_names) n: n == "seat"
     let sat = []::int  // those who sat down at the inn
+    var on_road = 0    // a carrier's moving ticks with a load, on a road cell and not (#138)
+    var off_road = 0
+    var off_line = 0  // of the road ticks, those off the lines through its tiles' centres (cutting across it at an angle)
     var h = 0
-    for(36 * 60 * TICK_HZ) t:  // (at the genre's pace, going inside at each drop: #139, #140)
+    for(48 * 60 * TICK_HZ) t:  // (at the genre's pace, going inside at each drop by the door: #139, #140, #157)
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
         if t == 40 and lay("lumber_camp", tx + 6, ty - 4): laid++
         if t == 60 and lay("sawmill", tx - 6, ty + 3): laid++
@@ -451,6 +494,11 @@ def big_town(dx:int, dy:int) -> int:
                 if b_make[b] == 0 and out_full(b, pl): full++
         for(u_x.length) i:
             if u_owner[i] == 0: stuck_most = max(stuck_most, u_stuck[i])
+            if u_owner[i] == 0 and t_carrier[u_kind[i]] != 0 and u_carry[i] > 0 and u_moving[i] != 0 and t > 6000:  // (once the roads are laid)
+                if road.length and road[cell_of(u_x[i], u_y[i])] > 0:
+                    on_road++
+                    if min(abs(u_x[i] % TILE - TILE / 2), abs(u_y[i] % TILE - TILE / 2)) > TILE / 5: off_line++
+                else: off_road++
             if u_owner[i] == 0 and hook_unit_get(col_seat, i) != 0 and not contains(sat, u_id[i]): sat.push(u_id[i])
         if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
     var built = 0
@@ -465,6 +513,10 @@ def big_town(dx:int, dy:int) -> int:
     let unbuilt = map(filter(b_id.length) b: b_owner[b] == 0 and b_done[b] == 0 and bt_road[b_kind[b]] < 0) b: bt_name[b_kind[b]]
     let full_pct = full * 100 / max(1, mill_ticks)
     print "steading: big town +{dx},{dy}: {built} of {laid} built, {staffed} staffed, sawmills stood full {full_pct}% of their staffed time, planks {produced[pl][0]} ({stock[pl][0]} in store), bread {produced[br][0]}, tools {produced[tl][0]}, {hungry} of {pop[0]} resting hungry, longest stuck {stuck_most}"
+    let road_pct = on_road * 100 / max(1, on_road + off_road)
+    let line_pct = off_line * 100 / max(1, on_road)
+    print "steading: big town +{dx},{dy}: carriers with a load walked on roads {road_pct}% of the time, {line_pct}% of that off the middle of the road"
+    check(road_pct >= 75 and line_pct <= 15, "steading: a big town (+{dx},{dy}): carriers keep to the roads and walk down their middle, as the genre\'s serfs do ({road_pct}% of their loaded walking on roads, {line_pct}% of that off the middle; #138)")
     print "steading: big town +{dx},{dy}: {pop[0]} people, gold smelted {produced[au][0]}, {stock[au][0]} in store"
     check(pop[0] >= 30 and produced[au][0] >= 50, "steading: a big town (+{dx},{dy}) grows past 25, paying the school with the gold it smelts ({pop[0]} people, {produced[au][0]} gold smelted)")
     check(laid == 17 and built == 17, "steading: a big town (+{dx},{dy}) builds all seventeen of its buildings ({built} of {laid}; not {unbuilt})")
@@ -481,6 +533,7 @@ def big_town(dx:int, dy:int) -> int:
 def metal_chain() -> int:
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own, not the order they open in)
     let tc = 0
@@ -526,6 +579,7 @@ def metal_chain() -> int:
 def pig_chain() -> int:
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own, not the order they open in)
     let tc = 0
@@ -570,6 +624,7 @@ def store_planks() -> int:
 def fields():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     bt_after = map(bt_after) _: []::int  // (unlocks off)
     let tx = start_x[0] / TILE
@@ -617,6 +672,7 @@ def fields():
 def inn_seats():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     bt_after = map(bt_after) _: []::int  // (unlocks off)
     let tc = b_index_of(done_of("town_center"))
@@ -683,6 +739,7 @@ def save_run(stop:bool) -> bool, bool:
     let path = "test_steading.sav"
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     bt_after = map(bt_after) _: []::int  // (unlocks off: this one checks a chain on its own, not the order they open in)
     let tx = start_x[0] / TILE
@@ -723,6 +780,7 @@ seam_check()
 def start_rules():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     let sc = btype_index("school")
     check(not build_barred(0, sc) and build_barred(0, btype_index("lumber_camp")) and build_barred(0, btype_index("sawmill")) and build_barred(0, btype_index("iron_smelter")),
@@ -758,6 +816,7 @@ def start_rules():
 def busy_sites():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     let sc = btype_index("school")
     let tx = start_x[0] / TILE
@@ -784,6 +843,7 @@ def busy_sites():
 def woods():
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     let tree = str_index(tr_names, "tree")
     let sap = str_index(tr_names, "sapling")
@@ -810,6 +870,7 @@ def woods():
     // A woodcutter whose trees are all felled plants saplings round his hut, and fells them once they've grown.
     new_world(2026, MAP, races, rules, [])
     lay_later = []
+    lay_sent = []
     fields_by_script(false)
     let tx = start_x[0] / TILE
     let ty = start_y[0] / TILE
