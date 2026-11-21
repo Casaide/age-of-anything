@@ -233,12 +233,15 @@ def play() -> int:
     let site_waits = []::int
     var longest_wait = 0  // the longest a site stood before its first builder came
     var trained = false
-    var mill_up = -1                                          // the tick the mill was first up
-    var crafters = false                                      // the miller and the baker sent for
-    var mill_waited = false                                   // the mill held grain enough for a round with no miller yet
-    var flour_unstaffed = -1                                  // the flour made before the miller came
-    var gatherers_ok = true                                   // nobody but a woodcutter or a stone cutter ever gathered
-    var off_door = 0  // stays inside begun away from the building's door tile (#157)
+    var mill_up = -1          // the tick the mill was first up
+    var crafters = false      // the miller and the baker sent for
+    var mill_waited = false   // the mill held grain enough for a round with no miller yet
+    var flour_unstaffed = -1  // the flour made before the miller came
+    var gatherers_ok = true   // nobody but a woodcutter or a stone cutter ever gathered
+    var off_door = 0          // stays inside begun away from the building's door tile (#157)
+    var idle_out = 0          // a trade's ticks idle at its workplace's door, out in the open, and inside resting (#158)
+    var idle_in = 0
+    var hidden_walk = 0  // ticks a unit put inside by the rules walks, unseen (#158)
     var went_in = 0
     var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
@@ -286,7 +289,7 @@ def play() -> int:
         lay_step()
         for(u_x.length) i:
             if i < inside_for.length:
-                if is_inside(i, -1):  // (a carrier or a worker at a drop, not one at the inn)
+                if is_inside(i, -1):        // (a carrier or a worker at a drop, not one at the inn)
                     if inside_for[i] == 0:  // (going in: by the door, #157)
                         let at_ = b_index_of(u_target[i])
                         if at_ >= 0 and b_done[at_] != 0:  // (a site is built from round it)
@@ -297,6 +300,13 @@ def play() -> int:
                 elif inside_for[i] > 0:
                     stays.push(inside_for[i])
                     inside_for[i] = 0
+            let ic = inside_col()
+            if ic >= 0 and hook_unit_get(ic, i) != 0 and u_moving[i] == 1: hidden_walk++
+            let wb = if t_carrier[u_kind[i]] == 0 and hook_unit_get(col_work, i) != 0: b_index_of(hook_unit_get(col_work, i)) else: -1
+            if wb >= 0 and u_task[i] == T_NONE and u_moving[i] == 0:
+                let x0, y0, x1, y1 = entry_rect(wb)
+                if in_reach(i, x0, y0, x1, y1):
+                    if ic >= 0 and hook_unit_get(ic, i) != 0: idle_in++ else: idle_out++
         let sawn = produced[res("plank")][0]
         if planks_seen >= 0 and sawn > planks_seen:
             if round_at >= 0: shortest_round = min(shortest_round, tick - round_at)
@@ -358,6 +368,10 @@ def play() -> int:
     print "steading: stays inside: {full_stays.length} of {r_inside_ticks} ticks, shorter {short_stays}, longer {long_stays}"
     check(r_inside_ticks == 30 and stays.length >= 100 and full_stays.length * 100 >= stays.length * 95,
           "steading: every pick-up and drop takes a carrier inside for 1.5 s ({full_stays.length} of {stays.length} stays that long)")
+    // (the genre's idle trade, #158: at its workplace with nothing to do, it goes in and rests, out of sight)
+    print "steading: idle trades at their door: {idle_in} ticks inside, {idle_out} out in the open; {hidden_walk} ticks walking while put inside"
+    check(idle_in > 0 and idle_out * 100 <= (idle_in + idle_out) * 5 and hidden_walk == 0,
+          "steading: a trade with nothing to do rests inside its workplace, as in the genre, and nobody walks about unseen ({idle_in} ticks in, {idle_out} out, {hidden_walk} walking hidden)")
     check(went_in > 100 and off_door == 0, "steading: people go into a building only by its door ({off_door} of {went_in} went in elsewhere; #157)")
     check(dropped_away == 0, "steading: a gatherer only ever drops at its own hut, and waits there when it\'s full; serfs take goods on ({dropped_away} ticks headed elsewhere)")
     let never = filter(site_waits): _ >= 0

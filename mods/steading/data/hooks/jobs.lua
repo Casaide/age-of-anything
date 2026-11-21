@@ -182,7 +182,7 @@ end
 -- Unit i, idle at its workplace b, gathers the nearest of b's goods round it (if there are any left); with none, a
 -- planter plants (the genre's woodcutter: saplings, when no grown tree is in reach, #126). With b full, or i carrying
 -- what b had no room for, it waits by b's door till a serf takes some away, then drops there (#134).
-local function go_to_work(i, b)
+local function set_to_work(i, b)
   if unit_get(col_plant, i) ~= 0 then return planting(i, b) end
   local kind = gathers[b_kind(b) + 1]
   if kind ~= 0 and (room(b, kind) <= 0 or (u_carry(i) > 0 and u_carry_kind(i) == kind)) then
@@ -212,6 +212,14 @@ local function go_to_work(i, b)
     building_set(col_out, b, 1)
     if not in_reach(i, entry_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
   end
+end
+
+-- Unit i goes to work at b, as above. Left with nothing to do at b's door, it goes in and rests there out of sight, as
+-- the genre's trades do, till there's work again (#158; COL_INSIDE is hunger.lua's).
+local function go_to_work(i, b)
+  unit_set(COL_INSIDE, i, 0)
+  set_to_work(i, b)
+  if u_task(i) == T_NONE and u_moving(i) == 0 and u_orders(i) == 0 and in_reach(i, entry_rect(b)) then unit_set(COL_INSIDE, i, 1) end
 end
 
 -- A finished store of side p with a tool in it, or -1.
@@ -291,6 +299,7 @@ function jobs_tick()
         working[b + 1] = (working[b + 1] or 0) + 1
         if in_reach(i, entry_rect(b)) then at_door[b + 1] = true end
         if u_task(i) == GATHER and u_carry(i) == 0 and u_target(i) >= 0 and not within_reach(b, u_target(i)) then clear_task(i) end
+        if unit_get(COL_INSIDE, i) ~= 0 and u_task(i) ~= T_EAT and (u_orders(i) ~= 0 or u_moving(i) == 1) then unit_set(COL_INSIDE, i, 0) end  -- (sent off by hand: out it comes)
         if u_task(i) == T_NONE and u_orders(i) == 0 then go_to_work(i, b) end
       else
         local p = u_owner(i) + 1

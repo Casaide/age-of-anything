@@ -45,7 +45,7 @@ local col_meal = unit_column("meal")  -- 1 + the ticks of its bar used up (up to
 local col_was = unit_column("was")  -- the job it left to eat, target * 16 + task, 0 for none
 local col_rest = unit_column("rest")  -- while resting (T_FAINT), 1 + the task it rests from
 local col_seat = unit_column("seat")  -- sitting at an inn's table: 1 + the foods eaten at this sitting (bit j: foods[j + 1])
-local col_inside = unit_column("inside")  -- 1 while sitting at an inn's table: inside it, not drawn nor in the crowd (creel #120)
+COL_INSIDE = unit_column("inside")  -- 1 while inside a building: sitting at an inn's table, or a trade resting in its workplace (jobs.lua, #158); not drawn nor in the crowd (creel #120)
 local col_seated = building_column("seated")  -- an inn: how many sit at its table now
 
 local function food_offered(b)
@@ -142,6 +142,7 @@ local function go_eat(i, b)
   set_u_target(i, b_id(b))
   set_u_work(i, 0)
   set_u_stuck(i, 0)
+  unit_set(COL_INSIDE, i, 0)  -- (a trade resting in its workplace comes out to go, #158)
   approach_building(i, b)
 end
 
@@ -179,7 +180,7 @@ end
 
 local function get_up(i, b)
   unit_set(col_seat, i, 0)
-  unit_set(col_inside, i, 0)
+  unit_set(COL_INSIDE, i, 0)
   if b >= 0 then building_set(col_seated, b, building_get(col_seated, b) - 1) end
   back_from_meal(i)
 end
@@ -225,7 +226,7 @@ local function eat(i, places)
       back_from_meal(i)
     elseif seat_free(b) then  -- a seat at the table
       unit_set(col_seat, i, 1)
-      unit_set(col_inside, i, 1)
+      unit_set(COL_INSIDE, i, 1)
       building_set(col_seated, b, building_get(col_seated, b) + 1)
       set_u_work(i, 0)
     elseif (tick() + i) % LOOK == 0 then  -- waiting for a seat: another inn with one free?
@@ -249,7 +250,7 @@ local function count_seated()
       local b = building_index(u_target(i))
       if u_task(i) ~= T_EAT or b < 0 then
         unit_set(col_seat, i, 0)
-        unit_set(col_inside, i, 0)
+        unit_set(COL_INSIDE, i, 0)
       else building_set(col_seated, b, building_get(col_seated, b) + 1) end
     end
   end
