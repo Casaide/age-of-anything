@@ -114,5 +114,14 @@ for([ "tilled", "wheat_sown", "wheat_ripe", "vines_young", "vines_ripe" ]) t:
     expect(pr != "" and pr != "tuft" and pr != "bush" and pr != "crops", "{t} has a field prop of its own, not the meadow\'s ({pr})")
     expect((find(field_props) x: x == pr) < 0, "{t}\'s prop {pr} is no other stage\'s")
     field_props.push(pr)
+// Each workshop that sounds busy names a building of the mod and a loop it brings (#121): its sound in audio.json and
+// the rendered WAV in the mod's audio.
+let work_sounds = gobj(lib_data("audio.json"), "buildings")
+expect(work_sounds.keys.length >= 5, "workshops have their working sounds ({work_sounds.keys.length})")
+for(work_sounds.keys) b, i:
+    let snd = gstr(work_sounds, b, "")
+    expect((find(buildings.keys) x: x == b) >= 0, "{b}, which sounds busy, is a building of the mod")
+    expect(gobj(gobj(lib_data("audio.json"), "sounds"), snd).keys.length > 0, "{b}\'s sound {snd} is in audio.json")
+    expect(read_file("../mods/steading/audio/sfx/{snd}_1.wav") != nil, "{b}\'s sound {snd} is rendered into the mod")
 print "{n_checks} checks, {n_failed} failed"
 if n_failed > 0: set_exit_code(1)
