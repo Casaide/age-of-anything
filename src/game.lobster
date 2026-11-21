@@ -321,6 +321,7 @@ var lobby_mode = "standard"
 var lobby_prompts = []::string  // each side's words (the lobby's, or races:A|B)
 var lobby_teams = []::int       // each side's team (a team game from the lobby)
 var lobby_levels = []::string   // each side's AI level ("" for a person)
+var lobby_save = ""             // a saved game the lobby hosts (#174): the match is the save
 var front_shown = false         // the lobby's pages were up (the match loader shows their armies)
 
 // The maps a match can be on (data/maps).
@@ -1052,6 +1053,8 @@ def make_match() -> bool:
     ai_levels = []
     if starts_with(front_choice, "load:"):
         if not load_saved(front_choice.substring(5, front_choice.length - 5)): return false
+    if hosting and lobby_save != "":  // (a saved game hosted, #174: the save, the people's sides then played by them)
+        if not load_saved(lobby_save): return false
     net_swarm_stop()                                                     // (the last match's)
     if join_ip != "" and fe_guests.length and fe_guests[0].world != "":  // joined in the host's lobby (#519): it sent the match
         let g = fe_guests[0]
@@ -1155,7 +1158,7 @@ def make_match() -> bool:
         roles_from_data()  // (a scenario file carries no building roles)
     note("world")
     events_on = true
-    if args[1] == "lobby" and lobby_levels.length == num_players and not joined_bots.length: ai_levels_set(lobby_levels)  // (each AI at its level)
+    if args[1] == "lobby" and lobby_levels.length == num_players and (not joined_bots.length or lobby_save != ""): ai_levels_set(lobby_levels)  // (each AI at its level)
     bots = map(num_players) p: new_bot(p)
     if joined_bots.length: bots = joined_bots
     if hosting and fe_rooms.length:  // the lobby's room (#519): its players are in, each on the side they took
@@ -1437,7 +1440,7 @@ def pause_menu_body():
     let ws = float(gl.window_size())
     if menu_saves:  // Load game: the saves (game/lobby.lobster)
         fe_fit()
-        let picked = fe_saves_card("")
+        let picked = fe_saves_card("", false)
         if picked == "back": menu_saves = false
         elif picked != "":  // (a new match from the save: its map may be another)
             next_choice = "load:" + picked
@@ -1766,6 +1769,7 @@ def new_match_reset():
     join_ip = ""
     net_seats = []
     in_net_match = false
+    lobby_save = ""
     net_on = false
     ME = 0
     skirmish = false

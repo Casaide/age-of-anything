@@ -83,8 +83,10 @@ var code = ""                      // code:<join code>: join through the sidecar
 let in_room = has_s(args, "room")  // room: through the lobby (#519): joiners take sides, type their army, then the host starts
 var sides = 2                      // sides:<n>: the room's sides (4: a 2v2, AIs in the sides no one takes)
 var want_side = -1                 // side:<n>: the side this joiner takes
+var saved_at = 0                   // save:<ticks>: the host hosts a saved game, that many ticks in (#174)
 for(args) a:
     if starts_with(a, "sides:"): sides = string_to_int(a.substring(6, a.length - 6))
+    if starts_with(a, "save:"): saved_at = string_to_int(a.substring(5, a.length - 5))
     if starts_with(a, "side:"): want_side = string_to_int(a.substring(5, a.length - 5))
     if starts_with(a, "code:"): code = a.substring(5, a.length - 5)
     if starts_with(a, "bootstrap:"): swarm_setup.extra = "--bootstrap " + a.substring(10, a.length - 10)  // (a local test DHT)
@@ -187,6 +189,17 @@ if role == "host":
     let races = map(n) k: generate(if in_room and hosted[0].sides[k].who == ROOM_PLAYER: hosted[0].sides[k].prompt else: words[k % words.length], rules, 0)
     setup_match(20261010, if n > 2: "reed_meadow_2v2" else: "reed_meadow", races, rules, if n > 2: map(n) k: k / 2 else: [])
     bots = map(num_players) p: new_bot(p)
+    if saved_at > 0:  // save:<ticks> (#174): a saved game hosted: played that far alone, saved, loaded back, then hosted
+        for(saved_at):
+            for(bots) b, p:
+                ai_level_for(p)
+                full_bot_think(b)
+            step()
+        let path = "/tmp/net_check_{port}.sav"
+        assert write_file(path, world_bytes(bots), 0, 1)
+        bots = load_world(path)
+        assert bots.length
+        print "host: hosting a save from tick {tick}"
     if in_room:
         let lv = map(sides) k: if hosted[0].sides[k].who == ROOM_AI: levels[k] else: ""
         ai_levels_set(lv)
