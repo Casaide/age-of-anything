@@ -2256,27 +2256,57 @@ def test_sapper_sling():
     var stopped = -1
     var thrown = -1
     var at_guard = false
+    var rolled_packed = true
+    var set_up_throw = true
     for(1200):
         tick_on()
         let i = index_of(sl)
+        if u_moving[i] == 1 and not packed(i): rolled_packed = false
         if stopped < 0 and u_moving[i] == 0 and u_ready[i] == 1: stopped = tick
         for(events) e:
             if e.kind == EV_SHOT and e.a == sl:
                 if thrown < 0: thrown = tick
+                if packed(i): set_up_throw = false
                 at_guard = at_guard or e.b == sentry
         if thrown >= 0: break
     let ti = index_of(sl)
     let reach = gap_b(ti, b_index_of(house))
     check(thrown > 0 and stopped > 0 and thrown - stopped >= t_unpack[k] - 1, "great sling: it stops, unpacks ({t_unpack[k]} ticks) and throws (stopped {stopped}, threw {thrown})")
     check(reach > 8000 and not at_guard, "great sling: throws at the house from {reach} milli-tiles, never at the soldier")
+    check(rolled_packed and set_up_throw, "great sling: it rolls packed and throws set up (the view draws it so: packed, #171)")
     let x0 = u_x[ti]
     issue_cmd(0, CMD_MOVE, [ sl ], 8000, 21000, 0, 0)
     var left = -1
+    var packing = -1
     for(200) t:
         tick_on()
+        if packing < 0 and packed(index_of(sl)): packing = t
         if left < 0 and u_x[index_of(sl)] != x0: left = t
     check(left >= t_pack[k], "great sling: it packs up ({t_pack[k]} ticks) before it rolls ({left})")
+    check(packing >= 0 and packing < left, "great sling: it is drawn packing as soon as it is told to move (packed from {packing}, rolled at {left})")
     check(type_of_slot(0, "sapper") < 0, "the sapper is still parked (D-128): when it comes back, port its checks from test_sim.gd")
+
+// Great slings told to attack together, as a player does with a few selected (a group order, in a block), and one
+// left standing near a foe's house: each sets up and throws (#171).
+def test_sling_group():
+    bare_world(races0)
+    let house = put(1, "house", 30, 20, 0)
+    let sls = map(3) n: lone(0, "great_sling", 14000, 19000 + n * 2000, "aggressive")
+    issue_cmd(0, CMD_ATTACK, sls, house, 0, 0, 0)
+    let threw = map(sls) _: false
+    for(1500):
+        tick_on()
+        for(events) e: if e.kind == EV_SHOT: for(sls) id, n: if e.a == id: threw[n] = true
+    let set_up = map(sls) id: not packed(index_of(id))
+    check((filter(threw) t: t).length == sls.length and (filter(set_up) t: t).length == sls.length, "great slings sent together: each sets up and throws (threw {threw}, set up {set_up})")
+    bare_world(races0)
+    let house2 = put(1, "house", 30, 20, 0)
+    let idle = lone(0, "great_sling", 24000, 21000, "aggressive")  // (in its own sight: it sees 6 tiles, throws 12)
+    var idle_threw = false
+    for(600):
+        tick_on()
+        for(events) e: if e.kind == EV_SHOT and e.a == idle and e.b == house2: idle_threw = true
+    check(idle_threw, "great sling: standing where it sees a foe\'s house, it sets up and throws at it")
 
 // ------------------------------------------------------------------ gates and walls
 
@@ -5314,7 +5344,7 @@ def test_save_load():
 // ------------------------------------------------------------------ the parts
 
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "walk_over_site", "gatherers", "hands_off", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "eating", "idle_wait", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "walk_over_site", "gatherers", "hands_off", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "eating", "idle_wait", "sapper_sling", "sling_group", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
@@ -5350,6 +5380,7 @@ def run_part(name:string):
     elif name == "eating": test_eating()
     elif name == "steading_big": test_steading_big()
     elif name == "sapper_sling": test_sapper_sling()
+    elif name == "sling_group": test_sling_group()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
     elif name == "diagonal_gates": test_diagonal_gates()

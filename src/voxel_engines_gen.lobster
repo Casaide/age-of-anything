@@ -124,7 +124,20 @@ def sling():  // a great sling: an A-frame, a long arm with a sling at its end a
     cap(float3 { 0.0, -28.0, 50.0 }, float3 { 0.0, -30.0, 38.0 }, float2 { 0.3, 0.3 }, "trim", true)
     ball(float3 { 0.0, -30.0, 37.0 }, 1.8, "trim", true)
     box(float3 { 0.0, 17.4, 6.0 }, float3 { 5.0, 0.5, 2.0 }, FRONT, "team", 0.3)
-    vxw_body(OUT + "siege.sling.json", "A great sling: an A-frame on skids, a long arm with a sling at its end and a heavy counterweight at the other. Its style: frame (skin), iron and weight (pale), sling (mark).", 1.35, [ STYLES, spots("crew", [ float3 { -11.0, 12.0, 0.0 }, float3 { 11.0, 12.0, 0.0 } ]) ])
+    vxw_body(OUT + "siege.sling.json", "A great sling: an A-frame on skids, a long arm with a sling at its end and a heavy counterweight at the other. Its style: frame (skin), iron and weight (pale), sling (mark).", 1.35, [ STYLES, "\"packed\": \"siege.sling_packed\"", spots("crew", [ float3 { -11.0, 12.0, 0.0 }, float3 { 11.0, 12.0, 0.0 } ]) ])
+
+def sling_packed():                                                                         // the great sling packed to move (#171): its frame taken down onto a wagon, the arm laid along it
+    for([ -5.0, 5.0 ]) x: wall(float3 { x, 0.0, 7.0 }, float3 { 1.2, 19.0, 1.2 }, "frame")  // the wagon's sills
+    for([ -17.0, -6.0, 6.0, 17.0 ]) y: wall(float3 { 0.0, y, 7.0 }, float3 { 6.2, 1.0, 1.0 }, "frame")
+    for([ -7.5, 7.5 ]) x: for([ -12.0, 12.0 ]) y: wheel(float3 { x, y, 4.5 }, 4.5)
+    for([ -3.0, 3.0 ]) x: cap(float3 { x, -15.0, 9.4 }, float3 { x, 15.0, 9.4 }, float2 { 1.2, 1.0 }, "frame", true)  // the A-frame's legs, bundled
+    cap(float3 { 0.0, -27.0, 11.6 }, float3 { 0.0, 20.0, 11.6 }, float2 { 1.4, 1.2 }, "frame", true)                  // the arm, laid along
+    cap(float3 { -4.5, 3.0, 13.2 }, float3 { 4.5, 3.0, 13.2 }, float2 { 1.0, 1.0 }, "frame2", true)                   // the axle, across it
+    box(float3 { 0.0, -11.0, 11.5 }, float3 { 4.5, 3.5, 3.5 }, FRONT, "frame2", 0.4)                                  // the counterweight, on the bed
+    ball(float3 { 0.0, -27.5, 11.6 }, 1.8, "trim", true)                                                              // the sling, rolled up
+    cap(float3 { 0.0, 19.0, 7.0 }, float3 { 0.0, 25.0, 4.0 }, float2 { 0.8, 0.6 }, "frame", true)                     // the pole the haulers pull
+    box(float3 { 0.0, 19.6, 9.5 }, float3 { 4.0, 0.5, 1.8 }, FRONT, "team", 0.3)
+    vxw_body(OUT + "siege.sling_packed.json", "A great sling packed to move: its A-frame taken down onto a four-wheeled wagon, the arm laid along it, the counterweight on the bed, its haulers pulling at the front. Its style: frame (skin), iron and weight (pale), sling (mark).", 1.35, [ STYLES, spots("crew", [ float3 { -6.0, 27.0, 0.0 }, float3 { 6.0, 27.0, 0.0 } ]) ])
 
 def cart():  // a trade cart: a bed on two big wheels, piled with goods, pulled between its shafts
     wall(float3 { 0.0, 0.0, 10.0 }, float3 { 8.0, 12.0, 1.0 }, "frame")
@@ -206,4 +219,5 @@ catapult()
 bolt()
 tower()
 sling()
+sling_packed()
 cart()

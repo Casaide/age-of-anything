@@ -156,6 +156,10 @@
       "size": 1.7,
       "h": 198
     },
+    "siege.sling_packed": {
+      "size": 1.7,
+      "h": 89
+    },
     "siege.tower": {
       "size": 1.25,
       "h": 231
