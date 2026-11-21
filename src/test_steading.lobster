@@ -862,6 +862,28 @@ def gave_up():
                 dropped++
     check(dropped == 3 and b_done[b] != 0, "steading: a site given up three times is still finished, with no new order ({dropped} given up, done {b_done[b]}, {b_progress[b]} of {bt_build_ticks[sc]})")
 
+// A site is levelled first (#41): its foundation is built with no goods, and nobody carries anything to it until that's
+// done (rules goods_after_foundation); then its goods come and it's finished.
+def levelled_first():
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    lay_sent = []
+    fields_by_script(false)
+    let sc = btype_index("school")
+    let id = lay_foundation(0, []::int, sc, start_x[0] / TILE - 2, start_y[0] / TILE - 6)
+    let b = b_index_of(id)
+    let cap = bt_build_ticks[sc] * r_foundation_pct / 100
+    var early = 0  // goods on their way to the site before its foundation was built
+    var levelled_at = -1
+    var t = 0
+    while b_done[b] == 0 and t < 4 * 60 * TICK_HZ:
+        lay_step()
+        t++
+        if levelled_at < 0 and b_progress[b] >= cap: levelled_at = t
+        if levelled_at < 0: early += fold(num_resources, 0) a, r: a + b_coming[b][r]
+    check(r_goods_after_foundation != 0 and early == 0 and levelled_at > 0 and b_done[b] != 0,
+          "steading: a site is levelled before any goods come, then finished ({early} goods early, levelled at {levelled_at}, done {b_done[b]})")
+
 // Woods as in the genre (#126): a tree is one trunk, felled and carried home whole; a sapling grows into a tree after
 // its time (terrain.json "grows"), through a save too; and a woodcutter with no grown tree in reach plants saplings.
 def woods():
@@ -935,6 +957,7 @@ inn_seats()
 start_rules()
 busy_sites()
 gave_up()
+levelled_first()
 woods()
 let h1 = play()
 let h2 = play()

@@ -326,6 +326,7 @@ class WorldSave:
     stock:[[int]]
     r_stocked:int
     r_foundation_pct:int
+    r_goods_after_foundation:int
     r_inside_ticks:int
     r_doors:int
     r_carrier_load:int
@@ -877,6 +878,7 @@ def world_bytes(bots:[Bot]) -> string:
         stock,
         r_stocked,
         r_foundation_pct,
+        r_goods_after_foundation,
         r_inside_ticks,
         r_doors,
         r_carrier_load,
@@ -1441,6 +1443,7 @@ def load_world_bytes(data:string) -> [Bot]:
     stock = s.stock
     r_stocked = s.r_stocked
     r_foundation_pct = s.r_foundation_pct
+    r_goods_after_foundation = s.r_goods_after_foundation
     r_inside_ticks = s.r_inside_ticks
     r_doors = s.r_doors
     r_carrier_load = s.r_carrier_load

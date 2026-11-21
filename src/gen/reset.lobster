@@ -325,6 +325,7 @@ var stashed_pop_cap = []::int
 var stashed_stock = []::[int]
 var stashed_r_stocked = 0
 var stashed_r_foundation_pct = 0
+var stashed_r_goods_after_foundation = 0
 var stashed_r_inside_ticks = 0
 var stashed_r_doors = 0
 var stashed_r_carrier_load = 1
@@ -879,6 +880,7 @@ def reset_world():
     stock = []::[int]
     r_stocked = 0
     r_foundation_pct = 0
+    r_goods_after_foundation = 0
     r_inside_ticks = 0
     r_doors = 0
     r_carrier_load = 1
@@ -1423,6 +1425,7 @@ def stash_world():
     stashed_stock = stock
     stashed_r_stocked = r_stocked
     stashed_r_foundation_pct = r_foundation_pct
+    stashed_r_goods_after_foundation = r_goods_after_foundation
     stashed_r_inside_ticks = r_inside_ticks
     stashed_r_doors = r_doors
     stashed_r_carrier_load = r_carrier_load
@@ -1960,6 +1963,7 @@ def unstash_world():
     stock = stashed_stock
     r_stocked = stashed_r_stocked
     r_foundation_pct = stashed_r_foundation_pct
+    r_goods_after_foundation = stashed_r_goods_after_foundation
     r_inside_ticks = stashed_r_inside_ticks
     r_doors = stashed_r_doors
     r_carrier_load = stashed_r_carrier_load

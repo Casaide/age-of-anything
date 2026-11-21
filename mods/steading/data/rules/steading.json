@@ -103,6 +103,8 @@
   "doors_on_roads": true,
   "door_roads": true,
   "foundation_pct": 30,
+  "goods_after_foundation": true,
+  "_goods_after_foundation_doc": "As in the genre (#41): a builder levels the plot first (its foundation share, foundation_pct), and only then are its goods fetched, so serfs never carry to a plot that isn't ready (the engine's rule, creel #138).",
   "inside_ticks": 30,
   "doors": true,
   "doors_clear": true,
