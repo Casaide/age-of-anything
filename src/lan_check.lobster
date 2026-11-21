@@ -112,5 +112,27 @@ if lan_seen.me != my_ipv4(): expect("the scan knows this machine", lan_seen.me, 
 if find_string(lan_scan_note(), "from {my_ipv4()}") < 0: expect("the note names this machine", lan_scan_note(), "... from {my_ipv4()} ...")
 print lan_scan_note()
 
+// a scan never holds the frame (#150 in Creel): started, then ticked each frame while the host's door is ticked too, each
+// tick returns at once, and the host on this machine answers and is found
+let scan = lan_scan_start(0.6, test_port)
+var tick_worst = 0.0
+var scan_done = false
+let t_scan = seconds_elapsed()
+while not scan_done and seconds_elapsed() - t_scan < 5.0:
+    door_tick(door)
+    let t_tick = seconds_elapsed()
+    scan_done = lan_scan_tick(scan)
+    tick_worst = max(tick_worst, seconds_elapsed() - t_tick)
+if not scan_done: expect("the scan ends", "still going after 5 s", "done")
+if tick_worst > 0.02: expect("a scan tick returns at once", "{tick_worst * 1000.0} ms", "under 20 ms")
+print "a scan tick: {tick_worst * 1000.0} ms at worst"
+if not (find(scan.found) h: h.ip == "127.0.0.1" and h.name == "check") >= 0: expect("the scan finds the host on this machine", string(scan.found.length) + " found", "check at 127.0.0.1")
+
+// this machine's address is asked once, then kept: a lobby that shows it every frame starts no tools (#150 in Creel)
+my_ipv4()
+let t_ip = seconds_elapsed()
+for(10): my_ipv4()
+if seconds_elapsed() - t_ip > 0.001: expect("my_ipv4 again is kept", "{(seconds_elapsed() - t_ip) * 1000.0} ms for 10", "under 1 ms")
+
 if bad: set_exit_code(1)
 print if bad: "lan_check: {bad} failed" else: "lan_check: all pass"

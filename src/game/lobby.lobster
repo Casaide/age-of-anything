@@ -75,6 +75,7 @@ var fe_frames = 0
 var fe_pad = false  // the pad was used last (its hints shown)
 var fe_hosts = []::LanHost
 var fe_scanned = false
+var fe_scan:LanScan? = nil  // the network page's scan while it runs, a step each frame (never the whole scan in one: #150 in Creel)
 var fe_address = ""
 var fe_lab_rules = 0
 let fe_lab_scroll = [ 0.0, 0.0 ]
@@ -1157,7 +1158,10 @@ def fe_net_page() -> string:
     fe_rule(x, y, w, lk.metal)
     y += 14.0 * fe_k
     ui_text(float2 { x, y }, "Games on this network", fz(18.0), lk.dim)
-    if ui_button(float2 { x + w - 200.0 * fe_k, y - 6.0 * fe_k }, float2 { 200.0 * fe_k, 36.0 * fe_k }, "Look again", false): fe_scanned = false
+    if ui_button(float2 { x + w - 200.0 * fe_k, y - 6.0 * fe_k }, float2 { 200.0 * fe_k, 36.0 * fe_k }, "Look again", false):
+        fe_scanned = false
+        fe_scan = nil
+        fe_hosts = []
     y += 40.0 * fe_k
     if not fe_hosts.length:
         ui_text(float2 { x, y + 14.0 * fe_k }, if fe_scanned: "None yet: on the other machine, Play on the network, Host a game." else: "Looking for games...", fz(16.0), lk.dim)
@@ -1552,8 +1556,11 @@ def run_front(page0:string, typed:[string]) -> string:
             elif fe_field == 20: fe_address = text
             if gl.button("tab") == 1 and fe_page == "setup": fe_focus((fe_field + 1) % fe_sides.length, fe_sides[(fe_field + 1) % fe_sides.length].typed)
         if fe_page == "net" and not fe_scanned and fe_frames > 1:
-            fe_hosts = lan_scan(4.0, NET_PORT)  // (Wi-Fi in power saving can take a while to answer: #506)
-            fe_scanned = true
+            let scan = fe_scan or lan_scan_start(4.0, NET_PORT)  // (Wi-Fi in power saving can take a while to answer: #506)
+            fe_scan = scan
+            fe_scanned = lan_scan_tick(scan)
+            fe_hosts = copy(scan.found)  // (each host shown as soon as it answers)
+            if fe_scanned: fe_scan = nil
         if fe_page == "setup" and fe_hosting: fe_room_tick()
         var joined_now = false
         if fe_page == "setup" and fe_joining: joined_now = fe_guest_sync() == "join"
@@ -1692,6 +1699,7 @@ def run_front(page0:string, typed:[string]) -> string:
             if go == "setup" or go == "lab": gl.set_text_input(fe_sides[0].typed)
             if go == "net":
                 fe_scanned = false
+                fe_scan = nil
                 fe_hosts = []
                 fe_field = 20
                 gl.set_text_input(fe_address)

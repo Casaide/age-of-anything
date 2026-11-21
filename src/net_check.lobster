@@ -217,6 +217,10 @@ events_on = true
 let ls = new_lockstep(link, me, seats)
 ls.more = others
 ls.relay = role == "host"
+ls_begin(ls)  // (both start the first tick together: #151 in Creel)
+while not ls_begin_tick(ls):
+    assert not link.closed
+    tcp.wait(nil, link.sock, false, 0.01)
 let t0 = seconds_elapsed()
 var waits = 0
 while tick < ticks and ls.desync == "" and not link.closed:

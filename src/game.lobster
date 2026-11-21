@@ -1608,6 +1608,14 @@ def play_match():
             print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
             bake_progress_on = false
             bake_loading = false
+            if net_on:  // every player loaded, then the match starts on all at once (#151 in Creel): no one freezes waiting mid-move
+                ls_begin(lockstep)
+                while not ls_begin_tick(lockstep) and not quit_game:
+                    if net_wait_frame(if link.closed: "The other player has left" else: "Waiting for the other players to load..."):
+                        quit_game = true
+                        if net_backed_out: back_to_lobby = true  // (B or Esc: the menu; the window closed: the end)
+                        else: quit_app = true
+                        net_backed_out = false
         if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
         if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
         if reload_at >= 0.0 and clock_s >= reload_at:
@@ -1624,7 +1632,7 @@ def play_match():
         if swap_arg != "" and clock_s >= swap_at:
             become(swap_arg)
             swap_arg = ""
-        if not paused and not test_pause and winner < 0 and not typing_text and ((not tree_open and not menu_open) or net_on): sim_owe(dt * speed)
+        if not paused and not test_pause and winner < 0 and not typing_text and ((not tree_open and not menu_open) or net_on): sim_owe(if frame_no == 2: 0.0 else: dt * speed)  // (the second frame's time is the first one's bake: not played, #151 in Creel)
         if net_on:
             ls_receive(lockstep)
             if lockstep.desync != "": banner = "Out of step with the other player: {lockstep.desync}"
