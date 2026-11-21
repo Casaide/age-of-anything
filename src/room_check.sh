@@ -9,8 +9,8 @@ ticks="${1:-600}"
 port=47818  # (the batch runs net_check and net_check_packs beside this)
 logs="$(mktemp -d)"
 failed=0
-room() {  # room <name> <sides> <the side the joiner takes>
-	"$LOBSTER" $LOBSTER_FLAGS net_check.lobster -- host "$ticks" room "sides:$2" "port:$port" > "$logs/$1.host" 2>&1 &
+room() {  # room <name> <sides> <the side the joiner takes> [save:<ticks>: a saved game hosted, #174]
+	"$LOBSTER" $LOBSTER_FLAGS net_check.lobster -- host "$ticks" room "sides:$2" "port:$port" $4 > "$logs/$1.host" 2>&1 &
 	host=$!
 	sleep 1
 	"$LOBSTER" $LOBSTER_FLAGS net_check.lobster -- join "$ticks" noscan room "side:$3" "port:$port" > "$logs/$1.join" 2>&1 || failed=1
@@ -27,6 +27,7 @@ room() {  # room <name> <sides> <the side the joiner takes>
 room 1v1 2 1
 room ally 4 1
 room enemy 4 3
+room saved 4 1 save:300
 rm -rf "$logs"
 [ $failed = 0 ] || exit 1
-echo "rooms: 1v1, a joined ally and a joined enemy all end on the host's hash"
+echo "rooms: 1v1, a joined ally, a joined enemy and a hosted save all end on the host's hash"
