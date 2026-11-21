@@ -257,6 +257,7 @@ import .model.buildings
 import .model.future
 import .model.steading
 import .model.buildings2
+import .model.build_stages
 import .game.art_kit
 import .game.ruin
 import .game.model_type

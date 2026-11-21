@@ -10,10 +10,9 @@
 // _building_job, _bake_building, _placed, _variant_look, front_split, _bake_front, _bake_gate_parts, _hold_back,
 // (art_kit.gd).
 // Needs (imported by the game before this file): game/pack, game/art_kit (keep_frame, ak_rebake), model/buildings,
-// model/buildings2, model/build_mats, view/voxel_mesh, gen/datalib, game/ruin.
+// model/buildings2, model/build_mats, model/build_stages, view/voxel_mesh, gen/datalib, game/ruin.
 
 let AKB_HOUSE_SCALE = 1.1
-let AKB_BUILD_STAGES = [ 0.15, 0.4, 0.45, 0.72 ]
 let AKB_ALONG = [ "", "^z", "^d", "^a" ]
 let AKB_PICTURE_K = 0.4  // a building's picture alone (akb_picture) at this share of the bake's density
 let AKB_SEEN = float3 { 1.0, 0.0, 1.0 }
@@ -137,68 +136,6 @@ def akb_front_walk(node:MNode, t:Xform, parent:Xform, front_only:bool) -> int:
     node.visible = if front_only: front else: not front
     return n
 
-// ---- under construction (ArtKit._hold_back)
-
-class AkbBox:
-    node:MNode
-    lo:float3
-    hi:float3
-
-def akb_boxes(node:MNode, t:Xform, out:[AkbBox]) -> void:
-    let m = node.mesh
-    if m and m.p.length:
-        var lo = float3_1 * 1000000000.0
-        var hi = float3_1 * -1000000000.0
-        for(m.p) q:
-            lo = min(lo, q)
-            hi = max(hi, q)
-        var blo = float3_1 * 1000000000.0
-        var bhi = float3_1 * -1000000000.0
-        for(8) c:
-            let corner = xf(t, float3 { if c & 1: hi.x else: lo.x, if c & 2: hi.y else: lo.y, if c & 4: hi.z else: lo.z })
-            blo = min(blo, corner)
-            bhi = max(bhi, corner)
-        out.push(AkbBox { node, blo, bhi })
-    for(node.kids) k: akb_boxes(k, xmul(t, node_xform(k)), out)
-
-// A building under construction: parts held back by height (foundations first, the roof last) and a scaffold of
-// poles and rails round the footprint up to just above what's built.
-def akb_hold_back(body:MNode, stage:int):
-    let cut = AKB_BUILD_STAGES[stage]
-    let boxes = []::AkbBox
-    for(body.kids) k: akb_boxes(k, node_xform(k), boxes)
-    var alo = float3_1 * 1000000000.0
-    var ahi = float3_1 * -1000000000.0
-    for(boxes) b:
-        alo = min(alo, b.lo)
-        ahi = max(ahi, b.hi)
-    let h = ahi.y - alo.y
-    var top = 0.0
-    for(boxes) b:
-        let at = (if stage < 2: b.hi.y else: (b.lo.y + b.hi.y) * 0.5) - alo.y
-        // (before its walls: nothing that hangs on them, a lit window or a door's studs low enough to pass, floating)
-        let m = b.node.mat
-        let lit = m and (m.unshaded or m.emission != float3_0)
-        let hangs = stage < 2 and (lit or (b.lo.y - alo.y > 0.15 * h and b.hi.y - b.lo.y < 0.25 * h))
-        if at > cut * h or hangs: b.node.visible = false
-        else: top = max(top, b.hi.y)
-    let wood = bm("wood")
-    let lo = float3 { alo.x - 0.04, 0.0, alo.z - 0.04 }
-    let hi = float3 { ahi.x + 0.04, 0.0, ahi.z + 0.04 }
-    let pole_h = max(top + 0.08, 0.22)
-    let posts = []::float3
-    for([ 0.0, 0.5, 1.0 ]) fx:
-        for([ 0.0, 0.5, 1.0 ]) fz:
-            if not (fx == 0.5 and fz == 0.5):
-                posts.push(float3 { lo.x + (hi.x - lo.x) * fx, 0.0, lo.z + (hi.z - lo.z) * fz })
-    for(posts) q: add_child(body, beam(q, q + float3 { 0.0, pole_h, 0.0 }, 0.016, wood))
-    let around = [ posts[0], posts[1], posts[2], posts[4], posts[7], posts[6], posts[5], posts[3] ]
-    let levels = if pole_h > 0.3: [ pole_h * 0.5, pole_h - 0.03 ] else: [ pole_h - 0.03 ]
-    for(levels) y:
-        for(around) a, k:
-            let c = around[(k + 1) % around.length]
-            add_child(body, beam(a + float3 { 0.0, y, 0.0 }, c + float3 { 0.0, y, 0.0 }, 0.011, wood))
-
 // ---- gate parts (ArtKit._bake_gate_parts)
 
 // A gate's middle without its towers (its doors, or the open passage and the arch over it).
@@ -249,7 +186,8 @@ class AkbCached:
 var akb_cache_frames = []::AkbFrame
 var akb_cache_stem = ""  // the look being baked ("" while not recording)
 
-def akb_stem_in(dir:string, name:string) -> string: return dir + "/b" + sha256_text("{BAKE_VERSION}|building|{name}|k {ART_K}").substring(0, 20)
+let AKB_VERSION = 1  // the game's own bakes of buildings, beside Creel's BAKE_VERSION (1: the roof goes on last at sites, #155)
+def akb_stem_in(dir:string, name:string) -> string: return dir + "/b" + sha256_text("{BAKE_VERSION}.{AKB_VERSION}|building|{name}|k {ART_K}").substring(0, 20)
 def akb_stem(name:string) -> string: return akb_stem_in(bake_cache_dir, name)
 
 // A look from the shipped bakes or the cache, if it's there (its frames, Look and BFx in place): whether it was.
