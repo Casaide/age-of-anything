@@ -292,9 +292,11 @@ def test_stocked():
 // `carriers` carriers by the store. The house's index.
 // Roads (#51): a worker walking from (8, 20) to (32, 20) on flat_test (an open row), with the given roads laid first
 // (cells, kind); the ticks it takes to pass x 30, how many rows it strays from row 20 on the way, and the hash at the end.
-def road_walk(roads:[[int]], pcts:[int]) -> int, int, int:
+def road_walk(roads:[[int]], pcts:[int], costs:[int] = []) -> int, int, int:
     new_world("flat_test", races0, bare0, [])
     rd_pct = pcts
+    rd_cost = if costs.length: costs else: map(pcts) p: 10000 / p  // (cost_pct: as a pack's rules give it, by default what the speed saves)
+    rd_middle = map(pcts): 0
     for(roads) r: set_road(r[0], r[1])
     let id = spawn_at(0, "worker", 8 * TILE + TILE / 2, 20 * TILE + TILE / 2)
     issue_cmd(0, CMD_MOVE, [ id ], 32 * TILE + TILE / 2, 20 * TILE + TILE / 2, 0, 0)
@@ -329,6 +331,10 @@ def test_roads():
     check(round < plain, "roads: and gets there sooner ({round} ticks, {plain} straight across)")
     let slow, slow_top, h4 = road_walk(bend, [ 110 ])
     check(slow_top <= 1 and slow > round and h4 != h3, "roads: a road barely faster than the grass is not worth the bend ({slow_top} rows out, {slow} ticks)")
+    // A road no quicker than the grass that paths keep to all the same (cost_pct, the town builder's road, creel #129):
+    // it takes the bend, at the grass's pace.
+    let kept, kept_top, _ = road_walk(bend, [ 100 ], [ 34 ])
+    check(kept_top >= 5 and kept > plain, "roads: a road no quicker but cheap to cross is the way it goes ({kept_top} rows out, {kept} ticks, {plain} straight across)")
 
 def carry_world(wood:int, carriers:int) -> int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
@@ -726,6 +732,8 @@ def road_plans() -> int:
     new_world("flat_test", races0, stocked_rules(bare0), [])
     rd_names = [ "dirt" ]
     rd_pct = [ 150 ]
+    rd_cost = [ 66 ]
+    rd_middle = [ 0 ]
     let hk = btype_index("house")
     bt_road[hk] = 0
     make_store("town_center", 200)
@@ -835,6 +843,8 @@ def bridge_plans() -> int:
     new_world("river_test", races0, stocked_rules(bare0), [])
     rd_names = [ "dirt" ]
     rd_pct = [ 150 ]
+    rd_cost = [ 66 ]
+    rd_middle = [ 0 ]
     let hk = btype_index("house")
     bt_road[hk] = 0
     bt_bridge[hk] = 1
@@ -883,6 +893,8 @@ def test_doors_on_roads():
     new_world("flat_test", races0, stocked_rules(bare0), [])
     rd_names = [ "dirt" ]
     rd_pct = [ 150 ]
+    rd_cost = [ 66 ]
+    rd_middle = [ 0 ]
     let hk = btype_index("house")
     let pk = btype_index("town_center")
     bt_road[pk] = 0  // stands in as a road plan

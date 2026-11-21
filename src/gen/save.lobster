@@ -331,6 +331,8 @@ class WorldSave:
     r_carrier_slots:[string]
     rd_names:[string]
     rd_pct:[int]
+    rd_cost:[int]
+    rd_middle:[int]
     road:[int]
     step_s:[int]
     step_d:[int]
@@ -879,6 +881,8 @@ def world_bytes(bots:[Bot]) -> string:
         r_carrier_slots,
         rd_names,
         rd_pct,
+        rd_cost,
+        rd_middle,
         road,
         step_s,
         step_d,
@@ -1440,6 +1444,8 @@ def load_world_bytes(data:string) -> [Bot]:
     r_carrier_slots = s.r_carrier_slots
     rd_names = s.rd_names
     rd_pct = s.rd_pct
+    rd_cost = s.rd_cost
+    rd_middle = s.rd_middle
     road = s.road
     step_s = s.step_s
     step_d = s.step_d

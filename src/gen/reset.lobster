@@ -330,6 +330,8 @@ var stashed_r_carrier_load = 1
 var stashed_r_carrier_slots = []::string
 var stashed_rd_names = []::string
 var stashed_rd_pct = []::int
+var stashed_rd_cost = []::int
+var stashed_rd_middle = []::int
 var stashed_road = []::int
 var stashed_step_s = []::int
 var stashed_step_d = []::int
@@ -881,6 +883,8 @@ def reset_world():
     r_carrier_slots = []::string
     rd_names = []::string
     rd_pct = []::int
+    rd_cost = []::int
+    rd_middle = []::int
     road = []::int
     step_s = []::int
     step_d = []::int
@@ -1422,6 +1426,8 @@ def stash_world():
     stashed_r_carrier_slots = r_carrier_slots
     stashed_rd_names = rd_names
     stashed_rd_pct = rd_pct
+    stashed_rd_cost = rd_cost
+    stashed_rd_middle = rd_middle
     stashed_road = road
     stashed_step_s = step_s
     stashed_step_d = step_d
@@ -1956,6 +1962,8 @@ def unstash_world():
     r_carrier_slots = stashed_r_carrier_slots
     rd_names = stashed_rd_names
     rd_pct = stashed_rd_pct
+    rd_cost = stashed_rd_cost
+    rd_middle = stashed_rd_middle
     road = stashed_road
     step_s = stashed_step_s
     step_d = stashed_step_d
