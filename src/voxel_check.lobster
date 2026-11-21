@@ -279,4 +279,20 @@ for(bodies) a, i:
                 print "{a} and {b}: silhouettes {int(o * 100.0)}% alike"
                 if o > 0.8 and not report: fail("{a} and {b} look alike side on ({int(o * 100.0)}%, at most 80%)")
 print "voxel_check: {bodies.length} bodies, {fails} failed"
+// ---- packed: the great sling packs to move (lib/siege's packed), drawn in its body's packed shape; any engine's packed
+// shape is a body of its own, lower than it stands set up, side on (#171: it rolled with its arm up)
+def rows_of(m:[bool]) -> int:
+    let w = int(sqrt(float(m.length)))
+    return (filter(w) y: (find(w) x: m[y * w + x]) >= 0).length
+if vx_body_of("siege.sling").packed == "": fail("siege.sling: no packed shape to roll in")
+for([ "siege.ram", "siege.catapult", "siege.bolt", "siege.tower", "siege.sling", "siege.cart" ]) id:
+    let pb = vx_body_of(id).packed
+    if pb != "":
+        if vx_bodies.get(pb) == nil: fail("{id}: its packed shape {pb} has no body")
+        else:
+            let tall = rows_of(mask(unit(id, hexc("#8c6133"), hexc("#4a4a50"), []), 2))
+            let low = rows_of(mask(unit(pb, hexc("#8c6133"), hexc("#4a4a50"), []), 2))
+            if report or low >= tall * 3 / 4: print "packed {id}: {low} rows packed, {tall} set up"
+            if low >= tall * 3 / 4: fail("{id}: packed ({low} rows) it stands nearly as tall as set up ({tall})")
+
 if fails: set_exit_code(1)

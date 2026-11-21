@@ -300,5 +300,33 @@
   "rgb": "#bd8f4d",
   "shine": 0.9,
   "_doc": "its rim: the armour's edge mat"
+ },
+ "shot_stone": {
+  "rgb": "#8a8377",
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.22,
+   "mix": 0.45,
+   "color2": "#5f5a52"
+  },
+  "_doc": "a thrown stone (shot.stone_*)"
+ },
+ "shot_stone_cut": {
+  "rgb": "#a39b8c",
+  "pattern": {
+   "kind": "mottle",
+   "size": [
+    1,
+    1
+   ],
+   "depth": 0.12,
+   "mix": 0.3,
+   "color2": "#857d70"
+  },
+  "_doc": "a thrown stone's split faces"
  }
 }

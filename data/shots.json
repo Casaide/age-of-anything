@@ -1,5 +1,5 @@
 {
-  "_doc": "Shot looks, all view only: the sim fires one shot and decides one hit whatever is drawn. Knobs, freely mixed: arc (path height for its distance; 0 straight), form (bolt, or beam: a line from muzzle to target), len and w (a bolt's length, 0 an orb, and the width), hold (seconds a beam stays lit), pulses {count, gap in seconds}, scatter {count, spread in canvas pixels at the target}, wobble and jag (a beam's shake in pixels and its segments), col, glow, fade (the share of its life spent fading), sticks (false: a miss leaves nothing in the ground), sound (firing). trail (a fading tail in canvas pixels, behind a bolt). muzzle {flash, col, smoke, ring, dust, recoil}: at the gun: a flash and a ring of that radius, puffs of smoke, puffs of dust at its feet, and the turret kicked back that many pixels. hit {sparks, size, spread, life, col, sound}: its own impact, in place of the game's. impact {blast, col, smoke, scorch, debris, shake}: where it lands: a blast of that radius, puffs of smoke, a scorch mark of that radius, thrown bits, and the screen shaken that many pixels. A mod's shots.json merges over this, and \"extends\": \"arrow\" starts from one of these; which units use a mod's look goes by its tag.",
+  "_doc": "Shot looks, all view only: the sim fires one shot and decides one hit whatever is drawn. Knobs, freely mixed: arc (path height for its distance; 0 straight), form (bolt, or beam: a line from muzzle to target), len and w (a bolt's length, 0 an orb, and the width), hold (seconds a beam stays lit), pulses {count, gap in seconds}, scatter {count, spread in canvas pixels at the target}, wobble and jag (a beam's shake in pixels and its segments), col, glow, fade (the share of its life spent fading), sticks (false: a miss leaves nothing in the ground), sound (firing). trail (a fading tail in canvas pixels, behind a bolt). muzzle {flash, col, smoke, ring, dust, recoil}: at the gun: a flash and a ring of that radius, puffs of smoke, puffs of dust at its feet, and the turret kicked back that many pixels. hit {sparks, size, spread, life, col, sound}: its own impact, in place of the game's. impact {blast, col, smoke, scorch, debris, dust, shake}: where it lands: a blast of that radius, puffs of smoke, a scorch mark of that radius, thrown bits, a ring of that many puffs of dust, and the screen shaken that many pixels. bodies (voxel bodies, e.g. a stone, in place of the orb: drawn in turn and in their 8 facings as it tumbles) and spin (its tumble, turns a second). A mod's shots.json merges over this, and \"extends\": \"arrow\" starts from one of these; which units use a mod's look goes by its tag.",
   "arrow": {
     "arc": 0.22,
     "len": 7.0,
@@ -58,8 +58,12 @@
     "w": 4.2,
     "col": "#8f8a7c",
     "sound": "catapult_release",
+    "bodies": ["shot.stone_0", "shot.stone_1", "shot.stone_2"],
+    "spin": 1.2,
     "impact": {
-      "shake": 1.0
+      "shake": 1.0,
+      "dust": 8,
+      "debris": 6
     }
   },
   "siege_bolt": {
@@ -75,8 +79,12 @@
     "w": 5.0,
     "col": "#8f8a7c",
     "sound": "sling_release",
+    "bodies": ["shot.stone_0", "shot.stone_1", "shot.stone_2"],
+    "spin": 0.9,
     "impact": {
-      "shake": 1.5
+      "shake": 1.5,
+      "dust": 10,
+      "debris": 8
     }
   }
 }

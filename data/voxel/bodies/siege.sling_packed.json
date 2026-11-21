@@ -1,0 +1,30 @@
+{
+ "_doc": "A great sling packed to move: its A-frame taken down onto a four-wheeled wagon, the arm laid along it, the counterweight on the bed, its haulers pulling at the front. Its style: frame (skin), iron and weight (pale), sling (mark).",
+ "styles": {"timber": {"skin": "#8c6133", "pale": "#4a4a50", "mark": "#9a7a50"}, "junk": {"skin": "#7a6a58", "pale": "#8a5a3a", "mark": "#8a9098"}, "frog": {"skin": "#8a8a40", "pale": "#4f5e2a", "mark": "#5e8a3a"}, "forest": {"skin": "#6b4a2a", "pale": "#3e4a2c", "mark": "#4a6a30"}, "spooky": {"skin": "#d8d0bc", "pale": "#3a3238", "mark": "#5a3a5a"}},
+ "crew": [[-6.0,27.0,0.0],[6.0,27.0,0.0]],
+ "points": {"o": {"at": [0, 0, 0]}},
+ "shapes": [
+  {"box":["o",-5.0,0.0,7.0],"half":[1.2,19.0,1.2],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"box":["o",5.0,0.0,7.0],"half":[1.2,19.0,1.2],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"box":["o",0.0,-17.0,7.0],"half":[6.2,1.0,1.0],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"box":["o",0.0,-6.0,7.0],"half":[6.2,1.0,1.0],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"box":["o",0.0,6.0,7.0],"half":[6.2,1.0,1.0],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"box":["o",0.0,17.0,7.0],"half":[6.2,1.0,1.0],"mat":"frame","n":[0.0,1.0,0.0],"round":0.3},
+  {"disc":["o",-7.5,-12.0,4.5],"mat":"frame2","n":[1.0,0.0,0.0],"r":[4.5,1.1]},
+  {"disc":["o",-8.1,-12.0,4.5],"mat":"frame","n":[1.0,0.0,0.0],"r":[1.35,1.0]},
+  {"disc":["o",-7.5,12.0,4.5],"mat":"frame2","n":[1.0,0.0,0.0],"r":[4.5,1.1]},
+  {"disc":["o",-8.1,12.0,4.5],"mat":"frame","n":[1.0,0.0,0.0],"r":[1.35,1.0]},
+  {"disc":["o",7.5,-12.0,4.5],"mat":"frame2","n":[1.0,0.0,0.0],"r":[4.5,1.1]},
+  {"disc":["o",8.1,-12.0,4.5],"mat":"frame","n":[1.0,0.0,0.0],"r":[1.35,1.0]},
+  {"disc":["o",7.5,12.0,4.5],"mat":"frame2","n":[1.0,0.0,0.0],"r":[4.5,1.1]},
+  {"disc":["o",8.1,12.0,4.5],"mat":"frame","n":[1.0,0.0,0.0],"r":[1.35,1.0]},
+  {"cap":["o",-3.0,-15.0,9.4],"hard":true,"mat":"frame","r":[1.2,1.0],"to":["o",-3.0,15.0,9.4]},
+  {"cap":["o",3.0,-15.0,9.4],"hard":true,"mat":"frame","r":[1.2,1.0],"to":["o",3.0,15.0,9.4]},
+  {"cap":["o",0.0,-27.0,11.6],"hard":true,"mat":"frame","r":[1.4,1.2],"to":["o",0.0,20.0,11.6]},
+  {"cap":["o",-4.5,3.0,13.2],"hard":true,"mat":"frame2","r":[1.0,1.0],"to":["o",4.5,3.0,13.2]},
+  {"box":["o",0.0,-11.0,11.5],"half":[4.5,3.5,3.5],"mat":"frame2","n":[0.0,1.0,0.0],"round":0.4},
+  {"ball":["o",0.0,-27.5,11.6],"hard":true,"mat":"trim","r":1.8},
+  {"cap":["o",0.0,19.0,7.0],"hard":true,"mat":"frame","r":[0.8,0.6],"to":["o",0.0,25.0,4.0]},
+  {"box":["o",0.0,19.6,9.5],"half":[4.0,0.5,1.8],"mat":"team","n":[0.0,1.0,0.0],"round":0.3}
+ ]
+}
