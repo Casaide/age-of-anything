@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<!-- Fish: one silver fish, its tail forked, an eye and a gill line. -->
+<g stroke="#1c120a" stroke-width="1.4" stroke-linejoin="round">
+<path d="M4 16 q8 -9 18 -2 l6 -5 l-1.5 7 l1.5 7 l-6 -5 q-10 7 -18 -2 z" fill="#9ab0bc"/>
+</g>
+<path d="M7 15 q7 -6 15 -1" stroke="#dce8ee" stroke-width="1.2" fill="none"/>
+<path d="M11 12.5 q1.5 3.5 0 7" stroke="#5a6e7a" stroke-width="1" fill="none"/>
+<circle cx="8" cy="15" r="1.1" fill="#1c120a"/>
+</svg>

@@ -55,6 +55,7 @@ add vox_model_check "$L" vox_model_check.lobster        # .vox models as a shape
 add vox_body_check "$L" vox_body_check.lobster          # a body from a .vox (#313): joints from the drawing, points layer, the walk, standing on its legs, bad files named
 add vox_mod_check "$L" vox_mod_check.lobster            # the example .vox mod (#381): loads with its model, its word gives its creature, its body from the .vox
 add steading_look_check "$L" steading_look_check.lobster   # Steading (#125): every good has its own load, carried in sight
+add site_stage_check "$L" site_stage_check.lobster        # building sites go up as real ones do (#155): nothing floats at any stage, the roof goes on last
 add size_check "$L" size_check.lobster                  # the one size table (data/voxel/sizes.json): every body as tall as it says, every mount at its ratio
 add rider_check "$L" rider_check.lobster                # riders and crews as drawn: every pair a race can field, showing, one on a seat, in the size table's ratios
 add walk_check "$L" walk_check.lobster                  # feet against the ground (#422): a planted foot goes back as far as the walk cycle covers, at a steady speed, for every body and mount

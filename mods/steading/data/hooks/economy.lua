@@ -11,11 +11,9 @@
 --     once a second (with none idle and nobody at it, the nearest fetching one, empty-handed, once it's stood alone 5 s); once all its goods are in, up to builders_per_site (1 if unset) at once. A serf with a site
 --     that has work within NEXT goes there first (a road's next cell, #119). (The engine drops a site
 --     whose builder can't get to it; this sends someone back too.)
---   idle_wait: an idle serf (a carrier slot, economy.carriers) with nothing to do walks back to its side's nearest
---     store and waits by it, rather than standing wherever its last job left it.
+--   An idle serf stands where its last job left it, as the genre's do (#158): nothing sends it off to wait.
 
 local LOOK = 20  -- ticks between looks (a second)
-local WAIT = 2 * TILE  -- how far from a store's middle, past its half size, an idle serf may stand
 local ALONE = 5  -- looks a site with work may stand with nobody at it before a fetching serf is taken for it
 local NEXT = 4 * TILE  -- how far from a builder a site with work may be for it to go there first (next_door)
 
@@ -24,7 +22,6 @@ local doors = ec.doors_on_roads == true
 local doors_clear = ec.doors_clear == true
 local builders_come = ec.builders_come == true
 local per_site = ec.builders_per_site or 1
-local idle_wait = ec.idle_wait == true
 local col_alone = building_column("alone")  -- the looks a site with work has stood with nobody building it
 local foundation = ec.foundation_pct or 0  -- the share of a site built before its goods are in (the engine's rule, #105)
 local door_roads = doors and ec.door_roads == true
@@ -218,40 +215,6 @@ local function send_builders(builders, idle, fetching)
   end
 end
 
--- The idle serfs left, not walking: each to its side's nearest finished store, if it's further than WAIT past its
--- edge. (approach_building leaves it idle, so a carrier's job or a site still takes it on the way.)
-local function wait_by_stores(idle)
-  local stores = {}  -- each side's finished stores (by side + 1)
-  for b = 0, building_count() - 1 do
-    if b_done(b) ~= 0 and bt_store(b_kind(b)) then
-      local p = b_owner(b) + 1
-      if not stores[p] then stores[p] = {} end
-      table.insert(stores[p], b)
-    end
-  end
-  for p, mine in pairs(idle) do
-    local theirs = stores[p] or {}
-    for _, i in ipairs(mine) do
-      if u_moving(i) == 0 then
-        local best = -1
-        local best_d2 = 1 << 50
-        for _, b in ipairs(theirs) do
-          local d2 = mid_dist2(b, u_x(i), u_y(i))
-          if d2 < best_d2 then
-            best_d2 = d2
-            best = b
-          end
-        end
-        if best >= 0 then
-          local x0, y0, x1, y1 = building_rect(best)
-          local reach = (x1 - x0) // 2 + WAIT
-          if best_d2 > reach * reach then approach_building(i, best) end
-        end
-      end
-    end
-  end
-end
-
 -- Each site with a door on free ground gets a road plan there, its owner's (door_roads: the genre lays the road tile in
 -- front of a new building with it; the player joins it to the rest).
 local function plan_door_roads()
@@ -288,8 +251,7 @@ end
 function economy_tick()
   if door_roads and stocked() and road_kind >= 0 then plan_door_roads() end
   if builders_come and stocked() and tick() % LOOK ~= 0 then feed_starved() end
-  if not stocked() or tick() % LOOK ~= 0 or not (builders_come or idle_wait) then return end
+  if not stocked() or tick() % LOOK ~= 0 or not builders_come then return end
   local builders, idle, fetching = look()
   if builders_come then send_builders(builders, idle, fetching) end
-  if idle_wait then wait_by_stores(idle) end
 end

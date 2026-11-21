@@ -35,6 +35,23 @@ class RuinMesh:
 
 def ruin_roll(rng:Rng) -> float: return float(next_u32(rng) % 10000) / 10000.0
 
+// Goes up when the broken-up stages change, so a building's old bakes aren't reused (its part of the bake key; 2:
+// what holds something up stays while it stands, #163).
+let RUIN_LOOK = 2
+
+// The stages a building shows while it still stands (battered, breaking): what holds something up stays upright.
+let RUIN_STANDING = 2
+
+// `up` rests on `down`: their boxes overlap across, and up's foot is at or in down's top (within `tol`), above down's
+// foot (a rail post stands in its platform).
+def ruin_rests_on(up:RuinMesh, down:RuinMesh, tol:float) -> bool:
+    return up.lo.x < down.hi.x and down.lo.x < up.hi.x and up.lo.z < down.hi.z and down.lo.z < up.hi.z and down.lo.y < up.lo.y - tol * 0.2 and down.hi.y >= up.lo.y - tol
+
+// Which pieces bear a load: on the ground, or with another piece resting on them.
+def ruin_bearing(meshes:[RuinMesh], base:float, tol:float) -> [bool]:
+    return map(meshes) d:
+        d.lo.y - base <= tol or exists(meshes) u: u.node != d.node and u.node.visible and ruin_rests_on(u, d, tol)
+
 // Every mesh under `node` (not the body itself), depth first as Godot's find_children.
 def ruin_meshes(node:MNode, parents:Xform, out:[RuinMesh]) -> void:
     for(node.kids) k:
@@ -83,7 +100,11 @@ def ruin_apply(body:MNode, s:int, seed_value:int):
     let h = asize.y
     let base = alo.y
     let mats = []::MMat  // what fell: the rubble is made of it
-    for(meshes) mi:
+    // While it stands, a post under a platform or a tier under the next never goes or tilts (#163: a tower at half
+    // health was a roof floating over stray posts).
+    let bearing = ruin_bearing(meshes, base, h * 0.03)
+    for(meshes) mi, mn:
+        let held = s <= RUIN_STANDING and bearing[mn]
         let n = mi.node
         if not n.visible: continue
         let m = n.mat
@@ -94,6 +115,7 @@ def ruin_apply(body:MNode, s:int, seed_value:int):
             continue
         let bsize = mi.hi - mi.lo
         let centre = (mi.lo + mi.hi) * 0.5
+        let roof = bsize.x > asize.x * 0.5 and bsize.z > asize.z * 0.5  // a whole roof as one piece: battered, it only slips
         let rel = (centre.y - base) / h
         var gone = false
         if st.cut > 0.0 and mi.lo.y - base < st.cut * h * 0.6 and mi.hi.y - base > st.cut * h:
@@ -107,11 +129,11 @@ def ruin_apply(body:MNode, s:int, seed_value:int):
                 let sq = Basis { float3 { 1.0, 0.0, 0.0 }, float3 { 0.0, k, 0.0 }, float3 { 0.0, 0.0, 1.0 } }
                 ruin_move(mi, Xform { sq, float3_0 }, float3 { centre.x, mi.lo.y, centre.z })
             if m and not lit: mats.push(m)
-        elif (rel > st.above or (st.cut > 0.0 and mi.hi.y - base > st.cut * h)) and ruin_roll(rng) < st.gone:
+        elif not held and not (s == 1 and roof) and (rel > st.above or (st.cut > 0.0 and mi.hi.y - base > st.cut * h)) and ruin_roll(rng) < st.gone:
             n.visible = false
             if m and not lit: mats.push(m)
             gone = true
-        elif rel > st.above * 0.6 and ruin_roll(rng) < st.tilt:
+        elif not held and rel > st.above * 0.6 and ruin_roll(rng) < st.tilt:
             // Knocked askew: turned about its lowest edge and sagging a little.
             let ax = ruin_roll(rng) - 0.5
             let az = ruin_roll(rng) - 0.5
@@ -137,6 +159,31 @@ def ruin_apply(body:MNode, s:int, seed_value:int):
         var d = (if magnitude(flat) > 0.0: normalize(flat) else: float3_0) * along
         d = float3 { d.x, h * (0.12 + 0.25 * ruin_roll(rng)) * (if s < 4: 1.0 else: 0.3), d.z }
         add_child(body, beam(a, a + d, 0.022 + 0.012 * ruin_roll(rng), char_mat))
+
+// The check (#163): pieces of a standing stage (1, 2) left in the air, every piece they rested on in the whole model
+// gone or moved while they weren't. `whole` is ruin_meshes of the model before ruin_apply broke it, `seen` which of
+// them showed then.
+def ruin_floating(whole:[RuinMesh], seen:[bool], broken:MNode) -> int:
+    let now = []::RuinMesh
+    ruin_meshes(broken, XF_ID, now)
+    var base = 1000000000.0
+    var top = -base
+    for(whole) b:
+        base = min(base, b.lo.y)
+        top = max(top, b.hi.y)
+    let tol = (top - base) * 0.03
+    def intact(i:int) -> bool: return now[i].node.visible and magnitude(now[i].lo - whole[i].lo) + magnitude(now[i].hi - whole[i].hi) < tol * 0.1
+    var n = 0
+    for(whole) u, i:
+        if not seen[i] or not now[i].node.visible: continue
+        var under = 0
+        var held = 0
+        for(whole) d, j:
+            if j != i and seen[j] and ruin_rests_on(u, d, tol):
+                under++
+                if intact(j): held++
+        if under > 0 and held == 0: n++
+    return n
 
 // A heap of broken pieces over the footprint, highest in the middle, spilling past the walls.
 def ruin_rubble(body:MNode, alo:float3, ahi:float3, n:int, cut:float, mats:[MMat], rng:Rng):

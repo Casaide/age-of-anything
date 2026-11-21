@@ -1,11 +1,17 @@
 -- Steading's hook points, in Lua (Casaide/creel#82): each tick its town rules (economy.lua), the specialists (jobs.lua),
--- then eating (hunger.lua). A building goes up only where both the door rule (economy.lua) and the mines' (mines.lua)
--- allow. The files run in name order, so the functions they define are all there by this one.
+-- eating (hunger.lua), then the markets (market.lua, #43), whose orders come in by on_order. A building goes up only
+-- where both the door rule (economy.lua) and the mines' (mines.lua) allow. The files run in name order, so the
+-- functions they define are all there by this one.
 
 function on_tick()
   economy_tick()
   jobs_tick()
   hunger_tick()
+  market_tick()
+end
+
+function on_order(code, p, ids, x, y)
+  market_order(code, p, ids, x, y)
 end
 
 function can_place(p, k, cx, cy, sx, sy)

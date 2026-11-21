@@ -28,6 +28,19 @@ local staff = {}
 local gathers = {}
 local reach = {}  -- (in tiles, or nil for anywhere)
 local ins = {}  -- the resources its recipe takes (r, 0-based), or nil ("makes": the workshops)
+local ins_n = {}  -- how many of each (by r + 1) a round takes
+local good_name = {}  -- each of those resources' name, as the panel says it (by r + 1)
+
+-- A resource's id as words: "iron_ore" is "iron ore".
+local function spaced(id)
+  local out = ""
+  for k = 1, string.len(id) do
+    local c = id:sub(k, k)
+    if c == "_" then c = " " end
+    out = out .. c
+  end
+  return out
+end
 local plants = {}  -- the terrain type its worker plants when nothing is left to gather in reach ("plants"), or -1
 local plants_on = {}  -- and the terrain it plants on ("plants": {"terrain", "on"}: a farm's tilled fields, #122), or nil for open ground
 local job_slots = {}
@@ -40,7 +53,13 @@ for k = 0, building_type_count() - 1 do
   if bt.makes and bt.makes["in"] then
     ins[k + 1] = {}
     for id, n in pairs(bt.makes["in"]) do
-      if n > 0 then table.insert(ins[k + 1], resource_index(id)) end
+      if n > 0 then
+        local r = resource_index(id)
+        table.insert(ins[k + 1], r)
+        ins_n[k + 1] = ins_n[k + 1] or {}
+        ins_n[k + 1][r + 1] = n
+        good_name[r + 1] = spaced(id)
+      end
     end
     table.sort(ins[k + 1])
   end
@@ -182,7 +201,7 @@ end
 -- Unit i, idle at its workplace b, gathers the nearest of b's goods round it (if there are any left); with none, a
 -- planter plants (the genre's woodcutter: saplings, when no grown tree is in reach, #126). With b full, or i carrying
 -- what b had no room for, it waits by b's door till a serf takes some away, then drops there (#134).
-local function go_to_work(i, b)
+local function set_to_work(i, b)
   if unit_get(col_plant, i) ~= 0 then return planting(i, b) end
   local kind = gathers[b_kind(b) + 1]
   if kind ~= 0 and (room(b, kind) <= 0 or (u_carry(i) > 0 and u_carry_kind(i) == kind)) then
@@ -190,13 +209,13 @@ local function go_to_work(i, b)
       set_u_task(i, T_RETURN)
       set_u_target(i, b_id(b))
       approach_building(i, b)
-    elseif not in_reach(i, building_rect(b)) and u_moving(i) == 0 then
+    elseif not in_reach(i, entry_rect(b)) and u_moving(i) == 0 then
       approach_building(i, b)
     end
     return
   end
   if kind == 0 then
-    if not in_reach(i, building_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
+    if not in_reach(i, entry_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
     return
   end
   local x0, y0, x1, y1 = building_rect(b)
@@ -210,8 +229,16 @@ local function go_to_work(i, b)
     planting(i, b)
   elseif reach[b_kind(b) + 1] then
     building_set(col_out, b, 1)
-    if not in_reach(i, building_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
+    if not in_reach(i, entry_rect(b)) and u_moving(i) == 0 then approach_building(i, b) end
   end
+end
+
+-- Unit i goes to work at b, as above. Left with nothing to do at b's door, it goes in and rests there out of sight, as
+-- the genre's trades do, till there's work again (#158; COL_INSIDE is hunger.lua's).
+local function go_to_work(i, b)
+  unit_set(COL_INSIDE, i, 0)
+  set_to_work(i, b)
+  if u_task(i) == T_NONE and u_moving(i) == 0 and u_orders(i) == 0 and in_reach(i, entry_rect(b)) then unit_set(COL_INSIDE, i, 1) end
 end
 
 -- A finished store of side p with a tool in it, or -1.
@@ -289,8 +316,9 @@ function jobs_tick()
       local b = workplace(i)
       if b >= 0 then
         working[b + 1] = (working[b + 1] or 0) + 1
-        if in_reach(i, building_rect(b)) then at_door[b + 1] = true end
+        if in_reach(i, entry_rect(b)) then at_door[b + 1] = true end
         if u_task(i) == GATHER and u_carry(i) == 0 and u_target(i) >= 0 and not within_reach(b, u_target(i)) then clear_task(i) end
+        if unit_get(COL_INSIDE, i) ~= 0 and u_task(i) ~= T_EAT and (u_orders(i) ~= 0 or u_moving(i) == 1) then unit_set(COL_INSIDE, i, 0) end  -- (sent off by hand: out it comes)
         if u_task(i) == T_NONE and u_orders(i) == 0 then go_to_work(i, b) end
       else
         local p = u_owner(i) + 1
@@ -347,7 +375,16 @@ function jobs_task_name(i)
   local at = name .. " at the " .. (building_type(b_kind(b)).name or "hut")
   if unit_get(col_plant, i) ~= 0 then return at .. ": planting" end
   local kind = gathers[b_kind(b) + 1]
-  if kind ~= 0 and room(b, kind) <= 0 then return at .. ": waiting, the hut is full" end
-  if building_get(col_out, b) == 1 then return at .. ": it's worked out" end
+  local wait = ": waiting, "
+  if unit_get(COL_INSIDE, i) ~= 0 then wait = ": idle inside, " end  -- (#158: resting in there, and why)
+  if kind ~= 0 and room(b, kind) <= 0 then return at .. wait .. "the hut is full" end
+  if building_get(col_out, b) == 1 then return at .. wait .. "it's worked out" end
+  if unit_get(COL_INSIDE, i) ~= 0 then
+    if b_making(b) > 0 then return at .. ": working inside" end
+    for _, r in ipairs(ins[b_kind(b) + 1] or {}) do
+      if b_hold(b, r) < ins_n[b_kind(b) + 1][r + 1] then return at .. ": idle inside, no " .. good_name[r + 1] end
+    end
+    return at .. ": idle inside, nothing to do"
+  end
   return at
 end
