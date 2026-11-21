@@ -151,7 +151,8 @@ sim's events) plays:
 
 ## Known gaps and next steps
 
-- An engine rolling has no sound of its own yet (a creak on a loop while it moves).
+- An engine rolling has its own loop now, `cart_roll` (#169): wooden rim joints knocking round, a stone now and then, a
+  hub creak, a low rumble, kept quiet under the mix. It can't follow the unit's speed (no pitch control).
 - **Nobody has listened yet.** Every sound was checked by numbers and spectrograms, not ears.
   The creature voices are the experimental part: synthetic throats may read as cheap. Dominic
   listens first; recipes are small, so a bad one is a quick change.
