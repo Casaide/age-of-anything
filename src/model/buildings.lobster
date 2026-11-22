@@ -166,7 +166,6 @@ def town_center(team:float3) -> BSpec:
     let stone = bm("stone")
     let wood = bm("wood")
     let mud = bm("mud")
-    let thatch = bm("thatch")
     bld_footing(body, "thatch", 2.8, 2.8, 0.22)
     let w = 2.1
     let h = 1.15
@@ -201,9 +200,7 @@ def town_center(team:float3) -> BSpec:
         add_child(body, bbox(bv(0.12, 0.32, 0.03), door_wood, bv(w / 2.0 + 0.1, base + 0.78, z + 0.24), bv(0.0, -55.0, 0.0)))
         lights.push(bv(w / 2.0 + 0.05, base + 0.78, z))
     let roof_y = base + h
-    add_child(body, bcyl(0.0, 1.95, 1.35, thatch, bv(0.0, roof_y + 0.6, 0.0), bv(0.0, 45.0, 0.0), 4))
-    add_child(body, bcyl(0.0, 1.62, 1.15, thatch, bv(0.0, roof_y + 0.92, 0.0), bv(0.0, 45.0, 0.0), 4))
-    add_child(body, bcyl(0.0, 0.32, 0.32, bflat(html("#5a4220"), 0.9), bv(0.0, roof_y + 1.42, 0.0), bv(0.0, 45.0, 0.0), 4))
+    let roof_top = thatch_hip(body, bv(0.0, roof_y - 0.05, 0.0), 1.95, 1.5, 4, 45.0, 42)
     let chim = bv(-0.55, roof_y + 1.0, -0.55)
     add_child(body, bbox(bv(0.3, 1.0, 0.3), stone, chim))
     add_child(body, bbox(bv(0.36, 0.08, 0.36), stone, chim + bv(0.0, 0.5, 0.0)))
@@ -220,7 +217,7 @@ def town_center(team:float3) -> BSpec:
     add_child(banner, bbox(bv(0.64, 0.06, 0.03), wood, flag_top + bv(0.33, 0.0, 0.0)))
     add_child(banner, bball(0.13, bcloth(html("#e8e4d8")), flag_top + bv(0.33, -0.4, 0.015), bv(1.0, 1.0, 0.1)))
     let vane = mnode()
-    let apex = bv(0.0, roof_y + 1.58, 0.0)
+    let apex = bv(0.0, roof_top - 0.02, 0.0)
     let metal = bflat(html("#5e6a66"), 0.35, 0.8)
     add_child(vane, bcyl(0.012, 0.012, 0.4, metal, apex + bv(0.0, 0.2, 0.0), float3_0, 6))
     add_child(vane, bcyl(0.025, 0.025, 0.4, metal, apex + bv(0.0, 0.38, 0.0), bv(0.0, 0.0, 90.0), 6))
@@ -239,7 +236,6 @@ def stilt_house(team:float3) -> BSpec:
     let body = mnode()
     let wood = bm("wood")
     let mud = bm("mud")
-    let thatch = bm("thatch")
     for([ -0.6, 0.6 ]) x:
         for([ -0.6, 0.6 ]) z:
             let rx = randf_range(brng, -4.0, 4.0)
@@ -254,8 +250,7 @@ def stilt_house(team:float3) -> BSpec:
         let a = 360.0 * float(k) / 6.0
         add_child(body, bbox(bv(0.07, 0.72, 0.07), wood, bv(cos(a) * 0.62, 0.86, sin(a) * 0.62)))
     add_child(body, bbox(bv(0.32, 0.5, 0.05), bflat(html("#3e2616"), 0.8), bv(0.05, 0.75, 0.6), bv(0.0, 8.0, 0.0)))
-    add_child(body, bcyl(0.0, 0.95, 0.85, thatch, bv(0.0, 1.62, 0.0), float3_0, 24))
-    add_child(body, bcyl(0.0, 0.8, 0.5, thatch, bv(0.0, 1.95, 0.0), bv(0.0, 17.0, 0.0), 24))
+    thatch_hip(body, bv(0.0, 1.2, 0.0), 0.98, 1.0, 24, 0.0, 7)
     add_child(body, bcyl(0.05, 0.05, 0.25, bflat(html("#3a3430"), 0.4, 0.7), bv(0.35, 1.95, -0.2), float3_0, 8))
     let foot = bv(0.0, 0.0, 1.12)
     let top = bv(0.0, 0.5, 0.8)
@@ -634,6 +629,126 @@ def bkit(arch:string) -> BKit:
 // The culture's roof stuff for a small roof ("tiles" are terracotta).
 def bld_roof_mat(k:BKit) -> MMat: return bm(if k.roof == "tiles": "terracotta" else: k.roof)
 
+// ------------------------------------------------------------------ thatch, laid as the real thing is (#197)
+// A thatched roof is straw a hand's length thick, laid in courses from the eave up, each course proud of the one
+// above; its eave is a thick rounded edge of cut straw ends; the ridge is built up again in fresh straw and pinned
+// with criss-cross hazel spars; it weathers from gold at the ridge to grey-brown at the eaves, and on a long slope moss
+// takes hold low down where it stays damp.
+def th_rand(i:int) -> float: return float(((i * 1103515245 + 12345) >> 9) & 1023) / 1023.0
+
+// The straw at a height up the roof (0 the eave, 1 the ridge), with a course's own jitter.
+def th_straw(t:float, k:int) -> MMat:
+    let th_old = float3 { 0.74, 0.69, 0.64 }
+    let th_new = float3 { 1.1, 1.0, 0.82 }
+    let j = (th_rand(k * 7 + 3) - 0.5) * 0.16
+    let m = bmat_thatch()
+    m.albedo = lerp3(th_old, th_new, clamp(t * 1.15, 0.0, 1.0)) * (1.0 + j)
+    return m
+
+def th_butts() -> MMat: return bflat(html("#5a4526"), 0.95)  // the cut straw ends under an eave
+def th_hazel() -> MMat: return bflat(html("#7a5a36"), 0.85)  // the spars that pin the ridge
+def th_moss(k:int) -> MMat: return bflat(lerp3(html("#56602e"), html("#6a6c3a"), th_rand(k * 13 + 5)), 0.95)
+
+// A hipped (sides 4, turned 45 so its faces meet the walls) or round thatched roof: r its eave's radius (to a corner
+// for a hip), rising `rise` over `at`, in courses from a thick eave to a fresh collar under a straw finial. seed: its
+// courses' tones. Returns the top of its finial.
+def thatch_hip(body:MNode, at:float3, r:float, rise:float, sides:int = 4, turn:float = 45.0, seed:int = 1, finial:bool = true) -> float:
+    let rot = bv(0.0, turn, 0.0)
+    let n = max(3, int(rise / 0.15 + 0.5))
+    let dh = rise / float(n)
+    let lip = 0.08
+    let rad = fn(y:float): r * (1.0 - y / rise)
+    // the eave: a thick roll whose underside shows the dark cut ends
+    add_child(body, bcyl(r - 0.02, r - 0.12, 0.08, th_butts(), at + bv(0.0, -0.04, 0.0), rot, sides))
+    for(n) k:
+        let y0 = float(k) * dh
+        let top = min(rise, y0 + dh * 1.45)
+        let hb = top - y0
+        let rt = if top >= rise: 0.0 else: rad(top)
+        add_child(body, bcyl(rt, rad(y0) + lip, hb, th_straw(y0 / rise, k + seed * 17), at + bv(0.0, y0 + hb / 2.0, 0.0), rot, sides))
+    // the ridge collar, built up in fresh straw, its spars crossing
+    let cy0 = rise * 0.72
+    let cy1 = rise * 0.9
+    let rc0 = rad(cy0) + lip * 1.2
+    let rc1 = rad(cy1) + lip * 1.2
+    add_child(body, bcyl(rc1, rc0, cy1 - cy0, th_straw(1.0, seed), at + bv(0.0, (cy0 + cy1) / 2.0, 0.0), rot, sides))
+    add_child(body, bcyl(rc0 - 0.01, rc0 + 0.025, 0.05, th_straw(0.9, seed + 1), at + bv(0.0, cy0 + 0.01, 0.0), rot, sides))  // its cut lower edge
+    if sides > 4:                                                                                                             // (a round roof's spars run round its collar; on a hip's flat faces they read as a cage)
+        for(sides) i:
+            for([ -1.0, 1.0 ]) dir:
+                let a = turn + 360.0 * (float(i) + 0.5) / float(sides)
+                let da = dir * 180.0 / float(sides) * 0.8
+                let lo = th_on(at, cy0 + 0.03, a - da, rc0 + 0.012, sides, turn, rc0)
+                let hi = th_on(at, cy1 - 0.02, a + da, rc1 + 0.012, sides, turn, rc1)
+                add_child(body, beam(lo, hi, 0.008, th_hazel(), 4))
+    if not finial: return at.y + rise
+    // the finial: a bound straw bundle on the top
+    let fy = at + bv(0.0, rise - 0.04, 0.0)
+    add_child(body, bcyl(0.05, 0.085, 0.2, th_straw(1.0, seed + 2), fy + bv(0.0, 0.1, 0.0), float3_0, 10))
+    add_child(body, bcyl(0.07, 0.07, 0.035, th_hazel(), fy + bv(0.0, 0.08, 0.0), float3_0, 10))
+    add_child(body, bball(0.06, th_straw(1.0, seed + 3), fy + bv(0.0, 0.22, 0.0), bv(1.0, 0.8, 1.0)))
+    return at.y + rise + 0.25
+
+// A point on a hip or round roof's face at height y and compass angle a (degrees), out at radius r to a corner (a
+// flat face's points come nearer the middle than its corners).
+def th_on(at:float3, y:float, a:float, r:float, sides:int, turn:float, _r0:float) -> float3:
+    var rr = r
+    if sides <= 8:
+        let seg = 360.0 / float(sides)
+        let rel = a - turn
+        let m = rel - floor(rel / seg) * seg - seg / 2.0
+        rr = r * cos(seg / 2.0) / cos(m)
+    return at + bv(sin(a) * rr, y, cos(a) * rr)
+
+// A gabled thatched roof over a w x d box, ridge along x: courses down each slope from a fresh ridge roll pinned
+// with crossed spars to a thick eave roll, the straw running out past the gables. Returns the ridge height.
+def thatch_gable(body:MNode, at:float3, w:float, d:float, rise:float, seed:int = 1) -> float:
+    let over = 0.17
+    let half = d / 2.0 + over
+    let slope = magnitude(float2 { half, rise })
+    let ang = atan2(float2 { half, rise })
+    let span = w + 0.34
+    let rows = max(3, int(slope / 0.15 + 0.5))
+    let step = slope / float(rows)
+    let thick = 0.1
+    for([ -1.0, 1.0 ]) side:
+        let tilt = bv(side * ang, 0.0, 0.0)
+        let nrm = bv(0.0, half, side * rise) / slope  // out of this slope
+        add_child(body, bbox(bv(span, thick, slope), th_straw(0.3, seed + 5), at + bv(0.0, rise / 2.0, side * half / 2.0) - bv(0.0, 0.04, 0.0), tilt))
+        for(rows) k:
+            let t = (float(k) + 0.55) / float(rows)
+            let c = at + bv(0.0, rise * t, side * half * (1.0 - t)) + nrm * (thick * 0.5 + 0.02 + 0.01 * float(rows - k)) - bv(0.0, 0.04, 0.0)
+            add_child(body, bbox(bv(span + 0.02 * th_rand(k + seed), 0.07, step * 1.5), th_straw(t, k + seed * 17 + int(side + 1.0) * 5), c, tilt))
+        // the eave roll and the dark cut ends under it
+        let e = at + bv(0.0, 0.0, side * half) + nrm * 0.03 - bv(0.0, 0.04, 0.0)
+        add_child(body, bcyl(0.07, 0.07, span + 0.03, th_straw(0.0, seed + int(side + 1.0)), e, bv(0.0, 0.0, 90.0), 10))
+        add_child(body, bbox(bv(span + 0.01, 0.05, 0.12), th_butts(), e + bv(0.0, -0.05, -side * 0.05)))
+        // moss low on the slope
+        for(2) i:
+            let x = (th_rand(seed * 29 + i * 3 + int(side + 1.0)) - 0.5) * (span - 0.4)
+            let t = 0.08 + 0.25 * th_rand(seed * 23 + i * 7 + int(side + 1.0))
+            let p = at + bv(x, rise * t, side * half * (1.0 - t)) + nrm * (thick + 0.04) - bv(0.0, 0.04, 0.0)
+            add_child(body, bball(0.07 + 0.05 * th_rand(seed + i * 9), th_moss(seed + i + int(side + 1.0)), p - nrm * 0.02, bv(1.8, 0.3, 1.2), tilt))
+    // the ridge: a roll of fresh straw over a block-cut skirt, pinned with crossed spars
+    let ry = at.y + rise + 0.0
+    add_child(body, bcyl(0.12, 0.12, span + 0.06, th_straw(1.0, seed), bv(at.x, ry, at.z), bv(0.0, 0.0, 90.0), 12))
+    for([ -1.0, 1.0 ]) side:
+        let tilt = bv(side * ang, 0.0, 0.0)
+        let nrm = bv(0.0, half, side * rise) / slope
+        let skirt = 0.2
+        let c = at + bv(0.0, rise - skirt * 0.5 * sin(90.0 - ang), side * skirt * 0.5 * cos(90.0 - ang)) + nrm * 0.1
+        add_child(body, bbox(bv(span + 0.04, 0.05, skirt), th_straw(0.95, seed + 3), c, tilt))
+        let n = max(2, int(span / 0.32))
+        for(n) i:
+            let x0 = -span / 2.0 + 0.1 + (span - 0.2) * float(i) / float(n)
+            let x1 = -span / 2.0 + 0.1 + (span - 0.2) * float(i + 1) / float(n)
+            let lo = rise - skirt * 0.85 * sin(90.0 - ang)
+            let lz = side * skirt * 0.85 * cos(90.0 - ang)
+            let out = nrm * 0.13
+            add_child(body, beam(at + bv(x0, lo, lz) + out, at + bv(x1, rise - 0.03, side * 0.02) + out, 0.008, th_hazel(), 4))
+            add_child(body, beam(at + bv(x1, lo, lz) + out, at + bv(x0, rise - 0.03, side * 0.02) + out, 0.008, th_hazel(), 4))
+    return rise + 0.1
+
 // A roof over a w x d box, ridge along x. Returns the ridge height.
 def bld_roof(body:MNode, arch:string, at:float3, w:float, d:float) -> float:
     let k = bkit(arch)
@@ -647,6 +762,14 @@ def bld_roof(body:MNode, arch:string, at:float3, w:float, d:float) -> float:
         holder.pos = at
         add_child(body, holder)
         return tile_roof(holder, float3_0, d / 2.0 + 0.12, w + 0.2, 26.0, bm("plaster"), bm("plaster"))
+    if k.roof == "thatch":  // (laid in courses, #197)
+        let rise = d * 0.42
+        thatch_gable(body, at, w, d, rise, int(w * 10.0 + d * 100.0))
+        for([ -1.0, 1.0 ]) side:  // gable ends
+            let g = add_child(body, slab_tri(float2 { -d / 2.0, 0.0 }, float2 { d / 2.0, 0.0 }, float2 { 0.0, rise }, 0.06, bm(k.wall)))
+            g.pos = at + bv(side * w / 2.0, 0.0, 0.0)
+            g.rot = bv(0.0, 90.0, 0.0)
+        return rise
     let mat = bm(k.roof)
     let rise = d * (if k.roof == "thatch": 0.42 else: 0.3)
     let slope = magnitude(float2 { d / 2.0 + 0.15, rise })
@@ -984,7 +1107,7 @@ def bld_bastion(arch:string, team:float3) -> BSpec:
             for(4) s:
                 let p = if s == 0: bv(0.0, g + 0.17, 0.5) elif s == 1: bv(0.5, g + 0.17, 0.0) elif s == 2: bv(0.0, g + 0.17, -0.5) else: bv(-0.5, g + 0.17, 0.0)
                 add_child(body, bbox(bv(if s % 2 == 0: 1.02 else: 0.05, 0.28, if s % 2 == 0: 0.05 else: 1.02), wood, p))
-            add_child(body, bcyl(0.0, 0.78, 0.6, bm("thatch"), bv(0.0, g + 0.62, 0.0), bv(0.0, 45.0, 0.0), 4))
+            thatch_hip(body, bv(0.0, g + 0.32, 0.0), 0.8, 0.62, 4, 45.0, 9)
             add_child(body, bbox(bv(0.26, 0.14, 0.02), bcloth(team), bv(0.12, g + 0.12, 0.53)))
             add_child(body, bbox(bv(0.05, 0.2, 0.02), slit, bv(-0.1, 0.95, 0.375)))
             top = g + 0.9
@@ -1712,7 +1835,6 @@ def wonder_stone(team:float3) -> BSpec:
 def wonder_thatch(team:float3) -> BSpec:
     let body = mnode()
     let wood = bm("wood")
-    let thatch = bm("thatch")
     let dark = bflat(html("#3a2414"), 0.8)
     let hall = mnode()
     hall.pos = bv(0.0, 0.0, -0.3)
@@ -1730,7 +1852,7 @@ def wonder_thatch(team:float3) -> BSpec:
         for([ -1.0, 1.0 ]) x:
             for([ -1.0, 1.0 ]) z:
                 add_child(hall, bbox(bv(0.07, hh + 0.04, 0.07), dark, bv(x * sz / 2.0, y + hh / 2.0, z * sz / 2.0)))
-        add_child(hall, bcyl(0.0, sz * 0.95, sz * 0.55, thatch, bv(0.0, y + hh + sz * 0.22, 0.0), bv(0.0, 45.0, 0.0), 4))
+        thatch_hip(hall, bv(0.0, y + hh - sz * 0.05, 0.0), sz * 0.95, sz * 0.55, 4, 45.0, 60 + s, false)
         y += hh + sz * 0.3
     add_child(hall, beam(bv(0.0, y + 0.05, 0.0), bv(0.0, y + 0.5, 0.0), 0.02, wood, 6))
     add_child(hall, bbox(bv(0.24, 0.16, 0.02), bcloth(team), bv(0.12, y + 0.42, 0.0)))
