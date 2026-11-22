@@ -1435,6 +1435,9 @@ var tc0 = -1
 var paused = false
 var speed = start_speed
 var frame_no = 0
+var cam_seen = float2_0  // the view as last seen, and since when it has kept still (#206: no bakes while it moves)
+var zoom_seen = 0.0
+var cam_still_t = 0.0
 var menu_saves = false     // ...showing the saved games (Load game)
 var menu_settings = false  // ...showing Settings (game/lobby.lobster)
 var quit_game = false
@@ -1651,8 +1654,12 @@ def play_match():
         let dt = gl.delta_time()
         frame_dt = dt
         fx_tick(dt)
-        vx_tick(0.006, u_x.length < 300 and gl.time() - last_battle >= 6.0)  // (the voxel units' later bakes, not in a fight)
-        akb_wall_tick()                                                      // (a wall tile with joins not seen before: one a frame)
+        if cam != cam_seen or zoom != zoom_seen:  // (the view moving: no bakes or saves, each a dropped frame, #206)
+            cam_seen = cam
+            zoom_seen = zoom
+            cam_still_t = gl.time()
+        vx_tick(0.006, u_x.length < 300 and gl.time() - last_battle >= 6.0 and gl.time() - cam_still_t >= 0.5)  // (the voxel units' later bakes, not in a fight or a pan)
+        akb_wall_tick()                                                                                         // (a wall tile with joins not seen before: one a frame)
         town_tick(dt)
         music_tick("age{clamp(ages[ME], 1, 4)}", gl.time() - last_battle < 6.0, dt)
         ambience_tick(town_level(), dt)
@@ -1679,6 +1686,12 @@ def play_match():
             let t2 = seconds_elapsed()
             let nb = bake_buildings_for(arch_of)
             print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
+            let t3 = seconds_elapsed()  // the music: each piece decoded now, not in the frame it first plays (#206)
+            if bake_progress_on and bake_live:
+                bake_progress("Tuning the music", 1.0)
+                gl.frame()
+            music_preload()
+            print "music decoded in {int((seconds_elapsed() - t3) * 1000.0)} ms"
             bake_progress_on = false
             bake_loading = false
             if net_on:  // every player loaded, then the match starts on all at once (#151 in Creel): no one freezes waiting mid-move
