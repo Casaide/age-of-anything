@@ -621,6 +621,7 @@ import .game.order_marks
 import .game.touch          // (here: it plays through the pad, and leaves the panel, top bar and minimap to the mouse)
 import .game.techtree_page  // (here: it draws with the panel's portraits and the top bar's icons)
 import .game.build_id
+import .game.turf
 import .game.lobby
 import .game.boot
 
