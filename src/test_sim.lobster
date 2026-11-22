@@ -4405,7 +4405,6 @@ def test_towers():
 
 // ------------------------------------------------------------------ camps, the market, research and ages, order queues
 
-
 // Gather percents raise the rate (Casaide/creel#179, #200): +30% wood is 30% more wood a minute, so the
 // ticks a load takes are base * 100 / 130, not base * 70 / 100 (which is +43%, and +100% would take
 // one tick). The final age's +15% axes and +15% saws with a +15% creature bonus came to 1.8x.
