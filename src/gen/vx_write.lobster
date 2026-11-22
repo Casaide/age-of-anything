@@ -37,6 +37,11 @@ def glow(name:string, rgb:string): mats.push("\"{name}\": {stringify(jset(jset(j
 // ---- shapes (on the one point, "o")
 
 var shapes = []::JV
+var swing_tag = ""  // the body's swing the shapes made now are on (#198), or ""
+
+def tagged(o:JV) -> JV:
+    if swing_tag != "": set(o, "swing", jstr(swing_tag))
+    return o
 
 // A box round c facing along n, half sizes across, thick and up (the format's); facing x (a side wall's), half is
 // given as the world's x, y, z like the rest.
@@ -47,7 +52,7 @@ def box(c:float3, half:float3, n:float3, m:string, round:float):
     set(o, "half", jv3(h))
     set(o, "round", jf(round))
     set(o, "mat", jstr(m))
-    shapes.push(o)
+    shapes.push(tagged(o))
 
 let FRONT = float3 { 0.0, 1.0, 0.0 }
 let SIDE = float3 { 1.0, 0.0, 0.0 }
@@ -61,21 +66,21 @@ def cap(a:float3, b:float3, r:float2, m:string, hard:bool):
     set(o, "r", jarr([ jf(r.x), jf(r.y) ]))
     set(o, "mat", jstr(m))
     set(o, "hard", jbool(hard))
-    shapes.push(o)
+    shapes.push(tagged(o))
 
 def ball(c:float3, r:float, m:string, hard:bool):
     let o = jset(jobj(), "ball", jpt(c))
     set(o, "r", jf(r))
     set(o, "mat", jstr(m))
     set(o, "hard", jbool(hard))
-    shapes.push(o)
+    shapes.push(tagged(o))
 
 def disc(c:float3, n:float3, r:float, thick:float, m:string):
     let o = jset(jobj(), "disc", jpt(c))
     set(o, "n", jv3(n))
     set(o, "r", jarr([ jf(r), jf(thick) ]))
     set(o, "mat", jstr(m))
-    shapes.push(o)
+    shapes.push(tagged(o))
 
 // A gable roof over a w x d (half sizes) box from eave height z0 up `rise`, the ridge along x (or y), overhanging by
 // `over`: two sloped planes (the material's pattern lays the tiles or ripples down them), a ridge, and the gable ends
