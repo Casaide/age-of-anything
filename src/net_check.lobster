@@ -104,6 +104,7 @@ if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' bec
     lib_load("../data")
     use_mods()
     let room = room_open(port, "net_check", if sides > 2: "reed_meadow_2v2" else: "reed_meadow")
+    room.fixed = saved_at > 0  // (a saved game: the armies are the save's, #188)
     hosted.push(room)
     let door = room.door
     if has_s(args, "swarm"):  // (online too: a join code through the sidecar)
@@ -123,6 +124,12 @@ if role == "host":  // (through the door: a scan's '?' gets an answer, a 'J' bec
             assert hold or seconds_elapsed() - t_wait < 60.0
             room_tick(room)
             tcp.wait(door.listener, nil, false, 0.02)
+        if room.fixed:  // (#188) a while for the joiner's words to come: they must not change its side
+            let t_in = seconds_elapsed()
+            while seconds_elapsed() - t_in < 1.0:
+                room_tick(room)
+                tcp.wait(door.listener, nil, false, 0.02)
+            for(room.sides) rs, k: assert rs.prompt == words[k % words.length]
         let seen = map(room.sides) rs: rs.who + ":" + rs.prompt
         print "host: the room: {seen}"
     else:
@@ -165,6 +172,7 @@ let levels = map(sides) k: if k % 2 == 1: "easy" else: "hard"  // (the AIs' leve
 if role != "host" and in_room:                                 // (#519) in the room: take the side asked for, type an army, wait for the start
     let g = guest_new(link)
     var asked = false
+    var saw_fixed = false
     while g.world == "":
         assert g.error == ""
         assert seconds_elapsed() - t_wait < 60.0
@@ -172,7 +180,10 @@ if role != "host" and in_room:                                 // (#519) in the 
         if g.side >= 0 and want_side >= 0 and g.side != want_side and not asked:
             guest_take(g, want_side)
             asked = true
-        if g.side >= 0 and (want_side < 0 or g.side == want_side): guest_prompt(g, words[g.side % words.length], 0)
+        let fixed = gbool(g.lobby, "fixed", false)  // (#188: a saved game's room; our words must not reach it)
+        if fixed and not saw_fixed: print "join: the room is fixed"
+        saw_fixed = saw_fixed or fixed
+        if g.side >= 0 and (want_side < 0 or g.side == want_side): guest_prompt(g, if fixed: "giant ducks" else: words[g.side % words.length], 0)
         tcp.wait(nil, link.sock, false, 0.02)
     me = g.side
     seats = g.seats

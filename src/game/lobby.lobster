@@ -68,6 +68,7 @@ var fe_guests = []::Guest      // the guest page's link to a host's room
 var fe_join_what = ""          // what the joiner joins: a join code or an address
 var fe_joining = false         // the battle setup is a joiner's view of a host's room (#521)
 var fe_my_side = -1            // the side the joiner holds, as last seen
+var fe_host_save = ""          // a saved game hosted (#174): its path
 var fe_guest_words = ""        // captures: the joiner's army, typed on the side it's given
 var fe_code_copied = ""        // the join code last put on the clipboard
 var fe_note = ""               // a line at the foot (the saves page, the network page)
@@ -412,6 +413,11 @@ def fe_draw_map(at:float2, size:float2, id:string, m:JV):
             gl.render_mesh(fe_map_mesh(id, m))
     gl.set_shader("color")
 
+// A saved game's setup, hosted or joined (#188): the save is the match, so its map, mode and armies stay as they are.
+def fe_setup_fixed() -> bool:
+    if fe_host_save != "": return true
+    return fe_joining and fe_guests.length > 0 and gbool(fe_guests[0].lobby, "fixed", false)
+
 def fe_team_of(i:int, n:int) -> int:
     let mteams = glist(fe_map_json, "teams")
     if i < mteams.length: return as_int(mteams[i])
@@ -719,9 +725,10 @@ def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:fl
     // the dice, then the prompt
     let ph = (if compact: 48.0 else: 68.0) * fe_k
     let mine = if fe_joining: fe_guests.length > 0 and i == fe_guests[0].side else: not fe_player_side(i)
-    if not mine:  // (a joiner's on the host, everyone else's on a joiner: the words come from them)
+    if not mine or fe_setup_fixed():  // (a joiner's on the host, everyone else's on a joiner: the words come from them; a save's are its own)
         fe_well(float2 { x, y }, float2 { w, ph })
         ui_text_f(float2 { x + 14.0 * fe_k, y + ph / 2.0 - 12.0 * fe_k }, if s.typed != "": s.typed elif fe_joining: "the host is choosing..." else: "the player is choosing...", fz(if compact: 18.0 else: 22.0), lk.dim, 1, 0.0)
+        if fe_setup_fixed() and fe_over(float2 { x, y }, float2 { w, ph }): fe_tip([ "The saved game\'s army: it plays on as it was saved" ])
     else:
         if fe_dice(float2 { x, y }, ph): fe_roll(i)
         fe_box(i, float2 { x + ph + 10.0 * fe_k, y }, float2 { w - ph - 10.0 * fe_k, ph }, s.typed, "...or describe your race", fz(if compact: 20.0 else: 25.0), false)
@@ -861,8 +868,6 @@ def fe_room_open():
 
 // Host a saved game (#174): the save's map, sides, teams and armies' names on the setup page, the room open; joiners take
 // an AI's side, and at Start the save is the match. What's wrong, or "" once hosting.
-var fe_host_save = ""
-
 def fe_host_saved(path:string) -> string:
     let data = read_file(path, true)
     if not data: return "No such save."
@@ -900,6 +905,7 @@ def fe_room_tick():
     let r = fe_rooms[0]
     r.map_id = fe_maps[fe_map_k]
     r.mode = lobby_mode
+    r.fixed = fe_host_save != ""
     room_sides(r, map(fe_sides) side: side.team, map(fe_sides.length) i: fe_prompt(i), map(fe_sides) side: side.reroll)
     room_tick(r)
     for(r.sides) rs, i:
@@ -969,8 +975,10 @@ def fe_guest_sync() -> string:
     if map_id != "" and map_id != fe_maps[fe_map_k] and str_index(fe_maps, map_id) >= 0: fe_set_map(str_index(fe_maps, map_id))
     let mode = str_index(map(fe_modes) m: m[0], gstr(g.lobby, "mode", ""))
     if mode >= 0: fe_mode_k = mode
-    if g.side != fe_my_side and g.side >= 0 and g.side < fe_sides.length:  // (a side taken: our army goes with us)
-        if fe_my_side >= 0 and fe_my_side < fe_sides.length:
+    let fixed = fe_setup_fixed()
+    if g.side != fe_my_side and g.side >= 0 and g.side < fe_sides.length:  // (a side taken: our army goes with us, but for a save's)
+        if fixed: fe_my_side = g.side                                      // (a save's side keeps its army)
+        elif fe_my_side >= 0 and fe_my_side < fe_sides.length:
             let was = fe_sides[fe_my_side]
             let now = fe_sides[g.side]
             now.typed = was.typed
@@ -988,11 +996,11 @@ def fe_guest_sync() -> string:
             s.team = gint(sd, "team", s.team)
             let words = gstr(sd, "prompt", "")
             let reroll = gint(sd, "reroll", 0)
-            if i != g.side and words != "" and (s.typed != words or s.reroll != reroll):
+            if (i != g.side or fixed) and words != "" and (s.typed != words or s.reroll != reroll):
                 s.typed = words
                 s.reroll = reroll
                 fe_regen(i)
-    if g.side >= 0 and g.side < fe_sides.length: guest_prompt(g, fe_prompt(g.side), fe_sides[g.side].reroll)
+    if g.side >= 0 and g.side < fe_sides.length and not fixed: guest_prompt(g, fe_prompt(g.side), fe_sides[g.side].reroll)
     return ""
 
 def fe_setup_page(dt:float) -> string:
@@ -1033,7 +1041,7 @@ def fe_setup_page(dt:float) -> string:
     var y = card_y + 26.0
     ui_text_c(mid * fe_k, y * fe_k, "BATTLEFIELD", fz(14.0), fe_caption(lk), 3, 0.0)
     y += 26.0
-    if not fe_joining:  // (a joiner's map and mode are the host's)
+    if not fe_joining and not fe_setup_fixed():  // (a joiner's map and mode are the host's; a save's are its own)
         if ui_button(D(cx + 30.0, y), D(46.0, 46.0), "<", false): fe_set_map(fe_map_k - 1)
         if ui_button(D(cx + centre_w - 76.0, y), D(46.0, 46.0), ">", false): fe_set_map(fe_map_k + 1)
     let name = gstr(fe_map_json, "name", fe_maps[fe_map_k])
@@ -1047,7 +1055,7 @@ def fe_setup_page(dt:float) -> string:
     let starts = glist(fe_map_json, "starts").length
     ui_text_c(mid * fe_k, y * fe_k, "{gint(fe_map_json, "width", 0)} x {gint(fe_map_json, "height", 0)} tiles  ·  " + (if starts == 2: "1 v 1" else: "{starts / 2} v {starts - starts / 2}"), fz(16.0), lk.dim, 0, 0.0)
     y += 32.0
-    if not fe_joining:
+    if not fe_joining and not fe_setup_fixed():
         if ui_button(D(cx + 30.0, y), D(36.0, 36.0), "<", false): fe_mode_k = (fe_mode_k + fe_modes.length - 1) % fe_modes.length
         if ui_button(D(cx + centre_w - 66.0, y), D(36.0, 36.0), ">", false): fe_mode_k = (fe_mode_k + 1) % fe_modes.length
     ui_text_c(mid * fe_k, (y + 6.0) * fe_k, "Mode: " + fe_modes[fe_mode_k][1], fz(19.0), lk.text, 0, 0.0)
@@ -1086,7 +1094,7 @@ def fe_setup_page(dt:float) -> string:
                     for(col) i, r:
                         if f.y >= (row_y + float(r) * (each + 30.0)) * fe_k: k = i
         if fe_joining: k = fe_my_side  // (a joiner rolls only its own)
-        if k >= 0: fe_roll(k)
+        if k >= 0 and not fe_setup_fixed(): fe_roll(k)
     if gl.button("controller_start") == 1: go = "start"
     if go == "start" and held: go = ""
     if gl.button("controller_b") == 1 or (gl.button("escape") == 1 and fe_field < 0): go = "back"

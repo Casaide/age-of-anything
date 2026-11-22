@@ -19,6 +19,7 @@ room() {  # room <name> <sides> <the side the joiner takes> [save:<ticks>: a sav
 	h="$(grep -ho 'last hash [0-9-]*' "$logs/$1.host")"
 	j="$(grep -ho 'last hash [0-9-]*' "$logs/$1.join")"
 	took="$(grep -c "join: took side $3 " "$logs/$1.join")"
+	case "$4" in save:*) grep -q "join: the room is fixed" "$logs/$1.join" || { echo "FAILED: $1: the joiner never saw a fixed room"; failed=1; } ;; esac
 	if [ -z "$h" ] || [ "$h" != "$j" ] || [ "$took" != 1 ]; then
 		echo "FAILED: $1: host '$h', joiner '$j', joiner on side $3: $took"
 		failed=1
