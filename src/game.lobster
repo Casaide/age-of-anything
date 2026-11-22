@@ -144,6 +144,7 @@ var zoom_arg = 0.0                    // zoom:<n>: the camera at that zoom at th
 var zoom_start = 0.0                  // the zoom a match starts at, before its rules' zoom_in
 var density_arg = 0.0                 // density:<z>: prebake at that art density (prebake.sh: the base, then a Retina Mac's 2.4, #358)
 var hurt_pct = -1                     // hurt:<percent>: your buildings start at that much of their hit points (captures of fire)
+var loadsave_arg = ""                 // loadsave:<path>: straight into that saved match (with lobby; Creel's MCP captures, #196)
 var page_arg = ""                     // page:<name>: the lobby opened on that page (title, setup, lab, saves, net; boot: the boot screen), captures with shot:
 var lab_arg = false                   // lab: the lobby with races:A|B typed in, a picture (shot:) after a second, then quit
 var tree_arg = false                  // tree: the tech tree page open from the start (captures)
@@ -220,6 +221,7 @@ for(args) a, k:
             tree_hover_arg = val
         if a == "lab": lab_arg = true
         if key == "page": page_arg = val
+        if key == "loadsave": loadsave_arg = val
         if key == "hurt": hurt_pct = string_to_int(val)
         if key == "raze": raze_at = string_to_float(val)
         if key == "army": army_n = string_to_int(val)
@@ -1883,7 +1885,10 @@ while not quit_app and not bake_quit:
             startup_frame("Loading the armies...", 0.9)
             vx_init()
             build_label_now(net_version())  // (git asked here too, not in the title's first frame)
-        front_choice = run_front(if lab_arg: "lab" elif page_arg != "": page_arg else: "title", if races_arg != "": lobby_prompts else: [])
+        if loadsave_arg != "":
+            front_choice = "load:" + loadsave_arg
+            loadsave_arg = ""
+        else: front_choice = run_front(if lab_arg: "lab" elif page_arg != "": page_arg else: "title", if races_arg != "": lobby_prompts else: [])
         if front_choice == "": break
     if not make_match():
         if not net_backed_out: break

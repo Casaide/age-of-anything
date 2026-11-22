@@ -1,0 +1,17 @@
+{
+  "name": "age-of-anything",
+  "lobster": "~/Dev/lobster/bin/lobster",
+  "cwd": "src",
+  "server": "mcp_server.lobster",
+  "instructions": "A headless Age of Anything match, the same sim the game plays. creel_start {\"args\": {\"mods\": [\"steading\"]}} for a Steading town; creel_names maps kinds and resources to names; positions are in sim units (1000 a tile).",
+  "start_help": "args: mods (e.g. [\"steading\"]), rules (default the first mod's, else \"default\"), map (default steading_vale with Steading, else reed_meadow), seed (2026), races (one prompt a player, e.g. [\"romans\", \"greeks\"]), bots (the players a bot plays: none with Steading, else all but player 0).",
+  "capture": ["sh", "../play.sh", "lobby", "mods:{start.mods}", "loadsave:{save}", "mute", "windowed", "window:1280,720", "shot:{png}", "at:3"],
+  "capture_help": "Extra options as args, e.g. {\"look\": \"40,30\"} for the camera on a tile.",
+  "tests": {
+    "unit": ["{lobster}", "run_tests.lobster"],
+    "sim": ["{lobster}", "test_sim.lobster"],
+    "steading": ["{lobster}", "test_steading.lobster"],
+    "quick": ["sh", "-c", "cd .. && ./tests/batch.sh --quick"]
+  },
+  "timeout_s": 900
+}
