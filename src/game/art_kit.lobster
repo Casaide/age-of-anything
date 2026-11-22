@@ -150,4 +150,28 @@ def bake_doodads() -> int:
         ak_bake("yard{s + 1}", yard(s + 1, 0), true)
         ak_bake("garden{s + 1}", garden(s + 1, 0), false)
     ak_bake("tether_post", tether_post(), true)
+    for(br_id.length) k:
+        for(2) broken:
+            let len, wide, along = bridge_shape(k)
+            let name = bridge_frame_name(k, broken)
+            ak_bake(name, bridge_turned(1700 + len, len, broken, wide, along), true)
     return ak_baked
+
+// Map bridges (#194): one bake per size the match's bridges use (length and width in tiles), along sim x or along sim y
+// ("^z"), standing or broken (".1"). A bridge runs along its longer side, along y when square.
+def bridge_shape(k:int) -> int, int, int:
+    let sx = (br_x1[k] - br_x0[k] + 1) / TILE
+    let sy = (br_y1[k] - br_y0[k] + 1) / TILE
+    return max(sx, sy), min(sx, sy), if sy >= sx: 1 else: 0
+
+def bridge_frame_name(k:int, broken:int) -> string:
+    let len, wide, along = bridge_shape(k)
+    return "bridge{len}x{wide}{if along == 1: "^z" else: ""}{if broken == 1: ".1" else: ""}"
+
+def bridge_turned(seed_value:int, len:int, broken:int, wide:int, along:int) -> MNode:
+    let m = bridge(seed_value, len, 0, broken, wide)
+    if along == 0: return m
+    let n = mnode()
+    n.rot = float3 { 0.0, 90.0, 0.0 }  // (running along sim y)
+    add_child(n, m)
+    return n

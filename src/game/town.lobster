@@ -394,6 +394,7 @@ def town_cell_free(m:float2) -> bool:  // milli-tiles
 def collect_town():
     collect_cracks()
     collect_tethers()
+    collect_bridges()
     for(b_id.length) b:
         let cell = b_cy[b] * W + b_cx[b]
         if teams[b_owner[b]] == teams[ME] or fog[ME][cell] != 0:
@@ -527,6 +528,19 @@ def mount_recipe(p:int) -> JV?:
             set(out, "creature", at(m, "creature"))
             return out
     return nil
+
+// The map's bridges, flat under the units (walked across), standing or broken (#194).
+def collect_bridges():
+    for(br_id.length) k:
+        let cx = float(br_x0[k] + br_x1[k] + 1) * 0.5
+        let cy = float(br_y0[k] + br_y1[k] + 1) * 0.5
+        let c = clamp(int(cy) / TILE, 0, H - 1) * W + clamp(int(cx) / TILE, 0, W - 1)
+        if fog_shows_land(fog[ME][c]):
+            let f = frame_index(bridge_frame_name(k, if br_up[k] == 1: 0 else: 1))
+            if f >= 0:
+                let at = iso(cx, cy)
+                let shade = fog_prop_shade(fog[ME][c])
+                add(f, at.x, at.y - lift_at(cx, cy) * 1.5, -100000.0 + at.y, float4 { 1.0, 1.0, 1.0, shade })
 
 def tether_spot(b:int) -> float2: return float2 { float((b_cx[b] + b_sx[b]) * 1000 + 350), (float(b_cy[b]) + float(b_sy[b]) * 0.5) * 1000.0 }
 
