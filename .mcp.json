@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "age-of-anything": { "command": "node", "args": ["creel/mcp/creel-mcp.js", "creel-mcp.json"] }
+  }
+}
