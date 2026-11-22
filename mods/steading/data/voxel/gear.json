@@ -1327,7 +1327,7 @@
    "flags": [
     "armour"
    ],
-   "_doc": "a serf's tunic in the team's colour down to mid-thigh, his trousers showing under it (Dominic, 2026-11-22: one block of colour looked wrong), a rope belt, and a wicker basket on his back: the one who carries (#156) The basket is left off while he carries a basket load: his basket is the one heaped.",
+   "_doc": "a serf's tunic in the team's colour short, just over the hips, his trousers showing under it (Dominic, 2026-11-22: one block of colour looked wrong), a rope belt, and a wicker basket on his back: the one who carries (#156) The basket is left off while he carries a basket load: his basket is the one heaped.",
    "fits": {
     "*": [
      {
@@ -1335,7 +1335,7 @@
        "hip",
        -1.0,
        0.1,
-       -3.2
+       1.2
       ],
       "to": [
        "chest",
@@ -1354,7 +1354,7 @@
        "hip",
        1.0,
        0.1,
-       -3.2
+       1.2
       ],
       "to": [
        "chest",
@@ -1373,7 +1373,7 @@
        "hip",
        0,
        1.3,
-       -3.2
+       1.2
       ],
       "to": [
        "chest",
@@ -1392,7 +1392,7 @@
        "hip",
        0,
        -1.3,
-       -3.2
+       1.2
       ],
       "to": [
        "chest",
