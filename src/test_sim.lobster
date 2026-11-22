@@ -4405,6 +4405,22 @@ def test_towers():
 
 // ------------------------------------------------------------------ camps, the market, research and ages, order queues
 
+
+// Gather percents raise the rate (Casaide/creel#179, #200): +30% wood is 30% more wood a minute, so the
+// ticks a load takes are base * 100 / 130, not base * 70 / 100 (which is +43%, and +100% would take
+// one tick). The final age's +15% axes and +15% saws with a +15% creature bonus came to 1.8x.
+def test_gather_pct():
+    new_world("flat_test", races0, rules0, [])
+    let w = res_of("wood")
+    let base = base_gather_ticks[w]
+    let pct0 = (base * 100 / max(1, gather_ticks[0][w])) - 100  // player 0's own wood bonus, if it has one
+    check(pct0 == 0, "gather pct: player 0 starts with no wood bonus (ticks {gather_ticks[0][w]} of {base})")
+    give(0, "stone_axes")
+    give(0, "saws")
+    check(gather_ticks[0][w] == base * 100 / 130, "gather pct: axes and saws (+15%, +15%) make wood come 30% faster: {base * 100 / 130} ticks a log ({gather_ticks[0][w]})")
+    give_fx(0, "test.double", [ fx_of("\{\"gather\": \"wood\", \"pct\": 70\}") ])
+    check(gather_ticks[0][w] == base / 2, "gather pct: +100% in all is twice as fast, half the ticks ({base / 2}), never instant ({gather_ticks[0][w]})")
+
 // The builder of a lumber camp goes to gather wood.
 def test_camp_gather():
     new_world("flat_test", races0, rules0, [])
@@ -5471,7 +5487,7 @@ def test_save_load():
 let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "demolish", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
               "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "walk_over_site", "gatherers", "hands_off", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "eating", "idle_wait", "sapper_sling", "sling_group", "gates", "diagonal_wall", "diagonal_gates",
               "walls", "siege_ways", "tower_ride", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
-              "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
+              "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "gather_pct", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
               "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "wonder", "save_load", "match", "match_b", "match_flipped" ]
 
@@ -5525,6 +5541,7 @@ def run_part(name:string):
     elif name == "builder_back_to_work": test_builder_back_to_work()
     elif name == "no_dark_picks": test_no_dark_picks()
     elif name == "wood_spots": test_wood_spots()
+    elif name == "gather_pct": test_gather_pct()
     elif name == "rally_gather": test_rally_gather()
     elif name == "build_queue": test_build_queue()
     elif name == "drop_off": test_drop_off()
