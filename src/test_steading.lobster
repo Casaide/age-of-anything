@@ -392,7 +392,8 @@ def play() -> int:
     // (the genre's idle trade, #158: at its workplace with nothing to do, it goes in and rests, out of sight)
     print "steading: idle trades at their door: {idle_in} ticks inside, {idle_out} out in the open; {hidden_walk} ticks walking while put inside"
     print "steading: idle serfs: {idle_stand} ticks standing, {idle_walk} walking with no job"
-    check(idle_stand > 0 and idle_walk * 100 <= (idle_stand + idle_walk) * 2 and idle_far <= 3 * TILE,
+    // (with solid bodies a walker pushes an idle serf off its line: short steps, up to 5% of idle time; Dominic, 2026-11-22)
+    check(idle_stand > 0 and idle_walk * 100 <= (idle_stand + idle_walk) * 5 and idle_far <= 3 * TILE,
           "steading: an idle serf stands where it finished, as in the genre, stepping aside off a doorway or another\'s spot but never walking off to wait ({idle_walk} of {idle_stand + idle_walk} idle ticks walking, at most {idle_far} milli-tiles in one go)")
     print "steading: the panel of an idle trade: {idle_said.slice(0, min(6, idle_said.length))}"
     check(idle_said.length > 0 and (filter(idle_said) s: find_string(s, " inside") < 0).length == 0,
