@@ -116,10 +116,10 @@
   "doors_clear": true,
   "roads": [
    {
-    "_doc": "the genre's road (#138): no quicker to walk (a serf walks 1 tile a second anywhere), but paths keep to it (crossing it costs a third of open ground), walked tile to tile down its middle, and two passing on it trade places instead of shoving",
+    "_doc": "the genre's road (#138): no quicker to walk (a serf walks 1 tile a second anywhere), but paths keep to it (crossing it costs a tenth of open ground or fields: townsfolk leave it only at the end of a trip, #186), walked tile to tile down its middle",
     "name": "road",
     "speed_pct": 100,
-    "cost_pct": 34,
+    "cost_pct": 10,
     "middle": true,
     "style": "cobble"
    }
