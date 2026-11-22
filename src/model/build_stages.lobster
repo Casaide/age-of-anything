@@ -73,10 +73,11 @@ def akb_hide(body:MNode, stage:int) -> float:
     var top = 0.0
     for(boxes) b:
         let at = (if stage < 2: b.hi.y else: (b.lo.y + b.hi.y) * 0.5) - alo.y
-        // (before its walls: nothing that hangs on them, a lit window or a door's studs low enough to pass, floating)
+        // (before its walls: nothing that hangs on them, a door's studs low enough to pass, floating)
         let m = b.node.mat
         let lit = m and (m.unshaded or m.emission != float3_0)
-        let hangs = stage < 2 and (lit or (b.lo.y - alo.y > 0.15 * h and b.hi.y - b.lo.y < 0.25 * h))
+        // (a lit window or lantern stays dark until it's finished: nobody lives in a site, #208)
+        let hangs = lit or (stage < 2 and b.lo.y - alo.y > 0.15 * h and b.hi.y - b.lo.y < 0.25 * h)
         let roofed = find_string(b.node.meta, "roof") >= 0 or b.lo.y >= eave - 0.01
         if at > cut * h or hangs or roofed: b.node.visible = false
     // (and nothing left hanging in the air: a part whose support is held back waits too)
