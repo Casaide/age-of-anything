@@ -95,6 +95,7 @@ import .game.paths
 import .game.fx
 import .game.topbar_fit
 import .game.text_field
+import .game.edge_scroll
 import .game.ui
 import .game.view_state
 import .game.text_cache
