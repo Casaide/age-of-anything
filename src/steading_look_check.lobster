@@ -114,6 +114,8 @@ for([ "tilled", "wheat_sown", "wheat_ripe", "vines_young", "vines_ripe" ]) t:
     expect(pr != "" and pr != "tuft" and pr != "bush" and pr != "crops", "{t} has a field prop of its own, not the meadow\'s ({pr})")
     expect((find(field_props) x: x == pr) < 0, "{t}\'s prop {pr} is no other stage\'s")
     field_props.push(pr)
+// The low stages lie on the ground (#186): a serf on a field is drawn over the earth and the shoots, never sunk in them.
+for([ "tilled", "wheat_sown" ]) t: expect(gbool(gobj(field_terrain, t), "prop_flat", false), "{t}\'s prop lies flat, under serfs")
 // Each workshop that sounds busy names a building of the mod and a loop it brings (#121): its sound in audio.json and
 // the rendered WAV in the mod's audio.
 let work_sounds = gobj(lib_data("audio.json"), "buildings")

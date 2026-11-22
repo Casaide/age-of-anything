@@ -106,15 +106,20 @@
   "foundation_pct": 30,
   "goods_after_foundation": true,
   "_goods_after_foundation_doc": "As in the genre (#41): a builder levels the plot first (its foundation share, foundation_pct), and only then are its goods fetched, so serfs never carry to a plot that isn't ready (the engine's rule, creel #138).",
-  "inside_ticks": 30,
+  "inside_ticks": 10,
+  "door_step": 14,
+  "idle_aside": true,
+  "solid_bodies": true,
+  "_solid_bodies_doc": "As in the genre (#186): nobody ever walks through anybody, on a road or off it; two meeting keep right and pass side by side, and a crowd queues, which is what makes a second road worth laying.",
+  "_door_step_doc": "As in the genre (#186): a serf steps in through the door where it's seen, is out of sight half a second, and steps back out (14 ticks each way, at a walk); at a building site it puts the goods down at the door and never goes in.",
   "doors": true,
   "doors_clear": true,
   "roads": [
    {
-    "_doc": "the genre's road (#138): no quicker to walk (a serf walks 1 tile a second anywhere), but paths keep to it (crossing it costs a third of open ground), walked tile to tile down its middle, and two passing on it trade places instead of shoving",
+    "_doc": "the genre's road (#138): no quicker to walk (a serf walks 1 tile a second anywhere), but paths keep to it (crossing it costs a tenth of open ground or fields: townsfolk leave it only at the end of a trip, #186), walked tile to tile down its middle",
     "name": "road",
     "speed_pct": 100,
-    "cost_pct": 34,
+    "cost_pct": 10,
     "middle": true,
     "style": "cobble"
    }

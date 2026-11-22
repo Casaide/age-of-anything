@@ -83,6 +83,8 @@ var stashed_wonder_ids = []::int
 var stashed_wonder_since = []::int
 var stashed_wonder_owners = []::int
 var stashed_mode_hold = -1
+var stashed_solid_px = []::int
+var stashed_solid_py = []::int
 var stashed_r_splash_friend_pct = 100
 var stashed_extras = dictionary<string, [int]>(64)
 var stashed_W = 0
@@ -329,6 +331,9 @@ var stashed_r_stocked = 0
 var stashed_r_foundation_pct = 0
 var stashed_r_goods_after_foundation = 0
 var stashed_r_inside_ticks = 0
+var stashed_r_door_step = 0
+var stashed_r_idle_aside = 0
+var stashed_r_solid = 0
 var stashed_r_doors = 0
 var stashed_r_carrier_load = 1
 var stashed_r_carrier_slots = []::string
@@ -638,6 +643,9 @@ def reset_world():
     wonder_since = []::int
     wonder_owners = []::int
     mode_hold = -1
+    // lib/movement.lobster
+    solid_px = []::int
+    solid_py = []::int
     // lib/siege.lobster
     r_splash_friend_pct = 100
     // lib/state.lobster
@@ -886,6 +894,9 @@ def reset_world():
     r_foundation_pct = 0
     r_goods_after_foundation = 0
     r_inside_ticks = 0
+    r_door_step = 0
+    r_idle_aside = 0
+    r_solid = 0
     r_doors = 0
     r_carrier_load = 1
     r_carrier_slots = []::string
@@ -1187,6 +1198,8 @@ def stash_world():
     stashed_wonder_since = wonder_since
     stashed_wonder_owners = wonder_owners
     stashed_mode_hold = mode_hold
+    stashed_solid_px = solid_px
+    stashed_solid_py = solid_py
     stashed_r_splash_friend_pct = r_splash_friend_pct
     stashed_extras = extras
     stashed_W = W
@@ -1433,6 +1446,9 @@ def stash_world():
     stashed_r_foundation_pct = r_foundation_pct
     stashed_r_goods_after_foundation = r_goods_after_foundation
     stashed_r_inside_ticks = r_inside_ticks
+    stashed_r_door_step = r_door_step
+    stashed_r_idle_aside = r_idle_aside
+    stashed_r_solid = r_solid
     stashed_r_doors = r_doors
     stashed_r_carrier_load = r_carrier_load
     stashed_r_carrier_slots = r_carrier_slots
@@ -1727,6 +1743,8 @@ def unstash_world():
     wonder_since = stashed_wonder_since
     wonder_owners = stashed_wonder_owners
     mode_hold = stashed_mode_hold
+    solid_px = stashed_solid_px
+    solid_py = stashed_solid_py
     r_splash_friend_pct = stashed_r_splash_friend_pct
     extras = stashed_extras
     W = stashed_W
@@ -1973,6 +1991,9 @@ def unstash_world():
     r_foundation_pct = stashed_r_foundation_pct
     r_goods_after_foundation = stashed_r_goods_after_foundation
     r_inside_ticks = stashed_r_inside_ticks
+    r_door_step = stashed_r_door_step
+    r_idle_aside = stashed_r_idle_aside
+    r_solid = stashed_r_solid
     r_doors = stashed_r_doors
     r_carrier_load = stashed_r_carrier_load
     r_carrier_slots = stashed_r_carrier_slots

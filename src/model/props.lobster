@@ -524,12 +524,17 @@ def crops(seed_value:int) -> MNode:
 // A field as the genre shows it (#154), each stage told apart at game size: tilled earth in ridged rows (furrows), the
 // same rows with green shoots up them (shoots), and ripe wheat standing gold to the edges (wheat). One cell each.
 def field_rows(n:MNode, rng:Pcg):
-    add_child(n, box(float3 { 0.98, 0.03, 0.98 }, plain(html("#5a3e24")), float3 { 0.0, 0.015, 0.0 }))
-    let ridge = [ plain(html("#7a5634")), plain(html("#70502f")) ]
+    // (bare earth to the cell's edges, so fields side by side are one field, and thin, so it lies on the ground; each
+    // ridge heaped clods of three earths, so the rows read as ploughed soil, not boards)
+    add_child(n, box(float3 { 1.0, 0.012, 1.0 }, plain(html("#4c3420")), float3 { 0.0, 0.006, 0.0 }))
+    let soil = [ plain(html("#7a5634")), plain(html("#6a4a2c")), plain(html("#84623c")) ]
     for(6) row:
-        let z = -0.4 + float(row) * 0.16
-        add_child(n, blob(float3 { 0.48, 0.03, 0.05 }, ridge[row % 2], float3 { 0.0, 0.035, z }))
-        for(4): add_child(n, blob(float3 { 0.018, 0.012, 0.016 }, plain(html("#4a3220")), float3 { randf_range(rng, -0.45, 0.45), 0.05, z + randf_range(rng, -0.03, 0.03) }))
+        let z = -0.42 + float(row) * 0.168
+        for(10) k:
+            let x = -0.45 + float(k) * 0.1 + randf_range(rng, -0.02, 0.02)
+            let r = float3 { randf_range(rng, 0.06, 0.08), randf_range(rng, 0.018, 0.03), randf_range(rng, 0.04, 0.055) }
+            add_child(n, blob(r, soil[int(randf(rng) * 3.0) % 3], float3 { x, 0.012, z + randf_range(rng, -0.012, 0.012) }))
+        for(4): add_child(n, blob(float3 { 0.018, 0.012, 0.016 }, plain(html("#3e2a18")), float3 { randf_range(rng, -0.45, 0.45), 0.03, z + randf_range(rng, -0.03, 0.03) }))
 
 def furrows(seed_value:int) -> MNode:
     let rng = grng(seed_value)
@@ -552,7 +557,7 @@ def shoots(seed_value:int) -> MNode:
 def wheat(seed_value:int) -> MNode:
     let rng = grng(seed_value)
     let n = mnode()
-    add_child(n, box(float3 { 0.98, 0.03, 0.98 }, plain(html("#6e5232")), float3 { 0.0, 0.015, 0.0 }))
+    add_child(n, box(float3 { 1.0, 0.012, 1.0 }, plain(html("#6e5232")), float3 { 0.0, 0.006, 0.0 }))
     let stalk = [ plain(html("#c8a040")), plain(html("#b8902e")), plain(html("#d8b450")) ]
     let ear = [ plain(html("#e6c460")), plain(html("#d0a844")) ]
     for(9) row:
@@ -571,7 +576,7 @@ def wheat(seed_value:int) -> MNode:
 def vines(seed_value:int, ripe:bool) -> MNode:
     let rng = grng(seed_value)
     let n = mnode()
-    add_child(n, box(float3 { 0.98, 0.03, 0.98 }, plain(html("#5e4a30")), float3 { 0.0, 0.015, 0.0 }))
+    add_child(n, box(float3 { 1.0, 0.012, 1.0 }, plain(html("#5e4a30")), float3 { 0.0, 0.006, 0.0 }))
     let stake = plain(html("#6a4a2e"))
     let leaf = [ plain(html("#4e7a2a")), plain(html("#3e6a24")), plain(html("#62903a")) ]
     let grape = [ plain(html("#3a1e4a")), plain(html("#4e2a5e")) ]

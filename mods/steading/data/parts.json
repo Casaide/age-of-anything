@@ -1338,5 +1338,105 @@
   ],
   "note": "a fisherman's rod: a long cane, the line hanging from its tip",
   "noun": "Butcher"
+ },
+ {
+  "id": "body.human",
+  "drape_scale": 85,
+  "_drape_doc": "capes (on its own cape.cloth and cape.leaf sockets) hang 85% long on the heroic build (D-173): full length, the stride went through them",
+  "slot": "body",
+  "noun": "Folk",
+  "points": 3,
+  "price_points": 4,
+  "cost_mix": {
+   "food": 100
+  },
+  "tags": [
+   "infantry"
+  ],
+  "stats": {
+   "hp": 28,
+   "speed": 10,
+   "armour": {
+    "melee": 0,
+    "pierce": 0
+   },
+   "radius": 150
+  },
+  "shapes": [
+   {
+    "t": "poly",
+    "p": [
+     [
+      -6,
+      -26
+     ],
+     [
+      6,
+      -26
+     ],
+     [
+      7,
+      -8
+     ],
+     [
+      -7,
+      -8
+     ]
+    ],
+    "ch": "cloth"
+   }
+  ],
+  "sockets": {
+   "head": [
+    0,
+    -26
+   ],
+   "hand_r": [
+    7,
+    -20
+   ],
+   "hand_l": [
+    -6,
+    -20
+   ],
+   "torso": [
+    0,
+    -17
+   ],
+   "back": [
+    -6,
+    -22
+   ]
+  },
+  "torso_scale": [
+   0.95,
+   1.25
+  ],
+  "legs": {
+   "part": "leg.human",
+   "poses": 8,
+   "gait": {
+    "swing": 0.0,
+    "cadence": 1.0,
+    "bob": 0.4,
+    "rock": 0.0
+   },
+   "_poses_doc": "the heroic leg bent at the knee and ankle, baked in 8 walk steps (D-179; leg.human@w<i>_<n>, unit_models.gd human_joints): the knee bending, the foot rolling through, the body riding on the planted foot",
+   "anchors": [
+    [
+     -3,
+     -8,
+     0,
+     -1
+    ],
+    [
+     3,
+     -8,
+     3.14,
+     1
+    ]
+   ]
+  },
+  "_radius_doc": "Steading (#186): a person's body is as wide as it's drawn, about a third of a tile, so two pass side by side on a road and nobody walks through anybody (the base game's is a foot soldier's 300)"
  }
 ]

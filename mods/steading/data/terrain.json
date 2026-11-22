@@ -1,11 +1,12 @@
 {
- "_doc": "Fields (#122): a wheat field is tilled earth the farmer sows; it ripens into wheat, a sheaf of grain each, and reaped it's tilled earth again. Vines ripen into grapes by themselves, and picked bare grow them again. Coal, iron and gold seams run through the mountains (#42): a mine against one digs it out, and a dug-out seam is worked-out rock. Trees are one trunk each, and a woodcutter plants saplings that grow into trees (#126). Rivers hold fish (#149), which come back in time once fished out.",
+ "_doc": "Fields (#122): a wheat field is tilled earth the farmer sows; it ripens into wheat, a sheaf of grain each, and reaped it's tilled earth again. Vines ripen into grapes by themselves, and picked bare grow them again. Coal, iron and gold seams run through the mountains (#42): a mine against one digs it out, and a dug-out seam is worked-out rock. Trees are one trunk each, and a woodcutter plants saplings that grow into trees (#126). Rivers hold fish (#149), which come back in time once fished out. Tilled earth and shoots lie flat (prop_flat), so a serf on them is drawn over them.",
  "terrain": {
   "tilled": {
    "walkable": true,
    "colour": "#6e5434",
    "colour2": "#664d30",
-   "prop": "furrows",
+   "prop": "ploughed",
+   "prop_flat": true,
    "cleared": "grass",
    "note": "a wheat field laid by a farm and dug by a serf: bare tilled earth, waiting for the farmer to sow it (#122)"
   },
@@ -13,7 +14,8 @@
    "walkable": true,
    "colour": "#7c6a36",
    "colour2": "#6f8a3a",
-   "prop": "shoots",
+   "prop": "sprouts",
+   "prop_flat": true,
    "grows": {
     "into": "wheat_ripe",
     "seconds": 360
@@ -25,7 +27,7 @@
    "walkable": true,
    "colour": "#c8a648",
    "colour2": "#b8963e",
-   "prop": "wheat",
+   "prop": "ripe_wheat",
    "resource": "grain",
    "amount": 1,
    "depleted": "tilled",
@@ -36,7 +38,7 @@
    "walkable": true,
    "colour": "#5e5a34",
    "colour2": "#566a32",
-   "prop": "vines",
+   "prop": "vine_row",
    "grows": {
     "into": "vines_ripe",
     "seconds": 360
@@ -48,7 +50,7 @@
    "walkable": true,
    "colour": "#5a4a5e",
    "colour2": "#4f6a34",
-   "prop": "vines_ripe",
+   "prop": "vine_row_ripe",
    "resource": "grapes",
    "amount": 1,
    "depleted": "vines_young",
