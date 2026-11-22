@@ -757,7 +757,7 @@ def mud_earth(t:float, k:int) -> MMat:  // the mud at a height (0 the foot, 1 th
     let damp = float3 { 0.5, 0.47, 0.45 }
     let dry = float3 { 1.06, 1.04, 1.04 }  // (the daub is orange already: greyer tints keep it earth, not clay)
     let j = (th_rand(k * 5 + 11) - 0.5) * 0.12
-    let m = bmat("mud")
+    let m = bmat_make("mud")  // (its own: bmat's is shared, and the tint would land on every mud in the game)
     m.albedo = lerp3(damp, dry, clamp(t, 0.0, 1.0)) * (1.0 + j)
     return m
 
