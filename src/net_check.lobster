@@ -68,6 +68,7 @@ import game.levels
 // TCP. The host sets the match up and sends it whole; then each runs the same world in lockstep,
 // with only its own side's bot playing (its commands travel to the other). Both print their last
 // hash; they must match, with no desync on the way.
+// The host takes one of its buildings down halfway (creel #149, #180): both sides must see it gone.
 // Run from src:  sh net_check.sh [ticks]   (or by hand: -- host <ticks> / -- join <ticks>)
 let args = command_line_arguments()
 let role = args[0]
@@ -227,6 +228,8 @@ else:
         tcp.wait(nil, link.sock, false, 0.05)
     if not in_room: print "join: got the match at tick {tick}, {u_id.length} units"
 events_on = true
+let DEMOLISH_AT = min(1000, ticks / 2) / TICKS_PER_TURN * TICKS_PER_TURN
+var demolished = 0
 let ls = new_lockstep(link, me, seats)
 ls.more = others
 ls.relay = role == "host"
@@ -246,6 +249,11 @@ while tick < ticks and ls.desync == "" and not link.closed:
             if p == me or not contains(seats, p):  // (ours, and every AI: each machine runs the AIs)
                 ai_level_for(p)
                 full_bot_think(b)
+        if tick == DEMOLISH_AT:  // (creel #149, #180) the host's side takes its newest building down; both sides pick the same one
+            let host_side = seats[0]
+            for(b_id.length) b:
+                if b_owner[b] == host_side and bt_name[b_kind[b]] != "town_center": demolished = b_id[b]
+            if role == "host" and demolished != 0: issue_cmd(me, CMD_DEMOLISH, []::int, demolished, 0, 0, 0)
         step()
         ls_after_step(ls)
 // The last turns' hashes: keep the link up until the other side's are in.
@@ -254,4 +262,6 @@ while ls.mine.get_keys().length and ls.desync == "" and not link.closed and seco
     ls_receive(ls)
     tcp.wait(nil, link.sock, false, 0.01)
 let checked = (ticks / HASH_EVERY) - ls.mine.get_keys().length
+if demolished != 0: print "{role}: building {demolished} taken down by the host at tick {DEMOLISH_AT}: {if b_index_of(demolished) < 0: "gone" else: "STILL STANDING"}"
+if demolished != 0 and b_index_of(demolished) >= 0: set_exit_code(1)
 print "{role}: tick {tick}, {u_id.length} units, {b_id.length} buildings, last hash {state_hash()}, {checked} hashes checked, {waits} waits, {int((seconds_elapsed() - t0) * 1000.0)} ms{if ls.desync != "": ", DESYNC: " + ls.desync else: ""}"
