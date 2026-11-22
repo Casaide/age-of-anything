@@ -735,7 +735,7 @@ def pad_script() -> PadIn:
         // (#192: the right stick had nudged the reticle onto another of the ring's buttons, the one most to the side)
         let wring = wheel_layout()
         var other = -1
-        for(wring) it, n:
+        for(wring.length) n:
             if n != house and (other < 0 or abs(sin(-90.0 + 360.0 * float(n) / float(wring.length))) < abs(sin(-90.0 + 360.0 * float(other) / float(wring.length)))): other = n
         if other >= 0:
             pad_off = wring[other].at + float2_1 * wring[other].side / 2.0 - float(gl.window_size()) / 2.0
