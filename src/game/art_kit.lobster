@@ -7,7 +7,7 @@
 // (all of it when `rebake` is on), so a pack made without art still plays.
 
 let AK_DOODADS = [ [ "reeds", "6" ], [ "bush", "6" ], [ "rock", "6" ], [ "quarry", "4" ], [ "gold", "4" ], [ "carcass", "3" ], [ "stones", "6" ],
-                   [ "tuft", "6" ], [ "flowers", "6" ], [ "shore", "4" ], [ "lily", "4" ], [ "crops", "4" ], [ "paddy", "4" ], [ "furrows", "3" ], [ "shoots", "3" ], [ "wheat", "3" ], [ "vines", "3" ], [ "vines_ripe", "3" ],
+                   [ "tuft", "6" ], [ "flowers", "6" ], [ "shore", "4" ], [ "lily", "4" ], [ "crops", "4" ], [ "paddy", "4" ], [ "ploughed", "3" ], [ "sprouts", "3" ], [ "ripe_wheat", "3" ], [ "vine_row", "3" ], [ "vine_row_ripe", "3" ],
                    [ "tree_broadleaf", "4" ], [ "tree_pine", "4" ], [ "tree_swamp", "4" ] ]
 let AK_STAGES = 4
 let AK_PILE_STYLE = [ [ "food", "a" ], [ "wood", "a" ], [ "stone", "b" ], [ "gold", "a" ] ]
@@ -139,11 +139,11 @@ def bake_doodads() -> int:
     for(ak_count("lily")) v: ak_bake("lily{v}", lily_pads(900 + v), false)
     for(ak_count("crops")) v: ak_bake("crops{v}", crops(1100 + v), false)
     for(ak_count("paddy")) v: ak_bake("paddy{v}", paddy(1200 + v), false)
-    for(ak_count("furrows")) v: ak_bake("furrows{v}", furrows(1700 + v), false)  // a field's stages, a vine row's (#154)
-    for(ak_count("shoots")) v: ak_bake("shoots{v}", shoots(1710 + v), false)
-    for(ak_count("wheat")) v: ak_bake("wheat{v}", wheat(1720 + v), false)
-    for(ak_count("vines")) v: ak_bake("vines{v}", vines(1730 + v, false), true)
-    for(ak_count("vines_ripe")) v: ak_bake("vines_ripe{v}", vines(1740 + v, true), true)
+    for(ak_count("ploughed")) v: ak_bake("ploughed{v}", furrows(1700 + v), false)  // a field's stages, a vine row's (#154; renamed when the earth lay flat, #186, so old bakes go)
+    for(ak_count("sprouts")) v: ak_bake("sprouts{v}", shoots(1710 + v), false)
+    for(ak_count("ripe_wheat")) v: ak_bake("ripe_wheat{v}", wheat(1720 + v), false)
+    for(ak_count("vine_row")) v: ak_bake("vine_row{v}", vines(1730 + v, false), true)
+    for(ak_count("vine_row_ripe")) v: ak_bake("vine_row_ripe{v}", vines(1740 + v, true), true)
     for(AK_PILE_STYLE) ps:
         for(3) s: ak_bake("pile.{ps[0]}.{s + 1}", pile(ps[0], s + 1, ps[1]), true)
     for(3) s:

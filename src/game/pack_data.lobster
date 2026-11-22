@@ -68,6 +68,7 @@ def pack_from_data(map_id:string):
     for(tr_names) id:  // (a terrain's own "prop" first: a mod's crops, #122)
         let pr = gstr(at(tjp, id), "prop", "")
         if pr != "" and prop_of.get(id, "") == "": prop_of.set(id, pr)
+        if gbool(at(tjp, id), "prop_flat", false): prop_flat.set(pr, true)  // (ploughed earth lies under the farmer, creel#169)
     for(PD_PROPS) pp:
         if prop_of.get(pp[0], "") == "": prop_of.set(pp[0], pp[1])
     if not species.length: species = species_from_map(map_id)
