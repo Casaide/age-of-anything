@@ -209,10 +209,10 @@ def bld_keep(body:MNode, arch:string, at:float3, w:float, d:float, h:float, team
             return at.y + top + r * 0.5
         case "mound":
             let r = min(w, d) / 2.0
-            mud_dome(holder, float3_0, r, bv(w / (2.0 * r), h / r, d / (2.0 * r)), 71, false)
-            mud_dome(holder, bv(0.0, h * 0.85, 0.0), r * 0.45, float3_1, 72, true, 0)
-            bld_burrow_door(holder, bv(0.0, h * 0.25, d / 2.0 - 0.05), r * 0.22, 0.0, team)
-            return at.y + h * 0.85 + r * 0.45
+            mud_dome(holder, float3_0, r, bv(w / (2.0 * r), h / r * 0.5, d / (2.0 * r)), 71, false)
+            mound_spires(holder, bv(0.0, h * 0.3, 0.0), r * 0.6, [ float3 { -r * 0.2, -r * 0.15, h * 1.1 }, float3 { r * 0.3, 0.0, h * 0.75 } ], 72, 0.3)
+            bld_burrow_door(holder, bv(0.0, h * 0.18, d / 2.0 - 0.12), r * 0.22, 0.0, team)
+            return at.y + h * 1.4
         default: pass()
     let base = bld_hall(holder, arch, w, d, h)
     let rise = bld_roof(holder, arch, bv(0.0, base + h, 0.0), w, d)
