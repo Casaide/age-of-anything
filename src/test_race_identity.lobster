@@ -171,7 +171,7 @@ def g_buildings():
     expect(rstr(r0, "creature") == "beetle" and rstr(r0, "family") == "forest", "the prompt gives forest beetles ({rstr(r0, "creature")}/{rstr(r0, "family")})")
     expect(bcost_of(0, "house", "wood") == 21 and bcost_of(1, "house", "wood") == 30, "bugs: houses cost 30% less ({bcost_of(0, "house", "wood")}, rats {bcost_of(1, "house", "wood")})")
     let wood = res("wood")
-    expect(gather_ticks[0][wood] == base_gather_ticks[wood] * 85 / 100, "beetles: wood gathered 15% faster (bark borers; the forest\'s wood bonus takes its alt) ({gather_ticks[0][wood]} ticks)")
+    expect(gather_ticks[0][wood] == base_gather_ticks[wood] * 100 / 115, "beetles: wood gathered 15% faster (bark borers; the forest\'s wood bonus takes its alt) ({gather_ticks[0][wood]} ticks)")
     let bugs_research = bm_research_time[0][bk("armoury")]
     // Rodents: a house holds 6.
     let cap0 = pop_cap[1]
@@ -207,7 +207,7 @@ def g_units():
     let food = res("food")
     let farm = bk("farm")
     expect(bm_food[1][farm] == bt_food_base[farm] * 120 / 100, "swamp frogs: ...farms hold 20% more food (rich mud)")
-    expect(gather_ticks[1][food] == base_gather_ticks[food] * 80 / 100, "frogs: food gathered 20% faster ({gather_ticks[1][food]})")
+    expect(gather_ticks[1][food] == base_gather_ticks[food] * 100 / 120, "frogs: food gathered 20% faster ({gather_ticks[1][food]})")
     // Team bonuses reach allies (the Nile's granary: 100 more food at the start, for an ally too, not a foe).
     new_world_2v2([ "nile humans", "imperial humans", "imperial humans", "forest humans" ])
     let start_food = as_int(at(at(at(base_rules, "economy"), "start"), "food"))

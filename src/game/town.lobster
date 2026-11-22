@@ -259,7 +259,43 @@ def crack_lines(b:int, look:string) -> [[float2]]:
         line
 
 // The cracks of building b, if it's hurt enough (drawn in the world's sort, just after the building).
+// A site's plot on the ground, as the genre shows one (#208): pegs and a line round it from the moment it's placed,
+// the entrance marked where the door will be (a threshold across the door edge, an arrow on the tile in front), and
+// each tile of it turning to levelled earth as the builder gets through its foundation share, back to front. Under
+// everything: what's built stands on it.
+let PLOT_LINE = float4 { 0.94, 0.88, 0.7, 0.95 }
+let PLOT_EARTH = float4 { 0.47, 0.35, 0.22, 0.96 }
+let PLOT_EARTH2 = float4 { 0.53, 0.4, 0.26, 0.96 }
+let PLOT_DOOR = float4 { 0.86, 0.8, 0.66, 1.0 }
+
+def plot_pt(x:float, y:float) -> float2: return ground_at(int(x * 1000.0), int(y * 1000.0))
+
+def draw_plot_of(b:int):
+    let x0 = float(b_cx[b])
+    let y0 = float(b_cy[b])
+    let sx = b_sx[b]
+    let sy = b_sy[b]
+    let found = bt_build_ticks[b_kind[b]] * r_foundation_pct / 100
+    let cells = sx * sy
+    let levelled = if found > 0: min(cells, cells * b_progress[b] / found) else: cells
+    gl.set_shader("color")
+    for(levelled) n:  // (back to front: the row furthest from the door first)
+        let cx = x0 + float(n % sx)
+        let cy = y0 + float(n / sx)
+        gl.color(if (n + n / sx) % 2 == 0: PLOT_EARTH else: PLOT_EARTH2): gl.polygon([ plot_pt(cx, cy), plot_pt(cx + 1.0, cy), plot_pt(cx + 1.0, cy + 1.0), plot_pt(cx, cy + 1.0) ])
+    let corners = [ plot_pt(x0, y0), plot_pt(x0 + float(sx), y0), plot_pt(x0 + float(sx), y0 + float(sy)), plot_pt(x0, y0 + float(sy)) ]
+    for(4) k: ui_line(corners[k], corners[(k + 1) % 4], 0.6, PLOT_LINE)
+    for(corners) c: fx_circle(c, 0.9, float4 { 0.42, 0.28, 0.16, 1.0 })
+    // the entrance: the door edge's middle tile (economy's door_cell is the tile below it)
+    let dx = x0 + float(sx / 2)
+    let dy = y0 + float(sy)
+    gl.color(PLOT_DOOR): gl.polygon([ plot_pt(dx + 0.15, dy - 0.12), plot_pt(dx + 0.85, dy - 0.12), plot_pt(dx + 0.85, dy + 0.12), plot_pt(dx + 0.15, dy + 0.12) ])
+    gl.color(float4 { 0.94, 0.88, 0.7, 0.85 }): gl.polygon([ plot_pt(dx + 0.5, dy + 0.25), plot_pt(dx + 0.78, dy + 0.62), plot_pt(dx + 0.22, dy + 0.62) ])
+
 def draw_cracks_of(b:int):
+    if b_done[b] == 0:
+        draw_plot_of(b)
+        return
     let full = bm_hp[b_owner[b]][b_kind[b]]
     let damage = if full > 0: 1.0 - float(b_hp[b]) / float(full) else: 0.0
     if damage < DAMAGE_CRACKS: return
@@ -272,7 +308,7 @@ def draw_cracks_of(b:int):
             ui_line(at + l[i] + float2 { 0.7, 0.35 }, at + l[i + 1] + float2 { 0.7, 0.35 }, 0.7, float4 { 1.0, 0.95, 0.85, 0.25 })
             ui_line(at + l[i], at + l[i + 1], 0.7, float4 { 0.16, 0.11, 0.07, 0.85 })
 
-// Into the draw list: each hurt building's cracks just after it.
+// Into the draw list: each hurt building's cracks just after it, and each site's plot on the ground (#208).
 def collect_cracks():
     for(b_id.length) b:
         if b_done[b] == 1 and fog[ME][b_cy[b] * W + b_cx[b]] != 0 and b_owner[b] < arch_of.length:
@@ -281,6 +317,10 @@ def collect_cracks():
             if full > 0 and float(full - b_hp[b]) / float(full) >= DAMAGE_CRACKS and lk and not lk.ruins.length:  // (cracks: a look baked without its broken-up stages)
                 let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
                 draws.push(Drawable { at.y + 0.5, draws.length, -3, float(b), 0.0, float4_1, [] })
+        // a site's plot (Steading's sites are levelled first, #208), on the ground under it
+        if b_done[b] == 0 and r_goods_after_foundation != 0 and bt_road[b_kind[b]] < 0 and (teams[b_owner[b]] == teams[ME] or fog[ME][b_cy[b] * W + b_cx[b]] != 0):
+            let at = iso(float(b_cx[b] * 1000 + b_sx[b] * 500), float(b_cy[b] * 1000 + b_sy[b] * 500))
+            draws.push(Drawable { -100000.0 + at.y - 1.0, draws.length, -3, float(b), 0.0, float4_1, [] })  // (under the site itself, which lies flat while walked over)
 
 def draw_building_fx():
     gl.set_shader("color")

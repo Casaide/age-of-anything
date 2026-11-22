@@ -16,6 +16,10 @@ let OUT = "../data/voxel/bodies/"
 let STYLES = "\"styles\": \{\"timber\": \{\"skin\": \"#8c6133\", \"pale\": \"#4a4a50\", \"mark\": \"#9a7a50\"\}, \"junk\": \{\"skin\": \"#7a6a58\", \"pale\": \"#8a5a3a\", \"mark\": \"#8a9098\"\}, \"frog\": \{\"skin\": \"#8a8a40\", \"pale\": \"#4f5e2a\", \"mark\": \"#5e8a3a\"\}, \"forest\": \{\"skin\": \"#6b4a2a\", \"pale\": \"#3e4a2c\", \"mark\": \"#4a6a30\"\}, \"spooky\": \{\"skin\": \"#d8d0bc\", \"pale\": \"#3a3238\", \"mark\": \"#5a3a5a\"\}\}"
 let HOWDAH = "\"styles\": \{\"howdah\": \{\"skin\": \"#8c6133\", \"pale\": \"#4a3a2a\", \"mark\": \"#8a3a2a\"\}\}"
 
+// The throwing arms' swings through a throw (#198): the act starts as the shot leaves, so it opens mid-swing.
+let SLING_SWING = "\"swings\": \{\"arm\": \{\"hinge\": [0, 0, 34], \"axis\": [1, 0, 0], \"keys\": [[0, -50], [0.15, -105], [0.45, -90], [1, 0]]\}\}"
+let CATAPULT_SWING = "\"swings\": \{\"arm\": \{\"hinge\": [0, 4, 7.5], \"axis\": [1, 0, 0], \"keys\": [[0, -45], [0.1, -82], [0.45, -80], [1, 0]]\}\}"
+
 def spots(name:string, ps:[float3]) -> string: return "\"{name}\": " + stringify(jarr(map(ps) p: jv3(p)))
 
 // A mirrored pair: the shape at x and at -x.
@@ -82,11 +86,13 @@ def catapult():  // a frame on wheels, a throwing arm wound back with a stone in
         cap(float3 { x, 10.0, 6.0 }, float3 { x, 4.0, 22.0 }, float2 { 1.2, 1.0 }, "frame", true)
     cap(float3 { -6.0, 4.0, 22.0 }, float3 { 6.0, 4.0, 22.0 }, float2 { 1.2, 1.2 }, "frame", true)  // the stop bar
     cap(float3 { -5.0, 4.0, 7.5 }, float3 { 5.0, 4.0, 7.5 }, float2 { 2.0, 2.0 }, "rope", true)     // the twisted skein
+    swing_tag = "arm"                                                                               // (it flies up against the stop bar as it throws, then is wound back: #198)
     cap(float3 { 0.0, 4.0, 7.5 }, float3 { 0.0, -14.0, 11.0 }, float2 { 1.3, 1.1 }, "frame", true)  // the arm, wound back
     ball(float3 { 0.0, -15.5, 12.0 }, 2.6, "frame2", true)
     ball(float3 { 0.0, -15.5, 13.5 }, 2.0, "frame2", true)
+    swing_tag = ""
     box(float3 { 0.0, 13.4, 9.0 }, float3 { 5.0, 0.5, 2.0 }, FRONT, "team", 0.3)
-    vxw_body(OUT + "siege.catapult.json", "A catapult: a frame on four wheels, its arm wound back against a twisted skein, a stone in its bucket, a stop bar to throw against. Its style: frame (skin), iron (pale), rope (mark).", 1.5, [ STYLES, spots("crew", [ float3 { -10.0, -17.0, 0.0 }, float3 { 10.0, -17.0, 0.0 } ]) ])
+    vxw_body(OUT + "siege.catapult.json", "A catapult: a frame on four wheels, its arm wound back against a twisted skein, a stone in its bucket, a stop bar to throw against. Its style: frame (skin), iron (pale), rope (mark).", 1.5, [ STYLES, CATAPULT_SWING, spots("crew", [ float3 { -10.0, -17.0, 0.0 }, float3 { 10.0, -17.0, 0.0 } ]) ])
 
 def bolt():  // a great crossbow on two wheels and a trail
     for([ -8.0, 8.0 ]) x: wheel(float3 { x, -2.0, 6.0 }, 6.0)
@@ -119,12 +125,14 @@ def sling():  // a great sling: an A-frame, a long arm with a sling at its end a
         cap(float3 { x, -9.0, 4.0 }, float3 { x * 0.8, 0.0, 34.0 }, float2 { 1.3, 1.1 }, "frame", true)
         cap(float3 { x, 9.0, 4.0 }, float3 { x * 0.8, 0.0, 34.0 }, float2 { 1.3, 1.1 }, "frame", true)
     cap(float3 { -6.5, 0.0, 34.0 }, float3 { 6.5, 0.0, 34.0 }, float2 { 1.0, 1.0 }, "frame2", true)  // the axle
+    swing_tag = "arm"                                                                                // (it swings up over the axle and throws forward, then settles back: #198)
     cap(float3 { 0.0, -28.0, 50.0 }, float3 { 0.0, 9.0, 27.0 }, float2 { 1.4, 1.2 }, "frame", true)  // the arm
     box(float3 { 0.0, 10.0, 22.0 }, float3 { 4.5, 3.5, 5.0 }, FRONT, "frame2", 0.4)                  // the counterweight
     cap(float3 { 0.0, -28.0, 50.0 }, float3 { 0.0, -30.0, 38.0 }, float2 { 0.3, 0.3 }, "trim", true)
     ball(float3 { 0.0, -30.0, 37.0 }, 1.8, "trim", true)
+    swing_tag = ""
     box(float3 { 0.0, 17.4, 6.0 }, float3 { 5.0, 0.5, 2.0 }, FRONT, "team", 0.3)
-    vxw_body(OUT + "siege.sling.json", "A great sling: an A-frame on skids, a long arm with a sling at its end and a heavy counterweight at the other. Its style: frame (skin), iron and weight (pale), sling (mark).", 1.35, [ STYLES, "\"packed\": \"siege.sling_packed\"", spots("crew", [ float3 { -11.0, 12.0, 0.0 }, float3 { 11.0, 12.0, 0.0 } ]) ])
+    vxw_body(OUT + "siege.sling.json", "A great sling: an A-frame on skids, a long arm with a sling at its end and a heavy counterweight at the other. Its style: frame (skin), iron and weight (pale), sling (mark).", 1.35, [ STYLES, "\"packed\": \"siege.sling_packed\"", SLING_SWING, spots("crew", [ float3 { -11.0, 12.0, 0.0 }, float3 { 11.0, 12.0, 0.0 } ]) ])
 
 def sling_packed():                                                                         // the great sling packed to move (#171): its frame taken down onto a wagon, the arm laid along it
     for([ -5.0, 5.0 ]) x: wall(float3 { x, 0.0, 7.0 }, float3 { 1.2, 19.0, 1.2 }, "frame")  // the wagon's sills

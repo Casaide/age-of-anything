@@ -265,6 +265,7 @@ def test_passive(a:JV, b:JV):
     world([ a, b ], rules)
     let r = play([ a, b ], [ full_side(0), eco_side(1) ], "bot {rname(a)} vs passive {rname(b)}", false)
     check(r.winner == 0, "the bot beats a passive {rname(b)} (winner {r.winner} at {clock(r.end_tick)})")
+    stat("heroes", r.kinds[0].length)  // (the bot's; counted with the bot matches' in combine)
 
 // A side clearly ahead presses it home: it wins, within PRESS_WITHIN. Without a clear lead (two equal
 // bots) the match may run to the limit.
@@ -300,6 +301,7 @@ let HARD_SEEDS = [ SEED, 1, 2, 3 ]
 def test_hard():
     var hwon = 0
     var hlost = 0
+    var heroes = 0
     for(HARD_SEEDS) seed: for([ rats, frogs, generate("centaur romans", rules, 0), generate("greek hoplites", rules, 0) ]) race:
         for(2) h:
             new_world(seed, map_id, [ race, race ], rules, [])
@@ -310,11 +312,13 @@ def test_hard():
                 s
             let r = play([ race, race ], sides, "hard bot (player {h}) vs normal bot, {rname(race)} each", false)
             print "hard as player {h}, {rname(race)} each: winner {r.winner} at {clock(r.end_tick)}"
+            heroes = max(heroes, max(r.kinds[0].length, r.kinds[1].length))
             if r.winner == h: hwon++
             if r.winner == 1 - h: hlost++
     // Over 96 matches (12 seeds) hard is still a coin flip against normal, 36-43-17 (#192), and a sim change that touches no
     // bot reshuffles them all (#187, #203): on one seed, two won to one lost failed 4 seeds of 12. Over these 32 matches
     // one to three fails about one reshuffle in fifty, and still catches hard being clearly worse.
+    stat("heroes", heroes)
     check(hwon * 3 >= hlost, "hard isn\'t clearly worse than normal over the mirrors ({hwon} won, {hlost} lost of {HARD_SEEDS.length * 8})")
 
 // The checks across pieces: the same match twice is the same; the bots' healers heal someone over their
@@ -334,9 +338,11 @@ def combine():
             lengths.push(g(m + " tick"))
         check(heals > 0, "the bots\' healers heal someone in their matches ({heals} heals)")
         // Heroes (D-159): a bot with an economy fields its hero in one of its matches (a match won
-        // early can end before either side affords one).
-        let heroes = map(ms) m: g(m + " heroes")
-        check(exists(heroes) n: n >= 1, "a bot fields its hero in the bot matches ({heroes} kinds)")
+        // early can end before either side affords one, and any sim change reshuffles which: #200), over
+        // every bot match the pieces that ran played, the matches against a passive side and hard's too.
+        let hms = filter(ms.append([ "passive_frogs", "passive_rats", "hard" ])) m: g(m + " heroes") != -(1 << 40)
+        let heroes = map(hms) m: g(m + " heroes")
+        check(exists(heroes) n: n >= 1, "a bot fields its hero in the bot matches ({hms}: {heroes} kinds)")
         insertion_sort(lengths) x, y: x < y
         print "\nbot match lengths [" + concat_string(map(lengths) t: clock(t), ", ") + "], median {clock(lengths[1])} (target for players: 9-12 minutes)"
 

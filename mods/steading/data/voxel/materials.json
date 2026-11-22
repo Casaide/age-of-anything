@@ -1,10 +1,10 @@
 {
  "_doc": "Steading's goods' colours, for the loads the serfs and trades carry (#125).",
  "plank": {
-  "rgb": "#cfa468"
+  "rgb": "#a26a34"
  },
  "plank_end": {
-  "rgb": "#e2c28e"
+  "rgb": "#c99256"
  },
  "sheaf": {
   "rgb": "#dcbc58",
@@ -36,7 +36,7 @@
   "shine": 0.6
  },
  "block": {
-  "rgb": "#c6c0b2"
+  "rgb": "#8e897f"
  },
  "chest": {
   "rgb": "#74482a"

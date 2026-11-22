@@ -295,4 +295,20 @@ for([ "siege.ram", "siege.catapult", "siege.bolt", "siege.tower", "siege.sling",
             if report or low >= tall * 3 / 4: print "packed {id}: {low} rows packed, {tall} set up"
             if low >= tall * 3 / 4: fail("{id}: packed ({low} rows) it stands nearly as tall as set up ({tall})")
 
+// The engines that throw swing their arm as they do (#198): a picture through the throw is not the standing one.
+def mask_acting(u:vx_unit_def, f:int, t:float) -> [bool]:
+    vx_set_look(u, 0)
+    vx_act = "attack"
+    let g = vx_fill(vx_unit_prims(u, t * 360.0), vx_size_of(u), vx_flies(u))
+    vx_act = ""
+    return map(vx_cell(g, f)) c: c.w > 0.0
+for([ "siege.sling", "siege.catapult" ]) id:
+    if not vx_body_of(id).swings.length: fail("{id}: nothing swings when it throws")
+    else:
+        let still = mask(unit(id, hexc("#8c6133"), hexc("#4a4a50"), []), 2)
+        let thrown = mask_acting(unit(id, hexc("#8c6133"), hexc("#4a4a50"), []), 2, 0.3)
+        let moved = (filter(still.length) j: still[j] != thrown[j]).length
+        if report: print "swing {id}: {moved} of {area(still)} pixels move through the throw"
+        if moved * 20 < area(still): fail("{id}: its throw moves only {moved} of {area(still)} pixels")
+
 if fails: set_exit_code(1)
