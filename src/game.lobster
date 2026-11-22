@@ -671,6 +671,7 @@ def draw_groups():
 var pad_step = 0
 var test_pause = false
 var pad_paged = false
+var pad_house_n = -1  // the house's place on the wheel's page (#192)
 var pad_spot = float2_0
 var pad_houses = 0
 var pad_site = 0  // the house just laid, taken down from the wheel (creel #149, #180)
@@ -732,9 +733,22 @@ def pad_script() -> PadIn:
         for(items) w, n:
             if w.act == 3 and bt_name[w.arg] == "house": house = n
         let a = float(house) / float(max(1, items.length)) * 360.0 - 90.0
+        // (#192: the right stick had nudged the reticle onto another of the ring's buttons, the one most to the side)
+        let wring = wheel_layout()
+        var other = -1
+        for(wring.length) n:
+            if n != house and (other < 0 or abs(sin(-90.0 + 360.0 * float(n) / float(wring.length))) < abs(sin(-90.0 + 360.0 * float(other) / float(wring.length)))): other = n
+        if other >= 0:
+            pad_off = wring[other].at + float2_1 * wring[other].side / 2.0 - float(gl.window_size()) / 2.0
+            fake_mouse = reticle()
+        pad_house_n = house
         pad_step++
         return PadIn { [ cos(a), sin(a), 0.0, 0.0, 0.0, 0.0 ], [] }
     if pad_step == 7:
+        if has_s(args, "wheelshot") and shot != "": gl.screenshot(shot + ".stick.png")  // (captures: the wheel after the stick)
+        let wring = wheel_layout()
+        expect_ok(pad_pick == pad_house_n and wheel_hot(wring) == pad_house_n, "with the reticle left on another button, the stick lifts the house ({wheel_hot(wring)}, {pad_house_n})")
+        pad_off = float2_0
         pad_step++
         return PadIn { none.axes, [ "a" ] }
 
@@ -1061,6 +1075,30 @@ var back_to_lobby = false  // the pause menu's Back to the menu (or the match wo
 var quit_app = false
 var next_choice = ""   // the next match without the lobby (the pause menu's Load game)
 var front_choice = ""  // what the lobby chose (game/lobby.lobster: play, host, join, fight, load:<path>)
+
+var net_wait_t0 = -1.0  // captures: when the start's wait began
+
+// The start of a network match, loaded (#190): the match loader stays up, each person's line saying how far they've
+// loaded, the bar everyone's together. True to stop (the window closed, or B or Esc).
+def net_load_frame() -> bool:
+    if fe_sides.length != num_players or front_choice == "": return net_wait_frame(if link.closed: "The other player has left" else: "Waiting for the other players to load...")
+    if not gl.frame(): return true
+    if gl.button("escape") == 1 or gl.button("controller_b") == 1:
+        net_backed_out = true
+        return true
+    let people = lockstep.players
+    fe_ld_loads = map(num_players) p: if (find(people) q: q == p) >= 0: ls_loaded(lockstep, p) else: -1.0
+    let behind = filter(people) p: ls_loaded(lockstep, p) < 1.0
+    let names = map(behind) p: if p < fe_sides.length: rstr(fe_sides[p].race, "name") else: "a player"
+    var all = 0.0
+    for(people) p: all += ls_loaded(lockstep, p)
+    fe_ld_hint = "B or Esc: back to the menu"
+    fe_loader(if link.closed: "The other player has left" elif behind.length: "Ready. Waiting for {concat_string(names, " and ")} to load" else: "Everyone is ready", all / float(max(1, people.length)))
+    if shot != "" and net_wait_t0 < 0.0: net_wait_t0 = seconds_elapsed()
+    if shot != "" and net_wait_t0 > 0.0 and seconds_elapsed() - net_wait_t0 > 2.0:  // (captures: the wait itself, once)
+        gl.screenshot(shot + ".wait.png")
+        net_wait_t0 = 0.0
+    return false
 
 // A saved match from the lobby's Load game: its world and bots, as a joiner takes the host's.
 def load_saved(path:string) -> bool:
@@ -1660,7 +1698,9 @@ def play_match():
         frame_no++
         if frame_no == 1:                                                            // (inside a frame: a bake outside one leaves the window drawing nothing)
             if bake_live and fe_sides.length == num_players and front_choice != "":  // (the match loader shows the bake's progress)
-                bake_progress = fn(st, f): fe_loader(st, f)
+                bake_progress = fn(st, f):
+                    if net_on: ls_load(lockstep, f)  // (the others' loaders show how far we are: #190)
+                    fe_loader(st, f)
                 bake_progress_on = true
             bake_loading = true
             bake_progress_from = 0.5
@@ -1684,11 +1724,13 @@ def play_match():
             if net_on:  // every player loaded, then the match starts on all at once (#151 in Creel): no one freezes waiting mid-move
                 ls_begin(lockstep)
                 while not ls_begin_tick(lockstep) and not quit_game:
-                    if net_wait_frame(if link.closed: "The other player has left" else: "Waiting for the other players to load..."):
+                    if net_load_frame():
                         quit_game = true
                         if net_backed_out: back_to_lobby = true  // (B or Esc: the menu; the window closed: the end)
                         else: quit_app = true
                         net_backed_out = false
+                fe_ld_loads = []
+                fe_ld_hint = ""
         if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
         if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
         if reload_at >= 0.0 and clock_s >= reload_at:

@@ -1339,6 +1339,8 @@ let FE_LD_EDGE = float4 { 0.42, 0.35, 0.25, 1.0 }                             //
 let FE_LD_TEXT = float4 { 0.94, 0.89, 0.78, 1.0 }                             // #efe4c8
 let FE_LD_DIM = float4 { 0.72, 0.68, 0.58, 1.0 }                              // #b8ad94
 let FE_LD_GOLD = float4 { 0.95, 0.79, 0.3, 1.0 }                              // #f2c94c
+var fe_ld_loads = []::float                                                   // a network match's start (#190): per side, how far its player has loaded (-1: an AI's)
+var fe_ld_hint = ""                                                           // in place of the tips: what a key does while waiting
 
 def fe_loader_pick(race:JV) -> [JV]:
     let units = glist(race, "units")
@@ -1423,7 +1425,8 @@ def fe_loader(status:string, frac:float):
         let by = (y + float(row) * (block_h + 10.0)) * k
         let bx = if left: x0 else: x0 + half + vs_w + 56.0 * k
         let nm = rstr(s.race, "name")
-        let who = "{gstr(creature(rstr(s.race, "creature")), "plural", rstr(s.race, "creature"))}, {capitalize(rstr(s.race, "family"))}"
+        let load = if i < fe_ld_loads.length: fe_ld_loads[i] else: -1.0
+        let who = "{gstr(creature(rstr(s.race, "creature")), "plural", rstr(s.race, "creature"))}, {capitalize(rstr(s.race, "family"))}" + (if load >= 1.0: "  ·  ready" elif load >= 0.0: "  ·  loading {int(load * 100.0)}%" else: "")
         let nx = if left: bx + half - ui_text_wf(nm, fz(nfs), 0) else: bx  // (each name towards the "vs")
         let wx = if left: bx + half - ui_text_wf(who, fz(17.0), 0) else: bx
         ui_text_f(float2 { nx, by }, nm, fz(nfs), FE_LD_TEXT, 0, 3.0 * k)
@@ -1477,7 +1480,8 @@ def fe_loader(status:string, frac:float):
     if fill > 1.0:
         ui_fill(float2 { bx + 4.0 * k, bar_y + 4.0 * k }, float2 { fill, 10.0 * k }, FE_LD_GOLD * float4 { 0.75, 0.75, 0.75, 1.0 })
         ui_fill(float2 { bx + 4.0 * k, bar_y + 4.0 * k }, float2 { fill, 4.0 * k }, FE_LD_GOLD + (float4_1 - FE_LD_GOLD) * 0.1)
-    if fe_tips.length:
+    if fe_ld_hint != "": ui_text(float2 { bx, bar_y + 28.0 * k }, fe_ld_hint, fz(16.0), FE_LD_DIM)
+    elif fe_tips.length:
         if seconds_elapsed() - fe_tip_t > 7.0:
             fe_tip_k = rnd(fe_tips.length)
             fe_tip_t = seconds_elapsed()
