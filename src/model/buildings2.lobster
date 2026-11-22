@@ -102,7 +102,7 @@ def bld_fort_tower(body:MNode, arch:string, at:float3, r:float, h:float) -> floa
             return h + r * 0.98
         case "mound":
             let mud = bm("mud")
-            add_child(body, bcyl(r * 0.28, r * 1.05, h, mud, at + bv(0.0, h / 2.0, 0.0), float3_0, 14))
+            mud_spire(body, at, r * 1.05, r * 0.28, h, 81)
             for(4) k:
                 let a = TAU * float(k) / 4.0 + 0.6
                 let y = h * (0.25 + 0.15 * float(k))
@@ -208,10 +208,9 @@ def bld_keep(body:MNode, arch:string, at:float3, w:float, d:float, h:float, team
             add_child(holder, bdome(r * 0.44, bm("thatch"), bv(0.0, top + 0.05, 0.0), bv(1.0, 1.1, 1.0)))
             return at.y + top + r * 0.5
         case "mound":
-            let mud = bm("mud")
             let r = min(w, d) / 2.0
-            add_child(holder, bdome(r, mud, float3_0, bv(w / (2.0 * r), h / r, d / (2.0 * r))))
-            add_child(holder, bdome(r * 0.45, mud, bv(0.0, h * 0.85, 0.0), bv(1.0, 1.0, 1.0)))
+            mud_dome(holder, float3_0, r, bv(w / (2.0 * r), h / r, d / (2.0 * r)), 71, false)
+            mud_dome(holder, bv(0.0, h * 0.85, 0.0), r * 0.45, float3_1, 72, true, 0)
             bld_burrow_door(holder, bv(0.0, h * 0.25, d / 2.0 - 0.05), r * 0.22, 0.0, team)
             return at.y + h * 0.85 + r * 0.45
         default: pass()
