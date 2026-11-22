@@ -84,6 +84,8 @@ class WorldSave:
     wonder_since:[int]
     wonder_owners:[int]
     mode_hold:int
+    solid_px:[int]
+    solid_py:[int]
     r_splash_friend_pct:int
     extras:dictionary<string, [int]>
     W:int
@@ -198,6 +200,7 @@ class WorldSave:
     u_lx:[int]
     u_ly:[int]
     u_mount:[[int]]
+    u_inside:[[int]]
     u_orders:[[Cmd]]
     hook_unit_names:[string]
     hook_unit_cols:[[int]]
@@ -267,6 +270,7 @@ class WorldSave:
     bt_over_trees:[int]
     r_fog_tower:int
     r_garrison_heal_every:int
+    r_dock_holds:int
     r_call_range:int
     garrison_not:[int]
     hero_types:[int]
@@ -328,6 +332,9 @@ class WorldSave:
     r_foundation_pct:int
     r_goods_after_foundation:int
     r_inside_ticks:int
+    r_door_step:int
+    r_idle_aside:int
+    r_solid:int
     r_doors:int
     r_carrier_load:int
     r_carrier_slots:[string]
@@ -636,6 +643,8 @@ def world_bytes(bots:[Bot]) -> string:
         wonder_since,
         wonder_owners,
         mode_hold,
+        solid_px,
+        solid_py,
         r_splash_friend_pct,
         extras,
         W,
@@ -750,6 +759,7 @@ def world_bytes(bots:[Bot]) -> string:
         u_lx,
         u_ly,
         u_mount,
+        u_inside,
         u_orders,
         hook_unit_names,
         hook_unit_cols,
@@ -819,6 +829,7 @@ def world_bytes(bots:[Bot]) -> string:
         bt_over_trees,
         r_fog_tower,
         r_garrison_heal_every,
+        r_dock_holds,
         r_call_range,
         garrison_not,
         hero_types,
@@ -880,6 +891,9 @@ def world_bytes(bots:[Bot]) -> string:
         r_foundation_pct,
         r_goods_after_foundation,
         r_inside_ticks,
+        r_door_step,
+        r_idle_aside,
+        r_solid,
         r_doors,
         r_carrier_load,
         r_carrier_slots,
@@ -1201,6 +1215,8 @@ def load_world_bytes(data:string) -> [Bot]:
     wonder_since = s.wonder_since
     wonder_owners = s.wonder_owners
     mode_hold = s.mode_hold
+    solid_px = s.solid_px
+    solid_py = s.solid_py
     r_splash_friend_pct = s.r_splash_friend_pct
     extras = s.extras
     W = s.W
@@ -1315,6 +1331,7 @@ def load_world_bytes(data:string) -> [Bot]:
     u_lx = s.u_lx
     u_ly = s.u_ly
     u_mount = s.u_mount
+    u_inside = s.u_inside
     u_orders = s.u_orders
     hook_unit_names = s.hook_unit_names
     hook_unit_cols = s.hook_unit_cols
@@ -1384,6 +1401,7 @@ def load_world_bytes(data:string) -> [Bot]:
     bt_over_trees = s.bt_over_trees
     r_fog_tower = s.r_fog_tower
     r_garrison_heal_every = s.r_garrison_heal_every
+    r_dock_holds = s.r_dock_holds
     r_call_range = s.r_call_range
     garrison_not = s.garrison_not
     hero_types = s.hero_types
@@ -1445,6 +1463,9 @@ def load_world_bytes(data:string) -> [Bot]:
     r_foundation_pct = s.r_foundation_pct
     r_goods_after_foundation = s.r_goods_after_foundation
     r_inside_ticks = s.r_inside_ticks
+    r_door_step = s.r_door_step
+    r_idle_aside = s.r_idle_aside
+    r_solid = s.r_solid
     r_doors = s.r_doors
     r_carrier_load = s.r_carrier_load
     r_carrier_slots = s.r_carrier_slots

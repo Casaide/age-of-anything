@@ -245,11 +245,15 @@ def play() -> int:
     var hidden_walk = 0  // ticks a unit put inside by the rules walks, unseen (#158)
     var idle_walk = 0    // a serf's ticks walking with no job (the genre's idle serf stands where it finished, #158)
     var idle_stand = 0
+    var idle_far = 0  // the furthest an idle serf walked in one go, milli-tiles (#186: it steps aside, never off to wait)
+    let idle_ox = dictionary<int, int>(64)
+    let idle_oy = dictionary<int, int>(64)
     var went_in = 0
     var dropped_away = 0                                      // ticks a specialist was on its way to drop goods somewhere not its own workplace (#134)
     let col_work = find(hook_unit_names) n: n == "workplace"  // (the mod's jobs.lua: the hut a specialist works at)
     let inside_for = map(1000): 0                             // (#140) each unit slot's ticks inside a building so far, and each stay's length when it came out
     let stays = []::int
+    var site_hidden = 0                              // ticks a carrier spent inside a building site (#186)
     let hc = gobj(gobj(rules, "economy"), "hunger")  // (#132: who ate in the first 15 minutes, and the least time left on a bar then)
     let col_meal = find(hook_unit_names) n: n == "meal"
     var ate_15 = -1
@@ -292,7 +296,7 @@ def play() -> int:
         lay_step()
         for(u_x.length) i:
             if i < inside_for.length:
-                if is_inside(i, -1):        // (a carrier or a worker at a drop, not one at the inn)
+                if hidden_inside(i, -1):    // (a carrier or a worker at a drop, not one at the inn; out of sight, past its door step)
                     if inside_for[i] == 0:  // (going in: by the door, #157)
                         let at_ = b_index_of(u_target[i])
                         if at_ >= 0 and b_done[at_] != 0:  // (a site is built from round it)
@@ -303,10 +307,17 @@ def play() -> int:
                 elif inside_for[i] > 0:
                     stays.push(inside_for[i])
                     inside_for[i] = 0
+            let vb = visiting(i)
+            if is_inside(i, -1) and vb >= 0 and b_done[vb] == 0: site_hidden++
             let ic = inside_col()
             if ic >= 0 and hook_unit_get(ic, i) != 0 and u_moving[i] == 1: hidden_walk++
             if u_owner[i] == 0 and t_carrier[u_kind[i]] != 0 and u_task[i] == T_NONE and u_orders[i].length == 0:
                 if u_moving[i] == 1: idle_walk++ else: idle_stand++
+                if idle_ox.get(u_id[i], -1) < 0 or u_moving[i] == 0:  // (each walk on its own: a step aside, or pushed aside by a walker)
+                    idle_ox.set(u_id[i], u_x[i])
+                    idle_oy.set(u_id[i], u_y[i])
+                idle_far = max(idle_far, isqrt(dist2(u_x[i], u_y[i], idle_ox.get(u_id[i], 0), idle_oy.get(u_id[i], 0))))
+            elif u_owner[i] == 0 and t_carrier[u_kind[i]] != 0: idle_ox.set(u_id[i], -1)
             let wb = if t_carrier[u_kind[i]] == 0 and hook_unit_get(col_work, i) != 0: b_index_of(hook_unit_get(col_work, i)) else: -1
             if wb >= 0 and u_task[i] == T_NONE and u_moving[i] == 0:
                 let x0, y0, x1, y1 = entry_rect(wb)
@@ -368,19 +379,22 @@ def play() -> int:
     check(most_builders >= 2 and most_builders <= 3, "steading: idle serfs help build a site, no more than 3 sent at once ({most_builders})")
     check(site_walked, "steading: serfs walk across a site while it goes up")
     check(next_job / MINUTES <= 50, "steading: serfs aren\'t run off their feet: at the genre\'s pace a town of this size makes at most 50 carry jobs a minute, most for its building sites ({next_job / MINUTES}; 59 at the old pace)")
-    check(shortest_round >= 44 * TICK_HZ and shortest_round < 1 << 30,
+    // (36 s sawing, a break, and the log brought in: 44 s with 1.5 s inside at each drop, 42 at the genre's 0.5 s, #186)
+    check(shortest_round >= 42 * TICK_HZ and shortest_round < 1 << 30,
           "steading: a sawyer saws a log in 36 s and takes a break after each round, the genre\'s pace (the shortest round {shortest_round / TICK_HZ} s)")
     let full_stays = filter(stays): _ == r_inside_ticks
     let short_stays = filter(stays): _ < r_inside_ticks
     let long_stays = filter(stays): _ > r_inside_ticks
     print "steading: stays inside: {full_stays.length} of {r_inside_ticks} ticks, shorter {short_stays}, longer {long_stays}"
-    check(r_inside_ticks == 30 and stays.length >= 100 and full_stays.length * 100 >= stays.length * 95,
-          "steading: every pick-up and drop takes a carrier inside for 1.5 s ({full_stays.length} of {stays.length} stays that long)")
+    check(r_inside_ticks == 10 and r_door_step > 0 and stays.length >= 100 and full_stays.length * 100 >= stays.length * 95,
+          "steading: every pick-up and drop takes a carrier out of sight for 0.5 s, the genre\'s, after a step in through the door that is seen ({full_stays.length} of {stays.length} stays that long)")
+    check(site_hidden == 0, "steading: nobody goes inside a building site: its goods are put down at its door ({site_hidden} ticks)")
     // (the genre's idle trade, #158: at its workplace with nothing to do, it goes in and rests, out of sight)
     print "steading: idle trades at their door: {idle_in} ticks inside, {idle_out} out in the open; {hidden_walk} ticks walking while put inside"
     print "steading: idle serfs: {idle_stand} ticks standing, {idle_walk} walking with no job"
-    check(idle_stand > 0 and idle_walk * 100 <= (idle_stand + idle_walk) * 2,
-          "steading: an idle serf stands where it finished, as in the genre, and doesn\'t walk off to wait ({idle_walk} of {idle_stand + idle_walk} idle ticks walking)")
+    // (a step aside is to a road tile two away at most, round whatever stands between: never the walk to a store)
+    check(idle_stand > 0 and idle_walk * 100 <= (idle_stand + idle_walk) * 10 and idle_far <= 4 * TILE,
+          "steading: an idle serf stands where it finished, as in the genre, stepping aside off a doorway or another\'s spot but never walking off to wait ({idle_walk} of {idle_stand + idle_walk} idle ticks walking, at most {idle_far} milli-tiles in one go)")
     print "steading: the panel of an idle trade: {idle_said.slice(0, min(6, idle_said.length))}"
     check(idle_said.length > 0 and (filter(idle_said) s: find_string(s, " inside") < 0).length == 0,
           "steading: the panel says an idle trade is inside, and why ({idle_said.length} looks)")
@@ -445,6 +459,8 @@ def big_town(dx:int, dy:int) -> int:
     var on_road = 0    // a carrier's moving ticks with a load, on a road cell and not (#138)
     var off_road = 0
     var off_line = 0  // of the road ticks, those off the lines through its tiles' centres (cutting across it at an angle)
+    var pairs = 0     // (#186) pairs of people within reach of each other, looked at every 10 ticks, and those overlapping
+    var overlaps = 0
     var h = 0
     for(48 * 60 * TICK_HZ) t:  // (at the genre's pace, going inside at each drop by the door: #139, #140, #157)
         if t == 20 and lay("school", tx - 2, ty - 6): laid++
@@ -500,6 +516,14 @@ def big_town(dx:int, dy:int) -> int:
                     if min(abs(u_x[i] % TILE - TILE / 2), abs(u_y[i] % TILE - TILE / 2)) > TILE / 5: off_line++
                 else: off_road++
             if u_owner[i] == 0 and hook_unit_get(col_seat, i) != 0 and not contains(sat, u_id[i]): sat.push(u_id[i])
+            if t % 10 == 0 and u_owner[i] == 0 and solid_body(i, inside_col()):
+                for(u_x.length) j:
+                    if j > i and u_owner[j] == 0 and solid_body(j, inside_col()):
+                        let rr = u_radius[i] + u_radius[j]
+                        let d2 = dist2(u_x[i], u_y[i], u_x[j], u_y[j])
+                        if d2 < 4 * rr * rr:
+                            pairs++
+                            if d2 * 100 < rr * rr * 64: overlaps++  // (nearer than 80% of their bodies' reach: one through the other)
         if tick % 30 == 0: h = (h * 31 + state_hash()) & ((1 << 40) - 1)
     var built = 0
     for(b_id.length) b:
@@ -513,6 +537,8 @@ def big_town(dx:int, dy:int) -> int:
     let unbuilt = map(filter(b_id.length) b: b_owner[b] == 0 and b_done[b] == 0 and bt_road[b_kind[b]] < 0) b: bt_name[b_kind[b]]
     let full_pct = full * 100 / max(1, mill_ticks)
     print "steading: big town +{dx},{dy}: {built} of {laid} built, {staffed} staffed, sawmills stood full {full_pct}% of their staffed time, planks {produced[pl][0]} ({stock[pl][0]} in store), bread {produced[br][0]}, tools {produced[tl][0]}, {hungry} of {pop[0]} resting hungry, longest stuck {stuck_most}"
+    print "steading: big town +{dx},{dy}: {overlaps} of {pairs} pairs side by side overlapping"
+    check(overlaps * 1000 <= pairs, "steading: a big town (+{dx},{dy}): nobody walks through anybody, on the roads or off them ({overlaps} of {pairs} pairs side by side overlapping)")
     let road_pct = on_road * 100 / max(1, on_road + off_road)
     let line_pct = off_line * 100 / max(1, on_road)
     print "steading: big town +{dx},{dy}: carriers with a load walked on roads {road_pct}% of the time, {line_pct}% of that off the middle of the road"

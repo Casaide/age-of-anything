@@ -83,6 +83,8 @@ var stashed_wonder_ids = []::int
 var stashed_wonder_since = []::int
 var stashed_wonder_owners = []::int
 var stashed_mode_hold = -1
+var stashed_solid_px = []::int
+var stashed_solid_py = []::int
 var stashed_r_splash_friend_pct = 100
 var stashed_extras = dictionary<string, [int]>(64)
 var stashed_W = 0
@@ -197,6 +199,7 @@ var stashed_u_hull = []::int
 var stashed_u_lx = []::int
 var stashed_u_ly = []::int
 var stashed_u_mount = []::[int]
+var stashed_u_inside = []::[int]
 var stashed_u_orders = []::[Cmd]
 var stashed_hook_unit_names = []::string
 var stashed_hook_unit_cols = []::[int]
@@ -266,6 +269,7 @@ var stashed_bt_wall = []::int
 var stashed_bt_over_trees = []::int
 var stashed_r_fog_tower = 0
 var stashed_r_garrison_heal_every = 0
+var stashed_r_dock_holds:int = DOCK_HOLDS
 var stashed_r_call_range = 0
 var stashed_garrison_not = []::int
 var stashed_hero_types = []::int
@@ -327,6 +331,9 @@ var stashed_r_stocked = 0
 var stashed_r_foundation_pct = 0
 var stashed_r_goods_after_foundation = 0
 var stashed_r_inside_ticks = 0
+var stashed_r_door_step = 0
+var stashed_r_idle_aside = 0
+var stashed_r_solid = 0
 var stashed_r_doors = 0
 var stashed_r_carrier_load = 1
 var stashed_r_carrier_slots = []::string
@@ -636,6 +643,9 @@ def reset_world():
     wonder_since = []::int
     wonder_owners = []::int
     mode_hold = -1
+    // lib/movement.lobster
+    solid_px = []::int
+    solid_py = []::int
     // lib/siege.lobster
     r_splash_friend_pct = 100
     // lib/state.lobster
@@ -752,6 +762,7 @@ def reset_world():
     u_lx = []::int
     u_ly = []::int
     u_mount = []::[int]
+    u_inside = []::[int]
     u_orders = []::[Cmd]
     hook_unit_names = []::string
     hook_unit_cols = []::[int]
@@ -821,6 +832,7 @@ def reset_world():
     bt_over_trees = []::int
     r_fog_tower = 0
     r_garrison_heal_every = 0
+    r_dock_holds = DOCK_HOLDS
     r_call_range = 0
     garrison_not = []::int
     hero_types = []::int
@@ -882,6 +894,9 @@ def reset_world():
     r_foundation_pct = 0
     r_goods_after_foundation = 0
     r_inside_ticks = 0
+    r_door_step = 0
+    r_idle_aside = 0
+    r_solid = 0
     r_doors = 0
     r_carrier_load = 1
     r_carrier_slots = []::string
@@ -1183,6 +1198,8 @@ def stash_world():
     stashed_wonder_since = wonder_since
     stashed_wonder_owners = wonder_owners
     stashed_mode_hold = mode_hold
+    stashed_solid_px = solid_px
+    stashed_solid_py = solid_py
     stashed_r_splash_friend_pct = r_splash_friend_pct
     stashed_extras = extras
     stashed_W = W
@@ -1297,6 +1314,7 @@ def stash_world():
     stashed_u_lx = u_lx
     stashed_u_ly = u_ly
     stashed_u_mount = u_mount
+    stashed_u_inside = u_inside
     stashed_u_orders = u_orders
     stashed_hook_unit_names = hook_unit_names
     stashed_hook_unit_cols = hook_unit_cols
@@ -1366,6 +1384,7 @@ def stash_world():
     stashed_bt_over_trees = bt_over_trees
     stashed_r_fog_tower = r_fog_tower
     stashed_r_garrison_heal_every = r_garrison_heal_every
+    stashed_r_dock_holds = r_dock_holds
     stashed_r_call_range = r_call_range
     stashed_garrison_not = garrison_not
     stashed_hero_types = hero_types
@@ -1427,6 +1446,9 @@ def stash_world():
     stashed_r_foundation_pct = r_foundation_pct
     stashed_r_goods_after_foundation = r_goods_after_foundation
     stashed_r_inside_ticks = r_inside_ticks
+    stashed_r_door_step = r_door_step
+    stashed_r_idle_aside = r_idle_aside
+    stashed_r_solid = r_solid
     stashed_r_doors = r_doors
     stashed_r_carrier_load = r_carrier_load
     stashed_r_carrier_slots = r_carrier_slots
@@ -1721,6 +1743,8 @@ def unstash_world():
     wonder_since = stashed_wonder_since
     wonder_owners = stashed_wonder_owners
     mode_hold = stashed_mode_hold
+    solid_px = stashed_solid_px
+    solid_py = stashed_solid_py
     r_splash_friend_pct = stashed_r_splash_friend_pct
     extras = stashed_extras
     W = stashed_W
@@ -1835,6 +1859,7 @@ def unstash_world():
     u_lx = stashed_u_lx
     u_ly = stashed_u_ly
     u_mount = stashed_u_mount
+    u_inside = stashed_u_inside
     u_orders = stashed_u_orders
     hook_unit_names = stashed_hook_unit_names
     hook_unit_cols = stashed_hook_unit_cols
@@ -1904,6 +1929,7 @@ def unstash_world():
     bt_over_trees = stashed_bt_over_trees
     r_fog_tower = stashed_r_fog_tower
     r_garrison_heal_every = stashed_r_garrison_heal_every
+    r_dock_holds = stashed_r_dock_holds
     r_call_range = stashed_r_call_range
     garrison_not = stashed_garrison_not
     hero_types = stashed_hero_types
@@ -1965,6 +1991,9 @@ def unstash_world():
     r_foundation_pct = stashed_r_foundation_pct
     r_goods_after_foundation = stashed_r_goods_after_foundation
     r_inside_ticks = stashed_r_inside_ticks
+    r_door_step = stashed_r_door_step
+    r_idle_aside = stashed_r_idle_aside
+    r_solid = stashed_r_solid
     r_doors = stashed_r_doors
     r_carrier_load = stashed_r_carrier_load
     r_carrier_slots = stashed_r_carrier_slots
