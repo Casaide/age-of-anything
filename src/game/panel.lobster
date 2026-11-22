@@ -1011,6 +1011,16 @@ def wheel_layout() -> [PItem], float:
         PItem { b, mid + float2 { cos(a), sin(a) } * r - float2_1 * bw / 2.0, bw }
     return out, r
 
+// The lifted item: the one under a pointer (the mouse, a finger), else the stick's pick. On the pad the fake mouse is
+// the reticle, which the wheel doesn't move, so it never lifts one: left on a ring button it hid the stick's pick (#192).
+def wheel_hot(items:[PItem]) -> int:
+    if touch_play or not pad_on:
+        let m = mouse_px()
+        for(items) it, n:
+            if m.x >= it.at.x and m.y >= it.at.y and m.x <= it.at.x + it.side and m.y <= it.at.y + it.side: return n
+        if touch_play: return -1
+    return if pad_pick < items.length: pad_pick else: -1
+
 def wheel_draw():
     pad_wheel = wheel_items()  // (costs and what can be afforded, as they change)
     if not pad_wheel.length: return
@@ -1019,14 +1029,10 @@ def wheel_draw():
     let s = hud_s()
     let ws = float(gl.window_size())
     let mid = ws / 2.0
-    let mpos = mouse_px()
     ui_frame(false)
     ui_fill(float2_0, ws, float4 { 0.0, 0.0, 0.0, 0.28 })
     let items, r = wheel_layout()
-    var hot = -1
-    for(items) it, n:
-        if mpos.x >= it.at.x and mpos.y >= it.at.y and mpos.x <= it.at.x + it.side and mpos.y <= it.at.y + it.side: hot = n
-    if hot < 0 and not touch_play and pad_pick < items.length: hot = pad_pick
+    let hot = wheel_hot(items)
     if hot >= 0:  // (lifted)
         let it = items[hot]
         items[hot] = PItem { it.b, it.at - float2_1 * it.side * 0.09, it.side * 1.18 }

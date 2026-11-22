@@ -18,6 +18,7 @@ let PAD_CIRCLE_START = 34.0
 let PAD_CIRCLE_GROW = 300.0
 let PAD_CIRCLE_MAX = 0.42
 let PAD_GROUP_HOLD = 0.5
+let PAD_NO_POINTER = float2 { 1.0e7, 1.0e7 }  // the fake mouse parked off every screen
 let PAD_BUTTONS = [ "a", "b", "x", "y", "leftshoulder", "rightshoulder", "dpup", "dpdown", "dpleft", "dpright", "start", "back", "leftstick", "rightstick" ]
 
 // One frame of the pad: the sticks and triggers (SDL's order: left x, y, right x, y, LT, RT) and the
@@ -135,6 +136,7 @@ def pad_tick(pin:PadIn, dt:float) -> bool:
     let left = float2 { pin.axes[0], pin.axes[1] }
     let right = float2 { pin.axes[2], pin.axes[3] }
     if pad_wheel.length:  // the wheel: either stick points, A chooses (it stays up), B closes
+        fake_mouse = PAD_NO_POINTER  // (the reticle isn't a pointer on the wheel: no hover where it was left, #192)
         if pressed("leftshoulder") and wheel_pages() > 1:
             pad_page = (pad_page + 1) % wheel_pages()
             pad_pick = 0

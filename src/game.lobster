@@ -670,6 +670,7 @@ def draw_groups():
 var pad_step = 0
 var test_pause = false
 var pad_paged = false
+var pad_house_n = -1  // the house's place on the wheel's page (#192)
 var pad_spot = float2_0
 var pad_houses = 0
 var pad_site = 0  // the house just laid, taken down from the wheel (creel #149, #180)
@@ -731,9 +732,22 @@ def pad_script() -> PadIn:
         for(items) w, n:
             if w.act == 3 and bt_name[w.arg] == "house": house = n
         let a = float(house) / float(max(1, items.length)) * 360.0 - 90.0
+        // (#192: the right stick had nudged the reticle onto another of the ring's buttons, the one most to the side)
+        let wring = wheel_layout()
+        var other = -1
+        for(wring) it, n:
+            if n != house and (other < 0 or abs(sin(-90.0 + 360.0 * float(n) / float(wring.length))) < abs(sin(-90.0 + 360.0 * float(other) / float(wring.length)))): other = n
+        if other >= 0:
+            pad_off = wring[other].at + float2_1 * wring[other].side / 2.0 - float(gl.window_size()) / 2.0
+            fake_mouse = reticle()
+        pad_house_n = house
         pad_step++
         return PadIn { [ cos(a), sin(a), 0.0, 0.0, 0.0, 0.0 ], [] }
     if pad_step == 7:
+        if has_s(args, "wheelshot") and shot != "": gl.screenshot(shot + ".stick.png")  // (captures: the wheel after the stick)
+        let wring = wheel_layout()
+        expect_ok(pad_pick == pad_house_n and wheel_hot(wring) == pad_house_n, "with the reticle left on another button, the stick lifts the house ({wheel_hot(wring)}, {pad_house_n})")
+        pad_off = float2_0
         pad_step++
         return PadIn { none.axes, [ "a" ] }
 
