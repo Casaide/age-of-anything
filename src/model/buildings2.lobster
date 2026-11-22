@@ -102,7 +102,7 @@ def bld_fort_tower(body:MNode, arch:string, at:float3, r:float, h:float) -> floa
             return h + r * 0.98
         case "mound":
             let mud = bm("mud")
-            mud_spire(body, at, r * 1.05, r * 0.28, h, 81)
+            mud_spire(body, at, r * 1.05, r * 0.5, h, 81)
             for(4) k:
                 let a = TAU * float(k) / 4.0 + 0.6
                 let y = h * (0.25 + 0.15 * float(k))
@@ -212,7 +212,7 @@ def bld_keep(body:MNode, arch:string, at:float3, w:float, d:float, h:float, team
             mud_dome(holder, float3_0, r, bv(w / (2.0 * r), h / r * 0.5, d / (2.0 * r)), 71, false)
             mound_spires(holder, bv(0.0, h * 0.3, 0.0), r * 0.6, [ float3 { -r * 0.2, -r * 0.15, h * 1.1 }, float3 { r * 0.3, 0.0, h * 0.75 } ], 72, 0.3)
             bld_burrow_door(holder, bv(0.0, h * 0.18, d / 2.0 - 0.12), r * 0.22, 0.0, team)
-            return at.y + h * 1.4
+            return at.y + h * 1.05
         default: pass()
     let base = bld_hall(holder, arch, w, d, h)
     let rise = bld_roof(holder, arch, bv(0.0, base + h, 0.0), w, d)

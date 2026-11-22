@@ -754,8 +754,8 @@ def thatch_gable(body:MNode, at:float3, w:float, d:float, rise:float, seed:int =
 // splashed by rain, with stones in it; the earth dries lighter towards the crown; a termite mound grows buttress
 // ribs up its sides and breathes through small vents.
 def mud_earth(t:float, k:int) -> MMat:  // the mud at a height (0 the foot, 1 the top), with a lift's own jitter
-    let damp = float3 { 0.5, 0.4, 0.33 }
-    let dry = float3 { 1.18, 1.1, 0.98 }
+    let damp = float3 { 0.5, 0.47, 0.45 }
+    let dry = float3 { 1.06, 1.04, 1.04 }  // (the daub is orange already: greyer tints keep it earth, not clay)
     let j = (th_rand(k * 5 + 11) - 0.5) * 0.12
     let m = bmat("mud")
     m.albedo = lerp3(damp, dry, clamp(t, 0.0, 1.0)) * (1.0 + j)
@@ -817,7 +817,7 @@ def mud_dome(body:MNode, at:float3, r:float, scl:float3 = float3_1, seed:int = 1
             add_child(body, bball(s, mud_earth(1.0, seed + i + 5), top + bv(rsin(a) * s * 0.7, -s * 0.2, rcos(a) * s * 0.7), bv(1.0, 0.8, 1.0)))
 
 // A termite spire: a tapering cone r_bot to r_top, h high, in lifts drying lighter upwards, ribbed, vented, capped.
-def mud_spire(body:MNode, at:float3, r_bot:float, r_top:float, h:float, seed:int = 1, rot:float3 = float3_0):
+def mud_spire(body:MNode, at:float3, r_bot:float, r_top:float, h:float, seed:int = 1, rot:float3 = float3_0, sides:int = 8):
     let holder = mnode()
     holder.pos = at
     holder.rot = rot
@@ -828,8 +828,8 @@ def mud_spire(body:MNode, at:float3, r_bot:float, r_top:float, h:float, seed:int
     for(n) k:
         let y0 = h * float(k) / float(n)
         let y1 = min(h, h * (float(k) + 1.3) / float(n))
-        add_child(holder, bcyl(rad(y1), rad(y0) + lip, y1 - y0, mud_earth(y0 / h * 1.05, k + seed * 13), bv(0.0, (y0 + y1) / 2.0, 0.0), float3_0, 14))
-    add_child(holder, bcyl(r_bot + lip * 1.5, r_bot + lip * 2.5, min(0.1, h * 0.06), mud_earth(0.0, seed + 3), bv(0.0, min(0.05, h * 0.03), 0.0), float3_0, 14))
+        add_child(holder, bcyl(rad(y1), rad(y0) + lip, y1 - y0, mud_earth(y0 / h * 1.05, k + seed * 13), bv(0.0, (y0 + y1) / 2.0, 0.0), bv(0.0, 22.5, 0.0), sides))  // (faceted: flat faces take the light as walls do)
+    add_child(holder, bcyl(r_bot + lip * 1.5, r_bot + lip * 2.5, min(0.1, h * 0.06), mud_earth(0.0, seed + 3), bv(0.0, min(0.05, h * 0.03), 0.0), bv(0.0, 22.5, 0.0), sides))
     let nr = max(3, int(r_bot * 8.0))
     for(nr) i:
         let a = TAU * (float(i) + 0.3 * th_rand(seed * 7 + i)) / float(nr)
@@ -843,7 +843,7 @@ def mud_spire(body:MNode, at:float3, r_bot:float, r_top:float, h:float, seed:int
         let y = h * (0.3 + 0.5 * th_rand(seed * 31 + i * 3))
         let s = max(0.02, rad(y) * 0.14)
         add_child(holder, bball(s, mud_vent(), bv(rsin(a) * (rad(y) - s * 0.2), y, rcos(a) * (rad(y) - s * 0.2)), bv(1.0, 0.75, 1.0)))
-    add_child(holder, bball(max(r_top * 1.3, 0.04), mud_earth(1.0, seed + 2), bv(0.0, h, 0.0), bv(1.0, 1.2, 1.0)))
+    add_child(holder, bball(max(r_top * 1.05, 0.04), mud_earth(1.0, seed + 2), bv(0.0, h, 0.0), bv(1.0, 0.8, 1.0)))  // a rounded crown, not a point
 
 // A cathedral mound (#205): fluted spires fused on a low earth base base_r across, as termites build. tall: each
 // spire's (x, z) from `at` and its height; its girth follows its height, and lumpy buttresses climb its flanks.
@@ -852,14 +852,23 @@ def mound_spires(body:MNode, at:float3, base_r:float, tall:[float3], seed:int, b
     mud_dome(body, at, base_r, bv(1.0, base_h, 1.0), seed, false, 0)
     var top = at.y
     for(tall) t, i:
-        let h = t.z
-        let r = 0.18 + h * 0.17
-        let lean = bv(-t.y * 6.0, 0.0, t.x * 6.0)
-        mud_spire(body, at + bv(t.x, 0.0, t.y), r, r * 0.16, h, seed + i * 7, lean)
+        let h = t.z * 0.68  // (blunt towers: Dominic, "very pointy")
+        let r = 0.2 + t.z * 0.17
+        let lean = bv(-t.y * 4.0, 0.0, t.x * 4.0)
+        let c = at + bv(t.x, 0.0, t.y)
+        mud_spire(body, c, r, r * 0.55, h, seed + i * 7, lean)
+        let ly = h * 0.58  // a ledge round it, casting a band of shadow
+        let lr = r + (r * 0.55 - r) * ly / h
+        add_child(body, bcyl(lr + 0.05, lr + 0.02, 0.06, mud_earth(0.9, seed + i), c + bv(0.0, ly, 0.0), bv(0.0, 22.5, 0.0), 8))
+        for(4) k:  // sticks built into it, ends out, each with its own shadow
+            let a = TAU * (float(k) + 0.5) / 4.0 + 0.4
+            let y = h * (0.3 + 0.1 * float(k % 2))
+            let rr = r + (r * 0.55 - r) * y / h
+            add_child(body, beam(c + bv(rsin(a) * rr * 0.7, y, rcos(a) * rr * 0.7), c + bv(rsin(a) * (rr + 0.12), y, rcos(a) * (rr + 0.12)), 0.022, bm("wood"), 5))
         for(3) k:  // buttresses fused up its flanks
             let a = TAU * (float(k) + th_rand(seed + i * 3 + k)) / 3.0
-            let hh = h * (0.35 + 0.25 * th_rand(seed + i + k * 5))
-            mud_spire(body, at + bv(t.x + rsin(a) * r * 0.75, 0.0, t.y + rcos(a) * r * 0.75), r * 0.5, r * 0.08, hh, seed + i * 11 + k, lean)
+            let hh = h * (0.35 + 0.2 * th_rand(seed + i + k * 5))
+            mud_spire(body, at + bv(t.x + rsin(a) * r * 0.8, 0.0, t.y + rcos(a) * r * 0.8), r * 0.45, r * 0.3, hh, seed + i * 11 + k, lean)
         top = max(top, at.y + h)
     return top
 
@@ -875,9 +884,9 @@ def bld_roof(body:MNode, arch:string, at:float3, w:float, d:float) -> float:
             let spires = [ float3 { -w * 0.22, -d * 0.12, s * 0.95 }, float3 { w * 0.24, -d * 0.05, s * 0.7 }, float3 { w * 0.02, d * 0.18, s * 0.45 } ]
             for(spires) t, i:
                 let r = 0.12 + t.z * 0.15
-                mud_spire(body, at + bv(t.x, rise * 0.25, t.y), r, r * 0.16, t.z, seed + i * 7)
-                mud_spire(body, at + bv(t.x + r * 0.7, rise * 0.15, t.y + r * 0.3), r * 0.5, r * 0.08, t.z * 0.5, seed + i * 7 + 3)
-            return rise * 0.6 + s * 0.95
+                mud_spire(body, at + bv(t.x, rise * 0.25, t.y), r, r * 0.55, t.z * 0.65, seed + i * 7)
+                mud_spire(body, at + bv(t.x + r * 0.7, rise * 0.15, t.y + r * 0.3), r * 0.5, r * 0.3, t.z * 0.35, seed + i * 7 + 3)
+            return rise * 0.6 + s * 0.65
         else:
             add_child(body, bdome(1.0, bm(k.roof), at - bv(0.0, 0.05, 0.0), bv(w / 2.0 + 0.18, rise, d / 2.0 + 0.18)))
         return rise
@@ -1037,7 +1046,7 @@ def bld_tower(arch:string, team:float3) -> BSpec:
     let wood = bm("wood")
     let top = 1.7
     if arch == "mound":  // a termite spire
-        mud_spire(body, float3_0, 0.42, 0.12, top, 11)
+        mud_spire(body, float3_0, 0.42, 0.24, top, 11)
     elif arch == "stone" or arch == "thatch":
         add_child(body, bbox(bv(0.62, top, 0.62), bm(if arch == "stone": "stone" else: k.wall), bv(0.0, top / 2.0, 0.0)))
         for([ -0.31, 0.31 ]) z:
@@ -1091,7 +1100,7 @@ def bld_outpost_pole(arch:string, team:float3) -> BSpec:
     elif arch == "junk":
         post_mat = bflat(html("#5a5c5e"), 0.5, 0.6)  // a pipe
     if arch == "mound":
-        mud_spire(body, float3_0, 0.3, 0.05, top, 12)
+        mud_spire(body, float3_0, 0.3, 0.16, top, 12)
     else:
         add_child(body, bcyl(0.045, 0.06, top, post_mat, bv(0.0, top / 2.0, 0.0), float3_0, 8))
         for(3) k:  // the raking legs
@@ -1285,11 +1294,11 @@ def bld_bastion(arch:string, team:float3) -> BSpec:
             add_child(body, bbox(bv(0.26, 0.12, 0.02), bcloth(team), bv(-0.1, deck_y + h - 0.1, 0.42)))
             top = deck_y + h + 0.6
         case "mound":
-            mud_spire(body, float3_0, 0.52, 0.14, top, 51)
+            mud_spire(body, float3_0, 0.52, 0.28, top, 51)
             for(5) s:  // buttress spires leaning on the main one
                 let a = TAU * float(s) / 5.0 + 0.3
                 let hh = randf_range(brng, 0.9, 1.4)
-                mud_spire(body, bv(rcos(a) * 0.36, 0.0, rsin(a) * 0.36), 0.2, 0.04, hh, 52 + s, bv(rsin(a) * 8.0, 0.0, -rcos(a) * 8.0))
+                mud_spire(body, bv(rcos(a) * 0.36, 0.0, rsin(a) * 0.36), 0.2, 0.11, hh, 52 + s, bv(rsin(a) * 8.0, 0.0, -rcos(a) * 8.0))
             for(6) s:  // vent holes to shoot from
                 let a = TAU * float(s) / 6.0
                 let y = 1.0 + float(s % 2) * 0.45
@@ -1463,7 +1472,7 @@ def mound_town_center(team:float3) -> BSpec:
     last_kid(banner).pos = flag_top
     let sp = bspec(body)
     bbanner(sp, banner, flag_top)
-    bpt(sp, "smoke", bv(-0.3, 3.05, -0.45))
+    bpt(sp, "smoke", bv(-0.3, 2.15, -0.45))
     bpt(sp, "lantern", bv(0.2, 0.4, 1.0))
     return bdoorway(sp, bld_doorway(bv(-0.1, 0.26 - 0.2, 0.92), 0.4, 0.4, true))
 
@@ -2136,10 +2145,10 @@ def wonder_mound(team:float3) -> BSpec:
         let h = spire_h[i]
         let rx = randf_range(brng, -3.0, 3.0)
         let rz = randf_range(brng, -3.0, 3.0)
-        mud_spire(body, at, r, r * 0.12, h, 94 + i, bv(rx, 0.0, rz))
+        mud_spire(body, at, r, r * 0.45, h * 0.75, 94 + i, bv(rx, 0.0, rz))
         for(3) k:  // flutes: lumps up its sides
             let a = TAU * float(k) / 3.0 + randf(brng)
-            mud_spire(body, at + bv(rcos(a) * r * 0.55, 0.0, rsin(a) * r * 0.55), r * 0.4, r * 0.05, h * 0.6, 120 + i * 3 + k)
+            mud_spire(body, at + bv(rcos(a) * r * 0.55, 0.0, rsin(a) * r * 0.55), r * 0.4, r * 0.2, h * 0.45, 120 + i * 3 + k)
     bld_burrow_door(body, bv(0.0, 0.32, 1.8), 0.3, 0.0, team)
     bld_burrow_door(body, bv(-1.6, 0.25, 1.0), 0.16, -50.0, team)
     bld_burrow_door(body, bv(1.75, 0.25, 0.6), 0.16, 60.0)
