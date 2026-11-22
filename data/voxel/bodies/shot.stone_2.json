@@ -1,0 +1,14 @@
+{
+ "_doc": "A thrown stone, a turn 2 of 3 through its tumble (#179): a rough boulder, lumps out of a core and a couple of split faces.",
+ "points": {"o": {"at": [0, 0, 0]}},
+ "shapes": [
+  {"ball":["o",0.0,0.0,8.0],"hard":false,"mat":"shot_stone","r":6.2},
+  {"ball":["o",3.2,-1.278,10.586],"hard":false,"mat":"shot_stone","r":4.2},
+  {"ball":["o",-2.8,2.512,9.552],"hard":false,"mat":"shot_stone","r":4.0},
+  {"ball":["o",0.6,-3.432,6.056],"hard":false,"mat":"shot_stone","r":3.8},
+  {"ball":["o",-1.6,2.244,5.088],"hard":false,"mat":"shot_stone","r":3.6},
+  {"ball":["o",1.8,3.752,9.298],"hard":false,"mat":"shot_stone","r":3.2},
+  {"box":["o",3.61,-2.61,10.698],"half":[3.4,1.0,3.0],"mat":"shot_stone_cut","n":[0.693,-0.501,0.518],"round":0.4},
+  {"box":["o",-3.223,-3.276,5.549],"half":[3.4,1.0,3.0],"mat":"shot_stone_cut","n":[-0.619,-0.629,-0.471],"round":0.4}
+ ]
+}

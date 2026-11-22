@@ -68,6 +68,7 @@ import game.levels
 // TCP. The host sets the match up and sends it whole; then each runs the same world in lockstep,
 // with only its own side's bot playing (its commands travel to the other). Both print their last
 // hash; they must match, with no desync on the way.
+// The host takes one of its buildings down halfway (creel #149, #180): both sides must see it gone.
 // Run from src:  sh net_check.sh [ticks]   (or by hand: -- host <ticks> / -- join <ticks>)
 let args = command_line_arguments()
 let role = args[0]
@@ -83,8 +84,10 @@ var code = ""                      // code:<join code>: join through the sidecar
 let in_room = has_s(args, "room")  // room: through the lobby (#519): joiners take sides, type their army, then the host starts
 var sides = 2                      // sides:<n>: the room's sides (4: a 2v2, AIs in the sides no one takes)
 var want_side = -1                 // side:<n>: the side this joiner takes
+var saved_at = 0                   // save:<ticks>: the host hosts a saved game, that many ticks in (#174)
 for(args) a:
     if starts_with(a, "sides:"): sides = string_to_int(a.substring(6, a.length - 6))
+    if starts_with(a, "save:"): saved_at = string_to_int(a.substring(5, a.length - 5))
     if starts_with(a, "side:"): want_side = string_to_int(a.substring(5, a.length - 5))
     if starts_with(a, "code:"): code = a.substring(5, a.length - 5)
     if starts_with(a, "bootstrap:"): swarm_setup.extra = "--bootstrap " + a.substring(10, a.length - 10)  // (a local test DHT)
@@ -187,6 +190,17 @@ if role == "host":
     let races = map(n) k: generate(if in_room and hosted[0].sides[k].who == ROOM_PLAYER: hosted[0].sides[k].prompt else: words[k % words.length], rules, 0)
     setup_match(20261010, if n > 2: "reed_meadow_2v2" else: "reed_meadow", races, rules, if n > 2: map(n) k: k / 2 else: [])
     bots = map(num_players) p: new_bot(p)
+    if saved_at > 0:  // save:<ticks> (#174): a saved game hosted: played that far alone, saved, loaded back, then hosted
+        for(saved_at):
+            for(bots) b, p:
+                ai_level_for(p)
+                full_bot_think(b)
+            step()
+        let path = "/tmp/net_check_{port}.sav"
+        assert write_file(path, world_bytes(bots), 0, 1)
+        bots = load_world(path)
+        assert bots.length
+        print "host: hosting a save from tick {tick}"
     if in_room:
         let lv = map(sides) k: if hosted[0].sides[k].who == ROOM_AI: levels[k] else: ""
         ai_levels_set(lv)
@@ -214,9 +228,15 @@ else:
         tcp.wait(nil, link.sock, false, 0.05)
     if not in_room: print "join: got the match at tick {tick}, {u_id.length} units"
 events_on = true
+let DEMOLISH_AT = min(1000, ticks / 2) / TICKS_PER_TURN * TICKS_PER_TURN
+var demolished = 0
 let ls = new_lockstep(link, me, seats)
 ls.more = others
 ls.relay = role == "host"
+ls_begin(ls)  // (both start the first tick together: #151 in Creel)
+while not ls_begin_tick(ls):
+    assert not link.closed
+    tcp.wait(nil, link.sock, false, 0.01)
 let t0 = seconds_elapsed()
 var waits = 0
 while tick < ticks and ls.desync == "" and not link.closed:
@@ -229,6 +249,11 @@ while tick < ticks and ls.desync == "" and not link.closed:
             if p == me or not contains(seats, p):  // (ours, and every AI: each machine runs the AIs)
                 ai_level_for(p)
                 full_bot_think(b)
+        if tick == DEMOLISH_AT:  // (creel #149, #180) the host's side takes its newest building down; both sides pick the same one
+            let host_side = seats[0]
+            for(b_id.length) b:
+                if b_owner[b] == host_side and bt_name[b_kind[b]] != "town_center": demolished = b_id[b]
+            if role == "host" and demolished != 0: issue_cmd(me, CMD_DEMOLISH, []::int, demolished, 0, 0, 0)
         step()
         ls_after_step(ls)
 // The last turns' hashes: keep the link up until the other side's are in.
@@ -237,4 +262,6 @@ while ls.mine.get_keys().length and ls.desync == "" and not link.closed and seco
     ls_receive(ls)
     tcp.wait(nil, link.sock, false, 0.01)
 let checked = (ticks / HASH_EVERY) - ls.mine.get_keys().length
+if demolished != 0: print "{role}: building {demolished} taken down by the host at tick {DEMOLISH_AT}: {if b_index_of(demolished) < 0: "gone" else: "STILL STANDING"}"
+if demolished != 0 and b_index_of(demolished) >= 0: set_exit_code(1)
 print "{role}: tick {tick}, {u_id.length} units, {b_id.length} buildings, last hash {state_hash()}, {checked} hashes checked, {waits} waits, {int((seconds_elapsed() - t0) * 1000.0)} ms{if ls.desync != "": ", DESYNC: " + ls.desync else: ""}"

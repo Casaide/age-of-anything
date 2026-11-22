@@ -3,7 +3,7 @@
 // rest ("watch": the bot plays you too).
 // Run: lobster game.lobster -- <pack dir> <scenario file, or - to make the start from the pack\'s races> [watch]
 //   left click / drag: select;  right click: move, attack, gather, build, rally;  shift: queue
-//   Ctrl + right click: attack-move;  X: stop;  B then 1-9: build;  1-9 on a building: train;  U: age up
+//   Ctrl + right click: attack-move;  X: stop;  B then 1-9: build;  1-9 on a building: train;  U: age up;  Delete: take your building down
 //   Q E R T Y F G H J on a building: research;  M: sound on / off;  the minimap (bottom right): click to look there
 //   WASD / arrows / screen edges: scroll;  wheel: zoom;  space: pause;  + / -: speed;  Ctrl/Cmd + / -: the HUD's size
 
@@ -324,6 +324,7 @@ var lobby_mode = "standard"
 var lobby_prompts = []::string  // each side's words (the lobby's, or races:A|B)
 var lobby_teams = []::int       // each side's team (a team game from the lobby)
 var lobby_levels = []::string   // each side's AI level ("" for a person)
+var lobby_save = ""             // a saved game the lobby hosts (#174): the match is the save
 var front_shown = false         // the lobby's pages were up (the match loader shows their armies)
 
 // The maps a match can be on (data/maps).
@@ -671,6 +672,9 @@ var test_pause = false
 var pad_paged = false
 var pad_spot = float2_0
 var pad_houses = 0
+var pad_site = 0  // the house just laid, taken down from the wheel (creel #149, #180)
+var pad_demolished = false
+var pad_t0 = 0.0
 def pad_script() -> PadIn:
     let t = clock_s
     let none = PadIn { [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ], [] }
@@ -756,6 +760,17 @@ def pad_script() -> PadIn:
         return none
     if pad_step == 102:
         expect_ok(selected_workers().length > 0, "letting go of the A that laid the house keeps the worker selected")
+        if not pad_demolished:  // (#180: the site from the wheel: A on it, A again for its wheel, Delete; then back)
+            pad_demolished = true
+            for(b_id.length) b:
+                if b_owner[b] == ME and bt_name[b_kind[b]] == "house" and b_done[b] == 0: pad_site = b_id[b]
+            store_group(1)
+            let b = b_index_of(pad_site)
+            cam = iso(float(b_cx[b] * TILE + b_sx[b] * TILE / 2), float(b_cy[b] * TILE + b_sy[b] * TILE / 2))
+            pad_off = float2_0
+            test_pause = true
+            pad_step = 110
+            return none
         var best = int2 { -1, -1 }  // (#508: the reticle on the tree nearest the Town Center)
         var best_d = 1000000000
         for(H) y:
@@ -770,6 +785,43 @@ def pad_script() -> PadIn:
         pad_off = float2_0
         test_pause = true
         pad_step = 103
+        return none
+    if pad_step == 110:
+        pad_step++
+        return PadIn { none.axes, [ "a" ] }
+    if pad_step == 111:
+        pad_step++
+        return none
+    if pad_step == 112:
+        expect_ok(sel_building == pad_site, "A on the house site selects it ({sel_building}, {pad_site})")
+        pad_step++
+        return PadIn { none.axes, [ "a" ] }
+    if pad_step == 113:
+        pad_step++
+        return none
+    if pad_step == 114:
+        let del = find(pad_wheel) w: w.act == 19
+        expect_ok(del >= 0, "A again opens the site\'s wheel, with Delete on it ({pad_wheel.length} things)")
+        if del >= 0:
+            pad_page = max(0, find_s(wheel_groups(), pad_wheel[del].group))
+        let items = wheel_page_items()
+        let at = find(items) w: w.act == 19
+        let a = float(max(0, at)) / float(max(1, items.length)) * 360.0 - 90.0
+        test_pause = false
+        pad_step++
+        return PadIn { [ cos(a), sin(a), 0.0, 0.0, 0.0, 0.0 ], [] }
+    if pad_step == 115:
+        pad_step++
+        pad_t0 = t
+        return PadIn { none.axes, [ "a" ] }
+    if pad_step == 116 and t < pad_t0 + 1.0: return none  // (the order runs two turns on)
+    if pad_step == 116:
+        expect_ok(b_index_of(pad_site) < 0, "pointing at Delete and A takes the site down")
+        pad_step++
+        return PadIn { none.axes, [ "b" ] }
+    if pad_step == 117:
+        recall_group(1)
+        pad_step = 102
         return none
     if pad_step == 103:
         pad_step = 104
@@ -1057,6 +1109,8 @@ def make_match() -> bool:
     ai_levels = []
     if starts_with(front_choice, "load:"):
         if not load_saved(front_choice.substring(5, front_choice.length - 5)): return false
+    if hosting and lobby_save != "":  // (a saved game hosted, #174: the save, the people's sides then played by them)
+        if not load_saved(lobby_save): return false
     net_swarm_stop()                                                     // (the last match's)
     if join_ip != "" and fe_guests.length and fe_guests[0].world != "":  // joined in the host's lobby (#519): it sent the match
         let g = fe_guests[0]
@@ -1160,7 +1214,7 @@ def make_match() -> bool:
         roles_from_data()  // (a scenario file carries no building roles)
     note("world")
     events_on = true
-    if args[1] == "lobby" and lobby_levels.length == num_players and not joined_bots.length: ai_levels_set(lobby_levels)  // (each AI at its level)
+    if args[1] == "lobby" and lobby_levels.length == num_players and (not joined_bots.length or lobby_save != ""): ai_levels_set(lobby_levels)  // (each AI at its level)
     bots = map(num_players) p: new_bot(p)
     if joined_bots.length: bots = joined_bots
     if hosting and fe_rooms.length:  // the lobby's room (#519): its players are in, each on the side they took
@@ -1207,6 +1261,7 @@ def make_match() -> bool:
         let fgate = btype_index(if stone: "stone_gate" else: "palisade_gate")
         let ftower = btype_index(if stone: "wall_tower" else: "watchtower")
         let tc = town_center(ME)
+        let fside = if has_s(args, "tower_ride"): 1 else: ME  // (tower_ride: the wall is the enemy's, to dock against)
         if tc >= 0:
             var done = false
             for([ int2 { 5, -4 }, int2 { -12, 5 }, int2 { 5, 6 }, int2 { -10, -10 }, int2 { 6, 0 }, int2 { 0, 6 }, int2 { -8, 0 }, int2 { 0, -8 } ]) o:
@@ -1225,7 +1280,7 @@ def make_match() -> bool:
                     if fits * 10 >= cells.length * 8:  // (most of it: a tree or a rock in the way leaves a gap)
                         for(cells) c:
                             let k = if c.z == -1: fwall elif c.z == -2: fgate else: ftower
-                            if can_place(ME, k, c.x, c.y): fort_put(ME, k, c.x, c.y, 0)
+                            if can_place(ME, k, c.x, c.y): fort_put(fside, k, c.x, c.y, 0)
                         update_pop()
                         cam = iso(float(x0 * 1000 + 5500), float(y0 * 1000 + 4500))
                         print "fort: {fits} of {cells.length} tiles at {x0},{y0}"
@@ -1268,7 +1323,17 @@ def make_match() -> bool:
                     issue_cmd(p, CMD_ATTACK_MOVE, ids, start_x[foe], start_y[foe], 0, 0)
                     army_snap = true
         update_pop()
-        if fort_gate.x >= 0 and has_s(args, "in_gate"):  // (captures: soldiers standing through the gate's arch, before, in it, past it)
+        if fort_gate.x >= 0 and has_s(args, "tower_ride"):  // (captures: our siege tower carries swordsmen to the wall, #177)
+            let tk = type_of_slot(ME, "siege_tower")
+            let ik = type_of_slot(ME, "infantry")
+            if tk >= 0 and ik >= 0:
+                let tx = (fort_gate.x - 2) * 1000 + 500
+                let tw = add_unit(ME, tk, tx, (fort_gate.y + 6) * 1000)
+                let rid = map(6) n: u_id[add_unit(ME, ik, tx - 2500 + n * 1000, (fort_gate.y + 8) * 1000)]
+                issue_cmd(ME, CMD_GARRISON, rid, u_id[tw], 0, 0, 0)
+                issue_cmd(ME, CMD_MOVE, [ u_id[tw] ], tx, (fort_gate.y + 1) * 1000 + 500, 0, 0, 1)
+                cam = iso(float(tx), float((fort_gate.y + 3) * 1000))
+        elif fort_gate.x >= 0 and has_s(args, "in_gate"):  // (captures: soldiers standing through the gate's arch, before, in it, past it)
             let gk = find(t_slot.length) j: t_player[j] == ME and t_slot[j] == "infantry"
             let gx = (fort_gate.x + 1) * 1000 + 500
             if gk >= 0:
@@ -1442,7 +1507,7 @@ def pause_menu_body():
     let ws = float(gl.window_size())
     if menu_saves:  // Load game: the saves (game/lobby.lobster)
         fe_fit()
-        let picked = fe_saves_card("")
+        let picked = fe_saves_card("", false)
         if picked == "back": menu_saves = false
         elif picked != "":  // (a new match from the save: its map may be another)
             next_choice = "load:" + picked
@@ -1615,6 +1680,14 @@ def play_match():
             print "baked {nb} building frames{if rebake_art: "" else: " the pack lacked"}, in {int((seconds_elapsed() - t2) * 1000.0)} ms"
             bake_progress_on = false
             bake_loading = false
+            if net_on:  // every player loaded, then the match starts on all at once (#151 in Creel): no one freezes waiting mid-move
+                ls_begin(lockstep)
+                while not ls_begin_tick(lockstep) and not quit_game:
+                    if net_wait_frame(if link.closed: "The other player has left" else: "Waiting for the other players to load..."):
+                        quit_game = true
+                        if net_backed_out: back_to_lobby = true  // (B or Esc: the menu; the window closed: the end)
+                        else: quit_app = true
+                        net_backed_out = false
         if shot != "" and frame_no < 3: note("frame {frame_no} tc at {if tc0 >= 0: to_screen(iso(float(b_cx[tc0] * 1000 + 2000), float(b_cy[tc0] * 1000 + 2000))) else: float2_0} cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()} tc {tc0} draws {draws.length} W {W} H {H} first {iso(0.0, 0.0)} last {iso(float(W * 1000), float(H * 1000))}")
         if shot != "" and frame_no % 60 == 0: print "frame {frame_no}: {dt * 1000.0} ms, play {clock_s} s"
         if reload_at >= 0.0 and clock_s >= reload_at:
@@ -1631,7 +1704,7 @@ def play_match():
         if swap_arg != "" and clock_s >= swap_at:
             become(swap_arg)
             swap_arg = ""
-        if not paused and not test_pause and winner < 0 and not typing_text and ((not tree_open and not menu_open) or net_on): sim_owe(dt * speed)
+        if not paused and not test_pause and winner < 0 and not typing_text and ((not tree_open and not menu_open) or net_on): sim_owe(if frame_no == 2: 0.0 else: dt * speed)  // (the second frame's time is the first one's bake: not played, #151 in Creel)
         if net_on:
             ls_receive(lockstep)
             if lockstep.desync != "": banner = "Out of step with the other player: {lockstep.desync}"
@@ -1765,6 +1838,7 @@ def new_match_reset():
     join_ip = ""
     net_seats = []
     in_net_match = false
+    lobby_save = ""
     net_on = false
     ME = 0
     skirmish = false

@@ -2265,27 +2265,57 @@ def test_sapper_sling():
     var stopped = -1
     var thrown = -1
     var at_guard = false
+    var rolled_packed = true
+    var set_up_throw = true
     for(1200):
         tick_on()
         let i = index_of(sl)
+        if u_moving[i] == 1 and not packed(i): rolled_packed = false
         if stopped < 0 and u_moving[i] == 0 and u_ready[i] == 1: stopped = tick
         for(events) e:
             if e.kind == EV_SHOT and e.a == sl:
                 if thrown < 0: thrown = tick
+                if packed(i): set_up_throw = false
                 at_guard = at_guard or e.b == sentry
         if thrown >= 0: break
     let ti = index_of(sl)
     let reach = gap_b(ti, b_index_of(house))
     check(thrown > 0 and stopped > 0 and thrown - stopped >= t_unpack[k] - 1, "great sling: it stops, unpacks ({t_unpack[k]} ticks) and throws (stopped {stopped}, threw {thrown})")
     check(reach > 8000 and not at_guard, "great sling: throws at the house from {reach} milli-tiles, never at the soldier")
+    check(rolled_packed and set_up_throw, "great sling: it rolls packed and throws set up (the view draws it so: packed, #171)")
     let x0 = u_x[ti]
     issue_cmd(0, CMD_MOVE, [ sl ], 8000, 21000, 0, 0)
     var left = -1
+    var packing = -1
     for(200) t:
         tick_on()
+        if packing < 0 and packed(index_of(sl)): packing = t
         if left < 0 and u_x[index_of(sl)] != x0: left = t
     check(left >= t_pack[k], "great sling: it packs up ({t_pack[k]} ticks) before it rolls ({left})")
+    check(packing >= 0 and packing < left, "great sling: it is drawn packing as soon as it is told to move (packed from {packing}, rolled at {left})")
     check(type_of_slot(0, "sapper") < 0, "the sapper is still parked (D-128): when it comes back, port its checks from test_sim.gd")
+
+// Great slings told to attack together, as a player does with a few selected (a group order, in a block), and one
+// left standing near a foe's house: each sets up and throws (#171).
+def test_sling_group():
+    bare_world(races0)
+    let house = put(1, "house", 30, 20, 0)
+    let sls = map(3) n: lone(0, "great_sling", 14000, 19000 + n * 2000, "aggressive")
+    issue_cmd(0, CMD_ATTACK, sls, house, 0, 0, 0)
+    let threw = map(sls) _: false
+    for(1500):
+        tick_on()
+        for(events) e: if e.kind == EV_SHOT: for(sls) id, n: if e.a == id: threw[n] = true
+    let set_up = map(sls) id: not packed(index_of(id))
+    check((filter(threw) t: t).length == sls.length and (filter(set_up) t: t).length == sls.length, "great slings sent together: each sets up and throws (threw {threw}, set up {set_up})")
+    bare_world(races0)
+    let house2 = put(1, "house", 30, 20, 0)
+    let idle = lone(0, "great_sling", 24000, 21000, "aggressive")  // (in its own sight: it sees 6 tiles, throws 12)
+    var idle_threw = false
+    for(600):
+        tick_on()
+        for(events) e: if e.kind == EV_SHOT and e.a == idle and e.b == house2: idle_threw = true
+    check(idle_threw, "great sling: standing where it sees a foe\'s house, it sets up and throws at it")
 
 // ------------------------------------------------------------------ gates and walls
 
@@ -2769,6 +2799,59 @@ def test_siege_ways():
     let a = ways_run(true)
     let b = ways_run(false)
     check(a == b, "siege ways: the same commands give the same state hash")
+
+// A siege tower carries its soldiers (#177): rat swordsmen sent to their tower board it (off the field, on its records,
+// their pop kept); it rolls to the frogs' south wall and docks, and they come out and stand on the walkway. Another tower
+// unloads by hand beside it; a third, struck down with riders aboard, spills them.
+def riders_of(j:int) -> int: return u_inside[j].length / REC_SIZE
+def test_tower_ride():
+    new_world("flat_test", races0, rules0, [])
+    in_age3()
+    fortify_ring(0, 12, 12, 6, ring_spec(""))
+    let tower = lone(1, "siege_tower", 15500, 26500, "passive")
+    let swords = map(4) k: lone(1, "infantry", 13500 + k * 900, 28500, "stand")
+    let pop0 = pop[1]
+    issue_cmd(1, CMD_GARRISON, swords, tower, 0, 0, 0)
+    for(400):
+        tick_on()
+        if riders_of(index_of(tower)) == swords.length: break
+    let off = (filter(swords) uid: index_of(uid) < 0).length
+    check(riders_of(index_of(tower)) == swords.length and off == swords.length and pop[1] == pop0, "tower ride: swordsmen board their siege tower ({riders_of(index_of(tower))} aboard, {off} off the field, pop {pop[1]} was {pop0})")
+    issue_cmd(1, CMD_MOVE, [ tower ], 15500, 18500, 0, 0)
+    var docked = -1
+    var aboard_then = 0
+    for(900) t:
+        tick_on()
+        if docked < 0 and docked_at(index_of(tower)) >= 0:
+            docked = t
+            aboard_then = riders_of(index_of(tower))
+        if count_up(swords) == swords.length: break
+    check(docked >= 0 and aboard_then == swords.length, "tower ride: they ride until it docks against the wall ({aboard_then} aboard then)")
+    check(count_up(swords) == swords.length and riders_of(index_of(tower)) == 0, "tower ride: docked, they come out onto the walkway ({count_up(swords)} up)")
+    let t2 = lone(1, "siege_tower", 22500, 26500, "passive")
+    let two = map(2) k: lone(1, "spear", 21500 + k * 1800, 28500, "stand")
+    issue_cmd(1, CMD_GARRISON, two, t2, 0, 0, 0)
+    for(400):
+        tick_on()
+        if riders_of(index_of(t2)) == two.length: break
+    issue_cmd(1, CMD_UNGARRISON, [], t2, 0, 0, 0)
+    for(20):
+        tick_on()
+        if riders_of(index_of(t2)) == 0: break
+    let out = (filter(two) uid: index_of(uid) >= 0 and gap(index_of(uid), index_of(t2)) < 2000).length
+    check(riders_of(index_of(t2)) == 0 and out == two.length, "tower ride: unloaded by hand, they step out beside it ({out} of {two.length})")
+    issue_cmd(1, CMD_GARRISON, two, t2, 0, 0, 0)
+    for(400):
+        tick_on()
+        if riders_of(index_of(t2)) == two.length: break
+    u_hp[index_of(t2)] = 1
+    let killer = lone(0, "infantry", 23500, 27500, "aggressive")
+    issue_cmd(0, CMD_ATTACK, [ killer ], t2, 0, 0, 0)
+    for(400):
+        tick_on()
+        if index_of(t2) < 0: break
+    let spilled = (filter(two) uid: index_of(uid) >= 0).length
+    check(index_of(t2) < 0 and spilled == two.length, "tower ride: a tower struck down spills its riders ({spilled} of {two.length})")
 
 // ------------------------------------------------------------------ game modes
 
@@ -4697,6 +4780,56 @@ def put_done(p:int, id:string, cx:int, cy:int) -> int:  // place + done + full h
     b_hp[b] = bm_hp[p][k]
     return b
 
+// Demolish (creel #149, #180): a player takes down their own building or site, as the genre's Delete key does. It falls as a
+// building lost in a fight (people inside come out, its cells free); another player's building is refused; the
+// order crosses the lockstep wire like any other.
+class WireTurn:  // net.lockstep's TurnMsg, field for field (its HASH_EVERY clashes with this file's)
+    player:int
+    turn:int
+    cmds:[Cmd]
+    hashes:[int]
+
+def test_demolish():
+    new_world("flat_test", races0, rules0, [])
+    let sx = start_x[0] / 1000
+    let sy = start_y[0] / 1000
+    let hk = btype_index("house")
+    let at = free_spot(hk, sx + 5, sy + 5)
+    let house = b_id[put_done(0, "house", at.x, at.y)]
+    let cells = footprint(b_index_of(house))
+    let workers = own_workers_of(0)
+    let st = free_spot(hk, sx - 6, sy + 5)
+    let site = lay_foundation(0, [ workers[0] ], hk, st.x, st.y)
+    check(site != 0 and b_done[b_index_of(site)] == 0, "demolish: a site to take down ({site})")
+    let tc = b_id[0]
+    issue_cmd(0, CMD_GARRISON, workers.slice(1, 2), tc, 0, 0, 0)
+    for(300):
+        tick_on()
+        if inside_n(b_index_of(tc)) == 2: break
+    let foe_tc = b_id[(find(b_id.length) b: b_owner[b] == 1)]
+    issue_cmd(0, CMD_DEMOLISH, [], house, 0, 0, 0)
+    issue_cmd(0, CMD_DEMOLISH, [], site, 0, 0, 0)
+    issue_cmd(0, CMD_DEMOLISH, [], foe_tc, 0, 0, 0)  // not ours: refused
+    steps(12)
+    check(b_index_of(house) < 0, "demolish: a finished house is gone")
+    check(not exists(cells) c: occupied[c] != 0, "demolish: its cells are free")
+    check(b_index_of(site) < 0, "demolish: a site is gone")
+    check(b_index_of(foe_tc) >= 0, "demolish: another player\'s building stands")
+    issue_cmd(0, CMD_DEMOLISH, [], tc, 0, 0, 0)
+    steps(12)
+    check(b_index_of(tc) < 0 and index_of(workers[1]) >= 0 and index_of(workers[2]) >= 0, "demolish: those inside come out")
+    // Over the wire: a turn message with the order, written and read back as lockstep does, takes a building down.
+    let at2 = free_spot(hk, sx + 9, sy - 6)
+    let h2 = b_id[put_done(0, "house", at2.x, at2.y)]
+    issue_cmd(0, CMD_DEMOLISH, [], h2, 0, 0, 0)
+    let sent = WireTurn { 0, tick / TICKS_PER_TURN, pending, [] }
+    let back, err = flexbuffers_binary_to_value(typeof WireTurn, flexbuffers_value_to_binary(sent, 1000))
+    let got = if back: back.cmds else: []::Cmd
+    check(err == nil and exists(got) c: c.code == CMD_DEMOLISH and c.a == h2, "demolish: the order reads back off the wire ({err})")
+    pending = got
+    steps(12)
+    check(b_index_of(h2) < 0, "demolish: the order from the wire takes the house down")
+
 // Research and the age-up queue with units, the genre's way: in the order clicked, paid when queued,
 // refunded on cancel, never queued twice.
 def test_research_queue():
@@ -5335,9 +5468,9 @@ def test_save_load():
 
 // ------------------------------------------------------------------ the parts
 
-let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
-              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "walk_over_site", "gatherers", "hands_off", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "eating", "idle_wait", "sapper_sling", "gates", "diagonal_wall", "diagonal_gates",
-              "walls", "siege_ways", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
+let PARTS = [ "fixed", "turret", "air", "shot_pace", "hold_ground", "command_order", "demolish", "source_lint", "flow", "crossing_flat", "crossing_choke", "crossing_engines",
+              "combat", "opening", "shots", "engines", "trade", "stocked", "carry", "recipes", "sites", "abandoned_site", "walk_over_site", "gatherers", "hands_off", "steading_big", "roads", "road_plans", "doors_on_roads", "bridge_plans", "eating", "idle_wait", "sapper_sling", "sling_group", "gates", "diagonal_wall", "diagonal_gates",
+              "walls", "siege_ways", "tower_ride", "modes", "movement_classes", "land", "hills", "flow_patch", "flow_patch_mixed",
               "farms", "fog_memory", "age_timing", "builder_moves_on", "builder_back_to_work", "no_dark_picks", "wood_spots", "rally_gather",
               "build_queue", "drop_off", "animals", "hunt_holds", "sheep_spot", "pen", "bot_hunts", "garrison", "towers",
               "camp_gather", "market", "effects", "university_castle", "research_queue", "tech", "queue", "wonder", "save_load", "match", "match_b", "match_flipped" ]
@@ -5372,11 +5505,13 @@ def run_part(name:string):
     elif name == "eating": test_eating()
     elif name == "steading_big": test_steading_big()
     elif name == "sapper_sling": test_sapper_sling()
+    elif name == "sling_group": test_sling_group()
     elif name == "gates": test_gates()
     elif name == "diagonal_wall": test_diagonal_wall()
     elif name == "diagonal_gates": test_diagonal_gates()
     elif name == "walls": test_walls()
     elif name == "siege_ways": test_siege_ways()
+    elif name == "tower_ride": test_tower_ride()
     elif name == "modes": test_modes()
     elif name == "movement_classes": test_movement_classes()
     elif name == "land": test_land()
@@ -5405,6 +5540,7 @@ def run_part(name:string):
     elif name == "effects": test_effects()
     elif name == "university_castle": test_university_castle()
     elif name == "research_queue": test_research_queue()
+    elif name == "demolish": test_demolish()
     elif name == "tech": test_tech()
     elif name == "queue": test_queue()
     elif name == "wonder": test_wonder()

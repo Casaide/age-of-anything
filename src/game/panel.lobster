@@ -358,6 +358,11 @@ def panel_buttons() -> [Btn]:
             b.group = "Orders"
             b.tip = if rung: "The sheltering workers come out and go back to work." else: "Workers near it run into the nearest buildings."
             out.push(b)
+        let del = Btn { "Delete", "Del", 19, 0 }  // the genre's Delete: it falls, nothing comes back (creel #149, #180)
+        del.icon = "demolish"
+        del.group = "Orders"
+        del.tip = if b_done[bi] == 0: "Take this site down. Nothing spent on it comes back." else: "Take this building down. Nothing comes back, and anyone inside comes out."
+        out.push(del)
         if town_bar(): build_buttons(out)
         return out
     if not ids.length: return out
@@ -389,6 +394,17 @@ def panel_buttons() -> [Btn]:
             b.accent = arming_ability
             b.group = "Orders"
             b.tip = "{gstr(ab, "desc", "")} Then click where (within {gint(ab, "range", 0) / 1000} tiles)."
+            out.push(b)
+        let towers = filter(ids) id: holds(index_of(id)) > 0
+        if towers.length:  // siege towers: their riders out beside them (#177)
+            var aboard = 0
+            for(towers) id: aboard += riders(index_of(id))
+            let b = Btn { "Unload", "", 18, 0 }
+            b.icon = "ungarrison"
+            b.enabled = aboard > 0
+            b.group = "Orders"
+            b.note = "{aboard}/{towers.length * r_dock_holds}"
+            b.tip = "Everyone riding inside steps out beside it. Docked against a wall, they climb out onto it by themselves."
             out.push(b)
         let st = Btn { "Stop", "X", 4, 0 }
         st.icon = "stop"
@@ -432,6 +448,8 @@ def press(b:Btn):
         case 14: issue_cmd(ME, CMD_AUTO_RESEED, []::int, if auto_reseed[ME] == 1: 0 else: 1, 0, 0, 0)
         case 15: issue_cmd(ME, CMD_RELEASE, []::int, sel_building, 0, 0, 0)
         case 16: issue_cmd(ME, CMD_TRADE, []::int, sel_building, b.arg / 2, b.arg % 2, 0)
+        case 18: for(filter(selected_units()) id: holds(index_of(id)) > 0) id: issue_cmd(ME, CMD_UNGARRISON, []::int, id, 0, 0, 0)
+        case 19: issue_cmd(ME, CMD_DEMOLISH, []::int, sel_building, 0, 0, 0)
         case 17:  // the workers go for the first of the selected animals (sim_debug.slaughter_selected)
             let herd = filter(selected_units()) id: t_animal[u_kind[index_of(id)]] != 0
             if herd.length: issue_cmd(ME, CMD_ATTACK, selected_workers(), herd[0], 0, 0, 0)
@@ -684,6 +702,7 @@ def draw_panel():
                 if u_carry[i] > 0 and u_carry_kind[i] > 0: line += " ({u_carry[i]} {resource_names[u_carry_kind[i] - 1]})"
                 info.push(line)
             elif t_animal[k] == 0: info = card_lines(k)
+            if holds(i) > 0 and u_owner[i] == ME: info.insert(0, "{riders(i)} / {holds(i)} aboard")  // (a siege tower's riders, #177)
         else:
             title = "{ids.length} selected"
             for(ids) id:

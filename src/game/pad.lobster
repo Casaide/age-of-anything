@@ -33,7 +33,8 @@ class Btn:
     act:int  // 0 train slot, 1 research, 2 age up, 3 build, 4 stop, 5 cancel the last in the queue,
     // 6 a build page (arg 0 civilian, 1 military, -1 back), 7 stance (arg), 8 call to arms, 9 back to work,
     // 10 arm attack-move, 11 arm the race's ability, 12 ungarrison, 13 reseed, 14 auto-reseed,
-    // 15 release the pen's animals, 16 trade (arg: resource x 2 + 1 to buy), 17 slaughter
+    // 15 release the pen's animals, 16 trade (arg: resource x 2 + 1 to buy), 17 slaughter,
+    // 18 unload what the selected carry, 19 delete the selected building (creel #149, #180)
     arg:int
     unit = -1      // a unit type to draw on it
     building = -1  // or a building type
