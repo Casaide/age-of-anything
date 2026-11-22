@@ -644,31 +644,6 @@ def fe_traits(s:FeSide, at:float2, w:float, h:float, fs:int):
 // the dice and the prompt, the roster as a line of its rows_' names, a line of bonuses, lacks and notes. Compact (a
 // team game, two panels a column): a smaller banner (the traits ride on it), stage and type, an AI's level in its
 // top row.
-// The game's own ground under a stage (Dominic, 2026-11-04: "just put them on our ground texture"): the terrain shader
-// over a patch of plain grass (blank masks: no paths, reeds, swamp or rock), at the units' scale (k screen px a world
-// px), each side's patch a different stretch of it.
-var fe_turf_tex:resource<texture>? = nil
-def fe_turf(at:float2, size:float2, k:float, side:int):
-    if not fe_turf_tex: fe_turf_tex = gl.create_texture(map(2): map(2): float4_0, texture_format_clamp | texture_format_nomipmap)
-    let tex = fe_turf_tex
-    ui_batch_flush()
-    let local = size / k
-    let o = float2 { float(side) * 200.0 - 300.0, 1400.0 }  // (world px: well inside the 128 x 128 map it says)
-    gl.set_shader("terrain")
-    gl.set_uniform("map_size", float2 { 128.0, 128.0 })
-    gl.set_uniform("art_px", k / ART_K)  // (screen px an art px, as the match passes it)
-    gl.set_uniform("dev_px", k)
-    gl.set_uniform("time", 0.0)
-    for(4) u: gl.set_primitive_texture(u, tex)
-    gl.set_primitive_texture(4, ground_atlas())
-    gl.set_primitive_texture(5, tex)
-    gl.translate(at):
-        gl.scale(k):
-            gl.translate(-o):
-                gl.draw_mesh("PT", [ float3 { o.x, o.y, 0.0 }, float3 { o.x + local.x, o.y, 0.0 }, float3 { o.x + local.x, o.y + local.y, 0.0 }, float3 { o.x, o.y + local.y, 0.0 } ],
-                             []::float4, []::float3, map(4): float2_0, []::float2, [ 0, 2, 1, 0, 3, 2 ])
-    gl.set_shader("color")
-
 def fe_side_panel(i:int, at:float2, size:float2, compact:bool, who:string, dt:float):
     let s = fe_sides[i]
     let lk = ui_look_of(rstr(s.race, "family"))
