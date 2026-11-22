@@ -1,6 +1,6 @@
 // A building site goes up the way a real one does (#155): at every stage of every building, Steading's set and the
 // base game's, nothing seen hangs in the air (each part stands on the ground or on a part seen under it), and no
-// part of the roof shows before the building is finished.
+// part of the roof, and no lit window or lantern, shows before the building is finished (#208).
 //   lobster site_stage_check.lobster
 import from "../creel/src"
 import game.deps
@@ -29,6 +29,9 @@ def check_site(name:string, spec:BSpec, stage:int):
     var ground = 1000000000.0
     for(seen) s: ground = min(ground, s.lo.y)
     for(seen) s: expect(find_string(s.node.meta, "roof") < 0, "{name} stage {stage}: a roof part shows before it is finished ({s.lo.y - ground})")
+    for(seen) s:  // (nobody lives in a site: no window or lantern lit until it's finished, #208)
+        let m = s.node.mat
+        expect(not (m and (m.unshaded or m.emission != float3_0)), "{name} stage {stage}: a lit part shows before it is finished ({s.node.meta})")
     let held = akb_held(seen, ground)
     for(seen) s, i:
         expect(held[i], "{name} stage {stage}: a part floats at {s.lo.y - ground} with nothing under it ({s.node.meta} {s.hi - s.lo} at {s.lo})")
