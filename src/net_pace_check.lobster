@@ -221,12 +221,20 @@ var late = 0.0
 for(args) a: if starts_with(a, "late:"): late = string_to_float(a.substring(5, a.length - 5))
 if late > 0.0:
     let tl = seconds_elapsed()
-    while seconds_elapsed() - tl < late: tcp.wait(nil, nil, false, 0.05)  // (this side loads slower)
-ls_begin(ls)                                                              // (every player starts the first tick together: this side's loaded)
+    while seconds_elapsed() - tl < late:  // (this side loads slower, saying how far it is: #190)
+        ls_load(ls, (seconds_elapsed() - tl) / late)
+        tcp.wait(nil, nil, false, 0.05)
+ls_begin(ls)  // (every player starts the first tick together: this side's loaded)
 let t_begin = seconds_elapsed()
+let other = if me == 0: 1 else: 0
+var heard_part = false  // (the other side's progress seen part way, as the loader shows it)
 while not ls_begin_tick(ls):
     assert seconds_elapsed() - t_begin < 20.0 and not link.closed
+    let got = ls_loaded(ls, other)
+    heard_part = heard_part or (got > 0.0 and got < 1.0)
     tcp.wait(nil, link.sock, false, 0.01)
+let heard_done = ls_loaded(ls, other)
+print "net_pace: heard the other side load: part way {heard_part}, at the start {ls_loaded(ls, other)}"
 var acc = 0.0
 var stall_t0 = -1.0
 var stall_long = 0.0
@@ -286,6 +294,8 @@ def fail(what:string):
 if ls.desync != "": fail("out of step: {ls.desync}")
 if tick < ticks: fail("stopped at tick {tick} of {ticks}")
 if ls.mine.get_keys().length: fail("{ls.mine.get_keys().length} hashes never checked")
+if late == 0.0 and not heard_part: fail("the other side\'s loading was never heard part way (the loader shows it: #190)")
+if heard_done < 1.0: fail("the other side started without being heard as loaded")
 if stall_long > 0.25: fail("a stall of {int(stall_long * 1000.0)} ms (a side that loads later must not freeze the other: at most a turn and a bit)")
 if multi > 0: fail("{multi} frames ran 3+ ticks (time saved up and rushed through)")
 if bad: set_exit_code(1)
