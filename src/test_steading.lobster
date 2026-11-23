@@ -1084,6 +1084,16 @@ let same, lively = save_run(false)
 check(lively and same, "steading: through a save, the mod\'s rules and their state play on the same (lively {lively}, same {same})")
 let same_off, _ = save_run(true)
 check(same_off, "steading: rules that stopped before a save stay stopped after it, the same on every machine")
+// The pack's own tests (data/tests/*.lua, Creel's testkit/pack_tests): its rules, each in a fresh town, every invariant
+// checked each tick.
+let pack_results = pack_tests_of("steading"):
+    new_world(2026, MAP, races, rules, [])
+    lay_later = []
+    lay_sent = []
+fn:
+    lay_step()
+check(pack_results.length >= 1, "steading: the pack has its own tests")
+for(pack_results) line: check(starts_with(line, "ok "), "steading: the pack\'s test {line}")
 lib_packs = [ lib_packs[0] ]
 id_load(lib_root)
 print "\n{checks - failures} passed, {failures} failed"
