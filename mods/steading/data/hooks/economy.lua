@@ -97,11 +97,12 @@ local function take_nearest(idle, b)
   return table.remove(idle, best)
 end
 
--- Whether site b has goods brought for more than is built: work for a builder now.
+-- Whether site b has work for a builder now: levelling it (a road cell's digging), or goods brought for more than is
+-- built (the engine's phases, creel #192: 0 levelling, 1 waiting for goods, 2 going up).
 local function work_at(b)
   if b_done(b) ~= 0 or not b_is_site(b) then return false end
-  local cap = foundation * 10 + (1000 - foundation * 10) * site_permille(b) // 1000  -- (as the engine caps it, #105)
-  return b_progress(b) * 1000 < bt_build_ticks(b_kind(b)) * cap
+  local ph = site_phase(b)
+  return ph == 0 or ph == 2
 end
 
 -- Whether site b is still waiting on goods: a builder there waits with it (the genre's foundations: lay it, then wait).
