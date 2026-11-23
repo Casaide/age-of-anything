@@ -116,6 +116,7 @@ var pick_arg = ""         // captures: pick:<building type id>, your first finis
 var selftest = false      // play a few orders through the controls, check the sim took them, quit
 var airtest = false       // does a click on an aircraft, where it's drawn, take it? Then quit (#185)
 var shot_at = 0.0
+var probe_arg = ""  // probe:<json>: with shot:, what was drawn for each unit and building in that frame (Creel's draw probe, #188)
 var start_speed = 1.0
 var look_x = -1
 var swap_arg = ""  // swap:<prompt>@<seconds>: become that race then (tests and captures)
@@ -170,6 +171,7 @@ for(args) a, k:
             ui_touch = true
         let key, val = split_string(a, ":")
         if key == "shot": shot = val
+        if key == "probe": probe_arg = val
         if key == "fsat": window_toggles = map(tokenize(val, ",", " ")) t: string_to_float(t)
         if key == "fsreport": window_report = val
         if key == "at": shot_at = string_to_float(val)
@@ -1787,6 +1789,7 @@ def play_match():
         if drawing():  // (minimised: the sim plays on, nothing is drawn)
             gl.clear(float4 { 0.05, 0.05, 0.05, 1.0 })
             gl.blend(1)
+            if probe_arg != "": probe_begin()
             draw_world_lit()
             if not rec_clean: ui_batch(): draw_panel()
             perf_lap(6)
@@ -1832,6 +1835,7 @@ def play_match():
             return
         if shot != "" and clock_s >= shot_at and not selftest and not padtest and not has_s(args, "tillend") and (not tree_arg or (frame_no > 4 and tree_waiting == 0)) and (not has_s(args, "menu") or frame_no > 4):
             gl.screenshot(shot)
+            if probe_arg != "": assert write_file(probe_arg, probe_json(), 0, 1)
             print "shot {shot} at {clock_s} s, tick {tick}; sim {sim_step_time * 1000.0 / max(1, sim_steps)} ms a tick; cam {cam} zoom {zoom} ws {gl.window_size()} fb {gl.framebuffer_size()}"
             quit_app = true
             return
