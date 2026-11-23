@@ -90,6 +90,32 @@
  ],
  "economy": {
   "model": "stocked",
+  "deliveries": {
+   "_doc": "As in the genre (creel #191): gold to the school first, then food to the inn, then building sites, the nearest done first; then the rest. A workshop's goods before the store's (from_store: 4 tiles further).",
+   "levels": [
+    {
+     "to": [
+      "school"
+     ],
+     "goods": [
+      "gold"
+     ],
+     "level": 5
+    },
+    {
+     "to": [
+      "inn"
+     ],
+     "level": 4
+    },
+    {
+     "site": true,
+     "level": 3
+    }
+   ],
+   "from_store": 4000,
+   "nearer_done_first": true
+  },
   "gatherers": [
    "woodcutter",
    "stonecutter",

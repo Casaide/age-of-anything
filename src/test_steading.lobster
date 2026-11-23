@@ -797,7 +797,8 @@ def inn_seats():
     check(lay("inn", tx + 6, ty - 1), "steading: an inn is laid by the storehouse")
     for(3 * 60 * TICK_HZ):
         if done_of("inn") == 0: lay_step()
-    let inn = b_index_of(done_of("inn"))
+    let inn_id = done_of("inn")
+    var inn = b_index_of(inn_id)  // (looked up again each tick: a road built by it takes its plan out of the list)
     check(inn >= 0, "steading: the inn goes up")
     for([ br, sa, wi ]) r:
         hold_take(tc, r, b_hold[tc][r])  // (only what the inn holds is eaten)
@@ -820,6 +821,7 @@ def inn_seats():
     let ate_at = map(u_x.length) _: 0   // sittings each has had
     for(90 * TICK_HZ):
         lay_step()
+        inn = b_index_of(inn_id)
         var seated = 0
         var waiting = 0
         for(u_x.length) i:

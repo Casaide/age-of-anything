@@ -200,6 +200,8 @@
     "stone": 1
    },
    "build_time": 3,
+   "foundation_pct": 50,
+   "_foundation_pct_doc": "As in the genre: a road cell is dug for half its work before its stone is fetched, then laid (creel #192)",
    "age": 1,
    "hotkey": "R",
    "pop": 0,

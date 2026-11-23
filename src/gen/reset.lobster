@@ -302,6 +302,7 @@ var stashed_bt_store = []::int
 var stashed_bt_after = []::[int]
 var stashed_bt_road = []::int
 var stashed_bt_ground = []::int
+var stashed_bt_foundation = []::int
 var stashed_bt_drag = []::int
 var stashed_bt_bridge = []::int
 var stashed_bt_in = []::[int]
@@ -865,6 +866,7 @@ def reset_world():
     bt_after = []::[int]
     bt_road = []::int
     bt_ground = []::int
+    bt_foundation = []::int
     bt_drag = []::int
     bt_bridge = []::int
     bt_in = []::[int]
@@ -1417,6 +1419,7 @@ def stash_world():
     stashed_bt_after = bt_after
     stashed_bt_road = bt_road
     stashed_bt_ground = bt_ground
+    stashed_bt_foundation = bt_foundation
     stashed_bt_drag = bt_drag
     stashed_bt_bridge = bt_bridge
     stashed_bt_in = bt_in
@@ -1962,6 +1965,7 @@ def unstash_world():
     bt_after = stashed_bt_after
     bt_road = stashed_bt_road
     bt_ground = stashed_bt_ground
+    bt_foundation = stashed_bt_foundation
     bt_drag = stashed_bt_drag
     bt_bridge = stashed_bt_bridge
     bt_in = stashed_bt_in
