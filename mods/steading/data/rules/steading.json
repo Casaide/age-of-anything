@@ -131,6 +131,8 @@
   "door_roads": true,
   "foundation_pct": 30,
   "goods_after_foundation": true,
+  "stages_ahead": 2,
+  "_stages_ahead_doc": "A site's planks and stone are both fetched once it's levelled, and used in their stages' order: planks, then stone (creel #193).",
   "_goods_after_foundation_doc": "As in the genre (#41): a builder levels the plot first (its foundation share, foundation_pct), and only then are its goods fetched, so serfs never carry to a plot that isn't ready (the engine's rule, creel #138).",
   "inside_ticks": 10,
   "door_step": 14,
