@@ -303,6 +303,7 @@ class WorldSave:
     bt_after:[[int]]
     bt_road:[int]
     bt_ground:[int]
+    bt_stages:[[int]]
     bt_foundation:[int]
     bt_drag:[int]
     bt_bridge:[int]
@@ -331,6 +332,7 @@ class WorldSave:
     stock:[[int]]
     r_stocked:int
     r_foundation_pct:int
+    r_stages_ahead:int
     r_goods_after_foundation:int
     r_inside_ticks:int
     r_door_step:int
@@ -863,6 +865,7 @@ def world_bytes(bots:[Bot]) -> string:
         bt_after,
         bt_road,
         bt_ground,
+        bt_stages,
         bt_foundation,
         bt_drag,
         bt_bridge,
@@ -891,6 +894,7 @@ def world_bytes(bots:[Bot]) -> string:
         stock,
         r_stocked,
         r_foundation_pct,
+        r_stages_ahead,
         r_goods_after_foundation,
         r_inside_ticks,
         r_door_step,
@@ -1436,6 +1440,7 @@ def load_world_bytes(data:string) -> [Bot]:
     bt_after = s.bt_after
     bt_road = s.bt_road
     bt_ground = s.bt_ground
+    bt_stages = s.bt_stages
     bt_foundation = s.bt_foundation
     bt_drag = s.bt_drag
     bt_bridge = s.bt_bridge
@@ -1464,6 +1469,7 @@ def load_world_bytes(data:string) -> [Bot]:
     stock = s.stock
     r_stocked = s.r_stocked
     r_foundation_pct = s.r_foundation_pct
+    r_stages_ahead = s.r_stages_ahead
     r_goods_after_foundation = s.r_goods_after_foundation
     r_inside_ticks = s.r_inside_ticks
     r_door_step = s.r_door_step

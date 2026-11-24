@@ -302,6 +302,7 @@ var stashed_bt_store = []::int
 var stashed_bt_after = []::[int]
 var stashed_bt_road = []::int
 var stashed_bt_ground = []::int
+var stashed_bt_stages = []::[int]
 var stashed_bt_foundation = []::int
 var stashed_bt_drag = []::int
 var stashed_bt_bridge = []::int
@@ -330,6 +331,7 @@ var stashed_pop_cap = []::int
 var stashed_stock = []::[int]
 var stashed_r_stocked = 0
 var stashed_r_foundation_pct = 0
+var stashed_r_stages_ahead = 0
 var stashed_r_goods_after_foundation = 0
 var stashed_r_inside_ticks = 0
 var stashed_r_door_step = 0
@@ -866,6 +868,7 @@ def reset_world():
     bt_after = []::[int]
     bt_road = []::int
     bt_ground = []::int
+    bt_stages = []::[int]
     bt_foundation = []::int
     bt_drag = []::int
     bt_bridge = []::int
@@ -894,6 +897,7 @@ def reset_world():
     stock = []::[int]
     r_stocked = 0
     r_foundation_pct = 0
+    r_stages_ahead = 0
     r_goods_after_foundation = 0
     r_inside_ticks = 0
     r_door_step = 0
@@ -1419,6 +1423,7 @@ def stash_world():
     stashed_bt_after = bt_after
     stashed_bt_road = bt_road
     stashed_bt_ground = bt_ground
+    stashed_bt_stages = bt_stages
     stashed_bt_foundation = bt_foundation
     stashed_bt_drag = bt_drag
     stashed_bt_bridge = bt_bridge
@@ -1447,6 +1452,7 @@ def stash_world():
     stashed_stock = stock
     stashed_r_stocked = r_stocked
     stashed_r_foundation_pct = r_foundation_pct
+    stashed_r_stages_ahead = r_stages_ahead
     stashed_r_goods_after_foundation = r_goods_after_foundation
     stashed_r_inside_ticks = r_inside_ticks
     stashed_r_door_step = r_door_step
@@ -1965,6 +1971,7 @@ def unstash_world():
     bt_after = stashed_bt_after
     bt_road = stashed_bt_road
     bt_ground = stashed_bt_ground
+    bt_stages = stashed_bt_stages
     bt_foundation = stashed_bt_foundation
     bt_drag = stashed_bt_drag
     bt_bridge = stashed_bt_bridge
@@ -1993,6 +2000,7 @@ def unstash_world():
     stock = stashed_stock
     r_stocked = stashed_r_stocked
     r_foundation_pct = stashed_r_foundation_pct
+    r_stages_ahead = stashed_r_stages_ahead
     r_goods_after_foundation = stashed_r_goods_after_foundation
     r_inside_ticks = stashed_r_inside_ticks
     r_door_step = stashed_r_door_step

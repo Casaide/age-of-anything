@@ -124,6 +124,12 @@
     "seconds": 300
    },
    "note": "river fished out (#149): drawn as the river is, and its fish come back five minutes on"
+  },
+  "reeds": {
+   "resource": "",
+   "amount": 0,
+   "depleted": "",
+   "note": "as in the genre, a woodcutter fells only trees: a reed bed is in the way, not wood"
   }
  }
 }
